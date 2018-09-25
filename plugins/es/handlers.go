@@ -8,11 +8,11 @@ import (
 	"github.com/appbaseio-confidential/arc/internal/util"
 )
 
-func redirectHandler(w http.ResponseWriter, r *http.Request) {
+func (es *ES) redirectHandler(w http.ResponseWriter, r *http.Request) {
 	client := httpClient()
 	response, err := client.Do(r)
 	if err != nil {
-		log.Printf("[ERROR]: error fetching response for %s: %v", r.URL.Path, err)
+		log.Printf("%s: error fetching response for %s: %v", logTag, r.URL.Path, err)
 		util.WriteBackError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}

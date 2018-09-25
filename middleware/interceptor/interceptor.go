@@ -7,6 +7,12 @@ import (
 	"os"
 
 	"github.com/appbaseio-confidential/arc/arc/middleware/order"
+	"github.com/appbaseio-confidential/arc/internal/errors"
+)
+
+const (
+	logTag          = "[interceptor]"
+	envEsClusterURL = "ES_CLUSTER_URL"
 )
 
 type Interceptor struct {
@@ -22,12 +28,13 @@ func esInterceptor(h http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		rawURL := os.Getenv("ES_CLUSTER_URL")
 		if rawURL == "" {
-			log.Println("[ERROR]: env var ES_CLUSTER_URL not set")
+			err := errors.NewEnvVarNotSetError(envEsClusterURL)
+			log.Printf("%s: %v", logTag, err)
 			return
 		}
 		esURL, err := url.Parse(rawURL)
 		if err != nil {
-			log.Printf("[ERROR]: error parsing ES_CLUSTER_URL=%s: %v", rawURL, err)
+			log.Printf("%s: error parsing %s=%s: %v", logTag, rawURL, envEsClusterURL, err)
 			return
 		}
 
