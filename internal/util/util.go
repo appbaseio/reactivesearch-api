@@ -23,7 +23,6 @@ func WriteBackMessage(w http.ResponseWriter, msg string, code int) {
 	}
 }
 
-
 func WriteBackError(w http.ResponseWriter, err string, code int) {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.Header().Set("X-Content-Type-Options", "nosniff")

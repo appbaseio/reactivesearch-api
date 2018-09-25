@@ -11,11 +11,9 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/appbaseio-confidential/arc/arc"
+	"github.com/appbaseio-confidential/arc/arc/plugin"
 	"github.com/appbaseio-confidential/arc/middleware/interceptor"
 )
-
-var i = interceptor.New()
 
 type api struct {
 	name string
@@ -38,28 +36,22 @@ type spec struct {
 	} `json:"body,omitempty"`
 }
 
-func apiDirPath() (string, error) {
-	wd, err := os.Getwd()
-	if err != nil {
-		return "", nil
-	}
-	return filepath.Join(wd, "plugins/es/api"), nil
-}
+func (es *ES) routes() []plugin.Route {
+	var i = interceptor.New()
 
-func getESRoutes() []arc.Route {
 	files := make(chan string)
 	apis := make(chan api)
 
 	path, err := apiDirPath()
 	if err != nil {
-		log.Printf("[ERROR]: unable to fetch api dir path: %v", err)
+		log.Printf("%s: unable to fetch api dir path: %v", logTag, err)
 		return nil
 	}
 
 	go fetchSpecFiles(path, files)
 	go decodeSpecFiles(files, apis)
 
-	var routes []arc.Route
+	var routes []plugin.Route
 	for api := range apis {
 		name := strings.TrimSuffix(api.name, ".json")
 		methods := api.spec.Methods
@@ -71,11 +63,11 @@ func getESRoutes() []arc.Route {
 			if len(path) == 1 {
 				continue
 			}
-			route := arc.Route{
+			route := plugin.Route{
 				Name:        name,
 				Methods:     methods,
 				Path:        path,
-				HandlerFunc: i.Wrap(redirectHandler),
+				HandlerFunc: i.Wrap(es.redirectHandler),
 				Description: description,
 			}
 			routes = append(routes, route)
@@ -84,15 +76,23 @@ func getESRoutes() []arc.Route {
 
 	// append the index route last in order to avoid early
 	// matches for other specific routes
-	indexRoute := arc.Route{
+	indexRoute := plugin.Route{
 		Name:        "ping",
 		Methods:     []string{http.MethodGet},
 		Path:        "/",
-		HandlerFunc: i.Wrap(redirectHandler),
+		HandlerFunc: i.Wrap(es.redirectHandler),
 		Description: "You know, for search",
 	}
 	routes = append(routes, indexRoute)
 	return routes
+}
+
+func apiDirPath() (string, error) {
+	wd, err := os.Getwd()
+	if err != nil {
+		return "", nil
+	}
+	return filepath.Join(wd, "plugins/es/api"), nil
 }
 
 func fetchSpecFiles(path string, files chan<- string) {
@@ -104,7 +104,7 @@ func fetchSpecFiles(path string, files chan<- string) {
 		return
 	}
 	if !info.IsDir() {
-		log.Println("cannot walk through a file path")
+		log.Printf("%s: cannot walk through a file path", logTag)
 		return
 	}
 	err = filepath.Walk(path, func(path string, info os.FileInfo, err error) error {

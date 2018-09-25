@@ -15,8 +15,8 @@ import (
 	"github.com/gorilla/mux"
 	"gopkg.in/natefinch/lumberjack.v2"
 
-	_ "github.com/appbaseio-confidential/arc/plugins/permission"
-	_ "github.com/appbaseio-confidential/arc/plugins/user"
+	_ "github.com/appbaseio-confidential/arc/plugins/permissions"
+	_ "github.com/appbaseio-confidential/arc/plugins/users"
 
 	// TODO: Currently this plugin needs to load last in order to correctly register path prefix
 	_ "github.com/appbaseio-confidential/arc/plugins/es"
@@ -60,7 +60,7 @@ func main() {
 	router := mux.NewRouter().StrictSlash(true)
 	for _, plugin := range arc.ListPlugins() {
 		if err := arc.LoadPlugin(router, plugin); err != nil {
-			log.Fatalf("[ERROR]: %v", err)
+			log.Fatalf("%v", err)
 		}
 	}
 
