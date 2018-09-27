@@ -17,15 +17,15 @@ const (
 )
 
 type Permission struct {
-	UserId    string       `json:"user_id"`
-	UserName  string       `json:"user_name"`
-	Password  string       `json:"password"`
-	Creator   string       `json:"creator"`
-	ACL       []acl.ACL    `json:"acl"`
-	Op        op.Operation `json:"op"`
-	Indices   []string     `json:"indices"`
-	CreatedAt time.Time    `json:"created_at"`
-	ExpiresAt time.Time    `json:"expires_at"`
+	UserId    string         `json:"user_id"`
+	UserName  string         `json:"user_name"`
+	Password  string         `json:"password"`
+	Creator   string         `json:"creator"`
+	ACL       []acl.ACL      `json:"acl"`
+	Op        []op.Operation `json:"op"`
+	Indices   []string       `json:"indices"`
+	CreatedAt time.Time      `json:"created_at"`
+	TTL       time.Duration  `json:"expires_at"`
 }
 
 type Builder interface {
@@ -33,7 +33,7 @@ type Builder interface {
 	Username(string) Builder
 	Creator(string) Builder
 	ACL([]acl.ACL) Builder
-	Op(op.Operation) Builder
+	Op([]op.Operation) Builder
 	Indices([]string) Builder
 	Build() Permission
 }
@@ -44,7 +44,7 @@ type permissionBuilder struct {
 	password string
 	creator  string
 	acl      []acl.ACL
-	op       op.Operation
+	op       []op.Operation
 	indices  []string
 }
 
@@ -73,7 +73,7 @@ func (p *permissionBuilder) ACL(acl []acl.ACL) Builder {
 	return p
 }
 
-func (p *permissionBuilder) Op(op op.Operation) Builder {
+func (p *permissionBuilder) Op(op []op.Operation) Builder {
 	p.op = op
 	return p
 }
@@ -85,13 +85,15 @@ func (p *permissionBuilder) Indices(indices []string) Builder {
 
 func (p *permissionBuilder) Build() Permission {
 	return Permission{
-		UserId:   p.userId,
-		UserName: util.RandStr(),
-		Password: uuid.New().String(),
-		Creator:  p.creator,
-		ACL:      p.acl,
-		Op:       p.op,
-		Indices:  p.indices,
+		UserId:    p.userId,
+		UserName:  util.RandStr(),
+		Password:  uuid.New().String(),
+		Creator:   p.creator,
+		ACL:       p.acl,
+		Op:        p.op,
+		Indices:   p.indices,
+		CreatedAt: time.Now(),
+		TTL:       24 * time.Hour,
 	}
 }
 
@@ -109,7 +111,7 @@ func New(userId, creator string) Permission {
 		Password: uuid.New().String(),
 		Creator:  creator,
 		ACL:      []acl.ACL{},
-		Op:       op.Read,
+		Op:       []op.Operation{op.Read},
 		Indices:  []string{},
 	}
 }

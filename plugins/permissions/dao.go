@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/appbaseio-confidential/arc/internal/types/op"
 	"github.com/appbaseio-confidential/arc/internal/types/permission"
 	"github.com/olivere/elastic"
 )
@@ -65,7 +64,7 @@ func (es *elasticsearch) getRawPermissions(username string) ([]byte, error) {
 	}
 
 	raw, _ := json.Marshal(resp)
-	log.Printf("%s: es_response: %v", logTag, raw)
+	log.Printf("%s: es_response: %v", logTag, string(raw))
 
 	src, err := resp.Source.MarshalJSON()
 	if err != nil {
@@ -87,7 +86,7 @@ func (es *elasticsearch) putPermission(p permission.Permission) (bool, error) {
 	}
 
 	raw, _ := json.Marshal(resp)
-	log.Printf("%s: es_response: %s\n", logTag, raw)
+	log.Printf("%s: es_response: %s\n", logTag, string(raw))
 
 	return true, nil
 }
@@ -97,9 +96,9 @@ func (es *elasticsearch) patchPermission(username string, p permission.Permissio
 	if p.ACL != nil {
 		fields["acl"] = p.ACL
 	}
-	if p.Op != op.Noop {
-		fields["op"] = p.Op
-	}
+	//if p.Op != op.Noop {
+	//	fields["op"] = p.Op
+	//}
 	if p.Indices != nil {
 		fields["indices"] = p.Indices
 	}
@@ -115,7 +114,7 @@ func (es *elasticsearch) patchPermission(username string, p permission.Permissio
 	}
 
 	raw, _ := json.Marshal(resp)
-	log.Printf("%s: es_response: %s\n", logTag, raw)
+	log.Printf("%s: es_response: %s\n", logTag, string(raw))
 
 	return true, nil
 }
@@ -131,7 +130,7 @@ func (es *elasticsearch) deletePermission(userId string) (bool, error) {
 	}
 
 	raw, _ := json.Marshal(resp)
-	log.Printf("%s: es_response: %s\n", logTag, raw)
+	log.Printf("%s: es_response: %s\n", logTag, string(raw))
 
 	return true, nil
 }

@@ -37,7 +37,16 @@ func WriteBackRaw(w http.ResponseWriter, raw []byte, code int) {
 	w.Write(raw)
 }
 
-func Contains(slice []string, val string) bool {
+func ContainsStr(slice []string, val string) bool {
+	for _, v := range slice {
+		if v == val {
+			return true
+		}
+	}
+	return false
+}
+
+func ContainsVal(slice []interface{}, val interface{}) bool {
 	for _, v := range slice {
 		if v == val {
 			return true

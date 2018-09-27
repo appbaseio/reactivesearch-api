@@ -18,7 +18,7 @@ type User struct {
 	IsAdmin  bool         `json:"is_admin"`
 	ACL      []acl.ACL    `json:"acl"`
 	Email    string       `json:"email"`
-	Op       op.Operation `json:"op"`
+	Op       []op.Operation `json:"op"`
 	Indices  []string     `json:"indices"`
 }
 
@@ -28,7 +28,7 @@ type Builder interface {
 	IsAdmin(bool) Builder
 	ACL([]acl.ACL) Builder
 	Email(string) Builder
-	Op(op.Operation) Builder
+	Op([]op.Operation) Builder
 	Indices([]string) Builder
 	Build() User
 }
@@ -39,7 +39,7 @@ type userBuilder struct {
 	isAdmin  bool
 	acl      []acl.ACL
 	email    string
-	op       op.Operation
+	op       []op.Operation
 	indices  []string
 }
 
@@ -72,7 +72,7 @@ func (u *userBuilder) Email(email string) Builder {
 	return u
 }
 
-func (u *userBuilder) Op(op op.Operation) Builder {
+func (u *userBuilder) Op(op []op.Operation) Builder {
 	u.op = op
 	return u
 }

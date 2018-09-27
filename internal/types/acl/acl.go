@@ -43,7 +43,7 @@ func (c ACL) String() string {
 
 func (c *ACL) UnmarshalJSON(bytes []byte) error {
 	var category string
-	err := json.Unmarshal(bytes, &c)
+	err := json.Unmarshal(bytes, &category)
 	if err != nil {
 		return err
 	}
@@ -103,4 +103,13 @@ func (c ACL) MarshalJSON() ([]byte, error) {
 		return nil, errors.New("invalid category encountered: " + c.String())
 	}
 	return json.Marshal(category)
+}
+
+func Contains(slice []ACL, val ACL) bool {
+	for _, v := range slice {
+		if v == val {
+			return true
+		}
+	}
+	return false
 }

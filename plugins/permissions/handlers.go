@@ -7,7 +7,6 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/appbaseio-confidential/arc/internal/types/op"
 	"github.com/appbaseio-confidential/arc/internal/types/permission"
 	"github.com/appbaseio-confidential/arc/internal/util"
 	"github.com/gorilla/mux"
@@ -18,8 +17,8 @@ func (p *Permissions) getPermission() http.HandlerFunc {
 		vars := mux.Vars(r)
 		username := vars["username"]
 
-		// TODO: Is it crucial to store permissions in request context?
 		ctx := r.Context()
+		// TODO: Is it crucial to store permissions in request context?
 		permissionObj := ctx.Value(permission.CtxKey)
 		if permissionObj == nil {
 			permissionObj, err := p.es.getRawPermissions(username)
@@ -72,7 +71,7 @@ func (p *Permissions) putPermission() http.HandlerFunc {
 
 		builder := permission.NewBuilder(userId).Permission(permissionObj)
 		if permissionObj.Creator == "" {
-			// TODO: Authenticate the creator of permission
+			// TODO: BasicAuth the creator of permission
 			msg := "empty creator passed in body"
 			log.Printf("%s\n", msg)
 			util.WriteBackError(w, msg, http.StatusBadRequest)
@@ -80,12 +79,12 @@ func (p *Permissions) putPermission() http.HandlerFunc {
 		}
 		builder = builder.Creator(permissionObj.Creator)
 
-		if permissionObj.Op == op.Noop {
-			msg := "invalid operation passed in body"
-			log.Printf("%s: %s: %v", logTag, msg, permissionObj.Op)
-			util.WriteBackError(w, msg, http.StatusBadRequest)
-			return
-		}
+		//if len(permissionObj.Op == op.Noop {
+		//	msg := "invalid operation passed in body"
+		//	log.Printf("%s: %s: %v", logTag, msg, permissionObj.Op)
+		//	util.WriteBackError(w, msg, http.StatusBadRequest)
+		//	return
+		//}
 		builder = builder.Op(permissionObj.Op)
 
 		if permissionObj.ACL == nil || len(permissionObj.ACL) <= 0 {

@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/appbaseio-confidential/arc/internal/types/op"
 	"github.com/appbaseio-confidential/arc/internal/types/user"
 	"github.com/olivere/elastic"
 )
@@ -95,9 +94,6 @@ func (es *elasticsearch) patchUser(userId string, u user.User) (bool, error) {
 	}
 	if u.Email != "" {
 		fields["email"] = u.Email
-	}
-	if u.Op != op.Noop {
-		fields["op"] = u.Op
 	}
 	if u.Indices != nil && len(u.Indices) >= 0 {
 		fields["indices"] = u.Indices

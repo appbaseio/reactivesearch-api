@@ -39,7 +39,7 @@ func (es *ES) categorize(method, path string) (acl.ACL, op.Operation) {
 				log.Printf("%s: malformed regexp %s: %v", logTag, pattern, err)
 				continue
 			}
-			if ok && util.Contains(api.spec.Methods, method) {
+			if ok && util.ContainsStr(api.spec.Methods, method) {
 				return api.category, getOp(api.spec.Methods, method)
 			}
 		}
@@ -56,7 +56,7 @@ func getOp(methods []string, method string) op.Operation {
 	case http.MethodGet:
 		operation = op.Read
 	case http.MethodPost:
-		if util.Contains(methods, http.MethodGet) {
+		if util.ContainsStr(methods, http.MethodGet) {
 			operation = op.Read
 		} else {
 			operation = op.Write
@@ -68,7 +68,7 @@ func getOp(methods []string, method string) op.Operation {
 	case http.MethodDelete:
 		operation = op.Delete
 	default:
-		operation = op.Noop
+		// TODO: handle?
 	}
 	return operation
 }
