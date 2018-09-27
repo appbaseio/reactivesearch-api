@@ -7,7 +7,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/appbaseio-confidential/arc/internal/types/category"
+	"github.com/appbaseio-confidential/arc/internal/types/acl"
 	"github.com/appbaseio-confidential/arc/internal/types/op"
 	"github.com/appbaseio-confidential/arc/internal/util"
 )
@@ -21,17 +21,17 @@ func (es *ES) classifier(h http.HandlerFunc) http.HandlerFunc {
 		params := r.URL.Query()
 		stream := params.Get("stream")
 		if stream == "true" {
-			c = category.Streams
+			c = acl.Streams
 		}
 
 		ctx := r.Context()
-		ctx = context.WithValue(ctx, category.CtxKey, c)
+		ctx = context.WithValue(ctx, acl.CtxKey, c)
 		ctx = context.WithValue(ctx, op.CtxKey, o)
 		h(w, r.WithContext(ctx))
 	}
 }
 
-func (es *ES) categorize(method, path string) (category.Category, op.Operation) {
+func (es *ES) categorize(method, path string) (acl.ACL, op.Operation) {
 	for _, api := range es.specs {
 		for _, pattern := range api.regexps {
 			ok, err := regexp.MatchString(pattern, path)
@@ -47,7 +47,7 @@ func (es *ES) categorize(method, path string) (category.Category, op.Operation) 
 	// TODO: should we classify it as misc and then return the result.
 	log.Printf("%s: unable to find the category for path [%s]: %s, categorising as 'misc'",
 		logTag, method, path)
-	return category.Misc, op.Read
+	return acl.Misc, op.Read
 }
 
 func getOp(methods []string, method string) op.Operation {

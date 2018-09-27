@@ -12,13 +12,30 @@ import (
 	"sync"
 
 	"github.com/appbaseio-confidential/arc/arc/plugin"
-	"github.com/appbaseio-confidential/arc/internal/types/category"
+	"github.com/appbaseio-confidential/arc/internal/types/acl"
 	"github.com/appbaseio-confidential/arc/middleware/interceptor"
 )
 
+const (
+	varRegexp  = "[^_][^\\s/]*"
+	esSpecsDir = "plugins/es/api"
+)
+
+var categories = map[string]acl.ACL{
+	"docs":     acl.Docs,
+	"search":   acl.Search,
+	"indices":  acl.Indices,
+	"cat":      acl.Cat,
+	"tasks":    acl.Clusters,
+	"cluster":  acl.Clusters,
+	"ingest":   acl.Misc,
+	"snapshot": acl.Misc,
+	"modules":  acl.Misc,
+}
+
 type api struct {
 	name     string
-	category category.Category
+	category acl.ACL
 	spec     spec
 	regexps  []string
 }
@@ -38,42 +55,6 @@ type spec struct {
 		Serialize   string `json:"serialize,omitempty"`
 	} `json:"body,omitempty"`
 }
-
-var (
-	categories = map[string]category.Category{
-		"docs":    category.Docs,
-		"search":  category.Search,
-		"indices": category.Indices,
-		"cat":     category.Cat,
-
-		"tasks":   category.Clusters,
-		"cluster": category.Clusters,
-
-		"ingest":   category.Misc,
-		"snapshot": category.Misc,
-		"modules":  category.Misc,
-	}
-
-	varRegexp = map[string]string{
-		"{index}":                "[^_][^\\s/]*",
-		"{type}":                 "[^_][^\\s/]*",
-		"{id}":                   "[^_][^\\s/]*",
-		"{name}":                 "[^_][^\\s/]*",
-		"{task_id}":              "[^_][^\\s/]*",
-		"{scroll_id}":            "[^_][^\\s/]*",
-		"{fields}":               "[^_][^\\s/]*",
-		"{target}":               "[^_][^\\s/]*",
-		"{metric}":               "[^_][^\\s/]*",
-		"{alias}":                "[^_][^\\s/]*",
-		"{new_index}":            "[^_][^\\s/]*",
-		"{node_id}":              "[^_][^\\s/]*",
-		"{repository}":           "[^_][^\\s/]*",
-		"{thread_pool_patterns}": "[^_][^\\s/]*",
-		"{index_metric}":         "[^_][^\\s/]*",
-		"{context}":              "[^_][^\\s/]*",
-		"{snapshot}":             "[^_][^\\s/]*",
-	}
-)
 
 func (es *ES) routes() []plugin.Route {
 	// fetch es api
@@ -133,12 +114,11 @@ func apiDirPath() (string, error) {
 	if err != nil {
 		return "", nil
 	}
-	return filepath.Join(wd, "plugins/es/api"), nil
+	return filepath.Join(wd, esSpecsDir), nil
 }
 
 func fetchSpecFiles(path string, files chan<- string) {
 	defer close(files)
-
 	info, err := os.Stat(path)
 	if err != nil {
 		log.Fatal(err)
@@ -200,7 +180,6 @@ func decodeSpec(file string, wg *sync.WaitGroup, apis chan<- api) {
 	name := strings.TrimSuffix(filepath.Base(file), ".json")
 	c := getCategory(s)
 	regexps := getRegexps(s.URL.Paths)
-
 	apis <- api{
 		name:     name,
 		spec:     s,
@@ -222,18 +201,13 @@ func replaceVars(path string) string {
 	vars := strings.Split(path, "/")
 	for i, v := range vars {
 		if strings.HasPrefix(v, "{") && strings.HasSuffix(v, "}") {
-			regexp, ok := varRegexp[v]
-			if !ok {
-				log.Printf("%s: path var %s not found in the map.", logTag, v)
-				continue
-			}
-			vars[i] = regexp
+			vars[i] = varRegexp
 		}
 	}
 	return "^" + strings.Join(vars, "/") + "(\\?.*)?$"
 }
 
-func getCategory(s spec) category.Category {
+func getCategory(s spec) acl.ACL {
 	docTokens := strings.Split(s.Documentation, "/")
 	tag := strings.TrimSuffix(docTokens[len(docTokens)-1], ".html")
 	tagTokens := strings.Split(tag, "-")

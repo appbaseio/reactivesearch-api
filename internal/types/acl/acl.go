@@ -5,82 +5,102 @@ import (
 	"errors"
 )
 
+type contextKey string
+
+const CtxKey = contextKey("category")
+
 type ACL int
 
 const (
-	Get ACL = iota
-	Post
-	Delete
-	Settings
-	Bulk
+	Docs ACL = iota
 	Search
-	Streams
+	Indices
+	Cat
+	Clusters
+	Misc
+
+	User
+	Permission
 	Analytics
+	Streams
 )
 
-func (a ACL) String() string {
+func (c ACL) String() string {
 	return [...]string{
-		"get",
-		"post",
-		"delete",
-		"settings",
-		"bulk",
+		"docs",
 		"search",
-		"streams",
+		"indices",
+		"cat",
+		"clusters",
+		"misc",
+
+		"user",
+		"permission",
 		"analytics",
-	}[a]
+		"streams",
+	}[c]
 }
 
-func (a *ACL) UnmarshalJSON(bytes []byte) error {
-	var acl string
-	err := json.Unmarshal(bytes, &acl)
+func (c *ACL) UnmarshalJSON(bytes []byte) error {
+	var category string
+	err := json.Unmarshal(bytes, &c)
 	if err != nil {
 		return err
 	}
-	switch acl {
-	case Get.String():
-		*a = Get
-	case Post.String():
-		*a = Post
-	case Delete.String():
-		*a = Delete
-	case Settings.String():
-		*a = Settings
-	case Bulk.String():
-		*a = Bulk
+	switch category {
+	case Docs.String():
+		*c = Docs
 	case Search.String():
-		*a = Search
-	case Streams.String():
-		*a = Streams
+		*c = Search
+	case Indices.String():
+		*c = Indices
+	case Cat.String():
+		*c = Cat
+	case Clusters.String():
+		*c = Clusters
+	case Misc.String():
+		*c = Misc
+
+	case User.String():
+		*c = User
+	case Permission.String():
+		*c = Permission
 	case Analytics.String():
-		*a = Analytics
+		*c = Analytics
+	case Streams.String():
+		*c = Streams
 	default:
-		return errors.New("invalid acl encountered: " + acl)
+		return errors.New("invalid category encountered: " + category)
 	}
 	return nil
 }
 
-func (a ACL) MarshalJSON() ([]byte, error) {
-	var acl string
-	switch a {
-	case Get:
-		acl = Get.String()
-	case Post:
-		acl = Post.String()
-	case Delete:
-		acl = Delete.String()
-	case Settings:
-		acl = Settings.String()
-	case Bulk:
-		acl = Bulk.String()
+func (c ACL) MarshalJSON() ([]byte, error) {
+	var category string
+	switch c {
+	case Docs:
+		category = Docs.String()
 	case Search:
-		acl = Search.String()
-	case Streams:
-		acl = Streams.String()
+		category = Search.String()
+	case Indices:
+		category = Indices.String()
+	case Cat:
+		category = Cat.String()
+	case Clusters:
+		category = Clusters.String()
+	case Misc:
+		category = Misc.String()
+
+	case User:
+		category = User.String()
+	case Permission:
+		category = Permission.String()
 	case Analytics:
-		acl = Analytics.String()
+		category = Analytics.String()
+	case Streams:
+		category = Streams.String()
 	default:
-		return nil, errors.New("invalid acl encountered: " + a.String())
+		return nil, errors.New("invalid category encountered: " + c.String())
 	}
-	return json.Marshal(acl)
+	return json.Marshal(category)
 }

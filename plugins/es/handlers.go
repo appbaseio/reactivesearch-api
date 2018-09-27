@@ -5,7 +5,7 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/appbaseio-confidential/arc/internal/types/category"
+	"github.com/appbaseio-confidential/arc/internal/types/acl"
 	"github.com/appbaseio-confidential/arc/internal/types/op"
 	"github.com/appbaseio-confidential/arc/internal/util"
 )
@@ -13,7 +13,7 @@ import (
 func (es *ES) handler() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
-		c := ctx.Value(category.CtxKey)
+		c := ctx.Value(acl.CtxKey)
 		if c != nil {
 			log.Printf("%s: acl=%s\n", logTag, c)
 		}
