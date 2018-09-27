@@ -5,15 +5,27 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/appbaseio-confidential/arc/internal/types/category"
+	"github.com/appbaseio-confidential/arc/internal/types/op"
 	"github.com/appbaseio-confidential/arc/internal/util"
 )
 
-func (es *ES) redirectHandler() http.HandlerFunc {
+func (es *ES) handler() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		ctx := r.Context()
+		c := ctx.Value(category.CtxKey)
+		if c != nil {
+			log.Printf("%s: acl=%s\n", logTag, c)
+		}
+		o := ctx.Value(op.CtxKey)
+		if o != nil {
+			log.Printf("%s: operation=%s\n", logTag, o)
+		}
+
 		client := httpClient()
 		response, err := client.Do(r)
 		if err != nil {
-			log.Printf("%s: error fetching response for %s: %v", logTag, r.URL.Path, err)
+			log.Printf("%s: error fetching response for %s: %v\n", logTag, r.URL.Path, err)
 			util.WriteBackError(w, err.Error(), http.StatusInternalServerError)
 			return
 		}

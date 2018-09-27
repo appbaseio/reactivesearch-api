@@ -12,18 +12,22 @@ import (
 	"github.com/appbaseio-confidential/arc/internal/util"
 )
 
-func (es *ES) classify(h http.HandlerFunc) http.HandlerFunc {
+func (es *ES) classifier(h http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		path := strings.TrimSuffix(r.URL.Path, "/")
 		method := r.Method
 		c, o := es.categorize(method, path)
 
-		log.Printf("%s: category: %s", logTag, c.String())
+		params := r.URL.Query()
+		stream := params.Get("stream")
+		if stream == "true" {
+			c = category.Streams
+		}
 
 		ctx := r.Context()
-		classifierCtx := context.WithValue(ctx, category.CtxKey, c)
-		classifierCtx = context.WithValue(ctx, op.CtxKey, o)
-		h(w, r.WithContext(classifierCtx))
+		ctx = context.WithValue(ctx, category.CtxKey, c)
+		ctx = context.WithValue(ctx, op.CtxKey, o)
+		h(w, r.WithContext(ctx))
 	}
 }
 

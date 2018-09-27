@@ -13,6 +13,7 @@ import (
 
 	"github.com/appbaseio-confidential/arc/arc/plugin"
 	"github.com/appbaseio-confidential/arc/internal/types/category"
+	"github.com/appbaseio-confidential/arc/middleware/interceptor"
 )
 
 type api struct {
@@ -38,7 +39,44 @@ type spec struct {
 	} `json:"body,omitempty"`
 }
 
+var (
+	categories = map[string]category.Category{
+		"docs":    category.Docs,
+		"search":  category.Search,
+		"indices": category.Indices,
+		"cat":     category.Cat,
+
+		"tasks":   category.Clusters,
+		"cluster": category.Clusters,
+
+		"ingest":   category.Misc,
+		"snapshot": category.Misc,
+		"modules":  category.Misc,
+	}
+
+	varRegexp = map[string]string{
+		"{index}":                "[^_][^\\s/]*",
+		"{type}":                 "[^_][^\\s/]*",
+		"{id}":                   "[^_][^\\s/]*",
+		"{name}":                 "[^_][^\\s/]*",
+		"{task_id}":              "[^_][^\\s/]*",
+		"{scroll_id}":            "[^_][^\\s/]*",
+		"{fields}":               "[^_][^\\s/]*",
+		"{target}":               "[^_][^\\s/]*",
+		"{metric}":               "[^_][^\\s/]*",
+		"{alias}":                "[^_][^\\s/]*",
+		"{new_index}":            "[^_][^\\s/]*",
+		"{node_id}":              "[^_][^\\s/]*",
+		"{repository}":           "[^_][^\\s/]*",
+		"{thread_pool_patterns}": "[^_][^\\s/]*",
+		"{index_metric}":         "[^_][^\\s/]*",
+		"{context}":              "[^_][^\\s/]*",
+		"{snapshot}":             "[^_][^\\s/]*",
+	}
+)
+
 func (es *ES) routes() []plugin.Route {
+	// fetch es api
 	files := make(chan string)
 	apis := make(chan api)
 
@@ -51,9 +89,10 @@ func (es *ES) routes() []plugin.Route {
 	go fetchSpecFiles(path, files)
 	go decodeSpecFiles(files, apis)
 
-	// init the middleware
-	//var i = interceptor.New()
+	// init the necessary middleware
+	var i = interceptor.New()
 
+	// accumulate the routes
 	var routes []plugin.Route
 	for api := range apis {
 		for _, path := range api.spec.URL.Paths {
@@ -67,7 +106,7 @@ func (es *ES) routes() []plugin.Route {
 				Name:        api.name,
 				Methods:     api.spec.Methods,
 				Path:        path,
-				HandlerFunc: es.classify(es.redirectHandler()),
+				HandlerFunc: es.classifier(i.Wrap(es.handler())),
 				Description: api.spec.Documentation,
 			}
 			routes = append(routes, route)
@@ -81,13 +120,13 @@ func (es *ES) routes() []plugin.Route {
 		Name:        "ping",
 		Methods:     []string{http.MethodGet},
 		Path:        "/",
-		HandlerFunc: es.classify(es.redirectHandler()),
+		HandlerFunc: es.classifier(i.Wrap(es.handler())),
 		Description: "You know, for search",
 	}
 	routes = append(routes, indexRoute)
+
 	return routes
 }
-
 
 func apiDirPath() (string, error) {
 	wd, err := os.Getwd()
@@ -110,7 +149,8 @@ func fetchSpecFiles(path string, files chan<- string) {
 		return
 	}
 	err = filepath.Walk(path, func(path string, info os.FileInfo, err error) error {
-		if !info.IsDir() && filepath.Ext(path) == ".json" && !strings.HasPrefix(info.Name(), "_") {
+		if !info.IsDir() && filepath.Ext(path) == ".json" &&
+			!strings.HasPrefix(info.Name(), "_") {
 			files <- path
 		}
 		return nil
@@ -199,39 +239,4 @@ func getCategory(s spec) category.Category {
 	tagTokens := strings.Split(tag, "-")
 	tagName := tagTokens[0]
 	return categories[tagName]
-}
-
-var categories = map[string]category.Category{
-	"docs":    category.Docs,
-	"search":  category.Search,
-	"indices": category.Indices,
-	"cat":     category.Cat,
-
-	"tasks":   category.Clusters,
-	"cluster": category.Clusters,
-
-	"ingest":   category.Misc,
-	"snapshot": category.Misc,
-	"modules":  category.Misc,
-}
-
-var varRegexp = map[string]string{
-	"{index}": "[^_][^\\s/]*",
-	"{type}":  "[^_][^\\s/]*",
-	//"{type}":                 "[_]*[^\\s/]*",
-	"{id}":                   "[^_][^\\s/]*",
-	"{name}":                 "[^_][^\\s/]*",
-	"{task_id}":              "[^_][^\\s/]*",
-	"{scroll_id}":            "[^_][^\\s/]*",
-	"{fields}":               "[^_][^\\s/]*",
-	"{target}":               "[^_][^\\s/]*",
-	"{metric}":               "[^_][^\\s/]*",
-	"{alias}":                "[^_][^\\s/]*",
-	"{new_index}":            "[^_][^\\s/]*",
-	"{node_id}":              "[^_][^\\s/]*",
-	"{repository}":           "[^_][^\\s/]*",
-	"{thread_pool_patterns}": "[^_][^\\s/]*",
-	"{index_metric}":         "[^_][^\\s/]*",
-	"{context}":              "[^_][^\\s/]*",
-	"{snapshot}":             "[^_][^\\s/]*",
 }
