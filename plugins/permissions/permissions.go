@@ -24,11 +24,7 @@ type Permissions struct {
 }
 
 func init() {
-	arc.RegisterPlugin(New())
-}
-
-func New() *Permissions {
-	return &Permissions{}
+	arc.RegisterPlugin(&Permissions{})
 }
 
 func (p *Permissions) Name() string {

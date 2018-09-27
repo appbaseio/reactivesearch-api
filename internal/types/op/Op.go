@@ -5,13 +5,17 @@ import (
 	"errors"
 )
 
+type contextKey string
+
+const CtxKey = contextKey("op")
+
 type Operation int
 
 const (
 	Noop Operation = iota
 	Read
 	Write
-	ReadWrite
+	Delete
 )
 
 func (o Operation) String() string {
@@ -19,7 +23,7 @@ func (o Operation) String() string {
 		"noop",
 		"read",
 		"write",
-		"read_write",
+		"delete",
 	}[o]
 }
 
@@ -36,8 +40,8 @@ func (o *Operation) UnmarshalJSON(bytes []byte) error {
 		*o = Read
 	case Write.String():
 		*o = Write
-	case ReadWrite.String():
-		*o = ReadWrite
+	case Delete.String():
+		*o = Delete
 	default:
 		return errors.New("invalid op encountered: " + op)
 	}
@@ -53,8 +57,8 @@ func (o Operation) MarshalJSON() ([]byte, error) {
 		op = Read.String()
 	case Write:
 		op = Write.String()
-	case ReadWrite:
-		op = ReadWrite.String()
+	case Delete:
+		op = Delete.String()
 	default:
 		return nil, errors.New("invalid op encountered: " + op)
 	}

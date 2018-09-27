@@ -24,11 +24,7 @@ type Users struct {
 }
 
 func init() {
-	arc.RegisterPlugin(New())
-}
-
-func New() *Users {
-	return &Users{}
+	arc.RegisterPlugin(&Users{})
 }
 
 func (u *Users) Name() string {

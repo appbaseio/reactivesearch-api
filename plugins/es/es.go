@@ -12,14 +12,12 @@ const (
 	logTag     = "[es]"
 )
 
-type ES struct{}
-
-func init() {
-	arc.RegisterPlugin(New())
+type ES struct {
+	specs []api
 }
 
-func New() *ES {
-	return &ES{}
+func init() {
+	arc.RegisterPlugin(&ES{})
 }
 
 func (es *ES) Name() string {
