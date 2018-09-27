@@ -1,6 +1,7 @@
 package arc
 
 import (
+	"sort"
 	"strconv"
 
 	"github.com/appbaseio-confidential/arc/arc/plugin"
@@ -39,21 +40,6 @@ func LoadPlugin(router *mux.Router, p plugin.Plugin) error {
 		return err
 	}
 	for _, route := range p.Routes() {
-		// TODO: Eliminate this ugly workaround
-		// We are handling a path tree here
-		// if route.Path == "" {
-		// 	err := router.Methods(route.Methods...).
-		// 		Name(route.Name).
-		// 		PathPrefix(route.PathPrefix).
-		// 		HandlerFunc(route.HandlerFunc).
-		// 		GetError()
-		// 	if err != nil {
-		// 		return err
-		// 	}
-		// 	continue
-		// }
-
-		// We are handling specific paths here
 		err := router.Methods(route.Methods...).
 			Name(route.Name).
 			Path(route.Path).
@@ -83,4 +69,43 @@ func ListPlugins() []plugin.Plugin {
 		list = append(list, p)
 	}
 	return list
+}
+
+// By is the type of a "less" function that defines the
+// ordering its Plugin arguments
+type By func(p1, p2 plugin.Plugin) bool
+
+// Sort is a method on the function type, By, that sorts
+// the argument slice according to the function.
+func (by By) Sort(plugins []plugin.Plugin) {
+	ps := &pluginSorter{
+		plugins: plugins,
+		by:      by,
+	}
+	sort.Sort(ps)
+}
+
+// pluginSorted joins a By function and a slice of Plugins
+// to be sorted.
+type pluginSorter struct {
+	plugins []plugin.Plugin
+	by      By
+}
+
+// Len is part of sort.Interface that returns the length
+// of slice to be sorted.
+func (s *pluginSorter) Len() int {
+	return len(s.plugins)
+}
+
+// Swap is part of sort.Interface that defines a way
+// to swap two plugins in the slice.
+func (s *pluginSorter) Swap(i, j int) {
+	s.plugins[i], s.plugins[j] = s.plugins[j], s.plugins[i]
+}
+
+// Less is part of sort.Interface. It is implemented by calling
+// the "by" closure in the sorter.
+func (s *pluginSorter) Less(i, j int) bool {
+	return s.by(s.plugins[i], s.plugins[j])
 }

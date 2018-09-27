@@ -12,26 +12,25 @@ import (
 	"strings"
 
 	"github.com/appbaseio-confidential/arc/arc"
+	"github.com/appbaseio-confidential/arc/arc/plugin"
 	"github.com/gorilla/mux"
 	"gopkg.in/natefinch/lumberjack.v2"
 
+	_ "github.com/appbaseio-confidential/arc/plugins/es"
 	_ "github.com/appbaseio-confidential/arc/plugins/permissions"
 	_ "github.com/appbaseio-confidential/arc/plugins/users"
-
-	// TODO: Currently this plugin needs to load last in order to correctly register path prefix
-	_ "github.com/appbaseio-confidential/arc/plugins/es"
 )
 
 var (
-	envFile string
-	logFile string
-	plugins bool
+	envFile     string
+	logFile     string
+	listPlugins bool
 )
 
 func init() {
 	flag.StringVar(&envFile, "env", ".env", "Path to file with environment variables to load in KEY=VALUE format")
 	flag.StringVar(&logFile, "log", "", "Process log file")
-	flag.BoolVar(&plugins, "plugins", false, "List currently registered plugins")
+	flag.BoolVar(&listPlugins, "plugins", false, "List currently registered plugins")
 }
 
 func main() {
@@ -58,13 +57,26 @@ func main() {
 		log.Fatalf("[ERROR]: reading env file %q: %v", envFile, err)
 	}
 	router := mux.NewRouter().StrictSlash(true)
-	for _, plugin := range arc.ListPlugins() {
-		if err := arc.LoadPlugin(router, plugin); err != nil {
+
+	plugins := arc.ListPlugins()
+	criteria := func(p1, p2 plugin.Plugin) bool {
+		if p1.Name() == "es" {
+			return false
+		} else if p2.Name() == "es" {
+			return true
+		} else {
+			return p1.Name() < p2.Name()
+		}
+	}
+	arc.By(criteria).Sort(plugins)
+
+	for _, p := range plugins {
+		if err := arc.LoadPlugin(router, p); err != nil {
 			log.Fatalf("%v", err)
 		}
 	}
 
-	if plugins {
+	if listPlugins {
 		fmt.Println(arc.ListPluginsStr())
 	}
 
