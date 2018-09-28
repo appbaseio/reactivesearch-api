@@ -145,7 +145,7 @@ func (p *Permissions) patchPermission() http.HandlerFunc {
 			return
 		}
 
-		msg := fmt.Sprintf("error updating permission for user_id=%s")
+		msg := fmt.Sprintf("error updating permission for username=%s", username)
 		log.Printf("%s: %s: %v", logTag, msg, err)
 		util.WriteBackError(w, msg, http.StatusInternalServerError)
 	}

@@ -13,13 +13,13 @@ const (
 )
 
 type User struct {
-	UserId   string       `json:"user_id"`
-	Password string       `json:"password"`
-	IsAdmin  bool         `json:"is_admin"`
-	ACL      []acl.ACL    `json:"acl"`
-	Email    string       `json:"email"`
+	UserId   string         `json:"user_id"`
+	Password string         `json:"password"`
+	IsAdmin  bool           `json:"is_admin"`
+	ACL      []acl.ACL      `json:"acl"`
+	Email    string         `json:"email"`
 	Op       []op.Operation `json:"op"`
-	Indices  []string     `json:"indices"`
+	Indices  []string       `json:"indices"`
 }
 
 type Builder interface {
