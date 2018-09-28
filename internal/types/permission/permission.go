@@ -16,6 +16,7 @@ const (
 	IndexMapping = `{"settings":{"number_of_shards":3, "number_of_replicas":2}}`
 )
 
+// TODO: map category to acls
 type Permission struct {
 	UserId    string         `json:"user_id"`
 	UserName  string         `json:"user_name"`
@@ -26,6 +27,8 @@ type Permission struct {
 	Indices   []string       `json:"indices"`
 	CreatedAt time.Time      `json:"created_at"`
 	TTL       time.Duration  `json:"expires_at"`
+	IPLimit   int64          `json:"ip_limit"`
+	ACLLimit  int64          `json:"acl_limit"`
 }
 
 type Builder interface {

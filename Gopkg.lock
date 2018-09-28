@@ -2,6 +2,31 @@
 
 
 [[projects]]
+  digest = "1:ffe9824d294da03b391f44e1ae8281281b4afc1bdaa9588c9097785e3af10cec"
+  name = "github.com/davecgh/go-spew"
+  packages = ["spew"]
+  pruneopts = "UT"
+  revision = "8991bc29aa16c548c550c7ff78260e27b9ab7c73"
+  version = "v1.1.1"
+
+[[projects]]
+  digest = "1:7c2fd446293ff7799cc496d3446e674ee67902d119f244de645caf95dff1bb98"
+  name = "github.com/go-redis/redis"
+  packages = [
+    ".",
+    "internal",
+    "internal/consistenthash",
+    "internal/hashtag",
+    "internal/pool",
+    "internal/proto",
+    "internal/singleflight",
+    "internal/util",
+  ]
+  pruneopts = "UT"
+  revision = "f3bba01df2026fc865f7782948845db9cf44cf23"
+  version = "v6.14.1"
+
+[[projects]]
   digest = "1:3a26588bc48b96825977c1b3df964f8fd842cd6860cc26370588d3563433cf11"
   name = "github.com/google/uuid"
   packages = ["."]
@@ -59,6 +84,37 @@
   version = "v0.8.0"
 
 [[projects]]
+  digest = "1:0028cb19b2e4c3112225cd871870f2d9cf49b9b4276531f03438a88e94be86fe"
+  name = "github.com/pmezard/go-difflib"
+  packages = ["difflib"]
+  pruneopts = "UT"
+  revision = "792786c7400a136282c1664665ae0a8db921c6c2"
+  version = "v1.0.0"
+
+[[projects]]
+  digest = "1:c40d65817cdd41fac9aa7af8bed56927bb2d6d47e4fea566a74880f5c2b1c41e"
+  name = "github.com/stretchr/testify"
+  packages = [
+    "assert",
+    "require",
+  ]
+  pruneopts = "UT"
+  revision = "f35b8ab0b5a2cef36673838d662e249dd9c94686"
+  version = "v1.2.2"
+
+[[projects]]
+  digest = "1:e9a9ea92fdcea268b9422d7697e6d5cd3b93f38bc98ef1db5f4e03bed901615f"
+  name = "github.com/ulule/limiter"
+  packages = [
+    ".",
+    "drivers/store/common",
+    "drivers/store/redis",
+  ]
+  pruneopts = "UT"
+  revision = "f0ff82677fc4826ddae9ac45f2e11462fa245dad"
+  version = "v2.2.0"
+
+[[projects]]
   digest = "1:c805e517269b0ba4c21ded5836019ed7d16953d4026cb7d00041d039c7906be9"
   name = "gopkg.in/natefinch/lumberjack.v2"
   packages = ["."]
@@ -70,9 +126,12 @@
   analyzer-name = "dep"
   analyzer-version = 1
   input-imports = [
+    "github.com/go-redis/redis",
     "github.com/google/uuid",
     "github.com/gorilla/mux",
     "github.com/olivere/elastic",
+    "github.com/ulule/limiter",
+    "github.com/ulule/limiter/drivers/store/redis",
     "gopkg.in/natefinch/lumberjack.v2",
   ]
   solver-name = "gps-cdcl"
