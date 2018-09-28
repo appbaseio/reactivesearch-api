@@ -63,11 +63,11 @@ const _CategoryName = "CatBulkSearchClusterRemoteScriptsDocCountCreateSourceFiel
 
 var _CategoryIndex = [...]uint16{0, 3, 7, 13, 20, 26, 33, 36, 41, 47, 53, 62, 69, 76, 89, 94, 99, 106, 114, 119, 126, 131, 141, 149, 156, 164, 168, 175, 183, 191, 197, 208, 216, 221, 226, 232, 240, 247, 252, 256, 268, 276, 283, 296, 302, 314, 322, 327, 338, 344}
 
-func (i Category) String() string {
-	if i < 0 || i >= Category(len(_CategoryIndex)-1) {
-		return fmt.Sprintf("Category(%d)", i)
+func (c Category) String() string {
+	if c < 0 || c >= Category(len(_CategoryIndex)-1) {
+		return fmt.Sprintf("Category(%d)", c)
 	}
-	return _CategoryName[_CategoryIndex[i]:_CategoryIndex[i+1]]
+	return _CategoryName[_CategoryIndex[c]:_CategoryIndex[c+1]]
 }
 
 var _CategoryValues = []Category{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48}
@@ -139,9 +139,9 @@ func CategoryValues() []Category {
 }
 
 // IsACategory returns "true" if the value is listed in the enum definition. "false" otherwise
-func (i Category) IsACategory() bool {
+func (c Category) IsACategory() bool {
 	for _, v := range _CategoryValues {
-		if i == v {
+		if c == v {
 			return true
 		}
 	}
@@ -149,18 +149,18 @@ func (i Category) IsACategory() bool {
 }
 
 // MarshalJSON implements the json.Marshaler interface for Category
-func (i Category) MarshalJSON() ([]byte, error) {
-	return json.Marshal(i.String())
+func (c Category) MarshalJSON() ([]byte, error) {
+	return json.Marshal(c.String())
 }
 
 // UnmarshalJSON implements the json.Unmarshaler interface for Category
-func (i *Category) UnmarshalJSON(data []byte) error {
+func (c *Category) UnmarshalJSON(data []byte) error {
 	var s string
 	if err := json.Unmarshal(data, &s); err != nil {
 		return fmt.Errorf("category should be a string, got %s", data)
 	}
 
 	var err error
-	*i, err = CategoryString(s)
+	*c, err = CategoryString(s)
 	return err
 }
