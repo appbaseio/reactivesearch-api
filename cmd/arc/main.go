@@ -22,16 +22,22 @@ import (
 	_ "github.com/appbaseio-confidential/arc/plugins/users"
 )
 
+const logTag = "[cmd]"
+
 var (
 	envFile     string
 	logFile     string
 	listPlugins bool
+	address     string
+	port        int
 )
 
 func init() {
 	flag.StringVar(&envFile, "env", ".env", "Path to file with environment variables to load in KEY=VALUE format")
 	flag.StringVar(&logFile, "log", "", "Process log file")
 	flag.BoolVar(&listPlugins, "plugins", false, "List currently registered plugins")
+	flag.StringVar(&address, "addr", "localhost", "Address to serve on")
+	flag.IntVar(&port, "port", 8000, "Port number")
 }
 
 func main() {
@@ -57,7 +63,6 @@ func main() {
 	if err := LoadEnvFromFile(envFile); err != nil {
 		log.Fatalf("[ERROR]: reading env file %q: %v", envFile, err)
 	}
-	router := mux.NewRouter().StrictSlash(true)
 
 	plugins := arc.ListPlugins()
 	criteria := func(p1, p2 plugin.Plugin) bool {
@@ -71,6 +76,7 @@ func main() {
 	}
 	arc.By(criteria).Sort(plugins)
 
+	router := mux.NewRouter().StrictSlash(true)
 	for _, p := range plugins {
 		if err := arc.LoadPlugin(router, p); err != nil {
 			log.Fatalf("%v", err)
@@ -81,8 +87,9 @@ func main() {
 		fmt.Println(arc.ListPluginsStr())
 	}
 
-	log.Printf("[INFO]: listening on localhost:8000")
-	log.Fatal(http.ListenAndServe(":8000", router))
+	addr := fmt.Sprintf("%s:%d", address, port)
+	log.Printf("%s: listening on %s", logTag, addr)
+	log.Fatal(http.ListenAndServe(addr, router))
 }
 
 func LoadEnvFromFile(envFile string) error {

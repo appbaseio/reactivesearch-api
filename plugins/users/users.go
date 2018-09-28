@@ -13,9 +13,9 @@ import (
 const (
 	pluginName     = "users"
 	logTag         = "[users]"
-	envUserEsURL   = "USER_ES_URL"
-	envUserEsIndex = "USER_ES_INDEX"
-	envUserEsType  = "USER_ES_TYPE"
+	envEsURL       = "ES_CLUSTER_URL"
+	envUsersEsIndex = "USERS_ES_INDEX"
+	envUsersEsType  = "USERS_ES_TYPE"
 )
 
 // TODO: Justify the API
@@ -35,17 +35,17 @@ func (u *Users) InitFunc() error {
 	log.Printf("%s: initializing plugin: %s", logTag, pluginName)
 
 	// fetch vars from env
-	esURL := os.Getenv(envUserEsURL)
+	esURL := os.Getenv(envEsURL)
 	if esURL == "" {
-		return errors.NewEnvVarNotSetError(envUserEsURL)
+		return errors.NewEnvVarNotSetError(envEsURL)
 	}
-	indexName := os.Getenv(envUserEsIndex)
+	indexName := os.Getenv(envUsersEsIndex)
 	if indexName == "" {
-		return errors.NewEnvVarNotSetError(envUserEsIndex)
+		return errors.NewEnvVarNotSetError(envUsersEsIndex)
 	}
-	typeName := os.Getenv(envUserEsType)
+	typeName := os.Getenv(envUsersEsType)
 	if typeName == "" {
-		return errors.NewEnvVarNotSetError(envUserEsType)
+		return errors.NewEnvVarNotSetError(envUsersEsType)
 	}
 	mapping := user.IndexMapping
 

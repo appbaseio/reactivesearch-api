@@ -15,8 +15,8 @@ const (
 	pluginName           = "permissions"
 	logTag               = "[permissions]"
 	envEsURL             = "ES_CLUSTER_URL"
-	envPermissionEsIndex = "PERMISSION_ES_INDEX"
-	envPermissionEsType  = "PERMISSION_ES_TYPE"
+	envPermissionEsIndex = "PERMISSIONS_ES_INDEX"
+	envPermissionEsType  = "PERMISSIONS_ES_TYPE"
 )
 
 type Permissions struct {

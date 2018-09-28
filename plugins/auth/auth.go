@@ -13,10 +13,10 @@ const (
 	pluginName           = "auth"
 	logTag               = "[auth]"
 	envEsURL             = "ES_CLUSTER_URL"
-	envUserEsIndex       = "USER_ES_INDEX"
-	envUserEsType        = "USER_ES_TYPE"
-	envPermissionEsIndex = "PERMISSION_ES_INDEX"
-	envPermissionEsType  = "PERMISSION_ES_TYPE"
+	envUsersEsIndex       = "USERS_ES_INDEX"
+	envUsersEsType        = "USERS_ES_TYPE"
+	envPermissionsEsIndex = "PERMISSIONS_ES_INDEX"
+	envPermissionsEsType  = "PERMISSIONS_ES_TYPE"
 )
 
 var a *Auth
@@ -48,21 +48,21 @@ func (a *Auth) InitFunc() error {
 	if esURL == "" {
 		return errors.NewEnvVarNotSetError(envEsURL)
 	}
-	userIndex := os.Getenv(envUserEsIndex)
+	userIndex := os.Getenv(envUsersEsIndex)
 	if userIndex == "" {
-		return errors.NewEnvVarNotSetError(envUserEsIndex)
+		return errors.NewEnvVarNotSetError(envUsersEsIndex)
 	}
-	userType := os.Getenv(envUserEsType)
+	userType := os.Getenv(envUsersEsType)
 	if userType == "" {
-		return errors.NewEnvVarNotSetError(envUserEsType)
+		return errors.NewEnvVarNotSetError(envUsersEsType)
 	}
-	permissionIndex := os.Getenv(envPermissionEsIndex)
+	permissionIndex := os.Getenv(envPermissionsEsIndex)
 	if permissionIndex == "" {
-		return errors.NewEnvVarNotSetError(envPermissionEsIndex)
+		return errors.NewEnvVarNotSetError(envPermissionsEsIndex)
 	}
-	permissionType := os.Getenv(envPermissionEsType)
+	permissionType := os.Getenv(envPermissionsEsType)
 	if permissionType == "" {
-		return errors.NewEnvVarNotSetError(envPermissionEsType)
+		return errors.NewEnvVarNotSetError(envPermissionsEsType)
 	}
 
 	// initialize the dao
