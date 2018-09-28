@@ -4,19 +4,23 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
 
+	"github.com/appbaseio-confidential/arc/internal/types/permission"
 	"github.com/appbaseio-confidential/arc/internal/types/user"
 	"github.com/olivere/elastic"
 )
 
 type elasticsearch struct {
-	url       string
-	indexName string
-	typeName  string
-	client    *elastic.Client
+	url             string
+	userIndex       string
+	userType        string
+	permissionIndex string
+	permissionType  string
+	client          *elastic.Client
 }
 
-func NewES(url, indexName, typeName string) (*elasticsearch, error) {
+func NewES(url, userIndex, userType, permissionIndex, permissionType string) (*elasticsearch, error) {
 	opts := []elastic.ClientOptionFunc{
 		elastic.SetURL(url),
 		elastic.SetSniff(false),
@@ -28,7 +32,14 @@ func NewES(url, indexName, typeName string) (*elasticsearch, error) {
 	if err != nil {
 		return nil, fmt.Errorf("%s: error while initializing elastic client: %v\n", logTag, err)
 	}
-	es := &elasticsearch{url, indexName, typeName, client}
+	es := &elasticsearch{
+		url,
+		userIndex,
+		userType,
+		permissionIndex,
+		permissionType,
+		client,
+	}
 
 	return es, nil
 }
@@ -48,8 +59,8 @@ func (es *elasticsearch) getUser(userId string) (*user.User, error) {
 
 func (es *elasticsearch) getRawUser(userId string) ([]byte, error) {
 	data, err := es.client.Get().
-		Index(es.indexName).
-		Type(es.typeName).
+		Index(es.userIndex).
+		Type(es.userType).
 		Id(userId).
 		FetchSource(true).
 		Do(context.Background())
@@ -57,6 +68,41 @@ func (es *elasticsearch) getRawUser(userId string) ([]byte, error) {
 		return nil, err
 	}
 	src, err := data.Source.MarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+
+	return src, nil
+}
+
+func (es *elasticsearch) getPermission(username string) (*permission.Permission, error) {
+	data, err := es.getRawPermission(username)
+	if err != nil {
+		return nil, err
+	}
+	var p permission.Permission
+	err = json.Unmarshal(data, &p)
+	if err != nil {
+		return nil, err
+	}
+	return &p, nil
+}
+
+func (es *elasticsearch) getRawPermission(username string) ([]byte, error) {
+	resp, err := es.client.Get().
+		Index(es.permissionIndex).
+		Type(es.permissionType).
+		Id(username).
+		FetchSource(true).
+		Do(context.Background())
+	if err != nil {
+		return nil, err
+	}
+
+	raw, _ := json.Marshal(resp)
+	log.Printf("%s: es_response: %v", logTag, string(raw))
+
+	src, err := resp.Source.MarshalJSON()
 	if err != nil {
 		return nil, err
 	}

@@ -2,6 +2,7 @@ package es
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"net/http"
 	"regexp"
@@ -9,6 +10,7 @@ import (
 
 	"github.com/appbaseio-confidential/arc/internal/types/acl"
 	"github.com/appbaseio-confidential/arc/internal/types/op"
+	"github.com/appbaseio-confidential/arc/internal/types/permission"
 	"github.com/appbaseio-confidential/arc/internal/util"
 )
 
@@ -71,4 +73,50 @@ func getOp(methods []string, method string) op.Operation {
 		// TODO: handle?
 	}
 	return operation
+}
+
+func validateACL(h http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		// TODO: add a check if set in classifier
+		esACL := r.Context().Value(acl.CtxKey).(acl.ACL)
+		p := r.Context().Value(permission.CtxKey).(*permission.Permission)
+		if p == nil {
+			// TODO: auth didn't fetch permission?
+			log.Printf("%s: cannot fetch permission object from request context", logTag)
+			util.WriteBackMessage(w, "Internal server error", http.StatusInternalServerError)
+			return
+		}
+		if !acl.Contains(p.ACL, esACL) {
+			msg := fmt.Sprintf("permission with username=%s does not have '%s' acl",
+				p.UserName, esACL)
+			util.WriteBackMessage(w, msg, http.StatusUnauthorized)
+			return
+		}
+
+		log.Printf("%s: validate acl: validated\n", logTag)
+		h(w, r)
+	}
+}
+
+func validateOp(h http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		// TODO: add a check if set in classifier
+		operation := r.Context().Value(op.CtxKey).(op.Operation)
+		p := r.Context().Value(permission.CtxKey).(*permission.Permission)
+		if p == nil {
+			// TODO: auth didn't fetch permission?
+			log.Printf("%s: cannot fetch permission object from request context", logTag)
+			util.WriteBackMessage(w, "Internal server error", http.StatusInternalServerError)
+			return
+		}
+		if !op.Contains(p.Op, operation) {
+			msg := fmt.Sprintf("permission with username=%s does not have '%s' operation",
+				p.UserName, operation)
+			util.WriteBackMessage(w, msg, http.StatusUnauthorized)
+			return
+		}
+
+		log.Printf("%s: validate op: validated\n", logTag)
+		h(w, r)
+	}
 }

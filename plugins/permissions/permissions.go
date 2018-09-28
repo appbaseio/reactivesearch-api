@@ -14,7 +14,7 @@ import (
 const (
 	pluginName           = "permissions"
 	logTag               = "[permissions]"
-	envPermissionEsURL   = "PERMISSION_ES_URL"
+	envEsURL             = "ES_CLUSTER_URL"
 	envPermissionEsIndex = "PERMISSION_ES_INDEX"
 	envPermissionEsType  = "PERMISSION_ES_TYPE"
 )
@@ -35,9 +35,9 @@ func (p *Permissions) InitFunc() error {
 	log.Printf("%s: initializing plugin: %s\n", logTag, pluginName)
 
 	// fetch vars from env
-	url := os.Getenv(envPermissionEsURL)
+	url := os.Getenv(envEsURL)
 	if url == "" {
-		return errors.NewEnvVarNotSetError(envPermissionEsURL)
+		return errors.NewEnvVarNotSetError(envEsURL)
 	}
 	indexName := os.Getenv(envPermissionEsIndex)
 	if indexName == "" {

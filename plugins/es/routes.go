@@ -14,6 +14,7 @@ import (
 	"github.com/appbaseio-confidential/arc/arc/plugin"
 	"github.com/appbaseio-confidential/arc/internal/types/acl"
 	"github.com/appbaseio-confidential/arc/middleware/interceptor"
+	"github.com/appbaseio-confidential/arc/plugins/auth"
 )
 
 const (
@@ -72,6 +73,10 @@ func (es *ES) routes() []plugin.Route {
 
 	// init the necessary middleware
 	var i = interceptor.New()
+	var a = auth.Instance()
+
+	// handler TODO: chain common middleware
+	var handlerFunc = es.classifier(a.BasicAuth(validateOp(validateACL(i.Wrap(es.handler())))))
 
 	// accumulate the routes
 	var routes []plugin.Route
@@ -87,7 +92,7 @@ func (es *ES) routes() []plugin.Route {
 				Name:        api.name,
 				Methods:     api.spec.Methods,
 				Path:        path,
-				HandlerFunc: es.classifier(i.Wrap(es.handler())),
+				HandlerFunc: handlerFunc,
 				Description: api.spec.Documentation,
 			}
 			routes = append(routes, route)
@@ -101,7 +106,7 @@ func (es *ES) routes() []plugin.Route {
 		Name:        "ping",
 		Methods:     []string{http.MethodGet},
 		Path:        "/",
-		HandlerFunc: es.classifier(i.Wrap(es.handler())),
+		HandlerFunc: handlerFunc,
 		Description: "You know, for search",
 	}
 	routes = append(routes, indexRoute)
