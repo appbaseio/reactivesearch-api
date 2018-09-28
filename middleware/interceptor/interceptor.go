@@ -24,7 +24,7 @@ func New() Interceptor {
 }
 
 // TODO: Create a new request?
-func esInterceptor(h http.HandlerFunc) http.HandlerFunc {
+func (i *Interceptor) intercept(h http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		rawURL := os.Getenv("ES_CLUSTER_URL")
 		if rawURL == "" {
@@ -53,5 +53,5 @@ func esInterceptor(h http.HandlerFunc) http.HandlerFunc {
 }
 
 func (i *Interceptor) Wrap(h http.HandlerFunc) http.HandlerFunc {
-	return i.Adapt(h, esInterceptor)
+	return i.Adapt(h, i.intercept)
 }
