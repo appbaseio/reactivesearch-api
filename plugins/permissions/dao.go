@@ -52,7 +52,7 @@ func NewES(url, indexName, typeName, mapping string) (*elasticsearch, error) {
 	return es, nil
 }
 
-func (es *elasticsearch) getRawPermissions(username string) ([]byte, error) {
+func (es *elasticsearch) getRawPermission(username string) ([]byte, error) {
 	resp, err := es.client.Get().
 		Index(es.indexName).
 		Type(es.typeName).
@@ -91,23 +91,12 @@ func (es *elasticsearch) putPermission(p permission.Permission) (bool, error) {
 	return true, nil
 }
 
-func (es *elasticsearch) patchPermission(username string, p permission.Permission) (bool, error) {
-	fields := make(map[string]interface{})
-	if p.ACL != nil {
-		fields["acl"] = p.ACL
-	}
-	//if p.Op != op.Noop {
-	//	fields["op"] = p.Op
-	//}
-	if p.Indices != nil {
-		fields["indices"] = p.Indices
-	}
-
+func (es *elasticsearch) patchPermission(username string, patch map[string]interface{}) (bool, error) {
 	resp, err := es.client.Update().
 		Index(es.indexName).
 		Type(es.typeName).
 		Id(username).
-		Doc(fields).
+		Doc(patch).
 		Do(context.Background())
 	if err != nil {
 		return false, nil

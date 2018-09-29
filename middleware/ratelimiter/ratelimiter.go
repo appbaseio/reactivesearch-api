@@ -43,35 +43,44 @@ func New(storeAddr, storePassword string) *RateLimiter {
 func (rl *RateLimiter) RateLimit(h http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		remoteIP := r.Header.Get("X-Forwarded-For")
-		apiKey, _, ok := r.BasicAuth()
+		userId, _, ok := r.BasicAuth()
 		if !ok {
 			log.Printf("%s: user not logged in through basic auth.", logTag)
 			return
 		}
 
-		p := r.Context().Value(permission.CtxKey)
-		if p == nil {
-			log.Printf("%s: unable to fetch user from request context", logTag)
+		ctxPermission := r.Context().Value(permission.CtxKey)
+		if ctxPermission == nil {
+			log.Printf("%s: unable to fetch permission from request context", logTag)
 			return
 		}
-		permissionObj, ok := p.(*permission.Permission)
+		obj, ok := ctxPermission.(*permission.Permission)
 		if !ok {
-			log.Printf("%s: unable to cast to context user to user object: %v", logTag, p)
+			log.Printf("%s: unable to cast context permission to permission object: %v",
+				logTag, ctxPermission)
 			return
 		}
 
-		a := r.Context().Value(acl.CtxKey)
-		if a != nil {
-			aclLimit := permissionObj.ACLLimit
-			key := apiKey
-			if rl.limitExceededByACL(key, aclLimit) {
-				util.WriteBackMessage(w, "Rate limit exceeded", http.StatusTooManyRequests)
-				return
-			}
+		ctxACL := r.Context().Value(acl.CtxKey)
+		if ctxACL == nil {
+			log.Printf("%s: unable to fetch acl from request context", logTag)
+			return
+		}
+		aclObj, ok := ctxACL.(acl.ACL)
+		if !ok {
+			log.Printf("%s: unable to cast context acl to acl object: %v", logTag, ctxACL)
+			return
 		}
 
-		ipLimit := permissionObj.IPLimit
-		key := apiKey + remoteIP
+		aclLimit := obj.GetLimitFor(aclObj)
+		key := userId + aclObj.String() // limit per acl
+		if rl.limitExceededByACL(key, aclLimit) {
+			util.WriteBackMessage(w, "Rate limit exceeded", http.StatusTooManyRequests)
+			return
+		}
+
+		ipLimit := obj.Limits.IPLimit
+		key = userId + remoteIP
 		if rl.limitExceededByIP(key, ipLimit) {
 			util.WriteBackMessage(w, "Rate limit exceeded", http.StatusTooManyRequests)
 			return

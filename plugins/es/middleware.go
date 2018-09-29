@@ -41,7 +41,7 @@ func (es *ES) categorize(method, path string) (acl.ACL, op.Operation) {
 				log.Printf("%s: malformed regexp %s: %v", logTag, pattern, err)
 				continue
 			}
-			if ok && util.ContainsStr(api.spec.Methods, method) {
+			if ok && util.Contains(api.spec.Methods, method) {
 				return api.category, getOp(api.spec.Methods, method)
 			}
 		}
@@ -58,7 +58,7 @@ func getOp(methods []string, method string) op.Operation {
 	case http.MethodGet:
 		operation = op.Read
 	case http.MethodPost:
-		if util.ContainsStr(methods, http.MethodGet) {
+		if util.Contains(methods, http.MethodGet) {
 			operation = op.Read
 		} else {
 			operation = op.Write
@@ -86,7 +86,7 @@ func validateACL(h http.HandlerFunc) http.HandlerFunc {
 			util.WriteBackMessage(w, "Internal server error", http.StatusInternalServerError)
 			return
 		}
-		if !acl.Contains(p.ACL, esACL) {
+		if !acl.Contains(p.ACLs, esACL) {
 			msg := fmt.Sprintf("permission with username=%s does not have '%s' acl",
 				p.UserName, esACL)
 			util.WriteBackMessage(w, msg, http.StatusUnauthorized)
@@ -109,7 +109,7 @@ func validateOp(h http.HandlerFunc) http.HandlerFunc {
 			util.WriteBackMessage(w, "Internal server error", http.StatusInternalServerError)
 			return
 		}
-		if !op.Contains(p.Op, operation) {
+		if !op.Contains(p.Ops, operation) {
 			msg := fmt.Sprintf("permission with username=%s does not have '%s' operation",
 				p.UserName, operation)
 			util.WriteBackMessage(w, msg, http.StatusUnauthorized)

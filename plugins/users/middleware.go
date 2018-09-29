@@ -12,7 +12,7 @@ import (
 	"github.com/appbaseio-confidential/arc/internal/util"
 )
 
-func opClassifier(h http.HandlerFunc) http.HandlerFunc {
+func classifier(h http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var operation op.Operation
 		switch r.Method {
@@ -27,11 +27,13 @@ func opClassifier(h http.HandlerFunc) http.HandlerFunc {
 		case http.MethodDelete:
 			operation = op.Delete
 		default:
-			// TODO: handle?
+			operation = op.Read
 		}
 		ctx := r.Context()
+		ctx = context.WithValue(ctx, acl.CtxKey, acl.User)
 		ctx = context.WithValue(ctx, op.CtxKey, operation)
-		h(w, r.WithContext(ctx))
+		r = r.WithContext(ctx)
+		h(w, r)
 	}
 }
 
@@ -52,7 +54,7 @@ func validateOp(h http.HandlerFunc) http.HandlerFunc {
 			return
 		}
 
-		if !op.Contains(u.Op, o.(op.Operation)) {
+		if !op.Contains(u.Ops, o.(op.Operation)) {
 			msg := fmt.Sprintf("user with user_id=%s does not have '%s' op access",
 				u.UserId, o.(op.Operation).String())
 			util.WriteBackMessage(w, msg, http.StatusUnauthorized)
@@ -75,7 +77,7 @@ func validateACL(h http.HandlerFunc) http.HandlerFunc {
 			return
 		}
 
-		if !acl.Contains(u.ACL, acl.Permission) {
+		if !acl.Contains(u.ACLs, acl.Permission) {
 			msg := fmt.Sprintf("user with user_id=%s does not have 'permission' acl", u.UserId)
 			util.WriteBackMessage(w, msg, http.StatusUnauthorized)
 			return

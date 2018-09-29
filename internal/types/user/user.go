@@ -1,6 +1,10 @@
 package user
 
 import (
+	"log"
+	"regexp"
+
+	"github.com/appbaseio-confidential/arc/internal/errors"
 	"github.com/appbaseio-confidential/arc/internal/types/acl"
 	"github.com/appbaseio-confidential/arc/internal/types/op"
 )
@@ -15,93 +19,146 @@ const (
 type User struct {
 	UserId   string         `json:"user_id"`
 	Password string         `json:"password"`
-	IsAdmin  bool           `json:"is_admin"`
-	ACL      []acl.ACL      `json:"acl"`
+	IsAdmin  *bool          `json:"is_admin"`
+	ACLs     []acl.ACL      `json:"acls"`
 	Email    string         `json:"email"`
-	Op       []op.Operation `json:"op"`
+	Ops      []op.Operation `json:"ops"`
 	Indices  []string       `json:"indices"`
 }
 
-type Builder interface {
-	UserId(string) Builder
-	Password(string) Builder
-	IsAdmin(bool) Builder
-	ACL([]acl.ACL) Builder
-	Email(string) Builder
-	Op([]op.Operation) Builder
-	Indices([]string) Builder
-	Build() User
-}
+type Options func(u *User) error
 
-type userBuilder struct {
-	userId   string
-	password string
-	isAdmin  bool
-	acl      []acl.ACL
-	email    string
-	op       []op.Operation
-	indices  []string
-}
-
-func New() Builder {
-	return &userBuilder{}
-}
-
-func (u *userBuilder) UserId(userId string) Builder {
-	u.userId = userId
-	return u
-}
-
-func (u *userBuilder) Password(password string) Builder {
-	u.password = password
-	return u
-}
-
-func (u *userBuilder) IsAdmin(isAdmin bool) Builder {
-	u.isAdmin = isAdmin
-	return u
-}
-
-func (u *userBuilder) ACL(acl []acl.ACL) Builder {
-	u.acl = acl
-	return u
-}
-
-func (u *userBuilder) Email(email string) Builder {
-	u.email = email
-	return u
-}
-
-func (u *userBuilder) Op(op []op.Operation) Builder {
-	u.op = op
-	return u
-}
-
-func (u *userBuilder) Indices(indices []string) Builder {
-	u.indices = indices
-	return u
-}
-
-func (u *userBuilder) User(user User) Builder {
-	u.userId = user.UserId
-	u.password = user.Password
-	u.isAdmin = user.IsAdmin
-	u.acl = user.ACL
-	u.email = user.Email
-	u.op = user.Op
-	u.indices = user.Indices
-	return u
-}
-
-func (u *userBuilder) Build() User {
-	// TODO: Ensure usable zero valued properties
-	return User{
-		UserId:   u.userId,
-		Password: u.password,
-		IsAdmin:  u.isAdmin,
-		ACL:      u.acl,
-		Email:    u.email,
-		Op:       u.op,
-		Indices:  u.indices,
+func IsAdmin(isAdmin *bool) Options {
+	return func(u *User) error {
+		u.IsAdmin = isAdmin
+		return nil
 	}
+}
+
+func ACLs(acls []acl.ACL) Options {
+	return func(u *User) error {
+		if acls == nil {
+			return errors.NilACLsError
+		}
+		u.ACLs = acls
+		return nil
+	}
+}
+
+func Email(email string) Options {
+	return func(u *User) error {
+		u.Email = email
+		return nil
+	}
+}
+
+func Ops(ops []op.Operation) Options {
+	return func(u *User) error {
+		if ops == nil {
+			return errors.NilOpsError
+		}
+		u.Ops = ops
+		return nil
+	}
+}
+
+func Indices(indices []string) Options {
+	return func(u *User) error {
+		if indices == nil {
+			return errors.NilIndicesError
+		}
+		u.Indices = indices
+		return nil
+	}
+}
+
+func New(userId, password string, opts ...Options) (*User, error) {
+	// create a default user
+	u := &User{
+		UserId:   userId,
+		Password: password,
+		IsAdmin:  &defaultIsAdmin, // pointer to bool
+		ACLs:     defaultACLs,
+		Ops:      defaultOps,
+		Indices:  []string{},
+	}
+
+	// run the options on it
+	for _, option := range opts {
+		if err := option(u); err != nil {
+			return nil, err
+		}
+	}
+
+	return u, nil
+}
+
+func (u *User) HasACL(acl acl.ACL) bool {
+	for _, a := range u.ACLs {
+		if a == acl {
+			return true
+		}
+	}
+	return false
+}
+
+func (u *User) Can(op op.Operation) bool {
+	for _, o := range u.Ops {
+		if o == op {
+			return true
+		}
+	}
+	return false
+}
+
+func (u *User) CanAccessIndex(name string) (bool, error) {
+	for _, pattern := range u.Indices {
+		matched, err := regexp.MatchString(pattern, name)
+		if err != nil {
+			log.Printf("invalid index regexp %s encountered: %v", pattern, err)
+			return false, err
+		}
+		if matched {
+			return true, nil
+		}
+	}
+	return false, nil
+}
+
+func (u *User) GetPatch() (map[string]interface{}, error) {
+	patch := make(map[string]interface{})
+
+	if u.UserId != "" {
+		patch["user_id"] = u.UserId
+	}
+	if u.Password != "" {
+		patch["password"] = u.Password
+	}
+	if u.IsAdmin != nil {
+		patch["is_admin"] = u.IsAdmin
+	}
+	if u.Email != "" {
+		patch["email"] = u.Email
+	}
+	if u.ACLs != nil {
+		patch["acls"] = u.ACLs
+	}
+	if u.Ops != nil {
+		patch["ops"] = u.Ops
+	}
+	if u.Indices != nil {
+		patch["indices"] = u.Indices
+	}
+
+	return patch, nil
+}
+
+func (u *User) Validate() error {
+	if u.UserId == "" {
+		return errors.NewMissingFieldError("user", "user_id")
+	}
+	if u.IsAdmin == nil {
+		return errors.NewMissingFieldError("user", "is_admin")
+	}
+	return nil
 }

@@ -35,7 +35,8 @@ func NewES(url, indexName, typeName, mapping string) (*elasticsearch, error) {
 	// Check if the meta index already exists
 	exists, err := client.IndexExists(indexName).Do(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("%s: error while checking if index already exists: %v\n", logTag, err)
+		return nil, fmt.Errorf("%s: error while checking if index already exists: %v\n",
+			logTag, err)
 	}
 	if exists {
 		log.Printf("%s: index named '%s' already exists, skipping...", logTag, indexName)
@@ -45,7 +46,8 @@ func NewES(url, indexName, typeName, mapping string) (*elasticsearch, error) {
 	// Meta index does not exists, create a new one
 	_, err = client.CreateIndex(indexName).Body(mapping).Do(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("%s: error while creating index named %s: %v\n", logTag, indexName, err)
+		return nil, fmt.Errorf("%s: error while creating index named %s: %v\n",
+			logTag, indexName, err)
 	}
 
 	log.Printf("%s successfully created index named '%s'", logTag, indexName)
@@ -62,6 +64,7 @@ func (es *elasticsearch) getRawUser(userId string) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	src, err := data.Source.MarshalJSON()
 	if err != nil {
 		return nil, err
@@ -83,27 +86,16 @@ func (es *elasticsearch) putUser(u user.User) (bool, error) {
 
 	raw, _ := json.Marshal(resp)
 	log.Printf("%s: es_response: %s\n", logTag, string(raw))
+
 	return true, nil
 }
 
-func (es *elasticsearch) patchUser(userId string, u user.User) (bool, error) {
-	// Only consider fields that can be updated
-	fields := make(map[string]interface{})
-	if u.ACL != nil && len(u.ACL) >= 0 {
-		fields["acl"] = u.ACL
-	}
-	if u.Email != "" {
-		fields["email"] = u.Email
-	}
-	if u.Indices != nil && len(u.Indices) >= 0 {
-		fields["indices"] = u.Indices
-	}
-
+func (es *elasticsearch) patchUser(userId string, patch map[string]interface{}) (bool, error) {
 	resp, err := es.client.Update().
 		Index(es.indexName).
 		Type(es.typeName).
 		Id(userId).
-		Doc(fields).
+		Doc(patch).
 		Do(context.Background())
 	if err != nil {
 		return false, err
@@ -111,6 +103,7 @@ func (es *elasticsearch) patchUser(userId string, u user.User) (bool, error) {
 
 	raw, _ := json.Marshal(resp)
 	log.Printf("%s: es_response: %s\n", logTag, string(raw))
+
 	return true, nil
 }
 
@@ -126,5 +119,6 @@ func (es *elasticsearch) deleteUser(userId string) (bool, error) {
 
 	raw, _ := json.Marshal(resp)
 	log.Printf("%s: es_response: %s\n", logTag, string(raw))
+
 	return true, nil
 }

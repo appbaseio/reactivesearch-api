@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/google/uuid"
 )
@@ -37,7 +38,7 @@ func WriteBackRaw(w http.ResponseWriter, raw []byte, code int) {
 	w.Write(raw)
 }
 
-func ContainsStr(slice []string, val string) bool {
+func Contains(slice []string, val string) bool {
 	for _, v := range slice {
 		if v == val {
 			return true
@@ -46,11 +47,17 @@ func ContainsStr(slice []string, val string) bool {
 	return false
 }
 
-func ContainsVal(slice []interface{}, val interface{}) bool {
-	for _, v := range slice {
-		if v == val {
-			return true
-		}
-	}
-	return false
+// DaysInMonth returns the number of days in a month for a given year.
+func DaysInMonth(m time.Month, year int) int {
+	return time.Date(year, m+1, 0, 0, 0, 0, 0, time.UTC).Day()
+}
+
+// DaysInYear returns the number of days in a given year.
+func DaysInYear(year int) int {
+	return time.Date(year, 0, 0, 0, 0, 0, 0, time.UTC).Day()
+}
+
+// DaysInCurrentYear returns the number of days in the current year.
+func DaysInCurrentYear() int {
+	return DaysInYear(time.Now().Year())
 }
