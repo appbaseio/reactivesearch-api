@@ -25,7 +25,7 @@ const (
 	Streams
 )
 
-func (c ACL) String() string {
+func (a ACL) String() string {
 	return [...]string{
 		"docs",
 		"search",
@@ -38,10 +38,10 @@ func (c ACL) String() string {
 		"permission",
 		"analytics",
 		"streams",
-	}[c]
+	}[a]
 }
 
-func (c *ACL) UnmarshalJSON(bytes []byte) error {
+func (a *ACL) UnmarshalJSON(bytes []byte) error {
 	var category string
 	err := json.Unmarshal(bytes, &category)
 	if err != nil {
@@ -49,60 +49,69 @@ func (c *ACL) UnmarshalJSON(bytes []byte) error {
 	}
 	switch category {
 	case Docs.String():
-		*c = Docs
+		*a = Docs
 	case Search.String():
-		*c = Search
+		*a = Search
 	case Indices.String():
-		*c = Indices
+		*a = Indices
 	case Cat.String():
-		*c = Cat
+		*a = Cat
 	case Clusters.String():
-		*c = Clusters
+		*a = Clusters
 	case Misc.String():
-		*c = Misc
+		*a = Misc
 
 	case User.String():
-		*c = User
+		*a = User
 	case Permission.String():
-		*c = Permission
+		*a = Permission
 	case Analytics.String():
-		*c = Analytics
+		*a = Analytics
 	case Streams.String():
-		*c = Streams
+		*a = Streams
 	default:
 		return errors.New("invalid category encountered: " + category)
 	}
 	return nil
 }
 
-func (c ACL) MarshalJSON() ([]byte, error) {
-	var category string
-	switch c {
+func (a ACL) MarshalJSON() ([]byte, error) {
+	var acl string
+	switch a {
 	case Docs:
-		category = Docs.String()
+		acl = Docs.String()
 	case Search:
-		category = Search.String()
+		acl = Search.String()
 	case Indices:
-		category = Indices.String()
+		acl = Indices.String()
 	case Cat:
-		category = Cat.String()
+		acl = Cat.String()
 	case Clusters:
-		category = Clusters.String()
+		acl = Clusters.String()
 	case Misc:
-		category = Misc.String()
+		acl = Misc.String()
 
 	case User:
-		category = User.String()
+		acl = User.String()
 	case Permission:
-		category = Permission.String()
+		acl = Permission.String()
 	case Analytics:
-		category = Analytics.String()
+		acl = Analytics.String()
 	case Streams:
-		category = Streams.String()
+		acl = Streams.String()
 	default:
-		return nil, errors.New("invalid category encountered: " + c.String())
+		return nil, errors.New("invalid category encountered: " + a.String())
 	}
-	return json.Marshal(category)
+	return json.Marshal(acl)
+}
+
+func (a ACL) IsFromES() bool {
+	return a == Docs ||
+		a == Search ||
+		a == Indices ||
+		a == Cat ||
+		a == Clusters ||
+		a == Misc
 }
 
 func Contains(slice []ACL, val ACL) bool {

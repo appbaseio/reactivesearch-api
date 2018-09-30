@@ -1,9 +1,8 @@
 package errors
 
 import (
+	"errors"
 	"fmt"
-
-	"github.com/pkg/errors"
 )
 
 var (

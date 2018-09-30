@@ -29,10 +29,12 @@ func classifier(h http.HandlerFunc) http.HandlerFunc {
 		default:
 			operation = op.Read
 		}
+
 		ctx := r.Context()
 		ctx = context.WithValue(ctx, acl.CtxKey, acl.User)
 		ctx = context.WithValue(ctx, op.CtxKey, operation)
 		r = r.WithContext(ctx)
+
 		h(w, r)
 	}
 }

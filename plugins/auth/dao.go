@@ -44,6 +44,23 @@ func NewES(url, userIndex, userType, permissionIndex, permissionType string) (*e
 	return es, nil
 }
 
+func (es *elasticsearch) putUser(u user.User) (bool, error) {
+	resp, err := es.client.Index().
+		Index(es.userIndex).
+		Type(es.userType).
+		Id(u.UserId).
+		BodyJson(u).
+		Do(context.Background())
+	if err != nil {
+		return false, err
+	}
+
+	raw, _ := json.Marshal(resp)
+	log.Printf("%s: es_response: %s\n", logTag, string(raw))
+
+	return true, nil
+}
+
 func (es *elasticsearch) getUser(userId string) (*user.User, error) {
 	data, err := es.getRawUser(userId)
 	if err != nil {
@@ -73,6 +90,23 @@ func (es *elasticsearch) getRawUser(userId string) ([]byte, error) {
 	}
 
 	return src, nil
+}
+
+func (es *elasticsearch) putPermission(p permission.Permission) (bool, error) {
+	resp, err := es.client.Index().
+		Index(es.permissionIndex).
+		Type(es.permissionType).
+		Id(p.UserName).
+		BodyJson(p).
+		Do(context.Background())
+	if err != nil {
+		return false, err
+	}
+
+	raw, _ := json.Marshal(resp)
+	log.Printf("%s: es_response: %s\n", logTag, string(raw))
+
+	return true, nil
 }
 
 func (es *elasticsearch) getPermission(username string) (*permission.Permission, error) {

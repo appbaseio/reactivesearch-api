@@ -117,6 +117,22 @@ func New(creator string, opts ...Options) (*Permission, error) {
 	return p, nil
 }
 
+// TODO: Temporary?
+func NewAdmin(creator string) *Permission {
+	return &Permission{
+		UserId:    creator,
+		UserName:  util.RandStr(),
+		Password:  uuid.New().String(),
+		Creator:   creator,
+		ACLs:      defaultAdminACLs,
+		Ops:       defaultAdminOps,
+		Indices:   []string{"*"},
+		CreatedAt: time.Now(),
+		TTL:       time.Duration(util.DaysInCurrentYear()) * 24 * time.Hour,
+		Limits:    &defaultAdminLimits,
+	}
+}
+
 func (p *Permission) IsExpired() bool {
 	return time.Since(p.CreatedAt) > p.TTL
 }

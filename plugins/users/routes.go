@@ -7,6 +7,15 @@ import (
 	"github.com/appbaseio-confidential/arc/plugins/auth"
 )
 
+// Middleware chain:
+// r -> classifier -> basicAuth -> validateOp -> validateACL -> rateLimit
+//
+// 1. classifier:
+// 2. basicAuth:
+// 3. validateOp:
+// 4. validateACL:
+// 5. isAdmin (optional)
+// 6. rateLimit:
 func (u *Users) routes() []plugin.Route {
 	// TODO: plugin dependency
 	var basicAuth = auth.Instance().BasicAuth

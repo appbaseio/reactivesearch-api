@@ -28,14 +28,14 @@ type User struct {
 
 type Options func(u *User) error
 
-func IsAdmin(isAdmin *bool) Options {
+func SetIsAdmin(isAdmin *bool) Options {
 	return func(u *User) error {
 		u.IsAdmin = isAdmin
 		return nil
 	}
 }
 
-func ACLs(acls []acl.ACL) Options {
+func SetACLs(acls []acl.ACL) Options {
 	return func(u *User) error {
 		if acls == nil {
 			return errors.NilACLsError
@@ -45,14 +45,14 @@ func ACLs(acls []acl.ACL) Options {
 	}
 }
 
-func Email(email string) Options {
+func SetEmail(email string) Options {
 	return func(u *User) error {
 		u.Email = email
 		return nil
 	}
 }
 
-func Ops(ops []op.Operation) Options {
+func SetOps(ops []op.Operation) Options {
 	return func(u *User) error {
 		if ops == nil {
 			return errors.NilOpsError
@@ -62,7 +62,7 @@ func Ops(ops []op.Operation) Options {
 	}
 }
 
-func Indices(indices []string) Options {
+func SetIndices(indices []string) Options {
 	return func(u *User) error {
 		if indices == nil {
 			return errors.NilIndicesError
@@ -77,7 +77,7 @@ func New(userId, password string, opts ...Options) (*User, error) {
 	u := &User{
 		UserId:   userId,
 		Password: password,
-		IsAdmin:  &defaultIsAdmin, // pointer to bool
+		IsAdmin:  &isAdminFalse, // pointer to bool
 		ACLs:     defaultACLs,
 		Ops:      defaultOps,
 		Indices:  []string{},
@@ -91,6 +91,17 @@ func New(userId, password string, opts ...Options) (*User, error) {
 	}
 
 	return u, nil
+}
+
+func NewAdmin(userId, password string) *User {
+	return &User{
+		UserId:   userId,
+		Password: password,
+		IsAdmin:  &isAdminTrue,
+		ACLs:     defaultAdminACLs,
+		Ops:      defaultAdminOps,
+		Indices:  []string{"*"},
+	}
 }
 
 func (u *User) HasACL(acl acl.ACL) bool {
@@ -151,14 +162,4 @@ func (u *User) GetPatch() (map[string]interface{}, error) {
 	}
 
 	return patch, nil
-}
-
-func (u *User) Validate() error {
-	if u.UserId == "" {
-		return errors.NewMissingFieldError("user", "user_id")
-	}
-	if u.IsAdmin == nil {
-		return errors.NewMissingFieldError("user", "is_admin")
-	}
-	return nil
 }

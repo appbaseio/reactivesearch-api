@@ -59,7 +59,7 @@ func (u *Users) putUser() http.HandlerFunc {
 		body, err := ioutil.ReadAll(r.Body)
 		if err != nil {
 			msg := "can't read body"
-			log.Printf(fmt.Sprintf("%s: %s: %v", logTag, msg, err))
+			log.Printf("%s: %s: %v\n", logTag, msg, err)
 			util.WriteBackError(w, msg, http.StatusBadRequest)
 			return
 		}
@@ -74,19 +74,19 @@ func (u *Users) putUser() http.HandlerFunc {
 		}
 
 		opts := []user.Options{
-			user.Email(obj.Email),
+			user.SetEmail(obj.Email),
 		}
 		if obj.IsAdmin != nil {
-			opts = append(opts, user.IsAdmin(obj.IsAdmin))
+			opts = append(opts, user.SetIsAdmin(obj.IsAdmin))
 		}
 		if obj.ACLs != nil {
-			opts = append(opts, user.ACLs(obj.ACLs))
+			opts = append(opts, user.SetACLs(obj.ACLs))
 		}
 		if obj.Ops != nil {
-			opts = append(opts, user.Ops(obj.Ops))
+			opts = append(opts, user.SetOps(obj.Ops))
 		}
 		if obj.Indices != nil {
-			opts = append(opts, user.Indices(obj.Indices))
+			opts = append(opts, user.SetIndices(obj.Indices))
 		}
 		newUser, err := user.New(userId, password, opts...)
 		if err != nil {
@@ -133,7 +133,6 @@ func (u *Users) patchUser() http.HandlerFunc {
 
 		var obj user.User
 		err = json.Unmarshal(body, &obj)
-		log.Printf("received fields: %v", obj)
 		if err != nil {
 			msg := "error parsing request body"
 			log.Printf("%s: %s: %v\n", logTag, msg, err)
@@ -150,7 +149,8 @@ func (u *Users) patchUser() http.HandlerFunc {
 
 		ok, err = u.es.patchUser(userId, patch)
 		if ok && err == nil {
-			util.WriteBackMessage(w, "successfully updated user", http.StatusOK)
+			msg := fmt.Sprintf(`Successfully updated user with "user_id"="%s"`, userId)
+			util.WriteBackMessage(w, msg, http.StatusOK)
 			return
 		}
 
@@ -171,7 +171,8 @@ func (u *Users) deleteUser() http.HandlerFunc {
 
 		ok, err := u.es.deleteUser(userId)
 		if ok && err == nil {
-			util.WriteBackMessage(w, "successfully deleted user", http.StatusOK)
+			msg := fmt.Sprintf(`Successfully deleted user with "user_id"="%s"`, userId)
+			util.WriteBackMessage(w, msg, http.StatusOK)
 			return
 		}
 
