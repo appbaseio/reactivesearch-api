@@ -14,6 +14,8 @@ import (
 
 func classifier(h http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		userACL := acl.User
+
 		var operation op.Operation
 		switch r.Method {
 		case http.MethodGet:
@@ -29,7 +31,6 @@ func classifier(h http.HandlerFunc) http.HandlerFunc {
 		default:
 			operation = op.Read
 		}
-		userACL := acl.User
 
 		ctx := r.Context()
 		ctx = context.WithValue(ctx, acl.CtxKey, &userACL)
@@ -43,6 +44,7 @@ func classifier(h http.HandlerFunc) http.HandlerFunc {
 func validateOp(h http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
+
 		ctxUser := ctx.Value(user.CtxKey)
 		if ctxUser == nil {
 			log.Printf("%s: cannot fetch user object from request context", logTag)
@@ -73,6 +75,7 @@ func validateOp(h http.HandlerFunc) http.HandlerFunc {
 func validateACL(h http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
+
 		ctxUser := ctx.Value(user.CtxKey)
 		if ctxUser == nil {
 			log.Printf("%s: cannot fetch user object from request context", logTag)
@@ -81,8 +84,9 @@ func validateACL(h http.HandlerFunc) http.HandlerFunc {
 		}
 		u := ctxUser.(*user.User)
 
-		if !acl.Contains(u.ACLs, acl.Permission) {
-			msg := fmt.Sprintf("user with user_id=%s does not have 'permission' acl", u.UserId)
+		if !acl.Contains(u.ACLs, acl.User) {
+			msg := fmt.Sprintf(`user with "user_id"="%s" does not have '%s' acl`,
+				u.UserId, acl.User.String())
 			util.WriteBackMessage(w, msg, http.StatusUnauthorized)
 			return
 		}
@@ -94,6 +98,7 @@ func validateACL(h http.HandlerFunc) http.HandlerFunc {
 func isAdmin(h http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
+
 		ctxUser := ctx.Value(user.CtxKey)
 		if ctxUser == nil {
 			log.Printf("%s: cannot fetch user from request context", logTag)

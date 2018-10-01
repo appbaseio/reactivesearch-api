@@ -10,9 +10,10 @@ import (
 	"github.com/appbaseio-confidential/arc/internal/types/acl"
 	"github.com/appbaseio-confidential/arc/internal/types/permission"
 	"github.com/appbaseio-confidential/arc/internal/util"
-	goredis "github.com/go-redis/redis"
+	//goredis "github.com/go-redis/redis"
 	"github.com/ulule/limiter"
-	"github.com/ulule/limiter/drivers/store/redis"
+	"github.com/ulule/limiter/drivers/store/memory"
+	//"github.com/ulule/limiter/drivers/store/redis"
 )
 
 const (
@@ -146,20 +147,21 @@ func (rl *RateLimiter) getLimiter(key string, limit int64, period time.Duration)
 // The access must be mediated by some kind of synchronization mechanism to prevent concurrent
 // read/write operations to the map and vars.
 func (rl *RateLimiter) newLimiter(key string, limit int64, period time.Duration) *limiter.Limiter {
-	option := &goredis.Options{
-		Addr:     redisAddr,
-		Password: redisPassword,
-		DB:       DefaultRedisDB,
-	}
-	client := goredis.NewClient(option)
-	store, err := redis.NewStoreWithOptions(client, limiter.StoreOptions{
-		Prefix:   key,
-		MaxRetry: DefaultMaxRetry,
-	})
-	if err != nil {
-		log.Printf("%s: cannot create redis store for the rate limiter: %v", logTag, err)
-		return nil
-	}
+	//option := &goredis.Options{
+	//	Addr:     redisAddr,
+	//	Password: redisPassword,
+	//	DB:       DefaultRedisDB,
+	//}
+	//client := goredis.NewClient(option)
+	//store, err := redis.NewStoreWithOptions(client, limiter.StoreOptions{
+	//	Prefix:   key,
+	//	MaxRetry: DefaultMaxRetry,
+	//})
+	//if err != nil {
+	//	log.Printf("%s: cannot create redis store for the rate limiter: %v", logTag, err)
+	//	return nil
+	//}
+	store := memory.NewStore()
 	rate := limiter.Rate{
 		Limit:  limit,
 		Period: period,

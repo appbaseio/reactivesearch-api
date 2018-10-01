@@ -10,23 +10,6 @@
   version = "v1.1.1"
 
 [[projects]]
-  digest = "1:7c2fd446293ff7799cc496d3446e674ee67902d119f244de645caf95dff1bb98"
-  name = "github.com/go-redis/redis"
-  packages = [
-    ".",
-    "internal",
-    "internal/consistenthash",
-    "internal/hashtag",
-    "internal/pool",
-    "internal/proto",
-    "internal/singleflight",
-    "internal/util",
-  ]
-  pruneopts = "UT"
-  revision = "f3bba01df2026fc865f7782948845db9cf44cf23"
-  version = "v6.14.1"
-
-[[projects]]
   digest = "1:3a26588bc48b96825977c1b3df964f8fd842cd6860cc26370588d3563433cf11"
   name = "github.com/google/uuid"
   packages = ["."]
@@ -103,12 +86,12 @@
   version = "v1.2.2"
 
 [[projects]]
-  digest = "1:e9a9ea92fdcea268b9422d7697e6d5cd3b93f38bc98ef1db5f4e03bed901615f"
+  digest = "1:8028876dc882c0ea887e7ea264d700a208406ffe7136edfc67f1ba60bc9909e4"
   name = "github.com/ulule/limiter"
   packages = [
     ".",
     "drivers/store/common",
-    "drivers/store/redis",
+    "drivers/store/memory",
   ]
   pruneopts = "UT"
   revision = "f0ff82677fc4826ddae9ac45f2e11462fa245dad"
@@ -126,12 +109,11 @@
   analyzer-name = "dep"
   analyzer-version = 1
   input-imports = [
-    "github.com/go-redis/redis",
     "github.com/google/uuid",
     "github.com/gorilla/mux",
     "github.com/olivere/elastic",
     "github.com/ulule/limiter",
-    "github.com/ulule/limiter/drivers/store/redis",
+    "github.com/ulule/limiter/drivers/store/memory",
     "gopkg.in/natefinch/lumberjack.v2",
   ]
   solver-name = "gps-cdcl"
