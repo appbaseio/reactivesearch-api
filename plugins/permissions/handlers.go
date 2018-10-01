@@ -131,6 +131,7 @@ func (p *Permissions) patchPermission() http.HandlerFunc {
 		}
 
 		patch, err := obj.GetPatch()
+		log.Printf("%s: patch=%v", logTag, patch["limits"])
 		if err != nil {
 			log.Printf("%s: %v", logTag, err)
 			util.WriteBackError(w, err.Error(), http.StatusBadRequest)

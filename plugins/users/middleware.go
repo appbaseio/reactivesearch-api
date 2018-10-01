@@ -29,10 +29,11 @@ func classifier(h http.HandlerFunc) http.HandlerFunc {
 		default:
 			operation = op.Read
 		}
+		userACL := acl.User
 
 		ctx := r.Context()
-		ctx = context.WithValue(ctx, acl.CtxKey, acl.User)
-		ctx = context.WithValue(ctx, op.CtxKey, operation)
+		ctx = context.WithValue(ctx, acl.CtxKey, &userACL)
+		ctx = context.WithValue(ctx, op.CtxKey, &operation)
 		r = r.WithContext(ctx)
 
 		h(w, r)
@@ -42,28 +43,29 @@ func classifier(h http.HandlerFunc) http.HandlerFunc {
 func validateOp(h http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
-		u := ctx.Value(user.CtxKey).(*user.User)
-		if u == nil {
+		ctxUser := ctx.Value(user.CtxKey)
+		if ctxUser == nil {
 			log.Printf("%s: cannot fetch user object from request context", logTag)
 			util.WriteBackMessage(w, "Internal server error", http.StatusInternalServerError)
 			return
 		}
+		u := ctxUser.(*user.User)
 
-		o := ctx.Value(op.CtxKey)
-		if o == nil {
+		ctxOp := ctx.Value(op.CtxKey)
+		if ctxOp == nil {
 			log.Printf("%s: cannot fetch op from request context", logTag)
 			util.WriteBackMessage(w, "Internal server error", http.StatusInternalServerError)
 			return
 		}
+		operation := ctxOp.(*op.Operation)
 
-		if !op.Contains(u.Ops, o.(op.Operation)) {
+		if !op.Contains(u.Ops, *operation) {
 			msg := fmt.Sprintf("user with user_id=%s does not have '%s' op access",
-				u.UserId, o.(op.Operation).String())
+				u.UserId, operation.String())
 			util.WriteBackMessage(w, msg, http.StatusUnauthorized)
 			return
 		}
 
-		log.Printf("%s: validateOp: validated\n", logTag)
 		h(w, r)
 	}
 }
@@ -71,13 +73,13 @@ func validateOp(h http.HandlerFunc) http.HandlerFunc {
 func validateACL(h http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
-		u := ctx.Value(user.CtxKey).(*user.User)
-		if u == nil {
-			// TODO: auth didn't fetch user?
+		ctxUser := ctx.Value(user.CtxKey)
+		if ctxUser == nil {
 			log.Printf("%s: cannot fetch user object from request context", logTag)
 			util.WriteBackMessage(w, "Internal server error", http.StatusInternalServerError)
 			return
 		}
+		u := ctxUser.(*user.User)
 
 		if !acl.Contains(u.ACLs, acl.Permission) {
 			msg := fmt.Sprintf("user with user_id=%s does not have 'permission' acl", u.UserId)
@@ -85,7 +87,27 @@ func validateACL(h http.HandlerFunc) http.HandlerFunc {
 			return
 		}
 
-		log.Printf("%s: validate acl: validated", logTag)
+		h(w, r)
+	}
+}
+
+func isAdmin(h http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		ctx := r.Context()
+		ctxUser := ctx.Value(user.CtxKey)
+		if ctxUser == nil {
+			log.Printf("%s: cannot fetch user from request context", logTag)
+			util.WriteBackMessage(w, "Internal server error", http.StatusInternalServerError)
+			return
+		}
+		obj := ctxUser.(*user.User)
+
+		if !*obj.IsAdmin {
+			msg := fmt.Sprintf(`User with "user_id"="%s" is not an admin`, obj.UserId)
+			util.WriteBackMessage(w, msg, http.StatusUnauthorized)
+			return
+		}
+
 		h(w, r)
 	}
 }

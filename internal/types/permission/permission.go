@@ -33,17 +33,13 @@ type Permission struct {
 }
 
 type Limits struct {
-	IPLimit          int64 `json:"ip_limit"`
-	DocsLimit        int64 `json:"docs_limit"`
-	SearchLimit      int64 `json:"search_limit"`
-	IndicesLimit     int64 `json:"indices_limit"`
-	CatLimit         int64 `json:"cat_limit"`
-	ClustersLimit    int64 `json:"clusters_limit"`
-	MiscLimit        int64 `json:"misc_limit"`
-	UsersLimit       int64 `json:"users_limit"`
-	PermissionsLimit int64 `json:"permissions_limit"`
-	AnalyticsLimit   int64 `json:"analytics_limit"`
-	StreamsLimit     int64 `json:"streams_limit"`
+	IPLimit       int64 `json:"ip_limit"`
+	DocsLimit     int64 `json:"docs_limit"`
+	SearchLimit   int64 `json:"search_limit"`
+	IndicesLimit  int64 `json:"indices_limit"`
+	CatLimit      int64 `json:"cat_limit"`
+	ClustersLimit int64 `json:"clusters_limit"`
+	MiscLimit     int64 `json:"misc_limit"`
 }
 
 type Options func(p *Permission) error
@@ -183,17 +179,8 @@ func (p *Permission) GetLimitFor(a acl.ACL) int64 {
 		return p.Limits.ClustersLimit
 	case acl.Misc:
 		return p.Limits.MiscLimit
-	case acl.User:
-		return p.Limits.UsersLimit
-	case acl.Permission:
-		return p.Limits.PermissionsLimit
-	case acl.Analytics:
-		return p.Limits.AnalyticsLimit
-	case acl.Streams:
-		return p.Limits.StreamsLimit
 	default:
-		// TODO: unreachable state?
-		return p.Limits.IPLimit
+		return 0 // TODO: correct default value?
 	}
 }
 
@@ -224,11 +211,34 @@ func (p *Permission) GetPatch() (map[string]interface{}, error) {
 	if !p.CreatedAt.Equal(time.Time{}) {
 		return nil, errors.NewUnsupportedPatchError("permission", "created_at")
 	}
-	if p.TTL.String() != "" {
+	if p.TTL.String() != "0s" {
 		patch["ttl"] = p.TTL
 	}
+	// TODO: cannot currently patch individual limits to 0
 	if p.Limits != nil {
-		patch["limits"] = p.Limits
+		limits := make(map[string]interface{})
+		if p.Limits.IPLimit != 0 {
+			limits["ip_limit"] = p.Limits.IPLimit
+		}
+		if p.Limits.DocsLimit != 0 {
+			limits["docs_limit"] = p.Limits.DocsLimit
+		}
+		if p.Limits.SearchLimit != 0 {
+			limits["search_limit"] = p.Limits.SearchLimit
+		}
+		if p.Limits.IndicesLimit != 0 {
+			limits["indices_limit"] = p.Limits.IndicesLimit
+		}
+		if p.Limits.CatLimit != 0 {
+			limits["cat_limit"] = p.Limits.CatLimit
+		}
+		if p.Limits.ClustersLimit != 0 {
+			limits["clusters_limit"] = p.Limits.ClustersLimit
+		}
+		if p.Limits.MiscLimit != 0 {
+			limits["misc_limit"] = p.Limits.MiscLimit
+		}
+		patch["limits"] = limits
 	}
 
 	return patch, nil

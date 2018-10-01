@@ -14,6 +14,7 @@ import (
 	"github.com/appbaseio-confidential/arc/arc/plugin"
 	"github.com/appbaseio-confidential/arc/internal/types/acl"
 	"github.com/appbaseio-confidential/arc/middleware/interceptor"
+	"github.com/appbaseio-confidential/arc/middleware/logger"
 	"github.com/appbaseio-confidential/arc/plugins/auth"
 )
 
@@ -72,11 +73,17 @@ func (es *ES) routes() []plugin.Route {
 	go decodeSpecFiles(files, apis)
 
 	// init the necessary middleware
-	var i = interceptor.New()
-	var a = auth.Instance()
+	var (
+		redirectRequest = interceptor.New()
+		basicAuth       = auth.New().BasicAuth
+		reqLogger       = logger.New()
+		classifier      = es.classifier
+		//ratelimit       = ratelimiter.New().RateLimit
+	)
 
-	// handler TODO: chain common middleware
-	var handlerFunc = es.classifier(a.BasicAuth(validateOp(validateACL(i.Wrap(es.handler())))))
+	// TODO: chain common middleware
+	// handler
+	var handlerFunc = reqLogger(classifier(basicAuth(validateOp(validateACL(redirectRequest.Wrap(es.handler()))))))
 
 	// accumulate the routes
 	var routes []plugin.Route

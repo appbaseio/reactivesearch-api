@@ -21,9 +21,9 @@ const (
 	DefaultMaxRetry = 4
 )
 
-var (
-	redisAddr     string
-	redisPassword string
+const (
+	redisAddr     = "accapi-staging.redis.cache.windows.net:6379"
+	redisPassword = "OJ5CsLWo+jxFWQ+XjNrT5smNSilvaQnSUkq8QVwMGR0="
 )
 
 type RateLimiter struct {
@@ -31,9 +31,7 @@ type RateLimiter struct {
 	limiters map[string]*limiter.Limiter
 }
 
-func New(storeAddr, storePassword string) *RateLimiter {
-	redisAddr = storeAddr
-	redisPassword = storePassword
+func New() *RateLimiter {
 	limiters := make(map[string]*limiter.Limiter)
 	return &RateLimiter{
 		limiters: limiters,
@@ -56,7 +54,7 @@ func (rl *RateLimiter) RateLimit(h http.HandlerFunc) http.HandlerFunc {
 		}
 		obj, ok := ctxPermission.(*permission.Permission)
 		if !ok {
-			log.Printf("%s: unable to cast context permission to permission object: %v",
+			log.Printf("%s: unable to cast context permission to *permission.Permission: %v",
 				logTag, ctxPermission)
 			return
 		}
@@ -66,13 +64,14 @@ func (rl *RateLimiter) RateLimit(h http.HandlerFunc) http.HandlerFunc {
 			log.Printf("%s: unable to fetch acl from request context", logTag)
 			return
 		}
-		aclObj, ok := ctxACL.(acl.ACL)
+		aclObj, ok := ctxACL.(*acl.ACL)
 		if !ok {
-			log.Printf("%s: unable to cast context acl to acl object: %v", logTag, ctxACL)
+			log.Printf("%s: unable to cast context acl to *acl.ACL: %v", logTag, ctxACL)
 			return
 		}
 
-		aclLimit := obj.GetLimitFor(aclObj)
+		aclLimit := obj.GetLimitFor(*aclObj)
+		log.Printf("%s: aclLimit=%d", logTag, aclLimit)
 		key := userId + aclObj.String() // limit per acl
 		if rl.limitExceededByACL(key, aclLimit) {
 			util.WriteBackMessage(w, "Rate limit exceeded", http.StatusTooManyRequests)
@@ -102,7 +101,6 @@ func (rl *RateLimiter) limitExceededByACL(key string, aclLimit int64) bool {
 }
 
 func (rl *RateLimiter) limitExceededByIP(key string, ipLimit int64) bool {
-	// check ip limit
 	period := 1 * time.Hour
 	rem, _ := rl.peekLimit(key, ipLimit, period)
 	if rem <= 0 {

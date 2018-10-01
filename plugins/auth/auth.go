@@ -3,16 +3,19 @@ package auth
 import (
 	"log"
 	"os"
+	"sync"
 
 	"github.com/appbaseio-confidential/arc/arc"
 	"github.com/appbaseio-confidential/arc/arc/plugin"
 	"github.com/appbaseio-confidential/arc/internal/errors"
+	"github.com/appbaseio-confidential/arc/internal/types/permission"
+	"github.com/appbaseio-confidential/arc/internal/types/user"
 )
 
 const (
-	pluginName           = "auth"
-	logTag               = "[auth]"
-	envEsURL             = "ES_CLUSTER_URL"
+	pluginName            = "auth"
+	logTag                = "[auth]"
+	envEsURL              = "ES_CLUSTER_URL"
 	envUsersEsIndex       = "USERS_ES_INDEX"
 	envUsersEsType        = "USERS_ES_TYPE"
 	envPermissionsEsIndex = "PERMISSIONS_ES_INDEX"
@@ -21,17 +24,24 @@ const (
 
 var a *Auth
 
+// TODO: clear cache after fixed entries: LRU?
 type Auth struct {
-	es *elasticsearch
+	mu               sync.Mutex
+	usersCache       map[string]*user.User
+	permissionsCache map[string]*permission.Permission
+	es               *elasticsearch
 }
 
 func init() {
-	arc.RegisterPlugin(Instance())
+	arc.RegisterPlugin(New())
 }
 
-func Instance() *Auth {
+func New() *Auth {
 	if a == nil {
-		a = &Auth{}
+		a = &Auth{
+			usersCache:       make(map[string]*user.User),
+			permissionsCache: make(map[string]*permission.Permission),
+		}
 	}
 	return a
 }

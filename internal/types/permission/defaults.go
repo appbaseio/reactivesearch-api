@@ -50,23 +50,15 @@ var (
 		CatLimit:         5,
 		ClustersLimit:    5,
 		MiscLimit:        5,
-		UsersLimit:       5,
-		PermissionsLimit: 5,
-		AnalyticsLimit:   5,
-		StreamsLimit:     5,
 	}
 
 	defaultAdminLimits = Limits{
-		IPLimit:          7200,
+		IPLimit:          5,
 		DocsLimit:        30,
 		SearchLimit:      30,
 		IndicesLimit:     30,
 		CatLimit:         30,
 		ClustersLimit:    30,
 		MiscLimit:        30,
-		UsersLimit:       30,
-		PermissionsLimit: 30,
-		AnalyticsLimit:   30,
-		StreamsLimit:     30,
 	}
 )

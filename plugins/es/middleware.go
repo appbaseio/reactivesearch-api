@@ -18,24 +18,27 @@ func (es *ES) classifier(h http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		path := strings.TrimSuffix(r.URL.Path, "/")
 		method := r.Method
-		c, o := es.categorize(method, path)
+		reqACL, reqOp := es.categorize(method, path)
 
 		params := r.URL.Query()
 		stream := params.Get("stream")
 		if stream == "true" {
-			c = acl.Streams
+			reqACL = acl.Streams
 		}
 
 		ctx := r.Context()
-		ctx = context.WithValue(ctx, acl.CtxKey, c)
-		ctx = context.WithValue(ctx, op.CtxKey, o)
-		h(w, r.WithContext(ctx))
+		ctx = context.WithValue(ctx, acl.CtxKey, &reqACL)
+		ctx = context.WithValue(ctx, op.CtxKey, &reqOp)
+		r = r.WithContext(ctx)
+
+		h(w, r)
 	}
 }
 
 func (es *ES) categorize(method, path string) (acl.ACL, op.Operation) {
 	for _, api := range es.specs {
 		for _, pattern := range api.regexps {
+			// TODO: additional check for keywords?
 			ok, err := regexp.MatchString(pattern, path)
 			if err != nil {
 				log.Printf("%s: malformed regexp %s: %v", logTag, pattern, err)
@@ -70,53 +73,65 @@ func getOp(methods []string, method string) op.Operation {
 	case http.MethodDelete:
 		operation = op.Delete
 	default:
-		// TODO: handle?
+		operation = op.Read // TODO: correct default or panic?
 	}
 	return operation
 }
 
 func validateACL(h http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		// TODO: add a check if set in classifier
-		esACL := r.Context().Value(acl.CtxKey).(acl.ACL)
-		p := r.Context().Value(permission.CtxKey).(*permission.Permission)
-		if p == nil {
-			// TODO: auth didn't fetch permission?
-			log.Printf("%s: cannot fetch permission object from request context", logTag)
+		ctxACL := r.Context().Value(acl.CtxKey)
+		if ctxACL == nil {
+			log.Printf("%s: cannot fetch *acl.ACL from request context\n", logTag)
 			util.WriteBackMessage(w, "Internal server error", http.StatusInternalServerError)
 			return
 		}
-		if !acl.Contains(p.ACLs, esACL) {
+		a := ctxACL.(*acl.ACL)
+
+		ctxPermission := r.Context().Value(permission.CtxKey)
+		if ctxPermission == nil {
+			log.Printf("%s: cannot fetch *permission.Permission from request context\n", logTag)
+			util.WriteBackMessage(w, "Internal server error", http.StatusInternalServerError)
+			return
+		}
+		p := ctxPermission.(*permission.Permission)
+
+		if !acl.Contains(p.ACLs, *a) {
 			msg := fmt.Sprintf("permission with username=%s does not have '%s' acl",
-				p.UserName, esACL)
+				p.UserName, *a)
 			util.WriteBackMessage(w, msg, http.StatusUnauthorized)
 			return
 		}
 
-		log.Printf("%s: validate acl: validated\n", logTag)
 		h(w, r)
 	}
 }
 
 func validateOp(h http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		// TODO: add a check if set in classifier
-		operation := r.Context().Value(op.CtxKey).(op.Operation)
-		p := r.Context().Value(permission.CtxKey).(*permission.Permission)
-		if p == nil {
-			// TODO: auth didn't fetch permission?
-			log.Printf("%s: cannot fetch permission object from request context", logTag)
+		ctxOp := r.Context().Value(op.CtxKey)
+		if ctxOp == nil {
+			log.Printf("%s: cannot fetch *op.Operation from request context", logTag)
 			util.WriteBackMessage(w, "Internal server error", http.StatusInternalServerError)
 			return
 		}
-		if !op.Contains(p.Ops, operation) {
+		operation := ctxOp.(*op.Operation)
+
+		ctxPermission := r.Context().Value(permission.CtxKey)
+		if ctxPermission == nil {
+			log.Printf("%s: cannot fetch *permission.Permission from request context", logTag)
+			util.WriteBackMessage(w, "Internal server error", http.StatusInternalServerError)
+			return
+		}
+		p := ctxPermission.(*permission.Permission)
+
+		if !op.Contains(p.Ops, *operation) {
 			msg := fmt.Sprintf("permission with username=%s does not have '%s' operation",
 				p.UserName, operation)
 			util.WriteBackMessage(w, msg, http.StatusUnauthorized)
 			return
 		}
 
-		log.Printf("%s: validate op: validated\n", logTag)
 		h(w, r)
 	}
 }

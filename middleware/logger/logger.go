@@ -29,7 +29,7 @@ func logger(h http.HandlerFunc) http.HandlerFunc {
 		msg := fmt.Sprintf("%s %s", r.Method, r.URL.Path)
 		log.Println(fmt.Sprintf("%s: started %s", logTag, msg))
 		start := time.Now()
-		defer log.Println(fmt.Sprintf("%s: finished %s, took %f", logTag, msg, time.Since(start).Seconds()))
 		h(w, r)
+		log.Println(fmt.Sprintf("%s: finished %s, took %fs", logTag, msg, time.Since(start).Seconds()))
 	}
 }
