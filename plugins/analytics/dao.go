@@ -3,11 +3,11 @@ package analytics
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 
 	"github.com/olivere/elastic"
-	"github.com/pkg/errors"
 )
 
 type elasticsearch struct {
