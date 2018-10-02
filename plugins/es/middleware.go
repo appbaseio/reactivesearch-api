@@ -44,8 +44,8 @@ func (es *ES) categorize(method, path string) (acl.ACL, op.Operation) {
 				log.Printf("%s: malformed regexp %s: %v", logTag, pattern, err)
 				continue
 			}
-			if ok && util.Contains(api.spec.Methods, method) {
-				return api.category, getOp(api.spec.Methods, method)
+			if ok && util.Contains(api.spec.Methods, method) && matchKeywords(api, path) {
+				return api.acl, getOp(api.spec.Methods, method)
 			}
 		}
 	}
@@ -53,6 +53,20 @@ func (es *ES) categorize(method, path string) (acl.ACL, op.Operation) {
 	log.Printf("%s: unable to find the category for path [%s]: %s, categorising as 'misc'",
 		logTag, method, path)
 	return acl.Misc, op.Read
+}
+
+func matchKeywords(api api, path string) bool {
+	var count int
+	tokens := strings.Split(path, "/")
+	for _, token := range tokens {
+		if strings.HasPrefix(token, "_") {
+			if _, ok := api.keywords[token]; ok {
+				return true
+			}
+			count++
+		}
+	}
+	return count == 0
 }
 
 func getOp(methods []string, method string) op.Operation {

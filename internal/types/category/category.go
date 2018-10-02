@@ -143,7 +143,7 @@ var _CategoryNameToValueMap = map[string]Category{
 
 // CategoryString retrieves an enum value from the enum constants string name.
 // Throws an error if the param is not part of the enum.
-func CategoryString(s string) (Category, error) {
+func Value(s string) (Category, error) {
 	if val, ok := _CategoryNameToValueMap[s]; ok {
 		return val, nil
 	}
@@ -151,7 +151,7 @@ func CategoryString(s string) (Category, error) {
 }
 
 // CategoryValues returns all values of the enum
-func CategoryValues() []Category {
+func Values() []Category {
 	return _CategoryValues
 }
 
@@ -178,6 +178,6 @@ func (c *Category) UnmarshalJSON(data []byte) error {
 	}
 
 	var err error
-	*c, err = CategoryString(s)
+	*c, err = Value(s)
 	return err
 }

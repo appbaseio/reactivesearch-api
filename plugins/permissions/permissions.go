@@ -27,10 +27,15 @@ func init() {
 	arc.RegisterPlugin(&Permissions{})
 }
 
+// Name returns the name of the plugin: 'permissions'.
 func (p *Permissions) Name() string {
 	return pluginName
 }
 
+// InitFunc reads the required environment variables and initializes
+// the elasticsearch as its dao. The function returns EnvVarNotSetError
+// in case the required environment variables are not set before the plugin
+// is loaded.
 func (p *Permissions) InitFunc() error {
 	log.Printf("%s: initializing plugin: %s\n", logTag, pluginName)
 
@@ -59,6 +64,7 @@ func (p *Permissions) InitFunc() error {
 	return nil
 }
 
+// Routes returns the routes that this plugin handles.
 func (p *Permissions) Routes() []plugin.Route {
 	return p.routes()
 }

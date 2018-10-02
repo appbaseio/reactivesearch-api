@@ -13,31 +13,18 @@ import (
 
 	"github.com/appbaseio-confidential/arc/arc/plugin"
 	"github.com/appbaseio-confidential/arc/internal/types/acl"
+	"github.com/appbaseio-confidential/arc/internal/util"
 	"github.com/appbaseio-confidential/arc/middleware/interceptor"
 	"github.com/appbaseio-confidential/arc/middleware/logger"
 	"github.com/appbaseio-confidential/arc/plugins/auth"
 )
 
-const (
-	varRegexp  = "[^_][^\\s/]*"
-	esSpecsDir = "plugins/es/api"
-)
-
-var categories = map[string]acl.ACL{
-	"docs":     acl.Docs,
-	"search":   acl.Search,
-	"indices":  acl.Indices,
-	"cat":      acl.Cat,
-	"tasks":    acl.Clusters,
-	"cluster":  acl.Clusters,
-	"ingest":   acl.Misc,
-	"snapshot": acl.Misc,
-	"modules":  acl.Misc,
-}
+const esSpecsDir = "plugins/es/api"
 
 type api struct {
 	name     string
-	category acl.ACL
+	acl      acl.ACL
+	keywords map[string]bool
 	spec     spec
 	regexps  []string
 }
@@ -58,6 +45,7 @@ type spec struct {
 	} `json:"body,omitempty"`
 }
 
+// TODO: major refactoring
 func (es *ES) routes() []plugin.Route {
 	// fetch es api
 	files := make(chan string)
@@ -74,7 +62,7 @@ func (es *ES) routes() []plugin.Route {
 
 	// init the necessary middleware
 	var (
-		redirectRequest = interceptor.New()
+		redirectRequest = interceptor.New().Wrap
 		basicAuth       = auth.New().BasicAuth
 		reqLogger       = logger.New()
 		classifier      = es.classifier
@@ -83,7 +71,7 @@ func (es *ES) routes() []plugin.Route {
 
 	// TODO: chain common middleware
 	// handler
-	var handlerFunc = reqLogger(classifier(basicAuth(validateOp(validateACL(redirectRequest.Wrap(es.handler()))))))
+	var handlerFunc = reqLogger(classifier(basicAuth(validateOp(validateACL(redirectRequest(es.handler()))))))
 
 	// accumulate the routes
 	var routes []plugin.Route
@@ -190,12 +178,14 @@ func decodeSpec(file string, wg *sync.WaitGroup, apis chan<- api) {
 	}
 
 	name := strings.TrimSuffix(filepath.Base(file), ".json")
-	c := getCategory(s)
+	a := getACL(s)
+	keywords := getKeywords(s.URL.Paths)
 	regexps := getRegexps(s.URL.Paths)
 	apis <- api{
 		name:     name,
 		spec:     s,
-		category: c,
+		acl:      a,
+		keywords: keywords,
 		regexps:  regexps,
 	}
 }
@@ -213,16 +203,31 @@ func replaceVars(path string) string {
 	vars := strings.Split(path, "/")
 	for i, v := range vars {
 		if strings.HasPrefix(v, "{") && strings.HasSuffix(v, "}") {
-			vars[i] = varRegexp
+			vars[i] = varRegexps[v]
 		}
 	}
 	return "^" + strings.Join(vars, "/") + "(\\?.*)?$"
 }
 
-func getCategory(s spec) acl.ACL {
+func getACL(s spec) acl.ACL {
 	docTokens := strings.Split(s.Documentation, "/")
 	tag := strings.TrimSuffix(docTokens[len(docTokens)-1], ".html")
 	tagTokens := strings.Split(tag, "-")
 	tagName := tagTokens[0]
 	return categories[tagName]
+}
+
+func getKeywords(paths []string) map[string]bool {
+	set := make(map[string]bool)
+	for _, path := range paths {
+		tokens := strings.Split(path, "/")
+		for _, token := range tokens {
+			if strings.HasPrefix(token, "_") && util.Contains(keywords, token) {
+				if _, ok := set[token]; !ok {
+					set[token] = true
+				}
+			}
+		}
+	}
+	return set
 }

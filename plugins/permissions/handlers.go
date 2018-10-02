@@ -12,40 +12,55 @@ import (
 	"github.com/gorilla/mux"
 )
 
+// getPermission fetches the permission from elasticsearch. If the request context
+// already bears *permission.Permission then we simply return the marshaled context
+// permission. However, authenticator authenticates the access for permissions endpoints
+// against user.User and thus every time this handler is executed, we fetch the
+// permission from the elasticsearch. An error on the side of elasticsearch client
+// causes the handler to return http.StatusInternalServerError.
 func (p *Permissions) getPermission() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		vars := mux.Vars(r)
 		username := vars["username"]
 		ctx := r.Context()
 
-		// TODO: Is it crucial to store permissions in request context, caching makes more sense?
-		var err error
-		obj := ctx.Value(permission.CtxKey)
-		if obj == nil {
-			obj, err = p.es.getRawPermission(username)
+		// check the request context
+		permissionCtx := ctx.Value(permission.CtxKey)
+		if permissionCtx != nil {
+			p := permissionCtx.(*permission.Permission)
+			rawPermission, err := json.Marshal(*p)
 			if err != nil {
-				msg := fmt.Sprintf("cannot fetch permissions for username=%s", username)
+				msg := "error parsing the context permissions object"
 				log.Printf("%s: %s: %v\n", logTag, msg, err)
-				util.WriteBackError(w, msg, http.StatusNotFound)
+				util.WriteBackError(w, msg, http.StatusInternalServerError)
 				return
 			}
-			util.WriteBackRaw(w, obj.([]byte), http.StatusOK)
-			return
+			util.WriteBackRaw(w, rawPermission, http.StatusOK)
 		}
 
-		raw, err := json.Marshal(obj)
+		// fetch the permission from elasticsearch
+		rawPermission, err := p.es.getRawPermission(username)
 		if err != nil {
-			msg := "error parsing the context permissions object"
+			msg := fmt.Sprintf(`permission for "username"="%s" not found`, username)
 			log.Printf("%s: %s: %v\n", logTag, msg, err)
-			util.WriteBackError(w, msg, http.StatusInternalServerError)
+			util.WriteBackError(w, msg, http.StatusNotFound)
 			return
 		}
-		util.WriteBackRaw(w, raw, http.StatusOK)
+		util.WriteBackRaw(w, rawPermission, http.StatusOK)
 	}
 }
 
+// putPermission creates a new permission.Permission and indexes it in elastic search.
+// The handler expects "user_id" in basic auth for the permission.Permission it intends
+// to create and a request body that conforms to the permission.Permission struct. Omitted
+// fields in the request body will assume default values. Invalid values passed explicitly
+// in the request body will cause the handler to return http.StatusBadRequest. A raw/json
+// permission is returned when a permission is successfully indexed in elasticsearch. An
+// error on the side of elasticsearch client will cause the handler to return
+// http.InternalServerError.
 func (p *Permissions) putPermission() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		// redundant check
 		userId, _, ok := r.BasicAuth()
 		if !ok {
 			util.WriteBackError(w, "credentials not provided", http.StatusUnauthorized)
@@ -84,8 +99,9 @@ func (p *Permissions) putPermission() http.HandlerFunc {
 		}
 		newPermission, err := permission.New(userId, opts...)
 		if err != nil {
-			log.Printf("%s: error constructing permission object: %v", logTag, err)
-			util.WriteBackError(w, "Unable to create permission", http.StatusInternalServerError)
+			msg := fmt.Sprintf("error constructing permission object: %v", err)
+			log.Printf("%s: %s", logTag, msg)
+			util.WriteBackError(w, msg, http.StatusInternalServerError)
 			return
 		}
 
@@ -108,6 +124,12 @@ func (p *Permissions) putPermission() http.HandlerFunc {
 	}
 }
 
+// patchPermission modifies explicit fields in the indexed permission.Permission. The handler
+// expects a request body that conforms to permission.Permission struct. The fields whose
+// values are explicitly provided in the request body will only be overwritten. Invalid field
+// values passed explicitly in the request body will cause the handler to return
+// http.StatusBadRequest. However, an error on the side of elasticsearch client will cause
+// the handler to return http.StatusInternalServerError.
 func (p *Permissions) patchPermission() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		vars := mux.Vars(r)
@@ -131,7 +153,6 @@ func (p *Permissions) patchPermission() http.HandlerFunc {
 		}
 
 		patch, err := obj.GetPatch()
-		log.Printf("%s: patch=%v", logTag, patch["limits"])
 		if err != nil {
 			log.Printf("%s: %v", logTag, err)
 			util.WriteBackError(w, err.Error(), http.StatusBadRequest)
@@ -150,6 +171,8 @@ func (p *Permissions) patchPermission() http.HandlerFunc {
 	}
 }
 
+// deletePermission deletes the permission.Permission from elasticsearch. An error on
+// the side of elasticsearch client will cause the handler to return http.InternalServerError.
 func (p *Permissions) deletePermission() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		vars := mux.Vars(r)
@@ -161,7 +184,7 @@ func (p *Permissions) deletePermission() http.HandlerFunc {
 			return
 		}
 
-		msg := fmt.Sprintf("error deleting permission for username=%s", username)
+		msg := fmt.Sprintf(`error deleting permission for "username"="%s"`, username)
 		log.Printf("%s: %s: %v", logTag, msg, err)
 		util.WriteBackError(w, msg, http.StatusInternalServerError)
 	}

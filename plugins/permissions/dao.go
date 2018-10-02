@@ -18,6 +18,8 @@ type elasticsearch struct {
 	client    *elastic.Client
 }
 
+// NewES initializes the elasticsearch client for the 'permissions' plugin. The function
+// is expected to be executed only once, ideally during the initialization of the plugin.
 func NewES(url, indexName, typeName, mapping string) (*elasticsearch, error) {
 	opts := []elastic.ClientOptionFunc{
 		elastic.SetURL(url),
@@ -63,8 +65,8 @@ func (es *elasticsearch) getRawPermission(username string) ([]byte, error) {
 		return nil, err
 	}
 
-	raw, _ := json.Marshal(resp)
-	log.Printf("%s: es_response: %v", logTag, string(raw))
+	//raw, _ := json.Marshal(resp)
+	//log.Printf("%s: es_response: %v", logTag, string(raw))
 
 	src, err := resp.Source.MarshalJSON()
 	if err != nil {
@@ -75,7 +77,7 @@ func (es *elasticsearch) getRawPermission(username string) ([]byte, error) {
 }
 
 func (es *elasticsearch) putPermission(p permission.Permission) (bool, error) {
-	resp, err := es.client.Index().
+	_, err := es.client.Index().
 		Index(es.indexName).
 		Type(es.typeName).
 		Id(p.UserName).
@@ -85,8 +87,8 @@ func (es *elasticsearch) putPermission(p permission.Permission) (bool, error) {
 		return false, err
 	}
 
-	raw, _ := json.Marshal(resp)
-	log.Printf("%s: es_response: %s\n", logTag, string(raw))
+	//raw, _ := json.Marshal(resp)
+	//log.Printf("%s: es_response: %s\n", logTag, string(raw))
 
 	return true, nil
 }
@@ -109,7 +111,7 @@ func (es *elasticsearch) patchPermission(username string, patch map[string]inter
 }
 
 func (es *elasticsearch) deletePermission(userId string) (bool, error) {
-	resp, err := es.client.Delete().
+	_, err := es.client.Delete().
 		Index(es.indexName).
 		Type(es.typeName).
 		Id(userId).
@@ -118,8 +120,8 @@ func (es *elasticsearch) deletePermission(userId string) (bool, error) {
 		return false, err
 	}
 
-	raw, _ := json.Marshal(resp)
-	log.Printf("%s: es_response: %s\n", logTag, string(raw))
+	//raw, _ := json.Marshal(resp)
+	//log.Printf("%s: es_response: %s\n", logTag, string(raw))
 
 	return true, nil
 }

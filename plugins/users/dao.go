@@ -2,7 +2,6 @@ package users
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"log"
 
@@ -18,6 +17,8 @@ type elasticsearch struct {
 	client    *elastic.Client
 }
 
+// NewES initializes the elasticsearch client for the 'users' plugin. The function
+// is expected to be executed only once, ideally during the initialization of the plugin.
 func NewES(url, indexName, typeName, mapping string) (*elasticsearch, error) {
 	opts := []elastic.ClientOptionFunc{
 		elastic.SetURL(url),
@@ -74,7 +75,7 @@ func (es *elasticsearch) getRawUser(userId string) ([]byte, error) {
 }
 
 func (es *elasticsearch) putUser(u user.User) (bool, error) {
-	resp, err := es.client.Index().
+	_, err := es.client.Index().
 		Index(es.indexName).
 		Type(es.typeName).
 		Id(u.UserId).
@@ -84,14 +85,14 @@ func (es *elasticsearch) putUser(u user.User) (bool, error) {
 		return false, err
 	}
 
-	raw, _ := json.Marshal(resp)
-	log.Printf("%s: es_response: %s\n", logTag, string(raw))
+	//raw, _ := json.Marshal(resp)
+	//log.Printf("%s: es_response: %s\n", logTag, string(raw))
 
 	return true, nil
 }
 
 func (es *elasticsearch) patchUser(userId string, patch map[string]interface{}) (bool, error) {
-	resp, err := es.client.Update().
+	_, err := es.client.Update().
 		Index(es.indexName).
 		Type(es.typeName).
 		Id(userId).
@@ -101,14 +102,14 @@ func (es *elasticsearch) patchUser(userId string, patch map[string]interface{}) 
 		return false, err
 	}
 
-	raw, _ := json.Marshal(resp)
-	log.Printf("%s: es_response: %s\n", logTag, string(raw))
+	//raw, _ := json.Marshal(resp)
+	//log.Printf("%s: es_response: %s\n", logTag, string(raw))
 
 	return true, nil
 }
 
 func (es *elasticsearch) deleteUser(userId string) (bool, error) {
-	resp, err := es.client.Delete().
+	_, err := es.client.Delete().
 		Index(es.indexName).
 		Type(es.typeName).
 		Id(userId).
@@ -117,8 +118,8 @@ func (es *elasticsearch) deleteUser(userId string) (bool, error) {
 		return false, err
 	}
 
-	raw, _ := json.Marshal(resp)
-	log.Printf("%s: es_response: %s\n", logTag, string(raw))
+	//raw, _ := json.Marshal(resp)
+	//log.Printf("%s: es_response: %s\n", logTag, string(raw))
 
 	return true, nil
 }

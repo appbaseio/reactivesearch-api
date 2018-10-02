@@ -11,14 +11,13 @@ import (
 )
 
 const (
-	pluginName     = "users"
-	logTag         = "[users]"
-	envEsURL       = "ES_CLUSTER_URL"
+	pluginName      = "users"
+	logTag          = "[users]"
+	envEsURL        = "ES_CLUSTER_URL"
 	envUsersEsIndex = "USERS_ES_INDEX"
 	envUsersEsType  = "USERS_ES_TYPE"
 )
 
-// TODO: Justify the API
 type Users struct {
 	es *elasticsearch
 }
@@ -27,10 +26,15 @@ func init() {
 	arc.RegisterPlugin(&Users{})
 }
 
+// Name returns the name of the plugin: 'users'.
 func (u *Users) Name() string {
 	return pluginName
 }
 
+// InitFunc reads the required environment variables and initializes
+// the elasticsearch as its dao. The function returns EnvVarNotSetError
+// in case the required environment variables are not set before the plugin
+// is loaded.
 func (u *Users) InitFunc() error {
 	log.Printf("%s: initializing plugin: %s", logTag, pluginName)
 
@@ -59,6 +63,7 @@ func (u *Users) InitFunc() error {
 	return nil
 }
 
+// Routes returns the routes that this plugin handles.
 func (u *Users) Routes() []plugin.Route {
 	return u.routes()
 }

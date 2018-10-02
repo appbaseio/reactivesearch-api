@@ -19,8 +19,8 @@ type Interceptor struct {
 	order.Single
 }
 
-func New() Interceptor {
-	return Interceptor{}
+func New() *Interceptor {
+	return &Interceptor{}
 }
 
 // TODO: Create a new request?
