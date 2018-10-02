@@ -13,7 +13,6 @@ type elasticsearch struct {
 	url       string
 	indexName string
 	typeName  string
-	mapping   string
 	client    *elastic.Client
 }
 
@@ -31,7 +30,7 @@ func NewES(url, indexName, typeName, mapping string) (*elasticsearch, error) {
 	if err != nil {
 		return nil, fmt.Errorf("%s: error while initializing elastic client: %v\n", logTag, err)
 	}
-	es := &elasticsearch{url, indexName, typeName, mapping, client}
+	es := &elasticsearch{url, indexName, typeName, client}
 
 	// Check if the meta index already exists
 	exists, err := client.IndexExists(indexName).Do(ctx)

@@ -22,3 +22,7 @@ List of specific env vars required by respective plugins are listed below:
 - `USERS_ES_TYPE`
 - `PERMISSIONS_ES_INDEX`  
 - `PERMISSIONS_ES_TYPE`
+
+##### 4. Analytics
+- `ANALYTICS_ES_INDEX`
+- `ANALYTICS_ES_TYPE`
