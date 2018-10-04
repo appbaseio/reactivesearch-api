@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 
 	"github.com/appbaseio-confidential/arc/internal/types/acl"
 	"github.com/appbaseio-confidential/arc/internal/types/permission"
@@ -20,8 +21,8 @@ func (a *Auth) BasicAuth(h http.HandlerFunc) http.HandlerFunc {
 			return
 		}
 
-		//masterUserId := os.Getenv("USER_ID")
-		//masterPassword := os.Getenv("PASSWORD")
+		masterUserId := os.Getenv("USER_ID")
+		masterPassword := os.Getenv("PASSWORD")
 
 		ctxACL := r.Context().Value(acl.CtxKey)
 		if ctxACL == nil {
@@ -41,23 +42,23 @@ func (a *Auth) BasicAuth(h http.HandlerFunc) http.HandlerFunc {
 			var err error
 			var p *permission.Permission
 
-			//// TODO: temporary entry point?
-			//if userId == masterUserId && password == masterPassword {
-			//	p, err = a.createAdminPermission(userId)
-			//	if err != nil {
-			//		msg := fmt.Sprintf(`unable to create admin permission for "creator"="%s"`,
-			//			userId)
-			//		log.Printf("%s: %s: %v", logTag, msg, err)
-			//		util.WriteBackError(w, msg, http.StatusInternalServerError)
-			//		return
-			//	}
-			//	ctx := r.Context()
-			//	ctx = context.WithValue(ctx, permission.CtxKey, p)
-			//	r = r.WithContext(ctx)
-			//	log.Printf("[auth]: took %fs", time.Since(start).Seconds())
-			//	h(w, r)
-			//	return
-			//}
+			// TODO: temporary entry point?
+			if userId == masterUserId && password == masterPassword {
+				p, err = a.createAdminPermission(userId)
+				if err != nil {
+					msg := fmt.Sprintf(`unable to create admin permission for "creator"="%s"`,
+						userId)
+					log.Printf("%s: %s: %v", logTag, msg, err)
+					util.WriteBackError(w, msg, http.StatusInternalServerError)
+					return
+				}
+				ctx := r.Context()
+				ctx = context.WithValue(ctx, permission.CtxKey, p)
+				r = r.WithContext(ctx)
+				//log.Printf("[auth]: took %fs", time.Since(start).Seconds())
+				h(w, r)
+				return
+			}
 
 			// check in the cache
 			p, ok := a.cachedPermission(userId)
@@ -85,22 +86,22 @@ func (a *Auth) BasicAuth(h http.HandlerFunc) http.HandlerFunc {
 			var err error
 			var u *user.User
 
-			//// TODO: temporary entry point?
-			//if userId == masterUserId && password == masterPassword {
-			//	u, err = a.createAdminUser(userId, password)
-			//	if err != nil {
-			//		msg := fmt.Sprintf(`unable to create admin user for "user_id"="%s"`, userId)
-			//		log.Printf("%s: %s: %v", logTag, msg, err)
-			//		util.WriteBackError(w, msg, http.StatusInternalServerError)
-			//		return
-			//	}
-			//	ctx := r.Context()
-			//	ctx = context.WithValue(ctx, user.CtxKey, u)
-			//	r = r.WithContext(ctx)
-			//	log.Printf("[auth]: took %fs", time.Since(start).Seconds())
-			//	h(w, r)
-			//	return
-			//}
+			// TODO: temporary entry point?
+			if userId == masterUserId && password == masterPassword {
+				u, err = a.createAdminUser(userId, password)
+				if err != nil {
+					msg := fmt.Sprintf(`unable to create admin user for "user_id"="%s"`, userId)
+					log.Printf("%s: %s: %v", logTag, msg, err)
+					util.WriteBackError(w, msg, http.StatusInternalServerError)
+					return
+				}
+				ctx := r.Context()
+				ctx = context.WithValue(ctx, user.CtxKey, u)
+				r = r.WithContext(ctx)
+				//log.Printf("[auth]: took %fs", time.Since(start).Seconds())
+				h(w, r)
+				return
+			}
 
 			// check in the cache
 			u, ok := a.cachedUser(userId)

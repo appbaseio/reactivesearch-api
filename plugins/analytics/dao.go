@@ -2,10 +2,9 @@ package analytics
 
 import (
 	"context"
-	"encoding/json"
-	"errors"
 	"fmt"
 	"log"
+	"time"
 
 	"github.com/olivere/elastic"
 )
@@ -55,43 +54,46 @@ func NewES(url, indexName, typeName, mapping string) (*elasticsearch, error) {
 	return es, nil
 }
 
-func (es *elasticsearch) getRawLatency(from, to string, size int) ([]byte, error) {
-	duration := elastic.NewRangeQuery("datestamp").From(from).To(to)
-	cluster := elastic.NewTermQuery("index_name.keyword", "*")
-	query := elastic.NewBoolQuery().Must(elastic.NewMatchAllQuery()).Filter(duration, cluster)
-	aggr := elastic.NewHistogramAggregation().Field("took").Interval(10)
-	// TODO: should we expect interval as query param?
-
-	response, err := es.client.
-		Search(es.indexName).
-		Query(query).
-		Aggregation("latency", aggr).
-		Size(size).
+func (es *elasticsearch) indexRecord(docId string, record map[string]interface{}) {
+	_, err := es.client.
+		Index().
+		Index(es.indexName).
+		Type(es.typeName).
+		BodyJson(record).
+		Id(docId).
 		Do(context.Background())
 	if err != nil {
-		return nil, fmt.Errorf("error fetching latency: %v", err)
+		log.Printf("%s: error indexing analytics record for id=%s: %v", logTag, docId, err)
+		return
 	}
+}
 
-	result, ok := response.Aggregations.Histogram("latency")
-	if !ok {
-		return nil, errors.New("unable to fetch latency results from response")
+func (es *elasticsearch) updateRecord(docId string, record map[string]interface{}) {
+	_, err := es.client.
+		Update().
+		Index(es.indexName).
+		Type(es.typeName).
+		Index(docId).
+		Doc(record).
+		Do(context.Background())
+	if err != nil {
+		log.Printf("%s: error updating analytics record for id=%s: %v", logTag, docId, err)
+		return
 	}
+}
 
-	var latency []map[string]interface{}
-	for _, bucket := range result.Buckets {
-		newBucket := map[string]interface{}{
-			"key":   bucket.Key,
-			"count": bucket.DocCount,
+func (es *elasticsearch) deleteOldRecords() {
+	body := `{ "query": { "range": { "datestamp": { "lt": "now-30d" } } } }`
+	ticker := time.NewTicker(24 * time.Hour)
+	for range ticker.C {
+		_, err := es.client.
+			DeleteByQuery().
+			Index(es.indexName).
+			Type(es.typeName).
+			Body(body).
+			Do(context.Background())
+		if err != nil {
+			log.Printf("%s: error deleting old analytics records: %v", logTag, err)
 		}
-		latency = append(latency, newBucket)
 	}
-
-	results := make(map[string]interface{})
-	if latency == nil {
-		results["latency"] = []interface{}{}
-	} else {
-		results["latency"] = latency
-	}
-
-	return json.Marshal(results)
 }

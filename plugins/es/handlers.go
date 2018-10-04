@@ -13,15 +13,14 @@ import (
 func (es *ES) handler() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
-		c := ctx.Value(acl.CtxKey)
-		if c != nil {
-			log.Printf("%s: acl=%s\n", logTag, c)
-		}
-		o := ctx.Value(op.CtxKey)
-		if o != nil {
-			log.Printf("%s: operation=%s\n", logTag, o)
-		}
 
+		ctxACL := ctx.Value(acl.CtxKey)
+		log.Printf("%s: acl=%s\n", logTag, ctxACL)
+
+		ctxOp := ctx.Value(op.CtxKey)
+		log.Printf("%s: operation=%s\n", logTag, ctxOp)
+
+		// Forward the request to elasticsearch
 		client := httpClient()
 		response, err := client.Do(r)
 		if err != nil {

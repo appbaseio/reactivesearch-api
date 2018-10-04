@@ -31,8 +31,8 @@ func classifier(h http.HandlerFunc) http.HandlerFunc {
 			operation = op.Write
 		case http.MethodPut:
 			operation = op.Write
-		case http.MethodHead:
-			operation = op.Read
+		case http.MethodPatch:
+			operation = op.Write
 		case http.MethodDelete:
 			operation = op.Delete
 		default:

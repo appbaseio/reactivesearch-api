@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/appbaseio-confidential/arc/internal/types/acl"
+	"github.com/appbaseio-confidential/arc/internal/types/index"
 	"github.com/appbaseio-confidential/arc/internal/types/op"
 	"github.com/appbaseio-confidential/arc/internal/types/permission"
 	"github.com/appbaseio-confidential/arc/internal/util"
@@ -18,7 +19,7 @@ func (es *ES) classifier(h http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		path := strings.TrimSuffix(r.URL.Path, "/")
 		method := r.Method
-		reqACL, reqOp := es.categorize(method, path)
+		reqACL, reqOp, indices := es.categorize(method, path)
 
 		params := r.URL.Query()
 		stream := params.Get("stream")
@@ -29,15 +30,16 @@ func (es *ES) classifier(h http.HandlerFunc) http.HandlerFunc {
 		ctx := r.Context()
 		ctx = context.WithValue(ctx, acl.CtxKey, &reqACL)
 		ctx = context.WithValue(ctx, op.CtxKey, &reqOp)
+		ctx = context.WithValue(ctx, index.CtxKey, indices)
 		r = r.WithContext(ctx)
 
 		h(w, r)
 	}
 }
 
-func (es *ES) categorize(method, path string) (acl.ACL, op.Operation) {
+func (es *ES) categorize(method, path string) (acl.ACL, op.Operation, []string) {
 	for _, api := range es.specs {
-		for _, pattern := range api.regexps {
+		for endpoint, pattern := range api.pathRegexps {
 			// TODO: additional check for keywords?
 			ok, err := regexp.MatchString(pattern, path)
 			if err != nil {
@@ -45,14 +47,42 @@ func (es *ES) categorize(method, path string) (acl.ACL, op.Operation) {
 				continue
 			}
 			if ok && util.Contains(api.spec.Methods, method) && matchKeywords(api, path) {
-				return api.acl, getOp(api.spec.Methods, method)
+				return api.acl, getOp(api.spec.Methods, method), getIndexName(endpoint, path)
 			}
 		}
 	}
 	// TODO: should we classify it as misc and then return the result.
 	log.Printf("%s: unable to find the category for path [%s]: %s, categorising as 'misc'",
 		logTag, method, path)
-	return acl.Misc, op.Read
+	return acl.Misc, op.Read, []string{}
+}
+
+func getIndexName(endpoint, requestPath string) []string {
+	const indexVar = "{index}"
+	if !strings.Contains(endpoint, indexVar) {
+		return []string{}
+	}
+
+	endpointTokens := strings.Split(endpoint, "/")
+	requestPathTokens := strings.Split(requestPath, "/")
+	if len(endpointTokens) != len(requestPathTokens) {
+		log.Printf("%s: invalid clissifier match for path=%s and pattern=%s",
+			logTag, requestPath, endpoint)
+		return []string{}
+	}
+
+	for i := 0; i < len(requestPath); i++ {
+		if endpointTokens[i] == indexVar {
+			names := strings.Split(requestPathTokens[i], ",")
+			var indices []string
+			for _, name := range names {
+				indices = append(indices, strings.TrimSpace(name))
+			}
+			return indices
+		}
+	}
+
+	return []string{}
 }
 
 func matchKeywords(api api, path string) bool {
@@ -144,6 +174,58 @@ func validateOp(h http.HandlerFunc) http.HandlerFunc {
 				p.UserName, operation)
 			util.WriteBackMessage(w, msg, http.StatusUnauthorized)
 			return
+		}
+
+		h(w, r)
+	}
+}
+
+func validateIndices(h http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		ctx := r.Context()
+
+		ctxPermission := ctx.Value(permission.CtxKey)
+		if ctxPermission == nil {
+			log.Printf("%s: unable to fetch permission from request context", logTag)
+			util.WriteBackMessage(w, "Internal server error", http.StatusInternalServerError)
+			return
+		}
+		p := ctxPermission.(*permission.Permission)
+
+		ctxIndices := ctx.Value(index.CtxKey)
+		if ctxIndices == nil {
+			log.Printf("%s: unable to fetch indices from request context", logTag)
+			util.WriteBackMessage(w, "Internal server error", http.StatusInternalServerError)
+			return
+		}
+		indices := ctxIndices.([]string)
+
+		if len(indices) == 0 {
+			// cluster level route
+			if !util.Contains(p.Indices, "*") {
+				util.WriteBackMessage(w, "User is unauthorized to access cluster level routes",
+					http.StatusUnauthorized)
+				return
+			}
+		} else {
+			// index level route
+			for _, indexName := range indices {
+				for _, pattern := range p.Indices {
+					ok, err := regexp.MatchString(pattern, indexName)
+					if err != nil {
+						msg := fmt.Sprintf("invalid index pattern encountered %s", pattern)
+						log.Printf("%s: invalid index pattern encountered %s: %v",
+							logTag, pattern, err)
+						util.WriteBackMessage(w, msg, http.StatusUnauthorized)
+						return
+					}
+					if !ok {
+						msg := fmt.Sprintf("User is unauthorized to access index %s", indexName)
+						util.WriteBackMessage(w, msg, http.StatusUnauthorized)
+						return
+					}
+				}
+			}
 		}
 
 		h(w, r)

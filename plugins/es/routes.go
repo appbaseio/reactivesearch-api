@@ -22,11 +22,12 @@ import (
 const esSpecsDir = "plugins/es/api"
 
 type api struct {
-	name     string
-	acl      acl.ACL
-	keywords map[string]bool
-	spec     spec
-	regexps  []string
+	name        string
+	acl         acl.ACL
+	keywords    map[string]bool
+	spec        spec
+	regexps     []string
+	pathRegexps map[string]string
 }
 
 type spec struct {
@@ -69,6 +70,7 @@ func (es *ES) routes() []plugin.Route {
 		//ratelimit       = ratelimiter.New().RateLimit
 	)
 
+	// TODO: validate permission for index being accessed
 	// TODO: chain common middleware
 	// handler
 	var handlerFunc = reqLogger(classifier(basicAuth(validateOp(validateACL(redirectRequest(es.handler()))))))
@@ -181,13 +183,24 @@ func decodeSpec(file string, wg *sync.WaitGroup, apis chan<- api) {
 	a := getACL(s)
 	keywords := getKeywords(s.URL.Paths)
 	regexps := getRegexps(s.URL.Paths)
+	paths := getPaths(s.URL.Paths)
 	apis <- api{
-		name:     name,
-		spec:     s,
-		acl:      a,
-		keywords: keywords,
-		regexps:  regexps,
+		name:        name,
+		spec:        s,
+		acl:         a,
+		keywords:    keywords,
+		regexps:     regexps,
+		pathRegexps: paths,
 	}
+}
+
+func getPaths(paths []string) map[string]string {
+	pathRegexps := make(map[string]string)
+	for _, path := range paths {
+		regexp := replaceVars(path)
+		pathRegexps[path] = regexp
+	}
+	return pathRegexps
 }
 
 func getRegexps(paths []string) []string {
