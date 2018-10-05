@@ -97,6 +97,9 @@ func (p *Permissions) putPermission() http.HandlerFunc {
 		if obj.Limits != nil {
 			opts = append(opts, permission.SetLimits(obj.Limits))
 		}
+		if obj.Indices != nil {
+			opts = append(opts, permission.SetIndices(obj.Indices))
+		}
 		newPermission, err := permission.New(userId, opts...)
 		if err != nil {
 			msg := fmt.Sprintf("error constructing permission object: %v", err)

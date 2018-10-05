@@ -67,6 +67,11 @@ func SetIndices(indices []string) Options {
 		if indices == nil {
 			return errors.NilIndicesError
 		}
+		for _, pattern := range indices {
+			if _, err := regexp.Compile(pattern); err != nil {
+				return err
+			}
+		}
 		u.Indices = indices
 		return nil
 	}
