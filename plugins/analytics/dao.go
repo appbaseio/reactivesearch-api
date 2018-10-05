@@ -2,8 +2,11 @@ package analytics
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"log"
+	"sort"
+	"strconv"
 	"time"
 
 	"github.com/olivere/elastic"
@@ -96,4 +99,613 @@ func (es *elasticsearch) deleteOldRecords() {
 			log.Printf("%s: error deleting old analytics records: %v", logTag, err)
 		}
 	}
+}
+
+// TODO: async??
+func (es *elasticsearch) analyticsOverview(from, to string, size int, clickAnalytics bool) ([]byte, error) {
+	overview := make(map[string]interface{})
+
+	popularSearches, err := es.popularSearches(from, to, size, clickAnalytics)
+	if err != nil {
+		log.Printf("%s: %v", logTag, err)
+		overview["popular_searches"] = []interface{}{}
+	} else {
+		overview["popular_searches"] = string(popularSearches)
+	}
+
+	noResultsSearches, err := es.noResultsSearches(from, to, size)
+	if err != nil {
+		log.Printf("%s: %v", logTag, err)
+		overview["no_results_searches"] = []interface{}{}
+	} else {
+		overview["no_results_searches"] = string(noResultsSearches)
+	}
+
+	searchHistogram, err := es.searchHistogram(from, to, size)
+	if err != nil {
+		log.Printf("%s: %v", err, err)
+		overview["search_histogram"] = []interface{}{}
+	} else {
+		overview["search_histogram"] = string(searchHistogram)
+	}
+
+	return json.Marshal(overview)
+}
+
+// TODO: async??
+func (es *elasticsearch) advancedAnalytics(from, to string, size int, clickAnalytics bool) ([]byte, error) {
+	advancedAnalytics := make(map[string]interface{})
+
+	popularSearches, err := es.popularSearches(from, to, size, clickAnalytics)
+	if err != nil {
+		log.Printf("%s: %v", logTag, err)
+		advancedAnalytics["popular_searches"] = []interface{}{}
+	} else {
+		advancedAnalytics["popular_searches"] = string(popularSearches)
+	}
+
+	popularResults, err := es.popularResults(from, to, size, clickAnalytics)
+	if err != nil {
+		log.Printf("%s: %v", logTag, err)
+		advancedAnalytics["popular_results"] = []interface{}{}
+	} else {
+		advancedAnalytics["popular_results"] = string(popularResults)
+	}
+
+	popularFilters, err := es.popularFilters(from, to, size, clickAnalytics)
+	if err != nil {
+		log.Printf("%s: %v", logTag, err)
+		advancedAnalytics["popular_filters"] = []interface{}{}
+	} else {
+		advancedAnalytics["popular_filters"] = string(popularFilters)
+	}
+
+	noResultsSearches, err := es.noResultsSearches(from, to, size)
+	if err != nil {
+		log.Printf("%s: %v", logTag, err)
+		advancedAnalytics["no_results_searches"] = []interface{}{}
+	} else {
+		advancedAnalytics["no_results_searches"] = string(noResultsSearches)
+	}
+
+	searchHistogram, err := es.searchHistogram(from, to, size)
+	if err != nil {
+		log.Printf("%s: %v", logTag, err)
+		advancedAnalytics["search_volume"] = []interface{}{}
+	} else {
+		advancedAnalytics["search_volume"] = string(searchHistogram)
+	}
+
+	return json.Marshal(advancedAnalytics)
+}
+
+func (es *elasticsearch) popularSearches(from, to string, size int, clickAnalytics bool) ([]byte, error) {
+	duration := elastic.NewRangeQuery("datestamp").
+		From(from).
+		To(to)
+
+	query := elastic.NewBoolQuery().
+		Must(elastic.NewMatchAllQuery()).
+		Filter(duration)
+
+	aggr := elastic.NewTermsAggregation().
+		Field("search_query").
+		OrderByCountDesc()
+
+	if clickAnalytics {
+		aggr = clickAnalyticsOnTerms(aggr)
+	}
+
+	result, err := es.client.Search(es.indexName).
+		Query(query).
+		Aggregation("popular_searches_aggr", aggr).
+		Size(size).
+		Do(context.Background())
+	if err != nil {
+		return nil, fmt.Errorf("unable to fetch popular searches response from es: %v", err)
+	}
+
+	aggrResult, found := result.Aggregations.Terms("popular_searches_aggr")
+	if !found {
+		return nil, fmt.Errorf("unable to fetch aggregation result from 'popular_searches_aggr'")
+	}
+
+	var buckets []map[string]interface{}
+	for _, bucket := range aggrResult.Buckets {
+		newBucket := make(map[string]interface{})
+		newBucket["key"] = bucket.Key
+		newBucket["count"] = bucket.DocCount
+
+		if clickAnalytics {
+			newBucket = addClickAnalytics(aggrResult, bucket.DocCount, newBucket)
+		}
+
+		buckets = append(buckets, newBucket)
+	}
+
+	popularSearches := make(map[string]interface{})
+	if buckets == nil {
+		popularSearches["popular_searches"] = []interface{}{}
+	} else {
+		popularSearches["popular_searches"] = buckets
+	}
+
+	return json.Marshal(popularSearches)
+}
+
+func (es *elasticsearch) popularResults(from, to string, size int, clickAnalytics bool) ([]byte, error) {
+	duration := elastic.NewRangeQuery("datestamp").
+		From(from).
+		To(to)
+
+	query := elastic.NewBoolQuery().
+		Must(elastic.NewMatchAllQuery()).
+		Filter(duration)
+
+	fetchSourceCtx := elastic.NewFetchSourceContext(true).Include("hits_in_response.source")
+	sourceAggr := elastic.NewTopHitsAggregation().
+		Size(1).
+		FetchSourceContext(fetchSourceCtx)
+	aggr := elastic.NewTermsAggregation().
+		Field("hits_in_response.id").
+		OrderByCountDesc().
+		SubAggregation("source_aggr", sourceAggr)
+
+	if clickAnalytics {
+		aggr = clickAnalyticsOnTerms(aggr)
+	}
+
+	result, err := es.client.Search(es.indexName).
+		Query(query).
+		Aggregation("popular_results_aggr", aggr).
+		Size(size).
+		Do(context.Background())
+	if err != nil {
+		return nil, fmt.Errorf("unable to fetch popular searches response from es: %v", err)
+	}
+
+	aggrResult, found := result.Aggregations.Terms("popular_results_aggr")
+	if !found {
+		return nil, fmt.Errorf("unable to fetch aggregation result from 'popular_results_aggr'")
+	}
+
+	var buckets []map[string]interface{}
+	for _, bucket := range aggrResult.Buckets {
+		newBucket := make(map[string]interface{})
+		newBucket["key"] = bucket.Key
+		newBucket["count"] = bucket.DocCount
+		if clickAnalytics {
+			newBucket = addClickAnalytics(aggrResult, bucket.DocCount, newBucket)
+		}
+		// TODO: source aggr?
+		buckets = append(buckets, newBucket)
+	}
+
+	popularResults := make(map[string]interface{})
+	if buckets == nil {
+		popularResults["popular_results"] = []interface{}{}
+	} else {
+		popularResults["popular_results"] = buckets
+	}
+
+	return json.Marshal(popularResults)
+}
+
+func (es *elasticsearch) popularFilters(from, to string, size int, clickAnalytics bool) ([]byte, error) {
+	duration := elastic.NewRangeQuery("datestamp").
+		From(from).
+		To(to)
+
+	query := elastic.NewBoolQuery().
+		Must(elastic.NewMatchAllQuery()).
+		Filter(duration)
+
+	valueAggr := elastic.NewTermsAggregation().
+		Field("search_filters.value.keyword").
+		OrderByCountDesc()
+	aggr := elastic.NewTermsAggregation().
+		Field("search_filters.key.keyword").OrderByCountDesc().
+		SubAggregation("values_aggr", valueAggr).OrderByCountDesc()
+
+	if clickAnalytics {
+		aggr = clickAnalyticsOnTerms(aggr)
+	}
+
+	result, err := es.client.Search(es.indexName).
+		Query(query).
+		Aggregation("popular_filters_aggr", aggr).
+		Size(size).
+		Do(context.Background())
+	if err != nil {
+		return nil, fmt.Errorf("unable to fetch popular filters from es: %v", err)
+	}
+
+	aggrResult, found := result.Aggregations.Terms("popular_filters_aggr")
+	if !found {
+		return nil, fmt.Errorf("unable to find aggregation result in 'popular_filters_aggr'")
+	}
+	valuesAggrResult, found := aggrResult.Aggregations.Terms("values_aggr")
+	if !found {
+		return nil, fmt.Errorf("unable to find 'values_aggr' in 'popular_filters_aggr'")
+	}
+
+	var buckets []map[string]interface{}
+	for _, bucket := range aggrResult.Buckets {
+		for _, valueBucket := range valuesAggrResult.Buckets {
+			newBucket := make(map[string]interface{})
+			newBucket["key"] = bucket.Key
+			newBucket["value"] = valueBucket.Key
+			newBucket["count"] = valueBucket.DocCount
+			if clickAnalytics {
+				newBucket = addClickAnalytics(aggrResult, valueBucket.DocCount, newBucket)
+			}
+			buckets = append(buckets, newBucket)
+		}
+	}
+
+	sort.SliceStable(buckets, func(i, j int) bool {
+		return buckets[i]["count"].(int64) > buckets[j]["count"].(int64)
+	})
+
+	popularFilters := make(map[string]interface{})
+	if buckets == nil {
+		popularFilters["popular_filters"] = []interface{}{}
+	} else {
+		popularFilters["popular_filters"] = buckets
+	}
+
+	return json.Marshal(popularFilters)
+}
+
+func (es *elasticsearch) noResultsSearches(from, to string, size int) ([]byte, error) {
+	duration := elastic.NewRangeQuery("datestamp").
+		From(from).
+		To(to)
+
+	zeroHits := elastic.NewTermQuery("total_hits", 0)
+
+	query := elastic.NewBoolQuery().
+		Must(elastic.NewMatchAllQuery()).
+		Filter(duration, zeroHits)
+
+	aggr := elastic.NewTermsAggregation().
+		Field("search_query").
+		OrderByCountDesc()
+
+	result, err := es.client.Search(es.indexName).
+		Query(query).
+		Aggregation("no_results_searches_aggr", aggr).
+		Size(size).
+		Do(context.Background())
+	if err != nil {
+		return nil, fmt.Errorf("unable to fetch no results searches from es: %v", err)
+	}
+
+	aggrResult, found := result.Aggregations.Terms("no_results_searches_aggr")
+	if !found {
+		return nil, fmt.Errorf("unable to find aggregation result in 'no_results_searches_aggr'")
+	}
+
+	var buckets []map[string]interface{}
+	for _, bucket := range aggrResult.Buckets {
+		newBucket := make(map[string]interface{})
+		newBucket["key"] = bucket.Key
+		newBucket["count"] = bucket.DocCount
+		buckets = append(buckets, newBucket)
+	}
+
+	noResultsSearches := make(map[string]interface{})
+	if buckets == nil {
+		noResultsSearches["no_results_searches"] = []interface{}{}
+	} else {
+		noResultsSearches["no_results_searches"] = buckets
+	}
+
+	return json.Marshal(noResultsSearches)
+}
+
+func (es *elasticsearch) geoRequestsDistribution(from, to string, size int) ([]byte, error) {
+	duration := elastic.NewRangeQuery("datestamp").
+		From(from).
+		To(to)
+
+	query := elastic.NewBoolQuery().
+		Must(elastic.NewMatchAllQuery()).
+		Filter(duration)
+
+	aggr := elastic.NewTermsAggregation().
+		Field("country").
+		OrderByCountDesc()
+
+	result, err := es.client.Search(es.indexName).
+		Query(query).
+		Aggregation("geo_dist_aggr", aggr).
+		Size(size).
+		Do(context.Background())
+	if err != nil {
+		return nil, fmt.Errorf("unable to fetch request distributions from es: %v", err)
+	}
+
+	aggrResult, found := result.Aggregations.Terms("geo_dist_aggr")
+	if !found {
+		return nil, fmt.Errorf("unable to find aggregation result in 'req_dist_aggr'")
+	}
+
+	var buckets []map[string]interface{}
+	for _, bucket := range aggrResult.Buckets {
+		if bucket.Key.(string) != "" { // TODO: check?
+			newBucket := make(map[string]interface{})
+			newBucket["key"] = bucket.Key
+			newBucket["count"] = bucket.DocCount
+			buckets = append(buckets, newBucket)
+		}
+	}
+
+	geoDist := make(map[string]interface{})
+	if buckets == nil {
+		geoDist["geo_distribution"] = []interface{}{}
+	} else {
+		geoDist["geo_distribution"] = buckets
+	}
+
+	return json.Marshal(geoDist)
+}
+
+func (es *elasticsearch) latencies(from, to string, size int) ([]byte, error) {
+	duration := elastic.NewRangeQuery("datestamp").
+		From(from).
+		To(to)
+
+	query := elastic.NewBoolQuery().
+		Must(elastic.NewMatchAllQuery()).
+		Filter(duration)
+
+	aggr := elastic.NewHistogramAggregation().
+		Field("took").
+		Interval(10)
+
+	result, err := es.client.Search(es.indexName).
+		Query(query).
+		Aggregation("latency_aggr", aggr).
+		Size(size).
+		Do(context.Background())
+	if err != nil {
+		return nil, fmt.Errorf("unable to fetch latency from es: %v", err)
+	}
+
+	aggrResult, found := result.Aggregations.Histogram("latency_aggr")
+	if !found {
+		return nil, fmt.Errorf("unable to find aggregatio result in 'latency_aggr'")
+	}
+
+	var buckets []map[string]interface{}
+	for _, bucket := range aggrResult.Buckets {
+		newBucket := make(map[string]interface{})
+		newBucket["key"] = bucket.Key
+		newBucket["count"] = bucket.DocCount
+		buckets = append(buckets, newBucket)
+	}
+
+	latencies := make(map[string]interface{})
+	if buckets == nil {
+		latencies["latencies"] = []interface{}{}
+	} else {
+		latencies["latencies"] = buckets
+	}
+
+	return json.Marshal(latencies)
+}
+
+// TODO: TEST??
+func clickAnalyticsOnTerms(aggr *elastic.TermsAggregation) *elastic.TermsAggregation {
+	clickAggr := elastic.NewTermsAggregation().Field("click").OrderByCountDesc()
+	clickPositionAggr := elastic.NewAvgAggregation().Field("click_position")
+	conversionAggr := elastic.NewTermsAggregation().Field("conversion")
+	return aggr.
+		SubAggregation("click_aggr", clickAggr).
+		SubAggregation("click_position_aggr", clickPositionAggr).
+		SubAggregation("conversion_aggr", conversionAggr)
+}
+
+// TODO: TEST??
+func addClickAnalytics(r *elastic.AggregationBucketKeyItems, count int64, newBucket map[string]interface{}) map[string]interface{} {
+	// click aggregation
+	clickAggrResult, found := r.Terms("click_aggr")
+	if found {
+		for _, bucket := range clickAggrResult.Buckets {
+			if *bucket.KeyAsString == "true" {
+				newBucket["clicks"] = bucket.DocCount
+			}
+		}
+	} else {
+		log.Printf("%s: cannot find click aggregation result in aggregation result", logTag)
+	}
+
+	// click position aggregation
+	clickPositionAggrResult, found := r.Avg("click_position_aggr")
+	if found {
+		newBucket["click_position"] = clickPositionAggrResult.Value
+	} else {
+		log.Printf("%s: cannot find click position aggregation result in aggregation result", logTag)
+	}
+
+	// conversion aggregation
+	conversionAggrResult, found := r.Terms("conversion_aggr")
+	if found {
+		var totalConversions int64
+		for _, bucket := range conversionAggrResult.Buckets {
+			if *bucket.KeyAsString == "true" {
+				totalConversions = bucket.DocCount
+			}
+		}
+		if newBucket["clicks"] != nil {
+			newBucket["conversion_rate"] = (float64(totalConversions) / float64(count)) * 100
+			newBucket["click_rate"] = float64(newBucket["clicks"].(int64)) / float64(count) * 100
+		}
+	} else {
+		log.Printf("%s: cannot fetch conversion aggregation result from aggregation result", logTag)
+	}
+
+	return newBucket
+}
+
+func (es *elasticsearch) summary(from, to string, size int) ([]byte, error) {
+	totalSearches, err := es.totalSearches(from, to)
+	if err != nil {
+		return nil, err
+	}
+	totalClicks, err := es.totalClicks(from, to)
+	if err != nil {
+		return nil, err
+	}
+	totalConversions, err := es.totalConversions(from, to)
+	if err != nil {
+		return nil, err
+	}
+
+	var avgClickRate, avgConversionRate float64
+	if totalSearches == 0 {
+		avgClickRate = 0
+		avgConversionRate = 0
+	} else {
+		avgClickRate = totalClicks / totalSearches * 100
+		avgConversionRate = totalConversions / totalSearches * 100
+	}
+
+	totalSearches, err = strconv.ParseFloat(fmt.Sprintf("%.2f", totalSearches), 64)
+	if err != nil {
+		return nil, err
+	}
+	avgClickRate, err = strconv.ParseFloat(fmt.Sprintf("%.2f", avgClickRate), 64)
+	if err != nil {
+		return nil, err
+	}
+	avgConversionRate, err = strconv.ParseFloat(fmt.Sprintf("%.2f", avgConversionRate), 64)
+	if err != nil {
+		return nil, err
+	}
+
+	summary := map[string]float64{
+		"total_searches":      totalSearches,
+		"avg_click_rate":      avgClickRate,
+		"avg_conversion_rate": avgConversionRate,
+	}
+
+	return json.Marshal(summary)
+}
+
+func (es *elasticsearch) totalSearches(from, to string) (float64, error) {
+	duration := elastic.NewRangeQuery("datestamp").
+		From(from).
+		To(to)
+
+	query := elastic.NewBoolQuery().
+		Must(elastic.NewMatchAllQuery()).
+		Filter(duration)
+
+	aggr := elastic.NewValueCountAggregation().Field("indices.keyword")
+
+	result, err := es.client.Search(es.indexName).
+		Query(query).
+		Aggregation("total_searches_aggr", aggr).
+		Do(context.Background())
+	if err != nil {
+		return 0, nil
+	}
+
+	aggrResult, found := result.Aggregations.ValueCount("total_searches_aggr")
+	if !found {
+		return 0, fmt.Errorf("unable to find aggregation result in 'total_searches_aggr'")
+	}
+
+	return *aggrResult.Value, nil
+}
+
+func (es *elasticsearch) totalConversions(from, to string) (float64, error) {
+	duration := elastic.NewRangeQuery("datestamp").
+		From(from).
+		To(to)
+
+	convertedSearches := elastic.NewTermQuery("conversion", true)
+
+	query := elastic.NewBoolQuery().
+		Must(elastic.NewMatchAllQuery()).
+		Filter(duration, convertedSearches)
+
+	count, err := elastic.NewCountService(es.client).
+		Query(query).
+		Do(context.Background())
+	if err != nil {
+		return 0, err
+	}
+
+	return float64(count), nil
+}
+
+func (es *elasticsearch) totalClicks(from, to string) (float64, error) {
+	duration := elastic.NewRangeQuery("datestamp").
+		From(from).
+		To(to)
+
+	clicks := elastic.NewTermQuery("click", true)
+
+	query := elastic.NewBoolQuery().
+		Must(elastic.NewMatchAllQuery()).
+		Filter(duration, clicks)
+
+	count, err := elastic.NewCountService(es.client).
+		Query(query).
+		Do(context.Background())
+	if err != nil {
+		return 0, err
+	}
+
+	return float64(count), nil
+}
+
+
+func (es *elasticsearch) searchHistogram(from, to string, size int) ([]byte, error) {
+	duration := elastic.NewRangeQuery("datestamp").
+		From(from).
+		To(to)
+
+	query := elastic.NewBoolQuery().
+		Must(elastic.NewMatchAllQuery()).
+		Filter(duration)
+
+	aggr := elastic.NewDateHistogramAggregation().
+		Interval("day").
+		Field("datestamp")
+
+	result, err := es.client.Search(es.indexName).
+		Query(query).
+		Aggregation("search_histogram_aggr", aggr).
+		Size(0).
+		Do(context.Background())
+	if err != nil {
+		return nil, fmt.Errorf("unable to fetch date histogram from es: %v", err)
+	}
+
+	aggrResult, found := result.Aggregations.DateHistogram("search_histogram_aggr")
+	if !found {
+		return nil, fmt.Errorf("unable to find aggregation result in 'search_histogram_aggr'")
+	}
+
+	var buckets []map[string]interface{}
+	for _, bucket := range aggrResult.Buckets {
+		newBucket := make(map[string]interface{})
+		newBucket["key"] = bucket.Key
+		newBucket["key_as_string"] = bucket.KeyAsString
+		newBucket["count"] = bucket.DocCount
+		buckets = append(buckets, newBucket)
+	}
+
+	searchHistogram := make(map[string]interface{})
+	if buckets == nil {
+		searchHistogram["search_histogram"] = []interface{}{}
+	} else {
+		searchHistogram["search_histogram"] = buckets
+	}
+
+	return json.Marshal(searchHistogram)
 }
