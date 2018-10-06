@@ -9,6 +9,7 @@ import (
 	"log"
 	"net/http"
 	"net/http/httptest"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -217,13 +218,6 @@ func (a *analytics) recordResponse(docId, searchId string, respRecorder *httptes
 	a.es.indexRecord(docId, record)
 }
 
-// classifier classifies an incoming request based on the request method
-// and the endpoint it is trying to access. The middleware makes two
-// classifications: first, the operation (op.Operation) incoming request is
-// trying to do, and second, the acl (acl.ACL) it is trying to access, which
-// is acl.User in this case. The identified classifications are passed along
-// in the request context to the next middleware. Classifier is supposedly
-// the first middleware that a request is expected to encounter.
 func classifier(h http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		analyticsACL := acl.Analytics
@@ -244,21 +238,28 @@ func classifier(h http.HandlerFunc) http.HandlerFunc {
 			operation = op.Read
 		}
 
+		var indices []string
+		tokens := strings.Split(r.URL.Path, "/")
+		if len(tokens) == 4 {
+			tokens = strings.Split(tokens[2], ",")
+			for _, indexName := range tokens {
+				indexName = strings.TrimSpace(indexName)
+				indices = append(indices, indexName)
+			}
+		} else {
+			indices = []string{}
+		}
+
 		ctx := r.Context()
 		ctx = context.WithValue(ctx, acl.CtxKey, &analyticsACL)
 		ctx = context.WithValue(ctx, op.CtxKey, &operation)
+		ctx = context.WithValue(ctx, index.CtxKey, indices)
 		r = r.WithContext(ctx)
 
 		h(w, r)
 	}
 }
 
-// validateOp verifies whether the user.User has the required op.Operation
-// in order to access a particular endpoint. The middleware expects the
-// request context to have both *user.User who is making the request
-// and *op.Operation required in order to access the endpoint. The absence
-// of either values in request context will cause the middleware to return
-// http.InternalServerError.
 func validateOp(h http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
@@ -290,11 +291,6 @@ func validateOp(h http.HandlerFunc) http.HandlerFunc {
 	}
 }
 
-// validateACL verifies whether the user.User has the required acl.ACL in
-// order to access a particular endpoint. The middleware expects the request
-// context to have *user.User who is making the request. The absence of
-// *user.User value in the request context will cause the middleware to return
-// http.InternalServerError.
 func validateACL(h http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
@@ -312,6 +308,59 @@ func validateACL(h http.HandlerFunc) http.HandlerFunc {
 				u.UserId, acl.Analytics.String())
 			util.WriteBackMessage(w, msg, http.StatusUnauthorized)
 			return
+		}
+
+		h(w, r)
+	}
+}
+
+func validateIndices(h http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		ctx := r.Context()
+
+		ctxPermission := ctx.Value(user.CtxKey)
+		if ctxPermission == nil {
+			log.Printf("%s: unable to fetch permission from request context", logTag)
+			util.WriteBackMessage(w, "Internal server error", http.StatusInternalServerError)
+			return
+		}
+		u := ctxPermission.(*user.User)
+
+		ctxIndices := ctx.Value(index.CtxKey)
+		if ctxIndices == nil {
+			log.Printf("%s: unable to fetch indices from request context", logTag)
+			util.WriteBackMessage(w, "Internal server error", http.StatusInternalServerError)
+			return
+		}
+		indices := ctxIndices.([]string)
+
+		if len(indices) == 0 {
+			// cluster level route
+			if !util.Contains(u.Indices, "*") {
+				util.WriteBackMessage(w, "User is unauthorized to access cluster level routes",
+					http.StatusUnauthorized)
+				return
+			}
+		} else {
+			// index level route
+			for _, indexName := range indices {
+				for _, pattern := range u.Indices {
+					pattern := strings.Replace(pattern, "*", ".*", -1)
+					ok, err := regexp.MatchString(pattern, indexName)
+					if err != nil {
+						msg := fmt.Sprintf("invalid index pattern encountered %s", pattern)
+						log.Printf("%s: invalid index pattern encountered %s: %v",
+							logTag, pattern, err)
+						util.WriteBackMessage(w, msg, http.StatusUnauthorized)
+						return
+					}
+					if !ok {
+						msg := fmt.Sprintf("User is unauthorized to access index %s", indexName)
+						util.WriteBackMessage(w, msg, http.StatusUnauthorized)
+						return
+					}
+				}
+			}
 		}
 
 		h(w, r)
