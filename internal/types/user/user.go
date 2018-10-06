@@ -1,7 +1,6 @@
 package user
 
 import (
-	"log"
 	"regexp"
 	"strings"
 
@@ -131,9 +130,9 @@ func (u *User) Can(op op.Operation) bool {
 
 func (u *User) CanAccessIndex(name string) (bool, error) {
 	for _, pattern := range u.Indices {
+		pattern := strings.Replace(pattern, "*", ".*", -1)
 		matched, err := regexp.MatchString(pattern, name)
 		if err != nil {
-			log.Printf("invalid index regexp %s encountered: %v", pattern, err)
 			return false, err
 		}
 		if matched {

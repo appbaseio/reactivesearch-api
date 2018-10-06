@@ -9,7 +9,6 @@ import (
 	"log"
 	"net/http"
 	"net/http/httptest"
-	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -21,6 +20,7 @@ import (
 	"github.com/appbaseio-confidential/arc/internal/types/user"
 	"github.com/appbaseio-confidential/arc/internal/util"
 	"github.com/google/uuid"
+	"github.com/gorilla/mux"
 )
 
 const (
@@ -52,27 +52,29 @@ type mSearchResponse struct {
 func (a *analytics) Recorder(h http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
+
 		ctxACL := ctx.Value(acl.CtxKey)
 		if ctxACL == nil {
 			log.Printf("%s: unable to fetch acl from request context", logTag)
 			util.WriteBackMessage(w, "Internal server error", http.StatusInternalServerError)
 			return
 		}
-		reqACL, ok := ctxACL.(*acl.ACL)
+		requestACL, ok := ctxACL.(*acl.ACL)
 		if !ok {
-			log.Printf("%s: unable to cast context acl %v to *acl.ACL", logTag, reqACL)
+			log.Printf("%s: unable to cast context acl %v to *acl.ACL", logTag, requestACL)
 			util.WriteBackMessage(w, "Internal server error", http.StatusInternalServerError)
 			return
 		}
+
 		searchQuery := r.Header.Get(XSearchQuery)
 		searchId := r.Header.Get(XSearchId)
-		if *reqACL != acl.Search || (searchQuery == "" && searchId == "") {
+		if *requestACL != acl.Search || (searchQuery == "" && searchId == "") {
 			h(w, r)
 			return
 		}
 
 		docId := searchId
-		if searchId == "" {
+		if docId == "" {
 			docId = uuid.New().String()
 		}
 
@@ -92,12 +94,12 @@ func (a *analytics) Recorder(h http.HandlerFunc) http.HandlerFunc {
 	}
 }
 
-// TODO: For urls ending with _search or _msearch only?
-func (a *analytics) recordResponse(docId, searchId string, respRecorder *httptest.ResponseRecorder, r *http.Request) {
+// TODO: For urls ending with _search or _msearch? Stricter checks should make it hard to misuse
+func (a *analytics) recordResponse(docId, searchId string, w *httptest.ResponseRecorder, r *http.Request) {
 	// read the response from elasticsearch
-	respBody, err := ioutil.ReadAll(respRecorder.Result().Body)
+	respBody, err := ioutil.ReadAll(w.Result().Body)
 	if err != nil {
-		log.Printf("%s: can't read response body: %v", logTag, err)
+		log.Printf("%s: can't read response body, unable to record es response: %v", logTag, err)
 		return
 	}
 
@@ -110,21 +112,24 @@ func (a *analytics) recordResponse(docId, searchId string, respRecorder *httptes
 		var m mSearchResponse
 		err := json.Unmarshal(respBody, &m)
 		if err != nil {
-			log.Printf("%s: unable to unmarshal es reponse %s: %v", logTag, string(respBody), err)
+			log.Printf("%s: can't unmarshal '_msearch' reponse, unable to record es response %s: %v",
+				logTag, string(respBody), err)
 			return
 		}
+		// TODO: why?
 		if len(m.Responses) > 0 {
 			esResponse = m.Responses[0]
 		}
 	} else {
 		err := json.Unmarshal(respBody, &esResponse)
 		if err != nil {
-			log.Printf("%s: unable to unmarshal es reponse %s: %v", logTag, string(respBody), err)
+			log.Printf("%s: can't unmarshal '_search' reponse, unable to record es response %s: %v",
+				logTag, string(respBody), err)
 			return
 		}
 	}
 
-	// record top 10 responses
+	// record up to top 10 hits
 	var hits []map[string]string
 	for i := 0; i < 10 && i < len(esResponse.Hits.Hits); i++ {
 		source := esResponse.Hits.Hits[i].Source
@@ -158,14 +163,15 @@ func (a *analytics) recordResponse(docId, searchId string, respRecorder *httptes
 
 	ipAddr := iplookup.FromRequest(r)
 	record["ip"] = ipAddr
+	ipInfo := iplookup.Instance()
 
-	ipInfo := iplookup.New()
 	coordinates, err := ipInfo.GetCoordinates(ipAddr)
 	if err != nil {
 		log.Printf("%s: error fetching location coordinates for ip=%s: %v", logTag, ipAddr, err)
 	} else {
 		record["location"] = coordinates
 	}
+
 	country, err := ipInfo.Get(iplookup.Country, ipAddr)
 	if err != nil {
 		log.Printf("%s: error fetching country for ip=%s: %v", logTag, ipAddr, err)
@@ -220,7 +226,7 @@ func (a *analytics) recordResponse(docId, searchId string, respRecorder *httptes
 
 func classifier(h http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		analyticsACL := acl.Analytics
+		requestACL := acl.Analytics
 
 		var operation op.Operation
 		switch r.Method {
@@ -238,10 +244,11 @@ func classifier(h http.HandlerFunc) http.HandlerFunc {
 			operation = op.Read
 		}
 
+		vars := mux.Vars(r)
+		indexVar, ok := vars["index"]
 		var indices []string
-		tokens := strings.Split(r.URL.Path, "/")
-		if len(tokens) == 4 {
-			tokens = strings.Split(tokens[2], ",")
+		if ok {
+			tokens := strings.Split(indexVar, ",")
 			for _, indexName := range tokens {
 				indexName = strings.TrimSpace(indexName)
 				indices = append(indices, indexName)
@@ -251,7 +258,7 @@ func classifier(h http.HandlerFunc) http.HandlerFunc {
 		}
 
 		ctx := r.Context()
-		ctx = context.WithValue(ctx, acl.CtxKey, &analyticsACL)
+		ctx = context.WithValue(ctx, acl.CtxKey, &requestACL)
 		ctx = context.WithValue(ctx, op.CtxKey, &operation)
 		ctx = context.WithValue(ctx, index.CtxKey, indices)
 		r = r.WithContext(ctx)
@@ -270,7 +277,12 @@ func validateOp(h http.HandlerFunc) http.HandlerFunc {
 			util.WriteBackMessage(w, "Internal server error", http.StatusInternalServerError)
 			return
 		}
-		u := ctxUser.(*user.User)
+		reqUser, ok := ctxUser.(*user.User)
+		if !ok {
+			log.Printf("%s: cannot cast ctxUser to *user.User", logTag)
+			util.WriteBackMessage(w, "Internal server error", http.StatusInternalServerError)
+			return
+		}
 
 		ctxOp := ctx.Value(op.CtxKey)
 		if ctxOp == nil {
@@ -278,11 +290,16 @@ func validateOp(h http.HandlerFunc) http.HandlerFunc {
 			util.WriteBackMessage(w, "Internal server error", http.StatusInternalServerError)
 			return
 		}
-		operation := ctxOp.(*op.Operation)
+		operation, ok := ctxOp.(*op.Operation)
+		if !ok {
+			log.Printf("%s: cannot cast ctxOp to *op.Operation", logTag)
+			util.WriteBackMessage(w, "Internal server error", http.StatusInternalServerError)
+			return
+		}
 
-		if !op.Contains(u.Ops, *operation) {
-			msg := fmt.Sprintf("user with user_id=%s does not have '%s' op access",
-				u.UserId, operation.String())
+		if !reqUser.Can(*operation) {
+			msg := fmt.Sprintf(`user with "user_id"="%s" does not have "%s" op access`,
+				reqUser.UserId, operation.String())
 			util.WriteBackMessage(w, msg, http.StatusUnauthorized)
 			return
 		}
@@ -301,11 +318,16 @@ func validateACL(h http.HandlerFunc) http.HandlerFunc {
 			util.WriteBackMessage(w, "Internal server error", http.StatusInternalServerError)
 			return
 		}
-		u := ctxUser.(*user.User)
+		reqUser, ok := ctxUser.(*user.User)
+		if !ok {
+			log.Printf("%s: cannot cast ctxUser to *user.User", logTag)
+			util.WriteBackMessage(w, "Internal server error", http.StatusInternalServerError)
+			return
+		}
 
-		if !acl.Contains(u.ACLs, acl.Analytics) {
+		if !reqUser.HasACL(acl.Analytics) {
 			msg := fmt.Sprintf(`user with "user_id"="%s" does not have '%s' acl`,
-				u.UserId, acl.Analytics.String())
+				reqUser.UserId, acl.Analytics.String())
 			util.WriteBackMessage(w, msg, http.StatusUnauthorized)
 			return
 		}
@@ -324,7 +346,12 @@ func validateIndices(h http.HandlerFunc) http.HandlerFunc {
 			util.WriteBackMessage(w, "Internal server error", http.StatusInternalServerError)
 			return
 		}
-		u := ctxPermission.(*user.User)
+		reqUser, ok := ctxPermission.(*user.User)
+		if !ok {
+			log.Printf("%s: unable to cast context user to *user.User", logTag)
+			util.WriteBackMessage(w, "Internal server error", http.StatusInternalServerError)
+			return
+		}
 
 		ctxIndices := ctx.Value(index.CtxKey)
 		if ctxIndices == nil {
@@ -332,33 +359,33 @@ func validateIndices(h http.HandlerFunc) http.HandlerFunc {
 			util.WriteBackMessage(w, "Internal server error", http.StatusInternalServerError)
 			return
 		}
-		indices := ctxIndices.([]string)
+		indices, ok := ctxIndices.([]string)
+		if !ok {
+			log.Printf("%s: unable to cast context indices to []string", logTag)
+			util.WriteBackMessage(w, "Internal server error", http.StatusInternalServerError)
+			return
+		}
 
-		if len(indices) == 0 {
-			// cluster level route
-			if !util.Contains(u.Indices, "*") {
+		if len(indices) == 0 { // cluster level route
+			if !util.Contains(reqUser.Indices, "*") {
 				util.WriteBackMessage(w, "User is unauthorized to access cluster level routes",
 					http.StatusUnauthorized)
 				return
 			}
-		} else {
-			// index level route
+		} else { // index level route
 			for _, indexName := range indices {
-				for _, pattern := range u.Indices {
-					pattern := strings.Replace(pattern, "*", ".*", -1)
-					ok, err := regexp.MatchString(pattern, indexName)
-					if err != nil {
-						msg := fmt.Sprintf("invalid index pattern encountered %s", pattern)
-						log.Printf("%s: invalid index pattern encountered %s: %v",
-							logTag, pattern, err)
-						util.WriteBackMessage(w, msg, http.StatusUnauthorized)
-						return
-					}
-					if !ok {
-						msg := fmt.Sprintf("User is unauthorized to access index %s", indexName)
-						util.WriteBackMessage(w, msg, http.StatusUnauthorized)
-						return
-					}
+				ok, err := reqUser.CanAccessIndex(indexName)
+				if err != nil {
+					msg := fmt.Sprintf("invalid index pattern encountered %s", indexName)
+					log.Printf("%s: invalid index pattern encountered %s: %v", logTag, indexName, err)
+					util.WriteBackMessage(w, msg, http.StatusUnauthorized)
+					return
+				}
+
+				if !ok {
+					msg := fmt.Sprintf(`User is unauthorized to access index names "%s"`, indexName)
+					util.WriteBackMessage(w, msg, http.StatusUnauthorized)
+					return
 				}
 			}
 		}

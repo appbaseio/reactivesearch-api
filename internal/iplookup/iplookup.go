@@ -31,6 +31,11 @@ const (
 	Status
 )
 
+var (
+	instance *IpInfo
+	once     sync.Once
+)
+
 type IpInfo struct {
 	sync.Mutex
 	cache map[string]*IpLookup
@@ -54,8 +59,11 @@ type IpLookup struct {
 	Status          string `json:"status"`
 }
 
-func New() *IpInfo {
-	return &IpInfo{cache: make(map[string]*IpLookup)}
+func Instance() *IpInfo {
+	once.Do(func() {
+		instance = &IpInfo{cache: make(map[string]*IpLookup)}
+	})
+	return instance
 }
 
 func (info *IpInfo) Cached(ipAddr string) (*IpLookup, bool) {

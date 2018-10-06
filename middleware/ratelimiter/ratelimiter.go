@@ -7,6 +7,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/appbaseio-confidential/arc/internal/iplookup"
 	"github.com/appbaseio-confidential/arc/internal/types/acl"
 	"github.com/appbaseio-confidential/arc/internal/types/permission"
 	"github.com/appbaseio-confidential/arc/internal/util"
@@ -45,12 +46,7 @@ func Instance() *ratelimiter {
 
 func (rl *ratelimiter) RateLimit(h http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		remoteIP := r.Header.Get("X-Forwarded-For")
-		userId, _, ok := r.BasicAuth()
-		if !ok {
-			log.Printf("%s: user not logged in through basic auth.", logTag)
-			return
-		}
+		remoteIP := iplookup.FromRequest(r)
 
 		ctxPermission := r.Context().Value(permission.CtxKey)
 		if ctxPermission == nil {
@@ -76,15 +72,14 @@ func (rl *ratelimiter) RateLimit(h http.HandlerFunc) http.HandlerFunc {
 		}
 
 		aclLimit := obj.GetLimitFor(*aclObj)
-		log.Printf("%s: aclLimit=%d", logTag, aclLimit)
-		key := userId + aclObj.String() // limit per acl
+		key := obj.UserName + aclObj.String() // limit per acl
 		if rl.limitExceededByACL(key, aclLimit) {
 			util.WriteBackMessage(w, "Rate limit exceeded", http.StatusTooManyRequests)
 			return
 		}
 
 		ipLimit := obj.Limits.IPLimit
-		key = userId + remoteIP
+		key = obj.UserName + remoteIP
 		if rl.limitExceededByIP(key, ipLimit) {
 			util.WriteBackMessage(w, "Rate limit exceeded", http.StatusTooManyRequests)
 			return
@@ -100,8 +95,7 @@ func (rl *ratelimiter) limitExceededByACL(key string, aclLimit int64) bool {
 	if rem <= 0 {
 		return true
 	}
-	reqRem, _ := rl.limit(key, aclLimit, period)
-	log.Printf("%s: remaining 'acl_limit': %d", logTag, reqRem)
+	rl.limit(key, aclLimit, period)
 	return false
 }
 
@@ -111,8 +105,7 @@ func (rl *ratelimiter) limitExceededByIP(key string, ipLimit int64) bool {
 	if rem <= 0 {
 		return true
 	}
-	reqRem, _ := rl.limit(key, ipLimit, period)
-	log.Printf("%s: remaining 'ip_limit': %d", logTag, reqRem)
+	rl.limit(key, ipLimit, period)
 	return false
 }
 
