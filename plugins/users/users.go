@@ -3,6 +3,7 @@ package users
 import (
 	"log"
 	"os"
+	"sync"
 
 	"github.com/appbaseio-confidential/arc/arc"
 	"github.com/appbaseio-confidential/arc/arc/plugin"
@@ -18,16 +19,28 @@ const (
 	envUsersEsType  = "USERS_ES_TYPE"
 )
 
-type Users struct {
+var (
+	instance *users
+	once     sync.Once
+)
+
+type users struct {
 	es *elasticsearch
 }
 
 func init() {
-	arc.RegisterPlugin(&Users{})
+	arc.RegisterPlugin(Instance())
+}
+
+func Instance() *users {
+	once.Do(func() {
+		instance = &users{}
+	})
+	return instance
 }
 
 // Name returns the name of the plugin: 'users'.
-func (u *Users) Name() string {
+func (u *users) Name() string {
 	return pluginName
 }
 
@@ -35,7 +48,7 @@ func (u *Users) Name() string {
 // the elasticsearch as its dao. The function returns EnvVarNotSetError
 // in case the required environment variables are not set before the plugin
 // is loaded.
-func (u *Users) InitFunc() error {
+func (u *users) InitFunc() error {
 	log.Printf("%s: initializing plugin: %s", logTag, pluginName)
 
 	// fetch vars from env
@@ -64,6 +77,6 @@ func (u *Users) InitFunc() error {
 }
 
 // Routes returns the routes that this plugin handles.
-func (u *Users) Routes() []plugin.Route {
+func (u *users) Routes() []plugin.Route {
 	return u.routes()
 }

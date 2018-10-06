@@ -6,8 +6,22 @@ import (
 	"github.com/appbaseio-confidential/arc/arc/plugin"
 )
 
-func (a *Analytics) routes() []plugin.Route {
+func (a *analytics) routes() []plugin.Route {
 	return []plugin.Route{
+		{
+			Name:        "Get overview",
+			Methods:     []string{http.MethodGet},
+			Path:        "/_analytics/overview",
+			HandlerFunc: a.getOverview(),
+			Description: "Returns analytics overview on cluster",
+		},
+		{
+			Name:        "Get advanced",
+			Methods:     []string{http.MethodGet},
+			Path:        "/_analytics/advanced",
+			HandlerFunc: a.getAdvanced(),
+			Description: "Returns advanced analytics on cluster",
+		},
 		{
 			Name:        "Get popular searches",
 			Methods:     []string{http.MethodGet},
@@ -19,15 +33,8 @@ func (a *Analytics) routes() []plugin.Route {
 			Name:        "Get no results searches",
 			Methods:     []string{http.MethodGet},
 			Path:        "/_analytics/noresultssearches",
-			HandlerFunc: a.getNoResultsSearches(),
+			HandlerFunc: a.getNoResultsSearches(), // TODO: Done
 			Description: "Returns no results searches on cluster",
-		},
-		{
-			Name:        "Get summary",
-			Methods:     []string{http.MethodGet},
-			Path:        "/_analytics/summary",
-			HandlerFunc: a.getSummary(),
-			Description: "Returns total searches, avg click and conversion rate on cluster",
 		},
 		{
 			Name:        "Get popular filters",
@@ -44,23 +51,9 @@ func (a *Analytics) routes() []plugin.Route {
 			Description: "Returns popular results on cluster",
 		},
 		{
-			Name:        "Get overview",
-			Methods:     []string{http.MethodGet},
-			Path:        "/_analytics/overview",
-			HandlerFunc: a.getOverview(),
-			Description: "Returns analytics overview on cluster",
-		},
-		{
-			Name:        "Get advanced",
-			Methods:     []string{http.MethodGet},
-			Path:        "/_analytics/advanced",
-			HandlerFunc: a.getAdvanced(),
-			Description: "Returns advanced analytics on cluster",
-		},
-		{
 			Name:        "Get geo ip",
 			Methods:     []string{http.MethodGet},
-			Path:        "/_analytics/geoip",
+			Path:        "/_analytics/geodistribution",
 			HandlerFunc: a.getGeoRequestsDistribution(),
 			Description: "Returns search counts based on request/ip location on cluster",
 		},
@@ -70,6 +63,13 @@ func (a *Analytics) routes() []plugin.Route {
 			Path:        "/_analytics/latency",
 			HandlerFunc: a.getLatencies(),
 			Description: "Returns search latencies",
+		},
+		{
+			Name:        "Get summary",
+			Methods:     []string{http.MethodGet},
+			Path:        "/_analytics/summary",
+			HandlerFunc: a.getSummary(),
+			Description: "Returns total searches, avg click and conversion rate on cluster",
 		},
 	}
 }

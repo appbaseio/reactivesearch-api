@@ -7,8 +7,8 @@ import (
 	"github.com/appbaseio-confidential/arc/plugins/auth"
 )
 
-func (p *Permissions) routes() []plugin.Route {
-	basicAuth := auth.New().BasicAuth
+func (p *permissions) routes() []plugin.Route {
+	basicAuth := auth.Instance().BasicAuth
 	routes := []plugin.Route{
 		{
 			Name:        "Get Permission",
@@ -21,21 +21,21 @@ func (p *Permissions) routes() []plugin.Route {
 			Name:        "Create Permission",
 			Methods:     []string{http.MethodPut},
 			Path:        "/_permission",
-			HandlerFunc: classifier(basicAuth(validateOp(validateACL(isAdmin(p.putPermission()))))),
+			HandlerFunc: classifier(basicAuth(validateOp(validateACL(p.putPermission())))),
 			Description: "Create a new permission object in the repository",
 		},
 		{
 			Name:        "Patch Permission",
 			Methods:     []string{http.MethodPatch},
 			Path:        "/_permission/{username}",
-			HandlerFunc: classifier(basicAuth(validateOp(validateACL(isAdmin(p.patchPermission()))))),
+			HandlerFunc: classifier(basicAuth(validateOp(validateACL(p.patchPermission())))),
 			Description: "Update the permission object in the repository",
 		},
 		{
 			Name:        "Delete Permission",
 			Methods:     []string{http.MethodDelete},
 			Path:        "/_permission/{username}",
-			HandlerFunc: classifier(basicAuth(validateOp(validateACL(isAdmin(p.deletePermission()))))),
+			HandlerFunc: classifier(basicAuth(validateOp(validateACL(p.deletePermission())))),
 			Description: "Delete the permission object in the repository",
 		},
 	}

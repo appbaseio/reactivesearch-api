@@ -61,8 +61,8 @@ func (a *Auth) BasicAuth(h http.HandlerFunc) http.HandlerFunc {
 			}
 
 			// check in the cache
-			p, ok := a.cachedPermission(userId)
-			if !ok {
+			//p, ok := a.cachedPermission(userId)
+			//if !ok {
 				p, err = a.es.getPermission(userId)
 				if err != nil {
 					msg := fmt.Sprintf(`Unable to fetch permission with "creator"="%s"`, userId)
@@ -72,7 +72,7 @@ func (a *Auth) BasicAuth(h http.HandlerFunc) http.HandlerFunc {
 				}
 				// store in the cache
 				a.cachePermission(userId, p)
-			}
+			//}
 
 			if password != p.Password {
 				util.WriteBackMessage(w, "Incorrect credentials", http.StatusUnauthorized)
@@ -104,8 +104,8 @@ func (a *Auth) BasicAuth(h http.HandlerFunc) http.HandlerFunc {
 			}
 
 			// check in the cache
-			u, ok := a.cachedUser(userId)
-			if !ok {
+			//u, ok := a.cachedUser(userId)
+			//if !ok {
 				u, err = a.es.getUser(userId)
 				if err != nil {
 					msg := fmt.Sprintf(`Unable to fetch user with "user_id"="%s"`, userId)
@@ -115,7 +115,7 @@ func (a *Auth) BasicAuth(h http.HandlerFunc) http.HandlerFunc {
 				}
 				// store in the cache
 				a.cacheUser(userId, u)
-			}
+			//}
 			if password != u.Password {
 				util.WriteBackMessage(w, "Incorrect credentials", http.StatusUnauthorized)
 				return

@@ -3,6 +3,7 @@ package permission
 import (
 	"log"
 	"regexp"
+	"strings"
 	"time"
 
 	"github.com/appbaseio-confidential/arc/internal/errors"
@@ -77,6 +78,7 @@ func SetIndices(indices []string) Options {
 			return errors.NilIndicesError
 		}
 		for _, pattern := range indices {
+			pattern = strings.Replace(pattern, "*", ".*", -1)
 			if _, err := regexp.Compile(pattern); err != nil {
 				return err
 			}

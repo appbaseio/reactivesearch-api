@@ -4,11 +4,12 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"sync"
 
 	"github.com/appbaseio-confidential/arc/arc"
 	"github.com/appbaseio-confidential/arc/arc/plugin"
 	"github.com/appbaseio-confidential/arc/internal/errors"
-	"github.com/appbaseio-confidential/arc/internal/types/analytics"
+	analyticsType "github.com/appbaseio-confidential/arc/internal/types/analytics"
 )
 
 const (
@@ -19,16 +20,28 @@ const (
 	envAnalyticsEsType  = "ANALYTICS_ES_TYPE"
 )
 
-type Analytics struct {
+var (
+	instance *analytics
+	once     sync.Once
+)
+
+type analytics struct {
 	es *elasticsearch
 }
 
 func init() {
-	arc.RegisterPlugin(&Analytics{})
+	arc.RegisterPlugin(Instance())
+}
+
+func Instance() *analytics {
+	once.Do(func() {
+		instance = &analytics{}
+	})
+	return instance
 }
 
 // Name returns the name of the plugin: 'analytics'.
-func (a *Analytics) Name() string {
+func (a *analytics) Name() string {
 	return pluginName
 }
 
@@ -36,7 +49,7 @@ func (a *Analytics) Name() string {
 // the elasticsearch as its dao. The function returns EnvVarNotSetError
 // in case the required environment variables are not set before the plugin
 // is loaded.
-func (a *Analytics) InitFunc() error {
+func (a *analytics) InitFunc() error {
 	log.Printf("%s: initializing plugin: %s\n", logTag, pluginName)
 
 	// fetch the required env vars
@@ -52,7 +65,7 @@ func (a *Analytics) InitFunc() error {
 	if typeName == "" {
 		return errors.NewEnvVarNotSetError(envAnalyticsEsType)
 	}
-	mapping := analytics.IndexMapping
+	mapping := analyticsType.IndexMapping
 
 	// initialize the dao
 	var err error
@@ -64,6 +77,6 @@ func (a *Analytics) InitFunc() error {
 	return nil
 }
 
-func (a *Analytics) Routes() []plugin.Route {
+func (a *analytics) Routes() []plugin.Route {
 	return a.routes()
 }

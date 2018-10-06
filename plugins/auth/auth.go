@@ -22,9 +22,12 @@ const (
 	envPermissionsEsType  = "PERMISSIONS_ES_TYPE"
 )
 
-var a *Auth
+var (
+	instance *Auth
+	once     sync.Once
+)
 
-// TODO: clear cache after fixed entries: LRU?
+// TODO: clear cache after fixed entries: LRU, also check for mutations?
 type Auth struct {
 	mu               sync.Mutex
 	usersCache       map[string]*user.User
@@ -33,17 +36,17 @@ type Auth struct {
 }
 
 func init() {
-	arc.RegisterPlugin(New())
+	arc.RegisterPlugin(Instance())
 }
 
-func New() *Auth {
-	if a == nil {
-		a = &Auth{
+func Instance() *Auth {
+	once.Do(func() {
+		instance = &Auth{
 			usersCache:       make(map[string]*user.User),
 			permissionsCache: make(map[string]*permission.Permission),
 		}
-	}
-	return a
+	})
+	return instance
 }
 
 func (a *Auth) Name() string {

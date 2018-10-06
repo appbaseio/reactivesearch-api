@@ -8,7 +8,7 @@ import (
 	"github.com/appbaseio-confidential/arc/internal/util"
 )
 
-func (a *Analytics) getOverview() http.HandlerFunc {
+func (a *analytics) getOverview() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		q := r.URL.Query().Get("click_analytics")
 
@@ -30,7 +30,7 @@ func (a *Analytics) getOverview() http.HandlerFunc {
 	}
 }
 
-func (a *Analytics) getAdvanced() http.HandlerFunc {
+func (a *analytics) getAdvanced() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		q := r.URL.Query().Get("click_analytics")
 
@@ -52,7 +52,7 @@ func (a *Analytics) getAdvanced() http.HandlerFunc {
 	}
 }
 
-func (a *Analytics) getPopularSearches() http.HandlerFunc {
+func (a *analytics) getPopularSearches() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		q := r.URL.Query().Get("click_analytics")
 
@@ -64,7 +64,7 @@ func (a *Analytics) getPopularSearches() http.HandlerFunc {
 		}
 		from, to, size := queryParams(r.URL.Query())
 
-		raw, err := a.es.popularSearches(from, to, size, clickAnalytics)
+		raw, err := a.es.popularSearchesRaw(from, to, size, clickAnalytics)
 		if err != nil {
 			log.Printf("%s: %v", logTag, err)
 			util.WriteBackMessage(w, "Internal server error", http.StatusInternalServerError)
@@ -74,7 +74,19 @@ func (a *Analytics) getPopularSearches() http.HandlerFunc {
 	}
 }
 
-func (a *Analytics) getPopularFilters() http.HandlerFunc {
+func (a *analytics) getNoResultsSearches() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		raw, err := a.es.noResultsSearchesRaw(queryParams(r.URL.Query()))
+		if err != nil {
+			log.Printf("%s: %v", logTag, err)
+			util.WriteBackMessage(w, "Internal server error", http.StatusInternalServerError)
+			return
+		}
+		util.WriteBackRaw(w, raw, http.StatusOK)
+	}
+}
+
+func (a *analytics) getPopularFilters() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		q := r.URL.Query().Get("click_analytics")
 
@@ -86,7 +98,7 @@ func (a *Analytics) getPopularFilters() http.HandlerFunc {
 		}
 		from, to, size := queryParams(r.URL.Query())
 
-		raw, err := a.es.popularFilters(from, to, size, clickAnalytics)
+		raw, err := a.es.popularFiltersRaw(from, to, size, clickAnalytics)
 		if err != nil {
 			log.Printf("%s: %v", logTag, err)
 			util.WriteBackMessage(w, "Internal server error", http.StatusInternalServerError)
@@ -96,7 +108,7 @@ func (a *Analytics) getPopularFilters() http.HandlerFunc {
 	}
 }
 
-func (a *Analytics) getPopularResults() http.HandlerFunc {
+func (a *analytics) getPopularResults() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		q := r.URL.Query().Get("click_analytics")
 
@@ -108,7 +120,7 @@ func (a *Analytics) getPopularResults() http.HandlerFunc {
 		}
 		from, to, size := queryParams(r.URL.Query())
 
-		raw, err := a.es.popularResults(from, to, size, clickAnalytics)
+		raw, err := a.es.popularResultsRaw(from, to, size, clickAnalytics)
 		if err != nil {
 			log.Printf("%s: %v", logTag, err)
 			util.WriteBackMessage(w, "Internal server error", http.StatusInternalServerError)
@@ -118,19 +130,7 @@ func (a *Analytics) getPopularResults() http.HandlerFunc {
 	}
 }
 
-func (a *Analytics) getNoResultsSearches() http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		raw, err := a.es.noResultsSearches(queryParams(r.URL.Query()))
-		if err != nil {
-			log.Printf("%s: %v", logTag, err)
-			util.WriteBackMessage(w, "Internal server error", http.StatusInternalServerError)
-			return
-		}
-		util.WriteBackRaw(w, raw, http.StatusOK)
-	}
-}
-
-func (a *Analytics) getGeoRequestsDistribution() http.HandlerFunc {
+func (a *analytics) getGeoRequestsDistribution() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		raw, err := a.es.geoRequestsDistribution(queryParams(r.URL.Query()))
 		if err != nil {
@@ -142,7 +142,7 @@ func (a *Analytics) getGeoRequestsDistribution() http.HandlerFunc {
 	}
 }
 
-func (a *Analytics) getLatencies() http.HandlerFunc {
+func (a *analytics) getLatencies() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		raw, err := a.es.latencies(queryParams(r.URL.Query()))
 		if err != nil {
@@ -154,7 +154,7 @@ func (a *Analytics) getLatencies() http.HandlerFunc {
 	}
 }
 
-func (a *Analytics) getSummary() http.HandlerFunc {
+func (a *analytics) getSummary() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		raw, err := a.es.summary(queryParams(r.URL.Query()))
 		if err != nil {

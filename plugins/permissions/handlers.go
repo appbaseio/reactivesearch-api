@@ -18,7 +18,7 @@ import (
 // against user.User and thus every time this handler is executed, we fetch the
 // permission from the elasticsearch. An error on the side of elasticsearch client
 // causes the handler to return http.StatusInternalServerError.
-func (p *Permissions) getPermission() http.HandlerFunc {
+func (p *permissions) getPermission() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		vars := mux.Vars(r)
 		username := vars["username"]
@@ -58,7 +58,7 @@ func (p *Permissions) getPermission() http.HandlerFunc {
 // permission is returned when a permission is successfully indexed in elasticsearch. An
 // error on the side of elasticsearch client will cause the handler to return
 // http.InternalServerError.
-func (p *Permissions) putPermission() http.HandlerFunc {
+func (p *permissions) putPermission() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		// redundant check
 		userId, _, ok := r.BasicAuth()
@@ -133,7 +133,7 @@ func (p *Permissions) putPermission() http.HandlerFunc {
 // values passed explicitly in the request body will cause the handler to return
 // http.StatusBadRequest. However, an error on the side of elasticsearch client will cause
 // the handler to return http.StatusInternalServerError.
-func (p *Permissions) patchPermission() http.HandlerFunc {
+func (p *permissions) patchPermission() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		vars := mux.Vars(r)
 		username := vars["username"]
@@ -176,7 +176,7 @@ func (p *Permissions) patchPermission() http.HandlerFunc {
 
 // deletePermission deletes the permission.Permission from elasticsearch. An error on
 // the side of elasticsearch client will cause the handler to return http.InternalServerError.
-func (p *Permissions) deletePermission() http.HandlerFunc {
+func (p *permissions) deletePermission() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		vars := mux.Vars(r)
 		username := vars["username"]

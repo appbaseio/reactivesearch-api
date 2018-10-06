@@ -44,12 +44,12 @@ type mSearchResponse struct {
 	Responses []searchResponse `json:"responses"`
 }
 
-func (a *Analytics) recorder(h http.HandlerFunc) http.HandlerFunc {
+func (a *analytics) Recorder(h http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
 		ctxACL := ctx.Value(acl.CtxKey)
 		if ctxACL == nil {
-			log.Printf("%s: unable to fetch from request context", logTag)
+			log.Printf("%s: unable to fetch acl from request context", logTag)
 			util.WriteBackMessage(w, "Internal server error", http.StatusInternalServerError)
 			return
 		}
@@ -87,14 +87,15 @@ func (a *Analytics) recorder(h http.HandlerFunc) http.HandlerFunc {
 	}
 }
 
-// TODO: For urls ending with _search or _msearch?
-func (a *Analytics) recordResponse(docId, searchId string, respRecorder *httptest.ResponseRecorder, r *http.Request) {
+// TODO: For urls ending with _search or _msearch only?
+func (a *analytics) recordResponse(docId, searchId string, respRecorder *httptest.ResponseRecorder, r *http.Request) {
 	// read the response from elasticsearch
-	respBody, err := ioutil.ReadAll(respRecorder.Body)
+	respBody, err := ioutil.ReadAll(respRecorder.Result().Body)
 	if err != nil {
 		log.Printf("%s: can't read response body: %v", logTag, err)
 		return
 	}
+
 	respBody = bytes.Replace(respBody, []byte("_source"), []byte("source"), -1)
 	respBody = bytes.Replace(respBody, []byte("_type"), []byte("type"), -1)
 	respBody = bytes.Replace(respBody, []byte("_id"), []byte("id"), -1)
@@ -120,7 +121,7 @@ func (a *Analytics) recordResponse(docId, searchId string, respRecorder *httptes
 
 	// record top 10 responses
 	var hits []map[string]string
-	for i := 0; i < 10; i++ {
+	for i := 0; i < 10 && i < len(esResponse.Hits.Hits); i++ {
 		source := esResponse.Hits.Hits[i].Source
 		raw, err := json.Marshal(source)
 		if err != nil {
@@ -150,7 +151,7 @@ func (a *Analytics) recordResponse(docId, searchId string, respRecorder *httptes
 		}
 	}
 
-	ipAddr := r.Header.Get("X-Forwarded-For")
+	ipAddr := iplookup.FromRequest(r)
 	record["ip"] = ipAddr
 
 	ipInfo := iplookup.New()
@@ -188,8 +189,8 @@ func (a *Analytics) recordResponse(docId, searchId string, respRecorder *httptes
 	}
 
 	searchConversion := r.Header.Get(XSearchConversion)
-	if searchClickPosition != "" {
-		if conversion, err := strconv.ParseBool(searchClickPosition); err == nil {
+	if searchConversion != "" {
+		if conversion, err := strconv.ParseBool(searchConversion); err == nil {
 			record["conversion"] = conversion
 		} else {
 			log.Printf("%s: invalid bool value '%v' passed for header %s: %v",
@@ -201,6 +202,13 @@ func (a *Analytics) recordResponse(docId, searchId string, respRecorder *httptes
 	if len(customEvents) > 0 {
 		record["custom_events"] = customEvents
 	}
+
+	// TODO: Remove
+	//rawRecord, err := json.Marshal(record)
+	//if err != nil {
+	//	log.Printf("%s: error marshalling analytics record: %v", logTag, err)
+	//}
+	//log.Printf("%s: %s", logTag, string(rawRecord))
 
 	a.es.indexRecord(docId, record)
 }
@@ -215,8 +223,6 @@ func parse(header string) []map[string]string {
 				"key":   values[0],
 				"value": values[1],
 			})
-		} else {
-			log.Printf("%s: invalid value '%v' passed for header %s", logTag, token, XSearchFilters)
 		}
 	}
 	return m

@@ -18,28 +18,32 @@ import (
 
 const (
 	logTag          = "[ratelimiter]"
-	DefaultRedisDB  = 0
-	DefaultMaxRetry = 4
+	defaultRedisDB  = 0
+	defaultMaxRetry = 4
+	redisAddr       = "accapi-staging.redis.cache.windows.net:6379"
+	redisPassword   = "OJ5CsLWo+jxFWQ+XjNrT5smNSilvaQnSUkq8QVwMGR0="
 )
 
-const (
-	redisAddr     = "accapi-staging.redis.cache.windows.net:6379"
-	redisPassword = "OJ5CsLWo+jxFWQ+XjNrT5smNSilvaQnSUkq8QVwMGR0="
+var (
+	instance *ratelimiter
+	once     sync.Once
 )
 
-type RateLimiter struct {
+type ratelimiter struct {
 	sync.Mutex
 	limiters map[string]*limiter.Limiter
 }
 
-func New() *RateLimiter {
-	limiters := make(map[string]*limiter.Limiter)
-	return &RateLimiter{
-		limiters: limiters,
-	}
+func Instance() *ratelimiter {
+	once.Do(func() {
+		instance = &ratelimiter{
+			limiters: make(map[string]*limiter.Limiter),
+		}
+	})
+	return instance
 }
 
-func (rl *RateLimiter) RateLimit(h http.HandlerFunc) http.HandlerFunc {
+func (rl *ratelimiter) RateLimit(h http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		remoteIP := r.Header.Get("X-Forwarded-For")
 		userId, _, ok := r.BasicAuth()
@@ -90,7 +94,7 @@ func (rl *RateLimiter) RateLimit(h http.HandlerFunc) http.HandlerFunc {
 	}
 }
 
-func (rl *RateLimiter) limitExceededByACL(key string, aclLimit int64) bool {
+func (rl *ratelimiter) limitExceededByACL(key string, aclLimit int64) bool {
 	period := 1 * time.Second
 	rem, _ := rl.peekLimit(key, aclLimit, period)
 	if rem <= 0 {
@@ -101,7 +105,7 @@ func (rl *RateLimiter) limitExceededByACL(key string, aclLimit int64) bool {
 	return false
 }
 
-func (rl *RateLimiter) limitExceededByIP(key string, ipLimit int64) bool {
+func (rl *ratelimiter) limitExceededByIP(key string, ipLimit int64) bool {
 	period := 1 * time.Hour
 	rem, _ := rl.peekLimit(key, ipLimit, period)
 	if rem <= 0 {
@@ -112,7 +116,7 @@ func (rl *RateLimiter) limitExceededByIP(key string, ipLimit int64) bool {
 	return false
 }
 
-func (rl *RateLimiter) peekLimit(key string, limit int64, period time.Duration) (int64, bool) {
+func (rl *ratelimiter) peekLimit(key string, limit int64, period time.Duration) (int64, bool) {
 	l := rl.getLimiter(key, limit, period)
 	if c, err := l.Peek(context.Background(), key); err == nil {
 		return c.Remaining, c.Reached
@@ -121,7 +125,7 @@ func (rl *RateLimiter) peekLimit(key string, limit int64, period time.Duration) 
 	return -1, false
 }
 
-func (rl *RateLimiter) limit(key string, limit int64, period time.Duration) (int64, bool) {
+func (rl *ratelimiter) limit(key string, limit int64, period time.Duration) (int64, bool) {
 	l := rl.getLimiter(key, limit, period)
 	if c, err := l.Get(context.Background(), key); err == nil {
 		return c.Remaining, c.Reached
@@ -130,7 +134,7 @@ func (rl *RateLimiter) limit(key string, limit int64, period time.Duration) (int
 	return -1, false
 }
 
-func (rl *RateLimiter) getLimiter(key string, limit int64, period time.Duration) *limiter.Limiter {
+func (rl *ratelimiter) getLimiter(key string, limit int64, period time.Duration) *limiter.Limiter {
 	rl.Lock()
 	defer rl.Unlock()
 	l, exists := rl.limiters[key]
@@ -146,7 +150,7 @@ func (rl *RateLimiter) getLimiter(key string, limit int64, period time.Duration)
 // A new instance for the given key is stored in the map each time this method is invoked.
 // The access must be mediated by some kind of synchronization mechanism to prevent concurrent
 // read/write operations to the map and vars.
-func (rl *RateLimiter) newLimiter(key string, limit int64, period time.Duration) *limiter.Limiter {
+func (rl *ratelimiter) newLimiter(key string, limit int64, period time.Duration) *limiter.Limiter {
 	//option := &goredis.Options{
 	//	Addr:     redisAddr,
 	//	Password: redisPassword,

@@ -15,7 +15,7 @@ import (
 	"github.com/appbaseio-confidential/arc/internal/util"
 )
 
-func (es *ES) classifier(h http.HandlerFunc) http.HandlerFunc {
+func (es *es) classifier(h http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		path := strings.TrimSuffix(r.URL.Path, "/")
 		method := r.Method
@@ -37,7 +37,7 @@ func (es *ES) classifier(h http.HandlerFunc) http.HandlerFunc {
 	}
 }
 
-func (es *ES) categorize(method, path string) (acl.ACL, op.Operation, []string) {
+func (es *es) categorize(method, path string) (acl.ACL, op.Operation, []string) {
 	for _, api := range es.specs {
 		for endpoint, pattern := range api.pathRegexps {
 			// TODO: additional check for keywords?

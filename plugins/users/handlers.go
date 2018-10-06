@@ -9,6 +9,7 @@ import (
 
 	"github.com/appbaseio-confidential/arc/internal/types/user"
 	"github.com/appbaseio-confidential/arc/internal/util"
+	"github.com/gorilla/mux"
 )
 
 // getUser fetches the user from elasticsearch. The handler expects "user_id" in basic
@@ -18,7 +19,7 @@ import (
 // authentication, the request context must always have a stored pointer to the
 // authenticated *user.User. An error on the side of elasticsearch client causes the
 // handler to return http.StatusInternalServerError.
-func (u *Users) getUser() http.HandlerFunc {
+func (u *users) getUser() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
 
@@ -56,6 +57,26 @@ func (u *Users) getUser() http.HandlerFunc {
 	}
 }
 
+func (u *users) getAnotherUser() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		vars := mux.Vars(r)
+		userId, ok := vars["user_id"]
+		if !ok {
+			util.WriteBackError(w, "cannot get a user without 'user_id'", http.StatusBadRequest)
+			return
+		}
+
+		rawUser, err := u.es.getRawUser(userId)
+		if err != nil {
+			msg := fmt.Sprintf(`user with "user_id"="%s" not found`, userId)
+			log.Printf("%s: %s: %v\n", logTag, msg, err)
+			util.WriteBackError(w, msg, http.StatusNotFound)
+			return
+		}
+		util.WriteBackRaw(w, rawUser, http.StatusOK)
+	}
+}
+
 // putUser creates a new user.User and indexes it in elasticsearch. The handler expects
 // "user_id" and "password" in basic auth for the user.User it intends to create and a
 // request body that conforms to the user.User struct. Omitted fields in the request body
@@ -63,15 +84,8 @@ func (u *Users) getUser() http.HandlerFunc {
 // will cause the handler to return http.StatusBadRequest. A raw/json user is returned
 // when a user is successfully indexed in elasticsearch. An error on the side of
 // elasticsearch client will cause the handler to return http.InternalServerError.
-func (u *Users) putUser() http.HandlerFunc {
+func (u *users) putUser() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		// redundant check
-		userId, password, ok := r.BasicAuth()
-		if !ok {
-			util.WriteBackError(w, "basic auth credentials not provided", http.StatusUnauthorized)
-			return
-		}
-
 		body, err := ioutil.ReadAll(r.Body)
 		if err != nil {
 			msg := "can't read body"
@@ -104,7 +118,15 @@ func (u *Users) putUser() http.HandlerFunc {
 		if obj.Indices != nil {
 			opts = append(opts, user.SetIndices(obj.Indices))
 		}
-		newUser, err := user.New(userId, password, opts...)
+		if obj.UserId == "" {
+			util.WriteBackError(w, "cannot create a user without 'user_id'", http.StatusBadRequest)
+			return
+		}
+		if obj.Password == "" {
+			util.WriteBackError(w, "cannot create a user without 'password'", http.StatusBadRequest)
+			return
+		}
+		newUser, err := user.New(obj.UserId, obj.Password, opts...)
 		if err != nil {
 			msg := fmt.Sprintf("error constructing user object: %v", err)
 			log.Printf("%s: %s", logTag, msg)
@@ -119,7 +141,7 @@ func (u *Users) putUser() http.HandlerFunc {
 			return
 		}
 
-		ok, err = u.es.putUser(*newUser)
+		ok, err := u.es.putUser(*newUser)
 		if ok && err == nil {
 			util.WriteBackRaw(w, rawUser, http.StatusOK)
 			return
@@ -139,7 +161,7 @@ func (u *Users) putUser() http.HandlerFunc {
 // in the request body will cause the handler to return http.StatusBadRequest. However,
 // an error on the side of elasticsearch client will cause the handler to return
 // http.StatusInternalServerError.
-func (u *Users) patchUser() http.HandlerFunc {
+func (u *users) patchUser() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		// redundant check
 		userId, _, ok := r.BasicAuth()
@@ -185,15 +207,83 @@ func (u *Users) patchUser() http.HandlerFunc {
 	}
 }
 
+func (u *users) patchAnotherUser() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		vars := mux.Vars(r)
+		userId, ok := vars["user_id"]
+		if !ok {
+			util.WriteBackError(w, "cannot patch user without 'user_id'", http.StatusBadRequest)
+			return
+		}
+
+		body, err := ioutil.ReadAll(r.Body)
+		if err != nil {
+			msg := "can't read body"
+			log.Printf(fmt.Sprintf("%s: %s: %v", logTag, msg, err))
+			util.WriteBackError(w, msg, http.StatusBadRequest)
+			return
+		}
+
+		var obj user.User
+		err = json.Unmarshal(body, &obj)
+		if err != nil {
+			msg := "error parsing request body"
+			log.Printf("%s: %s: %v\n", logTag, msg, err)
+			util.WriteBackError(w, msg, http.StatusBadRequest)
+			return
+		}
+
+		patch, err := obj.GetPatch()
+		if err != nil {
+			log.Printf("%s: %v", logTag, err)
+			util.WriteBackError(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+
+		ok, err = u.es.patchUser(userId, patch)
+		if ok && err == nil {
+			msg := fmt.Sprintf(`Successfully updated user with "user_id"="%s"`, userId)
+			util.WriteBackMessage(w, msg, http.StatusOK)
+			return
+		}
+
+		msg := fmt.Sprintf("error updating user with user_id=%s", userId)
+		log.Printf("%s: %s: %v\n", logTag, msg, err)
+		util.WriteBackError(w, msg, http.StatusInternalServerError)
+	}
+}
+
 // deleteUser deletes the user.User from elasticsearch. THe handler expects user_id
 // and password for the user.User the request intends to delete. An error on the side
 // of elasticsearch client will cause the handler to return http.InternalServerError.
-func (u *Users) deleteUser() http.HandlerFunc {
+func (u *users) deleteUser() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		// redundant check, should be verified in authenticator
 		userId, _, ok := r.BasicAuth()
 		if !ok {
 			util.WriteBackError(w, "credentials not provided", http.StatusUnauthorized)
+			return
+		}
+
+		ok, err := u.es.deleteUser(userId)
+		if ok && err == nil {
+			msg := fmt.Sprintf(`Successfully deleted user with "user_id"="%s"`, userId)
+			util.WriteBackMessage(w, msg, http.StatusOK)
+			return
+		}
+
+		msg := fmt.Sprintf("error deleting user with user_id=%s", userId)
+		log.Printf("%s: %s: %v\n", logTag, msg, err)
+		util.WriteBackError(w, msg, http.StatusInternalServerError)
+	}
+}
+
+func (u *users) deleteAnotherUser() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		vars := mux.Vars(r)
+		userId, ok := vars["user_id"]
+		if !ok {
+			util.WriteBackError(w, "cannot delete a user without 'user_id'", http.StatusBadRequest)
 			return
 		}
 

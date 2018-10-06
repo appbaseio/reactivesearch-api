@@ -10,14 +10,14 @@ import (
 	"github.com/appbaseio-confidential/arc/internal/util"
 )
 
-func (es *ES) handler() http.HandlerFunc {
+func (es *es) handler() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
 
-		ctxACL := ctx.Value(acl.CtxKey)
+		ctxACL := ctx.Value(acl.CtxKey).(*acl.ACL)
 		log.Printf("%s: acl=%s\n", logTag, ctxACL)
 
-		ctxOp := ctx.Value(op.CtxKey)
+		ctxOp := ctx.Value(op.CtxKey).(*op.Operation)
 		log.Printf("%s: operation=%s\n", logTag, ctxOp)
 
 		// Forward the request to elasticsearch
@@ -32,8 +32,11 @@ func (es *ES) handler() http.HandlerFunc {
 
 		// Copy the headers
 		for k, v := range response.Header {
-			w.Header()[k] = v
+			if k != "Content-Length" {
+				w.Header().Set(k, v[0])
+			}
 		}
+		w.Header().Set("X-Origin", "ES")
 
 		// Copy the status code
 		w.WriteHeader(response.StatusCode)

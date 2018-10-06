@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
 
 	"github.com/appbaseio-confidential/arc/internal/types/permission"
 	"github.com/appbaseio-confidential/arc/internal/types/user"
@@ -45,7 +44,7 @@ func NewES(url, userIndex, userType, permissionIndex, permissionType string) (*e
 }
 
 func (es *elasticsearch) putUser(u user.User) (bool, error) {
-	resp, err := es.client.Index().
+	_, err := es.client.Index().
 		Index(es.userIndex).
 		Type(es.userType).
 		Id(u.UserId).
@@ -55,8 +54,8 @@ func (es *elasticsearch) putUser(u user.User) (bool, error) {
 		return false, err
 	}
 
-	raw, _ := json.Marshal(resp)
-	log.Printf("%s: es_response: %s\n", logTag, string(raw))
+	//raw, _ := json.Marshal(resp)
+	//log.Printf("%s: es_response: %s\n", logTag, string(raw))
 
 	return true, nil
 }
@@ -93,7 +92,7 @@ func (es *elasticsearch) getRawUser(userId string) ([]byte, error) {
 }
 
 func (es *elasticsearch) putPermission(p permission.Permission) (bool, error) {
-	resp, err := es.client.Index().
+	_, err := es.client.Index().
 		Index(es.permissionIndex).
 		Type(es.permissionType).
 		Id(p.UserName).
@@ -103,8 +102,8 @@ func (es *elasticsearch) putPermission(p permission.Permission) (bool, error) {
 		return false, err
 	}
 
-	raw, _ := json.Marshal(resp)
-	log.Printf("%s: es_response: %s\n", logTag, string(raw))
+	//raw, _ := json.Marshal(resp)
+	//log.Printf("%s: es_response: %s\n", logTag, string(raw))
 
 	return true, nil
 }
@@ -133,8 +132,8 @@ func (es *elasticsearch) getRawPermission(username string) ([]byte, error) {
 		return nil, err
 	}
 
-	raw, _ := json.Marshal(resp)
-	log.Printf("%s: es_response: %v", logTag, string(raw))
+	//raw, _ := json.Marshal(resp)
+	//log.Printf("%s: es_response: %v", logTag, string(raw))
 
 	src, err := resp.Source.MarshalJSON()
 	if err != nil {

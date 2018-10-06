@@ -5,8 +5,8 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"sync"
 
-	"github.com/appbaseio-confidential/arc/arc/middleware/order"
 	"github.com/appbaseio-confidential/arc/internal/errors"
 )
 
@@ -15,16 +15,22 @@ const (
 	envEsClusterURL = "ES_CLUSTER_URL"
 )
 
-type Interceptor struct {
-	order.Single
-}
+var (
+	instance *interceptor
+	once     sync.Once
+)
 
-func New() *Interceptor {
-	return &Interceptor{}
+type interceptor struct{}
+
+func Instance() *interceptor {
+	once.Do(func() {
+		instance = &interceptor{}
+	})
+	return instance
 }
 
 // TODO: Create a new request?
-func (i *Interceptor) intercept(h http.HandlerFunc) http.HandlerFunc {
+func (i *interceptor) Intercept(h http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		rawURL := os.Getenv("ES_CLUSTER_URL")
 		if rawURL == "" {
@@ -42,6 +48,12 @@ func (i *Interceptor) intercept(h http.HandlerFunc) http.HandlerFunc {
 		r.URL.Host = esURL.Host
 		r.URL.User = esURL.User
 
+		// TODO: handle gzip?
+		encoding := r.Header.Get("Accept-Encoding")
+		if encoding != "" {
+			r.Header.Set("Accept-Encoding", "identity")
+		}
+
 		v := r.Header.Get("Content-Type")
 		if v == "" {
 			r.Header.Set("Content-Type", "application/json")
@@ -50,8 +62,4 @@ func (i *Interceptor) intercept(h http.HandlerFunc) http.HandlerFunc {
 
 		h(w, r)
 	}
-}
-
-func (i *Interceptor) Wrap(h http.HandlerFunc) http.HandlerFunc {
-	return i.Adapt(h, i.intercept)
 }

@@ -16,6 +16,7 @@ import (
 	"github.com/appbaseio-confidential/arc/internal/util"
 	"github.com/appbaseio-confidential/arc/middleware/interceptor"
 	"github.com/appbaseio-confidential/arc/middleware/logger"
+	"github.com/appbaseio-confidential/arc/plugins/analytics"
 	"github.com/appbaseio-confidential/arc/plugins/auth"
 )
 
@@ -47,7 +48,7 @@ type spec struct {
 }
 
 // TODO: major refactoring
-func (es *ES) routes() []plugin.Route {
+func (es *es) routes() []plugin.Route {
 	// fetch es api
 	files := make(chan string)
 	apis := make(chan api)
@@ -63,17 +64,18 @@ func (es *ES) routes() []plugin.Route {
 
 	// init the necessary middleware
 	var (
-		redirectRequest = interceptor.New().Wrap
-		basicAuth       = auth.New().BasicAuth
-		reqLogger       = logger.New()
-		classifier      = es.classifier
+		redirectRequest   = interceptor.Instance().Intercept
+		basicAuth         = auth.Instance().BasicAuth
+		reqLogger         = logger.Instance().Log
+		classifier        = es.classifier
+		analyticsRecorder = analytics.Instance().Recorder
 		//ratelimit       = ratelimiter.New().RateLimit
 	)
 
 	// TODO: validate permission for index being accessed
 	// TODO: chain common middleware
 	// handler
-	var handlerFunc = reqLogger(classifier(basicAuth(validateOp(validateACL(redirectRequest(es.handler()))))))
+	var handlerFunc = reqLogger(classifier(basicAuth(validateOp(validateACL(redirectRequest(analyticsRecorder(es.handler())))))))
 
 	// accumulate the routes
 	var routes []plugin.Route

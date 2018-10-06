@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"sync"
 
 	"github.com/appbaseio-confidential/arc/arc"
 	"github.com/appbaseio-confidential/arc/arc/plugin"
@@ -19,16 +20,28 @@ const (
 	envPermissionEsType  = "PERMISSIONS_ES_TYPE"
 )
 
-type Permissions struct {
+var (
+	instance *permissions
+	once     sync.Once
+)
+
+type permissions struct {
 	es *elasticsearch
 }
 
 func init() {
-	arc.RegisterPlugin(&Permissions{})
+	arc.RegisterPlugin(Instance())
+}
+
+func Instance() *permissions {
+	once.Do(func() {
+		instance = &permissions{}
+	})
+	return instance
 }
 
 // Name returns the name of the plugin: 'permissions'.
-func (p *Permissions) Name() string {
+func (p *permissions) Name() string {
 	return pluginName
 }
 
@@ -36,7 +49,7 @@ func (p *Permissions) Name() string {
 // the elasticsearch as its dao. The function returns EnvVarNotSetError
 // in case the required environment variables are not set before the plugin
 // is loaded.
-func (p *Permissions) InitFunc() error {
+func (p *permissions) InitFunc() error {
 	log.Printf("%s: initializing plugin: %s\n", logTag, pluginName)
 
 	// fetch vars from env
@@ -65,6 +78,6 @@ func (p *Permissions) InitFunc() error {
 }
 
 // Routes returns the routes that this plugin handles.
-func (p *Permissions) Routes() []plugin.Route {
+func (p *permissions) Routes() []plugin.Route {
 	return p.routes()
 }

@@ -3,6 +3,7 @@ package user
 import (
 	"log"
 	"regexp"
+	"strings"
 
 	"github.com/appbaseio-confidential/arc/internal/errors"
 	"github.com/appbaseio-confidential/arc/internal/types/acl"
@@ -68,6 +69,7 @@ func SetIndices(indices []string) Options {
 			return errors.NilIndicesError
 		}
 		for _, pattern := range indices {
+			pattern = strings.Replace(pattern, "*", ".*", -1)
 			if _, err := regexp.Compile(pattern); err != nil {
 				return err
 			}

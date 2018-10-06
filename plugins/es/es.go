@@ -2,6 +2,7 @@ package es
 
 import (
 	"log"
+	"sync"
 
 	"github.com/appbaseio-confidential/arc/arc"
 	"github.com/appbaseio-confidential/arc/arc/plugin"
@@ -12,23 +13,35 @@ const (
 	logTag     = "[es]"
 )
 
-type ES struct {
+var (
+	instance *es
+	once     sync.Once
+)
+
+type es struct {
 	specs []api
 }
 
 func init() {
-	arc.RegisterPlugin(&ES{})
+	arc.RegisterPlugin(Instance())
 }
 
-func (es *ES) Name() string {
+func Instance() *es {
+	once.Do(func() {
+		instance = &es{}
+	})
+	return instance
+}
+
+func (es *es) Name() string {
 	return pluginName
 }
 
-func (es *ES) InitFunc() error {
+func (es *es) InitFunc() error {
 	log.Printf("%s: initializing plugin: %s", logTag, pluginName)
 	return nil
 }
 
-func (es *ES) Routes() []plugin.Route {
+func (es *es) Routes() []plugin.Route {
 	return es.routes()
 }
