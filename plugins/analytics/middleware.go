@@ -208,11 +208,11 @@ func (a *analytics) recordResponse(docId, searchId string, respRecorder *httptes
 	}
 
 	// TODO: Remove
-	//rawRecord, err := json.Marshal(record)
-	//if err != nil {
-	//	log.Printf("%s: error marshalling analytics record: %v", logTag, err)
-	//}
-	//log.Printf("%s: %s", logTag, string(rawRecord))
+	rawRecord, err := json.Marshal(record)
+	if err != nil {
+		log.Printf("%s: error marshalling analytics record: %v", logTag, err)
+	}
+	log.Printf("%s: %s", logTag, string(rawRecord))
 
 	a.es.indexRecord(docId, record)
 }

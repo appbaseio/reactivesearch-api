@@ -19,8 +19,9 @@ func (a *analytics) getOverview() http.HandlerFunc {
 			}
 		}
 		from, to, size := queryParams(r.URL.Query())
+		indices, _ := getIndices(r)
 
-		raw, err := a.es.analyticsOverview(from, to, size, clickAnalytics)
+		raw, err := a.es.analyticsOverview(from, to, size, clickAnalytics, indices...)
 		if err != nil {
 			log.Printf("%s: %v", logTag, err)
 			util.WriteBackMessage(w, "Internal server error", http.StatusInternalServerError)
@@ -41,8 +42,9 @@ func (a *analytics) getAdvanced() http.HandlerFunc {
 			}
 		}
 		from, to, size := queryParams(r.URL.Query())
+		indices, _ := getIndices(r)
 
-		raw, err := a.es.advancedAnalytics(from, to, size, clickAnalytics)
+		raw, err := a.es.advancedAnalytics(from, to, size, clickAnalytics, indices...)
 		if err != nil {
 			log.Printf("%s: %v", logTag, err)
 			util.WriteBackMessage(w, "Internal server error", http.StatusInternalServerError)
@@ -63,8 +65,9 @@ func (a *analytics) getPopularSearches() http.HandlerFunc {
 			}
 		}
 		from, to, size := queryParams(r.URL.Query())
+		indices, _ := getIndices(r)
 
-		raw, err := a.es.popularSearchesRaw(from, to, size, clickAnalytics)
+		raw, err := a.es.popularSearchesRaw(from, to, size, clickAnalytics, indices...)
 		if err != nil {
 			log.Printf("%s: %v", logTag, err)
 			util.WriteBackMessage(w, "Internal server error", http.StatusInternalServerError)
@@ -76,7 +79,10 @@ func (a *analytics) getPopularSearches() http.HandlerFunc {
 
 func (a *analytics) getNoResultsSearches() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		raw, err := a.es.noResultsSearchesRaw(queryParams(r.URL.Query()))
+		from, to, size := queryParams(r.URL.Query())
+		indices, _ := getIndices(r)
+
+		raw, err := a.es.noResultsSearchesRaw(from, to, size, indices...)
 		if err != nil {
 			log.Printf("%s: %v", logTag, err)
 			util.WriteBackMessage(w, "Internal server error", http.StatusInternalServerError)
@@ -97,8 +103,9 @@ func (a *analytics) getPopularFilters() http.HandlerFunc {
 			}
 		}
 		from, to, size := queryParams(r.URL.Query())
+		indices, _ := getIndices(r)
 
-		raw, err := a.es.popularFiltersRaw(from, to, size, clickAnalytics)
+		raw, err := a.es.popularFiltersRaw(from, to, size, clickAnalytics, indices...)
 		if err != nil {
 			log.Printf("%s: %v", logTag, err)
 			util.WriteBackMessage(w, "Internal server error", http.StatusInternalServerError)
@@ -119,8 +126,9 @@ func (a *analytics) getPopularResults() http.HandlerFunc {
 			}
 		}
 		from, to, size := queryParams(r.URL.Query())
+		indices, _ := getIndices(r)
 
-		raw, err := a.es.popularResultsRaw(from, to, size, clickAnalytics)
+		raw, err := a.es.popularResultsRaw(from, to, size, clickAnalytics, indices...)
 		if err != nil {
 			log.Printf("%s: %v", logTag, err)
 			util.WriteBackMessage(w, "Internal server error", http.StatusInternalServerError)
@@ -132,7 +140,10 @@ func (a *analytics) getPopularResults() http.HandlerFunc {
 
 func (a *analytics) getGeoRequestsDistribution() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		raw, err := a.es.geoRequestsDistribution(queryParams(r.URL.Query()))
+		from, to, size := queryParams(r.URL.Query())
+		indices, _ := getIndices(r)
+
+		raw, err := a.es.geoRequestsDistribution(from, to, size, indices...)
 		if err != nil {
 			log.Printf("%s: %v", logTag, err)
 			util.WriteBackMessage(w, "Internal server error", http.StatusInternalServerError)
@@ -144,7 +155,10 @@ func (a *analytics) getGeoRequestsDistribution() http.HandlerFunc {
 
 func (a *analytics) getLatencies() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		raw, err := a.es.latencies(queryParams(r.URL.Query()))
+		from, to, size := queryParams(r.URL.Query())
+		indices, _ := getIndices(r)
+
+		raw, err := a.es.latencies(from, to, size, indices...)
 		if err != nil {
 			log.Printf("%s: %v", logTag, err)
 			util.WriteBackMessage(w, "Internal server error", http.StatusInternalServerError)
@@ -156,7 +170,10 @@ func (a *analytics) getLatencies() http.HandlerFunc {
 
 func (a *analytics) getSummary() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		raw, err := a.es.summary(queryParams(r.URL.Query()))
+		from, to, _ := queryParams(r.URL.Query())
+		indices, _ := getIndices(r)
+
+		raw, err := a.es.summary(from, to, indices...)
 		if err != nil {
 			log.Printf("%s: %v", logTag, err)
 			util.WriteBackMessage(w, "Internal server error", http.StatusInternalServerError)

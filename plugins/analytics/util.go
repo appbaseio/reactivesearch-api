@@ -2,10 +2,13 @@ package analytics
 
 import (
 	"log"
+	"net/http"
 	"net/url"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/gorilla/mux"
 )
 
 func queryParams(values url.Values) (from, to string, size int) {
@@ -49,7 +52,6 @@ func getWeekRange() (from, to string) {
 	return
 }
 
-
 func parse(header string) []map[string]string {
 	var m []map[string]string
 	tokens := strings.Split(header, ",")
@@ -63,4 +65,21 @@ func parse(header string) []map[string]string {
 		}
 	}
 	return m
+}
+
+func getIndices(r *http.Request) ([]string, bool) {
+	vars := mux.Vars(r)
+	indexVar, ok := vars["index"]
+	if !ok {
+		return nil, false
+	}
+
+	var indices []string
+	tokens := strings.Split(indexVar, ",")
+	for _, index := range tokens {
+		index = strings.TrimSpace(index)
+		indices = append(indices, index)
+	}
+
+	return indices, true
 }

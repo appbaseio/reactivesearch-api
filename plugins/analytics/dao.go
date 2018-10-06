@@ -102,10 +102,10 @@ func (es *elasticsearch) deleteOldRecords() {
 }
 
 // TODO: async??
-func (es *elasticsearch) analyticsOverview(from, to string, size int, clickAnalytics bool) ([]byte, error) {
+func (es *elasticsearch) analyticsOverview(from, to string, size int, clickAnalytics bool, indices ...string) ([]byte, error) {
 	var overview []map[string]interface{}
 
-	popularSearches, err := es.popularSearches(from, to, size, clickAnalytics)
+	popularSearches, err := es.popularSearches(from, to, size, clickAnalytics, indices...)
 	if err != nil {
 		log.Printf("%s: %v", logTag, err)
 		overview = append(overview, map[string]interface{}{
@@ -115,7 +115,7 @@ func (es *elasticsearch) analyticsOverview(from, to string, size int, clickAnaly
 		overview = append(overview, popularSearches)
 	}
 
-	noResultsSearches, err := es.noResultsSearches(from, to, size)
+	noResultsSearches, err := es.noResultsSearches(from, to, size, indices...)
 	if err != nil {
 		log.Printf("%s: %v", logTag, err)
 		overview = append(overview, map[string]interface{}{
@@ -125,7 +125,7 @@ func (es *elasticsearch) analyticsOverview(from, to string, size int, clickAnaly
 		overview = append(overview, noResultsSearches)
 	}
 
-	searchHistogram, err := es.searchHistogram(from, to, size)
+	searchHistogram, err := es.searchHistogram(from, to, size, indices...)
 	if err != nil {
 		log.Printf("%s: %v", err, err)
 		overview = append(overview, map[string]interface{}{
@@ -139,10 +139,10 @@ func (es *elasticsearch) analyticsOverview(from, to string, size int, clickAnaly
 }
 
 // TODO: async??
-func (es *elasticsearch) advancedAnalytics(from, to string, size int, clickAnalytics bool) ([]byte, error) {
+func (es *elasticsearch) advancedAnalytics(from, to string, size int, clickAnalytics bool, indices ...string) ([]byte, error) {
 	var advancedAnalytics []map[string]interface{}
 
-	popularSearches, err := es.popularSearches(from, to, size, clickAnalytics)
+	popularSearches, err := es.popularSearches(from, to, size, clickAnalytics, indices...)
 	if err != nil {
 		log.Printf("%s: %v", logTag, err)
 		advancedAnalytics = append(advancedAnalytics, map[string]interface{}{
@@ -152,7 +152,7 @@ func (es *elasticsearch) advancedAnalytics(from, to string, size int, clickAnaly
 		advancedAnalytics = append(advancedAnalytics, popularSearches)
 	}
 
-	popularResults, err := es.popularResults(from, to, size, clickAnalytics)
+	popularResults, err := es.popularResults(from, to, size, clickAnalytics, indices...)
 	if err != nil {
 		log.Printf("%s: %v", logTag, err)
 		advancedAnalytics = append(advancedAnalytics, map[string]interface{}{
@@ -162,7 +162,7 @@ func (es *elasticsearch) advancedAnalytics(from, to string, size int, clickAnaly
 		advancedAnalytics = append(advancedAnalytics, popularResults)
 	}
 
-	popularFilters, err := es.popularFilters(from, to, size, clickAnalytics)
+	popularFilters, err := es.popularFilters(from, to, size, clickAnalytics, indices...)
 	if err != nil {
 		log.Printf("%s: %v", logTag, err)
 		advancedAnalytics = append(advancedAnalytics, map[string]interface{}{
@@ -172,7 +172,7 @@ func (es *elasticsearch) advancedAnalytics(from, to string, size int, clickAnaly
 		advancedAnalytics = append(advancedAnalytics, popularFilters)
 	}
 
-	noResultsSearches, err := es.noResultsSearches(from, to, size)
+	noResultsSearches, err := es.noResultsSearches(from, to, size, indices...)
 	if err != nil {
 		log.Printf("%s: %v", logTag, err)
 		advancedAnalytics = append(advancedAnalytics, map[string]interface{}{
@@ -182,7 +182,7 @@ func (es *elasticsearch) advancedAnalytics(from, to string, size int, clickAnaly
 		advancedAnalytics = append(advancedAnalytics, noResultsSearches)
 	}
 
-	searchHistogram, err := es.searchHistogram(from, to, size)
+	searchHistogram, err := es.searchHistogram(from, to, size, indices...)
 	if err != nil {
 		log.Printf("%s: %v", logTag, err)
 		advancedAnalytics = append(advancedAnalytics, map[string]interface{}{
@@ -195,14 +195,22 @@ func (es *elasticsearch) advancedAnalytics(from, to string, size int, clickAnaly
 	return json.Marshal(advancedAnalytics)
 }
 
-func (es *elasticsearch) popularSearches(from, to string, size int, clickAnalytics bool) (map[string]interface{}, error) {
+func (es *elasticsearch) popularSearches(from, to string, size int, clickAnalytics bool, indices ...string) (map[string]interface{}, error) {
 	duration := elastic.NewRangeQuery("datestamp").
 		From(from).
 		To(to)
 
 	query := elastic.NewBoolQuery().
-		Must(elastic.NewMatchAllQuery()).
 		Filter(duration)
+
+	if indices != nil {
+		var indexQueries []elastic.Query
+		for _, index := range indices {
+			query := elastic.NewTermQuery("indices.keyword", index)
+			indexQueries = append(indexQueries, query)
+		}
+		query = query.Must(indexQueries...)
+	}
 
 	aggr := elastic.NewTermsAggregation().
 		Field("search_query.keyword").
@@ -249,14 +257,22 @@ func (es *elasticsearch) popularSearches(from, to string, size int, clickAnalyti
 	return popularSearches, nil
 }
 
-func (es *elasticsearch) popularSearchesRaw(from, to string, size int, clickAnalytics bool) ([]byte, error) {
+func (es *elasticsearch) popularSearchesRaw(from, to string, size int, clickAnalytics bool, indices ...string) ([]byte, error) {
 	duration := elastic.NewRangeQuery("datestamp").
 		From(from).
 		To(to)
 
 	query := elastic.NewBoolQuery().
-		Must(elastic.NewMatchAllQuery()).
 		Filter(duration)
+
+	if indices != nil {
+		var indexQueries []elastic.Query
+		for _, index := range indices {
+			query := elastic.NewTermQuery("indices.keyword", index)
+			indexQueries = append(indexQueries, query)
+		}
+		query = query.Must(indexQueries...)
+	}
 
 	aggr := elastic.NewTermsAggregation().
 		Field("search_query.keyword").
@@ -303,7 +319,7 @@ func (es *elasticsearch) popularSearchesRaw(from, to string, size int, clickAnal
 	return json.Marshal(popularSearches)
 }
 
-func (es *elasticsearch) noResultsSearchesRaw(from, to string, size int) ([]byte, error) {
+func (es *elasticsearch) noResultsSearchesRaw(from, to string, size int, indices ...string) ([]byte, error) {
 	duration := elastic.NewRangeQuery("datestamp").
 		From(from).
 		To(to)
@@ -311,8 +327,16 @@ func (es *elasticsearch) noResultsSearchesRaw(from, to string, size int) ([]byte
 	zeroHits := elastic.NewTermQuery("total_hits", 0)
 
 	query := elastic.NewBoolQuery().
-		Must(elastic.NewMatchAllQuery()).
 		Filter(duration, zeroHits)
+
+	if indices != nil {
+		var indexQueries []elastic.Query
+		for _, index := range indices {
+			query := elastic.NewTermQuery("indices.keyword", index)
+			indexQueries = append(indexQueries, query)
+		}
+		query = query.Must(indexQueries...)
+	}
 
 	aggr := elastic.NewTermsAggregation().
 		Field("search_query.keyword").
@@ -350,7 +374,7 @@ func (es *elasticsearch) noResultsSearchesRaw(from, to string, size int) ([]byte
 	return json.Marshal(noResultsSearches)
 }
 
-func (es *elasticsearch) noResultsSearches(from, to string, size int) (map[string]interface{}, error) {
+func (es *elasticsearch) noResultsSearches(from, to string, size int, indices ...string) (map[string]interface{}, error) {
 	duration := elastic.NewRangeQuery("datestamp").
 		From(from).
 		To(to)
@@ -358,8 +382,16 @@ func (es *elasticsearch) noResultsSearches(from, to string, size int) (map[strin
 	zeroHits := elastic.NewTermQuery("total_hits", 0)
 
 	query := elastic.NewBoolQuery().
-		Must(elastic.NewMatchAllQuery()).
 		Filter(duration, zeroHits)
+
+	if indices != nil {
+		var indexQueries []elastic.Query
+		for _, index := range indices {
+			query := elastic.NewTermQuery("indices.keyword", index)
+			indexQueries = append(indexQueries, query)
+		}
+		query = query.Must(indexQueries...)
+	}
 
 	aggr := elastic.NewTermsAggregation().
 		Field("search_query.keyword").
@@ -397,15 +429,22 @@ func (es *elasticsearch) noResultsSearches(from, to string, size int) (map[strin
 	return noResultsSearches, nil
 }
 
-
-func (es *elasticsearch) popularFiltersRaw(from, to string, size int, clickAnalytics bool) ([]byte, error) {
+func (es *elasticsearch) popularFiltersRaw(from, to string, size int, clickAnalytics bool, indices ...string) ([]byte, error) {
 	duration := elastic.NewRangeQuery("datestamp").
 		From(from).
 		To(to)
 
 	query := elastic.NewBoolQuery().
-		Must(elastic.NewMatchAllQuery()).
 		Filter(duration)
+
+	if indices != nil {
+		var indexQueries []elastic.Query
+		for _, index := range indices {
+			query := elastic.NewTermQuery("indices.keyword", index)
+			indexQueries = append(indexQueries, query)
+		}
+		query = query.Must(indexQueries...)
+	}
 
 	valueAggr := elastic.NewTermsAggregation().
 		Field("search_filters.value.keyword").
@@ -465,14 +504,22 @@ func (es *elasticsearch) popularFiltersRaw(from, to string, size int, clickAnaly
 	return json.Marshal(popularFilters)
 }
 
-func (es *elasticsearch) popularFilters(from, to string, size int, clickAnalytics bool) (map[string]interface{}, error) {
+func (es *elasticsearch) popularFilters(from, to string, size int, clickAnalytics bool, indices ...string) (map[string]interface{}, error) {
 	duration := elastic.NewRangeQuery("datestamp").
 		From(from).
 		To(to)
 
 	query := elastic.NewBoolQuery().
-		Must(elastic.NewMatchAllQuery()).
 		Filter(duration)
+
+	if indices != nil {
+		var indexQueries []elastic.Query
+		for _, index := range indices {
+			query := elastic.NewTermQuery("indices.keyword", index)
+			indexQueries = append(indexQueries, query)
+		}
+		query = query.Must(indexQueries...)
+	}
 
 	valueAggr := elastic.NewTermsAggregation().
 		Field("search_filters.value.keyword").
@@ -532,14 +579,22 @@ func (es *elasticsearch) popularFilters(from, to string, size int, clickAnalytic
 	return popularFilters, nil
 }
 
-func (es *elasticsearch) popularResultsRaw(from, to string, size int, clickAnalytics bool) ([]byte, error) {
+func (es *elasticsearch) popularResultsRaw(from, to string, size int, clickAnalytics bool, indices ...string) ([]byte, error) {
 	duration := elastic.NewRangeQuery("datestamp").
 		From(from).
 		To(to)
 
 	query := elastic.NewBoolQuery().
-		Must(elastic.NewMatchAllQuery()).
 		Filter(duration)
+
+	if indices != nil {
+		var indexQueries []elastic.Query
+		for _, index := range indices {
+			query := elastic.NewTermQuery("indices.keyword", index)
+			indexQueries = append(indexQueries, query)
+		}
+		query = query.Must(indexQueries...)
+	}
 
 	fetchSourceCtx := elastic.NewFetchSourceContext(true).Include("hits_in_response.source")
 	sourceAggr := elastic.NewTopHitsAggregation().
@@ -590,14 +645,22 @@ func (es *elasticsearch) popularResultsRaw(from, to string, size int, clickAnaly
 	return json.Marshal(popularResults)
 }
 
-func (es *elasticsearch) popularResults(from, to string, size int, clickAnalytics bool) (map[string]interface{}, error) {
+func (es *elasticsearch) popularResults(from, to string, size int, clickAnalytics bool, indices ...string) (map[string]interface{}, error) {
 	duration := elastic.NewRangeQuery("datestamp").
 		From(from).
 		To(to)
 
 	query := elastic.NewBoolQuery().
-		Must(elastic.NewMatchAllQuery()).
 		Filter(duration)
+
+	if indices != nil {
+		var indexQueries []elastic.Query
+		for _, index := range indices {
+			query := elastic.NewTermQuery("indices.keyword", index)
+			indexQueries = append(indexQueries, query)
+		}
+		query = query.Must(indexQueries...)
+	}
 
 	fetchSourceCtx := elastic.NewFetchSourceContext(true).Include("hits_in_response.source")
 	sourceAggr := elastic.NewTopHitsAggregation().
@@ -648,14 +711,22 @@ func (es *elasticsearch) popularResults(from, to string, size int, clickAnalytic
 	return popularResults, nil
 }
 
-func (es *elasticsearch) geoRequestsDistribution(from, to string, size int) ([]byte, error) {
+func (es *elasticsearch) geoRequestsDistribution(from, to string, size int, indices ...string) ([]byte, error) {
 	duration := elastic.NewRangeQuery("datestamp").
 		From(from).
 		To(to)
 
 	query := elastic.NewBoolQuery().
-		Must(elastic.NewMatchAllQuery()).
 		Filter(duration)
+
+	if indices != nil {
+		var indexQueries []elastic.Query
+		for _, index := range indices {
+			query := elastic.NewTermQuery("indices.keyword", index)
+			indexQueries = append(indexQueries, query)
+		}
+		query = query.Must(indexQueries...)
+	}
 
 	aggr := elastic.NewTermsAggregation().
 		Field("country.keyword").
@@ -695,14 +766,22 @@ func (es *elasticsearch) geoRequestsDistribution(from, to string, size int) ([]b
 	return json.Marshal(geoDist)
 }
 
-func (es *elasticsearch) latencies(from, to string, size int) ([]byte, error) {
+func (es *elasticsearch) latencies(from, to string, size int, indices ...string) ([]byte, error) {
 	duration := elastic.NewRangeQuery("datestamp").
 		From(from).
 		To(to)
 
 	query := elastic.NewBoolQuery().
-		Must(elastic.NewMatchAllQuery()).
 		Filter(duration)
+
+	if indices != nil {
+		var indexQueries []elastic.Query
+		for _, index := range indices {
+			query := elastic.NewTermQuery("indices.keyword", index)
+			indexQueries = append(indexQueries, query)
+		}
+		query = query.Must(indexQueries...)
+	}
 
 	aggr := elastic.NewHistogramAggregation().
 		Field("took").
@@ -740,34 +819,16 @@ func (es *elasticsearch) latencies(from, to string, size int) ([]byte, error) {
 	return json.Marshal(latencies)
 }
 
-// TODO: TEST??
-func clickAnalyticsOnTerms(aggr *elastic.TermsAggregation) {
-	clickAggr := elastic.NewTermsAggregation().
-		Field("click").
-		OrderByCountDesc()
-
-	clickPositionAggr := elastic.NewAvgAggregation().
-		Field("click_position")
-
-	conversionAggr := elastic.NewTermsAggregation().
-		Field("conversion")
-
-	aggr.
-		SubAggregation("click_aggr", clickAggr).
-		SubAggregation("click_position_aggr", clickPositionAggr).
-		SubAggregation("conversion_aggr", conversionAggr)
-}
-
-func (es *elasticsearch) summary(from, to string, size int) ([]byte, error) {
-	totalSearches, err := es.totalSearches(from, to)
+func (es *elasticsearch) summary(from, to string, indices ...string) ([]byte, error) {
+	totalSearches, err := es.totalSearches(from, to, indices...)
 	if err != nil {
 		return nil, err
 	}
-	totalClicks, err := es.totalClicks(from, to)
+	totalClicks, err := es.totalClicks(from, to, indices...)
 	if err != nil {
 		return nil, err
 	}
-	totalConversions, err := es.totalConversions(from, to)
+	totalConversions, err := es.totalConversions(from, to, indices...)
 	if err != nil {
 		return nil, err
 	}
@@ -803,14 +864,22 @@ func (es *elasticsearch) summary(from, to string, size int) ([]byte, error) {
 	return json.Marshal(summary)
 }
 
-func (es *elasticsearch) totalSearches(from, to string) (float64, error) {
+func (es *elasticsearch) totalSearches(from, to string, indices ...string) (float64, error) {
 	duration := elastic.NewRangeQuery("datestamp").
 		From(from).
 		To(to)
 
 	query := elastic.NewBoolQuery().
-		Must(elastic.NewMatchAllQuery()).
 		Filter(duration)
+
+	if indices != nil {
+		var indexQueries []elastic.Query
+		for _, index := range indices {
+			query := elastic.NewTermQuery("indices.keyword", index)
+			indexQueries = append(indexQueries, query)
+		}
+		query = query.Must(indexQueries...)
+	}
 
 	aggr := elastic.NewValueCountAggregation().Field("indices.keyword")
 
@@ -830,7 +899,7 @@ func (es *elasticsearch) totalSearches(from, to string) (float64, error) {
 	return *aggrResult.Value, nil
 }
 
-func (es *elasticsearch) totalConversions(from, to string) (float64, error) {
+func (es *elasticsearch) totalConversions(from, to string, indices ...string) (float64, error) {
 	duration := elastic.NewRangeQuery("datestamp").
 		From(from).
 		To(to)
@@ -838,8 +907,16 @@ func (es *elasticsearch) totalConversions(from, to string) (float64, error) {
 	convertedSearches := elastic.NewTermQuery("conversion", true)
 
 	query := elastic.NewBoolQuery().
-		Must(elastic.NewMatchAllQuery()).
 		Filter(duration, convertedSearches)
+
+	if indices != nil {
+		var indexQueries []elastic.Query
+		for _, index := range indices {
+			query := elastic.NewTermQuery("indices.keyword", index)
+			indexQueries = append(indexQueries, query)
+		}
+		query = query.Must(indexQueries...)
+	}
 
 	count, err := elastic.NewCountService(es.client).
 		Query(query).
@@ -851,7 +928,7 @@ func (es *elasticsearch) totalConversions(from, to string) (float64, error) {
 	return float64(count), nil
 }
 
-func (es *elasticsearch) totalClicks(from, to string) (float64, error) {
+func (es *elasticsearch) totalClicks(from, to string, indices ...string) (float64, error) {
 	duration := elastic.NewRangeQuery("datestamp").
 		From(from).
 		To(to)
@@ -859,8 +936,16 @@ func (es *elasticsearch) totalClicks(from, to string) (float64, error) {
 	clicks := elastic.NewTermQuery("click", true)
 
 	query := elastic.NewBoolQuery().
-		Must(elastic.NewMatchAllQuery()).
 		Filter(duration, clicks)
+
+	if indices != nil {
+		var indexQueries []elastic.Query
+		for _, index := range indices {
+			query := elastic.NewTermQuery("indices.keyword", index)
+			indexQueries = append(indexQueries, query)
+		}
+		query = query.Must(indexQueries...)
+	}
 
 	count, err := elastic.NewCountService(es.client).
 		Query(query).
@@ -872,14 +957,22 @@ func (es *elasticsearch) totalClicks(from, to string) (float64, error) {
 	return float64(count), nil
 }
 
-func (es *elasticsearch) searchHistogramRaw(from, to string, size int) ([]byte, error) {
+func (es *elasticsearch) searchHistogramRaw(from, to string, size int, indices ...string) ([]byte, error) {
 	duration := elastic.NewRangeQuery("datestamp").
 		From(from).
 		To(to)
 
 	query := elastic.NewBoolQuery().
-		Must(elastic.NewMatchAllQuery()).
 		Filter(duration)
+
+	if indices != nil {
+		var indexQueries []elastic.Query
+		for _, index := range indices {
+			query := elastic.NewTermQuery("indices.keyword", index)
+			indexQueries = append(indexQueries, query)
+		}
+		query = query.Must(indexQueries...)
+	}
 
 	aggr := elastic.NewDateHistogramAggregation().
 		Interval("day").
@@ -918,14 +1011,22 @@ func (es *elasticsearch) searchHistogramRaw(from, to string, size int) ([]byte, 
 	return json.Marshal(searchHistogram)
 }
 
-func (es *elasticsearch) searchHistogram(from, to string, size int) (map[string]interface{}, error) {
+func (es *elasticsearch) searchHistogram(from, to string, size int, indices ...string) (map[string]interface{}, error) {
 	duration := elastic.NewRangeQuery("datestamp").
 		From(from).
 		To(to)
 
 	query := elastic.NewBoolQuery().
-		Must(elastic.NewMatchAllQuery()).
 		Filter(duration)
+
+	if indices != nil {
+		var indexQueries []elastic.Query
+		for _, index := range indices {
+			query := elastic.NewTermQuery("indices.keyword", index)
+			indexQueries = append(indexQueries, query)
+		}
+		query = query.Must(indexQueries...)
+	}
 
 	aggr := elastic.NewDateHistogramAggregation().
 		Interval("day").
@@ -962,6 +1063,24 @@ func (es *elasticsearch) searchHistogram(from, to string, size int) (map[string]
 	}
 
 	return searchHistogram, nil
+}
+
+// TODO: TEST??
+func clickAnalyticsOnTerms(aggr *elastic.TermsAggregation) {
+	clickAggr := elastic.NewTermsAggregation().
+		Field("click").
+		OrderByCountDesc()
+
+	clickPositionAggr := elastic.NewAvgAggregation().
+		Field("click_position")
+
+	conversionAggr := elastic.NewTermsAggregation().
+		Field("conversion")
+
+	aggr.
+		SubAggregation("click_aggr", clickAggr).
+		SubAggregation("click_position_aggr", clickPositionAggr).
+		SubAggregation("conversion_aggr", conversionAggr)
 }
 
 // TODO: TEST??
