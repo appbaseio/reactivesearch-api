@@ -4,6 +4,7 @@ import (
 	"log"
 	"net/url"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -46,4 +47,20 @@ func getWeekRange() (from, to string) {
 	from = now.AddDate(0, 0, -7).Format(format)
 	to = now.Format(format)
 	return
+}
+
+
+func parse(header string) []map[string]string {
+	var m []map[string]string
+	tokens := strings.Split(header, ",")
+	for _, token := range tokens {
+		values := strings.Split(token, "=")
+		if len(values) == 2 {
+			m = append(m, map[string]string{
+				"key":   values[0],
+				"value": values[1],
+			})
+		}
+	}
+	return m
 }

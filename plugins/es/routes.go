@@ -75,7 +75,7 @@ func (es *es) routes() []plugin.Route {
 	// TODO: validate permission for index being accessed
 	// TODO: chain common middleware
 	// handler
-	var handlerFunc = reqLogger(classifier(basicAuth(validateOp(validateACL(redirectRequest(analyticsRecorder(es.handler())))))))
+	var handlerFunc = reqLogger(classifier(basicAuth(validateOp(validateACL(validateIndices(redirectRequest(analyticsRecorder(es.handler()))))))))
 
 	// accumulate the routes
 	var routes []plugin.Route

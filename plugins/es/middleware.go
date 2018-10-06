@@ -211,6 +211,7 @@ func validateIndices(h http.HandlerFunc) http.HandlerFunc {
 			// index level route
 			for _, indexName := range indices {
 				for _, pattern := range p.Indices {
+					pattern := strings.Replace(pattern, "*", ".*", -1)
 					ok, err := regexp.MatchString(pattern, indexName)
 					if err != nil {
 						msg := fmt.Sprintf("invalid index pattern encountered %s", pattern)

@@ -2,7 +2,9 @@ package analytics
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -14,6 +16,8 @@ import (
 	"github.com/appbaseio-confidential/arc/internal/iplookup"
 	"github.com/appbaseio-confidential/arc/internal/types/acl"
 	"github.com/appbaseio-confidential/arc/internal/types/index"
+	"github.com/appbaseio-confidential/arc/internal/types/op"
+	"github.com/appbaseio-confidential/arc/internal/types/user"
 	"github.com/appbaseio-confidential/arc/internal/util"
 	"github.com/google/uuid"
 )
@@ -213,17 +217,103 @@ func (a *analytics) recordResponse(docId, searchId string, respRecorder *httptes
 	a.es.indexRecord(docId, record)
 }
 
-func parse(header string) []map[string]string {
-	var m []map[string]string
-	tokens := strings.Split(header, ",")
-	for _, token := range tokens {
-		values := strings.Split(token, "=")
-		if len(values) == 2 {
-			m = append(m, map[string]string{
-				"key":   values[0],
-				"value": values[1],
-			})
+// classifier classifies an incoming request based on the request method
+// and the endpoint it is trying to access. The middleware makes two
+// classifications: first, the operation (op.Operation) incoming request is
+// trying to do, and second, the acl (acl.ACL) it is trying to access, which
+// is acl.User in this case. The identified classifications are passed along
+// in the request context to the next middleware. Classifier is supposedly
+// the first middleware that a request is expected to encounter.
+func classifier(h http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		analyticsACL := acl.Analytics
+
+		var operation op.Operation
+		switch r.Method {
+		case http.MethodGet:
+			operation = op.Read
+		case http.MethodPost:
+			operation = op.Write
+		case http.MethodPut:
+			operation = op.Write
+		case http.MethodPatch:
+			operation = op.Write
+		case http.MethodDelete:
+			operation = op.Delete
+		default:
+			operation = op.Read
 		}
+
+		ctx := r.Context()
+		ctx = context.WithValue(ctx, acl.CtxKey, &analyticsACL)
+		ctx = context.WithValue(ctx, op.CtxKey, &operation)
+		r = r.WithContext(ctx)
+
+		h(w, r)
 	}
-	return m
+}
+
+// validateOp verifies whether the user.User has the required op.Operation
+// in order to access a particular endpoint. The middleware expects the
+// request context to have both *user.User who is making the request
+// and *op.Operation required in order to access the endpoint. The absence
+// of either values in request context will cause the middleware to return
+// http.InternalServerError.
+func validateOp(h http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		ctx := r.Context()
+
+		ctxUser := ctx.Value(user.CtxKey)
+		if ctxUser == nil {
+			log.Printf("%s: cannot fetch user object from request context", logTag)
+			util.WriteBackMessage(w, "Internal server error", http.StatusInternalServerError)
+			return
+		}
+		u := ctxUser.(*user.User)
+
+		ctxOp := ctx.Value(op.CtxKey)
+		if ctxOp == nil {
+			log.Printf("%s: cannot fetch op from request context", logTag)
+			util.WriteBackMessage(w, "Internal server error", http.StatusInternalServerError)
+			return
+		}
+		operation := ctxOp.(*op.Operation)
+
+		if !op.Contains(u.Ops, *operation) {
+			msg := fmt.Sprintf("user with user_id=%s does not have '%s' op access",
+				u.UserId, operation.String())
+			util.WriteBackMessage(w, msg, http.StatusUnauthorized)
+			return
+		}
+
+		h(w, r)
+	}
+}
+
+// validateACL verifies whether the user.User has the required acl.ACL in
+// order to access a particular endpoint. The middleware expects the request
+// context to have *user.User who is making the request. The absence of
+// *user.User value in the request context will cause the middleware to return
+// http.InternalServerError.
+func validateACL(h http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		ctx := r.Context()
+
+		ctxUser := ctx.Value(user.CtxKey)
+		if ctxUser == nil {
+			log.Printf("%s: cannot fetch user object from request context", logTag)
+			util.WriteBackMessage(w, "Internal server error", http.StatusInternalServerError)
+			return
+		}
+		u := ctxUser.(*user.User)
+
+		if !acl.Contains(u.ACLs, acl.Analytics) {
+			msg := fmt.Sprintf(`user with "user_id"="%s" does not have '%s' acl`,
+				u.UserId, acl.Analytics.String())
+			util.WriteBackMessage(w, msg, http.StatusUnauthorized)
+			return
+		}
+
+		h(w, r)
+	}
 }
