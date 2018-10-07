@@ -7,6 +7,7 @@ import (
 	"log"
 	"sort"
 	"strconv"
+	"sync"
 	"time"
 
 	"github.com/olivere/elastic"
@@ -101,160 +102,167 @@ func (es *elasticsearch) deleteOldRecords() {
 	}
 }
 
-// TODO: async??
 func (es *elasticsearch) analyticsOverview(from, to string, size int, clickAnalytics bool, indices ...string) ([]byte, error) {
-	var overview []map[string]interface{}
+	var wg sync.WaitGroup
+	out := make(chan interface{})
 
-	popularSearches, err := es.popularSearches(from, to, size, clickAnalytics, indices...)
-	if err != nil {
-		log.Printf("%s: %v", logTag, err)
-		overview = append(overview, map[string]interface{}{
-			"popular_searches": []interface{}{},
-		})
-	} else {
-		overview = append(overview, popularSearches)
-	}
+	wg.Add(1)
+	go func(out chan<- interface{}) {
+		defer wg.Done()
+		popularSearches, err := es.popularSearches(from, to, size, clickAnalytics, indices...)
+		if err != nil {
+			log.Printf("%s: %v", logTag, err)
+			out <- map[string]interface{}{
+				"popular_searches": []interface{}{},
+			}
+		} else {
+			out <- popularSearches
+		}
+	}(out)
 
-	noResultsSearches, err := es.noResultsSearches(from, to, size, indices...)
-	if err != nil {
-		log.Printf("%s: %v", logTag, err)
-		overview = append(overview, map[string]interface{}{
-			"no_results_searches": []interface{}{},
-		})
-	} else {
-		overview = append(overview, noResultsSearches)
-	}
+	wg.Add(1)
+	go func(out chan<- interface{}) {
+		defer wg.Done()
+		noResultsSearches, err := es.noResultsSearches(from, to, size, indices...)
+		if err != nil {
+			log.Printf("%s: %v", logTag, err)
+			out <- map[string]interface{}{
+				"no_results_searches": []interface{}{},
+			}
+		} else {
+			out <- noResultsSearches
+		}
+	}(out)
 
-	searchHistogram, err := es.searchHistogram(from, to, size, indices...)
-	if err != nil {
-		log.Printf("%s: %v", err, err)
-		overview = append(overview, map[string]interface{}{
-			"search_volume": []interface{}{},
-		})
-	} else {
-		overview = append(overview, searchHistogram)
+	wg.Add(1)
+	go func(out chan<- interface{}) {
+		defer wg.Done()
+		searchHistogram, err := es.searchHistogram(from, to, size, indices...)
+		if err != nil {
+			log.Printf("%s: %v", err, err)
+			out <- map[string]interface{}{
+				"search_volume": []interface{}{},
+			}
+		} else {
+			out <- searchHistogram
+		}
+	}(out)
+
+	go func() {
+		wg.Wait()
+		close(out)
+	}()
+
+	var overview []interface{}
+	for result := range out {
+		overview = append(overview, result)
 	}
 
 	return json.Marshal(overview)
 }
 
-// TODO: async??
 func (es *elasticsearch) advancedAnalytics(from, to string, size int, clickAnalytics bool, indices ...string) ([]byte, error) {
-	var advancedAnalytics []map[string]interface{}
+	var wg sync.WaitGroup
+	out := make(chan interface{})
 
-	popularSearches, err := es.popularSearches(from, to, size, clickAnalytics, indices...)
-	if err != nil {
-		log.Printf("%s: %v", logTag, err)
-		advancedAnalytics = append(advancedAnalytics, map[string]interface{}{
-			"popular_searches": []interface{}{},
-		})
-	} else {
-		advancedAnalytics = append(advancedAnalytics, popularSearches)
-	}
+	wg.Add(1)
+	go func(out chan<- interface{}) {
+		defer wg.Done()
+		popularSearches, err := es.popularSearches(from, to, size, clickAnalytics, indices...)
+		if err != nil {
+			log.Printf("%s: %v", logTag, err)
+			out <- map[string]interface{}{
+				"popular_searches": []interface{}{},
+			}
+		} else {
+			out <- popularSearches
+		}
+	}(out)
 
-	popularResults, err := es.popularResults(from, to, size, clickAnalytics, indices...)
-	if err != nil {
-		log.Printf("%s: %v", logTag, err)
-		advancedAnalytics = append(advancedAnalytics, map[string]interface{}{
-			"popular_results": []interface{}{},
-		})
-	} else {
-		advancedAnalytics = append(advancedAnalytics, popularResults)
-	}
+	wg.Add(1)
+	go func(out chan<- interface{}) {
+		defer wg.Done()
+		popularResults, err := es.popularResults(from, to, size, clickAnalytics, indices...)
+		if err != nil {
+			log.Printf("%s: %v", logTag, err)
+			out <- map[string]interface{}{
+				"popular_results": []interface{}{},
+			}
+		} else {
+			out <- popularResults
+		}
+	}(out)
 
-	popularFilters, err := es.popularFilters(from, to, size, clickAnalytics, indices...)
-	if err != nil {
-		log.Printf("%s: %v", logTag, err)
-		advancedAnalytics = append(advancedAnalytics, map[string]interface{}{
-			"popular_filters": []interface{}{},
-		})
-	} else {
-		advancedAnalytics = append(advancedAnalytics, popularFilters)
-	}
+	wg.Add(1)
+	go func(out chan<- interface{}) {
+		defer wg.Done()
+		popularFilters, err := es.popularFilters(from, to, size, clickAnalytics, indices...)
+		if err != nil {
+			log.Printf("%s: %v", logTag, err)
+			out <- map[string]interface{}{
+				"popular_filters": []interface{}{},
+			}
+		} else {
+			out <- popularFilters
+		}
+	}(out)
 
-	noResultsSearches, err := es.noResultsSearches(from, to, size, indices...)
-	if err != nil {
-		log.Printf("%s: %v", logTag, err)
-		advancedAnalytics = append(advancedAnalytics, map[string]interface{}{
-			"no_results_searches": []interface{}{},
-		})
-	} else {
-		advancedAnalytics = append(advancedAnalytics, noResultsSearches)
-	}
+	wg.Add(1)
+	go func(out chan<- interface{}) {
+		defer wg.Done()
+		noResultsSearches, err := es.noResultsSearches(from, to, size, indices...)
+		if err != nil {
+			log.Printf("%s: %v", logTag, err)
+			out <- map[string]interface{}{
+				"no_results_searches": []interface{}{},
+			}
+		} else {
+			out <- noResultsSearches
+		}
+	}(out)
 
-	searchHistogram, err := es.searchHistogram(from, to, size, indices...)
-	if err != nil {
-		log.Printf("%s: %v", logTag, err)
-		advancedAnalytics = append(advancedAnalytics, map[string]interface{}{
-			"search_volume": []interface{}{},
-		})
-	} else {
-		advancedAnalytics = append(advancedAnalytics, searchHistogram)
+	wg.Add(1)
+	go func(out chan<- interface{}) {
+		defer wg.Done()
+		searchHistogram, err := es.searchHistogram(from, to, size, indices...)
+		if err != nil {
+			log.Printf("%s: %v", logTag, err)
+			out <- map[string]interface{}{
+				"search_volume": []interface{}{},
+			}
+		} else {
+			out <- searchHistogram
+		}
+	}(out)
+
+	go func() {
+		wg.Wait()
+		close(out)
+	}()
+
+	var advancedAnalytics []interface{}
+	for result := range out {
+		advancedAnalytics = append(advancedAnalytics, result)
 	}
 
 	return json.Marshal(advancedAnalytics)
 }
 
-func (es *elasticsearch) popularSearches(from, to string, size int, clickAnalytics bool, indices ...string) (map[string]interface{}, error) {
-	duration := elastic.NewRangeQuery("datestamp").
-		From(from).
-		To(to)
-
-	query := elastic.NewBoolQuery().
-		Filter(duration)
-
-	if indices != nil {
-		var indexQueries []elastic.Query
-		for _, index := range indices {
-			query := elastic.NewTermQuery("indices.keyword", index)
-			indexQueries = append(indexQueries, query)
-		}
-		query = query.Must(indexQueries...)
-	}
-
-	aggr := elastic.NewTermsAggregation().
-		Field("search_query.keyword").
-		OrderByCountDesc()
-
-	if clickAnalytics {
-		clickAnalyticsOnTerms(aggr)
-	}
-
-	result, err := es.client.Search(es.indexName).
-		Query(query).
-		Aggregation("popular_searches_aggr", aggr).
-		Size(size).
-		Do(context.Background())
+func (es *elasticsearch) popularSearches(from, to string, size int, clickAnalytics bool, indices ...string) (interface{}, error) {
+	raw, err := es.popularSearchesRaw(from, to, size, clickAnalytics, indices...)
 	if err != nil {
-		return nil, fmt.Errorf("unable to fetch popular searches response from es: %v", err)
+		return []interface{}{}, err
 	}
 
-	aggrResult, found := result.Aggregations.Terms("popular_searches_aggr")
-	if !found {
-		return nil, fmt.Errorf("unable to fetch aggregation result from 'popular_searches_aggr'")
+	var response struct {
+		PopularSearches []map[string]interface{} `json:"popular_searches"`
+	}
+	err = json.Unmarshal(raw, &response)
+	if err != nil {
+		return []interface{}{}, err
 	}
 
-	var buckets []map[string]interface{}
-	for _, bucket := range aggrResult.Buckets {
-		newBucket := make(map[string]interface{})
-		newBucket["key"] = bucket.Key
-		newBucket["count"] = bucket.DocCount
-
-		if clickAnalytics {
-			newBucket = addClickAnalytics(bucket, bucket.DocCount, newBucket)
-		}
-
-		buckets = append(buckets, newBucket)
-	}
-
-	popularSearches := make(map[string]interface{})
-	if buckets == nil {
-		popularSearches["popular_searches"] = []interface{}{}
-	} else {
-		popularSearches["popular_searches"] = buckets
-	}
-
-	return popularSearches, nil
+	return response, nil
 }
 
 func (es *elasticsearch) popularSearchesRaw(from, to string, size int, clickAnalytics bool, indices ...string) ([]byte, error) {
@@ -319,6 +327,23 @@ func (es *elasticsearch) popularSearchesRaw(from, to string, size int, clickAnal
 	return json.Marshal(popularSearches)
 }
 
+func (es *elasticsearch) noResultsSearches(from, to string, size int, indices ...string) (interface{}, error) {
+	raw, err := es.noResultsSearchesRaw(from, to, size, indices...)
+	if err != nil {
+		return []interface{}{}, err
+	}
+
+	var response struct {
+		NoResultsSearches []map[string]interface{} `json:"no_results_searches"`
+	}
+	err = json.Unmarshal(raw, &response)
+	if err != nil {
+		return []interface{}{}, err
+	}
+
+	return response, nil
+}
+
 func (es *elasticsearch) noResultsSearchesRaw(from, to string, size int, indices ...string) ([]byte, error) {
 	duration := elastic.NewRangeQuery("datestamp").
 		From(from).
@@ -374,59 +399,21 @@ func (es *elasticsearch) noResultsSearchesRaw(from, to string, size int, indices
 	return json.Marshal(noResultsSearches)
 }
 
-func (es *elasticsearch) noResultsSearches(from, to string, size int, indices ...string) (map[string]interface{}, error) {
-	duration := elastic.NewRangeQuery("datestamp").
-		From(from).
-		To(to)
-
-	zeroHits := elastic.NewTermQuery("total_hits", 0)
-
-	query := elastic.NewBoolQuery().
-		Filter(duration, zeroHits)
-
-	if indices != nil {
-		var indexQueries []elastic.Query
-		for _, index := range indices {
-			query := elastic.NewTermQuery("indices.keyword", index)
-			indexQueries = append(indexQueries, query)
-		}
-		query = query.Must(indexQueries...)
-	}
-
-	aggr := elastic.NewTermsAggregation().
-		Field("search_query.keyword").
-		OrderByCountDesc()
-
-	result, err := es.client.Search(es.indexName).
-		Query(query).
-		Aggregation("no_results_searches_aggr", aggr).
-		Size(size).
-		Do(context.Background())
+func (es *elasticsearch) popularFilters(from, to string, size int, clickAnalytics bool, indices ...string) (interface{}, error) {
+	raw, err := es.popularFiltersRaw(from, to, size, clickAnalytics, indices...)
 	if err != nil {
-		return nil, fmt.Errorf("unable to fetch no results searches from es: %v", err)
+		return []interface{}{}, err
 	}
 
-	aggrResult, found := result.Aggregations.Terms("no_results_searches_aggr")
-	if !found {
-		return nil, fmt.Errorf("unable to find aggregation result in 'no_results_searches_aggr'")
+	var response struct {
+		PopularFilters []map[string]interface{} `json:"popular_filters"`
+	}
+	err = json.Unmarshal(raw, &response)
+	if err != nil {
+		return []interface{}{}, err
 	}
 
-	var buckets []map[string]interface{}
-	for _, bucket := range aggrResult.Buckets {
-		newBucket := make(map[string]interface{})
-		newBucket["key"] = bucket.Key
-		newBucket["count"] = bucket.DocCount
-		buckets = append(buckets, newBucket)
-	}
-
-	noResultsSearches := make(map[string]interface{})
-	if buckets == nil {
-		noResultsSearches["no_results_searches"] = []interface{}{}
-	} else {
-		noResultsSearches["no_results_searches"] = buckets
-	}
-
-	return noResultsSearches, nil
+	return response, nil
 }
 
 func (es *elasticsearch) popularFiltersRaw(from, to string, size int, clickAnalytics bool, indices ...string) ([]byte, error) {
@@ -504,79 +491,21 @@ func (es *elasticsearch) popularFiltersRaw(from, to string, size int, clickAnaly
 	return json.Marshal(popularFilters)
 }
 
-func (es *elasticsearch) popularFilters(from, to string, size int, clickAnalytics bool, indices ...string) (map[string]interface{}, error) {
-	duration := elastic.NewRangeQuery("datestamp").
-		From(from).
-		To(to)
-
-	query := elastic.NewBoolQuery().
-		Filter(duration)
-
-	if indices != nil {
-		var indexQueries []elastic.Query
-		for _, index := range indices {
-			query := elastic.NewTermQuery("indices.keyword", index)
-			indexQueries = append(indexQueries, query)
-		}
-		query = query.Must(indexQueries...)
-	}
-
-	valueAggr := elastic.NewTermsAggregation().
-		Field("search_filters.value.keyword").
-		OrderByCountDesc()
-	aggr := elastic.NewTermsAggregation().
-		Field("search_filters.key.keyword").OrderByCountDesc().
-		SubAggregation("values_aggr", valueAggr).OrderByCountDesc()
-
-	if clickAnalytics {
-		clickAnalyticsOnTerms(aggr)
-	}
-
-	result, err := es.client.Search(es.indexName).
-		Query(query).
-		Aggregation("popular_filters_aggr", aggr).
-		Size(size).
-		Do(context.Background())
+func (es *elasticsearch) popularResults(from, to string, size int, clickAnalytics bool, indices ...string) (interface{}, error) {
+	raw, err := es.popularResultsRaw(from, to, size, clickAnalytics, indices...)
 	if err != nil {
-		return nil, fmt.Errorf("unable to fetch popular filters from es: %v", err)
+		return []interface{}{}, err
 	}
 
-	aggrResult, found := result.Aggregations.Terms("popular_filters_aggr")
-	if !found {
-		return nil, fmt.Errorf("unable to find aggregation result in 'popular_filters_aggr'")
+	var response struct {
+		PopularResults []map[string]interface{} `json:"popular_results"`
+	}
+	err = json.Unmarshal(raw, &response)
+	if err != nil {
+		return []interface{}{}, err
 	}
 
-	var buckets []map[string]interface{}
-	for _, bucket := range aggrResult.Buckets {
-		valuesAggrResult, found := bucket.Terms("values_aggr")
-		if !found {
-			log.Printf("%s: unable to find 'values_aggr' in aggregation result", logTag)
-			continue
-		}
-		for _, valueBucket := range valuesAggrResult.Buckets {
-			newBucket := make(map[string]interface{})
-			newBucket["key"] = bucket.Key
-			newBucket["value"] = valueBucket.Key
-			newBucket["count"] = valueBucket.DocCount
-			if clickAnalytics {
-				newBucket = addClickAnalytics(bucket, valueBucket.DocCount, newBucket)
-			}
-			buckets = append(buckets, newBucket)
-		}
-	}
-
-	sort.SliceStable(buckets, func(i, j int) bool {
-		return buckets[i]["count"].(int64) > buckets[j]["count"].(int64)
-	})
-
-	popularFilters := make(map[string]interface{})
-	if buckets == nil {
-		popularFilters["popular_filters"] = []interface{}{}
-	} else {
-		popularFilters["popular_filters"] = buckets
-	}
-
-	return popularFilters, nil
+	return response, nil
 }
 
 func (es *elasticsearch) popularResultsRaw(from, to string, size int, clickAnalytics bool, indices ...string) ([]byte, error) {
@@ -596,10 +525,9 @@ func (es *elasticsearch) popularResultsRaw(from, to string, size int, clickAnaly
 		query = query.Must(indexQueries...)
 	}
 
-	fetchSourceCtx := elastic.NewFetchSourceContext(true).Include("hits_in_response.source")
-	sourceAggr := elastic.NewTopHitsAggregation().
-		Size(1).
-		FetchSourceContext(fetchSourceCtx)
+	sourceAggr := elastic.NewTermsAggregation().
+		Field("hits_in_response.source.keyword").
+		OrderByCountDesc()
 	aggr := elastic.NewTermsAggregation().
 		Field("hits_in_response.id.keyword").
 		OrderByCountDesc().
@@ -625,15 +553,26 @@ func (es *elasticsearch) popularResultsRaw(from, to string, size int, clickAnaly
 
 	var buckets []map[string]interface{}
 	for _, bucket := range aggrResult.Buckets {
-		newBucket := make(map[string]interface{})
-		newBucket["key"] = bucket.Key
-		newBucket["count"] = bucket.DocCount
-		if clickAnalytics {
-			newBucket = addClickAnalytics(bucket, bucket.DocCount, newBucket)
+		sourceAggrResult, found := bucket.Terms("source_aggr")
+		if !found {
+			log.Printf("%s: unable to find 'source_aggr' in aggregation result", logTag)
+			continue
 		}
-		// TODO: source aggr?
-		buckets = append(buckets, newBucket)
+		for _, sourceBucket := range sourceAggrResult.Buckets {
+			newBucket := make(map[string]interface{})
+			newBucket["key"] = bucket.Key
+			newBucket["source"] = sourceBucket.Key
+			newBucket["count"] = sourceBucket.DocCount
+			if clickAnalytics {
+				newBucket = addClickAnalytics(bucket, sourceBucket.DocCount, newBucket)
+			}
+			buckets = append(buckets, newBucket)
+		}
 	}
+
+	sort.SliceStable(buckets, func(i, j int) bool {
+		return buckets[i]["count"].(int64) > buckets[j]["count"].(int64)
+	})
 
 	popularResults := make(map[string]interface{})
 	if buckets == nil {
@@ -643,72 +582,6 @@ func (es *elasticsearch) popularResultsRaw(from, to string, size int, clickAnaly
 	}
 
 	return json.Marshal(popularResults)
-}
-
-func (es *elasticsearch) popularResults(from, to string, size int, clickAnalytics bool, indices ...string) (map[string]interface{}, error) {
-	duration := elastic.NewRangeQuery("datestamp").
-		From(from).
-		To(to)
-
-	query := elastic.NewBoolQuery().
-		Filter(duration)
-
-	if indices != nil {
-		var indexQueries []elastic.Query
-		for _, index := range indices {
-			query := elastic.NewTermQuery("indices.keyword", index)
-			indexQueries = append(indexQueries, query)
-		}
-		query = query.Must(indexQueries...)
-	}
-
-	fetchSourceCtx := elastic.NewFetchSourceContext(true).Include("hits_in_response.source")
-	sourceAggr := elastic.NewTopHitsAggregation().
-		Size(1).
-		FetchSourceContext(fetchSourceCtx)
-	aggr := elastic.NewTermsAggregation().
-		Field("hits_in_response.id.keyword").
-		OrderByCountDesc().
-		SubAggregation("source_aggr", sourceAggr)
-
-	if clickAnalytics {
-		clickAnalyticsOnTerms(aggr)
-	}
-
-	result, err := es.client.Search(es.indexName).
-		Query(query).
-		Aggregation("popular_results_aggr", aggr).
-		Size(size).
-		Do(context.Background())
-	if err != nil {
-		return nil, fmt.Errorf("unable to fetch popular searches response from es: %v", err)
-	}
-
-	aggrResult, found := result.Aggregations.Terms("popular_results_aggr")
-	if !found {
-		return nil, fmt.Errorf("unable to fetch aggregation result from 'popular_results_aggr'")
-	}
-
-	var buckets []map[string]interface{}
-	for _, bucket := range aggrResult.Buckets {
-		newBucket := make(map[string]interface{})
-		newBucket["key"] = bucket.Key
-		newBucket["count"] = bucket.DocCount
-		if clickAnalytics {
-			newBucket = addClickAnalytics(bucket, bucket.DocCount, newBucket)
-		}
-		// TODO: source aggr?
-		buckets = append(buckets, newBucket)
-	}
-
-	popularResults := make(map[string]interface{})
-	if buckets == nil {
-		popularResults["popular_results"] = []interface{}{}
-	} else {
-		popularResults["popular_results"] = buckets
-	}
-
-	return popularResults, nil
 }
 
 func (es *elasticsearch) geoRequestsDistribution(from, to string, size int, indices ...string) ([]byte, error) {
@@ -1011,58 +884,21 @@ func (es *elasticsearch) searchHistogramRaw(from, to string, size int, indices .
 	return json.Marshal(searchHistogram)
 }
 
-func (es *elasticsearch) searchHistogram(from, to string, size int, indices ...string) (map[string]interface{}, error) {
-	duration := elastic.NewRangeQuery("datestamp").
-		From(from).
-		To(to)
-
-	query := elastic.NewBoolQuery().
-		Filter(duration)
-
-	if indices != nil {
-		var indexQueries []elastic.Query
-		for _, index := range indices {
-			query := elastic.NewTermQuery("indices.keyword", index)
-			indexQueries = append(indexQueries, query)
-		}
-		query = query.Must(indexQueries...)
-	}
-
-	aggr := elastic.NewDateHistogramAggregation().
-		Interval("day").
-		Field("datestamp")
-
-	result, err := es.client.Search(es.indexName).
-		Query(query).
-		Aggregation("search_histogram_aggr", aggr).
-		Size(0).
-		Do(context.Background())
+func (es *elasticsearch) searchHistogram(from, to string, size int, indices ...string) (interface{}, error) {
+	raw, err := es.searchHistogramRaw(from, to, size, indices...)
 	if err != nil {
-		return nil, fmt.Errorf("unable to fetch date histogram from es: %v", err)
+		return []interface{}{}, err
 	}
 
-	aggrResult, found := result.Aggregations.DateHistogram("search_histogram_aggr")
-	if !found {
-		return nil, fmt.Errorf("unable to find aggregation result in 'search_histogram_aggr'")
+	var response struct {
+		SearchHistogram []map[string]interface{} `json:"search_histogram"`
+	}
+	err = json.Unmarshal(raw, &response)
+	if err != nil {
+		return []interface{}{}, err
 	}
 
-	var buckets []map[string]interface{}
-	for _, bucket := range aggrResult.Buckets {
-		newBucket := make(map[string]interface{})
-		newBucket["key"] = bucket.Key
-		newBucket["key_as_string"] = bucket.KeyAsString
-		newBucket["count"] = bucket.DocCount
-		buckets = append(buckets, newBucket)
-	}
-
-	searchHistogram := make(map[string]interface{})
-	if buckets == nil {
-		searchHistogram["search_histogram"] = []interface{}{}
-	} else {
-		searchHistogram["search_histogram"] = buckets
-	}
-
-	return searchHistogram, nil
+	return response, nil
 }
 
 // TODO: TEST??

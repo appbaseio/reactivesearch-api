@@ -18,7 +18,7 @@ func (a *analytics) getOverview() http.HandlerFunc {
 				clickAnalytics = v
 			}
 		}
-		from, to, size := queryParams(r.URL.Query())
+		from, to, size := rangeQueryParams(r.URL.Query())
 		indices, _ := getIndices(r)
 
 		raw, err := a.es.analyticsOverview(from, to, size, clickAnalytics, indices...)
@@ -41,7 +41,7 @@ func (a *analytics) getAdvanced() http.HandlerFunc {
 				clickAnalytics = v
 			}
 		}
-		from, to, size := queryParams(r.URL.Query())
+		from, to, size := rangeQueryParams(r.URL.Query())
 		indices, _ := getIndices(r)
 
 		raw, err := a.es.advancedAnalytics(from, to, size, clickAnalytics, indices...)
@@ -64,7 +64,7 @@ func (a *analytics) getPopularSearches() http.HandlerFunc {
 				clickAnalytics = v
 			}
 		}
-		from, to, size := queryParams(r.URL.Query())
+		from, to, size := rangeQueryParams(r.URL.Query())
 		indices, _ := getIndices(r)
 
 		raw, err := a.es.popularSearchesRaw(from, to, size, clickAnalytics, indices...)
@@ -79,7 +79,7 @@ func (a *analytics) getPopularSearches() http.HandlerFunc {
 
 func (a *analytics) getNoResultsSearches() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		from, to, size := queryParams(r.URL.Query())
+		from, to, size := rangeQueryParams(r.URL.Query())
 		indices, _ := getIndices(r)
 
 		raw, err := a.es.noResultsSearchesRaw(from, to, size, indices...)
@@ -102,7 +102,7 @@ func (a *analytics) getPopularFilters() http.HandlerFunc {
 				clickAnalytics = v
 			}
 		}
-		from, to, size := queryParams(r.URL.Query())
+		from, to, size := rangeQueryParams(r.URL.Query())
 		indices, _ := getIndices(r)
 
 		raw, err := a.es.popularFiltersRaw(from, to, size, clickAnalytics, indices...)
@@ -125,7 +125,7 @@ func (a *analytics) getPopularResults() http.HandlerFunc {
 				clickAnalytics = v
 			}
 		}
-		from, to, size := queryParams(r.URL.Query())
+		from, to, size := rangeQueryParams(r.URL.Query())
 		indices, _ := getIndices(r)
 
 		raw, err := a.es.popularResultsRaw(from, to, size, clickAnalytics, indices...)
@@ -140,7 +140,7 @@ func (a *analytics) getPopularResults() http.HandlerFunc {
 
 func (a *analytics) getGeoRequestsDistribution() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		from, to, size := queryParams(r.URL.Query())
+		from, to, size := rangeQueryParams(r.URL.Query())
 		indices, _ := getIndices(r)
 
 		raw, err := a.es.geoRequestsDistribution(from, to, size, indices...)
@@ -155,7 +155,7 @@ func (a *analytics) getGeoRequestsDistribution() http.HandlerFunc {
 
 func (a *analytics) getLatencies() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		from, to, size := queryParams(r.URL.Query())
+		from, to, size := rangeQueryParams(r.URL.Query())
 		indices, _ := getIndices(r)
 
 		raw, err := a.es.latencies(from, to, size, indices...)
@@ -170,7 +170,7 @@ func (a *analytics) getLatencies() http.HandlerFunc {
 
 func (a *analytics) getSummary() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		from, to, _ := queryParams(r.URL.Query())
+		from, to, _ := rangeQueryParams(r.URL.Query())
 		indices, _ := getIndices(r)
 
 		raw, err := a.es.summary(from, to, indices...)

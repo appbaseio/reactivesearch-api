@@ -11,7 +11,7 @@ import (
 	"github.com/gorilla/mux"
 )
 
-func queryParams(values url.Values) (from, to string, size int) {
+func rangeQueryParams(values url.Values) (from, to string, size int) {
 	from, to = getWeekRange()
 	size = 100
 

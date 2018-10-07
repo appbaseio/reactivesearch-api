@@ -366,13 +366,15 @@ func validateIndices(h http.HandlerFunc) http.HandlerFunc {
 			return
 		}
 
-		if len(indices) == 0 { // cluster level route
+		if len(indices) == 0 {
+			// cluster level route
 			if !util.Contains(reqUser.Indices, "*") {
 				util.WriteBackMessage(w, "User is unauthorized to access cluster level routes",
 					http.StatusUnauthorized)
 				return
 			}
-		} else { // index level route
+		} else {
+			// index level route
 			for _, indexName := range indices {
 				ok, err := reqUser.CanAccessIndex(indexName)
 				if err != nil {
