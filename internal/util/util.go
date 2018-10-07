@@ -2,6 +2,7 @@ package util
 
 import (
 	"encoding/json"
+	"math"
 	"net/http"
 	"strings"
 	"time"
@@ -60,4 +61,9 @@ func DaysInYear(year int) int {
 // DaysInCurrentYear returns the number of days in the current year.
 func DaysInCurrentYear() int {
 	return DaysInYear(time.Now().Year())
+}
+
+func WithPrecision(num float64, precision int) float64 {
+	output := math.Pow(10, float64(precision))
+	return math.Round(num*output) / output
 }

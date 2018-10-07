@@ -3,13 +3,14 @@ package analytics
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"sort"
-	"strconv"
 	"sync"
 	"time"
 
+	"github.com/appbaseio-confidential/arc/internal/util"
 	"github.com/olivere/elastic"
 )
 
@@ -287,7 +288,7 @@ func (es *elasticsearch) popularSearchesRaw(from, to string, size int, clickAnal
 		OrderByCountDesc()
 
 	if clickAnalytics {
-		clickAnalyticsOnTerms(aggr)
+		applyClickAnalyticsOnTerms(aggr)
 	}
 
 	result, err := es.client.Search(es.indexName).
@@ -301,7 +302,7 @@ func (es *elasticsearch) popularSearchesRaw(from, to string, size int, clickAnal
 
 	aggrResult, found := result.Aggregations.Terms("popular_searches_aggr")
 	if !found {
-		return nil, fmt.Errorf("unable to fetch aggregation result from 'popular_searches_aggr'")
+		return nil, fmt.Errorf("unable to fetch aggregation value from 'popular_searches_aggr'")
 	}
 
 	var buckets []map[string]interface{}
@@ -309,11 +310,9 @@ func (es *elasticsearch) popularSearchesRaw(from, to string, size int, clickAnal
 		newBucket := make(map[string]interface{})
 		newBucket["key"] = bucket.Key
 		newBucket["count"] = bucket.DocCount
-
 		if clickAnalytics {
 			newBucket = addClickAnalytics(bucket, bucket.DocCount, newBucket)
 		}
-
 		buckets = append(buckets, newBucket)
 	}
 
@@ -378,7 +377,7 @@ func (es *elasticsearch) noResultsSearchesRaw(from, to string, size int, indices
 
 	aggrResult, found := result.Aggregations.Terms("no_results_searches_aggr")
 	if !found {
-		return nil, fmt.Errorf("unable to find aggregation result in 'no_results_searches_aggr'")
+		return nil, fmt.Errorf("unable to find aggregation value in 'no_results_searches_aggr'")
 	}
 
 	var buckets []map[string]interface{}
@@ -441,7 +440,7 @@ func (es *elasticsearch) popularFiltersRaw(from, to string, size int, clickAnaly
 		SubAggregation("values_aggr", valueAggr).OrderByCountDesc()
 
 	if clickAnalytics {
-		clickAnalyticsOnTerms(aggr)
+		applyClickAnalyticsOnTerms(aggr)
 	}
 
 	result, err := es.client.Search(es.indexName).
@@ -455,14 +454,14 @@ func (es *elasticsearch) popularFiltersRaw(from, to string, size int, clickAnaly
 
 	aggrResult, found := result.Aggregations.Terms("popular_filters_aggr")
 	if !found {
-		return nil, fmt.Errorf("unable to find aggregation result in 'popular_filters_aggr'")
+		return nil, fmt.Errorf("unable to find aggregation value in 'popular_filters_aggr'")
 	}
 
 	var buckets []map[string]interface{}
 	for _, bucket := range aggrResult.Buckets {
 		valuesAggrResult, found := bucket.Terms("values_aggr")
 		if !found {
-			log.Printf("%s: unable to find 'values_aggr' in aggregation result", logTag)
+			log.Printf("%s: unable to find 'values_aggr' in aggregation value", logTag)
 			continue
 		}
 		for _, valueBucket := range valuesAggrResult.Buckets {
@@ -534,7 +533,7 @@ func (es *elasticsearch) popularResultsRaw(from, to string, size int, clickAnaly
 		SubAggregation("source_aggr", sourceAggr)
 
 	if clickAnalytics {
-		clickAnalyticsOnTerms(aggr)
+		applyClickAnalyticsOnTerms(aggr)
 	}
 
 	result, err := es.client.Search(es.indexName).
@@ -548,14 +547,14 @@ func (es *elasticsearch) popularResultsRaw(from, to string, size int, clickAnaly
 
 	aggrResult, found := result.Aggregations.Terms("popular_results_aggr")
 	if !found {
-		return nil, fmt.Errorf("unable to fetch aggregation result from 'popular_results_aggr'")
+		return nil, fmt.Errorf("unable to fetch aggregation value from 'popular_results_aggr'")
 	}
 
 	var buckets []map[string]interface{}
 	for _, bucket := range aggrResult.Buckets {
 		sourceAggrResult, found := bucket.Terms("source_aggr")
 		if !found {
-			log.Printf("%s: unable to find 'source_aggr' in aggregation result", logTag)
+			log.Printf("%s: unable to find 'source_aggr' in aggregation value", logTag)
 			continue
 		}
 		for _, sourceBucket := range sourceAggrResult.Buckets {
@@ -616,14 +615,19 @@ func (es *elasticsearch) geoRequestsDistribution(from, to string, size int, indi
 
 	aggrResult, found := result.Aggregations.Terms("geo_dist_aggr")
 	if !found {
-		return nil, fmt.Errorf("unable to find aggregation result in 'req_dist_aggr'")
+		return nil, fmt.Errorf("unable to find aggregation value in 'req_dist_aggr'")
 	}
 
 	var buckets []map[string]interface{}
 	for _, bucket := range aggrResult.Buckets {
-		if bucket.Key.(string) != "" { // TODO: check?
+		country, ok := bucket.Key.(string)
+		if !ok {
+			log.Printf("%s: invalid key type %T received for country name", logTag, bucket.Key)
+			continue
+		}
+		if country != "" {
 			newBucket := make(map[string]interface{})
-			newBucket["key"] = bucket.Key
+			newBucket["key"] = country
 			newBucket["count"] = bucket.DocCount
 			buckets = append(buckets, newBucket)
 		}
@@ -671,7 +675,7 @@ func (es *elasticsearch) latencies(from, to string, size int, indices ...string)
 
 	aggrResult, found := result.Aggregations.Histogram("latency_aggr")
 	if !found {
-		return nil, fmt.Errorf("unable to find aggregatio result in 'latency_aggr'")
+		return nil, fmt.Errorf("unable to find aggregation value in 'latency_aggr'")
 	}
 
 	var buckets []map[string]interface{}
@@ -693,45 +697,98 @@ func (es *elasticsearch) latencies(from, to string, size int, indices ...string)
 }
 
 func (es *elasticsearch) summary(from, to string, indices ...string) ([]byte, error) {
-	totalSearches, err := es.totalSearches(from, to, indices...)
-	if err != nil {
-		return nil, err
+	type result struct {
+		field string
+		value float64
+		err   error
 	}
-	totalClicks, err := es.totalClicks(from, to, indices...)
-	if err != nil {
-		return nil, err
-	}
-	totalConversions, err := es.totalConversions(from, to, indices...)
-	if err != nil {
-		return nil, err
+
+	var wg sync.WaitGroup
+	out := make(chan result)
+
+	wg.Add(1)
+	go func(out chan<- result) {
+		defer wg.Done()
+		totalSearches, err := es.totalSearches(from, to, indices...)
+		if err != nil {
+			out <- result{
+				field: "total_searches",
+				err:   err,
+			}
+		} else {
+			out <- result{
+				field: "total_searches",
+				value: totalSearches,
+			}
+		}
+	}(out)
+
+	wg.Add(1)
+	go func(out chan<- result) {
+		defer wg.Done()
+		totalClicks, err := es.totalClicks(from, to, indices...)
+		if err != nil {
+			out <- result{
+				field: "total_clicks",
+				err:   err,
+			}
+		} else {
+			out <- result{
+				field: "total_clicks",
+				value: totalClicks,
+			}
+		}
+	}(out)
+
+	wg.Add(1)
+	go func(out chan<- result) {
+		defer wg.Done()
+		totalConversions, err := es.totalConversions(from, to, indices...)
+		if err != nil {
+			out <- result{
+				field: "total_conversions",
+				err:   err,
+			}
+		} else {
+			out <- result{
+				field: "total_conversions",
+				value: totalConversions,
+			}
+		}
+	}(out)
+
+	go func() {
+		wg.Wait()
+		close(out)
+	}()
+
+	var totalSearches, totalClicks, totalConversions float64
+	for result := range out {
+		if result.err != nil {
+			return nil, errors.New(fmt.Sprintf(`cannot fetch value for "%s"`, result.field))
+		}
+		switch result.field {
+		case "total_searches":
+			totalSearches = result.value
+		case "total_clicks":
+			totalClicks = result.value
+		case "total_conversions":
+			totalConversions = result.value
+		default:
+			return nil, errors.New(fmt.Sprintf(`illegal field "%s" encountered`, result.field))
+		}
 	}
 
 	var avgClickRate, avgConversionRate float64
-	if totalSearches == 0 {
-		avgClickRate = 0
-		avgConversionRate = 0
-	} else {
+	if totalSearches != 0 {
 		avgClickRate = totalClicks / totalSearches * 100
 		avgConversionRate = totalConversions / totalSearches * 100
 	}
 
-	totalSearches, err = strconv.ParseFloat(fmt.Sprintf("%.2f", totalSearches), 64)
-	if err != nil {
-		return nil, err
-	}
-	avgClickRate, err = strconv.ParseFloat(fmt.Sprintf("%.2f", avgClickRate), 64)
-	if err != nil {
-		return nil, err
-	}
-	avgConversionRate, err = strconv.ParseFloat(fmt.Sprintf("%.2f", avgConversionRate), 64)
-	if err != nil {
-		return nil, err
-	}
-
 	summary := map[string]float64{
-		"total_searches":      totalSearches,
-		"avg_click_rate":      avgClickRate,
-		"avg_conversion_rate": avgConversionRate,
+		"total_searches":      util.WithPrecision(totalSearches, 2),
+		"avg_click_rate":      util.WithPrecision(avgClickRate, 2),
+		"avg_conversion_rate": util.WithPrecision(avgConversionRate, 2),
 	}
 
 	return json.Marshal(summary)
@@ -766,7 +823,7 @@ func (es *elasticsearch) totalSearches(from, to string, indices ...string) (floa
 
 	aggrResult, found := result.Aggregations.ValueCount("total_searches_aggr")
 	if !found {
-		return 0, fmt.Errorf("unable to find aggregation result in 'total_searches_aggr'")
+		return 0, fmt.Errorf("unable to find aggregation value in 'total_searches_aggr'")
 	}
 
 	return *aggrResult.Value, nil
@@ -830,6 +887,23 @@ func (es *elasticsearch) totalClicks(from, to string, indices ...string) (float6
 	return float64(count), nil
 }
 
+func (es *elasticsearch) searchHistogram(from, to string, size int, indices ...string) (interface{}, error) {
+	raw, err := es.searchHistogramRaw(from, to, size, indices...)
+	if err != nil {
+		return []interface{}{}, err
+	}
+
+	var response struct {
+		SearchHistogram []map[string]interface{} `json:"search_histogram"`
+	}
+	err = json.Unmarshal(raw, &response)
+	if err != nil {
+		return []interface{}{}, err
+	}
+
+	return response, nil
+}
+
 func (es *elasticsearch) searchHistogramRaw(from, to string, size int, indices ...string) ([]byte, error) {
 	duration := elastic.NewRangeQuery("datestamp").
 		From(from).
@@ -862,7 +936,7 @@ func (es *elasticsearch) searchHistogramRaw(from, to string, size int, indices .
 
 	aggrResult, found := result.Aggregations.DateHistogram("search_histogram_aggr")
 	if !found {
-		return nil, fmt.Errorf("unable to find aggregation result in 'search_histogram_aggr'")
+		return nil, fmt.Errorf("unable to find aggregation value in 'search_histogram_aggr'")
 	}
 
 	var buckets []map[string]interface{}
@@ -884,25 +958,8 @@ func (es *elasticsearch) searchHistogramRaw(from, to string, size int, indices .
 	return json.Marshal(searchHistogram)
 }
 
-func (es *elasticsearch) searchHistogram(from, to string, size int, indices ...string) (interface{}, error) {
-	raw, err := es.searchHistogramRaw(from, to, size, indices...)
-	if err != nil {
-		return []interface{}{}, err
-	}
-
-	var response struct {
-		SearchHistogram []map[string]interface{} `json:"search_histogram"`
-	}
-	err = json.Unmarshal(raw, &response)
-	if err != nil {
-		return []interface{}{}, err
-	}
-
-	return response, nil
-}
-
 // TODO: TEST??
-func clickAnalyticsOnTerms(aggr *elastic.TermsAggregation) {
+func applyClickAnalyticsOnTerms(aggr *elastic.TermsAggregation) {
 	clickAggr := elastic.NewTermsAggregation().
 		Field("click").
 		OrderByCountDesc()
@@ -933,7 +990,7 @@ func addClickAnalytics(r *elastic.AggregationBucketKeyItem, count int64, newBuck
 			newBucket["clicks"] = int64(0)
 		}
 	} else {
-		log.Printf("%s: cannot find click aggregation result in aggregation result", logTag)
+		log.Printf("%s: cannot find click aggregation value in aggregation value", logTag)
 	}
 
 	// click position aggregation
@@ -945,7 +1002,7 @@ func addClickAnalytics(r *elastic.AggregationBucketKeyItem, count int64, newBuck
 			newBucket["click_position"] = 0 // TODO: default value 0?
 		}
 	} else {
-		log.Printf("%s: cannot find click position aggregation result in aggregation result", logTag)
+		log.Printf("%s: cannot find click position aggregation value in aggregation value", logTag)
 	}
 
 	// conversion aggregation
@@ -965,7 +1022,7 @@ func addClickAnalytics(r *elastic.AggregationBucketKeyItem, count int64, newBuck
 			newBucket["click_rate"] = 0
 		}
 	} else {
-		log.Printf("%s: cannot find conversion aggregation result in aggregation result", logTag)
+		log.Printf("%s: cannot find conversion aggregation value in aggregation value", logTag)
 	}
 
 	return newBucket
