@@ -10,16 +10,15 @@ import (
 
 func (a *analytics) getOverview() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		q := r.URL.Query().Get("click_analytics")
-
 		var clickAnalytics bool
+		q := r.URL.Query().Get("click_analytics")
 		if q != "" {
 			if v, err := strconv.ParseBool(q); err == nil {
 				clickAnalytics = v
 			}
 		}
 		from, to, size := rangeQueryParams(r.URL.Query())
-		indices, _ := getIndices(r)
+		indices, _ := indicesFrom(r)
 
 		raw, err := a.es.analyticsOverview(from, to, size, clickAnalytics, indices...)
 		if err != nil {
@@ -33,16 +32,15 @@ func (a *analytics) getOverview() http.HandlerFunc {
 
 func (a *analytics) getAdvanced() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		q := r.URL.Query().Get("click_analytics")
-
 		var clickAnalytics bool
+		q := r.URL.Query().Get("click_analytics")
 		if q != "" {
 			if v, err := strconv.ParseBool(q); err == nil {
 				clickAnalytics = v
 			}
 		}
 		from, to, size := rangeQueryParams(r.URL.Query())
-		indices, _ := getIndices(r)
+		indices, _ := indicesFrom(r)
 
 		raw, err := a.es.advancedAnalytics(from, to, size, clickAnalytics, indices...)
 		if err != nil {
@@ -56,16 +54,15 @@ func (a *analytics) getAdvanced() http.HandlerFunc {
 
 func (a *analytics) getPopularSearches() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		q := r.URL.Query().Get("click_analytics")
-
 		var clickAnalytics bool
+		q := r.URL.Query().Get("click_analytics")
 		if q != "" {
 			if v, err := strconv.ParseBool(q); err == nil {
 				clickAnalytics = v
 			}
 		}
 		from, to, size := rangeQueryParams(r.URL.Query())
-		indices, _ := getIndices(r)
+		indices, _ := indicesFrom(r)
 
 		raw, err := a.es.popularSearchesRaw(from, to, size, clickAnalytics, indices...)
 		if err != nil {
@@ -80,7 +77,7 @@ func (a *analytics) getPopularSearches() http.HandlerFunc {
 func (a *analytics) getNoResultsSearches() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		from, to, size := rangeQueryParams(r.URL.Query())
-		indices, _ := getIndices(r)
+		indices, _ := indicesFrom(r)
 
 		raw, err := a.es.noResultsSearchesRaw(from, to, size, indices...)
 		if err != nil {
@@ -94,16 +91,15 @@ func (a *analytics) getNoResultsSearches() http.HandlerFunc {
 
 func (a *analytics) getPopularFilters() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		q := r.URL.Query().Get("click_analytics")
-
 		var clickAnalytics bool
+		q := r.URL.Query().Get("click_analytics")
 		if q != "" {
 			if v, err := strconv.ParseBool(q); err == nil {
 				clickAnalytics = v
 			}
 		}
 		from, to, size := rangeQueryParams(r.URL.Query())
-		indices, _ := getIndices(r)
+		indices, _ := indicesFrom(r)
 
 		raw, err := a.es.popularFiltersRaw(from, to, size, clickAnalytics, indices...)
 		if err != nil {
@@ -117,16 +113,15 @@ func (a *analytics) getPopularFilters() http.HandlerFunc {
 
 func (a *analytics) getPopularResults() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		q := r.URL.Query().Get("click_analytics")
-
 		var clickAnalytics bool
+		q := r.URL.Query().Get("click_analytics")
 		if q != "" {
 			if v, err := strconv.ParseBool(q); err == nil {
 				clickAnalytics = v
 			}
 		}
 		from, to, size := rangeQueryParams(r.URL.Query())
-		indices, _ := getIndices(r)
+		indices, _ := indicesFrom(r)
 
 		raw, err := a.es.popularResultsRaw(from, to, size, clickAnalytics, indices...)
 		if err != nil {
@@ -141,7 +136,7 @@ func (a *analytics) getPopularResults() http.HandlerFunc {
 func (a *analytics) getGeoRequestsDistribution() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		from, to, size := rangeQueryParams(r.URL.Query())
-		indices, _ := getIndices(r)
+		indices, _ := indicesFrom(r)
 
 		raw, err := a.es.geoRequestsDistribution(from, to, size, indices...)
 		if err != nil {
@@ -153,10 +148,10 @@ func (a *analytics) getGeoRequestsDistribution() http.HandlerFunc {
 	}
 }
 
-func (a *analytics) getLatencies() http.HandlerFunc {
+func (a *analytics) getSearchLatencies() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		from, to, size := rangeQueryParams(r.URL.Query())
-		indices, _ := getIndices(r)
+		indices, _ := indicesFrom(r)
 
 		raw, err := a.es.latencies(from, to, size, indices...)
 		if err != nil {
@@ -171,7 +166,7 @@ func (a *analytics) getLatencies() http.HandlerFunc {
 func (a *analytics) getSummary() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		from, to, _ := rangeQueryParams(r.URL.Query())
-		indices, _ := getIndices(r)
+		indices, _ := indicesFrom(r)
 
 		raw, err := a.es.summary(from, to, indices...)
 		if err != nil {

@@ -67,7 +67,7 @@ func parse(header string) []map[string]string {
 	return m
 }
 
-func getIndices(r *http.Request) ([]string, bool) {
+func indicesFrom(r *http.Request) ([]string, bool) {
 	vars := mux.Vars(r)
 	indexVar, ok := vars["index"]
 	if !ok {

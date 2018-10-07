@@ -271,8 +271,7 @@ func (es *elasticsearch) popularSearchesRaw(from, to string, size int, clickAnal
 		From(from).
 		To(to)
 
-	query := elastic.NewBoolQuery().
-		Filter(duration)
+	query := elastic.NewBoolQuery().Filter(duration)
 
 	if indices != nil {
 		var indexQueries []elastic.Query
@@ -350,8 +349,7 @@ func (es *elasticsearch) noResultsSearchesRaw(from, to string, size int, indices
 
 	zeroHits := elastic.NewTermQuery("total_hits", 0)
 
-	query := elastic.NewBoolQuery().
-		Filter(duration, zeroHits)
+	query := elastic.NewBoolQuery().Filter(duration, zeroHits)
 
 	if indices != nil {
 		var indexQueries []elastic.Query
@@ -420,8 +418,7 @@ func (es *elasticsearch) popularFiltersRaw(from, to string, size int, clickAnaly
 		From(from).
 		To(to)
 
-	query := elastic.NewBoolQuery().
-		Filter(duration)
+	query := elastic.NewBoolQuery().Filter(duration)
 
 	if indices != nil {
 		var indexQueries []elastic.Query
@@ -512,8 +509,7 @@ func (es *elasticsearch) popularResultsRaw(from, to string, size int, clickAnaly
 		From(from).
 		To(to)
 
-	query := elastic.NewBoolQuery().
-		Filter(duration)
+	query := elastic.NewBoolQuery().Filter(duration)
 
 	if indices != nil {
 		var indexQueries []elastic.Query
@@ -588,8 +584,7 @@ func (es *elasticsearch) geoRequestsDistribution(from, to string, size int, indi
 		From(from).
 		To(to)
 
-	query := elastic.NewBoolQuery().
-		Filter(duration)
+	query := elastic.NewBoolQuery().Filter(duration)
 
 	if indices != nil {
 		var indexQueries []elastic.Query
@@ -648,8 +643,7 @@ func (es *elasticsearch) latencies(from, to string, size int, indices ...string)
 		From(from).
 		To(to)
 
-	query := elastic.NewBoolQuery().
-		Filter(duration)
+	query := elastic.NewBoolQuery().Filter(duration)
 
 	if indices != nil {
 		var indexQueries []elastic.Query
@@ -799,8 +793,7 @@ func (es *elasticsearch) totalSearches(from, to string, indices ...string) (floa
 		From(from).
 		To(to)
 
-	query := elastic.NewBoolQuery().
-		Filter(duration)
+	query := elastic.NewBoolQuery().Filter(duration)
 
 	if indices != nil {
 		var indexQueries []elastic.Query
@@ -836,8 +829,7 @@ func (es *elasticsearch) totalConversions(from, to string, indices ...string) (f
 
 	convertedSearches := elastic.NewTermQuery("conversion", true)
 
-	query := elastic.NewBoolQuery().
-		Filter(duration, convertedSearches)
+	query := elastic.NewBoolQuery().Filter(duration, convertedSearches)
 
 	if indices != nil {
 		var indexQueries []elastic.Query
@@ -865,8 +857,7 @@ func (es *elasticsearch) totalClicks(from, to string, indices ...string) (float6
 
 	clicks := elastic.NewTermQuery("click", true)
 
-	query := elastic.NewBoolQuery().
-		Filter(duration, clicks)
+	query := elastic.NewBoolQuery().Filter(duration, clicks)
 
 	if indices != nil {
 		var indexQueries []elastic.Query
@@ -909,8 +900,7 @@ func (es *elasticsearch) searchHistogramRaw(from, to string, size int, indices .
 		From(from).
 		To(to)
 
-	query := elastic.NewBoolQuery().
-		Filter(duration)
+	query := elastic.NewBoolQuery().Filter(duration)
 
 	if indices != nil {
 		var indexQueries []elastic.Query
@@ -958,7 +948,8 @@ func (es *elasticsearch) searchHistogramRaw(from, to string, size int, indices .
 	return json.Marshal(searchHistogram)
 }
 
-// TODO: TEST??
+// applyClickAnalyticsOnTerms is a mutator that applies aggregations
+// for click analytics on the given terms aggregation.
 func applyClickAnalyticsOnTerms(aggr *elastic.TermsAggregation) {
 	clickAggr := elastic.NewTermsAggregation().
 		Field("click").
@@ -970,8 +961,7 @@ func applyClickAnalyticsOnTerms(aggr *elastic.TermsAggregation) {
 	conversionAggr := elastic.NewTermsAggregation().
 		Field("conversion")
 
-	aggr.
-		SubAggregation("click_aggr", clickAggr).
+	aggr.SubAggregation("click_aggr", clickAggr).
 		SubAggregation("click_position_aggr", clickPositionAggr).
 		SubAggregation("conversion_aggr", conversionAggr)
 }
