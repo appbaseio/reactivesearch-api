@@ -52,7 +52,7 @@ func TestOpClassifier(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		handler := OpClassifier(func(w http.ResponseWriter, r *http.Request) {
+		handler := Instance().OpClassifier(func(w http.ResponseWriter, r *http.Request) {
 			ctx := r.Context()
 
 			ctxOp := ctx.Value(op.CtxKey)

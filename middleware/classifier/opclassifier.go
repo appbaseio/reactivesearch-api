@@ -3,11 +3,26 @@ package classifier
 import (
 	"context"
 	"net/http"
+	"sync"
 
 	"github.com/appbaseio-confidential/arc/internal/types/op"
 )
 
-func OpClassifier(h http.HandlerFunc) http.HandlerFunc {
+type classifier struct{}
+
+var (
+	instance *classifier
+	once     sync.Once
+)
+
+func Instance() *classifier {
+	once.Do(func() {
+		instance = &classifier{}
+	})
+	return instance
+}
+
+func (c *classifier) OpClassifier(h http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var operation op.Operation
 		switch r.Method {

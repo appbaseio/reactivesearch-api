@@ -94,7 +94,7 @@ func TestClassifier(t *testing.T) {
 	})
 
 	rr := httptest.NewRecorder()
-	handler := classifier(testHandler)
+	handler := aclClassifier(testHandler)
 
 	for _, test := range tests {
 		req, err := http.NewRequest(test.method, test.path, nil)
