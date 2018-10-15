@@ -1,17 +1,13 @@
 package es
 
 import (
-	"log"
 	"sync"
 
 	"github.com/appbaseio-confidential/arc/arc"
 	"github.com/appbaseio-confidential/arc/arc/plugin"
 )
 
-const (
-	pluginName = "es"
-	logTag     = "[es]"
-)
+const logTag = "[es]"
 
 var (
 	instance *es
@@ -34,11 +30,10 @@ func Instance() *es {
 }
 
 func (es *es) Name() string {
-	return pluginName
+	return logTag
 }
 
 func (es *es) InitFunc() error {
-	log.Printf("%s: initializing plugin: %s", logTag, pluginName)
 	return nil
 }
 

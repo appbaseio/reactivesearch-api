@@ -1,12 +1,15 @@
 package arc
 
 import (
+	"log"
 	"sort"
 	"strconv"
 
 	"github.com/appbaseio-confidential/arc/arc/plugin"
 	"github.com/gorilla/mux"
 )
+
+const logTag = "[registry]"
 
 // plugins is a map of a unique identifier, usually the plugin name,
 // to the Plugin. So, in practice all plugins must have a name,
@@ -35,6 +38,7 @@ func RegisterPlugin(p plugin.Plugin) {
 // that plugin.
 func LoadPlugin(router *mux.Router, p plugin.Plugin) error {
 	// TODO: asynchronous and more validation before loading plugin routes?
+	log.Printf("%s: Initializing plugin: %s", logTag, p.Name())
 	err := p.InitFunc()
 	if err != nil {
 		return err

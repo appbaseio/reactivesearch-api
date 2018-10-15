@@ -7,7 +7,7 @@ import (
 )
 
 func (u *users) routes() []plugin.Route {
-	middleware := chain{}.Wrap
+	middleware := (&chain{}).Wrap
 	routes := []plugin.Route{
 		{
 			Name:        "Get user",

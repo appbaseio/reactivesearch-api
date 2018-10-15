@@ -74,12 +74,12 @@ func (a *analytics) getPopularSearches() http.HandlerFunc {
 	}
 }
 
-func (a *analytics) getNoResultsSearches() http.HandlerFunc {
+func (a *analytics) getNoResultSearches() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		from, to, size := rangeQueryParams(r.URL.Query())
 		indices, _ := indicesFrom(r)
 
-		raw, err := a.es.noResultsSearchesRaw(from, to, size, indices...)
+		raw, err := a.es.noResultSearchesRaw(from, to, size, indices...)
 		if err != nil {
 			log.Printf("%s: %v", logTag, err)
 			util.WriteBackMessage(w, "Internal server error", http.StatusInternalServerError)

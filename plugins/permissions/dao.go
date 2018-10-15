@@ -20,7 +20,7 @@ type elasticsearch struct {
 
 // NewES initializes the elasticsearch client for the 'permissions' plugin. The function
 // is expected to be executed only once, ideally during the initialization of the plugin.
-func NewES(url, indexName, typeName, mapping string) (*elasticsearch, error) {
+func NewES(url, indexName, mapping string) (*elasticsearch, error) {
 	opts := []elastic.ClientOptionFunc{
 		elastic.SetURL(url),
 		elastic.SetSniff(false),
@@ -32,7 +32,7 @@ func NewES(url, indexName, typeName, mapping string) (*elasticsearch, error) {
 	if err != nil {
 		return nil, fmt.Errorf("%s: error while initializing elastic client: %v\n", logTag, err)
 	}
-	es := &elasticsearch{url, indexName, typeName, mapping, client}
+	es := &elasticsearch{url, indexName, "_doc", mapping, client}
 
 	// Check if the meta index already exists
 	exists, err := client.IndexExists(indexName).Do(ctx)

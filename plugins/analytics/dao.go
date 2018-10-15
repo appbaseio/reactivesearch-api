@@ -23,7 +23,7 @@ type elasticsearch struct {
 
 // NewES initializes the elasticsearch client for the 'analytics' plugin. The function
 // is expected to be executed only once, ideally during the initialization of the plugin.
-func NewES(url, indexName, typeName, mapping string) (*elasticsearch, error) {
+func NewES(url, indexName, mapping string) (*elasticsearch, error) {
 	opts := []elastic.ClientOptionFunc{
 		elastic.SetURL(url),
 		elastic.SetSniff(false),
@@ -35,7 +35,7 @@ func NewES(url, indexName, typeName, mapping string) (*elasticsearch, error) {
 	if err != nil {
 		return nil, fmt.Errorf("%s: error while initializing elastic client: %v\n", logTag, err)
 	}
-	es := &elasticsearch{url, indexName, typeName, client}
+	es := &elasticsearch{url, indexName, "_doc", client}
 
 	// Check if the meta index already exists
 	exists, err := client.IndexExists(indexName).Do(ctx)
@@ -124,7 +124,7 @@ func (es *elasticsearch) analyticsOverview(from, to string, size int, clickAnaly
 	wg.Add(1)
 	go func(out chan<- interface{}) {
 		defer wg.Done()
-		noResultsSearches, err := es.noResultsSearches(from, to, size, indices...)
+		noResultsSearches, err := es.noResultSearches(from, to, size, indices...)
 		if err != nil {
 			log.Printf("%s: %v", logTag, err)
 			out <- map[string]interface{}{
@@ -211,7 +211,7 @@ func (es *elasticsearch) advancedAnalytics(from, to string, size int, clickAnaly
 	wg.Add(1)
 	go func(out chan<- interface{}) {
 		defer wg.Done()
-		noResultsSearches, err := es.noResultsSearches(from, to, size, indices...)
+		noResultsSearches, err := es.noResultSearches(from, to, size, indices...)
 		if err != nil {
 			log.Printf("%s: %v", logTag, err)
 			out <- map[string]interface{}{
@@ -325,8 +325,8 @@ func (es *elasticsearch) popularSearchesRaw(from, to string, size int, clickAnal
 	return json.Marshal(popularSearches)
 }
 
-func (es *elasticsearch) noResultsSearches(from, to string, size int, indices ...string) (interface{}, error) {
-	raw, err := es.noResultsSearchesRaw(from, to, size, indices...)
+func (es *elasticsearch) noResultSearches(from, to string, size int, indices ...string) (interface{}, error) {
+	raw, err := es.noResultSearchesRaw(from, to, size, indices...)
 	if err != nil {
 		return []interface{}{}, err
 	}
@@ -342,7 +342,7 @@ func (es *elasticsearch) noResultsSearches(from, to string, size int, indices ..
 	return response, nil
 }
 
-func (es *elasticsearch) noResultsSearchesRaw(from, to string, size int, indices ...string) ([]byte, error) {
+func (es *elasticsearch) noResultSearchesRaw(from, to string, size int, indices ...string) ([]byte, error) {
 	duration := elastic.NewRangeQuery("datestamp").
 		From(from).
 		To(to)

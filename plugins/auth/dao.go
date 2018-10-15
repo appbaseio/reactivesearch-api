@@ -19,26 +19,19 @@ type elasticsearch struct {
 	client          *elastic.Client
 }
 
-func NewES(url, userIndex, userType, permissionIndex, permissionType string) (*elasticsearch, error) {
+func NewES(url, userIndex, permissionIndex string) (*elasticsearch, error) {
 	opts := []elastic.ClientOptionFunc{
 		elastic.SetURL(url),
 		elastic.SetSniff(false),
 	}
 
-	// auth only need to make a connection to es,
-	// users plugin handles creation of meta index
+	// auth only has to establish a connection to es, users, permissions
+	// plugin handles the creation of their respective meta indices
 	client, err := elastic.NewClient(opts...)
 	if err != nil {
 		return nil, fmt.Errorf("%s: error while initializing elastic client: %v\n", logTag, err)
 	}
-	es := &elasticsearch{
-		url,
-		userIndex,
-		userType,
-		permissionIndex,
-		permissionType,
-		client,
-	}
+	es := &elasticsearch{url, userIndex, "_doc", permissionIndex, "_doc", client}
 
 	return es, nil
 }

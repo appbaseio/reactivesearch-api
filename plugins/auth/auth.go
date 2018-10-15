@@ -1,7 +1,6 @@
 package auth
 
 import (
-	"log"
 	"os"
 	"sync"
 
@@ -13,13 +12,10 @@ import (
 )
 
 const (
-	pluginName            = "auth"
 	logTag                = "[auth]"
 	envEsURL              = "ES_CLUSTER_URL"
 	envUsersEsIndex       = "USERS_ES_INDEX"
-	envUsersEsType        = "USERS_ES_TYPE"
 	envPermissionsEsIndex = "PERMISSIONS_ES_INDEX"
-	envPermissionsEsType  = "PERMISSIONS_ES_TYPE"
 )
 
 var (
@@ -50,12 +46,10 @@ func Instance() *Auth {
 }
 
 func (a *Auth) Name() string {
-	return pluginName
+	return logTag
 }
 
 func (a *Auth) InitFunc() error {
-	log.Printf("%s: initializing plugin: %s", logTag, pluginName)
-
 	// fetch vars from env
 	esURL := os.Getenv(envEsURL)
 	if esURL == "" {
@@ -65,22 +59,14 @@ func (a *Auth) InitFunc() error {
 	if userIndex == "" {
 		return errors.NewEnvVarNotSetError(envUsersEsIndex)
 	}
-	userType := os.Getenv(envUsersEsType)
-	if userType == "" {
-		return errors.NewEnvVarNotSetError(envUsersEsType)
-	}
 	permissionIndex := os.Getenv(envPermissionsEsIndex)
 	if permissionIndex == "" {
 		return errors.NewEnvVarNotSetError(envPermissionsEsIndex)
 	}
-	permissionType := os.Getenv(envPermissionsEsType)
-	if permissionType == "" {
-		return errors.NewEnvVarNotSetError(envPermissionsEsType)
-	}
 
 	// initialize the dao
 	var err error
-	a.es, err = NewES(esURL, userIndex, userType, permissionIndex, permissionType)
+	a.es, err = NewES(esURL, userIndex, permissionIndex)
 	if err != nil {
 		return err
 	}

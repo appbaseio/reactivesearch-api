@@ -1,7 +1,6 @@
 package users
 
 import (
-	"log"
 	"os"
 	"sync"
 
@@ -12,11 +11,9 @@ import (
 )
 
 const (
-	pluginName      = "users"
 	logTag          = "[users]"
 	envEsURL        = "ES_CLUSTER_URL"
 	envUsersEsIndex = "USERS_ES_INDEX"
-	envUsersEsType  = "USERS_ES_TYPE"
 )
 
 var (
@@ -39,9 +36,9 @@ func Instance() *users {
 	return instance
 }
 
-// Name returns the name of the plugin: 'users'.
+// Name returns the name of the plugin: '[users]'.
 func (u *users) Name() string {
-	return pluginName
+	return logTag
 }
 
 // InitFunc reads the required environment variables and initializes
@@ -49,8 +46,6 @@ func (u *users) Name() string {
 // in case the required environment variables are not set before the plugin
 // is loaded.
 func (u *users) InitFunc() error {
-	log.Printf("%s: initializing plugin: %s", logTag, pluginName)
-
 	// fetch vars from env
 	esURL := os.Getenv(envEsURL)
 	if esURL == "" {
@@ -60,15 +55,11 @@ func (u *users) InitFunc() error {
 	if indexName == "" {
 		return errors.NewEnvVarNotSetError(envUsersEsIndex)
 	}
-	typeName := os.Getenv(envUsersEsType)
-	if typeName == "" {
-		return errors.NewEnvVarNotSetError(envUsersEsType)
-	}
 	mapping := user.IndexMapping
 
 	// initialize the dao
 	var err error
-	u.es, err = NewES(esURL, indexName, typeName, mapping)
+	u.es, err = NewES(esURL, indexName, mapping)
 	if err != nil {
 		return err
 	}

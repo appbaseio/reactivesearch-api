@@ -2,7 +2,6 @@ package analytics
 
 import (
 	"fmt"
-	"log"
 	"os"
 	"sync"
 
@@ -13,11 +12,9 @@ import (
 )
 
 const (
-	pluginName          = "analytics"
 	logTag              = "[analytics]"
 	envEsURL            = "ES_CLUSTER_URL"
 	envAnalyticsEsIndex = "ANALYTICS_ES_INDEX"
-	envAnalyticsEsType  = "ANALYTICS_ES_TYPE"
 )
 
 var (
@@ -42,7 +39,7 @@ func Instance() *analytics {
 
 // Name returns the name of the plugin: 'analytics'.
 func (a *analytics) Name() string {
-	return pluginName
+	return logTag
 }
 
 // InitFunc reads the required environment variables and initializes
@@ -50,8 +47,6 @@ func (a *analytics) Name() string {
 // in case the required environment variables are not set before the plugin
 // is loaded.
 func (a *analytics) InitFunc() error {
-	log.Printf("%s: initializing plugin: %s\n", logTag, pluginName)
-
 	// fetch the required env vars
 	url := os.Getenv(envEsURL)
 	if url == "" {
@@ -61,15 +56,11 @@ func (a *analytics) InitFunc() error {
 	if indexName == "" {
 		return errors.NewEnvVarNotSetError(envAnalyticsEsIndex)
 	}
-	typeName := os.Getenv(envAnalyticsEsType)
-	if typeName == "" {
-		return errors.NewEnvVarNotSetError(envAnalyticsEsType)
-	}
 	mapping := analyticsType.IndexMapping
 
 	// initialize the dao
 	var err error
-	a.es, err = NewES(url, indexName, typeName, mapping)
+	a.es, err = NewES(url, indexName, mapping)
 	if err != nil {
 		return fmt.Errorf("%s: error initializing analytics' elasticsearch dao: %v", logTag, err)
 	}

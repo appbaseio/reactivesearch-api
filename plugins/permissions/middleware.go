@@ -6,44 +6,48 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/appbaseio-confidential/arc/arc/middleware"
+	"github.com/appbaseio-confidential/arc/arc/middleware/order"
 	"github.com/appbaseio-confidential/arc/internal/types/acl"
 	"github.com/appbaseio-confidential/arc/internal/types/op"
 	"github.com/appbaseio-confidential/arc/internal/types/user"
 	"github.com/appbaseio-confidential/arc/internal/util"
+	"github.com/appbaseio-confidential/arc/middleware/classifier"
+	"github.com/appbaseio-confidential/arc/plugins/auth"
 )
 
-// classifier classifies an incoming request based on the request method
+type chain struct {
+	order.Fifo
+}
+
+func (c *chain) Wrap(h http.HandlerFunc) http.HandlerFunc {
+	return c.Adapt(h, list()...)
+}
+
+func list() []middleware.Middleware {
+	basicAuth := auth.Instance().BasicAuth
+	opClassifier := classifier.Instance().OpClassifier
+	return []middleware.Middleware{
+		opClassifier,
+		aclClassifier,
+		basicAuth,
+		validateOp,
+		validateACL,
+	}
+}
+
+// aclClassifier classifies an incoming request based on the request method
 // and the endpoint it is trying to access. The middleware makes two
 // classifications: first, the operation (op.Operation) incoming request is
 // trying to do, and second, the acl (acl.ACL) it is trying to access, which
 // is acl.Permission in this case. The identified classifications are passed along
 // in the request context to the next middleware. Classifier is supposedly
 // the first middleware that a request is expected to encounter.
-func classifier(h http.HandlerFunc) http.HandlerFunc {
+func aclClassifier(h http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		permissionACL := acl.Permission
-
-		var operation op.Operation
-		switch r.Method {
-		case http.MethodGet:
-			operation = op.Read
-		case http.MethodPost:
-			operation = op.Write
-		case http.MethodPut:
-			operation = op.Write
-		case http.MethodHead:
-			operation = op.Read
-		case http.MethodDelete:
-			operation = op.Delete
-		default:
-			operation = op.Read
-		}
-
-		ctx := r.Context()
-		ctx = context.WithValue(ctx, acl.CtxKey, &permissionACL)
-		ctx = context.WithValue(ctx, op.CtxKey, &operation)
+		ctx := context.WithValue(r.Context(), acl.CtxKey, &permissionACL)
 		r = r.WithContext(ctx)
-
 		h(w, r)
 	}
 }

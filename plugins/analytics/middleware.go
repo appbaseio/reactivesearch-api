@@ -13,12 +13,16 @@ import (
 	"strings"
 	"time"
 
+	"github.com/appbaseio-confidential/arc/arc/middleware"
+	"github.com/appbaseio-confidential/arc/arc/middleware/order"
 	"github.com/appbaseio-confidential/arc/internal/iplookup"
 	"github.com/appbaseio-confidential/arc/internal/types/acl"
 	"github.com/appbaseio-confidential/arc/internal/types/index"
 	"github.com/appbaseio-confidential/arc/internal/types/op"
 	"github.com/appbaseio-confidential/arc/internal/types/user"
 	"github.com/appbaseio-confidential/arc/internal/util"
+	"github.com/appbaseio-confidential/arc/middleware/classifier"
+	"github.com/appbaseio-confidential/arc/plugins/auth"
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 )
@@ -32,6 +36,27 @@ const (
 	XSearchConversion    = "X-Search-Conversion"
 	XSearchCustomEvent   = "X-Search-Custom-Event"
 )
+
+type chain struct {
+	order.Fifo
+}
+
+func (c *chain) Wrap(h http.HandlerFunc) http.HandlerFunc {
+	return c.Adapt(h, list()...)
+}
+
+func list() []middleware.Middleware {
+	basicAuth := auth.Instance().BasicAuth
+	opClassifier := classifier.Instance().OpClassifier
+	return []middleware.Middleware{
+		opClassifier,
+		aclClassifier,
+		basicAuth,
+		validateOp,
+		validateACL,
+		validateIndices,
+	}
+}
 
 type searchResponse struct {
 	Took float64 `json:"took"`
@@ -224,7 +249,7 @@ func (a *analytics) recordResponse(docId, searchId string, w *httptest.ResponseR
 	a.es.indexRecord(docId, record)
 }
 
-func classifier(h http.HandlerFunc) http.HandlerFunc {
+func aclClassifier(h http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		requestACL := acl.Analytics
 

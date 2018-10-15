@@ -13,11 +13,9 @@ import (
 )
 
 const (
-	pluginName           = "permissions"
 	logTag               = "[permissions]"
 	envEsURL             = "ES_CLUSTER_URL"
 	envPermissionEsIndex = "PERMISSIONS_ES_INDEX"
-	envPermissionEsType  = "PERMISSIONS_ES_TYPE"
 )
 
 var (
@@ -42,7 +40,7 @@ func Instance() *permissions {
 
 // Name returns the name of the plugin: 'permissions'.
 func (p *permissions) Name() string {
-	return pluginName
+	return logTag
 }
 
 // InitFunc reads the required environment variables and initializes
@@ -50,7 +48,7 @@ func (p *permissions) Name() string {
 // in case the required environment variables are not set before the plugin
 // is loaded.
 func (p *permissions) InitFunc() error {
-	log.Printf("%s: initializing plugin: %s\n", logTag, pluginName)
+	log.Printf("%s: initializing plugin\n", logTag)
 
 	// fetch vars from env
 	url := os.Getenv(envEsURL)
@@ -61,15 +59,11 @@ func (p *permissions) InitFunc() error {
 	if indexName == "" {
 		return errors.NewEnvVarNotSetError(envPermissionEsIndex)
 	}
-	typeName := os.Getenv(envPermissionEsType)
-	if typeName == "" {
-		return errors.NewEnvVarNotSetError(envPermissionEsType)
-	}
 	mapping := permission.IndexMapping
 
 	// initialize the dao
 	var err error
-	p.es, err = NewES(url, indexName, typeName, mapping)
+	p.es, err = NewES(url, indexName, mapping)
 	if err != nil {
 		return fmt.Errorf("%s: error initializing permission's elasticsearch dao: %v", logTag, err)
 	}

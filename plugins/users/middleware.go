@@ -27,7 +27,6 @@ func (c *chain) Wrap(h http.HandlerFunc) http.HandlerFunc {
 func list() []middleware.Middleware {
 	basicAuth := auth.Instance().BasicAuth
 	opClassifier := classifier.Instance().OpClassifier
-
 	return []middleware.Middleware{
 		opClassifier,
 		aclClassifier,
@@ -47,11 +46,8 @@ func list() []middleware.Middleware {
 func aclClassifier(h http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		userACL := acl.User
-
-		ctx := r.Context()
-		ctx = context.WithValue(ctx, acl.CtxKey, &userACL)
+		ctx := context.WithValue(r.Context(), acl.CtxKey, &userACL)
 		r = r.WithContext(ctx)
-
 		h(w, r)
 	}
 }
