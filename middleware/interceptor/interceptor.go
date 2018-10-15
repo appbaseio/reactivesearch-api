@@ -29,8 +29,8 @@ func Instance() *interceptor {
 	return instance
 }
 
-// TODO: Create a new request?
-func (i *interceptor) Intercept(h http.HandlerFunc) http.HandlerFunc {
+// TODO: Create a new request or mutate current request?
+func (i *interceptor) Redirect(h http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		rawURL := os.Getenv("ES_CLUSTER_URL")
 		if rawURL == "" {
@@ -48,12 +48,13 @@ func (i *interceptor) Intercept(h http.HandlerFunc) http.HandlerFunc {
 		r.URL.Host = esURL.Host
 		r.URL.User = esURL.User
 
-		// TODO: handle gzip?
+		// disable gzip compression
 		encoding := r.Header.Get("Accept-Encoding")
 		if encoding != "" {
 			r.Header.Set("Accept-Encoding", "identity")
 		}
 
+		// set request content type
 		v := r.Header.Get("Content-Type")
 		if v == "" {
 			r.Header.Set("Content-Type", "application/json")

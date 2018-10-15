@@ -27,7 +27,6 @@ func Instance() *logger {
 func (l *logger) Log(h http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		msg := fmt.Sprintf("%s %s", r.Method, r.URL.Path)
-		//log.Println(fmt.Sprintf("%s: started %s", logTag, msg))
 		start := time.Now()
 		h(w, r)
 		log.Println(fmt.Sprintf("%s: finished %s, took %fs",

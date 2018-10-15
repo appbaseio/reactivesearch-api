@@ -278,7 +278,7 @@ func classifyACL(h http.HandlerFunc) http.HandlerFunc {
 
 func extractIndices(h http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		indices, ok := indicesFromRequest(r)
+		indices, ok := util.IndicesFromRequest(r)
 		if !ok {
 			indices = []string{}
 		}

@@ -11,10 +11,10 @@ import (
 	"github.com/appbaseio-confidential/arc/internal/types/acl"
 	"github.com/appbaseio-confidential/arc/internal/types/permission"
 	"github.com/appbaseio-confidential/arc/internal/util"
-	//goredis "github.com/go-redis/redis"
+	goredis "github.com/go-redis/redis"
 	"github.com/ulule/limiter"
 	"github.com/ulule/limiter/drivers/store/memory"
-	//"github.com/ulule/limiter/drivers/store/redis"
+	"github.com/ulule/limiter/drivers/store/redis"
 )
 
 const (
@@ -35,6 +35,7 @@ type ratelimiter struct {
 	limiters map[string]*limiter.Limiter
 }
 
+// Instance returns the singleton instance of ratelimiter
 func Instance() *ratelimiter {
 	once.Do(func() {
 		instance = &ratelimiter{
@@ -44,6 +45,7 @@ func Instance() *ratelimiter {
 	return instance
 }
 
+// RateLimit middleware limits the requests made to elasticsearch for each permission.
 func (rl *ratelimiter) RateLimit(h http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		remoteIP := iplookup.FromRequest(r)
@@ -71,13 +73,15 @@ func (rl *ratelimiter) RateLimit(h http.HandlerFunc) http.HandlerFunc {
 			return
 		}
 
+		// limit on ACLs per second
 		aclLimit := obj.GetLimitFor(*aclObj)
-		key := obj.UserName + aclObj.String() // limit per acl
+		key := obj.UserName + aclObj.String()
 		if rl.limitExceededByACL(key, aclLimit) {
 			util.WriteBackMessage(w, "Rate limit exceeded", http.StatusTooManyRequests)
 			return
 		}
 
+		// limit on IP per hour
 		ipLimit := obj.Limits.IPLimit
 		key = obj.UserName + remoteIP
 		if rl.limitExceededByIP(key, ipLimit) {
@@ -144,21 +148,31 @@ func (rl *ratelimiter) getLimiter(key string, limit int64, period time.Duration)
 // The access must be mediated by some kind of synchronization mechanism to prevent concurrent
 // read/write operations to the map and vars.
 func (rl *ratelimiter) newLimiter(key string, limit int64, period time.Duration) *limiter.Limiter {
-	//option := &goredis.Options{
-	//	Addr:     redisAddr,
-	//	Password: redisPassword,
-	//	DB:       DefaultRedisDB,
-	//}
-	//client := goredis.NewClient(option)
-	//store, err := redis.NewStoreWithOptions(client, limiter.StoreOptions{
-	//	Prefix:   key,
-	//	MaxRetry: DefaultMaxRetry,
-	//})
-	//if err != nil {
-	//	log.Printf("%s: cannot create redis store for the rate limiter: %v", logTag, err)
-	//	return nil
-	//}
 	store := memory.NewStore()
+	rate := limiter.Rate{
+		Limit:  limit,
+		Period: period,
+	}
+	instance := limiter.New(store, rate)
+	rl.limiters[key] = instance
+	return instance
+}
+
+func (rl *ratelimiter) newLimiterWithRedis(key string, limit int64, period time.Duration) *limiter.Limiter {
+	option := &goredis.Options{
+		Addr:     redisAddr,
+		Password: redisPassword,
+		DB:       defaultRedisDB,
+	}
+	client := goredis.NewClient(option)
+	store, err := redis.NewStoreWithOptions(client, limiter.StoreOptions{
+		Prefix:   key,
+		MaxRetry: defaultMaxRetry,
+	})
+	if err != nil {
+		log.Printf("%s: cannot create redis store for the rate limiter: %v", logTag, err)
+		return nil
+	}
 	rate := limiter.Rate{
 		Limit:  limit,
 		Period: period,
