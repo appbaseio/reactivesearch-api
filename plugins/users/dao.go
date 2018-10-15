@@ -84,9 +84,6 @@ func (es *elasticsearch) putUser(u user.User) (bool, error) {
 		return false, err
 	}
 
-	//raw, _ := json.Marshal(resp)
-	//log.Printf("%s: es_response: %s\n", logTag, string(raw))
-
 	return true, nil
 }
 
@@ -101,9 +98,6 @@ func (es *elasticsearch) patchUser(userId string, patch map[string]interface{}) 
 		return false, err
 	}
 
-	//raw, _ := json.Marshal(resp)
-	//log.Printf("%s: es_response: %s\n", logTag, string(raw))
-
 	return true, nil
 }
 
@@ -116,9 +110,6 @@ func (es *elasticsearch) deleteUser(userId string) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-
-	//raw, _ := json.Marshal(resp)
-	//log.Printf("%s: es_response: %s\n", logTag, string(raw))
 
 	return true, nil
 }

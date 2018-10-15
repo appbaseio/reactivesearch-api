@@ -68,6 +68,7 @@ func (a *analytics) InitFunc() error {
 	return nil
 }
 
+// Routes returns the endpoints associated with analytics.
 func (a *analytics) Routes() []plugin.Route {
 	return a.routes()
 }

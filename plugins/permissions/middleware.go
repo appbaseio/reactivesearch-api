@@ -13,6 +13,7 @@ import (
 	"github.com/appbaseio-confidential/arc/internal/types/user"
 	"github.com/appbaseio-confidential/arc/internal/util"
 	"github.com/appbaseio-confidential/arc/middleware/classifier"
+	"github.com/appbaseio-confidential/arc/middleware/logger"
 	"github.com/appbaseio-confidential/arc/plugins/auth"
 )
 
@@ -27,7 +28,10 @@ func (c *chain) Wrap(h http.HandlerFunc) http.HandlerFunc {
 func list() []middleware.Middleware {
 	basicAuth := auth.Instance().BasicAuth
 	opClassifier := classifier.Instance().OpClassifier
+	logRequests := logger.Instance().Log
+
 	return []middleware.Middleware{
+		logRequests,
 		opClassifier,
 		aclClassifier,
 		basicAuth,

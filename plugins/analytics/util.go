@@ -1,6 +1,9 @@
 package analytics
 
 import (
+	"context"
+	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
 	"net/url"
@@ -8,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/appbaseio-confidential/arc/internal/types/index"
 	"github.com/gorilla/mux"
 )
 
@@ -87,8 +91,8 @@ func parse(header string) []map[string]string {
 	return m
 }
 
-// indicesFrom extracts index patterns from the request url (from var "{index}").
-func indicesFrom(r *http.Request) ([]string, bool) {
+// indicesFromRequest extracts index patterns from the request url (from var "{index}").
+func indicesFromRequest(r *http.Request) ([]string, bool) {
 	vars := mux.Vars(r)
 	indexVar, ok := vars["index"]
 	if !ok {
@@ -97,10 +101,32 @@ func indicesFrom(r *http.Request) ([]string, bool) {
 
 	var indices []string
 	tokens := strings.Split(indexVar, ",")
-	for _, index := range tokens {
-		index = strings.TrimSpace(index)
-		indices = append(indices, index)
+	for _, pattern := range tokens {
+		pattern = strings.TrimSpace(pattern)
+		indices = append(indices, pattern)
 	}
 
 	return indices, true
+}
+
+// indicesFromContext fetches index patterns from the request context.
+func indicesFromContext(ctx context.Context) ([]string, error) {
+	ctxIndices := ctx.Value(index.CtxKey)
+	if ctxIndices == nil {
+		return nil, fmt.Errorf("cannot fetch indices from request context")
+	}
+	indices, ok := ctxIndices.([]string)
+	if !ok {
+		return nil, fmt.Errorf("cannot cast ctxIndices to []string")
+	}
+	return indices, nil
+}
+
+func logRaw(record map[string]interface{}) {
+	rawRecord, err := json.Marshal(record)
+	if err != nil {
+		log.Printf("%s: error marshalling analytics record: %v", logTag, err)
+	}
+	log.Printf("%s: %s", logTag, string(rawRecord))
+
 }

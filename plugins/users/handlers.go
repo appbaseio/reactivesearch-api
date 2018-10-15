@@ -57,7 +57,7 @@ func (u *users) getUser() http.HandlerFunc {
 	}
 }
 
-func (u *users) getAnotherUser() http.HandlerFunc {
+func (u *users) getUserWithId() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		vars := mux.Vars(r)
 		userId, ok := vars["user_id"]
@@ -207,7 +207,7 @@ func (u *users) patchUser() http.HandlerFunc {
 	}
 }
 
-func (u *users) patchAnotherUser() http.HandlerFunc {
+func (u *users) patchUserWithId() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		vars := mux.Vars(r)
 		userId, ok := vars["user_id"]
@@ -278,7 +278,7 @@ func (u *users) deleteUser() http.HandlerFunc {
 	}
 }
 
-func (u *users) deleteAnotherUser() http.HandlerFunc {
+func (u *users) deleteUserWithId() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		vars := mux.Vars(r)
 		userId, ok := vars["user_id"]

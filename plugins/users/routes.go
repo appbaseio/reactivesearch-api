@@ -20,7 +20,7 @@ func (u *users) routes() []plugin.Route {
 			Name:        "Get another user",
 			Methods:     []string{http.MethodGet},
 			Path:        "/_user/{user_id}",
-			HandlerFunc: middleware(isAdmin(u.getAnotherUser())),
+			HandlerFunc: middleware(isAdmin(u.getUserWithId())),
 			Description: "Fetches another user from the repository",
 		},
 		{
@@ -41,7 +41,7 @@ func (u *users) routes() []plugin.Route {
 			Name:        "Patch another user",
 			Methods:     []string{http.MethodPatch},
 			Path:        "/_user/{user_id}",
-			HandlerFunc: middleware(isAdmin(u.patchAnotherUser())),
+			HandlerFunc: middleware(isAdmin(u.patchUserWithId())),
 			Description: "Patches another user with passed fields in the repository",
 		},
 		{
@@ -55,7 +55,7 @@ func (u *users) routes() []plugin.Route {
 			Name:        "Delete another user",
 			Methods:     []string{http.MethodDelete},
 			Path:        "/_user/{user_id}",
-			HandlerFunc: middleware(isAdmin(u.deleteAnotherUser())),
+			HandlerFunc: middleware(isAdmin(u.deleteUserWithId())),
 			Description: "Deletes another user from the repository",
 		},
 	}

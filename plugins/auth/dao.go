@@ -47,9 +47,6 @@ func (es *elasticsearch) putUser(u user.User) (bool, error) {
 		return false, err
 	}
 
-	//raw, _ := json.Marshal(resp)
-	//log.Printf("%s: es_response: %s\n", logTag, string(raw))
-
 	return true, nil
 }
 
@@ -95,9 +92,6 @@ func (es *elasticsearch) putPermission(p permission.Permission) (bool, error) {
 		return false, err
 	}
 
-	//raw, _ := json.Marshal(resp)
-	//log.Printf("%s: es_response: %s\n", logTag, string(raw))
-
 	return true, nil
 }
 
@@ -106,11 +100,13 @@ func (es *elasticsearch) getPermission(username string) (*permission.Permission,
 	if err != nil {
 		return nil, err
 	}
+
 	var p permission.Permission
 	err = json.Unmarshal(data, &p)
 	if err != nil {
 		return nil, err
 	}
+
 	return &p, nil
 }
 
@@ -124,9 +120,6 @@ func (es *elasticsearch) getRawPermission(username string) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-
-	//raw, _ := json.Marshal(resp)
-	//log.Printf("%s: es_response: %v", logTag, string(raw))
 
 	src, err := resp.Source.MarshalJSON()
 	if err != nil {

@@ -71,7 +71,7 @@ func (p *permissions) InitFunc() error {
 	return nil
 }
 
-// Routes returns the routes that this plugin handles.
+// Routes returns the endpoints associated with permission.
 func (p *permissions) Routes() []plugin.Route {
 	return p.routes()
 }

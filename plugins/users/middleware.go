@@ -13,6 +13,7 @@ import (
 	"github.com/appbaseio-confidential/arc/internal/types/user"
 	"github.com/appbaseio-confidential/arc/internal/util"
 	"github.com/appbaseio-confidential/arc/middleware/classifier"
+	"github.com/appbaseio-confidential/arc/middleware/logger"
 	"github.com/appbaseio-confidential/arc/plugins/auth"
 )
 
@@ -26,24 +27,27 @@ func (c *chain) Wrap(h http.HandlerFunc) http.HandlerFunc {
 
 func list() []middleware.Middleware {
 	basicAuth := auth.Instance().BasicAuth
-	opClassifier := classifier.Instance().OpClassifier
+	classifyOp := classifier.Instance().OpClassifier
+	logRequests := logger.Instance().Log
+
 	return []middleware.Middleware{
-		opClassifier,
-		aclClassifier,
+		logRequests,
+		classifyOp,
+		classifyACL,
 		basicAuth,
 		validateOp,
 		validateACL,
 	}
 }
 
-// aclClassifier classifies an incoming request based on the request method
+// classifyACL classifies an incoming request based on the request method
 // and the endpoint it is trying to access. The middleware makes two
 // classifications: first, the operation (op.Operation) incoming request is
 // trying to do, and second, the acl (acl.ACL) it is trying to access, which
 // is acl.User in this case. The identified classifications are passed along
 // in the request context to the next middleware. Classifier is supposedly
 // the first middleware that a request is expected to encounter.
-func aclClassifier(h http.HandlerFunc) http.HandlerFunc {
+func classifyACL(h http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		userACL := acl.User
 		ctx := context.WithValue(r.Context(), acl.CtxKey, &userACL)

@@ -27,7 +27,6 @@ func (a *Auth) BasicAuth(h http.HandlerFunc) http.HandlerFunc {
 			util.WriteBackMessage(w, "Internal server error", http.StatusInternalServerError)
 			return
 		}
-
 		reqACL, ok := ctxACL.(*acl.ACL)
 		if !ok {
 			log.Printf("%s: unable to cast context acl %v to type *acl.ACL", logTag, ctxACL)
@@ -37,33 +36,33 @@ func (a *Auth) BasicAuth(h http.HandlerFunc) http.HandlerFunc {
 
 		if reqACL.IsFromES() {
 			var err error
-			var p *permission.Permission
+			var reqPermission *permission.Permission
 
 			// check in the cache
-			p, ok := a.cachedPermission(userId)
+			reqPermission, ok = a.cachedPermission(userId)
 			if !ok {
-				p, err = a.es.getPermission(userId)
+				reqPermission, err = a.es.getPermission(userId)
 				if err != nil {
-					msg := fmt.Sprintf(`Unable to fetch permission with "creator"="%s"`, userId)
+					msg := fmt.Sprintf(`Unable to fetch permission with "username"="%s"`, userId)
 					log.Printf("%s: %s: %v", logTag, msg, err)
 					util.WriteBackError(w, msg, http.StatusInternalServerError)
 					return
 				}
 				// store in the cache
-				a.cachePermission(userId, p)
+				a.cachePermission(userId, reqPermission)
 			}
 
-			if password != p.Password {
+			if password != reqPermission.Password {
 				util.WriteBackMessage(w, "Incorrect credentials", http.StatusUnauthorized)
 				return
 			}
 
 			ctx := r.Context()
-			ctx = context.WithValue(ctx, permission.CtxKey, p)
+			ctx = context.WithValue(ctx, permission.CtxKey, reqPermission)
 			r = r.WithContext(ctx)
 		} else {
 			var err error
-			var u *user.User
+			var reqUser *user.User
 
 			// if we are patching a user or a permission, we must clear their
 			// respective objects from the cache, otherwise the changes won't be
@@ -77,24 +76,25 @@ func (a *Auth) BasicAuth(h http.HandlerFunc) http.HandlerFunc {
 				}
 			}
 
-			u, err = a.isMaster()
+			// master user
+			reqUser, err = a.isMaster()
 			if err != nil {
 				log.Printf("%s: %v", logTag, err)
 				util.WriteBackMessage(w, "Internal server error", http.StatusInternalServerError)
 				return
 			}
-			if u != nil {
+			if reqUser != nil {
 				ctx := r.Context()
-				ctx = context.WithValue(ctx, user.CtxKey, u)
+				ctx = context.WithValue(ctx, user.CtxKey, reqUser)
 				r = r.WithContext(ctx)
 				h(w, r)
 				return
 			}
 
 			// check in the cache
-			u, ok := a.cachedUser(userId)
+			reqUser, ok = a.cachedUser(userId)
 			if !ok {
-				u, err = a.es.getUser(userId)
+				reqUser, err = a.es.getUser(userId)
 				if err != nil {
 					msg := fmt.Sprintf(`Unable to fetch user with "user_id"="%s"`, userId)
 					log.Printf("%s: %s: %v", logTag, msg, err)
@@ -102,16 +102,16 @@ func (a *Auth) BasicAuth(h http.HandlerFunc) http.HandlerFunc {
 					return
 				}
 				// store in the cache
-				a.cacheUser(userId, u)
+				a.cacheUser(userId, reqUser)
 			}
 
-			if password != u.Password {
+			if password != reqUser.Password {
 				util.WriteBackMessage(w, "Incorrect credentials", http.StatusUnauthorized)
 				return
 			}
 
 			ctx := r.Context()
-			ctx = context.WithValue(ctx, user.CtxKey, u)
+			ctx = context.WithValue(ctx, user.CtxKey, reqUser)
 			r = r.WithContext(ctx)
 		}
 

@@ -273,7 +273,7 @@ func (es *elasticsearch) popularSearchesRaw(from, to string, size int, clickAnal
 
 	query := elastic.NewBoolQuery().Filter(duration)
 
-	if indices != nil {
+	if indices != nil && len(indices) != 0 {
 		var indexQueries []elastic.Query
 		for _, index := range indices {
 			query := elastic.NewTermQuery("indices.keyword", index)
@@ -351,7 +351,7 @@ func (es *elasticsearch) noResultSearchesRaw(from, to string, size int, indices 
 
 	query := elastic.NewBoolQuery().Filter(duration, zeroHits)
 
-	if indices != nil {
+	if indices != nil && len(indices) != 0 {
 		var indexQueries []elastic.Query
 		for _, index := range indices {
 			query := elastic.NewTermQuery("indices.keyword", index)
@@ -420,7 +420,7 @@ func (es *elasticsearch) popularFiltersRaw(from, to string, size int, clickAnaly
 
 	query := elastic.NewBoolQuery().Filter(duration)
 
-	if indices != nil {
+	if indices != nil && len(indices) != 0 {
 		var indexQueries []elastic.Query
 		for _, index := range indices {
 			query := elastic.NewTermQuery("indices.keyword", index)
@@ -511,7 +511,7 @@ func (es *elasticsearch) popularResultsRaw(from, to string, size int, clickAnaly
 
 	query := elastic.NewBoolQuery().Filter(duration)
 
-	if indices != nil {
+	if indices != nil && len(indices) != 0 {
 		var indexQueries []elastic.Query
 		for _, index := range indices {
 			query := elastic.NewTermQuery("indices.keyword", index)
@@ -586,7 +586,7 @@ func (es *elasticsearch) geoRequestsDistribution(from, to string, size int, indi
 
 	query := elastic.NewBoolQuery().Filter(duration)
 
-	if indices != nil {
+	if indices != nil && len(indices) != 0 {
 		var indexQueries []elastic.Query
 		for _, index := range indices {
 			query := elastic.NewTermQuery("indices.keyword", index)
@@ -645,7 +645,7 @@ func (es *elasticsearch) latencies(from, to string, size int, indices ...string)
 
 	query := elastic.NewBoolQuery().Filter(duration)
 
-	if indices != nil {
+	if indices != nil && len(indices) != 0 {
 		var indexQueries []elastic.Query
 		for _, index := range indices {
 			query := elastic.NewTermQuery("indices.keyword", index)
@@ -795,7 +795,7 @@ func (es *elasticsearch) totalSearches(from, to string, indices ...string) (floa
 
 	query := elastic.NewBoolQuery().Filter(duration)
 
-	if indices != nil {
+	if indices != nil && len(indices) != 0 {
 		var indexQueries []elastic.Query
 		for _, index := range indices {
 			query := elastic.NewTermQuery("indices.keyword", index)
@@ -831,7 +831,7 @@ func (es *elasticsearch) totalConversions(from, to string, indices ...string) (f
 
 	query := elastic.NewBoolQuery().Filter(duration, convertedSearches)
 
-	if indices != nil {
+	if indices != nil && len(indices) != 0 {
 		var indexQueries []elastic.Query
 		for _, index := range indices {
 			query := elastic.NewTermQuery("indices.keyword", index)
@@ -859,7 +859,7 @@ func (es *elasticsearch) totalClicks(from, to string, indices ...string) (float6
 
 	query := elastic.NewBoolQuery().Filter(duration, clicks)
 
-	if indices != nil {
+	if indices != nil && len(indices) != 0 {
 		var indexQueries []elastic.Query
 		for _, index := range indices {
 			query := elastic.NewTermQuery("indices.keyword", index)
@@ -902,7 +902,7 @@ func (es *elasticsearch) searchHistogramRaw(from, to string, size int, indices .
 
 	query := elastic.NewBoolQuery().Filter(duration)
 
-	if indices != nil {
+	if indices != nil && len(indices) != 0 {
 		var indexQueries []elastic.Query
 		for _, index := range indices {
 			query := elastic.NewTermQuery("indices.keyword", index)

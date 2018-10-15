@@ -23,7 +23,7 @@ var (
 	once     sync.Once
 )
 
-// TODO: clear cache after fixed entries: LRU, also check for mutations?
+// TODO: clear cache after fixed entries: LRU?
 type Auth struct {
 	mu               sync.Mutex
 	usersCache       map[string]*user.User

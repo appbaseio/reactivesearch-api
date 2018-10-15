@@ -67,7 +67,7 @@ func (u *users) InitFunc() error {
 	return nil
 }
 
-// Routes returns the routes that this plugin handles.
+// Routes returns the routes associated with user.
 func (u *users) Routes() []plugin.Route {
 	return u.routes()
 }

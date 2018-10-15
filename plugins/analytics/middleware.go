@@ -22,9 +22,9 @@ import (
 	"github.com/appbaseio-confidential/arc/internal/types/user"
 	"github.com/appbaseio-confidential/arc/internal/util"
 	"github.com/appbaseio-confidential/arc/middleware/classifier"
+	"github.com/appbaseio-confidential/arc/middleware/logger"
 	"github.com/appbaseio-confidential/arc/plugins/auth"
 	"github.com/google/uuid"
-	"github.com/gorilla/mux"
 )
 
 const (
@@ -37,20 +37,27 @@ const (
 	XSearchCustomEvent   = "X-Search-Custom-Event"
 )
 
+// chain of middleware that are wrapped over analytics endpoints.
 type chain struct {
 	order.Fifo
 }
 
+// Wrap wraps a list of middleware over an http handler func.
 func (c *chain) Wrap(h http.HandlerFunc) http.HandlerFunc {
 	return c.Adapt(h, list()...)
 }
 
+// list returns the list of middleware.
 func list() []middleware.Middleware {
 	basicAuth := auth.Instance().BasicAuth
-	opClassifier := classifier.Instance().OpClassifier
+	classifyOp := classifier.Instance().OpClassifier
+	logRequests := logger.Instance().Log
+
 	return []middleware.Middleware{
-		opClassifier,
-		aclClassifier,
+		logRequests,
+		classifyOp,
+		classifyACL,
+		extractIndices,
 		basicAuth,
 		validateOp,
 		validateACL,
@@ -84,16 +91,16 @@ func (a *analytics) Recorder(h http.HandlerFunc) http.HandlerFunc {
 			util.WriteBackMessage(w, "Internal server error", http.StatusInternalServerError)
 			return
 		}
-		requestACL, ok := ctxACL.(*acl.ACL)
+		reqACL, ok := ctxACL.(*acl.ACL)
 		if !ok {
-			log.Printf("%s: unable to cast context acl %v to *acl.ACL", logTag, requestACL)
+			log.Printf("%s: unable to cast context acl %v to *acl.ACL", logTag, reqACL)
 			util.WriteBackMessage(w, "Internal server error", http.StatusInternalServerError)
 			return
 		}
 
 		searchQuery := r.Header.Get(XSearchQuery)
 		searchId := r.Header.Get(XSearchId)
-		if *requestACL != acl.Search || (searchQuery == "" && searchId == "") {
+		if *reqACL != acl.Search || (searchQuery == "" && searchId == "") {
 			h(w, r)
 			return
 		}
@@ -128,6 +135,7 @@ func (a *analytics) recordResponse(docId, searchId string, w *httptest.ResponseR
 		return
 	}
 
+	// replace es response fields
 	respBody = bytes.Replace(respBody, []byte("_source"), []byte("source"), -1)
 	respBody = bytes.Replace(respBody, []byte("_type"), []byte("type"), -1)
 	respBody = bytes.Replace(respBody, []byte("_id"), []byte("id"), -1)
@@ -174,7 +182,20 @@ func (a *analytics) recordResponse(docId, searchId string, w *httptest.ResponseR
 	record := make(map[string]interface{})
 	record["took"] = esResponse.Took
 	if searchId == "" {
-		record["indices"] = r.Context().Value(index.CtxKey).([]string) // TODO: error check?
+		ctxIndices := r.Context().Value(index.CtxKey)
+		if ctxIndices == nil {
+			log.Printf("%s: cannot fetch indices from request context, failed to record analytics",
+				logTag)
+			return
+		}
+		indices, ok := ctxIndices.([]string)
+		if !ok {
+			log.Printf("%s: unable to cast ctxIndices to []string, failed to record analytics",
+				logTag)
+			return
+		}
+
+		record["indices"] = indices
 		record["search_query"] = r.Header.Get(XSearchQuery)
 		record["hits_in_response"] = hits
 		record["total_hits"] = esResponse.Hits.Total
@@ -239,52 +260,30 @@ func (a *analytics) recordResponse(docId, searchId string, w *httptest.ResponseR
 		record["custom_events"] = customEvents
 	}
 
-	// TODO: Remove
-	rawRecord, err := json.Marshal(record)
-	if err != nil {
-		log.Printf("%s: error marshalling analytics record: %v", logTag, err)
-	}
-	log.Printf("%s: %s", logTag, string(rawRecord))
-
+	logRaw(record) // TODO: remove
 	a.es.indexRecord(docId, record)
 }
 
-func aclClassifier(h http.HandlerFunc) http.HandlerFunc {
+func classifyACL(h http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		requestACL := acl.Analytics
 
-		var operation op.Operation
-		switch r.Method {
-		case http.MethodGet:
-			operation = op.Read
-		case http.MethodPost:
-			operation = op.Write
-		case http.MethodPut:
-			operation = op.Write
-		case http.MethodPatch:
-			operation = op.Write
-		case http.MethodDelete:
-			operation = op.Delete
-		default:
-			operation = op.Read
-		}
+		ctx := r.Context()
+		ctx = context.WithValue(ctx, acl.CtxKey, &requestACL)
+		r = r.WithContext(ctx)
 
-		vars := mux.Vars(r)
-		indexVar, ok := vars["index"]
-		var indices []string
-		if ok {
-			tokens := strings.Split(indexVar, ",")
-			for _, indexName := range tokens {
-				indexName = strings.TrimSpace(indexName)
-				indices = append(indices, indexName)
-			}
-		} else {
+		h(w, r)
+	}
+}
+
+func extractIndices(h http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		indices, ok := indicesFromRequest(r)
+		if !ok {
 			indices = []string{}
 		}
 
 		ctx := r.Context()
-		ctx = context.WithValue(ctx, acl.CtxKey, &requestACL)
-		ctx = context.WithValue(ctx, op.CtxKey, &operation)
 		ctx = context.WithValue(ctx, index.CtxKey, indices)
 		r = r.WithContext(ctx)
 
@@ -365,13 +364,13 @@ func validateIndices(h http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
 
-		ctxPermission := ctx.Value(user.CtxKey)
-		if ctxPermission == nil {
+		ctxUser := ctx.Value(user.CtxKey)
+		if ctxUser == nil {
 			log.Printf("%s: unable to fetch permission from request context", logTag)
 			util.WriteBackMessage(w, "Internal server error", http.StatusInternalServerError)
 			return
 		}
-		reqUser, ok := ctxPermission.(*user.User)
+		reqUser, ok := ctxUser.(*user.User)
 		if !ok {
 			log.Printf("%s: unable to cast context user to *user.User", logTag)
 			util.WriteBackMessage(w, "Internal server error", http.StatusInternalServerError)

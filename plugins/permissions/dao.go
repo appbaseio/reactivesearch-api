@@ -2,7 +2,6 @@ package permissions
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"log"
 
@@ -65,9 +64,6 @@ func (es *elasticsearch) getRawPermission(username string) ([]byte, error) {
 		return nil, err
 	}
 
-	//raw, _ := json.Marshal(resp)
-	//log.Printf("%s: es_response: %v", logTag, string(raw))
-
 	src, err := resp.Source.MarshalJSON()
 	if err != nil {
 		return nil, err
@@ -87,14 +83,11 @@ func (es *elasticsearch) putPermission(p permission.Permission) (bool, error) {
 		return false, err
 	}
 
-	//raw, _ := json.Marshal(resp)
-	//log.Printf("%s: es_response: %s\n", logTag, string(raw))
-
 	return true, nil
 }
 
 func (es *elasticsearch) patchPermission(username string, patch map[string]interface{}) (bool, error) {
-	resp, err := es.client.Update().
+	_, err := es.client.Update().
 		Index(es.indexName).
 		Type(es.typeName).
 		Id(username).
@@ -103,9 +96,6 @@ func (es *elasticsearch) patchPermission(username string, patch map[string]inter
 	if err != nil {
 		return false, nil
 	}
-
-	raw, _ := json.Marshal(resp)
-	log.Printf("%s: es_response: %s\n", logTag, string(raw))
 
 	return true, nil
 }
@@ -119,9 +109,6 @@ func (es *elasticsearch) deletePermission(userId string) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-
-	//raw, _ := json.Marshal(resp)
-	//log.Printf("%s: es_response: %s\n", logTag, string(raw))
 
 	return true, nil
 }
