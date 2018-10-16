@@ -64,7 +64,7 @@ func (es *es) routes() []plugin.Route {
 
 	// init the necessary middleware
 	var (
-		redirectRequest   = interceptor.Instance().Intercept
+		redirectRequest   = interceptor.Instance().Redirect
 		basicAuth         = auth.Instance().BasicAuth
 		reqLogger         = logger.Instance().Log
 		classifier        = es.classifier

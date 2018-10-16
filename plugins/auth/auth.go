@@ -19,12 +19,12 @@ const (
 )
 
 var (
-	instance *Auth
+	instance *auth
 	once     sync.Once
 )
 
 // TODO: clear cache after fixed entries: LRU?
-type Auth struct {
+type auth struct {
 	mu               sync.Mutex
 	usersCache       map[string]*user.User
 	permissionsCache map[string]*permission.Permission
@@ -35,9 +35,9 @@ func init() {
 	arc.RegisterPlugin(Instance())
 }
 
-func Instance() *Auth {
+func Instance() *auth {
 	once.Do(func() {
-		instance = &Auth{
+		instance = &auth{
 			usersCache:       make(map[string]*user.User),
 			permissionsCache: make(map[string]*permission.Permission),
 		}
@@ -45,11 +45,11 @@ func Instance() *Auth {
 	return instance
 }
 
-func (a *Auth) Name() string {
+func (a *auth) Name() string {
 	return logTag
 }
 
-func (a *Auth) InitFunc() error {
+func (a *auth) InitFunc() error {
 	// fetch vars from env
 	esURL := os.Getenv(envEsURL)
 	if esURL == "" {
@@ -74,6 +74,6 @@ func (a *Auth) InitFunc() error {
 	return nil
 }
 
-func (a *Auth) Routes() []plugin.Route {
+func (a *auth) Routes() []plugin.Route {
 	return []plugin.Route{}
 }

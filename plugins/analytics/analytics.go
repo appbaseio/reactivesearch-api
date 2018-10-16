@@ -8,7 +8,7 @@ import (
 	"github.com/appbaseio-confidential/arc/arc"
 	"github.com/appbaseio-confidential/arc/arc/plugin"
 	"github.com/appbaseio-confidential/arc/internal/errors"
-	analyticsType "github.com/appbaseio-confidential/arc/internal/types/analytics"
+	analyticsIndex "github.com/appbaseio-confidential/arc/internal/types/analytics"
 )
 
 const (
@@ -56,7 +56,7 @@ func (a *analytics) InitFunc() error {
 	if indexName == "" {
 		return errors.NewEnvVarNotSetError(envAnalyticsEsIndex)
 	}
-	mapping := analyticsType.IndexMapping
+	mapping := analyticsIndex.IndexMapping
 
 	// initialize the dao
 	var err error

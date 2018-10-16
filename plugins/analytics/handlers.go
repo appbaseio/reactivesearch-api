@@ -12,10 +12,8 @@ func (a *analytics) getOverview() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var clickAnalytics bool
 		q := r.URL.Query().Get("click_analytics")
-		if q != "" {
-			if v, err := strconv.ParseBool(q); err == nil {
-				clickAnalytics = v
-			}
+		if v, err := strconv.ParseBool(q); err == nil {
+			clickAnalytics = v
 		}
 		from, to, size := rangeQueryParams(r.URL.Query())
 		indices, err := util.IndicesFromContext(r.Context())
@@ -39,10 +37,8 @@ func (a *analytics) getAdvanced() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var clickAnalytics bool
 		q := r.URL.Query().Get("click_analytics")
-		if q != "" {
-			if v, err := strconv.ParseBool(q); err == nil {
-				clickAnalytics = v
-			}
+		if v, err := strconv.ParseBool(q); err == nil {
+			clickAnalytics = v
 		}
 		from, to, size := rangeQueryParams(r.URL.Query())
 		indices, err := util.IndicesFromContext(r.Context())
@@ -66,10 +62,8 @@ func (a *analytics) getPopularSearches() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var clickAnalytics bool
 		q := r.URL.Query().Get("click_analytics")
-		if q != "" {
-			if v, err := strconv.ParseBool(q); err == nil {
-				clickAnalytics = v
-			}
+		if v, err := strconv.ParseBool(q); err == nil {
+			clickAnalytics = v
 		}
 		from, to, size := rangeQueryParams(r.URL.Query())
 		indices, err := util.IndicesFromContext(r.Context())
@@ -113,10 +107,8 @@ func (a *analytics) getPopularFilters() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var clickAnalytics bool
 		q := r.URL.Query().Get("click_analytics")
-		if q != "" {
-			if v, err := strconv.ParseBool(q); err == nil {
-				clickAnalytics = v
-			}
+		if v, err := strconv.ParseBool(q); err == nil {
+			clickAnalytics = v
 		}
 		from, to, size := rangeQueryParams(r.URL.Query())
 		indices, err := util.IndicesFromContext(r.Context())
@@ -140,10 +132,8 @@ func (a *analytics) getPopularResults() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var clickAnalytics bool
 		q := r.URL.Query().Get("click_analytics")
-		if q != "" {
-			if v, err := strconv.ParseBool(q); err == nil {
-				clickAnalytics = v
-			}
+		if v, err := strconv.ParseBool(q); err == nil {
+			clickAnalytics = v
 		}
 		from, to, size := rangeQueryParams(r.URL.Query())
 		indices, err := util.IndicesFromContext(r.Context())

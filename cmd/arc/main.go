@@ -44,6 +44,7 @@ func init() {
 func main() {
 	flag.Parse()
 
+	log.SetFlags(log.LstdFlags | log.Lshortfile)
 	switch logFile {
 	case "stdout":
 		log.SetOutput(os.Stdout)

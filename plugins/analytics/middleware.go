@@ -314,16 +314,16 @@ func validateOp(h http.HandlerFunc) http.HandlerFunc {
 			util.WriteBackMessage(w, "Internal server error", http.StatusInternalServerError)
 			return
 		}
-		operation, ok := ctxOp.(*op.Operation)
+		reqOp, ok := ctxOp.(*op.Operation)
 		if !ok {
 			log.Printf("%s: cannot cast ctxOp to *op.Operation", logTag)
 			util.WriteBackMessage(w, "Internal server error", http.StatusInternalServerError)
 			return
 		}
 
-		if !reqUser.Can(*operation) {
+		if !reqUser.Can(*reqOp) {
 			msg := fmt.Sprintf(`user with "user_id"="%s" does not have "%s" op access`,
-				reqUser.UserId, operation.String())
+				reqUser.UserId, reqOp.String())
 			util.WriteBackMessage(w, msg, http.StatusUnauthorized)
 			return
 		}
@@ -350,7 +350,7 @@ func validateACL(h http.HandlerFunc) http.HandlerFunc {
 		}
 
 		if !reqUser.HasACL(acl.Analytics) {
-			msg := fmt.Sprintf(`user with "user_id"="%s" does not have '%s' acl`,
+			msg := fmt.Sprintf(`user with "user_id"="%s" does not have "%s" acl`,
 				reqUser.UserId, acl.Analytics.String())
 			util.WriteBackMessage(w, msg, http.StatusUnauthorized)
 			return
@@ -392,7 +392,13 @@ func validateIndices(h http.HandlerFunc) http.HandlerFunc {
 
 		if len(indices) == 0 {
 			// cluster level route
-			if !util.Contains(reqUser.Indices, "*") {
+			ok, err := reqUser.CanAccessIndex("*")
+			if err != nil {
+				log.Printf("%s: %v", logTag, err)
+				util.WriteBackError(w, err.Error(), http.StatusBadRequest)
+				return
+			}
+			if !ok {
 				util.WriteBackMessage(w, "User is unauthorized to access cluster level routes",
 					http.StatusUnauthorized)
 				return

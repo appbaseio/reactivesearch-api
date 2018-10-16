@@ -13,7 +13,7 @@ import (
 	"github.com/appbaseio-confidential/arc/internal/util"
 )
 
-func (a *Auth) BasicAuth(h http.HandlerFunc) http.HandlerFunc {
+func (a *auth) BasicAuth(h http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		userId, password, ok := r.BasicAuth()
 		if !ok {
@@ -119,14 +119,14 @@ func (a *Auth) BasicAuth(h http.HandlerFunc) http.HandlerFunc {
 	}
 }
 
-func (a *Auth) cachedUser(userId string) (*user.User, bool) {
+func (a *auth) cachedUser(userId string) (*user.User, bool) {
 	a.mu.Lock()
 	defer a.mu.Unlock()
 	u, ok := a.usersCache[userId]
 	return u, ok
 }
 
-func (a *Auth) cacheUser(userId string, u *user.User) {
+func (a *auth) cacheUser(userId string, u *user.User) {
 	if u == nil {
 		log.Printf("%s: cannot cache 'nil' user, skipping...", logTag)
 		return
@@ -136,13 +136,13 @@ func (a *Auth) cacheUser(userId string, u *user.User) {
 	a.usersCache[userId] = u
 }
 
-func (a *Auth) removeUserFromCache(userId string) {
+func (a *auth) removeUserFromCache(userId string) {
 	a.mu.Lock()
 	defer a.mu.Unlock()
 	delete(a.usersCache, userId)
 }
 
-func (a *Auth) createAdminUser(userId, password string) (*user.User, error) {
+func (a *auth) createAdminUser(userId, password string) (*user.User, error) {
 	u := user.NewAdmin(userId, password)
 	ok, err := a.es.putUser(*u)
 	if !ok || err != nil {
@@ -151,14 +151,14 @@ func (a *Auth) createAdminUser(userId, password string) (*user.User, error) {
 	return u, nil
 }
 
-func (a *Auth) cachedPermission(username string) (*permission.Permission, bool) {
+func (a *auth) cachedPermission(username string) (*permission.Permission, bool) {
 	a.mu.Lock()
 	defer a.mu.Unlock()
 	p, ok := a.permissionsCache[username]
 	return p, ok
 }
 
-func (a *Auth) cachePermission(username string, p *permission.Permission) {
+func (a *auth) cachePermission(username string, p *permission.Permission) {
 	if p == nil {
 		log.Printf("%s: cannot cache 'nil' permission, skipping...", logTag)
 		return
@@ -168,13 +168,13 @@ func (a *Auth) cachePermission(username string, p *permission.Permission) {
 	a.permissionsCache[username] = p
 }
 
-func (a *Auth) removePermissionFromCache(username string) {
+func (a *auth) removePermissionFromCache(username string) {
 	a.mu.Lock()
 	defer a.mu.Unlock()
 	delete(a.permissionsCache, username)
 }
 
-func (a *Auth) createAdminPermission(creator string) (*permission.Permission, error) {
+func (a *auth) createAdminPermission(creator string) (*permission.Permission, error) {
 	p := permission.NewAdmin(creator)
 	ok, err := a.es.putPermission(*p)
 	if !ok || err != nil {
@@ -184,7 +184,7 @@ func (a *Auth) createAdminPermission(creator string) (*permission.Permission, er
 	return p, nil
 }
 
-func (a *Auth) isMaster() (*user.User, error) {
+func (a *auth) isMaster() (*user.User, error) {
 	masterUser, masterPassword := os.Getenv("USER_ID"), os.Getenv("PASSWORD")
 	if masterUser == "" && masterPassword == "" {
 		return nil, nil

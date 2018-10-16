@@ -3,7 +3,6 @@ package analytics
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"log"
 	"sort"
@@ -33,15 +32,14 @@ func NewES(url, indexName, mapping string) (*elasticsearch, error) {
 	// Initialize the client
 	client, err := elastic.NewClient(opts...)
 	if err != nil {
-		return nil, fmt.Errorf("%s: error while initializing elastic client: %v\n", logTag, err)
+		return nil, fmt.Errorf("error while initializing elastic client: %v", err)
 	}
 	es := &elasticsearch{url, indexName, "_doc", client}
 
 	// Check if the meta index already exists
 	exists, err := client.IndexExists(indexName).Do(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("%s: error while checking if index already exists: %v\n",
-			logTag, err)
+		return nil, fmt.Errorf("error while checking if index already exists: %v", err)
 	}
 	if exists {
 		log.Printf("%s: index named '%s' already exists, skipping...", logTag, indexName)
@@ -51,38 +49,37 @@ func NewES(url, indexName, mapping string) (*elasticsearch, error) {
 	// Meta index does not exists, create a new one
 	_, err = client.CreateIndex(indexName).Body(mapping).Do(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("%s: error while creating index named %s: %v\n",
-			logTag, indexName, err)
+		return nil, fmt.Errorf("error while creating index named %s: %v", indexName, err)
 	}
 
 	log.Printf("%s successfully created index named '%s'", logTag, indexName)
 	return es, nil
 }
 
-func (es *elasticsearch) indexRecord(docId string, record map[string]interface{}) {
+func (es *elasticsearch) indexRecord(docID string, record map[string]interface{}) {
 	_, err := es.client.
 		Index().
 		Index(es.indexName).
 		Type(es.typeName).
 		BodyJson(record).
-		Id(docId).
+		Id(docID).
 		Do(context.Background())
 	if err != nil {
-		log.Printf("%s: error indexing analytics record for id=%s: %v", logTag, docId, err)
+		log.Printf("%s: error indexing analytics record for id=%s: %v", logTag, docID, err)
 		return
 	}
 }
 
-func (es *elasticsearch) updateRecord(docId string, record map[string]interface{}) {
+func (es *elasticsearch) updateRecord(docID string, record map[string]interface{}) {
 	_, err := es.client.
 		Update().
 		Index(es.indexName).
 		Type(es.typeName).
-		Index(docId).
+		Index(docID).
 		Doc(record).
 		Do(context.Background())
 	if err != nil {
-		log.Printf("%s: error updating analytics record for id=%s: %v", logTag, docId, err)
+		log.Printf("%s: error updating analytics record for id=%s: %v", logTag, docID, err)
 		return
 	}
 }
@@ -759,7 +756,7 @@ func (es *elasticsearch) summary(from, to string, indices ...string) ([]byte, er
 	var totalSearches, totalClicks, totalConversions float64
 	for result := range out {
 		if result.err != nil {
-			return nil, errors.New(fmt.Sprintf(`cannot fetch value for "%s"`, result.field))
+			return nil, fmt.Errorf(`cannot fetch value for "%s"`, result.field)
 		}
 		switch result.field {
 		case "total_searches":
@@ -769,7 +766,7 @@ func (es *elasticsearch) summary(from, to string, indices ...string) ([]byte, er
 		case "total_conversions":
 			totalConversions = result.value
 		default:
-			return nil, errors.New(fmt.Sprintf(`illegal field "%s" encountered`, result.field))
+			return nil, fmt.Errorf(`illegal field "%s" encountered`, result.field)
 		}
 	}
 
