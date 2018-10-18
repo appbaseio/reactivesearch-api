@@ -142,7 +142,7 @@ func validateACL(h http.HandlerFunc) http.HandlerFunc {
 
 		if !acl.Contains(p.ACLs, *a) {
 			msg := fmt.Sprintf("permission with username=%s does not have '%s' acl",
-				p.UserName, *a)
+				p.Username, *a)
 			util.WriteBackMessage(w, msg, http.StatusUnauthorized)
 			return
 		}
@@ -171,7 +171,7 @@ func validateOp(h http.HandlerFunc) http.HandlerFunc {
 
 		if !op.Contains(p.Ops, *operation) {
 			msg := fmt.Sprintf("permission with username=%s does not have '%s' operation",
-				p.UserName, operation)
+				p.Username, operation)
 			util.WriteBackMessage(w, msg, http.StatusUnauthorized)
 			return
 		}

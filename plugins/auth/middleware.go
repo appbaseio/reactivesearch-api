@@ -180,7 +180,7 @@ func (a *auth) createAdminPermission(creator string) (*permission.Permission, er
 	if !ok || err != nil {
 		return nil, err
 	}
-	log.Printf("%s: username=%s, password=%s", logTag, p.UserName, p.Password)
+	log.Printf("%s: username=%s, password=%s", logTag, p.Username, p.Password)
 	return p, nil
 }
 
