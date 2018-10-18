@@ -22,4 +22,3 @@ RUN go build -o /bin/github.com/appbaseio-confidential/arc/cmd/arc/main.go
 FROM scratch
 COPY --from=build /bin/github.com/appbaseio-confidential/arc/cmd/arc /bin/github.com/appbaseio-confidential/arc/cmd/arc
 ENTRYPOINT ["/bin/github.com/appbaseio-confidential/arc/cmd/arc/main"]
-CMD ["--help"]
