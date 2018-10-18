@@ -76,7 +76,7 @@ func (es *elasticsearch) putPermission(p permission.Permission) (bool, error) {
 	_, err := es.client.Index().
 		Index(es.indexName).
 		Type(es.typeName).
-		Id(p.UserName).
+		Id(p.Username).
 		BodyJson(p).
 		Do(context.Background())
 	if err != nil {
