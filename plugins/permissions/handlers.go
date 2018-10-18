@@ -63,7 +63,7 @@ func (p *permissions) putPermission() http.HandlerFunc {
 		// redundant check
 		userId, _, ok := r.BasicAuth()
 		if !ok {
-			util.WriteBackError(w, "credentials not provided", http.StatusUnauthorized)
+			util.WriteBackError(w, "basic auth credentials not provided", http.StatusUnauthorized)
 			return
 		}
 
@@ -190,5 +190,29 @@ func (p *permissions) deletePermission() http.HandlerFunc {
 		msg := fmt.Sprintf(`error deleting permission for "username"="%s"`, username)
 		log.Printf("%s: %s: %v", logTag, msg, err)
 		util.WriteBackError(w, msg, http.StatusInternalServerError)
+	}
+}
+
+// getUserPermissions fetches all the permissions associated with user from elasticsearch.
+// The handler expects "user_id" in basic auth for the permissions it intends from
+// elasticsearch. An error on the side of elasticsearch client causes the handler to
+// return http.StatusInternalServerError.
+func (p *permissions) getUserPermissions() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		userId, _, ok := r.BasicAuth()
+		if !ok {
+			util.WriteBackError(w, "basic auth credentials not provided", http.StatusUnauthorized)
+			return
+		}
+
+		raw, err := p.es.getUserPermissions(userId)
+		if err != nil {
+			msg := fmt.Sprintf(`unable to fetch permissions for "user_id"="%s"`, userId)
+			log.Printf("%s: %s: %v", logTag, msg, err)
+			util.WriteBackError(w, "Internal server error", http.StatusInternalServerError)
+			return
+		}
+
+		util.WriteBackRaw(w, raw, http.StatusOK)
 	}
 }
