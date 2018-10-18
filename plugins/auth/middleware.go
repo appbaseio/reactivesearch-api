@@ -3,6 +3,7 @@ package auth
 import (
 	"context"
 	"fmt"
+	"github.com/gorilla/mux"
 	"log"
 	"net/http"
 	"os"
@@ -72,7 +73,8 @@ func (a *auth) BasicAuth(h http.HandlerFunc) http.HandlerFunc {
 				case acl.User:
 					a.removeUserFromCache(userId)
 				case acl.Permission:
-					a.removePermissionFromCache(userId)
+					username := mux.Vars(r)["username"]
+					a.removePermissionFromCache(username)
 				}
 			}
 
