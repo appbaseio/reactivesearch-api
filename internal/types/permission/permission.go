@@ -22,7 +22,7 @@ const (
 
 type Permission struct {
 	UserId    string         `json:"user_id"`
-	UserName  string         `json:"user_name"`
+	Username  string         `json:"username"`
 	Password  string         `json:"password"`
 	Creator   string         `json:"creator"`
 	ACLs      []acl.ACL      `json:"acl"`
@@ -99,7 +99,7 @@ func New(creator string, opts ...Options) (*Permission, error) {
 	// create a default permission
 	p := &Permission{
 		UserId:    creator,
-		UserName:  util.RandStr(),
+		Username:  util.RandStr(),
 		Password:  uuid.New().String(),
 		Creator:   creator,
 		ACLs:      defaultACLs,
@@ -124,7 +124,7 @@ func New(creator string, opts ...Options) (*Permission, error) {
 func NewAdmin(creator string) *Permission {
 	return &Permission{
 		UserId:    creator,
-		UserName:  util.RandStr(),
+		Username:  util.RandStr(),
 		Password:  uuid.New().String(),
 		Creator:   creator,
 		ACLs:      defaultAdminACLs,
@@ -197,7 +197,7 @@ func (p *Permission) GetPatch() (map[string]interface{}, error) {
 	if p.UserId != "" {
 		patch["user_id"] = p.UserId
 	}
-	if p.UserName != "" {
+	if p.Username != "" {
 		return nil, errors.NewUnsupportedPatchError("permission", "username")
 	}
 	if p.Password != "" {
