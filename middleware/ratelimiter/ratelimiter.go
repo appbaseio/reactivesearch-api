@@ -75,7 +75,7 @@ func (rl *ratelimiter) RateLimit(h http.HandlerFunc) http.HandlerFunc {
 
 		// limit on ACLs per second
 		aclLimit := obj.GetLimitFor(*aclObj)
-		key := obj.UserName + aclObj.String()
+		key := obj.Username + aclObj.String()
 		if rl.limitExceededByACL(key, aclLimit) {
 			util.WriteBackMessage(w, "Rate limit exceeded", http.StatusTooManyRequests)
 			return
@@ -83,7 +83,7 @@ func (rl *ratelimiter) RateLimit(h http.HandlerFunc) http.HandlerFunc {
 
 		// limit on IP per hour
 		ipLimit := obj.Limits.IPLimit
-		key = obj.UserName + remoteIP
+		key = obj.Username + remoteIP
 		if rl.limitExceededByIP(key, ipLimit) {
 			util.WriteBackMessage(w, "Rate limit exceeded", http.StatusTooManyRequests)
 			return

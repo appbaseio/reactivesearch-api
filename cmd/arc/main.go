@@ -63,7 +63,7 @@ func main() {
 
 	// Load all env vars from envFile
 	if err := LoadEnvFromFile(envFile); err != nil {
-		log.Fatalf("[ERROR]: reading env file %q: %v", envFile, err)
+		log.Printf("%s: reading env file %q: %v", logTag, envFile, err)
 	}
 
 	plugins := arc.ListPlugins()
