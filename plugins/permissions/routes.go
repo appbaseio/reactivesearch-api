@@ -18,9 +18,9 @@ func (p *permissions) routes() []plugin.Route {
 		},
 		{
 			Name:        "Create permission",
-			Methods:     []string{http.MethodPut},
+			Methods:     []string{http.MethodPost},
 			Path:        "/_permission",
-			HandlerFunc: middleware(p.putPermission()),
+			HandlerFunc: middleware(p.postPermission()),
 			Description: "Create a new permission in the repository",
 		},
 		{

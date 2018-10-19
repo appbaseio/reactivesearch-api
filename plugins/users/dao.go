@@ -73,7 +73,7 @@ func (es *elasticsearch) getRawUser(userId string) ([]byte, error) {
 	return src, nil
 }
 
-func (es *elasticsearch) putUser(u user.User) (bool, error) {
+func (es *elasticsearch) postUser(u user.User) (bool, error) {
 	_, err := es.client.Index().
 		Index(es.indexName).
 		Type(es.typeName).

@@ -79,7 +79,7 @@ func (a *auth) BasicAuth(h http.HandlerFunc) http.HandlerFunc {
 			}
 
 			// master user
-			reqUser, err = a.isMaster()
+			reqUser, err = a.isMaster(userId, password)
 			if err != nil {
 				log.Printf("%s: %v", logTag, err)
 				util.WriteBackMessage(w, "Internal server error", http.StatusInternalServerError)
@@ -186,13 +186,13 @@ func (a *auth) createAdminPermission(creator string) (*permission.Permission, er
 	return p, nil
 }
 
-func (a *auth) isMaster() (*user.User, error) {
+func (a *auth) isMaster(userId, password string) (*user.User, error) {
 	masterUser, masterPassword := os.Getenv("USER_ID"), os.Getenv("PASSWORD")
-	if masterUser == "" && masterPassword == "" {
+	if masterUser != userId && masterPassword != password {
 		return nil, nil
 	}
 
-	master, err := a.es.getUser(masterUser)
+	master, err := a.es.getUser(userId)
 	if err != nil {
 		log.Printf("%s: master user doesn't exists, creating one... : %v", logTag, err)
 		master = user.NewAdmin(masterUser, masterPassword)

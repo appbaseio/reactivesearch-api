@@ -31,7 +31,7 @@ func (u *users) getUser() http.HandlerFunc {
 			if err != nil {
 				msg := "error parsing the context user object"
 				log.Printf("%s: %s: %v\n", logTag, msg, err)
-				util.WriteBackError(w, msg, http.StatusInternalServerError)
+				util.WriteBackError(w, "Internal server error", http.StatusInternalServerError)
 				return
 			}
 			util.WriteBackRaw(w, rawUser, http.StatusOK)
@@ -41,14 +41,14 @@ func (u *users) getUser() http.HandlerFunc {
 		// redundant check, should be verified in authenticator
 		userId, _, ok := r.BasicAuth()
 		if !ok {
-			util.WriteBackMessage(w, "basic auth credentials not provided", http.StatusUnauthorized)
+			util.WriteBackMessage(w, "Basic auth credentials not provided", http.StatusUnauthorized)
 			return
 		}
 
 		// fetch the user from elasticsearch
 		rawUser, err := u.es.getRawUser(userId)
 		if err != nil {
-			msg := fmt.Sprintf(`user with "user_id"="%s" not found`, userId)
+			msg := fmt.Sprintf(`User with "user_id"="%s" not found`, userId)
 			log.Printf("%s: %s: %v\n", logTag, msg, err)
 			util.WriteBackError(w, msg, http.StatusNotFound)
 			return
@@ -62,13 +62,13 @@ func (u *users) getUserWithId() http.HandlerFunc {
 		vars := mux.Vars(r)
 		userId, ok := vars["user_id"]
 		if !ok {
-			util.WriteBackError(w, "cannot get a user without 'user_id'", http.StatusBadRequest)
+			util.WriteBackError(w, `Can't get a user without "user_id"`, http.StatusBadRequest)
 			return
 		}
 
 		rawUser, err := u.es.getRawUser(userId)
 		if err != nil {
-			msg := fmt.Sprintf(`user with "user_id"="%s" not found`, userId)
+			msg := fmt.Sprintf(`User with "user_id"="%s" not found`, userId)
 			log.Printf("%s: %s: %v\n", logTag, msg, err)
 			util.WriteBackError(w, msg, http.StatusNotFound)
 			return
@@ -77,18 +77,18 @@ func (u *users) getUserWithId() http.HandlerFunc {
 	}
 }
 
-// putUser creates a new user.User and indexes it in elasticsearch. The handler expects
+// postUser creates a new user.User and indexes it in elasticsearch. The handler expects
 // "user_id" and "password" in basic auth for the user.User it intends to create and a
 // request body that conforms to the user.User struct. Omitted fields in the request body
 // will assume default values. Invalid values passed explicitly in the request body
 // will cause the handler to return http.StatusBadRequest. A raw/json user is returned
 // when a user is successfully indexed in elasticsearch. An error on the side of
 // elasticsearch client will cause the handler to return http.InternalServerError.
-func (u *users) putUser() http.HandlerFunc {
+func (u *users) postUser() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		body, err := ioutil.ReadAll(r.Body)
 		if err != nil {
-			msg := "can't read body"
+			msg := "Can't read request body"
 			log.Printf("%s: %s: %v\n", logTag, msg, err)
 			util.WriteBackError(w, msg, http.StatusBadRequest)
 			return
@@ -97,7 +97,7 @@ func (u *users) putUser() http.HandlerFunc {
 		var obj user.User
 		err = json.Unmarshal(body, &obj)
 		if err != nil {
-			msg := "error parsing request body"
+			msg := "Can't parse request body"
 			log.Printf("%s: %s: %v\n", logTag, msg, err)
 			util.WriteBackError(w, msg, http.StatusBadRequest)
 			return
@@ -119,35 +119,36 @@ func (u *users) putUser() http.HandlerFunc {
 			opts = append(opts, user.SetIndices(obj.Indices))
 		}
 		if obj.UserId == "" {
-			util.WriteBackError(w, "cannot create a user without 'user_id'", http.StatusBadRequest)
+			util.WriteBackError(w, `Can't create a user without "user_id"`, http.StatusBadRequest)
 			return
 		}
 		if obj.Password == "" {
-			util.WriteBackError(w, "cannot create a user without 'password'", http.StatusBadRequest)
+			util.WriteBackError(w, `Can't create a user without "password"`, http.StatusBadRequest)
 			return
 		}
 		newUser, err := user.New(obj.UserId, obj.Password, opts...)
 		if err != nil {
 			msg := fmt.Sprintf("error constructing user object: %v", err)
 			log.Printf("%s: %s", logTag, msg)
-			util.WriteBackError(w, msg, http.StatusInternalServerError)
+			util.WriteBackError(w, "Internal server error", http.StatusInternalServerError)
 			return
 		}
 
 		rawUser, err := json.Marshal(*newUser)
 		if err != nil {
 			log.Printf("%s: unable to marshal newUser object: %v", logTag, err)
-			util.WriteBackMessage(w, "Unable to create user", http.StatusInternalServerError)
+			util.WriteBackMessage(w, "Internal server error", http.StatusInternalServerError)
 			return
 		}
 
-		ok, err := u.es.putUser(*newUser)
+		// TODO: check if user already exists
+		ok, err := u.es.postUser(*newUser)
 		if ok && err == nil {
 			util.WriteBackRaw(w, rawUser, http.StatusOK)
 			return
 		}
 
-		msg := fmt.Sprintf("unable to store user with user_id=%s", obj.UserId)
+		msg := fmt.Sprintf(`An error occurred while creating a user with "user_id"="%s"`, obj.UserId)
 		log.Printf("%s: %s: %v", logTag, msg, err)
 		util.WriteBackError(w, msg, http.StatusInternalServerError)
 	}
@@ -166,28 +167,28 @@ func (u *users) patchUser() http.HandlerFunc {
 		// redundant check
 		userId, _, ok := r.BasicAuth()
 		if !ok {
-			util.WriteBackMessage(w, "credentials not provided", http.StatusUnauthorized)
+			util.WriteBackMessage(w, "Basic auth credentials not provided", http.StatusUnauthorized)
 			return
 		}
 
 		body, err := ioutil.ReadAll(r.Body)
 		if err != nil {
-			msg := "can't read body"
+			msg := "Can't read request body"
 			log.Printf(fmt.Sprintf("%s: %s: %v", logTag, msg, err))
 			util.WriteBackError(w, msg, http.StatusBadRequest)
 			return
 		}
 
-		var obj user.User
-		err = json.Unmarshal(body, &obj)
+		var userBody user.User
+		err = json.Unmarshal(body, &userBody)
 		if err != nil {
-			msg := "error parsing request body"
+			msg := "Can't parse request body"
 			log.Printf("%s: %s: %v\n", logTag, msg, err)
 			util.WriteBackError(w, msg, http.StatusBadRequest)
 			return
 		}
 
-		patch, err := obj.GetPatch()
+		patch, err := userBody.GetPatch()
 		if err != nil {
 			log.Printf("%s: %v", logTag, err)
 			util.WriteBackError(w, err.Error(), http.StatusBadRequest)
@@ -201,7 +202,7 @@ func (u *users) patchUser() http.HandlerFunc {
 			return
 		}
 
-		msg := fmt.Sprintf("error updating user with user_id=%s", userId)
+		msg := fmt.Sprintf(`An error occurred while updating user with "user_id"="%s"`, userId)
 		log.Printf("%s: %s: %v\n", logTag, msg, err)
 		util.WriteBackError(w, msg, http.StatusInternalServerError)
 	}
@@ -212,28 +213,28 @@ func (u *users) patchUserWithId() http.HandlerFunc {
 		vars := mux.Vars(r)
 		userId, ok := vars["user_id"]
 		if !ok {
-			util.WriteBackError(w, "cannot patch user without 'user_id'", http.StatusBadRequest)
+			util.WriteBackError(w, `Can't patch user without "user_id"`, http.StatusBadRequest)
 			return
 		}
 
 		body, err := ioutil.ReadAll(r.Body)
 		if err != nil {
-			msg := "can't read body"
+			msg := "Can't read request body"
 			log.Printf(fmt.Sprintf("%s: %s: %v", logTag, msg, err))
 			util.WriteBackError(w, msg, http.StatusBadRequest)
 			return
 		}
 
-		var obj user.User
-		err = json.Unmarshal(body, &obj)
+		var userBody user.User
+		err = json.Unmarshal(body, &userBody)
 		if err != nil {
-			msg := "error parsing request body"
+			msg := "Can't parse request body"
 			log.Printf("%s: %s: %v\n", logTag, msg, err)
 			util.WriteBackError(w, msg, http.StatusBadRequest)
 			return
 		}
 
-		patch, err := obj.GetPatch()
+		patch, err := userBody.GetPatch()
 		if err != nil {
 			log.Printf("%s: %v", logTag, err)
 			util.WriteBackError(w, err.Error(), http.StatusBadRequest)
@@ -247,7 +248,7 @@ func (u *users) patchUserWithId() http.HandlerFunc {
 			return
 		}
 
-		msg := fmt.Sprintf("error updating user with user_id=%s", userId)
+		msg := fmt.Sprintf(`An error occurred while updating user with "user_id"="%s"`, userId)
 		log.Printf("%s: %s: %v\n", logTag, msg, err)
 		util.WriteBackError(w, msg, http.StatusInternalServerError)
 	}
@@ -261,7 +262,7 @@ func (u *users) deleteUser() http.HandlerFunc {
 		// redundant check, should be verified in authenticator
 		userId, _, ok := r.BasicAuth()
 		if !ok {
-			util.WriteBackError(w, "credentials not provided", http.StatusUnauthorized)
+			util.WriteBackError(w, "Basic auth credentials not provided", http.StatusUnauthorized)
 			return
 		}
 
@@ -272,7 +273,7 @@ func (u *users) deleteUser() http.HandlerFunc {
 			return
 		}
 
-		msg := fmt.Sprintf("error deleting user with user_id=%s", userId)
+		msg := fmt.Sprintf(`An error occurred while deleting user with "user_id"="%s"`, userId)
 		log.Printf("%s: %s: %v\n", logTag, msg, err)
 		util.WriteBackError(w, msg, http.StatusInternalServerError)
 	}
@@ -283,7 +284,7 @@ func (u *users) deleteUserWithId() http.HandlerFunc {
 		vars := mux.Vars(r)
 		userId, ok := vars["user_id"]
 		if !ok {
-			util.WriteBackError(w, "cannot delete a user without 'user_id'", http.StatusBadRequest)
+			util.WriteBackError(w, `Can't delete a user without a "user_id"`, http.StatusBadRequest)
 			return
 		}
 
@@ -294,7 +295,7 @@ func (u *users) deleteUserWithId() http.HandlerFunc {
 			return
 		}
 
-		msg := fmt.Sprintf("error deleting user with user_id=%s", userId)
+		msg := fmt.Sprintf(`An error occurred while deleting user with "user_id"="%s"`, userId)
 		log.Printf("%s: %s: %v\n", logTag, msg, err)
 		util.WriteBackError(w, msg, http.StatusInternalServerError)
 	}

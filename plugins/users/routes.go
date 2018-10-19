@@ -24,10 +24,10 @@ func (u *users) routes() []plugin.Route {
 			Description: "Fetches another user from the repository",
 		},
 		{
-			Name:        "Put user",
-			Methods:     []string{http.MethodPut},
+			Name:        "Post user",
+			Methods:     []string{http.MethodPost},
 			Path:        "/_user",
-			HandlerFunc: middleware(isAdmin(u.putUser())),
+			HandlerFunc: middleware(isAdmin(u.postUser())),
 			Description: "Adds the user to the repository",
 		},
 		{

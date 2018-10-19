@@ -73,7 +73,7 @@ func (es *elasticsearch) getRawPermission(username string) ([]byte, error) {
 	return src, nil
 }
 
-func (es *elasticsearch) putPermission(p permission.Permission) (bool, error) {
+func (es *elasticsearch) postPermission(p permission.Permission) (bool, error) {
 	_, err := es.client.Index().
 		Index(es.indexName).
 		Type(es.typeName).
@@ -127,6 +127,10 @@ func (es *elasticsearch) getUserPermissions(userId string) ([]byte, error) {
 	var rawPermissions []*json.RawMessage
 	for _, hit := range resp.Hits.Hits {
 		rawPermissions = append(rawPermissions, hit.Source)
+	}
+
+	if rawPermissions == nil {
+		rawPermissions = []*json.RawMessage{}
 	}
 
 	raw, err := json.Marshal(rawPermissions)
