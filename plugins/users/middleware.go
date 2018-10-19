@@ -14,6 +14,7 @@ import (
 	"github.com/appbaseio-confidential/arc/internal/util"
 	"github.com/appbaseio-confidential/arc/middleware/classifier"
 	"github.com/appbaseio-confidential/arc/middleware/logger"
+	"github.com/appbaseio-confidential/arc/middleware/path"
 	"github.com/appbaseio-confidential/arc/plugins/auth"
 )
 
@@ -29,8 +30,10 @@ func list() []middleware.Middleware {
 	basicAuth := auth.Instance().BasicAuth
 	classifyOp := classifier.Instance().OpClassifier
 	logRequests := logger.Instance().Log
+	cleanPath := path.Clean
 
 	return []middleware.Middleware{
+		cleanPath,
 		logRequests,
 		classifyOp,
 		classifyACL,
