@@ -2,6 +2,7 @@ package permissions
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"log"
 
@@ -111,4 +112,27 @@ func (es *elasticsearch) deletePermission(userId string) (bool, error) {
 	}
 
 	return true, nil
+}
+
+func (es *elasticsearch) getUserPermissions(userId string) ([]byte, error) {
+	resp, err := es.client.Search().
+		Index(es.indexName).
+		Type(es.typeName).
+		Query(elastic.NewTermQuery("user_id", userId)).
+		Do(context.Background())
+	if err != nil {
+		return nil, err
+	}
+
+	var rawPermissions []*json.RawMessage
+	for _, hit := range resp.Hits.Hits {
+		rawPermissions = append(rawPermissions, hit.Source)
+	}
+
+	raw, err := json.Marshal(rawPermissions)
+	if err != nil {
+		return nil, fmt.Errorf("unable to marshal slice of raw permissions: %v", err)
+	}
+
+	return raw, nil
 }
