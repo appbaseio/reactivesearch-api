@@ -17,7 +17,6 @@ func (p *permissions) getPermission() http.HandlerFunc {
 		vars := mux.Vars(r)
 		username := vars["username"]
 
-		// fetch the permission from elasticsearch
 		rawPermission, err := p.es.getRawPermission(username)
 		if err != nil {
 			msg := fmt.Sprintf(`Permission with "username"="%s" Not Found`, username)

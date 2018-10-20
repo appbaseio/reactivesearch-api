@@ -1,7 +1,6 @@
 package analytics
 
 import (
-	"fmt"
 	"os"
 	"sync"
 
@@ -18,11 +17,12 @@ const (
 )
 
 var (
-	instance *analytics
+	instance *Analytics
 	once     sync.Once
 )
 
-type analytics struct {
+// Analytics plugin records and serves basic index or cluster level analytics.
+type Analytics struct {
 	es *elasticsearch
 }
 
@@ -30,23 +30,24 @@ func init() {
 	arc.RegisterPlugin(Instance())
 }
 
-func Instance() *analytics {
+// Instance returns the singleton instace of Analytics plugin.
+// Note: Only this function must be used (both within and outside the package) to
+// obtain the instance analytics in order to avoid stateless instances of the plugin.
+func Instance() *Analytics {
 	once.Do(func() {
-		instance = &analytics{}
+		instance = &Analytics{}
 	})
 	return instance
 }
 
-// Name returns the name of the plugin: 'analytics'.
-func (a *analytics) Name() string {
+// Name is a part of Plugin interface that returns the name of the plugin: '[analytics]'.
+func (a *Analytics) Name() string {
 	return logTag
 }
 
-// InitFunc reads the required environment variables and initializes
-// the elasticsearch as its dao. The function returns EnvVarNotSetError
-// in case the required environment variables are not set before the plugin
-// is loaded.
-func (a *analytics) InitFunc() error {
+// InitFunc is a part of Plugin interface that gets executed only once, and initializes
+// the dao, i.e. elasticsearch before the plugin is operational.
+func (a *Analytics) InitFunc() error {
 	// fetch the required env vars
 	url := os.Getenv(envEsURL)
 	if url == "" {
@@ -60,15 +61,15 @@ func (a *analytics) InitFunc() error {
 
 	// initialize the dao
 	var err error
-	a.es, err = NewES(url, indexName, mapping)
+	a.es, err = newClient(url, indexName, mapping)
 	if err != nil {
-		return fmt.Errorf("%s: error initializing analytics' elasticsearch dao: %v", logTag, err)
+		return err
 	}
 
 	return nil
 }
 
-// Routes returns the endpoints associated with analytics.
-func (a *analytics) Routes() []plugin.Route {
+// Routes returns the analytics routes that the plugin serves.
+func (a *Analytics) Routes() []plugin.Route {
 	return a.routes()
 }

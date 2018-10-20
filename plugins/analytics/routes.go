@@ -6,7 +6,7 @@ import (
 	"github.com/appbaseio-confidential/arc/arc/plugin"
 )
 
-func (a *analytics) routes() []plugin.Route {
+func (a *Analytics) routes() []plugin.Route {
 	middleware := (&chain{}).Wrap
 	return []plugin.Route{
 		{

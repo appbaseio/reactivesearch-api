@@ -20,9 +20,7 @@ type elasticsearch struct {
 	client    *elastic.Client
 }
 
-// NewES initializes the elasticsearch client for the 'analytics' plugin. The function
-// is expected to be executed only once, ideally during the initialization of the plugin.
-func NewES(url, indexName, mapping string) (*elasticsearch, error) {
+func newClient(url, indexName, mapping string) (*elasticsearch, error) {
 	opts := []elastic.ClientOptionFunc{
 		elastic.SetURL(url),
 		elastic.SetSniff(false),
