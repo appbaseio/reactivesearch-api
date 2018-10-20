@@ -1,7 +1,6 @@
 package permissions
 
 import (
-	"fmt"
 	"log"
 	"os"
 	"sync"
@@ -62,7 +61,7 @@ func (p *permissions) InitFunc() error {
 	var err error
 	p.es, err = newClient(url, indexName, mapping)
 	if err != nil {
-		return fmt.Errorf("%s: error initializing permission's elasticsearch dao: %v", logTag, err)
+		return err
 	}
 
 	return nil

@@ -56,25 +56,35 @@ func validateOp(h http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
 
+		err := "An error occurred while validating request op"
 		ctxUser := ctx.Value(user.CtxKey)
 		if ctxUser == nil {
-			log.Printf("%s: cannot fetch user object from request context", logTag)
-			util.WriteBackMessage(w, "Internal server error", http.StatusInternalServerError)
+			log.Printf("%s: cannot fetch user object from request context\n", logTag)
+			util.WriteBackError(w, err, http.StatusInternalServerError)
 			return
 		}
-		u := ctxUser.(*user.User)
+		reqUser, ok := ctxUser.(*user.User)
+		if !ok {
+			log.Printf("%s: cannot cast context user to *user.User\n", logTag)
+			util.WriteBackError(w, err, http.StatusInternalServerError)
+		}
 
 		ctxOp := ctx.Value(op.CtxKey)
 		if ctxOp == nil {
-			log.Printf("%s: cannot fetch op from request context", logTag)
-			util.WriteBackMessage(w, "Internal server error", http.StatusInternalServerError)
+			log.Printf("%s: cannot fetch op from request context\n", logTag)
+			util.WriteBackError(w, err, http.StatusInternalServerError)
 			return
 		}
-		operation := ctxOp.(*op.Operation)
+		reqOp, ok := ctxOp.(*op.Operation)
+		if !ok {
+			log.Printf("%s: cannot cast context op to *op.Operation\n", logTag)
+			util.WriteBackError(w, err, http.StatusInternalServerError)
+			return
+		}
 
-		if !op.Contains(u.Ops, *operation) {
-			msg := fmt.Sprintf(`User with "user_id"="%s" does not have "%s" op`, u.UserId, operation.String())
-			util.WriteBackMessage(w, msg, http.StatusUnauthorized)
+		if !reqUser.CanDo(*reqOp) {
+			msg := fmt.Sprintf(`User with "user_id"="%s" does not have "%s" op`, reqUser.UserId, *reqOp)
+			util.WriteBackError(w, msg, http.StatusUnauthorized)
 			return
 		}
 
@@ -86,17 +96,23 @@ func validateACL(h http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
 
+		err := "An error occurred while validating request acl"
 		ctxUser := ctx.Value(user.CtxKey)
 		if ctxUser == nil {
-			log.Printf("%s: cannot fetch user from request context", logTag)
-			util.WriteBackMessage(w, "Internal server error", http.StatusInternalServerError)
+			log.Printf("%s: cannot fetch user from request context\n", logTag)
+			util.WriteBackError(w, err, http.StatusInternalServerError)
 			return
 		}
-		u := ctxUser.(*user.User)
+		reqUser, ok := ctxUser.(*user.User)
+		if !ok {
+			log.Printf("%s: cannot cast context user to *user.User\n", logTag)
+			util.WriteBackError(w, err, http.StatusInternalServerError)
+			return
+		}
 
-		if !acl.Contains(u.ACLs, acl.Permission) {
-			msg := fmt.Sprintf(`User with "user_id"="%s" does not have "%s" acl`, u.UserId, acl.Permission.String())
-			util.WriteBackMessage(w, msg, http.StatusUnauthorized)
+		if !reqUser.HasACL(acl.Permission) {
+			msg := fmt.Sprintf(`User with "user_id"="%s" does not have "%s" acl`, reqUser.UserId, acl.Permission)
+			util.WriteBackError(w, msg, http.StatusUnauthorized)
 			return
 		}
 
@@ -108,17 +124,23 @@ func isAdmin(h http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
 
+		err := "An error occurred while validating user admin"
 		ctxUser := ctx.Value(user.CtxKey)
 		if ctxUser == nil {
-			log.Printf("%s: cannot fetch user from request context", logTag)
-			util.WriteBackMessage(w, "Internal server error", http.StatusInternalServerError)
+			log.Printf("%s: cannot fetch user from request context\n", logTag)
+			util.WriteBackError(w, err, http.StatusInternalServerError)
+			return
+		}
+		reqUser, ok := ctxUser.(*user.User)
+		if !ok {
+			log.Printf("%s: cannot cast context user to *user.User\n", logTag)
+			util.WriteBackError(w, err, http.StatusInternalServerError)
 			return
 		}
 
-		u := ctxUser.(*user.User)
-		if !*u.IsAdmin {
-			msg := fmt.Sprintf(`User with "user_id"="%s" is not an admin`, u.UserId)
-			util.WriteBackMessage(w, msg, http.StatusUnauthorized)
+		if !(*reqUser.IsAdmin) {
+			msg := fmt.Sprintf(`User with "user_id"="%s" is not an admin`, reqUser.UserId)
+			util.WriteBackError(w, msg, http.StatusUnauthorized)
 			return
 		}
 

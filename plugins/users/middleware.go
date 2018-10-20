@@ -59,26 +59,26 @@ func validateOp(h http.HandlerFunc) http.HandlerFunc {
 		err := "An error occurred while validating request op"
 		ctxUser := ctx.Value(user.CtxKey)
 		if ctxUser == nil {
-			log.Printf("%s: cannot fetch user object from request context", logTag)
+			log.Printf("%s: cannot fetch user object from request context\n", logTag)
 			util.WriteBackError(w, err, http.StatusInternalServerError)
 			return
 		}
 		reqUser, ok := ctxUser.(*user.User)
 		if !ok {
-			log.Printf("%s: cannot cast context user to *user.User", logTag)
+			log.Printf("%s: cannot cast context user to *user.User\n", logTag)
 			util.WriteBackError(w, err, http.StatusInternalServerError)
 			return
 		}
 
 		ctxOp := ctx.Value(op.CtxKey)
 		if ctxOp == nil {
-			log.Printf("%s: cannot fetch op from request context", logTag)
+			log.Printf("%s: cannot fetch op from request context\n", logTag)
 			util.WriteBackError(w, err, http.StatusInternalServerError)
 			return
 		}
 		reqOp, ok := ctxOp.(*op.Operation)
 		if !ok {
-			log.Printf("%s: cannot cast context op to *op.Operation", logTag)
+			log.Printf("%s: cannot cast context op to *op.Operation\n", logTag)
 			util.WriteBackError(w, err, http.StatusInternalServerError)
 			return
 		}
@@ -100,13 +100,13 @@ func validateACL(h http.HandlerFunc) http.HandlerFunc {
 		err := "An error occurred whilw validating request acl"
 		ctxUser := ctx.Value(user.CtxKey)
 		if ctxUser == nil {
-			log.Printf("%s: cannot fetch user object from request context", logTag)
+			log.Printf("%s: cannot fetch user object from request context\n", logTag)
 			util.WriteBackError(w, err, http.StatusInternalServerError)
 			return
 		}
 		reqUser, ok := ctxUser.(*user.User)
 		if !ok {
-			log.Printf("%s: cannot cast context user to *user.User", logTag)
+			log.Printf("%s: cannot cast context user to *user.User\n", logTag)
 			util.WriteBackError(w, err, http.StatusInternalServerError)
 			return
 		}
@@ -128,13 +128,13 @@ func isAdmin(h http.HandlerFunc) http.HandlerFunc {
 		err := "An error occurred while validating user admin"
 		ctxUser := ctx.Value(user.CtxKey)
 		if ctxUser == nil {
-			log.Printf("%s: cannot fetch user from request context", logTag)
+			log.Printf("%s: cannot fetch user from request context\n", logTag)
 			util.WriteBackError(w, err, http.StatusInternalServerError)
 			return
 		}
 		reqUser, ok := ctxUser.(*user.User)
 		if !ok {
-			log.Printf("%s: cannot cast context user to *user.User", logTag)
+			log.Printf("%s: cannot cast context user to *user.User\n", logTag)
 			util.WriteBackError(w, err, http.StatusInternalServerError)
 			return
 		}

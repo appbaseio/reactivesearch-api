@@ -121,7 +121,7 @@ func (u *users) postUser() http.HandlerFunc {
 		newUser, err := user.New(userBody.UserId, userBody.Password, opts...)
 		if err != nil {
 			msg := fmt.Sprintf("Error constructing user object: %v", err)
-			log.Printf("%s: %s\n", logTag, msg)
+			log.Printf("%s: %s: %v\n", logTag, msg, err)
 			util.WriteBackError(w, msg, http.StatusInternalServerError)
 			return
 		}

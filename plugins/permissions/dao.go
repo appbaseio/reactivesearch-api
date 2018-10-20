@@ -85,18 +85,23 @@ func (es *elasticsearch) postPermission(p permission.Permission) (bool, error) {
 	return true, nil
 }
 
-func (es *elasticsearch) patchPermission(username string, patch map[string]interface{}) (bool, error) {
-	_, err := es.client.Update().
+func (es *elasticsearch) patchPermission(username string, patch map[string]interface{}) ([]byte, error) {
+	response, err := es.client.Update().
 		Index(es.indexName).
 		Type(es.typeName).
 		Id(username).
 		Doc(patch).
 		Do(context.Background())
 	if err != nil {
-		return false, nil
+		return nil, err
 	}
 
-	return true, nil
+	src, err := response.GetResult.Source.MarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+
+	return src, nil
 }
 
 func (es *elasticsearch) deletePermission(userID string) (bool, error) {
