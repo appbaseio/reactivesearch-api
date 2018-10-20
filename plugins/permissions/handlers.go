@@ -12,12 +12,6 @@ import (
 	"github.com/gorilla/mux"
 )
 
-// getPermission fetches the permission from elasticsearch. If the request context
-// already bears *permission.Permission then we simply return the marshaled context
-// permission. However, authenticator authenticates the access for permissions endpoints
-// against user.User and thus every time this handler is executed, we fetch the
-// permission from the elasticsearch. An error on the side of elasticsearch client
-// causes the handler to return http.StatusInternalServerError.
 func (p *permissions) getPermission() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		vars := mux.Vars(r)
@@ -50,18 +44,10 @@ func (p *permissions) getPermission() http.HandlerFunc {
 	}
 }
 
-// postPermission creates a new permission.Permission and indexes it in elastic search.
-// The handler expects "user_id" in basic auth for the permission.Permission it intends
-// to create and a request body that conforms to the permission.Permission struct. Omitted
-// fields in the request body will assume default values. Invalid values passed explicitly
-// in the request body will cause the handler to return http.StatusBadRequest. A raw/json
-// permission is returned when a permission is successfully indexed in elasticsearch. An
-// error on the side of elasticsearch client will cause the handler to return
-// http.InternalServerError.
 func (p *permissions) postPermission() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		// redundant check
-		userId, _, ok := r.BasicAuth()
+		userID, _, ok := r.BasicAuth()
 		if !ok {
 			util.WriteBackError(w, "Basic auth credentials not provided", http.StatusUnauthorized)
 			return
@@ -100,7 +86,7 @@ func (p *permissions) postPermission() http.HandlerFunc {
 		if obj.Indices != nil {
 			opts = append(opts, permission.SetIndices(obj.Indices))
 		}
-		newPermission, err := permission.New(userId, opts...)
+		newPermission, err := permission.New(userID, opts...)
 		if err != nil {
 			msg := fmt.Sprintf("error constructing permission object: %v", err)
 			log.Printf("%s: %s", logTag, msg)
@@ -121,19 +107,13 @@ func (p *permissions) postPermission() http.HandlerFunc {
 			return
 		}
 
-		msg := fmt.Sprintf(`An error occurred while creating a permission for "user_id"="%s"`, userId)
+		msg := fmt.Sprintf(`An error occurred while creating a permission for "user_id"="%s"`, userID)
 		log.Printf("%s: %s: %v", logTag, msg, err)
 		util.WriteBackError(w, msg, http.StatusInternalServerError)
 		return
 	}
 }
 
-// patchPermission modifies explicit fields in the indexed permission.Permission. The handler
-// expects a request body that conforms to permission.Permission struct. The fields whose
-// values are explicitly provided in the request body will only be overwritten. Invalid field
-// values passed explicitly in the request body will cause the handler to return
-// http.StatusBadRequest. However, an error on the side of elasticsearch client will cause
-// the handler to return http.StatusInternalServerError.
 func (p *permissions) patchPermission() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		vars := mux.Vars(r)
@@ -176,8 +156,6 @@ func (p *permissions) patchPermission() http.HandlerFunc {
 	}
 }
 
-// deletePermission deletes the permission.Permission from elasticsearch. An error on
-// the side of elasticsearch client will cause the handler to return http.InternalServerError.
 func (p *permissions) deletePermission() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		vars := mux.Vars(r)
@@ -196,21 +174,17 @@ func (p *permissions) deletePermission() http.HandlerFunc {
 	}
 }
 
-// getUserPermissions fetches all the permissions associated with user from elasticsearch.
-// The handler expects "user_id" in basic auth for the permissions it intends from
-// elasticsearch. An error on the side of elasticsearch client causes the handler to
-// return http.StatusInternalServerError.
 func (p *permissions) getUserPermissions() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		userId, _, ok := r.BasicAuth()
+		userID, _, ok := r.BasicAuth()
 		if !ok {
 			util.WriteBackError(w, "Basic auth credentials not provided", http.StatusUnauthorized)
 			return
 		}
 
-		raw, err := p.es.getUserPermissions(userId)
+		raw, err := p.es.getUserPermissions(userID)
 		if err != nil {
-			msg := fmt.Sprintf(`A error occurred while fetching permissions for "user_id"="%s"`, userId)
+			msg := fmt.Sprintf(`A error occurred while fetching permissions for "user_id"="%s"`, userID)
 			log.Printf("%s: %s: %v", logTag, msg, err)
 			util.WriteBackError(w, msg, http.StatusNotFound)
 			return

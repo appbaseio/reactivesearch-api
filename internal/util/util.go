@@ -14,11 +14,14 @@ import (
 	"github.com/gorilla/mux"
 )
 
+// RandStr returns "node" field of a UUID.
+// See: https://tools.ietf.org/html/rfc4122#section-4.1.6
 func RandStr() string {
 	tokens := strings.Split(uuid.New().String(), "-")
 	return tokens[len(tokens)-1]
 }
 
+// WriteBackMessage writes the given message as a json response to the response writer.
 func WriteBackMessage(w http.ResponseWriter, msg string, code int) {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.Header().Set("X-Content-Type-Options", "nosniff")
@@ -29,6 +32,7 @@ func WriteBackMessage(w http.ResponseWriter, msg string, code int) {
 	}
 }
 
+// WriteBackError writes the given error message as a json response to the response writer.
 func WriteBackError(w http.ResponseWriter, err string, code int) {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.Header().Set("X-Content-Type-Options", "nosniff")
@@ -36,6 +40,7 @@ func WriteBackError(w http.ResponseWriter, err string, code int) {
 	json.NewEncoder(w).Encode(map[string]interface{}{"error": err})
 }
 
+// WriteBackRaw writes the given json encoded bytes to the response writer.
 func WriteBackRaw(w http.ResponseWriter, raw []byte, code int) {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.Header().Set("X-Content-Type-Options", "nosniff")
@@ -43,6 +48,7 @@ func WriteBackRaw(w http.ResponseWriter, raw []byte, code int) {
 	w.Write(raw)
 }
 
+// Contains checks the presence of a string in the given string slice.
 func Contains(slice []string, val string) bool {
 	for _, v := range slice {
 		if v == val {
@@ -67,12 +73,13 @@ func DaysInCurrentYear() int {
 	return DaysInYear(time.Now().Year())
 }
 
+// WithPrecision returns the floating point number with the given precision.
 func WithPrecision(num float64, precision int) float64 {
 	output := math.Pow(10, float64(precision))
 	return math.Round(num*output) / output
 }
 
-// indicesFromRequest extracts index patterns from the request url (from var "{index}").
+// IndicesFromRequest extracts index patterns from the request url (from var "{index}").
 func IndicesFromRequest(r *http.Request) ([]string, bool) {
 	vars := mux.Vars(r)
 	indexVar, ok := vars["index"]
@@ -90,7 +97,7 @@ func IndicesFromRequest(r *http.Request) ([]string, bool) {
 	return indices, true
 }
 
-// indicesFromContext fetches index patterns from the request context.
+// IndicesFromContext fetches index patterns from the request context.
 func IndicesFromContext(ctx context.Context) ([]string, error) {
 	ctxIndices := ctx.Value(index.CtxKey)
 	if ctxIndices == nil {

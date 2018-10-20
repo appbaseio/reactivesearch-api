@@ -18,9 +18,7 @@ type elasticsearch struct {
 	client    *elastic.Client
 }
 
-// NewES initializes the elasticsearch client for the 'permissions' plugin. The function
-// is expected to be executed only once, ideally during the initialization of the plugin.
-func NewES(url, indexName, mapping string) (*elasticsearch, error) {
+func newClient(url, indexName, mapping string) (*elasticsearch, error) {
 	opts := []elastic.ClientOptionFunc{
 		elastic.SetURL(url),
 		elastic.SetSniff(false),
@@ -30,14 +28,14 @@ func NewES(url, indexName, mapping string) (*elasticsearch, error) {
 	// Initialize the client
 	client, err := elastic.NewClient(opts...)
 	if err != nil {
-		return nil, fmt.Errorf("%s: error while initializing elastic client: %v\n", logTag, err)
+		return nil, fmt.Errorf("%s: error while initializing elastic client: %v", logTag, err)
 	}
 	es := &elasticsearch{url, indexName, "_doc", mapping, client}
 
 	// Check if the meta index already exists
 	exists, err := client.IndexExists(indexName).Do(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("%s: error while checking if index already exists: %v\n", logTag, err)
+		return nil, fmt.Errorf("%s: error while checking if index already exists: %v", logTag, err)
 	}
 	if exists {
 		log.Printf("%s index named '%s' already exists, skipping...", logTag, indexName)
@@ -47,7 +45,7 @@ func NewES(url, indexName, mapping string) (*elasticsearch, error) {
 	// Create a new meta index
 	_, err = client.CreateIndex(indexName).Body(mapping).Do(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("%s: error while creating index named %s: %v\n", logTag, indexName, err)
+		return nil, fmt.Errorf("%s: error while creating index named %s: %v", logTag, indexName, err)
 	}
 
 	log.Printf("%s successfully created index named '%s'", logTag, indexName)
@@ -101,11 +99,11 @@ func (es *elasticsearch) patchPermission(username string, patch map[string]inter
 	return true, nil
 }
 
-func (es *elasticsearch) deletePermission(userId string) (bool, error) {
+func (es *elasticsearch) deletePermission(userID string) (bool, error) {
 	_, err := es.client.Delete().
 		Index(es.indexName).
 		Type(es.typeName).
-		Id(userId).
+		Id(userID).
 		Do(context.Background())
 	if err != nil {
 		return false, err
@@ -114,11 +112,11 @@ func (es *elasticsearch) deletePermission(userId string) (bool, error) {
 	return true, nil
 }
 
-func (es *elasticsearch) getUserPermissions(userId string) ([]byte, error) {
+func (es *elasticsearch) getUserPermissions(userID string) ([]byte, error) {
 	resp, err := es.client.Search().
 		Index(es.indexName).
 		Type(es.typeName).
-		Query(elastic.NewTermQuery("user_id", userId)).
+		Query(elastic.NewTermQuery("user_id", userID)).
 		Do(context.Background())
 	if err != nil {
 		return nil, err

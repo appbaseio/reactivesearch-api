@@ -43,13 +43,6 @@ func list() []middleware.Middleware {
 	}
 }
 
-// classifyACL classifies an incoming request based on the request method
-// and the endpoint it is trying to access. The middleware makes two
-// classifications: first, the operation (op.Operation) incoming request is
-// trying to do, and second, the acl (acl.ACL) it is trying to access, which
-// is acl.User in this case. The identified classifications are passed along
-// in the request context to the next middleware. Classifier is supposedly
-// the first middleware that a request is expected to encounter.
 func classifyACL(h http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		userACL := acl.User
@@ -59,12 +52,6 @@ func classifyACL(h http.HandlerFunc) http.HandlerFunc {
 	}
 }
 
-// validateOp verifies whether the user.User has the required op.Operation
-// in order to access a particular endpoint. The middleware expects the
-// request context to have both *user.User who is making the request
-// and *op.Operation required in order to access the endpoint. The absence
-// of either values in request context will cause the middleware to return
-// http.InternalServerError.
 func validateOp(h http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
@@ -75,7 +62,7 @@ func validateOp(h http.HandlerFunc) http.HandlerFunc {
 			util.WriteBackMessage(w, "Internal server error", http.StatusInternalServerError)
 			return
 		}
-		u := ctxUser.(*user.User)
+		reqUser := ctxUser.(*user.User)
 
 		ctxOp := ctx.Value(op.CtxKey)
 		if ctxOp == nil {
@@ -85,9 +72,8 @@ func validateOp(h http.HandlerFunc) http.HandlerFunc {
 		}
 		operation := ctxOp.(*op.Operation)
 
-		if !op.Contains(u.Ops, *operation) {
-			msg := fmt.Sprintf("user with user_id=%s does not have '%s' op access",
-				u.UserId, operation.String())
+		if !reqUser.Can(*operation) {
+			msg := fmt.Sprintf(`User with "user_id"="%s" does not have "%s" op`, reqUser.UserId, operation.String())
 			util.WriteBackMessage(w, msg, http.StatusUnauthorized)
 			return
 		}
@@ -96,11 +82,6 @@ func validateOp(h http.HandlerFunc) http.HandlerFunc {
 	}
 }
 
-// validateACL verifies whether the user.User has the required acl.ACL in
-// order to access a particular endpoint. The middleware expects the request
-// context to have *user.User who is making the request. The absence of
-// *user.User value in the request context will cause the middleware to return
-// http.InternalServerError.
 func validateACL(h http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
@@ -111,11 +92,10 @@ func validateACL(h http.HandlerFunc) http.HandlerFunc {
 			util.WriteBackMessage(w, "Internal server error", http.StatusInternalServerError)
 			return
 		}
-		u := ctxUser.(*user.User)
+		reqUser := ctxUser.(*user.User)
 
-		if !acl.Contains(u.ACLs, acl.User) {
-			msg := fmt.Sprintf(`user with "user_id"="%s" does not have '%s' acl`,
-				u.UserId, acl.User.String())
+		if !reqUser.HasACL(acl.User) {
+			msg := fmt.Sprintf(`User with "user_id"="%s" does not have '%s' acl`, reqUser.UserId, acl.User.String())
 			util.WriteBackMessage(w, msg, http.StatusUnauthorized)
 			return
 		}
@@ -124,10 +104,6 @@ func validateACL(h http.HandlerFunc) http.HandlerFunc {
 	}
 }
 
-// isAdmin checks whether the user.User is an admin. The middleware
-// expects the request context to have a *user.User. The absence of *user.User
-// in the request context will cause the middleware to return
-// http.InternalServerError.
 func isAdmin(h http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
@@ -138,10 +114,10 @@ func isAdmin(h http.HandlerFunc) http.HandlerFunc {
 			util.WriteBackMessage(w, "Internal server error", http.StatusInternalServerError)
 			return
 		}
-		obj := ctxUser.(*user.User)
+		reqUser := ctxUser.(*user.User)
 
-		if !*obj.IsAdmin {
-			msg := fmt.Sprintf(`User with "user_id"="%s" is not an admin`, obj.UserId)
+		if !*reqUser.IsAdmin {
+			msg := fmt.Sprintf(`User with "user_id"="%s" is not an admin`, reqUser.UserId)
 			util.WriteBackMessage(w, msg, http.StatusUnauthorized)
 			return
 		}

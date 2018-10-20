@@ -17,8 +17,8 @@ const (
 )
 
 var (
-	instance *users
-	once     sync.Once
+	singleton *users
+	once      sync.Once
 )
 
 type users struct {
@@ -26,25 +26,20 @@ type users struct {
 }
 
 func init() {
-	arc.RegisterPlugin(Instance())
+	arc.RegisterPlugin(instance())
 }
 
-func Instance() *users {
+func instance() *users {
 	once.Do(func() {
-		instance = &users{}
+		singleton = &users{}
 	})
-	return instance
+	return singleton
 }
 
-// Name returns the name of the plugin: '[users]'.
 func (u *users) Name() string {
 	return logTag
 }
 
-// InitFunc reads the required environment variables and initializes
-// the elasticsearch as its dao. The function returns EnvVarNotSetError
-// in case the required environment variables are not set before the plugin
-// is loaded.
 func (u *users) InitFunc() error {
 	// fetch vars from env
 	esURL := os.Getenv(envEsURL)
@@ -59,7 +54,7 @@ func (u *users) InitFunc() error {
 
 	// initialize the dao
 	var err error
-	u.es, err = NewES(esURL, indexName, mapping)
+	u.es, err = newClient(esURL, indexName, mapping)
 	if err != nil {
 		return err
 	}
@@ -67,7 +62,6 @@ func (u *users) InitFunc() error {
 	return nil
 }
 
-// Routes returns the routes associated with user.
 func (u *users) Routes() []plugin.Route {
 	return u.routes()
 }

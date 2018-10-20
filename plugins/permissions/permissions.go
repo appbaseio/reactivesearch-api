@@ -19,8 +19,8 @@ const (
 )
 
 var (
-	instance *permissions
-	once     sync.Once
+	singleton *permissions
+	once      sync.Once
 )
 
 type permissions struct {
@@ -28,25 +28,20 @@ type permissions struct {
 }
 
 func init() {
-	arc.RegisterPlugin(Instance())
+	arc.RegisterPlugin(instance())
 }
 
-func Instance() *permissions {
+func instance() *permissions {
 	once.Do(func() {
-		instance = &permissions{}
+		singleton = &permissions{}
 	})
-	return instance
+	return singleton
 }
 
-// Name returns the name of the plugin: 'permissions'.
 func (p *permissions) Name() string {
 	return logTag
 }
 
-// InitFunc reads the required environment variables and initializes
-// the elasticsearch as its dao. The function returns EnvVarNotSetError
-// in case the required environment variables are not set before the plugin
-// is loaded.
 func (p *permissions) InitFunc() error {
 	log.Printf("%s: initializing plugin\n", logTag)
 
@@ -63,7 +58,7 @@ func (p *permissions) InitFunc() error {
 
 	// initialize the dao
 	var err error
-	p.es, err = NewES(url, indexName, mapping)
+	p.es, err = newClient(url, indexName, mapping)
 	if err != nil {
 		return fmt.Errorf("%s: error initializing permission's elasticsearch dao: %v", logTag, err)
 	}
@@ -71,7 +66,6 @@ func (p *permissions) InitFunc() error {
 	return nil
 }
 
-// Routes returns the endpoints associated with permission.
 func (p *permissions) Routes() []plugin.Route {
 	return p.routes()
 }
