@@ -119,7 +119,7 @@ func (u *User) HasACL(acl acl.ACL) bool {
 	return false
 }
 
-func (u *User) Can(op op.Operation) bool {
+func (u *User) CanDo(op op.Operation) bool {
 	for _, o := range u.Ops {
 		if o == op {
 			return true

@@ -31,6 +31,8 @@ func init() {
 	arc.RegisterPlugin(instance())
 }
 
+// Use only this function to fetch the instance of user from within
+// this package to avoid creating stateless duplicates of the plugin.
 func instance() *permissions {
 	once.Do(func() {
 		singleton = &permissions{}

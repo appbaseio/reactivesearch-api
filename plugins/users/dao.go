@@ -53,7 +53,7 @@ func newClient(url, indexName, mapping string) (*elasticsearch, error) {
 }
 
 func (es *elasticsearch) getRawUser(userID string) ([]byte, error) {
-	data, err := es.client.Get().
+	response, err := es.client.Get().
 		Index(es.indexName).
 		Type(es.typeName).
 		Id(userID).
@@ -63,7 +63,7 @@ func (es *elasticsearch) getRawUser(userID string) ([]byte, error) {
 		return nil, err
 	}
 
-	src, err := data.Source.MarshalJSON()
+	src, err := response.Source.MarshalJSON()
 	if err != nil {
 		return nil, err
 	}
@@ -85,18 +85,23 @@ func (es *elasticsearch) postUser(u user.User) (bool, error) {
 	return true, nil
 }
 
-func (es *elasticsearch) patchUser(userID string, patch map[string]interface{}) (bool, error) {
-	_, err := es.client.Update().
+func (es *elasticsearch) patchUser(userID string, patch map[string]interface{}) ([]byte, error) {
+	response, err := es.client.Update().
 		Index(es.indexName).
 		Type(es.typeName).
 		Id(userID).
 		Doc(patch).
 		Do(context.Background())
 	if err != nil {
-		return false, err
+		return nil, err
 	}
 
-	return true, nil
+	src, err := response.GetResult.Source.MarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+
+	return src, nil
 }
 
 func (es *elasticsearch) deleteUser(userID string) (bool, error) {

@@ -324,7 +324,7 @@ func validateOp(h http.HandlerFunc) http.HandlerFunc {
 			return
 		}
 
-		if !reqUser.Can(*reqOp) {
+		if !reqUser.CanDo(*reqOp) {
 			msg := fmt.Sprintf(`user with "user_id"="%s" does not have "%s" op access`,
 				reqUser.UserId, reqOp.String())
 			util.WriteBackMessage(w, msg, http.StatusUnauthorized)

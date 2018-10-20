@@ -22,11 +22,16 @@ func RandStr() string {
 }
 
 // WriteBackMessage writes the given message as a json response to the response writer.
-func WriteBackMessage(w http.ResponseWriter, msg string, code int) {
+func WriteBackMessage(w http.ResponseWriter, message string, code int) {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.Header().Set("X-Content-Type-Options", "nosniff")
 	w.WriteHeader(code)
-	err := json.NewEncoder(w).Encode(map[string]interface{}{"message": msg})
+	msg := map[string]interface{}{
+		"code":    code,
+		"status":  http.StatusText(code),
+		"message": message,
+	}
+	err := json.NewEncoder(w).Encode(msg)
 	if err != nil {
 		WriteBackError(w, err.Error(), http.StatusInternalServerError)
 	}
@@ -37,7 +42,14 @@ func WriteBackError(w http.ResponseWriter, err string, code int) {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.Header().Set("X-Content-Type-Options", "nosniff")
 	w.WriteHeader(code)
-	json.NewEncoder(w).Encode(map[string]interface{}{"error": err})
+	msg := map[string]interface{}{
+		"error": map[string]interface{}{
+			"code":    code,
+			"status":  http.StatusText(code),
+			"message": err,
+		},
+	}
+	json.NewEncoder(w).Encode(msg)
 }
 
 // WriteBackRaw writes the given json encoded bytes to the response writer.
