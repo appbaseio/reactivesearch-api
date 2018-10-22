@@ -92,6 +92,14 @@
   version = "v1.0.0"
 
 [[projects]]
+  digest = "1:b0c25f00bad20d783d259af2af8666969e2fc343fa0dc9efe52936bbd67fb758"
+  name = "github.com/rs/cors"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "9a47f48565a795472d43519dd49aac781f3034fb"
+  version = "v1.6.0"
+
+[[projects]]
   digest = "1:c40d65817cdd41fac9aa7af8bed56927bb2d6d47e4fea566a74880f5c2b1c41e"
   name = "github.com/stretchr/testify"
   packages = [
@@ -131,6 +139,7 @@
     "github.com/google/uuid",
     "github.com/gorilla/mux",
     "github.com/olivere/elastic",
+    "github.com/rs/cors",
     "github.com/ulule/limiter",
     "github.com/ulule/limiter/drivers/store/memory",
     "github.com/ulule/limiter/drivers/store/redis",

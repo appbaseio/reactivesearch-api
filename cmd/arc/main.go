@@ -14,8 +14,9 @@ import (
 	"github.com/appbaseio-confidential/arc/arc"
 	"github.com/appbaseio-confidential/arc/arc/plugin"
 	"github.com/gorilla/mux"
+	"github.com/rs/cors"
 	"gopkg.in/natefinch/lumberjack.v2"
-
+	
 	_ "github.com/appbaseio-confidential/arc/plugins/analytics"
 	_ "github.com/appbaseio-confidential/arc/plugins/auth"
 	_ "github.com/appbaseio-confidential/arc/plugins/es"
@@ -79,6 +80,8 @@ func main() {
 	arc.By(criteria).Sort(plugins)
 
 	router := mux.NewRouter().StrictSlash(true)
+	handler := cors.Default().Handler(router)
+
 	for _, p := range plugins {
 		if err := arc.LoadPlugin(router, p); err != nil {
 			log.Fatalf("%v", err)
@@ -91,9 +94,11 @@ func main() {
 
 	addr := fmt.Sprintf("%s:%d", address, port)
 	log.Printf("%s: listening on %s", logTag, addr)
-	log.Fatal(http.ListenAndServe(addr, router))
+	log.Fatal(http.ListenAndServe(addr, handler))
 }
 
+// LoadEnvFromFile loads env vars fron envFile. Envs in the file
+// should be in KEY=VALUE format.
 func LoadEnvFromFile(envFile string) error {
 	if envFile == "" {
 		return nil
@@ -119,6 +124,8 @@ func LoadEnvFromFile(envFile string) error {
 	return nil
 }
 
+// ParseEnvFile parses the envFile for env variables in present in
+// KEY=VALUE format. It ignores the comment lines starting with "#".
 func ParseEnvFile(envFile io.Reader) (map[string]string, error) {
 	envMap := make(map[string]string)
 
