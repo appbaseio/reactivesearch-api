@@ -110,7 +110,7 @@ func (u *users) postUser() http.HandlerFunc {
 		if userBody.Indices != nil {
 			opts = append(opts, user.SetIndices(userBody.Indices))
 		}
-		if userBody.UserId == "" {
+		if userBody.UserID == "" {
 			util.WriteBackError(w, `Can't create a user without a "user_id"`, http.StatusBadRequest)
 			return
 		}
@@ -118,7 +118,7 @@ func (u *users) postUser() http.HandlerFunc {
 			util.WriteBackError(w, `Can't create a user without a "password"`, http.StatusBadRequest)
 			return
 		}
-		newUser, err := user.New(userBody.UserId, userBody.Password, opts...)
+		newUser, err := user.New(userBody.UserID, userBody.Password, opts...)
 		if err != nil {
 			msg := fmt.Sprintf("Error constructing user object: %v", err)
 			log.Printf("%s: %s: %v\n", logTag, msg, err)
@@ -128,7 +128,7 @@ func (u *users) postUser() http.HandlerFunc {
 
 		rawUser, err := json.Marshal(*newUser)
 		if err != nil {
-			msg := fmt.Sprintf(`An error occurred while creating a user with "user_id"="%s"`, userBody.UserId)
+			msg := fmt.Sprintf(`An error occurred while creating a user with "user_id"="%s"`, userBody.UserID)
 			log.Printf("%s: %s: %v\n", logTag, msg, err)
 			util.WriteBackError(w, msg, http.StatusInternalServerError)
 			return
@@ -141,7 +141,7 @@ func (u *users) postUser() http.HandlerFunc {
 			return
 		}
 
-		msg := fmt.Sprintf(`An error occurred while creating a user with "user_id"="%s"`, userBody.UserId)
+		msg := fmt.Sprintf(`An error occurred while creating a user with "user_id"="%s"`, userBody.UserID)
 		log.Printf("%s: %s: %v\n", logTag, msg, err)
 		util.WriteBackError(w, msg, http.StatusInternalServerError)
 	}

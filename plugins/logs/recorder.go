@@ -12,7 +12,7 @@ const (
 	logTag         = "[logs]"
 	envEsURL       = "ES_CLUSTER_URL"
 	envLogsEsIndex = "LOGS_ES_INDEX"
-	mapping        = ""
+	mapping        = `{"settings":{"number_of_shards":3, "number_of_replicas":2}}`
 )
 
 var (

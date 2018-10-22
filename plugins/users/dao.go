@@ -75,7 +75,7 @@ func (es *elasticsearch) postUser(u user.User) (bool, error) {
 	_, err := es.client.Index().
 		Index(es.indexName).
 		Type(es.typeName).
-		Id(u.UserId).
+		Id(u.UserID).
 		BodyJson(u).
 		Do(context.Background())
 	if err != nil {

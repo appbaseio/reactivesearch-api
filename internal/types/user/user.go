@@ -13,12 +13,16 @@ import (
 type contextKey string
 
 const (
-	CtxKey       = contextKey("user")
+	// CtxKey is a key against which a user is stored in a context.
+	CtxKey = contextKey("user")
+
+	// IndexMapping for the index that houses the user data.
 	IndexMapping = `{"settings":{"number_of_shards":3, "number_of_replicas":2}}`
 )
 
+// User defines a user type.
 type User struct {
-	UserId   string         `json:"user_id"`
+	UserID   string         `json:"user_id"`
 	Password string         `json:"password"`
 	IsAdmin  *bool          `json:"is_admin"`
 	ACLs     []acl.ACL      `json:"acls"`
@@ -27,8 +31,10 @@ type User struct {
 	Indices  []string       `json:"indices"`
 }
 
+// Options is a function type used to define a user's properties.
 type Options func(u *User) error
 
+// SetIsAdmin defines whether a user is an admin or not.
 func SetIsAdmin(isAdmin *bool) Options {
 	return func(u *User) error {
 		u.IsAdmin = isAdmin
@@ -36,6 +42,7 @@ func SetIsAdmin(isAdmin *bool) Options {
 	}
 }
 
+// SetACLs sets the acls a user can have access to.
 func SetACLs(acls []acl.ACL) Options {
 	return func(u *User) error {
 		if acls == nil {
@@ -46,6 +53,7 @@ func SetACLs(acls []acl.ACL) Options {
 	}
 }
 
+// SetEmail sets the user email.
 func SetEmail(email string) Options {
 	return func(u *User) error {
 		u.Email = email
@@ -53,6 +61,7 @@ func SetEmail(email string) Options {
 	}
 }
 
+// SetOps sets the operations that a user can perform.
 func SetOps(ops []op.Operation) Options {
 	return func(u *User) error {
 		if ops == nil {
@@ -63,6 +72,7 @@ func SetOps(ops []op.Operation) Options {
 	}
 }
 
+// SetIndices sets the indices or index patterns a user can have access to.
 func SetIndices(indices []string) Options {
 	return func(u *User) error {
 		if indices == nil {
@@ -79,10 +89,12 @@ func SetIndices(indices []string) Options {
 	}
 }
 
-func New(userId, password string, opts ...Options) (*User, error) {
+// New creates a user by running to the Options on it. It returns a default user
+// in case no Options are provided.
+func New(userID, password string, opts ...Options) (*User, error) {
 	// create a default user
 	u := &User{
-		UserId:   userId,
+		UserID:   userID,
 		Password: password,
 		IsAdmin:  &isAdminFalse, // pointer to bool
 		ACLs:     defaultACLs,
@@ -100,9 +112,10 @@ func New(userId, password string, opts ...Options) (*User, error) {
 	return u, nil
 }
 
-func NewAdmin(userId, password string) *User {
+// TODO: Remove
+func NewAdmin(userID, password string) *User {
 	return &User{
-		UserId:   userId,
+		UserID:   userID,
 		Password: password,
 		IsAdmin:  &isAdminTrue,
 		ACLs:     defaultAdminACLs,
@@ -111,6 +124,7 @@ func NewAdmin(userId, password string) *User {
 	}
 }
 
+// FromContext retrieves the user stored against user.CtxKey from the context.
 func FromContext(ctx context.Context) (*User, error) {
 	ctxUser := ctx.Value(CtxKey)
 	if ctxUser == nil {
@@ -123,6 +137,7 @@ func FromContext(ctx context.Context) (*User, error) {
 	return reqUser, nil
 }
 
+// HasACL checks whether the user has access to the given acl.
 func (u *User) HasACL(acl acl.ACL) bool {
 	for _, a := range u.ACLs {
 		if a == acl {
@@ -132,6 +147,7 @@ func (u *User) HasACL(acl acl.ACL) bool {
 	return false
 }
 
+// CanDo checks whether the user is permitted to do the given operation.
 func (u *User) CanDo(op op.Operation) bool {
 	for _, o := range u.Ops {
 		if o == op {
@@ -141,6 +157,7 @@ func (u *User) CanDo(op op.Operation) bool {
 	return false
 }
 
+// CanAccessIndex checks whether the user has access to the given index or index pattern.
 func (u *User) CanAccessIndex(name string) (bool, error) {
 	for _, pattern := range u.Indices {
 		pattern := strings.Replace(pattern, "*", ".*", -1)
@@ -155,11 +172,12 @@ func (u *User) CanAccessIndex(name string) (bool, error) {
 	return false, nil
 }
 
+// GetPatch generates a patch doc from the non-zero fields set in the current user.
 func (u *User) GetPatch() (map[string]interface{}, error) {
 	patch := make(map[string]interface{})
 
-	if u.UserId != "" {
-		patch["user_id"] = u.UserId
+	if u.UserID != "" {
+		patch["user_id"] = u.UserID
 	}
 	if u.Password != "" {
 		patch["password"] = u.Password

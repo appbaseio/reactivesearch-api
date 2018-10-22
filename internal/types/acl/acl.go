@@ -10,10 +10,13 @@ import (
 
 type contextKey string
 
+// CtxKey is a key against which an acl.ACL is stored in the context.
 const CtxKey = contextKey("category")
 
+// ACL represents acl type
 type ACL int
 
+// Currently supported acls.
 const (
 	Docs ACL = iota
 	Search
@@ -21,13 +24,13 @@ const (
 	Cat
 	Clusters
 	Misc
-
 	User
 	Permission
 	Analytics
 	Streams
 )
 
+// String is an implementation of Stringer interface that returns the string representation of acl.ACL type.
 func (a ACL) String() string {
 	return [...]string{
 		"docs",
@@ -36,7 +39,6 @@ func (a ACL) String() string {
 		"cat",
 		"clusters",
 		"misc",
-
 		"user",
 		"permission",
 		"analytics",
@@ -44,6 +46,7 @@ func (a ACL) String() string {
 	}[a]
 }
 
+// UnmarshalJSON is an implementation of Unmarshaler interface for unmarshaling acl.ACL type.
 func (a *ACL) UnmarshalJSON(bytes []byte) error {
 	var category string
 	err := json.Unmarshal(bytes, &category)
@@ -63,7 +66,6 @@ func (a *ACL) UnmarshalJSON(bytes []byte) error {
 		*a = Clusters
 	case Misc.String():
 		*a = Misc
-
 	case User.String():
 		*a = User
 	case Permission.String():
@@ -78,6 +80,7 @@ func (a *ACL) UnmarshalJSON(bytes []byte) error {
 	return nil
 }
 
+// MarshalJSON is the implementation of Marshaler interface for marshaling acl.ACL type.
 func (a ACL) MarshalJSON() ([]byte, error) {
 	var acl string
 	switch a {
@@ -93,7 +96,6 @@ func (a ACL) MarshalJSON() ([]byte, error) {
 		acl = Clusters.String()
 	case Misc:
 		acl = Misc.String()
-
 	case User:
 		acl = User.String()
 	case Permission:
@@ -108,6 +110,8 @@ func (a ACL) MarshalJSON() ([]byte, error) {
 	return json.Marshal(acl)
 }
 
+// IsFromES checks whether the acl is one of the elasticsearch acls, i.e.
+// one of [docs, search, indices, cat, clusters, misc]
 func (a ACL) IsFromES() bool {
 	return a == Docs ||
 		a == Search ||
@@ -117,6 +121,7 @@ func (a ACL) IsFromES() bool {
 		a == Misc
 }
 
+// FromContext retrieves the acl stored against the acl.CtxKey from the context.
 func FromContext(ctx context.Context) (*ACL, error) {
 	ctxACL := ctx.Value(CtxKey)
 	if ctxACL == nil {
@@ -127,13 +132,4 @@ func FromContext(ctx context.Context) (*ACL, error) {
 		return nil, errors.NewInvalidCastError("ctxACL", "*acl.ACL")
 	}
 	return reqACL, nil
-}
-
-func Contains(slice []ACL, val ACL) bool {
-	for _, v := range slice {
-		if v == val {
-			return true
-		}
-	}
-	return false
 }

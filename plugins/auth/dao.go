@@ -19,7 +19,7 @@ type elasticsearch struct {
 	client          *elastic.Client
 }
 
-func NewES(url, userIndex, permissionIndex string) (*elasticsearch, error) {
+func newClient(url, userIndex, permissionIndex string) (*elasticsearch, error) {
 	opts := []elastic.ClientOptionFunc{
 		elastic.SetURL(url),
 		elastic.SetSniff(false),
@@ -29,7 +29,7 @@ func NewES(url, userIndex, permissionIndex string) (*elasticsearch, error) {
 	// plugin handles the creation of their respective meta indices
 	client, err := elastic.NewClient(opts...)
 	if err != nil {
-		return nil, fmt.Errorf("%s: error while initializing elastic client: %v\n", logTag, err)
+		return nil, fmt.Errorf("%s: error while initializing elastic client: %v", logTag, err)
 	}
 	es := &elasticsearch{url, userIndex, "_doc", permissionIndex, "_doc", client}
 
@@ -40,7 +40,7 @@ func (es *elasticsearch) putUser(u user.User) (bool, error) {
 	_, err := es.client.Index().
 		Index(es.userIndex).
 		Type(es.userType).
-		Id(u.UserId).
+		Id(u.UserID).
 		BodyJson(u).
 		Do(context.Background())
 	if err != nil {
@@ -50,8 +50,8 @@ func (es *elasticsearch) putUser(u user.User) (bool, error) {
 	return true, nil
 }
 
-func (es *elasticsearch) getUser(userId string) (*user.User, error) {
-	data, err := es.getRawUser(userId)
+func (es *elasticsearch) getUser(userID string) (*user.User, error) {
+	data, err := es.getRawUser(userID)
 	if err != nil {
 		return nil, err
 	}
@@ -63,11 +63,11 @@ func (es *elasticsearch) getUser(userId string) (*user.User, error) {
 	return &u, nil
 }
 
-func (es *elasticsearch) getRawUser(userId string) ([]byte, error) {
+func (es *elasticsearch) getRawUser(userID string) ([]byte, error) {
 	data, err := es.client.Get().
 		Index(es.userIndex).
 		Type(es.userType).
-		Id(userId).
+		Id(userID).
 		FetchSource(true).
 		Do(context.Background())
 	if err != nil {

@@ -19,12 +19,12 @@ const (
 )
 
 var (
-	instance *auth
-	once     sync.Once
+	singleton *Auth
+	once      sync.Once
 )
 
-// TODO: clear cache after fixed entries: LRU?
-type auth struct {
+// Auth (TODO - clear cache after fixed entries: LRU?)
+type Auth struct {
 	mu               sync.Mutex
 	usersCache       map[string]*user.User
 	permissionsCache map[string]*permission.Permission
@@ -35,21 +35,27 @@ func init() {
 	arc.RegisterPlugin(Instance())
 }
 
-func Instance() *auth {
+// Instance returns the singleton instance of the auth plugin. Instance
+// should be the only way (both within or outside the package) to fetch
+// the instance of the plugin, in order to avoid stateless duplicates.
+func Instance() *Auth {
 	once.Do(func() {
-		instance = &auth{
+		singleton = &Auth{
 			usersCache:       make(map[string]*user.User),
 			permissionsCache: make(map[string]*permission.Permission),
 		}
 	})
-	return instance
+	return singleton
 }
 
-func (a *auth) Name() string {
+// Name returns the name of the plugin: [auth]
+func (a *Auth) Name() string {
 	return logTag
 }
 
-func (a *auth) InitFunc() error {
+// InitFunc initializes the dao, i.e. elasticsearch client, and should be executed
+// only once in the lifetime of the plugin.
+func (a *Auth) InitFunc() error {
 	// fetch vars from env
 	esURL := os.Getenv(envEsURL)
 	if esURL == "" {
@@ -66,7 +72,7 @@ func (a *auth) InitFunc() error {
 
 	// initialize the dao
 	var err error
-	a.es, err = NewES(esURL, userIndex, permissionIndex)
+	a.es, err = newClient(esURL, userIndex, permissionIndex)
 	if err != nil {
 		return err
 	}
@@ -74,6 +80,7 @@ func (a *auth) InitFunc() error {
 	return nil
 }
 
-func (a *auth) Routes() []plugin.Route {
+// Routes returns an empty slices since the plugin solely acts as a middleware.
+func (a *Auth) Routes() []plugin.Route {
 	return []plugin.Route{}
 }

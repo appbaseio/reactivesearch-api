@@ -10,16 +10,24 @@ import (
 
 type contextKey string
 
+// CtxKey is a key against which an operation is stored in the context.
 const CtxKey = contextKey("op")
 
+// Operation defines an operation type.
 type Operation int
 
 const (
+	// Read operation.
 	Read Operation = iota
+
+	// Write operation.
 	Write
+
+	// Delete operation.
 	Delete
 )
 
+// String is the implementation of Stringer interface that returns the string representaiton of op.Operation.
 func (o Operation) String() string {
 	return [...]string{
 		"read",
@@ -28,6 +36,7 @@ func (o Operation) String() string {
 	}[o]
 }
 
+// UnmarshalJSON is the implementation of the Unmarshaler interface for unmarshaling op.Operation type.
 func (o *Operation) UnmarshalJSON(bytes []byte) error {
 	var op string
 	err := json.Unmarshal(bytes, &op)
@@ -47,6 +56,7 @@ func (o *Operation) UnmarshalJSON(bytes []byte) error {
 	return nil
 }
 
+// MarshalJSON is the implementation of the Marshaler interface for marshaling op.Operation type.
 func (o Operation) MarshalJSON() ([]byte, error) {
 	var op string
 	switch o {
@@ -62,15 +72,7 @@ func (o Operation) MarshalJSON() ([]byte, error) {
 	return json.Marshal(op)
 }
 
-func Contains(slice []Operation, val Operation) bool {
-	for _, v := range slice {
-		if v == val {
-			return true
-		}
-	}
-	return false
-}
-
+// FromContext retrieves the op.Operation stored against the op.CtxKey from the context.
 func FromContext(ctx context.Context) (*Operation, error) {
 	ctxOp := ctx.Value(CtxKey)
 	if ctxOp == nil {

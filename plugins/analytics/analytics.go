@@ -7,13 +7,13 @@ import (
 	"github.com/appbaseio-confidential/arc/arc"
 	"github.com/appbaseio-confidential/arc/arc/plugin"
 	"github.com/appbaseio-confidential/arc/internal/errors"
-	analyticsIndex "github.com/appbaseio-confidential/arc/internal/types/analytics"
 )
 
 const (
 	logTag              = "[analytics]"
 	envEsURL            = "ES_CLUSTER_URL"
 	envAnalyticsEsIndex = "ANALYTICS_ES_INDEX"
+	mapping             = `{"settings":{"number_of_shards":3, "number_of_replicas":2}}`
 )
 
 var (
@@ -57,7 +57,6 @@ func (a *Analytics) InitFunc() error {
 	if indexName == "" {
 		return errors.NewEnvVarNotSetError(envAnalyticsEsIndex)
 	}
-	mapping := analyticsIndex.IndexMapping
 
 	// initialize the dao
 	var err error

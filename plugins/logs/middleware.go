@@ -57,7 +57,6 @@ func (l *Logs) Recorder(h http.HandlerFunc) http.HandlerFunc {
 			util.WriteBackError(w, "Can't read request body", http.StatusInternalServerError)
 			return
 		}
-		defer r.Body.Close()
 		r.Body = ioutil.NopCloser(bytes.NewBuffer(reqBody))
 
 		// Serve using response recorder

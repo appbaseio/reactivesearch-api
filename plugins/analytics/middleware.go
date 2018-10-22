@@ -88,17 +88,10 @@ func (a *Analytics) Recorder(h http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
 
-		err := "An error occurred while recording search requests"
-		ctxACL := ctx.Value(acl.CtxKey)
-		if ctxACL == nil {
-			log.Printf("%s: unable to fetch acl from request context\n", logTag)
-			util.WriteBackError(w, err, http.StatusInternalServerError)
-			return
-		}
-		reqACL, ok := ctxACL.(*acl.ACL)
-		if !ok {
-			log.Printf("%s: unable to cast context acl %v to *acl.ACL\n", logTag, reqACL)
-			util.WriteBackError(w, err, http.StatusInternalServerError)
+		reqACL, err := acl.FromContext(ctx)
+		if err != nil {
+			log.Printf("%s: %v", logTag, err)
+			util.WriteBackError(w, "An error occurred while recording search request", http.StatusInternalServerError)
 			return
 		}
 
@@ -295,35 +288,23 @@ func validateOp(h http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
 
-		err := "An error occurred while validating request op"
-		ctxUser := ctx.Value(user.CtxKey)
-		if ctxUser == nil {
-			log.Printf("%s: cannot fetch user object from request context\n", logTag)
-			util.WriteBackError(w, err, http.StatusInternalServerError)
-			return
-		}
-		reqUser, ok := ctxUser.(*user.User)
-		if !ok {
-			log.Printf("%s: cannot cast ctxUser to *user.User\n", logTag)
-			util.WriteBackError(w, err, http.StatusInternalServerError)
+		errMsg := "An error occurred while validating request op"
+		reqUser, err := user.FromContext(ctx)
+		if err != nil {
+			log.Printf("%s: %v", logTag, err)
+			util.WriteBackError(w, errMsg, http.StatusInternalServerError)
 			return
 		}
 
-		ctxOp := ctx.Value(op.CtxKey)
-		if ctxOp == nil {
-			log.Printf("%s: cannot fetch op from request context\n", logTag)
-			util.WriteBackError(w, err, http.StatusInternalServerError)
-			return
-		}
-		reqOp, ok := ctxOp.(*op.Operation)
-		if !ok {
-			log.Printf("%s: cannot cast ctxOp to *op.Operation\n", logTag)
-			util.WriteBackError(w, err, http.StatusInternalServerError)
+		reqOp, err := op.FromContext(ctx)
+		if err != nil {
+			log.Printf("%s: %v", logTag, err)
+			util.WriteBackError(w, errMsg, http.StatusInternalServerError)
 			return
 		}
 
 		if !reqUser.CanDo(*reqOp) {
-			msg := fmt.Sprintf(`User with "user_id"="%s" does not have "%s" op`, reqUser.UserId, *reqOp)
+			msg := fmt.Sprintf(`User with "user_id"="%s" does not have "%s" op`, reqUser.UserID, *reqOp)
 			util.WriteBackError(w, msg, http.StatusUnauthorized)
 			return
 		}
@@ -336,23 +317,16 @@ func validateACL(h http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
 
-		err := "An error occurred while validating request acl"
-		ctxUser := ctx.Value(user.CtxKey)
-		if ctxUser == nil {
-			log.Printf("%s: cannot fetch user object from request context\n", logTag)
-			util.WriteBackError(w, err, http.StatusInternalServerError)
-			return
-		}
-		reqUser, ok := ctxUser.(*user.User)
-		if !ok {
-			log.Printf("%s: cannot cast ctxUser to *user.User\n", logTag)
-			util.WriteBackError(w, err, http.StatusInternalServerError)
+		errMsg := "An error occurred while validating request acl"
+		reqUser, err := user.FromContext(ctx)
+		if err != nil {
+			log.Printf("%s: %v", logTag, err)
+			util.WriteBackError(w, errMsg, http.StatusInternalServerError)
 			return
 		}
 
 		if !reqUser.HasACL(acl.Analytics) {
-			msg := fmt.Sprintf(`User with "user_id"="%s" does not have "%s" acl`,
-				reqUser.UserId, acl.Analytics.String())
+			msg := fmt.Sprintf(`User with "user_id"="%s" does not have "%s" acl`, reqUser.UserID, acl.Analytics)
 			util.WriteBackError(w, msg, http.StatusUnauthorized)
 			return
 		}
@@ -365,30 +339,24 @@ func validateIndices(h http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
 
-		err := "An error occurred while validating request indices"
-		ctxUser := ctx.Value(user.CtxKey)
-		if ctxUser == nil {
-			log.Printf("%s: unable to fetch permission from request context\n", logTag)
-			util.WriteBackError(w, err, http.StatusInternalServerError)
-			return
-		}
-		reqUser, ok := ctxUser.(*user.User)
-		if !ok {
-			log.Printf("%s: unable to cast context user to *user.User\n", logTag)
-			util.WriteBackError(w, err, http.StatusInternalServerError)
+		errMsg := "An error occurred while validating request indices"
+		reqUser, err := user.FromContext(ctx)
+		if err != nil {
+			log.Printf("%s: %v", logTag, err)
+			util.WriteBackError(w, errMsg, http.StatusInternalServerError)
 			return
 		}
 
 		ctxIndices := ctx.Value(index.CtxKey)
 		if ctxIndices == nil {
 			log.Printf("%s: unable to fetch indices from request context\n", logTag)
-			util.WriteBackError(w, err, http.StatusInternalServerError)
+			util.WriteBackError(w, errMsg, http.StatusInternalServerError)
 			return
 		}
 		indices, ok := ctxIndices.([]string)
 		if !ok {
 			log.Printf("%s: unable to cast context indices to []string\n", logTag)
-			util.WriteBackError(w, err, http.StatusInternalServerError)
+			util.WriteBackError(w, errMsg, http.StatusInternalServerError)
 			return
 		}
 

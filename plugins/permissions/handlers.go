@@ -54,8 +54,8 @@ func (p *permissions) postPermission() http.HandlerFunc {
 		}
 
 		var opts []permission.Options
-		if permissionBody.UserId != "" {
-			opts = append(opts, permission.SetUserId(permissionBody.UserId))
+		if permissionBody.UserID != "" {
+			opts = append(opts, permission.SetUserID(permissionBody.UserID))
 		}
 		if permissionBody.Ops != nil {
 			opts = append(opts, permission.SetOps(permissionBody.Ops))

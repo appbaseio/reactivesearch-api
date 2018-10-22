@@ -8,8 +8,10 @@ import (
 
 type contextKey string
 
+// CtxKey is a key against which a slice of indices or index patterns are stored in the context.
 const CtxKey = contextKey("indices")
 
+// FromContext retrieves the slice of indices or index patterns stored against the index.CtxKey from the context.
 func FromContext(ctx context.Context) ([]string, error) {
 	ctxIndices := ctx.Value(CtxKey)
 	if ctxIndices == nil {

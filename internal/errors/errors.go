@@ -58,7 +58,7 @@ func NewNotFoundInRequestContextError(field string) *NotFoundInRequestContextErr
 }
 
 func (n *NotFoundInRequestContextError) Error() string {
-	return fmt.Sprintf("%s not found in request context", n.Field)
+	return fmt.Sprintf("\"%s\" not found in request context", n.Field)
 }
 
 type InvalidCastError struct {

@@ -3,7 +3,6 @@ package auth
 import (
 	"context"
 	"fmt"
-	"github.com/gorilla/mux"
 	"log"
 	"net/http"
 	"os"
@@ -12,11 +11,13 @@ import (
 	"github.com/appbaseio-confidential/arc/internal/types/permission"
 	"github.com/appbaseio-confidential/arc/internal/types/user"
 	"github.com/appbaseio-confidential/arc/internal/util"
+	"github.com/gorilla/mux"
 )
 
-func (a *auth) BasicAuth(h http.HandlerFunc) http.HandlerFunc {
+// BasicAuth middleware that authenticates each requests against the basic auth credentials.
+func (a *Auth) BasicAuth(h http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		userId, password, ok := r.BasicAuth()
+		userID, password, ok := r.BasicAuth()
 		if !ok {
 			util.WriteBackMessage(w, "Not logged in", http.StatusUnauthorized)
 			return
@@ -40,17 +41,17 @@ func (a *auth) BasicAuth(h http.HandlerFunc) http.HandlerFunc {
 			var reqPermission *permission.Permission
 
 			// check in the cache
-			reqPermission, ok = a.cachedPermission(userId)
+			reqPermission, ok = a.cachedPermission(userID)
 			if !ok {
-				reqPermission, err = a.es.getPermission(userId)
+				reqPermission, err = a.es.getPermission(userID)
 				if err != nil {
-					msg := fmt.Sprintf(`Unable to fetch permission with "username"="%s"`, userId)
+					msg := fmt.Sprintf(`Unable to fetch permission with "username"="%s"`, userID)
 					log.Printf("%s: %s: %v", logTag, msg, err)
 					util.WriteBackError(w, msg, http.StatusInternalServerError)
 					return
 				}
 				// store in the cache
-				a.cachePermission(userId, reqPermission)
+				a.cachePermission(userID, reqPermission)
 			}
 
 			if password != reqPermission.Password {
@@ -71,7 +72,7 @@ func (a *auth) BasicAuth(h http.HandlerFunc) http.HandlerFunc {
 			if r.Method == http.MethodPatch {
 				switch *reqACL {
 				case acl.User:
-					a.removeUserFromCache(userId)
+					a.removeUserFromCache(userID)
 				case acl.Permission:
 					username := mux.Vars(r)["username"]
 					a.removePermissionFromCache(username)
@@ -79,7 +80,7 @@ func (a *auth) BasicAuth(h http.HandlerFunc) http.HandlerFunc {
 			}
 
 			// master user
-			reqUser, err = a.isMaster(userId, password)
+			reqUser, err = a.isMaster(userID, password)
 			if err != nil {
 				log.Printf("%s: %v", logTag, err)
 				util.WriteBackMessage(w, "Internal server error", http.StatusInternalServerError)
@@ -94,17 +95,17 @@ func (a *auth) BasicAuth(h http.HandlerFunc) http.HandlerFunc {
 			}
 
 			// check in the cache
-			reqUser, ok = a.cachedUser(userId)
+			reqUser, ok = a.cachedUser(userID)
 			if !ok {
-				reqUser, err = a.es.getUser(userId)
+				reqUser, err = a.es.getUser(userID)
 				if err != nil {
-					msg := fmt.Sprintf(`Unable to fetch user with "user_id"="%s"`, userId)
+					msg := fmt.Sprintf(`Unable to fetch user with "user_id"="%s"`, userID)
 					log.Printf("%s: %s: %v", logTag, msg, err)
 					util.WriteBackError(w, msg, http.StatusInternalServerError)
 					return
 				}
 				// store in the cache
-				a.cacheUser(userId, reqUser)
+				a.cacheUser(userID, reqUser)
 			}
 
 			if password != reqUser.Password {
@@ -121,31 +122,31 @@ func (a *auth) BasicAuth(h http.HandlerFunc) http.HandlerFunc {
 	}
 }
 
-func (a *auth) cachedUser(userId string) (*user.User, bool) {
+func (a *Auth) cachedUser(userID string) (*user.User, bool) {
 	a.mu.Lock()
 	defer a.mu.Unlock()
-	u, ok := a.usersCache[userId]
+	u, ok := a.usersCache[userID]
 	return u, ok
 }
 
-func (a *auth) cacheUser(userId string, u *user.User) {
+func (a *Auth) cacheUser(userID string, u *user.User) {
 	if u == nil {
 		log.Printf("%s: cannot cache 'nil' user, skipping...", logTag)
 		return
 	}
 	a.mu.Lock()
 	defer a.mu.Unlock()
-	a.usersCache[userId] = u
+	a.usersCache[userID] = u
 }
 
-func (a *auth) removeUserFromCache(userId string) {
+func (a *Auth) removeUserFromCache(userID string) {
 	a.mu.Lock()
 	defer a.mu.Unlock()
-	delete(a.usersCache, userId)
+	delete(a.usersCache, userID)
 }
 
-func (a *auth) createAdminUser(userId, password string) (*user.User, error) {
-	u := user.NewAdmin(userId, password)
+func (a *Auth) createAdminUser(userID, password string) (*user.User, error) {
+	u := user.NewAdmin(userID, password)
 	ok, err := a.es.putUser(*u)
 	if !ok || err != nil {
 		return nil, err
@@ -153,14 +154,14 @@ func (a *auth) createAdminUser(userId, password string) (*user.User, error) {
 	return u, nil
 }
 
-func (a *auth) cachedPermission(username string) (*permission.Permission, bool) {
+func (a *Auth) cachedPermission(username string) (*permission.Permission, bool) {
 	a.mu.Lock()
 	defer a.mu.Unlock()
 	p, ok := a.permissionsCache[username]
 	return p, ok
 }
 
-func (a *auth) cachePermission(username string, p *permission.Permission) {
+func (a *Auth) cachePermission(username string, p *permission.Permission) {
 	if p == nil {
 		log.Printf("%s: cannot cache 'nil' permission, skipping...", logTag)
 		return
@@ -170,13 +171,13 @@ func (a *auth) cachePermission(username string, p *permission.Permission) {
 	a.permissionsCache[username] = p
 }
 
-func (a *auth) removePermissionFromCache(username string) {
+func (a *Auth) removePermissionFromCache(username string) {
 	a.mu.Lock()
 	defer a.mu.Unlock()
 	delete(a.permissionsCache, username)
 }
 
-func (a *auth) createAdminPermission(creator string) (*permission.Permission, error) {
+func (a *Auth) createAdminPermission(creator string) (*permission.Permission, error) {
 	p := permission.NewAdmin(creator)
 	ok, err := a.es.putPermission(*p)
 	if !ok || err != nil {
@@ -186,13 +187,13 @@ func (a *auth) createAdminPermission(creator string) (*permission.Permission, er
 	return p, nil
 }
 
-func (a *auth) isMaster(userId, password string) (*user.User, error) {
+func (a *Auth) isMaster(userID, password string) (*user.User, error) {
 	masterUser, masterPassword := os.Getenv("USER_ID"), os.Getenv("PASSWORD")
-	if masterUser != userId && masterPassword != password {
+	if masterUser != userID && masterPassword != password {
 		return nil, nil
 	}
 
-	master, err := a.es.getUser(userId)
+	master, err := a.es.getUser(userID)
 	if err != nil {
 		log.Printf("%s: master user doesn't exists, creating one... : %v", logTag, err)
 		master = user.NewAdmin(masterUser, masterPassword)

@@ -56,34 +56,23 @@ func validateOp(h http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
 
-		err := "An error occurred while validating request op"
-		ctxUser := ctx.Value(user.CtxKey)
-		if ctxUser == nil {
-			log.Printf("%s: cannot fetch user object from request context\n", logTag)
-			util.WriteBackError(w, err, http.StatusInternalServerError)
+		errMsg := "An error occurred while validating request op"
+		reqUser, err := user.FromContext(ctx)
+		if err != nil {
+			log.Printf("%s: %v", logTag, err)
+			util.WriteBackError(w, errMsg, http.StatusInternalServerError)
 			return
-		}
-		reqUser, ok := ctxUser.(*user.User)
-		if !ok {
-			log.Printf("%s: cannot cast context user to *user.User\n", logTag)
-			util.WriteBackError(w, err, http.StatusInternalServerError)
 		}
 
-		ctxOp := ctx.Value(op.CtxKey)
-		if ctxOp == nil {
-			log.Printf("%s: cannot fetch op from request context\n", logTag)
-			util.WriteBackError(w, err, http.StatusInternalServerError)
-			return
-		}
-		reqOp, ok := ctxOp.(*op.Operation)
-		if !ok {
-			log.Printf("%s: cannot cast context op to *op.Operation\n", logTag)
-			util.WriteBackError(w, err, http.StatusInternalServerError)
+		reqOp, err := op.FromContext(ctx)
+		if err != nil {
+			log.Printf("%s: %v", logTag, err)
+			util.WriteBackError(w, errMsg, http.StatusInternalServerError)
 			return
 		}
 
 		if !reqUser.CanDo(*reqOp) {
-			msg := fmt.Sprintf(`User with "user_id"="%s" does not have "%s" op`, reqUser.UserId, *reqOp)
+			msg := fmt.Sprintf(`User with "user_id"="%s" does not have "%s" op`, reqUser.UserID, *reqOp)
 			util.WriteBackError(w, msg, http.StatusUnauthorized)
 			return
 		}
@@ -96,22 +85,15 @@ func validateACL(h http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
 
-		err := "An error occurred while validating request acl"
-		ctxUser := ctx.Value(user.CtxKey)
-		if ctxUser == nil {
-			log.Printf("%s: cannot fetch user from request context\n", logTag)
-			util.WriteBackError(w, err, http.StatusInternalServerError)
-			return
-		}
-		reqUser, ok := ctxUser.(*user.User)
-		if !ok {
-			log.Printf("%s: cannot cast context user to *user.User\n", logTag)
-			util.WriteBackError(w, err, http.StatusInternalServerError)
+		reqUser, err := user.FromContext(ctx)
+		if err != nil {
+			log.Printf("%s: %v", logTag, err)
+			util.WriteBackError(w, "An error occurred while validating request acl", http.StatusInternalServerError)
 			return
 		}
 
 		if !reqUser.HasACL(acl.Permission) {
-			msg := fmt.Sprintf(`User with "user_id"="%s" does not have "%s" acl`, reqUser.UserId, acl.Permission)
+			msg := fmt.Sprintf(`User with "user_id"="%s" does not have "%s" acl`, reqUser.UserID, acl.Permission)
 			util.WriteBackError(w, msg, http.StatusUnauthorized)
 			return
 		}
@@ -124,22 +106,15 @@ func isAdmin(h http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
 
-		err := "An error occurred while validating user admin"
-		ctxUser := ctx.Value(user.CtxKey)
-		if ctxUser == nil {
-			log.Printf("%s: cannot fetch user from request context\n", logTag)
-			util.WriteBackError(w, err, http.StatusInternalServerError)
-			return
-		}
-		reqUser, ok := ctxUser.(*user.User)
-		if !ok {
-			log.Printf("%s: cannot cast context user to *user.User\n", logTag)
-			util.WriteBackError(w, err, http.StatusInternalServerError)
+		reqUser, err := user.FromContext(ctx)
+		if err != nil {
+			log.Printf("%s: %v", logTag, err)
+			util.WriteBackError(w, "An error occurred while validating user admin", http.StatusInternalServerError)
 			return
 		}
 
 		if !(*reqUser.IsAdmin) {
-			msg := fmt.Sprintf(`User with "user_id"="%s" is not an admin`, reqUser.UserId)
+			msg := fmt.Sprintf(`User with "user_id"="%s" is not an admin`, reqUser.UserID)
 			util.WriteBackError(w, msg, http.StatusUnauthorized)
 			return
 		}
