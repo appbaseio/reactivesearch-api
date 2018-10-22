@@ -3,3 +3,4 @@
 
 .env
 main
+local-setup.sh

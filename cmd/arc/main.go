@@ -37,7 +37,7 @@ func init() {
 	flag.StringVar(&envFile, "env", ".env", "Path to file with environment variables to load in KEY=VALUE format")
 	flag.StringVar(&logFile, "log", "", "Process log file")
 	flag.BoolVar(&listPlugins, "plugins", false, "List currently registered plugins")
-	flag.StringVar(&address, "addr", "localhost", "Address to serve on")
+	flag.StringVar(&address, "addr", "", "Address to serve on")
 	flag.IntVar(&port, "port", 8000, "Port number")
 }
 
