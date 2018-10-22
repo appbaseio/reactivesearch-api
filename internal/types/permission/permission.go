@@ -1,6 +1,7 @@
 package permission
 
 import (
+	"context"
 	"log"
 	"regexp"
 	"strings"
@@ -134,6 +135,18 @@ func NewAdmin(creator string) *Permission {
 		TTL:       time.Duration(util.DaysInCurrentYear()) * 24 * time.Hour,
 		Limits:    &defaultAdminLimits,
 	}
+}
+
+func FromContext(ctx context.Context) (*Permission, error) {
+	ctxPermission := ctx.Value(CtxKey)
+	if ctxPermission == nil {
+		return nil, errors.NewNotFoundInRequestContextError("*permission.Permission")
+	}
+	reqPermission, ok := ctxPermission.(*Permission)
+	if !ok {
+		return nil, errors.NewInvalidCastError("ctxPermission", "*permission.Permission")
+	}
+	return reqPermission, nil
 }
 
 func (p *Permission) IsExpired() bool {

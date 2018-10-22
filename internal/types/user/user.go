@@ -1,6 +1,7 @@
 package user
 
 import (
+	"context"
 	"regexp"
 	"strings"
 
@@ -108,6 +109,18 @@ func NewAdmin(userId, password string) *User {
 		Ops:      defaultAdminOps,
 		Indices:  []string{"*"},
 	}
+}
+
+func FromContext(ctx context.Context) (*User, error) {
+	ctxUser := ctx.Value(CtxKey)
+	if ctxUser == nil {
+		return nil, errors.NewNotFoundInRequestContextError("*user.User")
+	}
+	reqUser, ok := ctxUser.(*User)
+	if !ok {
+		return nil, errors.NewInvalidCastError("ctxUser", "*user.User")
+	}
+	return reqUser, nil
 }
 
 func (u *User) HasACL(acl acl.ACL) bool {

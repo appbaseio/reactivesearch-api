@@ -1,8 +1,11 @@
 package op
 
 import (
+	"context"
 	"encoding/json"
-	"errors"
+	"fmt"
+
+	"github.com/appbaseio-confidential/arc/internal/errors"
 )
 
 type contextKey string
@@ -39,7 +42,7 @@ func (o *Operation) UnmarshalJSON(bytes []byte) error {
 	case Delete.String():
 		*o = Delete
 	default:
-		return errors.New("invalid op encountered: " + op)
+		return fmt.Errorf("invalid op encountered: %v", op)
 	}
 	return nil
 }
@@ -54,7 +57,7 @@ func (o Operation) MarshalJSON() ([]byte, error) {
 	case Delete:
 		op = Delete.String()
 	default:
-		return nil, errors.New("invalid op encountered: " + op)
+		return nil, fmt.Errorf("invalid op encountered: %v", op)
 	}
 	return json.Marshal(op)
 }
@@ -66,4 +69,16 @@ func Contains(slice []Operation, val Operation) bool {
 		}
 	}
 	return false
+}
+
+func FromContext(ctx context.Context) (*Operation, error) {
+	ctxOp := ctx.Value(CtxKey)
+	if ctxOp == nil {
+		return nil, errors.NewNotFoundInRequestContextError("*op.Operation")
+	}
+	reqOp, ok := ctxOp.(*Operation)
+	if !ok {
+		return nil, errors.NewInvalidCastError("ctxOp", "*op.Operation")
+	}
+	return reqOp, nil
 }

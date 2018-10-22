@@ -1,8 +1,11 @@
 package acl
 
 import (
+	"context"
 	"encoding/json"
-	"errors"
+	"fmt"
+
+	"github.com/appbaseio-confidential/arc/internal/errors"
 )
 
 type contextKey string
@@ -70,7 +73,7 @@ func (a *ACL) UnmarshalJSON(bytes []byte) error {
 	case Streams.String():
 		*a = Streams
 	default:
-		return errors.New("invalid category encountered: " + category)
+		return fmt.Errorf("invalid category encountered: %v" + category)
 	}
 	return nil
 }
@@ -100,7 +103,7 @@ func (a ACL) MarshalJSON() ([]byte, error) {
 	case Streams:
 		acl = Streams.String()
 	default:
-		return nil, errors.New("invalid category encountered: " + a.String())
+		return nil, fmt.Errorf("invalid category encountered: %v" + a.String())
 	}
 	return json.Marshal(acl)
 }
@@ -112,6 +115,18 @@ func (a ACL) IsFromES() bool {
 		a == Cat ||
 		a == Clusters ||
 		a == Misc
+}
+
+func FromContext(ctx context.Context) (*ACL, error) {
+	ctxACL := ctx.Value(CtxKey)
+	if ctxACL == nil {
+		return nil, errors.NewNotFoundInRequestContextError("*acl.ACL")
+	}
+	reqACL, ok := ctxACL.(*ACL)
+	if !ok {
+		return nil, errors.NewInvalidCastError("ctxACL", "*acl.ACL")
+	}
+	return reqACL, nil
 }
 
 func Contains(slice []ACL, val ACL) bool {
