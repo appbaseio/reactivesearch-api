@@ -13,9 +13,9 @@ import (
 
 	"github.com/appbaseio-confidential/arc/arc"
 	"github.com/appbaseio-confidential/arc/arc/plugin"
-        "github.com/gorilla/mux"
-        "github.com/rs/cors"
-        "gopkg.in/natefinch/lumberjack.v2"
+	"github.com/gorilla/mux"
+	"github.com/rs/cors"
+	"gopkg.in/natefinch/lumberjack.v2"
 
 	_ "github.com/appbaseio-confidential/arc/plugins/analytics"
 	_ "github.com/appbaseio-confidential/arc/plugins/auth"
