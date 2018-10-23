@@ -2,7 +2,6 @@ package iplookup
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -11,8 +10,10 @@ import (
 
 const ipLookupURL = "http://extreme-ip-lookup.com/json/"
 
+// Info is the information associated with an IP address provided by ip-lookup service.
 type Info int
 
+// Information fetched from an IP address.
 const (
 	BusinessName Info = iota
 	BusinessWebsite
@@ -32,16 +33,19 @@ const (
 )
 
 var (
-	instance *IpInfo
+	instance *IPInfo
 	once     sync.Once
 )
 
-type IpInfo struct {
+// IPInfo maintains a cache to hold IpLookup information to avoid redundant
+// network requests made for the same IP address.
+type IPInfo struct {
 	sync.Mutex
-	cache map[string]*IpLookup
+	cache map[string]*IPLookup
 }
 
-type IpLookup struct {
+// IPLookup represents the response received from the ip-llokup service.
+type IPLookup struct {
 	BusinessName    string `json:"businessName"`
 	BusinessWebsite string `json:"businessWebsite"`
 	City            string `json:"city"`
@@ -59,14 +63,17 @@ type IpLookup struct {
 	Status          string `json:"status"`
 }
 
-func Instance() *IpInfo {
+// Instance returns the singleton instance of IPInfo.
+func Instance() *IPInfo {
 	once.Do(func() {
-		instance = &IpInfo{cache: make(map[string]*IpLookup)}
+		instance = &IPInfo{cache: make(map[string]*IPLookup)}
 	})
 	return instance
 }
 
-func (info *IpInfo) Cached(ipAddr string) (*IpLookup, bool) {
+// Cached checks if the info for the ipAddr is present in the cache. If so
+// we return the result from the cache itself.
+func (info *IPInfo) Cached(ipAddr string) (*IPLookup, bool) {
 	info.Lock()
 	defer info.Unlock()
 	if ip, ok := info.cache[ipAddr]; ok {
@@ -75,13 +82,16 @@ func (info *IpInfo) Cached(ipAddr string) (*IpLookup, bool) {
 	return nil, false
 }
 
-func (info *IpInfo) Cache(ip string, ipLookup *IpLookup) {
+// Cache stores the IP information i.e. IPLookup in the cache.
+func (info *IPInfo) Cache(ip string, ipLookup *IPLookup) {
 	info.Lock()
 	defer info.Unlock()
 	info.cache[ip] = ipLookup
 }
 
-func (info *IpInfo) Lookup(ip string) (*IpLookup, error) {
+// Lookup fetches the ip information from the ip-lookup service. A request to
+// ip-lookup service is made only when the information is not available in the cache.
+func (info *IPInfo) Lookup(ip string) (*IPLookup, error) {
 	if ip, ok := info.Cached(ip); ok {
 		return ip, nil
 	}
@@ -97,7 +107,7 @@ func (info *IpInfo) Lookup(ip string) (*IpLookup, error) {
 		return nil, err
 	}
 
-	var ipLookup IpLookup
+	var ipLookup IPLookup
 	if err := json.Unmarshal(responseBody, &ipLookup); err != nil {
 		return nil, err
 	}
@@ -106,12 +116,12 @@ func (info *IpInfo) Lookup(ip string) (*IpLookup, error) {
 	return &ipLookup, nil
 }
 
-func (info *IpInfo) Get(field Info, ip string) (string, error) {
+// Get returns the specific field of information i.e. Info from IPLookup.
+func (info *IPInfo) Get(field Info, ip string) (string, error) {
 	ipLookup, err := info.Lookup(ip)
 	if err != nil {
 		return "", err
 	}
-
 	var ipInfo string
 	switch field {
 	case BusinessName:
@@ -145,13 +155,15 @@ func (info *IpInfo) Get(field Info, ip string) (string, error) {
 	case Status:
 		ipInfo = ipLookup.Status
 	default:
-		return "", errors.New(fmt.Sprintf("cannot fetch %v from %s", field, ipLookupURL))
+		return "", fmt.Errorf("cannot fetch %v from %s", field, ipLookupURL)
 	}
 
 	return ipInfo, nil
 }
 
-func (info *IpInfo) GetCoordinates(ip string) (string, error) {
+// GetCoordinates returns the formatted coordinates (both latitude and longitude)
+// of the location fetched for IP.
+func (info *IPInfo) GetCoordinates(ip string) (string, error) {
 	ipLookup, err := info.Lookup(ip)
 	if err != nil {
 		return "", err

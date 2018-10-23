@@ -146,11 +146,16 @@ func (a *Auth) removeUserFromCache(userID string) {
 }
 
 func (a *Auth) createAdminUser(userID, password string) (*user.User, error) {
-	u := user.NewAdmin(userID, password)
+	u, err := user.NewAdmin(userID, password)
+	if err != nil {
+		return nil, err
+	}
+
 	ok, err := a.es.putUser(*u)
 	if !ok || err != nil {
 		return nil, err
 	}
+
 	return u, nil
 }
 
@@ -178,12 +183,16 @@ func (a *Auth) removePermissionFromCache(username string) {
 }
 
 func (a *Auth) createAdminPermission(creator string) (*permission.Permission, error) {
-	p := permission.NewAdmin(creator)
+	p, err := permission.NewAdmin(creator)
+	if err != nil {
+		return nil, err
+	}
+
 	ok, err := a.es.putPermission(*p)
 	if !ok || err != nil {
 		return nil, err
 	}
-	log.Printf("%s: username=%s, password=%s", logTag, p.Username, p.Password)
+
 	return p, nil
 }
 
@@ -196,7 +205,10 @@ func (a *Auth) isMaster(userID, password string) (*user.User, error) {
 	master, err := a.es.getUser(userID)
 	if err != nil {
 		log.Printf("%s: master user doesn't exists, creating one... : %v", logTag, err)
-		master = user.NewAdmin(masterUser, masterPassword)
+		master, err = user.NewAdmin(masterUser, masterPassword)
+		if err != nil {
+			return nil, err
+		}
 		ok, err := a.es.putUser(*master)
 		if !ok || err != nil {
 			return nil, fmt.Errorf("%s: unable to create master user: %v", logTag, err)

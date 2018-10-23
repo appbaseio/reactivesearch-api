@@ -72,7 +72,7 @@ func validateOp(h http.HandlerFunc) http.HandlerFunc {
 		}
 
 		if !reqUser.CanDo(*reqOp) {
-			msg := fmt.Sprintf(`User with "user_id"="%s" does not have "%s" op`, reqUser.UserID, *reqOp)
+			msg := fmt.Sprintf(`User with "username"="%s" does not have "%s" op`, reqUser.Username, *reqOp)
 			util.WriteBackError(w, msg, http.StatusUnauthorized)
 			return
 		}
@@ -92,7 +92,7 @@ func validateACL(h http.HandlerFunc) http.HandlerFunc {
 		}
 
 		if !reqUser.HasACL(acl.User) {
-			msg := fmt.Sprintf(`User with "user_id"="%s" does not have "%s" acl`, reqUser.UserID, acl.User)
+			msg := fmt.Sprintf(`User with "username"="%s" does not have "%s" acl`, reqUser.Username, acl.User)
 			util.WriteBackError(w, msg, http.StatusUnauthorized)
 			return
 		}
@@ -113,7 +113,7 @@ func isAdmin(h http.HandlerFunc) http.HandlerFunc {
 		}
 
 		if !*reqUser.IsAdmin {
-			msg := fmt.Sprintf(`User with "user_id"="%s" is not an admin`, reqUser.UserID)
+			msg := fmt.Sprintf(`User with "username"="%s" is not an admin`, reqUser.Username)
 			util.WriteBackError(w, msg, http.StatusUnauthorized)
 			return
 		}

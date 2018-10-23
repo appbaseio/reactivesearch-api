@@ -52,11 +52,11 @@ func newClient(url, indexName, mapping string) (*elasticsearch, error) {
 	return es, nil
 }
 
-func (es *elasticsearch) getRawUser(userID string) ([]byte, error) {
+func (es *elasticsearch) getRawUser(username string) ([]byte, error) {
 	response, err := es.client.Get().
 		Index(es.indexName).
 		Type(es.typeName).
-		Id(userID).
+		Id(username).
 		FetchSource(true).
 		Do(context.Background())
 	if err != nil {
@@ -75,7 +75,7 @@ func (es *elasticsearch) postUser(u user.User) (bool, error) {
 	_, err := es.client.Index().
 		Index(es.indexName).
 		Type(es.typeName).
-		Id(u.UserID).
+		Id(u.Username).
 		BodyJson(u).
 		Do(context.Background())
 	if err != nil {
@@ -85,11 +85,11 @@ func (es *elasticsearch) postUser(u user.User) (bool, error) {
 	return true, nil
 }
 
-func (es *elasticsearch) patchUser(userID string, patch map[string]interface{}) ([]byte, error) {
+func (es *elasticsearch) patchUser(username string, patch map[string]interface{}) ([]byte, error) {
 	response, err := es.client.Update().
 		Index(es.indexName).
 		Type(es.typeName).
-		Id(userID).
+		Id(username).
 		Doc(patch).
 		Fields("_source").
 		Do(context.Background())
@@ -105,11 +105,11 @@ func (es *elasticsearch) patchUser(userID string, patch map[string]interface{}) 
 	return src, nil
 }
 
-func (es *elasticsearch) deleteUser(userID string) (bool, error) {
+func (es *elasticsearch) deleteUser(username string) (bool, error) {
 	_, err := es.client.Delete().
 		Index(es.indexName).
 		Type(es.typeName).
-		Id(userID).
+		Id(username).
 		Do(context.Background())
 	if err != nil {
 		return false, err

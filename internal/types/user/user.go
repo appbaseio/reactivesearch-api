@@ -2,6 +2,7 @@ package user
 
 import (
 	"context"
+	"fmt"
 	"regexp"
 	"strings"
 	"time"
@@ -17,16 +18,16 @@ const (
 	// Identifier is a value stored against request.Maker key in the context.
 	Identifier = contextKey("user_identifier")
 
-	// CtxKey is a key against which a user is stored in the context.
+	// CtxKey is a key against which a *User is stored in the context.
 	CtxKey = contextKey("user")
 
 	// IndexMapping for the index that houses the user data.
-	IndexMapping = `{"settings":{"number_of_shards":3, "number_of_replicas":2}}`
+	IndexMapping = `{ "settings" : { "number_of_shards" : 3, "number_of_replicas" : 2 } }`
 )
 
 // User defines a user type.
 type User struct {
-	UserID    string         `json:"user_id"`
+	Username  string         `json:"username"`
 	Password  string         `json:"password"`
 	IsAdmin   *bool          `json:"is_admin"`
 	ACLs      []acl.ACL      `json:"acls"`
@@ -40,9 +41,9 @@ type User struct {
 type Options func(u *User) error
 
 // SetIsAdmin defines whether a user is an admin or not.
-func SetIsAdmin(isAdmin *bool) Options {
+func SetIsAdmin(isAdmin bool) Options {
 	return func(u *User) error {
-		u.IsAdmin = isAdmin
+		u.IsAdmin = &isAdmin
 		return nil
 	}
 }
@@ -94,12 +95,16 @@ func SetIndices(indices []string) Options {
 	}
 }
 
-// New creates a user by running to the Options on it. It returns a default user
+// New creates a new user by running the Options on it. It returns a default user
 // in case no Options are provided.
-func New(userID, password string, opts ...Options) (*User, error) {
+func New(username, password string, opts ...Options) (*User, error) {
+	if username == "" {
+		return nil, fmt.Errorf("username cannot be an empty string")
+	}
+
 	// create a default user
 	u := &User{
-		UserID:    userID,
+		Username:  username,
 		Password:  password,
 		IsAdmin:   &isAdminFalse, // pointer to bool
 		ACLs:      defaultACLs,
@@ -118,20 +123,35 @@ func New(userID, password string, opts ...Options) (*User, error) {
 	return u, nil
 }
 
-// TODO: Remove
-func NewAdmin(userID, password string) *User {
-	return &User{
-		UserID:    userID,
+// NewAdmin create a new user by running the Options on it. It returns a
+// user with admin defaults in case no Options are provided.
+func NewAdmin(username, password string, opts ...Options) (*User, error) {
+	if username == "" {
+		return nil, fmt.Errorf("username cannot be an empty field")
+	}
+
+	// create an admin user
+	u := &User{
+		Username:  username,
 		Password:  password,
 		IsAdmin:   &isAdminTrue,
-		ACLs:      defaultAdminACLs,
-		Ops:       defaultAdminOps,
+		ACLs:      adminACLs,
+		Ops:       adminOps,
 		Indices:   []string{"*"},
 		CreatedAt: time.Now().Format(time.RFC3339),
 	}
+
+	// run the options on it
+	for _, option := range opts {
+		if err := option(u); err != nil {
+			return nil, err
+		}
+	}
+
+	return u, nil
 }
 
-// FromContext retrieves the user stored against user.CtxKey from the context.
+// FromContext retrieves the *user.User stored against user.CtxKey from the context.
 func FromContext(ctx context.Context) (*User, error) {
 	ctxUser := ctx.Value(CtxKey)
 	if ctxUser == nil {
@@ -179,12 +199,12 @@ func (u *User) CanAccessIndex(name string) (bool, error) {
 	return false, nil
 }
 
-// GetPatch generates a patch doc from the non-zero fields set in the current user.
+// GetPatch generates a patch doc from the non-zero fields set in the user.
 func (u *User) GetPatch() (map[string]interface{}, error) {
 	patch := make(map[string]interface{})
 
-	if u.UserID != "" {
-		patch["user_id"] = u.UserID
+	if u.Username != "" {
+		patch["username"] = u.Username
 	}
 	if u.Password != "" {
 		patch["password"] = u.Password

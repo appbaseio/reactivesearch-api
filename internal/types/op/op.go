@@ -16,14 +16,10 @@ const CtxKey = contextKey("op")
 // Operation defines an operation type.
 type Operation int
 
+// Operations
 const (
-	// Read operation.
 	Read Operation = iota
-
-	// Write operation.
 	Write
-
-	// Delete operation.
 	Delete
 )
 

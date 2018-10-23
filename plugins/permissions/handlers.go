@@ -30,11 +30,7 @@ func (p *permissions) getPermission() http.HandlerFunc {
 
 func (p *permissions) postPermission() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		userID, _, ok := r.BasicAuth()
-		if !ok {
-			util.WriteBackError(w, "Credentials not provided", http.StatusUnauthorized)
-			return
-		}
+		creator, _, _ := r.BasicAuth()
 
 		body, err := ioutil.ReadAll(r.Body)
 		if err != nil {
@@ -54,8 +50,8 @@ func (p *permissions) postPermission() http.HandlerFunc {
 		}
 
 		var opts []permission.Options
-		if permissionBody.UserID != "" {
-			opts = append(opts, permission.SetUserID(permissionBody.UserID))
+		if permissionBody.Owner != "" {
+			opts = append(opts, permission.SetOwner(permissionBody.Owner))
 		}
 		if permissionBody.Ops != nil {
 			opts = append(opts, permission.SetOps(permissionBody.Ops))
@@ -69,7 +65,7 @@ func (p *permissions) postPermission() http.HandlerFunc {
 		if permissionBody.Indices != nil {
 			opts = append(opts, permission.SetIndices(permissionBody.Indices))
 		}
-		newPermission, err := permission.New(userID, opts...)
+		newPermission, err := permission.New(creator, opts...)
 		if err != nil {
 			msg := fmt.Sprintf("Error constructing permission object: %v", err)
 			log.Printf("%s: %s: %v\n", logTag, msg, err)
@@ -79,19 +75,19 @@ func (p *permissions) postPermission() http.HandlerFunc {
 
 		rawPermission, err := json.Marshal(*newPermission)
 		if err != nil {
-			msg := fmt.Sprintf(`An error occurred while creating a permission for "user_id"="%s"`, userID)
+			msg := fmt.Sprintf(`An error occurred while creating a permission for "creator"="%s"`, creator)
 			log.Printf("%s: unable to marshal newPermission object: %v\n", logTag, err)
 			util.WriteBackError(w, msg, http.StatusInternalServerError)
 			return
 		}
 
-		ok, err = p.es.postPermission(*newPermission)
+		ok, err := p.es.postPermission(*newPermission)
 		if ok && err == nil {
 			util.WriteBackRaw(w, rawPermission, http.StatusOK)
 			return
 		}
 
-		msg := fmt.Sprintf(`An error occurred while creating a permission for "user_id"="%s"`, userID)
+		msg := fmt.Sprintf(`An error occurred while creating a permission for "creator"="%s"`, creator)
 		log.Printf("%s: %s: %v\n", logTag, msg, err)
 		util.WriteBackError(w, msg, http.StatusInternalServerError)
 		return
@@ -159,15 +155,11 @@ func (p *permissions) deletePermission() http.HandlerFunc {
 
 func (p *permissions) getUserPermissions() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		userID, _, ok := r.BasicAuth()
-		if !ok {
-			util.WriteBackError(w, "Credentials not provided", http.StatusUnauthorized)
-			return
-		}
+		owner, _, _ := r.BasicAuth()
 
-		raw, err := p.es.getUserPermissions(userID)
+		raw, err := p.es.getOwnerPermissions(owner)
 		if err != nil {
-			msg := fmt.Sprintf(`An error occurred while fetching permissions for "user_id"="%s"`, userID)
+			msg := fmt.Sprintf(`An error occurred while fetching permissions for "owner"="%s"`, owner)
 			log.Printf("%s: %s: %v\n", logTag, msg, err)
 			util.WriteBackError(w, msg, http.StatusNotFound)
 			return

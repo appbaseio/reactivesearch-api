@@ -105,11 +105,11 @@ func (es *elasticsearch) patchPermission(username string, patch map[string]inter
 	return src, nil
 }
 
-func (es *elasticsearch) deletePermission(userID string) (bool, error) {
+func (es *elasticsearch) deletePermission(username string) (bool, error) {
 	_, err := es.client.Delete().
 		Index(es.indexName).
 		Type(es.typeName).
-		Id(userID).
+		Id(username).
 		Do(context.Background())
 	if err != nil {
 		return false, err
@@ -118,23 +118,19 @@ func (es *elasticsearch) deletePermission(userID string) (bool, error) {
 	return true, nil
 }
 
-func (es *elasticsearch) getUserPermissions(userID string) ([]byte, error) {
+func (es *elasticsearch) getOwnerPermissions(owner string) ([]byte, error) {
 	resp, err := es.client.Search().
 		Index(es.indexName).
 		Type(es.typeName).
-		Query(elastic.NewTermQuery("user_id", userID)).
+		Query(elastic.NewTermQuery("owner", owner)).
 		Do(context.Background())
 	if err != nil {
 		return nil, err
 	}
 
-	var rawPermissions []*json.RawMessage
+	rawPermissions := []*json.RawMessage{}
 	for _, hit := range resp.Hits.Hits {
 		rawPermissions = append(rawPermissions, hit.Source)
-	}
-
-	if rawPermissions == nil {
-		rawPermissions = []*json.RawMessage{}
 	}
 
 	raw, err := json.Marshal(rawPermissions)

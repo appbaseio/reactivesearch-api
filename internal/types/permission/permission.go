@@ -18,18 +18,21 @@ import (
 type contextKey string
 
 const (
+	// Identifier is a value stored against request.Maker key in the context.
+	Identifier = contextKey("permission_identifier")
+
 	// CtxKey is the key against which a permission is stored in a context.
 	CtxKey = contextKey("permission")
 
 	// IndexMapping for the index that houses permission data.
-	IndexMapping = `{"settings":{"number_of_shards":3, "number_of_replicas":2}}`
+	IndexMapping = `{ "settings" : { "number_of_shards" : 3, "number_of_replicas" : 2 } }`
 )
 
 // Permission defines a permission type.
 type Permission struct {
-	UserID    string         `json:"user_id"`
 	Username  string         `json:"username"`
 	Password  string         `json:"password"`
+	Owner     string         `json:"owner"`
 	Creator   string         `json:"creator"`
 	ACLs      []acl.ACL      `json:"acls"`
 	Ops       []op.Operation `json:"ops"`
@@ -53,10 +56,13 @@ type Limits struct {
 // Options is a function type used to define a permission's properties.
 type Options func(p *Permission) error
 
-// SetUserID sets the userID of a permission.
-func SetUserID(userID string) Options {
+// SetOwner sets the owner of a permission.
+func SetOwner(owner string) Options {
 	return func(p *Permission) error {
-		p.UserID = userID
+		if owner == "" {
+			return fmt.Errorf("permission owner cannot be an empty string")
+		}
+		p.Owner = owner
 		return nil
 	}
 }
@@ -109,13 +115,18 @@ func SetLimits(limits *Limits) Options {
 }
 
 // New creates a new permission by running the Options on it. It returns a
-// default permission in case no Options are provided.
+// default permission in case no Options are provided. The default owner of
+// the permission is the creator itself.
 func New(creator string, opts ...Options) (*Permission, error) {
+	if creator == "" {
+		return nil, fmt.Errorf("permission creator cannot be an empty string")
+	}
+
 	// create a default permission
 	p := &Permission{
-		UserID:    creator,
 		Username:  util.RandStr(),
 		Password:  uuid.New().String(),
+		Owner:     creator,
 		Creator:   creator,
 		ACLs:      defaultACLs,
 		Ops:       defaultOps,
@@ -135,20 +146,35 @@ func New(creator string, opts ...Options) (*Permission, error) {
 	return p, nil
 }
 
-// TODO: Remove?
-func NewAdmin(creator string) *Permission {
-	return &Permission{
-		UserID:    creator,
+// NewAdmin creates a new admin permission by running the Options on it. It returns
+// a permission with admin defaults in case no Options are provided. The default owner
+// of the permission is the creator itself.
+func NewAdmin(creator string, opts ...Options) (*Permission, error) {
+	if creator == "" {
+		return nil, fmt.Errorf("permission creator cannot be an empty string")
+	}
+
+	p := &Permission{
 		Username:  util.RandStr(),
 		Password:  uuid.New().String(),
+		Owner:     creator,
 		Creator:   creator,
-		ACLs:      defaultAdminACLs,
-		Ops:       defaultAdminOps,
+		ACLs:      adminACLs,
+		Ops:       adminOps,
 		Indices:   []string{"*"},
 		CreatedAt: time.Now().Format(time.RFC3339),
 		TTL:       time.Duration(util.DaysInCurrentYear()) * 24 * time.Hour,
 		Limits:    &defaultAdminLimits,
 	}
+
+	// run the options on it
+	for _, option := range opts {
+		if err := option(p); err != nil {
+			return nil, err
+		}
+	}
+
+	return p, nil
 }
 
 // FromContext retrieves the permission stored against permission.CtxKey from the context.
@@ -210,31 +236,36 @@ func (p *Permission) CanAccessIndex(name string) (bool, error) {
 }
 
 // GetLimitFor returns the rate limit for the given acl in the permission.
-func (p *Permission) GetLimitFor(a acl.ACL) int64 {
+func (p *Permission) GetLimitFor(a acl.ACL) (int64, error) {
 	switch a {
 	case acl.Docs:
-		return p.Limits.DocsLimit
+		return p.Limits.DocsLimit, nil
 	case acl.Search:
-		return p.Limits.SearchLimit
+		return p.Limits.SearchLimit, nil
 	case acl.Indices:
-		return p.Limits.IndicesLimit
+		return p.Limits.IndicesLimit, nil
 	case acl.Cat:
-		return p.Limits.CatLimit
+		return p.Limits.CatLimit, nil
 	case acl.Clusters:
-		return p.Limits.ClustersLimit
+		return p.Limits.ClustersLimit, nil
 	case acl.Misc:
-		return p.Limits.MiscLimit
+		return p.Limits.MiscLimit, nil
 	default:
-		return 0 // TODO: correct default value?
+		return -1, fmt.Errorf(`we do not rate limit "%s" acl`, a)
 	}
+}
+
+// GetIPLimit returns the IPLimit i.e. the number of requests allowed per IP address per hour.
+func (p *Permission) GetIPLimit() int64 {
+	return p.Limits.IPLimit
 }
 
 // GetPatch generates a patch doc from the non-zero values in the permission.
 func (p *Permission) GetPatch() (map[string]interface{}, error) {
 	patch := make(map[string]interface{})
 
-	if p.UserID != "" {
-		patch["user_id"] = p.UserID
+	if p.Owner != "" {
+		patch["owner"] = p.Owner
 	}
 	if p.Username != "" {
 		return nil, errors.NewUnsupportedPatchError("permission", "username")
