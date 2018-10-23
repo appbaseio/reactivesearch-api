@@ -69,7 +69,7 @@ func (a *Auth) BasicAuth(h http.HandlerFunc) http.HandlerFunc {
 			// if we are patching a user or a permission, we must clear their
 			// respective objects from the cache, otherwise the changes won't be
 			// reflected the next time user tries to get the user or permission object.
-			if r.Method == http.MethodPatch {
+			if r.Method == http.MethodPatch || r.Method == http.MethodDelete {
 				switch *reqACL {
 				case acl.User:
 					a.removeUserFromCache(userID)
@@ -99,9 +99,9 @@ func (a *Auth) BasicAuth(h http.HandlerFunc) http.HandlerFunc {
 			if !ok {
 				reqUser, err = a.es.getUser(userID)
 				if err != nil {
-					msg := fmt.Sprintf(`Unable to fetch user with "user_id"="%s"`, userID)
+					msg := fmt.Sprintf(`User with "user_id"="%s" Not Found`, userID)
 					log.Printf("%s: %s: %v", logTag, msg, err)
-					util.WriteBackError(w, msg, http.StatusInternalServerError)
+					util.WriteBackError(w, msg, http.StatusNotFound)
 					return
 				}
 				// store in the cache

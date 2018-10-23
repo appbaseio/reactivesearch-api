@@ -247,7 +247,7 @@ func (u *users) deleteUser() http.HandlerFunc {
 
 		ok, err := u.es.deleteUser(userID)
 		if ok && err == nil {
-			msg := fmt.Sprintf(`Successfully deleted user with "user_id"="%s"`, userID)
+			msg := fmt.Sprintf(`User with "user_id"="%s" deleted`, userID)
 			util.WriteBackMessage(w, msg, http.StatusOK)
 			return
 		}

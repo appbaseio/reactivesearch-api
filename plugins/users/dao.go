@@ -91,6 +91,7 @@ func (es *elasticsearch) patchUser(userID string, patch map[string]interface{}) 
 		Type(es.typeName).
 		Id(userID).
 		Doc(patch).
+		Fields("_source").
 		Do(context.Background())
 	if err != nil {
 		return nil, err

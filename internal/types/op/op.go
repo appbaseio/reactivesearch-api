@@ -72,7 +72,7 @@ func (o Operation) MarshalJSON() ([]byte, error) {
 	return json.Marshal(op)
 }
 
-// FromContext retrieves the op.Operation stored against the op.CtxKey from the context.
+// FromContext retrieves the *op.Operation stored against the op.CtxKey from the context.
 func FromContext(ctx context.Context) (*Operation, error) {
 	ctxOp := ctx.Value(CtxKey)
 	if ctxOp == nil {

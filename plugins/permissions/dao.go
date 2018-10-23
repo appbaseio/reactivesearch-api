@@ -91,6 +91,7 @@ func (es *elasticsearch) patchPermission(username string, patch map[string]inter
 		Type(es.typeName).
 		Id(username).
 		Doc(patch).
+		Fields("_source").
 		Do(context.Background())
 	if err != nil {
 		return nil, err

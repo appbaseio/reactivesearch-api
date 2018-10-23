@@ -30,8 +30,8 @@ type Permission struct {
 	Username  string         `json:"username"`
 	Password  string         `json:"password"`
 	Creator   string         `json:"creator"`
-	ACLs      []acl.ACL      `json:"acl"`
-	Ops       []op.Operation `json:"op"`
+	ACLs      []acl.ACL      `json:"acls"`
+	Ops       []op.Operation `json:"ops"`
 	Indices   []string       `json:"indices"`
 	CreatedAt time.Time      `json:"created_at"`
 	TTL       time.Duration  `json:"ttl"`
