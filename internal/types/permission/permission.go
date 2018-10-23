@@ -196,6 +196,7 @@ func (p *Permission) CanDo(op op.Operation) bool {
 // CanAccessIndex checks whether the permission has access to given index or index pattern.
 func (p *Permission) CanAccessIndex(name string) (bool, error) {
 	for _, pattern := range p.Indices {
+		pattern = strings.Replace(pattern, "*", ".*", -1)
 		matched, err := regexp.MatchString(pattern, name)
 		if err != nil {
 			log.Printf("invalid index regexp %s encontered: %v", pattern, err)
