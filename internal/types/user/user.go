@@ -4,6 +4,7 @@ import (
 	"context"
 	"regexp"
 	"strings"
+	"time"
 
 	"github.com/appbaseio-confidential/arc/internal/errors"
 	"github.com/appbaseio-confidential/arc/internal/types/acl"
@@ -22,13 +23,14 @@ const (
 
 // User defines a user type.
 type User struct {
-	UserID   string         `json:"user_id"`
-	Password string         `json:"password"`
-	IsAdmin  *bool          `json:"is_admin"`
-	ACLs     []acl.ACL      `json:"acls"`
-	Email    string         `json:"email"`
-	Ops      []op.Operation `json:"ops"`
-	Indices  []string       `json:"indices"`
+	UserID    string         `json:"user_id"`
+	Password  string         `json:"password"`
+	IsAdmin   *bool          `json:"is_admin"`
+	ACLs      []acl.ACL      `json:"acls"`
+	Email     string         `json:"email"`
+	Ops       []op.Operation `json:"ops"`
+	Indices   []string       `json:"indices"`
+	CreatedAt string         `json:"created_at"`
 }
 
 // Options is a function type used to define a user's properties.
@@ -94,12 +96,13 @@ func SetIndices(indices []string) Options {
 func New(userID, password string, opts ...Options) (*User, error) {
 	// create a default user
 	u := &User{
-		UserID:   userID,
-		Password: password,
-		IsAdmin:  &isAdminFalse, // pointer to bool
-		ACLs:     defaultACLs,
-		Ops:      defaultOps,
-		Indices:  []string{},
+		UserID:    userID,
+		Password:  password,
+		IsAdmin:   &isAdminFalse, // pointer to bool
+		ACLs:      defaultACLs,
+		Ops:       defaultOps,
+		Indices:   []string{},
+		CreatedAt: time.Now().Format(time.RFC3339),
 	}
 
 	// run the options on it
@@ -115,12 +118,13 @@ func New(userID, password string, opts ...Options) (*User, error) {
 // TODO: Remove
 func NewAdmin(userID, password string) *User {
 	return &User{
-		UserID:   userID,
-		Password: password,
-		IsAdmin:  &isAdminTrue,
-		ACLs:     defaultAdminACLs,
-		Ops:      defaultAdminOps,
-		Indices:  []string{"*"},
+		UserID:    userID,
+		Password:  password,
+		IsAdmin:   &isAdminTrue,
+		ACLs:      defaultAdminACLs,
+		Ops:       defaultAdminOps,
+		Indices:   []string{"*"},
+		CreatedAt: time.Now().Format(time.RFC3339),
 	}
 }
 

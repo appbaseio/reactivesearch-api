@@ -10,7 +10,6 @@ import (
 )
 
 const (
-	timeFormat          = "2006/01/02 15:04:05"
 	defaultResponseSize = 100
 )
 
@@ -24,7 +23,7 @@ func rangeQueryParams(values url.Values) (from, to string, size int) {
 
 	value := values.Get("from")
 	if value != "" {
-		_, err := time.Parse(timeFormat, value)
+		_, err := time.Parse(time.RFC3339, value)
 		if err != nil {
 			log.Printf(`%s: unsupported "from" value provided, defaulting to previous week: %v`,
 				logTag, err)
@@ -35,7 +34,7 @@ func rangeQueryParams(values url.Values) (from, to string, size int) {
 
 	value = values.Get("to")
 	if value != "" {
-		_, err := time.Parse(timeFormat, value)
+		_, err := time.Parse(time.RFC3339, value)
 		if err != nil {
 			log.Printf(`%s: unsupported "to" value provided, defaulting to current time: %v`,
 				logTag, err)
@@ -64,8 +63,8 @@ func rangeQueryParams(values url.Values) (from, to string, size int) {
 // previousWeekRange returns one week's duration starting from the current instant seven days ago.
 func previousWeekRange() (from, to string) {
 	now := time.Now()
-	from = now.AddDate(0, 0, -7).Format(timeFormat)
-	to = now.Format(timeFormat)
+	from = now.AddDate(0, 0, -7).Format(time.RFC3339)
+	to = now.Format(time.RFC3339)
 	return
 }
 
@@ -77,8 +76,8 @@ func parse(header string) []map[string]string {
 		values := strings.Split(token, "=")
 		if len(values) == 2 {
 			m = append(m, map[string]string{
-				"key":   values[0],
-				"value": values[1],
+				"key":   strings.TrimSpace(values[0]),
+				"value": strings.TrimSpace(values[1]),
 			})
 		}
 	}

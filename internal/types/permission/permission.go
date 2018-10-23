@@ -2,6 +2,7 @@ package permission
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"regexp"
 	"strings"
@@ -33,7 +34,7 @@ type Permission struct {
 	ACLs      []acl.ACL      `json:"acls"`
 	Ops       []op.Operation `json:"ops"`
 	Indices   []string       `json:"indices"`
-	CreatedAt time.Time      `json:"created_at"`
+	CreatedAt string         `json:"created_at"`
 	TTL       time.Duration  `json:"ttl"`
 	Limits    *Limits        `json:"limits"`
 }
@@ -119,7 +120,7 @@ func New(creator string, opts ...Options) (*Permission, error) {
 		ACLs:      defaultACLs,
 		Ops:       defaultOps,
 		Indices:   []string{},
-		CreatedAt: time.Now(),
+		CreatedAt: time.Now().Format(time.RFC3339),
 		TTL:       time.Duration(util.DaysInCurrentYear()) * 24 * time.Hour,
 		Limits:    &defaultLimits,
 	}
@@ -144,7 +145,7 @@ func NewAdmin(creator string) *Permission {
 		ACLs:      defaultAdminACLs,
 		Ops:       defaultAdminOps,
 		Indices:   []string{"*"},
-		CreatedAt: time.Now(),
+		CreatedAt: time.Now().Format(time.RFC3339),
 		TTL:       time.Duration(util.DaysInCurrentYear()) * 24 * time.Hour,
 		Limits:    &defaultAdminLimits,
 	}
@@ -164,8 +165,12 @@ func FromContext(ctx context.Context) (*Permission, error) {
 }
 
 // IsExpired checks whether the permission is expired or not.
-func (p *Permission) IsExpired() bool {
-	return time.Since(p.CreatedAt) > p.TTL
+func (p *Permission) IsExpired() (bool, error) {
+	createdAt, err := time.Parse(time.RFC3339, p.CreatedAt)
+	if err != nil {
+		return false, fmt.Errorf("invalid time format for field \"created_at\": %s", p.CreatedAt)
+	}
+	return time.Since(createdAt) > p.TTL, nil
 }
 
 // HasACL checks whether the permission has access to the given acl.
@@ -248,7 +253,7 @@ func (p *Permission) GetPatch() (map[string]interface{}, error) {
 	if p.Indices != nil {
 		patch["indices"] = p.Indices
 	}
-	if !p.CreatedAt.Equal(time.Time{}) {
+	if p.CreatedAt != "" {
 		return nil, errors.NewUnsupportedPatchError("permission", "created_at")
 	}
 	if p.TTL.String() != "0s" {

@@ -195,9 +195,10 @@ func (a *Analytics) recordResponse(docID, searchID string, w *httptest.ResponseR
 		record["search_query"] = r.Header.Get(XSearchQuery)
 		record["hits_in_response"] = hits
 		record["total_hits"] = esResponse.Hits.Total
-		record["datestamp"] = time.Now().Format("2006/01/02 15:04:05")
+		record["timestamp"] = time.Now().Format(time.RFC3339)
 
 		searchFilters := parse(r.Header.Get(XSearchFilters))
+		log.Printf("%v\n", searchFilters)
 		if len(searchFilters) > 0 {
 			record["search_filters"] = searchFilters
 		}

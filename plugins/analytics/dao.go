@@ -83,7 +83,7 @@ func (es *elasticsearch) updateRecord(docID string, record map[string]interface{
 }
 
 func (es *elasticsearch) deleteOldRecords() {
-	body := `{ "query": { "range": { "datestamp": { "lt": "now-30d" } } } }`
+	body := `{ "query": { "range": { "timestamp": { "lt": "now-30d" } } } }`
 	ticker := time.NewTicker(24 * time.Hour)
 	for range ticker.C {
 		_, err := es.client.
@@ -262,7 +262,7 @@ func (es *elasticsearch) popularSearches(from, to string, size int, clickAnalyti
 }
 
 func (es *elasticsearch) popularSearchesRaw(from, to string, size int, clickAnalytics bool, indices ...string) ([]byte, error) {
-	duration := elastic.NewRangeQuery("datestamp").
+	duration := elastic.NewRangeQuery("timestamp").
 		From(from).
 		To(to)
 
@@ -338,7 +338,7 @@ func (es *elasticsearch) noResultSearches(from, to string, size int, indices ...
 }
 
 func (es *elasticsearch) noResultSearchesRaw(from, to string, size int, indices ...string) ([]byte, error) {
-	duration := elastic.NewRangeQuery("datestamp").
+	duration := elastic.NewRangeQuery("timestamp").
 		From(from).
 		To(to)
 
@@ -409,7 +409,7 @@ func (es *elasticsearch) popularFilters(from, to string, size int, clickAnalytic
 }
 
 func (es *elasticsearch) popularFiltersRaw(from, to string, size int, clickAnalytics bool, indices ...string) ([]byte, error) {
-	duration := elastic.NewRangeQuery("datestamp").
+	duration := elastic.NewRangeQuery("timestamp").
 		From(from).
 		To(to)
 
@@ -500,7 +500,7 @@ func (es *elasticsearch) popularResults(from, to string, size int, clickAnalytic
 }
 
 func (es *elasticsearch) popularResultsRaw(from, to string, size int, clickAnalytics bool, indices ...string) ([]byte, error) {
-	duration := elastic.NewRangeQuery("datestamp").
+	duration := elastic.NewRangeQuery("timestamp").
 		From(from).
 		To(to)
 
@@ -575,7 +575,7 @@ func (es *elasticsearch) popularResultsRaw(from, to string, size int, clickAnaly
 }
 
 func (es *elasticsearch) geoRequestsDistribution(from, to string, size int, indices ...string) ([]byte, error) {
-	duration := elastic.NewRangeQuery("datestamp").
+	duration := elastic.NewRangeQuery("timestamp").
 		From(from).
 		To(to)
 
@@ -634,7 +634,7 @@ func (es *elasticsearch) geoRequestsDistribution(from, to string, size int, indi
 }
 
 func (es *elasticsearch) latencies(from, to string, size int, indices ...string) ([]byte, error) {
-	duration := elastic.NewRangeQuery("datestamp").
+	duration := elastic.NewRangeQuery("timestamp").
 		From(from).
 		To(to)
 
@@ -774,17 +774,19 @@ func (es *elasticsearch) summary(from, to string, indices ...string) ([]byte, er
 		avgConversionRate = totalConversions / totalSearches * 100
 	}
 
-	summary := map[string]float64{
-		"total_searches":      util.WithPrecision(totalSearches, 2),
-		"avg_click_rate":      util.WithPrecision(avgClickRate, 2),
-		"avg_conversion_rate": util.WithPrecision(avgConversionRate, 2),
+	summary := map[string]map[string]float64{
+		"summary": map[string]float64{
+			"total_searches":      util.WithPrecision(totalSearches, 2),
+			"avg_click_rate":      util.WithPrecision(avgClickRate, 2),
+			"avg_conversion_rate": util.WithPrecision(avgConversionRate, 2),
+		},
 	}
 
 	return json.Marshal(summary)
 }
 
 func (es *elasticsearch) totalSearches(from, to string, indices ...string) (float64, error) {
-	duration := elastic.NewRangeQuery("datestamp").
+	duration := elastic.NewRangeQuery("timestamp").
 		From(from).
 		To(to)
 
@@ -818,7 +820,7 @@ func (es *elasticsearch) totalSearches(from, to string, indices ...string) (floa
 }
 
 func (es *elasticsearch) totalConversions(from, to string, indices ...string) (float64, error) {
-	duration := elastic.NewRangeQuery("datestamp").
+	duration := elastic.NewRangeQuery("timestamp").
 		From(from).
 		To(to)
 
@@ -846,7 +848,7 @@ func (es *elasticsearch) totalConversions(from, to string, indices ...string) (f
 }
 
 func (es *elasticsearch) totalClicks(from, to string, indices ...string) (float64, error) {
-	duration := elastic.NewRangeQuery("datestamp").
+	duration := elastic.NewRangeQuery("timestamp").
 		From(from).
 		To(to)
 
@@ -891,7 +893,7 @@ func (es *elasticsearch) searchHistogram(from, to string, size int, indices ...s
 }
 
 func (es *elasticsearch) searchHistogramRaw(from, to string, size int, indices ...string) ([]byte, error) {
-	duration := elastic.NewRangeQuery("datestamp").
+	duration := elastic.NewRangeQuery("timestamp").
 		From(from).
 		To(to)
 
@@ -908,7 +910,7 @@ func (es *elasticsearch) searchHistogramRaw(from, to string, size int, indices .
 
 	aggr := elastic.NewDateHistogramAggregation().
 		Interval("day").
-		Field("datestamp")
+		Field("timestamp")
 
 	result, err := es.client.Search(es.indexName).
 		Query(query).
