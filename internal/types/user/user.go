@@ -14,7 +14,10 @@ import (
 type contextKey string
 
 const (
-	// CtxKey is a key against which a user is stored in a context.
+	// Identifier is a value stored against request.Maker key in the context.
+	Identifier = contextKey("user_identifier")
+
+	// CtxKey is a key against which a user is stored in the context.
 	CtxKey = contextKey("user")
 
 	// IndexMapping for the index that houses the user data.
