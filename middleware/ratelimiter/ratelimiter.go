@@ -2,6 +2,7 @@ package ratelimiter
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"net/http"
 	"sync"
@@ -26,19 +27,22 @@ const (
 )
 
 var (
-	instance *ratelimiter
+	instance *Ratelimiter
 	once     sync.Once
 )
 
-type ratelimiter struct {
+// Ratelimiter limits the number of requests made by a permission per acls
+// as well as per IP. Creating direct instances of RateLimiter should be avoided.
+// ratelimiter.Instance returns the singleton instance of the Ratelimiter.
+type Ratelimiter struct {
 	sync.Mutex
 	limiters map[string]*limiter.Limiter
 }
 
-// Instance returns the singleton instance of ratelimiter
-func Instance() *ratelimiter {
+// Instance returns the singleton instance of ratelimiter.
+func Instance() *Ratelimiter {
 	once.Do(func() {
-		instance = &ratelimiter{
+		instance = &Ratelimiter{
 			limiters: make(map[string]*limiter.Limiter),
 		}
 	})
@@ -46,44 +50,42 @@ func Instance() *ratelimiter {
 }
 
 // RateLimit middleware limits the requests made to elasticsearch for each permission.
-func (rl *ratelimiter) RateLimit(h http.HandlerFunc) http.HandlerFunc {
+func (rl *Ratelimiter) RateLimit(h http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		ctx := r.Context()
 		remoteIP := iplookup.FromRequest(r)
 
-		ctxPermission := r.Context().Value(permission.CtxKey)
-		if ctxPermission == nil {
-			log.Printf("%s: unable to fetch permission from request context", logTag)
-			return
-		}
-		obj, ok := ctxPermission.(*permission.Permission)
-		if !ok {
-			log.Printf("%s: unable to cast context permission to *permission.Permission: %v",
-				logTag, ctxPermission)
+		errMsg := "An error occurred while validating rate limit"
+		reqPermission, err := permission.FromContext(ctx)
+		if err != nil {
+			log.Printf("%s: %v", logTag, err)
+			util.WriteBackError(w, errMsg, http.StatusInternalServerError)
 			return
 		}
 
-		ctxACL := r.Context().Value(acl.CtxKey)
-		if ctxACL == nil {
-			log.Printf("%s: unable to fetch acl from request context", logTag)
-			return
-		}
-		aclObj, ok := ctxACL.(*acl.ACL)
-		if !ok {
-			log.Printf("%s: unable to cast context acl to *acl.ACL: %v", logTag, ctxACL)
+		reqACL, err := acl.FromContext(ctx)
+		if err != nil {
+			log.Printf("%s: %v", logTag, err)
+			util.WriteBackError(w, errMsg, http.StatusInternalServerError)
 			return
 		}
 
 		// limit on ACLs per second
-		aclLimit := obj.GetLimitFor(*aclObj)
-		key := obj.Username + aclObj.String()
+		aclLimit, err := reqPermission.GetLimitFor(*reqACL)
+		if err != nil {
+			util.WriteBackError(w, err.Error(), http.StatusUnauthorized)
+			return
+		}
+
+		key := fmt.Sprintf("%s:%s", reqPermission.Username, *reqACL)
 		if rl.limitExceededByACL(key, aclLimit) {
 			util.WriteBackMessage(w, "Rate limit exceeded", http.StatusTooManyRequests)
 			return
 		}
 
 		// limit on IP per hour
-		ipLimit := obj.Limits.IPLimit
-		key = obj.Username + remoteIP
+		ipLimit := reqPermission.GetIPLimit()
+		key = fmt.Sprintf("%s:%s", reqPermission.Username, remoteIP)
 		if rl.limitExceededByIP(key, ipLimit) {
 			util.WriteBackMessage(w, "Rate limit exceeded", http.StatusTooManyRequests)
 			return
@@ -93,7 +95,7 @@ func (rl *ratelimiter) RateLimit(h http.HandlerFunc) http.HandlerFunc {
 	}
 }
 
-func (rl *ratelimiter) limitExceededByACL(key string, aclLimit int64) bool {
+func (rl *Ratelimiter) limitExceededByACL(key string, aclLimit int64) bool {
 	period := 1 * time.Second
 	rem, _ := rl.peekLimit(key, aclLimit, period)
 	if rem <= 0 {
@@ -103,7 +105,7 @@ func (rl *ratelimiter) limitExceededByACL(key string, aclLimit int64) bool {
 	return false
 }
 
-func (rl *ratelimiter) limitExceededByIP(key string, ipLimit int64) bool {
+func (rl *Ratelimiter) limitExceededByIP(key string, ipLimit int64) bool {
 	period := 1 * time.Hour
 	rem, _ := rl.peekLimit(key, ipLimit, period)
 	if rem <= 0 {
@@ -113,7 +115,7 @@ func (rl *ratelimiter) limitExceededByIP(key string, ipLimit int64) bool {
 	return false
 }
 
-func (rl *ratelimiter) peekLimit(key string, limit int64, period time.Duration) (int64, bool) {
+func (rl *Ratelimiter) peekLimit(key string, limit int64, period time.Duration) (int64, bool) {
 	l := rl.getLimiter(key, limit, period)
 	if c, err := l.Peek(context.Background(), key); err == nil {
 		return c.Remaining, c.Reached
@@ -122,7 +124,7 @@ func (rl *ratelimiter) peekLimit(key string, limit int64, period time.Duration) 
 	return -1, false
 }
 
-func (rl *ratelimiter) limit(key string, limit int64, period time.Duration) (int64, bool) {
+func (rl *Ratelimiter) limit(key string, limit int64, period time.Duration) (int64, bool) {
 	l := rl.getLimiter(key, limit, period)
 	if c, err := l.Get(context.Background(), key); err == nil {
 		return c.Remaining, c.Reached
@@ -131,7 +133,7 @@ func (rl *ratelimiter) limit(key string, limit int64, period time.Duration) (int
 	return -1, false
 }
 
-func (rl *ratelimiter) getLimiter(key string, limit int64, period time.Duration) *limiter.Limiter {
+func (rl *Ratelimiter) getLimiter(key string, limit int64, period time.Duration) *limiter.Limiter {
 	rl.Lock()
 	defer rl.Unlock()
 	l, exists := rl.limiters[key]
@@ -147,7 +149,7 @@ func (rl *ratelimiter) getLimiter(key string, limit int64, period time.Duration)
 // A new instance for the given key is stored in the map each time this method is invoked.
 // The access must be mediated by some kind of synchronization mechanism to prevent concurrent
 // read/write operations to the map and vars.
-func (rl *ratelimiter) newLimiter(key string, limit int64, period time.Duration) *limiter.Limiter {
+func (rl *Ratelimiter) newLimiter(key string, limit int64, period time.Duration) *limiter.Limiter {
 	store := memory.NewStore()
 	rate := limiter.Rate{
 		Limit:  limit,
@@ -158,7 +160,7 @@ func (rl *ratelimiter) newLimiter(key string, limit int64, period time.Duration)
 	return instance
 }
 
-func (rl *ratelimiter) newLimiterWithRedis(key string, limit int64, period time.Duration) *limiter.Limiter {
+func (rl *Ratelimiter) newLimiterWithRedis(key string, limit int64, period time.Duration) *limiter.Limiter {
 	option := &goredis.Options{
 		Addr:     redisAddr,
 		Password: redisPassword,

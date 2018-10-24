@@ -15,17 +15,10 @@ import (
 func (u *users) getUser() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
+		username, _, _ := r.BasicAuth()
 
 		// check the request context
-		ctxUser := ctx.Value(user.CtxKey)
-		if ctxUser != nil {
-			reqUser, ok := ctxUser.(*user.User)
-			if !ok {
-				msg := fmt.Sprintf("Cannot cast context user to *user.User")
-				log.Printf("%s: %s\n", logTag, msg)
-				util.WriteBackError(w, msg, http.StatusInternalServerError)
-				return
-			}
+		if reqUser, err := user.FromContext(ctx); err == nil {
 			rawUser, err := json.Marshal(*reqUser)
 			if err != nil {
 				msg := "Error parsing the context user object"
@@ -37,37 +30,31 @@ func (u *users) getUser() http.HandlerFunc {
 			return
 		}
 
-		// redundant check, should be verified in authenticator
-		userID, _, ok := r.BasicAuth()
-		if !ok {
-			util.WriteBackError(w, "Credentials not provided", http.StatusUnauthorized)
-			return
-		}
-
 		// fetch the user from elasticsearch
-		rawUser, err := u.es.getRawUser(userID)
+		rawUser, err := u.es.getRawUser(username)
 		if err != nil {
-			msg := fmt.Sprintf(`User with "user_id"="%s" Not Found`, userID)
+			msg := fmt.Sprintf(`User with "username"="%s" Not Found`, username)
 			log.Printf("%s: %s: %v\n", logTag, msg, err)
 			util.WriteBackError(w, msg, http.StatusNotFound)
 			return
 		}
 		util.WriteBackRaw(w, rawUser, http.StatusOK)
+		return
 	}
 }
 
-func (u *users) getUserWithID() http.HandlerFunc {
+func (u *users) getUserWithUsername() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		vars := mux.Vars(r)
-		userID, ok := vars["user_id"]
+		username, ok := vars["username"]
 		if !ok {
-			util.WriteBackError(w, `Can't get a user without a "user_id"`, http.StatusBadRequest)
+			util.WriteBackError(w, `Can't get a user without a "username"`, http.StatusBadRequest)
 			return
 		}
 
-		rawUser, err := u.es.getRawUser(userID)
+		rawUser, err := u.es.getRawUser(username)
 		if err != nil {
-			msg := fmt.Sprintf(`User with "user_id"="%s" Not Found`, userID)
+			msg := fmt.Sprintf(`User with "username"="%s" Not Found`, username)
 			log.Printf("%s: %s: %v\n", logTag, msg, err)
 			util.WriteBackError(w, msg, http.StatusNotFound)
 			return
@@ -99,7 +86,7 @@ func (u *users) postUser() http.HandlerFunc {
 			user.SetEmail(userBody.Email),
 		}
 		if userBody.IsAdmin != nil {
-			opts = append(opts, user.SetIsAdmin(userBody.IsAdmin))
+			opts = append(opts, user.SetIsAdmin(*userBody.IsAdmin))
 		}
 		if userBody.ACLs != nil {
 			opts = append(opts, user.SetACLs(userBody.ACLs))
@@ -110,15 +97,15 @@ func (u *users) postUser() http.HandlerFunc {
 		if userBody.Indices != nil {
 			opts = append(opts, user.SetIndices(userBody.Indices))
 		}
-		if userBody.UserID == "" {
-			util.WriteBackError(w, `Can't create a user without a "user_id"`, http.StatusBadRequest)
+		if userBody.Username == "" {
+			util.WriteBackError(w, `Can't create a user without a "username"`, http.StatusBadRequest)
 			return
 		}
 		if userBody.Password == "" {
-			util.WriteBackError(w, `Can't create a user without a "password"`, http.StatusBadRequest)
+			util.WriteBackError(w, `User "password" shouldn't be empty`, http.StatusBadRequest)
 			return
 		}
-		newUser, err := user.New(userBody.UserID, userBody.Password, opts...)
+		newUser, err := user.New(userBody.Username, userBody.Password, opts...)
 		if err != nil {
 			msg := fmt.Sprintf("Error constructing user object: %v", err)
 			log.Printf("%s: %s: %v\n", logTag, msg, err)
@@ -128,32 +115,27 @@ func (u *users) postUser() http.HandlerFunc {
 
 		rawUser, err := json.Marshal(*newUser)
 		if err != nil {
-			msg := fmt.Sprintf(`An error occurred while creating a user with "user_id"="%s"`, userBody.UserID)
+			msg := fmt.Sprintf(`An error occurred while creating a user with "username"="%s"`, userBody.Username)
 			log.Printf("%s: %s: %v\n", logTag, msg, err)
 			util.WriteBackError(w, msg, http.StatusInternalServerError)
 			return
 		}
 
-		// TODO: check if user already exists
 		ok, err := u.es.postUser(*newUser)
 		if ok && err == nil {
 			util.WriteBackRaw(w, rawUser, http.StatusCreated)
 			return
 		}
 
-		msg := fmt.Sprintf(`An error occurred while creating a user with "user_id"="%s"`, userBody.UserID)
-		log.Printf("%s: %s: %v\n", logTag, msg, err)
+		msg := fmt.Sprintf(`An error occurred while creating a user with "username"="%s": %v`, userBody.Username, err)
+		log.Printf("%s: %s\n", logTag, msg)
 		util.WriteBackError(w, msg, http.StatusInternalServerError)
 	}
 }
 
 func (u *users) patchUser() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		userID, _, ok := r.BasicAuth()
-		if !ok {
-			util.WriteBackError(w, "Credentials not provided", http.StatusUnauthorized)
-			return
-		}
+		username, _, _ := r.BasicAuth()
 
 		body, err := ioutil.ReadAll(r.Body)
 		if err != nil {
@@ -179,24 +161,24 @@ func (u *users) patchUser() http.HandlerFunc {
 			return
 		}
 
-		raw, err := u.es.patchUser(userID, patch)
+		raw, err := u.es.patchUser(username, patch)
 		if err == nil {
 			util.WriteBackRaw(w, raw, http.StatusOK)
 			return
 		}
 
-		msg := fmt.Sprintf(`User with "user_id"="%s" Not Found`, userID)
+		msg := fmt.Sprintf(`User with "username"="%s" Not Found`, username)
 		log.Printf("%s: %s: %v\n", logTag, msg, err)
 		util.WriteBackError(w, msg, http.StatusNotFound)
 	}
 }
 
-func (u *users) patchUserWithID() http.HandlerFunc {
+func (u *users) patchUserWithUsername() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		vars := mux.Vars(r)
-		userID, ok := vars["user_id"]
+		username, ok := vars["username"]
 		if !ok {
-			util.WriteBackError(w, `Can't patch user without a "user_id"`, http.StatusBadRequest)
+			util.WriteBackError(w, `Can't patch user without a "username"`, http.StatusBadRequest)
 			return
 		}
 
@@ -224,13 +206,13 @@ func (u *users) patchUserWithID() http.HandlerFunc {
 			return
 		}
 
-		raw, err := u.es.patchUser(userID, patch)
+		raw, err := u.es.patchUser(username, patch)
 		if err == nil {
 			util.WriteBackRaw(w, raw, http.StatusOK)
 			return
 		}
 
-		msg := fmt.Sprintf(`User with "user_id"="%s" Not Found`, userID)
+		msg := fmt.Sprintf(`User with "username"="%s" Not Found`, username)
 		log.Printf("%s: %s: %v\n", logTag, msg, err)
 		util.WriteBackError(w, msg, http.StatusNotFound)
 	}
@@ -238,43 +220,38 @@ func (u *users) patchUserWithID() http.HandlerFunc {
 
 func (u *users) deleteUser() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		// redundant check, should be verified in authenticator
-		userID, _, ok := r.BasicAuth()
-		if !ok {
-			util.WriteBackError(w, "Credentials not provided", http.StatusUnauthorized)
-			return
-		}
+		username, _, _ := r.BasicAuth()
 
-		ok, err := u.es.deleteUser(userID)
+		ok, err := u.es.deleteUser(username)
 		if ok && err == nil {
-			msg := fmt.Sprintf(`User with "user_id"="%s" deleted`, userID)
+			msg := fmt.Sprintf(`User with "username"="%s" deleted`, username)
 			util.WriteBackMessage(w, msg, http.StatusOK)
 			return
 		}
 
-		msg := fmt.Sprintf(`User with "user_id"="%s" Not Found`, userID)
+		msg := fmt.Sprintf(`User with "username"="%s" Not Found`, username)
 		log.Printf("%s: %s: %v\n", logTag, msg, err)
 		util.WriteBackError(w, msg, http.StatusNotFound)
 	}
 }
 
-func (u *users) deleteUserWithID() http.HandlerFunc {
+func (u *users) deleteUserWithUsername() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		vars := mux.Vars(r)
-		userID, ok := vars["user_id"]
+		username, ok := vars["username"]
 		if !ok {
-			util.WriteBackError(w, `Can't delete a user without a "user_id"`, http.StatusBadRequest)
+			util.WriteBackError(w, `Can't delete a user without a "username"`, http.StatusBadRequest)
 			return
 		}
 
-		ok, err := u.es.deleteUser(userID)
+		ok, err := u.es.deleteUser(username)
 		if ok && err == nil {
-			msg := fmt.Sprintf(`User with "user_id"="%s" deleted`, userID)
+			msg := fmt.Sprintf(`User with "username"="%s" deleted`, username)
 			util.WriteBackMessage(w, msg, http.StatusOK)
 			return
 		}
 
-		msg := fmt.Sprintf(`User with "user_id"="%s" Not Found`, userID)
+		msg := fmt.Sprintf(`User with "username"="%s" Not Found`, username)
 		log.Printf("%s: %s: %v\n", logTag, msg, err)
 		util.WriteBackError(w, msg, http.StatusNotFound)
 	}

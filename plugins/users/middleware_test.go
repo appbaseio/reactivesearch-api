@@ -106,8 +106,6 @@ func TestClassifier(t *testing.T) {
 }
 
 func TestIsAdmin(t *testing.T) {
-	var adminTrue, adminFalse = true, false
-
 	tests := []struct {
 		description  string
 		opts         user.Options
@@ -115,12 +113,12 @@ func TestIsAdmin(t *testing.T) {
 	}{
 		{
 			description:  "user is an admin",
-			opts:         user.SetIsAdmin(&adminTrue),
+			opts:         user.SetIsAdmin(true),
 			expectedCode: http.StatusOK,
 		},
 		{
 			description:  "user is not an admin",
-			opts:         user.SetIsAdmin(&adminFalse),
+			opts:         user.SetIsAdmin(false),
 			expectedCode: http.StatusUnauthorized,
 		},
 		{

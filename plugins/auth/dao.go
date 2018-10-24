@@ -40,7 +40,7 @@ func (es *elasticsearch) putUser(u user.User) (bool, error) {
 	_, err := es.client.Index().
 		Index(es.userIndex).
 		Type(es.userType).
-		Id(u.UserID).
+		Id(u.Username).
 		BodyJson(u).
 		Do(context.Background())
 	if err != nil {

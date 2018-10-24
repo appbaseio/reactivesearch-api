@@ -9,17 +9,9 @@ var (
 	defaultACLs = []acl.ACL{
 		acl.Docs,
 		acl.Search,
-		acl.Indices,
-		acl.Cat,
-		acl.Clusters,
-		acl.Misc,
-		acl.User,
-		acl.Permission,
-		acl.Analytics,
-		acl.Streams,
 	}
 
-	defaultAdminACLs = []acl.ACL{
+	adminACLs = []acl.ACL{
 		acl.Docs,
 		acl.Search,
 		acl.Indices,
@@ -36,12 +28,13 @@ var (
 		op.Read,
 	}
 
-	defaultAdminOps = []op.Operation{
+	adminOps = []op.Operation{
 		op.Read,
 		op.Write,
 		op.Delete,
 	}
 
-	isAdminTrue = true
+	// NOTE: we are storing the address of the isAdmin variable in the user
+	isAdminTrue  = true
 	isAdminFalse = false
 )

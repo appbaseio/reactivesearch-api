@@ -17,11 +17,11 @@ func (u *users) routes() []plugin.Route {
 			Description: "Returns the user",
 		},
 		{
-			Name:        "Get user with {user_id}",
+			Name:        "Get user with {username}",
 			Methods:     []string{http.MethodGet},
-			Path:        "/_user/{user_id}",
-			HandlerFunc: middleware(isAdmin(u.getUserWithID())),
-			Description: "Returns the user with {user_id}",
+			Path:        "/_user/{username}",
+			HandlerFunc: middleware(isAdmin(u.getUserWithUsername())),
+			Description: "Returns the user with {username}",
 		},
 		{
 			Name:        "Post user",
@@ -38,11 +38,11 @@ func (u *users) routes() []plugin.Route {
 			Description: "Modifies the user",
 		},
 		{
-			Name:        "Patch user with {user_id}",
+			Name:        "Patch user with {username}",
 			Methods:     []string{http.MethodPatch},
-			Path:        "/_user/{user_id}",
-			HandlerFunc: middleware(isAdmin(u.patchUserWithID())),
-			Description: "Modifies the user with {user_id}",
+			Path:        "/_user/{username}",
+			HandlerFunc: middleware(isAdmin(u.patchUserWithUsername())),
+			Description: "Modifies the user with {username}",
 		},
 		{
 			Name:        "Delete user",
@@ -52,11 +52,11 @@ func (u *users) routes() []plugin.Route {
 			Description: "Deletes the user",
 		},
 		{
-			Name:        "Delete user with {user_id}",
+			Name:        "Delete user with {username}",
 			Methods:     []string{http.MethodDelete},
-			Path:        "/_user/{user_id}",
-			HandlerFunc: middleware(isAdmin(u.deleteUserWithID())),
-			Description: "Deletes the user with {user_id}",
+			Path:        "/_user/{username}",
+			HandlerFunc: middleware(isAdmin(u.deleteUserWithUsername())),
+			Description: "Deletes the user with {username}",
 		},
 	}
 	return routes

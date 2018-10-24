@@ -305,7 +305,7 @@ func validateOp(h http.HandlerFunc) http.HandlerFunc {
 		}
 
 		if !reqUser.CanDo(*reqOp) {
-			msg := fmt.Sprintf(`User with "user_id"="%s" does not have "%s" op`, reqUser.UserID, *reqOp)
+			msg := fmt.Sprintf(`User with "username"="%s" does not have "%s" op`, reqUser.Username, *reqOp)
 			util.WriteBackError(w, msg, http.StatusUnauthorized)
 			return
 		}
@@ -327,7 +327,7 @@ func validateACL(h http.HandlerFunc) http.HandlerFunc {
 		}
 
 		if !reqUser.HasACL(acl.Analytics) {
-			msg := fmt.Sprintf(`User with "user_id"="%s" does not have "%s" acl`, reqUser.UserID, acl.Analytics)
+			msg := fmt.Sprintf(`User with "username"="%s" does not have "%s" acl`, reqUser.Username, acl.Analytics)
 			util.WriteBackError(w, msg, http.StatusUnauthorized)
 			return
 		}
