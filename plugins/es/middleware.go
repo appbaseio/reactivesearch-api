@@ -9,9 +9,11 @@ import (
 	"strings"
 
 	"github.com/appbaseio-confidential/arc/internal/types/acl"
+	"github.com/appbaseio-confidential/arc/internal/types/credential"
 	"github.com/appbaseio-confidential/arc/internal/types/index"
 	"github.com/appbaseio-confidential/arc/internal/types/op"
 	"github.com/appbaseio-confidential/arc/internal/types/permission"
+	"github.com/appbaseio-confidential/arc/internal/types/user"
 	"github.com/appbaseio-confidential/arc/internal/util"
 )
 
@@ -134,17 +136,37 @@ func validateACL(h http.HandlerFunc) http.HandlerFunc {
 			return
 		}
 
-		reqPermission, err := permission.FromContext(ctx)
+		reqCredential, err := credential.FromContext(r.Context())
 		if err != nil {
-			log.Printf("%s: %v", logTag, err)
+			log.Printf("%s: %v\n", logTag, err)
 			util.WriteBackError(w, errMsg, http.StatusInternalServerError)
 			return
 		}
+		if reqCredential == credential.User {
+			reqUser, err := user.FromContext(ctx)
+			if err != nil {
+				log.Printf("%s: %v\n", logTag, err)
+				util.WriteBackError(w, errMsg, http.StatusInternalServerError)
+				return
+			}
+			if !reqUser.HasACL(*reqACL) {
+				msg := fmt.Sprintf(`User with "username"="%s" does not have "%s" acl`, reqUser.Username, *reqACL)
+				util.WriteBackError(w, msg, http.StatusUnauthorized)
+				return
+			}
+		} else if reqCredential == credential.Permission {
+			reqPermission, err := permission.FromContext(ctx)
+			if err != nil {
+				log.Printf("%s: %v", logTag, err)
+				util.WriteBackError(w, errMsg, http.StatusInternalServerError)
+				return
+			}
 
-		if !reqPermission.HasACL(*reqACL) {
-			msg := fmt.Sprintf("permission with username=%s does not have '%s' acl", reqPermission.Username, *reqACL)
-			util.WriteBackMessage(w, msg, http.StatusUnauthorized)
-			return
+			if !reqPermission.HasACL(*reqACL) {
+				msg := fmt.Sprintf(`Permission with "username"="%s" does not have "%s" acl`, reqPermission.Username, *reqACL)
+				util.WriteBackMessage(w, msg, http.StatusUnauthorized)
+				return
+			}
 		}
 
 		h(w, r)
@@ -163,18 +185,38 @@ func validateOp(h http.HandlerFunc) http.HandlerFunc {
 			return
 		}
 
-		reqPermission, err := permission.FromContext(ctx)
+		reqCredential, err := credential.FromContext(ctx)
 		if err != nil {
-			log.Printf("%s: %v", logTag, err)
+			log.Printf("%s: %v\n", logTag, err)
 			util.WriteBackError(w, errMsg, http.StatusInternalServerError)
 			return
 		}
+		if reqCredential == credential.User {
+			reqUser, err := user.FromContext(ctx)
+			if err != nil {
+				log.Printf("%s: %v\n", logTag, err)
+				util.WriteBackError(w, errMsg, http.StatusInternalServerError)
+				return
+			}
+			if !reqUser.CanDo(*reqOp) {
+				msg := fmt.Sprintf(`User with "username"="%s" does not have "%s" op`, reqUser.Username, reqOp)
+				util.WriteBackError(w, msg, http.StatusUnauthorized)
+				return
+			}
+		} else if reqCredential == credential.Permission {
+			reqPermission, err := permission.FromContext(ctx)
+			if err != nil {
+				log.Printf("%s: %v", logTag, err)
+				util.WriteBackError(w, errMsg, http.StatusInternalServerError)
+				return
+			}
 
-		if !reqPermission.CanDo(*reqOp) {
-			msg := fmt.Sprintf("permission with username=%s does not have '%s' operation",
-				reqPermission.Username, reqOp)
-			util.WriteBackMessage(w, msg, http.StatusUnauthorized)
-			return
+			if !reqPermission.CanDo(*reqOp) {
+				msg := fmt.Sprintf(`Permission with "username"="%s" does not have "%s" operation`,
+					reqPermission.Username, reqOp)
+				util.WriteBackMessage(w, msg, http.StatusUnauthorized)
+				return
+			}
 		}
 
 		h(w, r)
@@ -186,49 +228,113 @@ func validateIndices(h http.HandlerFunc) http.HandlerFunc {
 		ctx := r.Context()
 
 		errMsg := "An error occurred while validating request indices"
-		reqPermission, err := permission.FromContext(ctx)
-		if err != nil {
-			log.Printf("%s: %v", logTag, err)
-			util.WriteBackError(w, errMsg, http.StatusInternalServerError)
-			return
-		}
-
 		ctxIndices := ctx.Value(index.CtxKey)
 		if ctxIndices == nil {
 			log.Printf("%s: unable to fetch indices from request context", logTag)
 			util.WriteBackMessage(w, "Internal server error", http.StatusInternalServerError)
 			return
 		}
-		indices := ctxIndices.([]string)
+		indices, ok := ctxIndices.([]string)
+		if !ok {
+			log.Printf("%s: unable to cast ctxIndices to []string\n", logTag)
+			util.WriteBackError(w, errMsg, http.StatusInternalServerError)
+			return
+		}
 
 		if len(indices) == 0 {
 			// cluster level route
-			canAccess, err := reqPermission.CanAccessIndex("*")
+			reqCredential, err := credential.FromContext(ctx)
 			if err != nil {
-				log.Printf("%s: %v", logTag, err)
-				util.WriteBackError(w, err.Error(), http.StatusBadRequest)
+				log.Printf("%s: %v\n", logTag, err)
+				util.WriteBackError(w, errMsg, http.StatusInternalServerError)
 				return
 			}
-			if !canAccess {
-				util.WriteBackError(w, "User is unauthorized to access cluster level routes", http.StatusUnauthorized)
-				return
+			if reqCredential == credential.User {
+				reqUser, err := user.FromContext(ctx)
+				if err != nil {
+					log.Printf("%s: %v\n", logTag, err)
+					util.WriteBackError(w, errMsg, http.StatusInternalServerError)
+					return
+				}
+				canAccess, err := reqUser.CanAccessIndex("*")
+				if err != nil {
+					log.Printf("%s: %v", logTag, err)
+					util.WriteBackError(w, err.Error(), http.StatusInternalServerError)
+					return
+				}
+				if !canAccess {
+					msg := fmt.Sprintf(`User with "username"="%s" is unauthorized to access cluster level routes`,
+						reqUser.Username)
+					util.WriteBackError(w, msg, http.StatusUnauthorized)
+					return
+				}
+			} else if reqCredential == credential.Permission {
+				reqPermission, err := permission.FromContext(ctx)
+				if err != nil {
+					log.Printf("%s: %v\n", logTag, err)
+					util.WriteBackError(w, errMsg, http.StatusInternalServerError)
+					return
+				}
+				canAccess, err := reqPermission.CanAccessIndex("*")
+				if err != nil {
+					log.Printf("%s: %v", logTag, err)
+					util.WriteBackError(w, err.Error(), http.StatusInternalServerError)
+					return
+				}
+				if !canAccess {
+					msg := fmt.Sprintf(`Permission with "username"="%s" is unauthorized to access cluster level routes`,
+						reqPermission.Username)
+					util.WriteBackError(w, msg, http.StatusUnauthorized)
+					return
+				}
 			}
 		} else {
 			// index level route
-			for _, indexName := range indices {
-				for _, pattern := range reqPermission.Indices {
-					pattern := strings.Replace(pattern, "*", ".*", -1)
-					ok, err := regexp.MatchString(pattern, indexName)
+			reqCredential, err := credential.FromContext(ctx)
+			if err != nil {
+				log.Printf("%s: %v", logTag, err)
+				util.WriteBackError(w, errMsg, http.StatusInternalServerError)
+				return
+			}
+			if reqCredential == credential.User {
+				reqUser, err := user.FromContext(ctx)
+				if err != nil {
+					log.Printf("%s: %v\n", logTag, err)
+					util.WriteBackError(w, errMsg, http.StatusInternalServerError)
+					return
+				}
+				for _, index := range indices {
+					canAccess, err := reqUser.CanAccessIndex(index)
 					if err != nil {
-						msg := fmt.Sprintf("invalid index pattern encountered %s", pattern)
-						log.Printf("%s: invalid index pattern encountered %s: %v",
-							logTag, pattern, err)
-						util.WriteBackMessage(w, msg, http.StatusUnauthorized)
+						log.Printf("%s: %v\n", logTag, err)
+						util.WriteBackError(w, err.Error(), http.StatusInternalServerError)
 						return
 					}
-					if !ok {
-						msg := fmt.Sprintf("User is unauthorized to access index %s", indexName)
-						util.WriteBackMessage(w, msg, http.StatusUnauthorized)
+					if !canAccess {
+						msg := fmt.Sprintf(`User with "username"="%s" is unauthprized to access index names "%s"`,
+							reqUser.Username, index)
+						util.WriteBackError(w, msg, http.StatusUnauthorized)
+						return
+					}
+				}
+			} else if reqCredential == credential.Permission {
+				reqPermission, err := permission.FromContext(ctx)
+				if err != nil {
+					log.Printf("%s: %v\n", logTag, err)
+					util.WriteBackError(w, errMsg, http.StatusInternalServerError)
+					return
+				}
+				for _, index := range indices {
+					canAccess, err := reqPermission.CanAccessIndex(index)
+					if err != nil {
+						log.Printf("%s: %v\n", logTag, err)
+						util.WriteBackError(w, err.Error(), http.StatusInternalServerError)
+						return
+					}
+					if !canAccess {
+						msg := fmt.Sprintf(`Permission with "username"="%s" is unauthorized to access index named "%s"`,
+							reqPermission.Username, index)
+						util.WriteBackError(w, msg, http.StatusUnauthorized)
 						return
 					}
 				}

@@ -18,8 +18,10 @@ import (
 type contextKey string
 
 const (
-	// Identifier is a value stored against request.Maker key in the context.
-	Identifier = contextKey("permission_identifier")
+	// Credential is a value stored against request.Maker key in the context.
+	// It basically acts as an identifier that tells whether the request uses
+	// permission credential.
+	Credential = contextKey("permission_credential")
 
 	// CtxKey is the key against which a permission is stored in a context.
 	CtxKey = contextKey("permission")
