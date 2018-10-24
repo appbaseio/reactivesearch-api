@@ -25,22 +25,11 @@ func (a *Auth) BasicAuth(h http.HandlerFunc) http.HandlerFunc {
 			return
 		}
 
-		obj, err := a.es.getCredential(username, password)
-		if err != nil {
-			log.Printf("%s: %v\n", logTag, err)
-			util.WriteBackError(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-		if obj == nil {
-			msg := fmt.Sprintf(`Credential with "username"="%s" Not Found`, username)
-			util.WriteBackError(w, msg, http.StatusNotFound)
-			return
-		}
-
 		var (
 			reqCredential credential.Credential
 			reqUser       *user.User
 			reqPermission *permission.Permission
+			err           error
 		)
 
 		// TODO: Temporary
@@ -59,6 +48,18 @@ func (a *Auth) BasicAuth(h http.HandlerFunc) http.HandlerFunc {
 			ctx = context.WithValue(ctx, user.CtxKey, reqUser)
 			r = r.WithContext(ctx)
 			h(w, r)
+			return
+		}
+
+		obj, err := a.es.getCredential(username, password)
+		if err != nil {
+			log.Printf("%s: %v\n", logTag, err)
+			util.WriteBackError(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		if obj == nil {
+			msg := fmt.Sprintf(`Credential with "username"="%s" Not Found`, username)
+			util.WriteBackError(w, msg, http.StatusNotFound)
 			return
 		}
 
