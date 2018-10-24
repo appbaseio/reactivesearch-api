@@ -55,6 +55,7 @@ func (a *Auth) BasicAuth(h http.HandlerFunc) http.HandlerFunc {
 		}
 		if reqUser != nil {
 			ctx := r.Context()
+			ctx = context.WithValue(ctx, credential.CtxKey, credential.User)
 			ctx = context.WithValue(ctx, user.CtxKey, reqUser)
 			r = r.WithContext(ctx)
 			h(w, r)
