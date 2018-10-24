@@ -8,6 +8,7 @@ import (
 	"net/http"
 
 	"github.com/appbaseio-confidential/arc/internal/types/permission"
+	"github.com/appbaseio-confidential/arc/internal/types/user"
 	"github.com/appbaseio-confidential/arc/internal/util"
 	"github.com/gorilla/mux"
 )
@@ -31,6 +32,12 @@ func (p *permissions) getPermission() http.HandlerFunc {
 func (p *permissions) postPermission() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		creator, _, _ := r.BasicAuth()
+		reqUser, err := user.FromContext(r.Context())
+		if err != nil {
+			log.Printf("%s: %v\n", logTag, err)
+			util.WriteBackError(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
 
 		body, err := ioutil.ReadAll(r.Body)
 		if err != nil {
@@ -65,7 +72,13 @@ func (p *permissions) postPermission() http.HandlerFunc {
 		if permissionBody.Indices != nil {
 			opts = append(opts, permission.SetIndices(permissionBody.Indices))
 		}
-		newPermission, err := permission.New(creator, opts...)
+
+		var newPermission *permission.Permission
+		if *reqUser.IsAdmin {
+			newPermission, err = permission.NewAdmin(creator, opts...)
+		} else {
+			newPermission, err = permission.New(creator, opts...)
+		}
 		if err != nil {
 			msg := fmt.Sprintf("Error constructing permission object: %v", err)
 			log.Printf("%s: %s: %v\n", logTag, msg, err)
