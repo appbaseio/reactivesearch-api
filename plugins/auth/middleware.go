@@ -8,6 +8,7 @@ import (
 	"os"
 
 	"github.com/appbaseio-confidential/arc/internal/types/acl"
+	"github.com/appbaseio-confidential/arc/internal/types/credential"
 	"github.com/appbaseio-confidential/arc/internal/types/permission"
 	"github.com/appbaseio-confidential/arc/internal/types/user"
 	"github.com/appbaseio-confidential/arc/internal/util"
@@ -17,73 +18,84 @@ import (
 // BasicAuth middleware that authenticates each requests against the basic auth credentials.
 func (a *Auth) BasicAuth(h http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		userID, password, ok := r.BasicAuth()
+		ctx := r.Context()
+		username, password, ok := r.BasicAuth()
 		if !ok {
-			util.WriteBackMessage(w, "Not logged in", http.StatusUnauthorized)
+			util.WriteBackError(w, "Not logged in", http.StatusUnauthorized)
 			return
 		}
 
-		ctxACL := r.Context().Value(acl.CtxKey)
-		if ctxACL == nil {
-			log.Printf("%s: request must be classified before it is authenticated", logTag)
-			util.WriteBackMessage(w, "Internal server error", http.StatusInternalServerError)
+		obj, err := a.es.getCredential(username, password)
+		if err != nil {
+			log.Printf("%s: %v\n", logTag, err)
+			util.WriteBackError(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-		reqACL, ok := ctxACL.(*acl.ACL)
-		if !ok {
-			log.Printf("%s: unable to cast context acl %v to type *acl.ACL", logTag, ctxACL)
-			util.WriteBackMessage(w, "Internal server error", http.StatusInternalServerError)
+		if obj == nil {
+			msg := fmt.Sprintf(`Credential with "username"="%s" Not Found`, username)
+			util.WriteBackError(w, msg, http.StatusNotFound)
+			return
+		}
+
+		var (
+			reqCredential credential.Credential
+			reqUser       *user.User
+			reqPermission *permission.Permission
+		)
+
+		reqPermission, ok = obj.(*permission.Permission)
+		if ok {
+			reqCredential = credential.Permission
+		} else {
+			reqUser, ok = obj.(*user.User)
+			if ok {
+				reqCredential = credential.User
+			} else {
+				msg := fmt.Sprintf(`Credential with "username"="%s" Not Found`, username)
+				log.Printf(`%s: cannot cast obj "%v" to either permission.Permission or user.User`, logTag, obj)
+				util.WriteBackError(w, msg, http.StatusNotFound)
+				return
+			}
+		}
+
+		reqACL, err := acl.FromContext(ctx)
+		if err != nil {
+			msg := "An error occurred while authenticating the request"
+			log.Printf("%s: %v", logTag, err)
+			util.WriteBackError(w, msg, http.StatusInternalServerError)
 			return
 		}
 
 		if reqACL.IsFromES() {
-			var err error
-			var reqPermission *permission.Permission
-
-			// check in the cache
-			reqPermission, ok = a.cachedPermission(userID)
-			if !ok {
-				reqPermission, err = a.es.getPermission(userID)
-				if err != nil {
-					msg := fmt.Sprintf(`Unable to fetch permission with "username"="%s"`, userID)
-					log.Printf("%s: %s: %v", logTag, msg, err)
-					util.WriteBackError(w, msg, http.StatusInternalServerError)
+			if reqCredential == credential.User {
+				if !(*reqUser.IsAdmin) {
+					msg := fmt.Sprintf(`User with "username"="%s" is not an admin`, username)
+					util.WriteBackError(w, msg, http.StatusUnauthorized)
 					return
 				}
-				// store in the cache
-				a.cachePermission(userID, reqPermission)
-			}
-
-			if password != reqPermission.Password {
-				util.WriteBackMessage(w, "Incorrect credentials", http.StatusUnauthorized)
-				return
-			}
-
-			ctx := r.Context()
-			ctx = context.WithValue(ctx, permission.CtxKey, reqPermission)
-			r = r.WithContext(ctx)
-		} else {
-			var err error
-			var reqUser *user.User
-
-			// if we are patching a user or a permission, we must clear their
-			// respective objects from the cache, otherwise the changes won't be
-			// reflected the next time user tries to get the user or permission object.
-			if r.Method == http.MethodPatch || r.Method == http.MethodDelete {
-				switch *reqACL {
-				case acl.User:
-					a.removeUserFromCache(userID)
-				case acl.Permission:
-					username := mux.Vars(r)["username"]
-					a.removePermissionFromCache(username)
+				if password != reqUser.Password {
+					util.WriteBackError(w, "Incorrect credentials", http.StatusUnauthorized)
+					return
 				}
+				ctx := r.Context()
+				ctx = context.WithValue(ctx, credential.CtxKey, reqCredential)
+				ctx = context.WithValue(ctx, user.CtxKey, reqUser)
+				r = r.WithContext(ctx)
+			} else {
+				if password != reqPermission.Password {
+					util.WriteBackMessage(w, "Incorrect credentials", http.StatusUnauthorized)
+					return
+				}
+				ctx := r.Context()
+				ctx = context.WithValue(ctx, credential.CtxKey, reqCredential)
+				ctx = context.WithValue(ctx, permission.CtxKey, reqPermission)
+				r = r.WithContext(ctx)
 			}
-
-			// master user
-			reqUser, err = a.isMaster(userID, password)
+		} else {
+			reqUser, err = a.isMaster(username, password)
 			if err != nil {
 				log.Printf("%s: %v", logTag, err)
-				util.WriteBackMessage(w, "Internal server error", http.StatusInternalServerError)
+				util.WriteBackMessage(w, "Unable create a master user", http.StatusInternalServerError)
 				return
 			}
 			if reqUser != nil {
@@ -94,18 +106,31 @@ func (a *Auth) BasicAuth(h http.HandlerFunc) http.HandlerFunc {
 				return
 			}
 
+			// if we are patching a user or a permission, we must clear their
+			// respective objects from the cache, otherwise the changes won't be
+			// reflected the next time user tries to get the user or permission object.
+			if r.Method == http.MethodPatch || r.Method == http.MethodDelete {
+				switch *reqACL {
+				case acl.User:
+					a.removeUserFromCache(username)
+				case acl.Permission:
+					username := mux.Vars(r)["username"]
+					a.removePermissionFromCache(username)
+				}
+			}
+
 			// check in the cache
-			reqUser, ok = a.cachedUser(userID)
+			reqUser, ok = a.cachedUser(username)
 			if !ok {
-				reqUser, err = a.es.getUser(userID)
+				reqUser, err = a.es.getUser(username)
 				if err != nil {
-					msg := fmt.Sprintf(`User with "user_id"="%s" Not Found`, userID)
+					msg := fmt.Sprintf(`User with "user_id"="%s" Not Found`, username)
 					log.Printf("%s: %s: %v", logTag, msg, err)
 					util.WriteBackError(w, msg, http.StatusNotFound)
 					return
 				}
 				// store in the cache
-				a.cacheUser(userID, reqUser)
+				a.cacheUser(username, reqUser)
 			}
 
 			if password != reqUser.Password {
@@ -196,13 +221,13 @@ func (a *Auth) createAdminPermission(creator string) (*permission.Permission, er
 	return p, nil
 }
 
-func (a *Auth) isMaster(userID, password string) (*user.User, error) {
-	masterUser, masterPassword := os.Getenv("USER_ID"), os.Getenv("PASSWORD")
-	if masterUser != userID && masterPassword != password {
+func (a *Auth) isMaster(username, password string) (*user.User, error) {
+	masterUser, masterPassword := os.Getenv("USERNAME"), os.Getenv("PASSWORD")
+	if masterUser != username && masterPassword != password {
 		return nil, nil
 	}
 
-	master, err := a.es.getUser(userID)
+	master, err := a.es.getUser(username)
 	if err != nil {
 		log.Printf("%s: master user doesn't exists, creating one... : %v", logTag, err)
 		master, err = user.NewAdmin(masterUser, masterPassword)

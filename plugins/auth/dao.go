@@ -36,6 +36,47 @@ func newClient(url, userIndex, permissionIndex string) (*elasticsearch, error) {
 	return es, nil
 }
 
+func (es *elasticsearch) getCredential(username, password string) (interface{}, error) {
+	matchUsername := elastic.NewTermQuery("username.keyword", username)
+	matchPassword := elastic.NewTermQuery("password.keyword", password)
+	query := elastic.NewBoolQuery().
+		Must(matchUsername, matchPassword)
+	response, err := es.client.Search().
+		Index(es.userIndex, es.permissionIndex).
+		Query(query).
+		FetchSource(true).
+		Do(context.Background())
+	if err != nil {
+		return nil, err
+	}
+
+	if len(response.Hits.Hits) > 1 {
+		return nil, fmt.Errorf(`more than one results for "username"="%s" and "password"="%s"`, username, password)
+	}
+
+	// there should be either 0 or 1 hit
+	var obj interface{}
+	for _, hit := range response.Hits.Hits {
+		if hit.Index == es.userIndex {
+			var u user.User
+			err := json.Unmarshal(*hit.Source, &u)
+			if err != nil {
+				return nil, err
+			}
+			obj = &u
+		} else if hit.Index == es.permissionIndex {
+			var p permission.Permission
+			err := json.Unmarshal(*hit.Source, &p)
+			if err != nil {
+				return nil, err
+			}
+			obj = &p
+		}
+	}
+
+	return obj, nil
+}
+
 func (es *elasticsearch) putUser(u user.User) (bool, error) {
 	_, err := es.client.Index().
 		Index(es.userIndex).
@@ -50,8 +91,8 @@ func (es *elasticsearch) putUser(u user.User) (bool, error) {
 	return true, nil
 }
 
-func (es *elasticsearch) getUser(userID string) (*user.User, error) {
-	data, err := es.getRawUser(userID)
+func (es *elasticsearch) getUser(username string) (*user.User, error) {
+	data, err := es.getRawUser(username)
 	if err != nil {
 		return nil, err
 	}
@@ -63,11 +104,11 @@ func (es *elasticsearch) getUser(userID string) (*user.User, error) {
 	return &u, nil
 }
 
-func (es *elasticsearch) getRawUser(userID string) ([]byte, error) {
+func (es *elasticsearch) getRawUser(username string) ([]byte, error) {
 	data, err := es.client.Get().
 		Index(es.userIndex).
 		Type(es.userType).
-		Id(userID).
+		Id(username).
 		FetchSource(true).
 		Do(context.Background())
 	if err != nil {

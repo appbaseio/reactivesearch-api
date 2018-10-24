@@ -4,7 +4,7 @@ Plugins might require certain environment variables to be in order initialize th
 needs for its functioning. Those variables can be declared in any file. The path to that file
 must be provided via the `--env` flag.
 
-**Note:** `ES_CLUSTER_URL` is by all the plugins that are interacting with elasticsearch. `USER_ID` and
+**Note:** `ES_CLUSTER_URL` is by all the plugins that are interacting with elasticsearch. `USERNAME` and
  `PASSWORD` are temporary entry point master credentials in order to test the plugins. 
 
 List of specific env vars required by respective plugins are listed below:
