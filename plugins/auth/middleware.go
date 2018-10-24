@@ -43,6 +43,24 @@ func (a *Auth) BasicAuth(h http.HandlerFunc) http.HandlerFunc {
 			reqPermission *permission.Permission
 		)
 
+		// TODO: Temporary
+		// if the provided credentials are from .env file
+		// we simply ignore the rest of the checks and serve
+		// the request.
+		reqUser, err = a.isMaster(username, password)
+		if err != nil {
+			log.Printf("%s: %v", logTag, err)
+			util.WriteBackMessage(w, "Unable create a master user", http.StatusInternalServerError)
+			return
+		}
+		if reqUser != nil {
+			ctx := r.Context()
+			ctx = context.WithValue(ctx, user.CtxKey, reqUser)
+			r = r.WithContext(ctx)
+			h(w, r)
+			return
+		}
+
 		reqPermission, ok = obj.(*permission.Permission)
 		if ok {
 			reqCredential = credential.Permission
@@ -92,20 +110,6 @@ func (a *Auth) BasicAuth(h http.HandlerFunc) http.HandlerFunc {
 				r = r.WithContext(ctx)
 			}
 		} else {
-			reqUser, err = a.isMaster(username, password)
-			if err != nil {
-				log.Printf("%s: %v", logTag, err)
-				util.WriteBackMessage(w, "Unable create a master user", http.StatusInternalServerError)
-				return
-			}
-			if reqUser != nil {
-				ctx := r.Context()
-				ctx = context.WithValue(ctx, user.CtxKey, reqUser)
-				r = r.WithContext(ctx)
-				h(w, r)
-				return
-			}
-
 			// if we are patching a user or a permission, we must clear their
 			// respective objects from the cache, otherwise the changes won't be
 			// reflected the next time user tries to get the user or permission object.
