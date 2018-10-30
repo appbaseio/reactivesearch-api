@@ -13,14 +13,15 @@ import (
 
 	"github.com/appbaseio-confidential/arc/arc"
 	"github.com/appbaseio-confidential/arc/arc/plugin"
+	"github.com/gorilla/mux"
+	"github.com/rs/cors"
+	"gopkg.in/natefinch/lumberjack.v2"
+
 	_ "github.com/appbaseio-confidential/arc/plugins/analytics"
 	_ "github.com/appbaseio-confidential/arc/plugins/auth"
 	_ "github.com/appbaseio-confidential/arc/plugins/es"
 	_ "github.com/appbaseio-confidential/arc/plugins/permissions"
 	_ "github.com/appbaseio-confidential/arc/plugins/users"
-	"github.com/gorilla/mux"
-	"github.com/rs/cors"
-	"gopkg.in/natefinch/lumberjack.v2"
 )
 
 const logTag = "[cmd]"
@@ -80,7 +81,7 @@ func main() {
 
 	router := mux.NewRouter().StrictSlash(true)
 	c := cors.New(cors.Options{
-		AllowedOrigins: []string{"http://127.0.0.1/1357"},
+		AllowedOrigins: []string{"http://127.0.0.1/3333"},
 		AllowedMethods: []string{"HEAD", "GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
 		AllowedHeaders: []string{"*"},
 	})
