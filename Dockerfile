@@ -18,7 +18,6 @@ RUN go mod download
 # Copy the entire project and build it
 # This layer is rebuilt when a file changes in the project directory
 COPY . .
-RUN ls -la
 RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o /go/bin/arc cmd/arc/main.go
 
 ## This results in a single layer image
