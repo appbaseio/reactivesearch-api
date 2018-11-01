@@ -32,9 +32,7 @@ func init() {
 // Use only this function to fetch the instance of user from within
 // this package to avoid creating stateless duplicates of the plugin.
 func instance() *users {
-	once.Do(func() {
-		singleton = &users{}
-	})
+	once.Do(func() { singleton = &users{} })
 	return singleton
 }
 
