@@ -1,22 +1,9 @@
-package plugin
+package route
 
-import "net/http"
-
-// Plugin is a type that holds information about the plugin.
-type Plugin interface {
-	// Name returns the name of the plugin. Name of the plugin must be
-	// unique as it is the name of the plugin that is used as a key
-	// to identify a plugin in the plugins map.
-	Name() string
-
-	// InitFunc returns the plugin's setup function that is executed
-	// before the plugin routes are loaded in the router.
-	InitFunc() error
-
-	// Routes returns the http routes that a plugin handles or is
-	// associated with.
-	Routes() []Route
-}
+import (
+	"net/http"
+	"sort"
+)
 
 // Route is a type that contains information about a route.
 type Route struct {
@@ -50,4 +37,41 @@ type Route struct {
 
 	// Description about this route.
 	Description string
+}
+
+// By is the type of a "less" function that defines the ordering of routes.
+type By func(r1, r2 Route) bool
+
+// Sort is a method on the function type, By, that sorts
+// the argument slice according to the function.
+func (by By) Sort(routes []Route) {
+	rs := &routeSorter{
+		routes: routes,
+		by:     by,
+	}
+	sort.Sort(rs)
+}
+
+// routeSorter joins a By function and a slice of routes to be sorted.
+type routeSorter struct {
+	routes []Route
+	by     By
+}
+
+// Len is part of sort.Interface that returns the length
+// of slice to be sorted.
+func (rs *routeSorter) Len() int {
+	return len(rs.routes)
+}
+
+// Swap is part of sort.Interface that defines a way
+// to swap two plugins in the slice.
+func (rs *routeSorter) Swap(i, j int) {
+	rs.routes[i], rs.routes[j] = rs.routes[j], rs.routes[i]
+}
+
+// Less is part of sort.Interface. It is implemented by calling
+// the "by" closure in the sorter.
+func (rs *routeSorter) Less(i, j int) bool {
+	return rs.by(rs.routes[i], rs.routes[j])
 }

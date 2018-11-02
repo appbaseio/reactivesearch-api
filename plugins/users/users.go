@@ -5,7 +5,7 @@ import (
 	"sync"
 
 	"github.com/appbaseio-confidential/arc/arc"
-	"github.com/appbaseio-confidential/arc/arc/plugin"
+	"github.com/appbaseio-confidential/arc/arc/route"
 	"github.com/appbaseio-confidential/arc/internal/errors"
 	"github.com/appbaseio-confidential/arc/internal/types/user"
 )
@@ -62,6 +62,6 @@ func (u *users) InitFunc() error {
 	return nil
 }
 
-func (u *users) Routes() []plugin.Route {
+func (u *users) Routes() []route.Route {
 	return u.routes()
 }

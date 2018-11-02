@@ -11,7 +11,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/appbaseio-confidential/arc/arc/plugin"
+	"github.com/appbaseio-confidential/arc/arc/route"
 	"github.com/appbaseio-confidential/arc/internal/types/acl"
 	"github.com/appbaseio-confidential/arc/internal/util"
 	"github.com/appbaseio-confidential/arc/middleware/interceptor"
@@ -49,7 +49,7 @@ type spec struct {
 }
 
 // TODO: major refactoring
-func (es *es) routes() []plugin.Route {
+func (es *es) routes() []route.Route {
 	// fetch es api
 	files := make(chan string)
 	apis := make(chan api)
@@ -79,7 +79,7 @@ func (es *es) routes() []plugin.Route {
 	// handler
 	var handlerFunc = cleanPath(reqLogger(classifier(basicAuth(validateOp(validateACL(validateIndices(redirectRequest(analyticsRecorder(es.handler())))))))))
 	// accumulate the routes
-	var routes []plugin.Route
+	var routes []route.Route
 	for api := range apis {
 		for _, path := range api.spec.URL.Paths {
 			if !strings.HasPrefix(path, "/") {
@@ -88,7 +88,7 @@ func (es *es) routes() []plugin.Route {
 			if len(path) == 1 {
 				continue
 			}
-			route := plugin.Route{
+			route := route.Route{
 				Name:        api.name,
 				Methods:     api.spec.Methods,
 				Path:        path,
@@ -102,7 +102,7 @@ func (es *es) routes() []plugin.Route {
 
 	// append the index route last in order to avoid early
 	// matches for other specific routes
-	indexRoute := plugin.Route{
+	indexRoute := route.Route{
 		Name:        "ping",
 		Methods:     []string{http.MethodGet},
 		Path:        "/",

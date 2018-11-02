@@ -3,11 +3,11 @@ package reindexer
 import (
 	"net/http"
 
-	"github.com/appbaseio-confidential/arc/arc/plugin"
+	"github.com/appbaseio-confidential/arc/arc/route"
 )
 
-func (rx *reindexer) routes() []plugin.Route {
-	routes := []plugin.Route{
+func (rx *reindexer) routes() []route.Route {
+	routes := []route.Route{
 		{
 			Name:        "Reindex",
 			Methods:     []string{http.MethodPost},
