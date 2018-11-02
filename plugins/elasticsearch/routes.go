@@ -20,7 +20,7 @@ import (
 
 var (
 	routes     []route.Route
-	routeSpecs = make(map[string]*api)
+	routeSpecs = make(map[string]api)
 )
 
 type api struct {
@@ -58,6 +58,8 @@ func (es *Elasticsearch) preprocess() error {
 	go fetchSpecFiles(path, files)
 	go decodeSpecFiles(files, apis)
 
+	middleware := (&chain{}).Wrap
+
 	for api := range apis {
 		for _, path := range api.spec.URL.Paths {
 			if !strings.HasPrefix(path, "/") {
@@ -70,23 +72,16 @@ func (es *Elasticsearch) preprocess() error {
 				Name:        api.name,
 				Methods:     api.spec.Methods,
 				Path:        path,
-				HandlerFunc: es.handler(),
+				HandlerFunc: middleware(es.handler()),
 				Description: api.spec.Documentation,
 			}
 			routes = append(routes, route)
-			routeSpecs[path] = &api
+			for _, method := range api.spec.Methods {
+				key := fmt.Sprintf("%s:%s", method, path)
+				routeSpecs[key] = api
+			}
 		}
 	}
-
-	// append index route last in order to avoid early matches for other specific routes
-	indexRoute := route.Route{
-		Name:        "ping",
-		Methods:     []string{http.MethodGet},
-		Path:        "/",
-		HandlerFunc: es.handler(),
-		Description: "You know, for search",
-	}
-	routes = append(routes, indexRoute)
 
 	// sort the routes
 	criteria := func(r1, r2 route.Route) bool {
@@ -98,6 +93,16 @@ func (es *Elasticsearch) preprocess() error {
 		return f1 > f2
 	}
 	route.By(criteria).Sort(routes)
+
+	// append index route last in order to avoid early matches for other specific routes
+	indexRoute := route.Route{
+		Name:        "ping",
+		Methods:     []string{http.MethodGet},
+		Path:        "/",
+		HandlerFunc: middleware(es.handler()),
+		Description: "You know, for search",
+	}
+	routes = append(routes, indexRoute)
 
 	return nil
 }
@@ -111,7 +116,7 @@ func getWD() (string, error) {
 	if err != nil {
 		return "", nil
 	}
-	return filepath.Join(wd, "plugins/nes/api"), nil
+	return filepath.Join(wd, "plugins/es/api"), nil
 }
 
 func fetchSpecFiles(path string, files chan<- string) {

@@ -6,16 +6,47 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/appbaseio-confidential/arc/arc/middleware"
+	"github.com/appbaseio-confidential/arc/arc/middleware/order"
 	"github.com/appbaseio-confidential/arc/internal/types/acl"
 	"github.com/appbaseio-confidential/arc/internal/types/credential"
 	"github.com/appbaseio-confidential/arc/internal/types/index"
 	"github.com/appbaseio-confidential/arc/internal/types/op"
 	"github.com/appbaseio-confidential/arc/internal/types/permission"
 	"github.com/appbaseio-confidential/arc/internal/types/user"
-
+	"github.com/appbaseio-confidential/arc/middleware/interceptor"
+	"github.com/appbaseio-confidential/arc/middleware/logger"
+	"github.com/appbaseio-confidential/arc/middleware/path"
+	"github.com/appbaseio-confidential/arc/plugins/auth"
 	"github.com/appbaseio-confidential/arc/internal/util"
 	"github.com/gorilla/mux"
 )
+
+type chain struct {
+	order.Fifo
+}
+
+func (c *chain) Wrap(h http.HandlerFunc) http.HandlerFunc {
+	return c.Adapt(h, list()...)
+}
+
+func list() []middleware.Middleware {
+	cleanPath := path.Clean
+	logRequests := logger.Instance().Log
+	basicAuth := auth.Instance().BasicAuth
+	redirectRequests := interceptor.Instance().Redirect
+
+	return []middleware.Middleware{
+		cleanPath,
+		logRequests,
+		classifyACL,
+		classifyOp,
+		basicAuth,
+		validateOp,
+		validateACL,
+		redirectRequests,
+	}
+}
 
 func classifyACL(h http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -27,7 +58,8 @@ func classifyACL(h http.HandlerFunc) http.HandlerFunc {
 			util.WriteBackError(w, "Page not found", http.StatusNotFound)
 			return
 		}
-		routeSpec := routeSpecs[template]
+		key := fmt.Sprintf("%s:%s", r.Method, template)
+		routeSpec := routeSpecs[key]
 		routeACL := routeSpec.acl
 
 		// classify streams explicitly
@@ -52,10 +84,11 @@ func classifyOp(h http.HandlerFunc) http.HandlerFunc {
 		template, err := route.GetPathTemplate()
 		if err != nil {
 			log.Fatalln(err)
-			util.WriteBackMessage(w, "Page not found", http.StatusNotFound)
+			util.WriteBackError(w, "Page not found", http.StatusNotFound)
 			return
 		}
-		routeSpec := routeSpecs[template]
+		key := fmt.Sprintf("%s:%s", r.Method, template)
+		routeSpec := routeSpecs[key]
 		routeOp := routeSpec.op
 
 		ctx := r.Context()
@@ -104,7 +137,8 @@ func validateACL(h http.HandlerFunc) http.HandlerFunc {
 				return
 			}
 			if !reqUser.HasACL(*reqACL) {
-				msg := fmt.Sprintf(`User with "username"="%s" does not have "%s" acl`, reqUser.Username, *reqACL)
+				msg := fmt.Sprintf(`User with "username"="%s" does not have "%s" acl`,
+					reqUser.Username, *reqACL)
 				util.WriteBackError(w, msg, http.StatusUnauthorized)
 				return
 			}
@@ -117,8 +151,9 @@ func validateACL(h http.HandlerFunc) http.HandlerFunc {
 			}
 
 			if !reqPermission.HasACL(*reqACL) {
-				msg := fmt.Sprintf(`Permission with "username"="%s" does not have "%s" acl`, reqPermission.Username, *reqACL)
-				util.WriteBackMessage(w, msg, http.StatusUnauthorized)
+				msg := fmt.Sprintf(`Permission with "username"="%s" does not have "%s" acl`,
+					reqPermission.Username, *reqACL)
+				util.WriteBackError(w, msg, http.StatusUnauthorized)
 				return
 			}
 		}
@@ -153,7 +188,8 @@ func validateOp(h http.HandlerFunc) http.HandlerFunc {
 				return
 			}
 			if !reqUser.CanDo(*reqOp) {
-				msg := fmt.Sprintf(`User with "username"="%s" does not have "%s" op`, reqUser.Username, reqOp)
+				msg := fmt.Sprintf(`User with "username"="%s" does not have "%s" op`,
+					reqUser.Username, reqOp)
 				util.WriteBackError(w, msg, http.StatusUnauthorized)
 				return
 			}

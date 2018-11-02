@@ -14,7 +14,7 @@ import (
 	"github.com/appbaseio-confidential/arc/arc"
 	_ "github.com/appbaseio-confidential/arc/plugins/analytics"
 	_ "github.com/appbaseio-confidential/arc/plugins/auth"
-	_ "github.com/appbaseio-confidential/arc/plugins/es"
+	_ "github.com/appbaseio-confidential/arc/plugins/elasticsearch"
 	_ "github.com/appbaseio-confidential/arc/plugins/permissions"
 	_ "github.com/appbaseio-confidential/arc/plugins/reindexer"
 	_ "github.com/appbaseio-confidential/arc/plugins/users"
