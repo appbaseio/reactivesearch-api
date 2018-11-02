@@ -1,138 +1,114 @@
-package es
+package elasticsearch
 
 import (
 	"context"
 	"fmt"
 	"log"
 	"net/http"
-	"regexp"
-	"strings"
 
+	"github.com/appbaseio-confidential/arc/arc/middleware"
+	"github.com/appbaseio-confidential/arc/arc/middleware/order"
 	"github.com/appbaseio-confidential/arc/internal/types/acl"
 	"github.com/appbaseio-confidential/arc/internal/types/credential"
 	"github.com/appbaseio-confidential/arc/internal/types/index"
 	"github.com/appbaseio-confidential/arc/internal/types/op"
 	"github.com/appbaseio-confidential/arc/internal/types/permission"
 	"github.com/appbaseio-confidential/arc/internal/types/user"
+	"github.com/appbaseio-confidential/arc/middleware/interceptor"
+	"github.com/appbaseio-confidential/arc/middleware/logger"
+	"github.com/appbaseio-confidential/arc/middleware/path"
+	"github.com/appbaseio-confidential/arc/plugins/auth"
 	"github.com/appbaseio-confidential/arc/internal/util"
 	"github.com/gorilla/mux"
 )
 
-func (es *es) classifier(h http.HandlerFunc) http.HandlerFunc {
+type chain struct {
+	order.Fifo
+}
+
+func (c *chain) Wrap(h http.HandlerFunc) http.HandlerFunc {
+	return c.Adapt(h, list()...)
+}
+
+func list() []middleware.Middleware {
+	cleanPath := path.Clean
+	logRequests := logger.Instance().Log
+	basicAuth := auth.Instance().BasicAuth
+	redirectRequests := interceptor.Instance().Redirect
+
+	return []middleware.Middleware{
+		cleanPath,
+		logRequests,
+		classifyACL,
+		classifyOp,
+		basicAuth,
+		validateOp,
+		validateACL,
+		redirectRequests,
+	}
+}
+
+func classifyACL(h http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		path := strings.TrimSuffix(r.URL.Path, "/")
 		currentRoute := mux.CurrentRoute(r)
 
 		template, err := currentRoute.GetPathTemplate()
 		if err != nil {
-			log.Printf("%s: %v\n", logTag, err)
+			log.Fatalln(err)
+			util.WriteBackError(w, "Page not found", http.StatusNotFound)
 			return
 		}
-		fmt.Println(template)
-		
+		key := fmt.Sprintf("%s:%s", r.Method, template)
+		routeSpec := routeSpecs[key]
+		routeACL := routeSpec.acl
 
-		method := r.Method
-		reqACL, reqOp, indices := es.categorize(method, path)
-
+		// classify streams explicitly
 		params := r.URL.Query()
 		stream := params.Get("stream")
 		if stream == "true" {
-			reqACL = acl.Streams
+			routeACL = acl.Streams
 		}
 
 		ctx := r.Context()
-		ctx = context.WithValue(ctx, acl.CtxKey, &reqACL)
-		ctx = context.WithValue(ctx, op.CtxKey, &reqOp)
-		ctx = context.WithValue(ctx, index.CtxKey, indices)
+		ctx = context.WithValue(ctx, acl.CtxKey, &routeACL)
 		r = r.WithContext(ctx)
 
 		h(w, r)
 	}
 }
 
-func (es *es) categorize(method, path string) (acl.ACL, op.Operation, []string) {
-	for _, api := range es.specs {
-		for endpoint, pattern := range api.pathRegexps {
-			// TODO: additional check for keywords?
-			ok, err := regexp.MatchString(pattern, path)
-			if err != nil {
-				log.Printf("%s: malformed regexp %s: %v", logTag, pattern, err)
-				continue
-			}
-			if ok && util.Contains(api.spec.Methods, method) && matchKeywords(api, path) {
-				return api.acl, getOp(api.spec.Methods, method), getIndexName(endpoint, path)
-			}
+func classifyOp(h http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		route := mux.CurrentRoute(r)
+
+		template, err := route.GetPathTemplate()
+		if err != nil {
+			log.Fatalln(err)
+			util.WriteBackError(w, "Page not found", http.StatusNotFound)
+			return
 		}
+		key := fmt.Sprintf("%s:%s", r.Method, template)
+		routeSpec := routeSpecs[key]
+		routeOp := routeSpec.op
+
+		ctx := r.Context()
+		ctx = context.WithValue(ctx, op.CtxKey, &routeOp)
+		r = r.WithContext(ctx)
+
+		h(w, r)
 	}
-	// TODO: should we classify it as misc and then return the result.
-	log.Printf("%s: unable to find the category for path [%s]: %s, categorising as 'misc'",
-		logTag, method, path)
-	return acl.Misc, op.Read, []string{}
 }
 
-func getIndexName(endpoint, requestPath string) []string {
-	const indexVar = "{index}"
-	if !strings.Contains(endpoint, indexVar) {
-		return []string{}
-	}
+func identifyIndices(h http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		indices, _ := util.IndicesFromRequest(r)
 
-	endpointTokens := strings.Split(endpoint, "/")
-	requestPathTokens := strings.Split(requestPath, "/")
-	if len(endpointTokens) != len(requestPathTokens) {
-		log.Printf("%s: invalid clissifier match for path=%s and pattern=%s",
-			logTag, requestPath, endpoint)
-		return []string{}
-	}
+		ctx := r.Context()
+		ctx = context.WithValue(ctx, index.CtxKey, indices)
+		r = r.WithContext(ctx)
 
-	for i := 0; i < len(requestPath); i++ {
-		if endpointTokens[i] == indexVar {
-			names := strings.Split(requestPathTokens[i], ",")
-			var indices []string
-			for _, name := range names {
-				indices = append(indices, strings.TrimSpace(name))
-			}
-			return indices
-		}
+		h(w, r)
 	}
-
-	return []string{}
-}
-
-func matchKeywords(api api, path string) bool {
-	var count int
-	tokens := strings.Split(path, "/")
-	for _, token := range tokens {
-		if strings.HasPrefix(token, "_") {
-			if _, ok := api.keywords[token]; ok {
-				return true
-			}
-			count++
-		}
-	}
-	return count == 0
-}
-
-func getOp(methods []string, method string) op.Operation {
-	var operation op.Operation
-	switch method {
-	case http.MethodGet:
-		operation = op.Read
-	case http.MethodPost:
-		if util.Contains(methods, http.MethodGet) {
-			operation = op.Read
-		} else {
-			operation = op.Write
-		}
-	case http.MethodPut:
-		operation = op.Write
-	case http.MethodHead:
-		operation = op.Read
-	case http.MethodDelete:
-		operation = op.Delete
-	default:
-		operation = op.Read // TODO: correct default or panic?
-	}
-	return operation
 }
 
 func validateACL(h http.HandlerFunc) http.HandlerFunc {
@@ -161,7 +137,8 @@ func validateACL(h http.HandlerFunc) http.HandlerFunc {
 				return
 			}
 			if !reqUser.HasACL(*reqACL) {
-				msg := fmt.Sprintf(`User with "username"="%s" does not have "%s" acl`, reqUser.Username, *reqACL)
+				msg := fmt.Sprintf(`User with "username"="%s" does not have "%s" acl`,
+					reqUser.Username, *reqACL)
 				util.WriteBackError(w, msg, http.StatusUnauthorized)
 				return
 			}
@@ -174,8 +151,9 @@ func validateACL(h http.HandlerFunc) http.HandlerFunc {
 			}
 
 			if !reqPermission.HasACL(*reqACL) {
-				msg := fmt.Sprintf(`Permission with "username"="%s" does not have "%s" acl`, reqPermission.Username, *reqACL)
-				util.WriteBackMessage(w, msg, http.StatusUnauthorized)
+				msg := fmt.Sprintf(`Permission with "username"="%s" does not have "%s" acl`,
+					reqPermission.Username, *reqACL)
+				util.WriteBackError(w, msg, http.StatusUnauthorized)
 				return
 			}
 		}
@@ -210,7 +188,8 @@ func validateOp(h http.HandlerFunc) http.HandlerFunc {
 				return
 			}
 			if !reqUser.CanDo(*reqOp) {
-				msg := fmt.Sprintf(`User with "username"="%s" does not have "%s" op`, reqUser.Username, reqOp)
+				msg := fmt.Sprintf(`User with "username"="%s" does not have "%s" op`,
+					reqUser.Username, reqOp)
 				util.WriteBackError(w, msg, http.StatusUnauthorized)
 				return
 			}

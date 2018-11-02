@@ -3,12 +3,12 @@ package permissions
 import (
 	"net/http"
 
-	"github.com/appbaseio-confidential/arc/arc/plugin"
+	"github.com/appbaseio-confidential/arc/arc/route"
 )
 
-func (p *permissions) routes() []plugin.Route {
+func (p *permissions) routes() []route.Route {
 	middleware := (&chain{}).Wrap
-	routes := []plugin.Route{
+	routes := []route.Route{
 		{
 			Name:        "Get permission",
 			Methods:     []string{http.MethodGet},

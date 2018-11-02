@@ -5,7 +5,7 @@ import (
 	"sync"
 
 	"github.com/appbaseio-confidential/arc/arc"
-	"github.com/appbaseio-confidential/arc/arc/plugin"
+	"github.com/appbaseio-confidential/arc/arc/route"
 	"github.com/appbaseio-confidential/arc/internal/errors"
 )
 
@@ -69,6 +69,6 @@ func (a *Analytics) InitFunc() error {
 }
 
 // Routes returns the analytics routes that the plugin serves.
-func (a *Analytics) Routes() []plugin.Route {
+func (a *Analytics) Routes() []route.Route {
 	return a.routes()
 }

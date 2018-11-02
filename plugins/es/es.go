@@ -4,7 +4,7 @@ import (
 	"sync"
 
 	"github.com/appbaseio-confidential/arc/arc"
-	"github.com/appbaseio-confidential/arc/arc/plugin"
+	"github.com/appbaseio-confidential/arc/arc/route"
 )
 
 const logTag = "[es]"
@@ -37,6 +37,6 @@ func (es *es) InitFunc() error {
 	return nil
 }
 
-func (es *es) Routes() []plugin.Route {
+func (es *es) Routes() []route.Route {
 	return es.routes()
 }

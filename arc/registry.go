@@ -5,7 +5,7 @@ import (
 	"sort"
 	"strconv"
 
-	"github.com/appbaseio-confidential/arc/arc/plugin"
+	"github.com/appbaseio-confidential/arc/arc/route"
 	"github.com/gorilla/mux"
 )
 
@@ -14,13 +14,29 @@ const logTag = "[registry]"
 // plugins is a map of a unique identifier, usually the plugin name,
 // to the Plugin. So, in practice all plugins must have a name,
 // preferably following the same practice while naming a package.
-var plugins = make(map[string]plugin.Plugin)
+var plugins = make(map[string]Plugin)
+
+// Plugin is a type that holds information about the plugin.
+type Plugin interface {
+	// Name returns the name of the plugin. Name of the plugin must be
+	// unique as it is the name of the plugin that is used as a key
+	// to identify a plugin in the plugins map.
+	Name() string
+
+	// InitFunc returns the plugin's setup function that is executed
+	// before the plugin routes are loaded in the router.
+	InitFunc() error
+
+	// Routes returns the http routes that a plugin handles or is
+	// associated with.
+	Routes() []route.Route
+}
 
 // RegisterPlugin plugs in plugin. All plugins must have a name:
 // preferably lowercase and one word. The name of the plugin must
 // be unique. A plugin, however, may not define any routes, but
 // still be useful, like a middleware.
-func RegisterPlugin(p plugin.Plugin) {
+func RegisterPlugin(p Plugin) {
 	name := p.Name()
 	if name == "" {
 		panic("plugin must have a name.")
@@ -36,7 +52,7 @@ func RegisterPlugin(p plugin.Plugin) {
 // initializations before the plugin is functional and second,
 // it registers the routes to the router that are associated with
 // that plugin.
-func LoadPlugin(router *mux.Router, p plugin.Plugin) error {
+func LoadPlugin(router *mux.Router, p Plugin) error {
 	// TODO: asynchronous and more validation before loading plugin routes?
 	log.Printf("%s: Initializing plugin: %s", logTag, p.Name())
 	err := p.InitFunc()
@@ -67,21 +83,20 @@ func ListPluginsStr() string {
 }
 
 // ListPlugins returns the list of plugins that are currently registered.
-func ListPlugins() []plugin.Plugin {
-	var list []plugin.Plugin
+func ListPlugins() []Plugin {
+	var list []Plugin
 	for _, p := range plugins {
 		list = append(list, p)
 	}
 	return list
 }
 
-// By is the type of a "less" function that defines the
-// ordering its Plugin arguments
-type By func(p1, p2 plugin.Plugin) bool
+// By is the type of a "less" function that defines the ordering of Plugins.
+type By func(p1, p2 Plugin) bool
 
 // Sort is a method on the function type, By, that sorts
 // the argument slice according to the function.
-func (by By) Sort(plugins []plugin.Plugin) {
+func (by By) Sort(plugins []Plugin) {
 	ps := &pluginSorter{
 		plugins: plugins,
 		by:      by,
@@ -89,10 +104,9 @@ func (by By) Sort(plugins []plugin.Plugin) {
 	sort.Sort(ps)
 }
 
-// pluginSorted joins a By function and a slice of Plugins
-// to be sorted.
+// pluginSorter joins a By function and a slice of Plugins to be sorted.
 type pluginSorter struct {
-	plugins []plugin.Plugin
+	plugins []Plugin
 	by      By
 }
 

@@ -12,10 +12,9 @@ import (
 	"strings"
 
 	"github.com/appbaseio-confidential/arc/arc"
-	"github.com/appbaseio-confidential/arc/arc/plugin"
 	_ "github.com/appbaseio-confidential/arc/plugins/analytics"
 	_ "github.com/appbaseio-confidential/arc/plugins/auth"
-	_ "github.com/appbaseio-confidential/arc/plugins/es"
+	_ "github.com/appbaseio-confidential/arc/plugins/elasticsearch"
 	_ "github.com/appbaseio-confidential/arc/plugins/permissions"
 	_ "github.com/appbaseio-confidential/arc/plugins/reindexer"
 	_ "github.com/appbaseio-confidential/arc/plugins/users"
@@ -68,7 +67,7 @@ func main() {
 	}
 
 	plugins := arc.ListPlugins()
-	criteria := func(p1, p2 plugin.Plugin) bool {
+	criteria := func(p1, p2 arc.Plugin) bool {
 		if p1.Name() == "[es]" {
 			return false
 		} else if p2.Name() == "[es]" {

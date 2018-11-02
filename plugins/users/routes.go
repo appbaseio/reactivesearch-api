@@ -3,12 +3,12 @@ package users
 import (
 	"net/http"
 
-	"github.com/appbaseio-confidential/arc/arc/plugin"
+	"github.com/appbaseio-confidential/arc/arc/route"
 )
 
-func (u *users) routes() []plugin.Route {
+func (u *users) routes() []route.Route {
 	middleware := (&chain{}).Wrap
-	routes := []plugin.Route{
+	routes := []route.Route{
 		{
 			Name:        "Get user",
 			Methods:     []string{http.MethodGet},

@@ -133,3 +133,23 @@ func FromContext(ctx context.Context) (*ACL, error) {
 	}
 	return reqACL, nil
 }
+
+// FromString returns the ACl from string tags.
+func FromString(tag string) ACL {
+	switch tag {
+	case "docs":
+		return Docs
+	case "search":
+		return Search
+	case "indices":
+		return Indices
+	case "cat":
+		return Cat
+	case "tasks":
+		return Clusters
+	case "cluster":
+		return Clusters
+	default:
+		return Misc
+	}
+}
