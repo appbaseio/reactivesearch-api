@@ -111,6 +111,16 @@ func (es *es) routes() []route.Route {
 	}
 	routes = append(routes, indexRoute)
 
+	criteria := func(r1, r2 route.Route) bool {
+		f1, c1 := util.CountComponents(r1.Path)
+		f2, c2 := util.CountComponents(r2.Path)
+		if f1 == f2 {
+			return c1 < c2
+		}
+		return f1 > f2
+	}
+	route.By(criteria).Sort(routes)
+
 	return routes
 }
 

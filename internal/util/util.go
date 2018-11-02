@@ -5,8 +5,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"math"
+	"net"
 	"net/http"
+	"regexp"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/appbaseio-confidential/arc/internal/types/index"
@@ -120,4 +123,47 @@ func IndicesFromContext(ctx context.Context) ([]string, error) {
 		return nil, fmt.Errorf("cannot cast ctxIndices to []string")
 	}
 	return indices, nil
+}
+
+// CountComponents returns the numbers of "/" and "vars" present in the route.
+func CountComponents(route string) (int, int) {
+	pattern := `^{.*}$`
+	var vars []string
+
+	fragments := strings.Split(route, "/")
+	for _, fragment := range fragments {
+		matched, _ := regexp.MatchString(pattern, fragment)
+		if matched {
+			vars = append(vars, fragment)
+		}
+	}
+
+	return strings.Count(route, "/"), len(vars)
+
+}
+
+var (
+	client *http.Client
+	once   sync.Once
+)
+
+// HTTPClient returns an http client with reasonable timeout defaults.
+// See: https://medium.com/@nate510/don-t-use-go-s-default-http-client-4804cb19f779
+// This client will cap the TCP connect and TLS handshake timeouts,
+// as well as establishing an end-to-end request timeout.
+func HTTPClient() *http.Client {
+	once.Do(func() {
+		var netTransport = &http.Transport{
+			DialContext: (&net.Dialer{
+				Timeout: 5 * time.Second,
+			}).DialContext,
+			TLSHandshakeTimeout: 5 * time.Second,
+		}
+		var netClient = &http.Client{
+			Timeout:   time.Second * 10,
+			Transport: netTransport,
+		}
+		client = netClient
+	})
+	return client
 }
