@@ -2,6 +2,7 @@ package permission
 
 import (
 	"github.com/appbaseio-confidential/arc/internal/types/acl"
+	"github.com/appbaseio-confidential/arc/internal/types/category"
 	"github.com/appbaseio-confidential/arc/internal/types/op"
 )
 
@@ -24,6 +25,10 @@ var (
 		acl.Analytics,
 		acl.Streams,
 	}
+
+	defaultCategories = []category.Category{}
+
+	adminCategories = []category.Category{}
 
 	defaultOps = []op.Operation{
 		op.Read,

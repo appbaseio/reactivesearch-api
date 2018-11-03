@@ -6,9 +6,10 @@ import (
 )
 
 var (
-	NilIndicesError = errors.New("indices cannot be set 'nil'")
-	NilACLsError    = errors.New("acls cannot be set 'nil'")
-	NilOpsError     = errors.New("ops cannot be set 'nil'")
+	NilIndicesError  = errors.New("indices cannot be set 'nil'")
+	NilACLsError     = errors.New("acls cannot be set 'nil'")
+	NilOpsError      = errors.New("ops cannot be set 'nil'")
+	ErrNilCategories = errors.New(`categories cannot be set to "nil"`)
 )
 
 type EnvVarNotSetError struct {

@@ -1,5 +1,11 @@
 package category
 
+import (
+	"context"
+
+	"github.com/appbaseio-confidential/arc/internal/errors"
+)
+
 type contextKey string
 
 // CtxKey is a key against which an category.Category is stored in the context.
@@ -65,3 +71,16 @@ const (
 	Termvectors
 	Update
 )
+
+// FromContext retrieves the category stored against the category.CtxKey from the context.
+func FromContext(ctx context.Context) (*Category, error) {
+	ctxCategory := ctx.Value(CtxKey)
+	if ctxCategory == nil {
+		return nil, errors.NewNotFoundInRequestContextError("*category.Category")
+	}
+	reqCategory, ok := ctxCategory.(*Category)
+	if !ok {
+		return nil, errors.NewInvalidCastError("ctxCategory", "*category.Category")
+	}
+	return reqCategory, nil
+}

@@ -14,6 +14,7 @@ import (
 
 	"github.com/appbaseio-confidential/arc/arc/route"
 	"github.com/appbaseio-confidential/arc/internal/types/acl"
+	"github.com/appbaseio-confidential/arc/internal/types/category"
 	"github.com/appbaseio-confidential/arc/internal/types/op"
 	"github.com/appbaseio-confidential/arc/internal/util"
 )
@@ -24,10 +25,11 @@ var (
 )
 
 type api struct {
-	name string
-	acl  acl.ACL
-	op   op.Operation
-	spec *spec
+	name     string
+	acl      acl.ACL
+	op       op.Operation
+	category category.Category
+	spec     *spec
 }
 
 type spec struct {
@@ -46,7 +48,7 @@ type spec struct {
 	} `json:"body,omitempty"`
 }
 
-func (es *Elasticsearch) preprocess() error {
+func (es *elasticsearch) preprocess() error {
 	files := make(chan string)
 	apis := make(chan api)
 
@@ -107,7 +109,7 @@ func (es *Elasticsearch) preprocess() error {
 	return nil
 }
 
-func (es *Elasticsearch) routes() []route.Route {
+func (es *elasticsearch) routes() []route.Route {
 	return routes
 }
 
@@ -188,12 +190,18 @@ func decodeSpecFile(file string, wg *sync.WaitGroup, apis chan<- api) {
 	specName := strings.TrimSuffix(filepath.Base(file), ".json")
 	specACL := decodeACL(&s)
 	specOp := decodeOp(&s)
+	specCategory, err := decodeCategory(specName, &s)
+	if err != nil {
+		log.Printf(`%s: unable to categorize spec "%s": %v\n`, logTag, specName, err)
+		return
+	}
 
 	apis <- api{
-		name: specName,
-		acl:  specACL,
-		op:   specOp,
-		spec: &s,
+		name:     specName,
+		acl:      specACL,
+		op:       specOp,
+		category: *specCategory,
+		spec:     &s,
 	}
 }
 
@@ -236,4 +244,26 @@ out:
 	}
 
 	return specOp
+}
+
+func decodeCategory(specName string, spec *spec) (*category.Category, error) {
+	pathTokens := strings.Split(spec.URL.Path, "/")
+	for _, pathToken := range pathTokens {
+		if strings.HasPrefix(pathToken, "_") {
+			pathToken = strings.TrimPrefix(pathToken, "_")
+			c, err := category.FromString(pathToken)
+			if err != nil {
+				return nil, err
+			}
+			return &c, nil
+		}
+	}
+
+	categoryString := strings.Split(specName, ".")[0]
+	c, err := category.FromString(categoryString)
+	if err != nil {
+		return nil, err
+	}
+
+	return &c, nil
 }

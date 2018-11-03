@@ -10,6 +10,7 @@ import (
 
 	"github.com/appbaseio-confidential/arc/internal/errors"
 	"github.com/appbaseio-confidential/arc/internal/types/acl"
+	"github.com/appbaseio-confidential/arc/internal/types/category"
 	"github.com/appbaseio-confidential/arc/internal/types/op"
 	"github.com/appbaseio-confidential/arc/internal/util"
 	"github.com/google/uuid"
@@ -32,16 +33,17 @@ const (
 
 // Permission defines a permission type.
 type Permission struct {
-	Username  string         `json:"username"`
-	Password  string         `json:"password"`
-	Owner     string         `json:"owner"`
-	Creator   string         `json:"creator"`
-	ACLs      []acl.ACL      `json:"acls"`
-	Ops       []op.Operation `json:"ops"`
-	Indices   []string       `json:"indices"`
-	CreatedAt string         `json:"created_at"`
-	TTL       time.Duration  `json:"ttl"`
-	Limits    *Limits        `json:"limits"`
+	Username   string              `json:"username"`
+	Password   string              `json:"password"`
+	Owner      string              `json:"owner"`
+	Creator    string              `json:"creator"`
+	ACLs       []acl.ACL           `json:"acls"`
+	Categories []category.Category `json:"categories"`
+	Ops        []op.Operation      `json:"ops"`
+	Indices    []string            `json:"indices"`
+	CreatedAt  string              `json:"created_at"`
+	TTL        time.Duration       `json:"ttl"`
+	Limits     *Limits             `json:"limits"`
 }
 
 // Limits defines the rate limits for each acls.
@@ -76,6 +78,17 @@ func SetACLs(acls []acl.ACL) Options {
 			return errors.NilACLsError
 		}
 		p.ACLs = acls
+		return nil
+	}
+}
+
+// SetCategories sets the categories a permission can have access to.
+func SetCategories(categories []category.Category) Options {
+	return func(p *Permission) error {
+		if categories == nil {
+			return errors.ErrNilCategories
+		}
+		p.Categories = categories
 		return nil
 	}
 }
@@ -126,16 +139,17 @@ func New(creator string, opts ...Options) (*Permission, error) {
 
 	// create a default permission
 	p := &Permission{
-		Username:  util.RandStr(),
-		Password:  uuid.New().String(),
-		Owner:     creator,
-		Creator:   creator,
-		ACLs:      defaultACLs,
-		Ops:       defaultOps,
-		Indices:   []string{},
-		CreatedAt: time.Now().Format(time.RFC3339),
-		TTL:       time.Duration(util.DaysInCurrentYear()) * 24 * time.Hour,
-		Limits:    &defaultLimits,
+		Username:   util.RandStr(),
+		Password:   uuid.New().String(),
+		Owner:      creator,
+		Creator:    creator,
+		ACLs:       defaultACLs,
+		Categories: defaultCategories,
+		Ops:        defaultOps,
+		Indices:    []string{},
+		CreatedAt:  time.Now().Format(time.RFC3339),
+		TTL:        time.Duration(util.DaysInCurrentYear()) * 24 * time.Hour,
+		Limits:     &defaultLimits,
 	}
 
 	// run the options on it
@@ -157,16 +171,17 @@ func NewAdmin(creator string, opts ...Options) (*Permission, error) {
 	}
 
 	p := &Permission{
-		Username:  util.RandStr(),
-		Password:  uuid.New().String(),
-		Owner:     creator,
-		Creator:   creator,
-		ACLs:      adminACLs,
-		Ops:       adminOps,
-		Indices:   []string{"*"},
-		CreatedAt: time.Now().Format(time.RFC3339),
-		TTL:       time.Duration(util.DaysInCurrentYear()) * 24 * time.Hour,
-		Limits:    &defaultAdminLimits,
+		Username:   util.RandStr(),
+		Password:   uuid.New().String(),
+		Owner:      creator,
+		Creator:    creator,
+		ACLs:       adminACLs,
+		Categories: adminCategories,
+		Ops:        adminOps,
+		Indices:    []string{"*"},
+		CreatedAt:  time.Now().Format(time.RFC3339),
+		TTL:        time.Duration(util.DaysInCurrentYear()) * 24 * time.Hour,
+		Limits:     &defaultAdminLimits,
 	}
 
 	// run the options on it
@@ -205,6 +220,16 @@ func (p *Permission) IsExpired() (bool, error) {
 func (p *Permission) HasACL(acl acl.ACL) bool {
 	for _, a := range p.ACLs {
 		if a == acl {
+			return true
+		}
+	}
+	return false
+}
+
+// HasCategory checks whether the permission has access to the given category.
+func (p *Permission) HasCategory(category category.Category) bool {
+	for _, c := range p.Categories {
+		if c == category {
 			return true
 		}
 	}
@@ -280,6 +305,9 @@ func (p *Permission) GetPatch() (map[string]interface{}, error) {
 	}
 	if p.ACLs != nil {
 		patch["acls"] = p.ACLs
+	}
+	if p.Categories != nil {
+		patch["categories"] = p.Categories
 	}
 	if p.Ops != nil {
 		patch["ops"] = p.Ops

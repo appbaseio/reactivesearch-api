@@ -1,6 +1,7 @@
 package elasticsearch
 
 import (
+	"github.com/appbaseio-confidential/arc/internal/types/category"
 	"context"
 	"fmt"
 	"log"
@@ -40,9 +41,11 @@ func list() []middleware.Middleware {
 		cleanPath,
 		logRequests,
 		classifyACL,
+		classifyCategory,
 		classifyOp,
 		basicAuth,
 		validateOp,
+		// validateCategory,
 		validateACL,
 		redirectRequests,
 	}
@@ -54,7 +57,7 @@ func classifyACL(h http.HandlerFunc) http.HandlerFunc {
 
 		template, err := currentRoute.GetPathTemplate()
 		if err != nil {
-			log.Fatalln(err)
+			log.Printf("%s: %v\n", logTag, err)
 			util.WriteBackError(w, "Page not found", http.StatusNotFound)
 			return
 		}
@@ -83,7 +86,7 @@ func classifyOp(h http.HandlerFunc) http.HandlerFunc {
 
 		template, err := route.GetPathTemplate()
 		if err != nil {
-			log.Fatalln(err)
+			log.Printf("%s: %v\n", logTag, err)
 			util.WriteBackError(w, "Page not found", http.StatusNotFound)
 			return
 		}
@@ -93,6 +96,28 @@ func classifyOp(h http.HandlerFunc) http.HandlerFunc {
 
 		ctx := r.Context()
 		ctx = context.WithValue(ctx, op.CtxKey, &routeOp)
+		r = r.WithContext(ctx)
+
+		h(w, r)
+	}
+}
+
+func classifyCategory(h http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		route := mux.CurrentRoute(r)
+
+		template, err := route.GetPathTemplate()
+		if err != nil {
+			log.Printf("%s: %v\n", logTag, err)
+			util.WriteBackError(w, "Page not found", http.StatusNotFound)
+			return
+		}
+		key := fmt.Sprintf("%s:%s", r.Method, template)
+		routeSpec := routeSpecs[key]
+		routeCategory := routeSpec.category
+
+		ctx := r.Context()
+		ctx = context.WithValue(ctx, category.CtxKey, &routeCategory)
 		r = r.WithContext(ctx)
 
 		h(w, r)
@@ -162,6 +187,54 @@ func validateACL(h http.HandlerFunc) http.HandlerFunc {
 	}
 }
 
+func validateCategory(h http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		ctx := r.Context()
+
+		errMsg := "An error occurred while validating request category"
+		reqCategory, err := category.FromContext(ctx)
+		if err != nil {
+			log.Printf("%s: %v\n", logTag, err)
+			util.WriteBackError(w, errMsg, http.StatusInternalServerError)
+			return
+		}
+		
+		reqCredential, err := credential.FromContext(ctx)
+		if err != nil {
+			log.Printf("%s: %v\n", logTag, err)
+			util.WriteBackError(w, errMsg, http.StatusInternalServerError)
+			return
+		}
+		if reqCredential == credential.User {
+			reqUser, err := user.FromContext(ctx)
+			if err != nil {
+				log.Printf("%s: %v\n", logTag, err)
+				util.WriteBackError(w, errMsg, http.StatusInternalServerError)
+				return
+			}
+			if !reqUser.HasCategory(*reqCategory) {
+				msg := fmt.Sprintf(`User with "username"="%s" does not have access to category "%s"`,
+					reqUser.Username, *reqCategory)
+				util.WriteBackError(w, msg, http.StatusUnauthorized)
+				return
+			}
+		} else if reqCredential == credential.Permission {
+			reqPermission, err := permission.FromContext(ctx)
+			if err != nil {
+				log.Printf("%s: %v", logTag, err)
+				util.WriteBackError(w, errMsg, http.StatusInternalServerError)
+				return
+			}
+			if !reqPermission.HasCategory(*reqCategory) {
+				msg := fmt.Sprintf(`Permission with "username"="%s" does not have access to category "%s"`,
+					reqPermission.Username, reqCategory)
+				util.WriteBackError(w, msg, http.StatusUnauthorized)
+				return
+			}
+		}
+	}
+}
+
 func validateOp(h http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
@@ -189,7 +262,7 @@ func validateOp(h http.HandlerFunc) http.HandlerFunc {
 			}
 			if !reqUser.CanDo(*reqOp) {
 				msg := fmt.Sprintf(`User with "username"="%s" does not have "%s" op`,
-					reqUser.Username, reqOp)
+					reqUser.Username, *reqOp)
 				util.WriteBackError(w, msg, http.StatusUnauthorized)
 				return
 			}
@@ -203,8 +276,8 @@ func validateOp(h http.HandlerFunc) http.HandlerFunc {
 
 			if !reqPermission.CanDo(*reqOp) {
 				msg := fmt.Sprintf(`Permission with "username"="%s" does not have "%s" operation`,
-					reqPermission.Username, reqOp)
-				util.WriteBackMessage(w, msg, http.StatusUnauthorized)
+					reqPermission.Username, *reqOp)
+				util.WriteBackError(w, msg, http.StatusUnauthorized)
 				return
 			}
 		}
@@ -221,7 +294,7 @@ func validateIndices(h http.HandlerFunc) http.HandlerFunc {
 		ctxIndices := ctx.Value(index.CtxKey)
 		if ctxIndices == nil {
 			log.Printf("%s: unable to fetch indices from request context", logTag)
-			util.WriteBackMessage(w, "Internal server error", http.StatusInternalServerError)
+			util.WriteBackError(w, errMsg, http.StatusInternalServerError)
 			return
 		}
 		indices, ok := ctxIndices.([]string)

@@ -10,7 +10,7 @@ import (
 	"github.com/appbaseio-confidential/arc/internal/util"
 )
 
-func (es *Elasticsearch) handler() http.HandlerFunc {
+func (es *elasticsearch) handler() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
 

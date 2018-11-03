@@ -9,6 +9,7 @@ import (
 
 	"github.com/appbaseio-confidential/arc/internal/errors"
 	"github.com/appbaseio-confidential/arc/internal/types/acl"
+	"github.com/appbaseio-confidential/arc/internal/types/category"
 	"github.com/appbaseio-confidential/arc/internal/types/op"
 )
 
@@ -29,14 +30,15 @@ const (
 
 // User defines a user type.
 type User struct {
-	Username  string         `json:"username"`
-	Password  string         `json:"password"`
-	IsAdmin   *bool          `json:"is_admin"`
-	ACLs      []acl.ACL      `json:"acls"`
-	Email     string         `json:"email"`
-	Ops       []op.Operation `json:"ops"`
-	Indices   []string       `json:"indices"`
-	CreatedAt string         `json:"created_at"`
+	Username   string              `json:"username"`
+	Password   string              `json:"password"`
+	IsAdmin    *bool               `json:"is_admin"`
+	ACLs       []acl.ACL           `json:"acls"`
+	Email      string              `json:"email"`
+	Ops        []op.Operation      `json:"ops"`
+	Categories []category.Category `json:"categories"`
+	Indices    []string            `json:"indices"`
+	CreatedAt  string              `json:"created_at"`
 }
 
 // Options is a function type used to define a user's properties.
@@ -57,6 +59,17 @@ func SetACLs(acls []acl.ACL) Options {
 			return errors.NilACLsError
 		}
 		u.ACLs = acls
+		return nil
+	}
+}
+
+// SetCategories sets the categories a user can have access to.
+func SetCategories(categories []category.Category) Options {
+	return func(u *User) error {
+		if categories == nil {
+			return errors.ErrNilCategories
+		}
+		u.Categories = categories
 		return nil
 	}
 }
@@ -106,13 +119,14 @@ func New(username, password string, opts ...Options) (*User, error) {
 
 	// create a default user
 	u := &User{
-		Username:  username,
-		Password:  password,
-		IsAdmin:   &isAdminFalse, // pointer to bool
-		ACLs:      defaultACLs,
-		Ops:       defaultOps,
-		Indices:   []string{},
-		CreatedAt: time.Now().Format(time.RFC3339),
+		Username:   username,
+		Password:   password,
+		IsAdmin:    &isAdminFalse, // pointer to bool
+		ACLs:       defaultACLs,
+		Categories: defaultCategories,
+		Ops:        defaultOps,
+		Indices:    []string{},
+		CreatedAt:  time.Now().Format(time.RFC3339),
 	}
 
 	// run the options on it
@@ -134,13 +148,14 @@ func NewAdmin(username, password string, opts ...Options) (*User, error) {
 
 	// create an admin user
 	u := &User{
-		Username:  username,
-		Password:  password,
-		IsAdmin:   &isAdminTrue,
-		ACLs:      adminACLs,
-		Ops:       adminOps,
-		Indices:   []string{"*"},
-		CreatedAt: time.Now().Format(time.RFC3339),
+		Username:   username,
+		Password:   password,
+		IsAdmin:    &isAdminTrue,
+		ACLs:       adminACLs,
+		Categories: adminCategories,
+		Ops:        adminOps,
+		Indices:    []string{"*"},
+		CreatedAt:  time.Now().Format(time.RFC3339),
 	}
 
 	// run the options on it
@@ -170,6 +185,16 @@ func FromContext(ctx context.Context) (*User, error) {
 func (u *User) HasACL(acl acl.ACL) bool {
 	for _, a := range u.ACLs {
 		if a == acl {
+			return true
+		}
+	}
+	return false
+}
+
+// HasCategory checks whether the user has access to the given category.
+func (u *User) HasCategory(category category.Category) bool {
+	for _, c := range u.Categories {
+		if c == category {
 			return true
 		}
 	}
@@ -219,6 +244,9 @@ func (u *User) GetPatch() (map[string]interface{}, error) {
 	}
 	if u.ACLs != nil {
 		patch["acls"] = u.ACLs
+	}
+	if u.Categories != nil {
+		patch["categories"] = u.Categories
 	}
 	if u.Ops != nil {
 		patch["ops"] = u.Ops

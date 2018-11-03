@@ -10,31 +10,31 @@ import (
 const logTag = "[elasticsearch]"
 
 var (
-	instance *Elasticsearch
-	once     sync.Once
+	singleton *elasticsearch
+	once      sync.Once
 )
 
-type Elasticsearch struct {
+type elasticsearch struct {
 	specs []api
 }
 
 func init() {
-	arc.RegisterPlugin(Instance())
+	arc.RegisterPlugin(instance())
 }
 
-func Instance() *Elasticsearch {
-	once.Do(func() { instance = &Elasticsearch{} })
-	return instance
+func instance() *elasticsearch {
+	once.Do(func() { singleton = &elasticsearch{} })
+	return singleton
 }
 
-func (es *Elasticsearch) Name() string {
+func (es *elasticsearch) Name() string {
 	return logTag
 }
 
-func (es *Elasticsearch) InitFunc() error {
+func (es *elasticsearch) InitFunc() error {
 	return es.preprocess()
 }
 
-func (es *Elasticsearch) Routes() []route.Route {
+func (es *elasticsearch) Routes() []route.Route {
 	return es.routes()
 }
