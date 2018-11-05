@@ -1,9 +1,9 @@
-# Category
+# ACLs
 
-Categories allow a fine grained control over the Elasticsearch APIs in addition to the ACLs. Each category resembles an
-action performed by an Elasticsearch API. For brevity, setting and organising ACLs automatically sets the default 
-categories associated with the set ACLs. Setting categories adds just another level of control to provide access to 
-Elasticsearch APIs within a given ACL. Each Elasticsearch ACL maps to the following categories:
+ACLs allow a fine grained control over the Elasticsearch APIs in addition to the Categories. Each ACL resembles an
+action performed by an Elasticsearch API. For brevity, setting and organising Categories automatically sets the default 
+ACLs associated with the set Categories. Setting ACLs adds just another level of control to provide access to 
+Elasticsearch APIs within a given Category. Each Elasticsearch Category maps to the following acls:
 
 1. `Docs`:
 	- [**Create**](http://www.elastic.co/guide/en/elasticsearch/reference/master/docs-index_.html)

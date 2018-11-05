@@ -1,11 +1,11 @@
-# ACL
+# Category
 
-ACLs can be used to control access to data and APIs in Arc. Along with Elasticsearch APIs, ACLs cover the APIs provided 
-by Arc itself to allow fine-grained control over the API consumption. For Elasticsearch, ACLs broadly resembles to the 
+Categories can be used to control access to data and APIs in Arc. Along with Elasticsearch APIs, Categories cover the APIs provided 
+by Arc itself to allow fine-grained control over the API consumption. For Elasticsearch, Categories broadly resembles to the 
 API [classification](https://www.elastic.co/guide/en/elasticsearch/reference/current/index.html) that Elasticsearch 
-provides such as **Document APIs**, **Search APIs**, **Indices APIs** and so on. For Arc, ACLs resembles to the 
-additional APIs on top of Elasticsearch APIs, such as analytics and book keeping. A combination of ACLs determine the 
-APIs a user or permission can access. The list of ACLs currently supported are as follows:
+provides such as **Document APIs**, **Search APIs**, **Indices APIs** and so on. For Arc, Categories resembles to the 
+additional APIs on top of Elasticsearch APIs, such as analytics and book keeping. A combination of Categories determine the 
+APIs a user or permission can access. The list of Categories currently supported are as follows:
 
 - `Docs`: allows access to Elasticsearch's [**Document APIs**](https://www.elastic.co/guide/en/elasticsearch/reference/current/docs.html).
 - `Search`: allows access to Elasticsearch's [**Search APIs**](https://www.elastic.co/guide/en/elasticsearch/reference/current/search.html)
