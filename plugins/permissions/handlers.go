@@ -21,7 +21,7 @@ func (p *permissions) getPermission() http.HandlerFunc {
 
 		rawPermission, err := p.es.getRawPermission(username)
 		if err != nil {
-			msg := fmt.Sprintf(`Permission with "username"="%s" Not Found`, username)
+			msg := fmt.Sprintf(`permission with "username"="%s" Not Found`, username)
 			log.Printf("%s: %s: %v\n", logTag, msg, err)
 			util.WriteBackError(w, msg, http.StatusNotFound)
 			return
@@ -42,7 +42,7 @@ func (p *permissions) postPermission() http.HandlerFunc {
 
 		body, err := ioutil.ReadAll(r.Body)
 		if err != nil {
-			msg := "Can't read request body"
+			msg := "can't read request body"
 			log.Printf("%s: %s: %v\n", logTag, msg, err)
 			util.WriteBackError(w, msg, http.StatusBadRequest)
 			return
@@ -51,7 +51,7 @@ func (p *permissions) postPermission() http.HandlerFunc {
 		var permissionBody permission.Permission
 		err = json.Unmarshal(body, &permissionBody)
 		if err != nil {
-			msg := "Can't parse request body"
+			msg := "can't parse request body"
 			log.Printf("%s: %s: %v\n", logTag, msg, err)
 			util.WriteBackError(w, msg, http.StatusBadRequest)
 			return
@@ -91,7 +91,7 @@ func (p *permissions) postPermission() http.HandlerFunc {
 
 		rawPermission, err := json.Marshal(*newPermission)
 		if err != nil {
-			msg := fmt.Sprintf(`An error occurred while creating permission for "creator"="%s"`, creator)
+			msg := fmt.Sprintf(`an error occurred while creating permission for "creator"="%s"`, creator)
 			log.Printf("%s: unable to marshal newPermission object: %v\n", logTag, err)
 			util.WriteBackError(w, msg, http.StatusInternalServerError)
 			return
@@ -103,7 +103,7 @@ func (p *permissions) postPermission() http.HandlerFunc {
 			return
 		}
 
-		msg := fmt.Sprintf(`An error occurred while creating permission for "creator"="%s"`, creator)
+		msg := fmt.Sprintf(`an error occurred while creating permission for "creator"="%s"`, creator)
 		log.Printf("%s: %s: %v\n", logTag, msg, err)
 		util.WriteBackError(w, msg, http.StatusInternalServerError)
 		return
@@ -117,7 +117,7 @@ func (p *permissions) patchPermission() http.HandlerFunc {
 
 		body, err := ioutil.ReadAll(r.Body)
 		if err != nil {
-			msg := "Can't read request body"
+			msg := "can't read request body"
 			log.Printf("%s: %s: %v\n", logTag, msg, err)
 			util.WriteBackError(w, msg, http.StatusBadRequest)
 			return
@@ -126,7 +126,7 @@ func (p *permissions) patchPermission() http.HandlerFunc {
 		var obj permission.Permission
 		err = json.Unmarshal(body, &obj)
 		if err != nil {
-			msg := "Can't parse request body"
+			msg := "can't parse request body"
 			log.Printf("%s: %s: %v\n", logTag, msg, err)
 			util.WriteBackError(w, msg, http.StatusBadRequest)
 			return
@@ -153,7 +153,7 @@ func (p *permissions) patchPermission() http.HandlerFunc {
 
 			categories, ok := patch["categories"].([]category.Category)
 			if !ok {
-				msg := fmt.Sprintf(`An error occurred while validating categories patch for user "%s"`, username)
+				msg := fmt.Sprintf(`an error occurred while validating categories patch for user "%s"`, username)
 				log.Printf("%s: unable to cast categories patch to []category.Category\n", logTag)
 				util.WriteBackError(w, msg, http.StatusInternalServerError)
 				return
@@ -171,7 +171,7 @@ func (p *permissions) patchPermission() http.HandlerFunc {
 			return
 		}
 
-		msg := fmt.Sprintf(`Permission with "username"="%s" Not Found`, username)
+		msg := fmt.Sprintf(`permission with "username"="%s" Not Found`, username)
 		log.Printf("%s: %s: %v\n", logTag, msg, err)
 		util.WriteBackError(w, msg, http.StatusInternalServerError)
 	}
@@ -184,12 +184,12 @@ func (p *permissions) deletePermission() http.HandlerFunc {
 
 		ok, err := p.es.deletePermission(username)
 		if ok && err == nil {
-			msg := fmt.Sprintf(`Permission with "username"="%s" deleted`, username)
+			msg := fmt.Sprintf(`permission with "username"="%s" deleted`, username)
 			util.WriteBackMessage(w, msg, http.StatusOK)
 			return
 		}
 
-		msg := fmt.Sprintf(`Permission with "username"="%s" Not Found`, username)
+		msg := fmt.Sprintf(`permission with "username"="%s" Not Found`, username)
 		log.Printf("%s: %s: %v\n", logTag, msg, err)
 		util.WriteBackError(w, msg, http.StatusNotFound)
 	}
@@ -201,7 +201,7 @@ func (p *permissions) getUserPermissions() http.HandlerFunc {
 
 		raw, err := p.es.getOwnerPermissions(owner)
 		if err != nil {
-			msg := fmt.Sprintf(`An error occurred while fetching permissions for "owner"="%s"`, owner)
+			msg := fmt.Sprintf(`an error occurred while fetching permissions for "owner"="%s"`, owner)
 			log.Printf("%s: %s: %v\n", logTag, msg, err)
 			util.WriteBackError(w, msg, http.StatusNotFound)
 			return

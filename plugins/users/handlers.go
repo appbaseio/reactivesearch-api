@@ -22,7 +22,7 @@ func (u *users) getUser() http.HandlerFunc {
 		if reqUser, err := user.FromContext(ctx); err == nil {
 			rawUser, err := json.Marshal(*reqUser)
 			if err != nil {
-				msg := "Error parsing the context user object"
+				msg := "error parsing the context user object"
 				log.Printf("%s: %s: %v\n", logTag, msg, err)
 				util.WriteBackError(w, msg, http.StatusInternalServerError)
 				return
@@ -34,7 +34,7 @@ func (u *users) getUser() http.HandlerFunc {
 		// fetch the user from elasticsearch
 		rawUser, err := u.es.getRawUser(username)
 		if err != nil {
-			msg := fmt.Sprintf(`User with "username"="%s" Not Found`, username)
+			msg := fmt.Sprintf(`user with "username"="%s" Not Found`, username)
 			log.Printf("%s: %s: %v\n", logTag, msg, err)
 			util.WriteBackError(w, msg, http.StatusNotFound)
 			return
@@ -49,13 +49,13 @@ func (u *users) getUserWithUsername() http.HandlerFunc {
 		vars := mux.Vars(r)
 		username, ok := vars["username"]
 		if !ok {
-			util.WriteBackError(w, `Can't get a user without a "username"`, http.StatusBadRequest)
+			util.WriteBackError(w, `can't get a user without a "username"`, http.StatusBadRequest)
 			return
 		}
 
 		rawUser, err := u.es.getRawUser(username)
 		if err != nil {
-			msg := fmt.Sprintf(`User with "username"="%s" Not Found`, username)
+			msg := fmt.Sprintf(`user with "username"="%s" not found`, username)
 			log.Printf("%s: %s: %v\n", logTag, msg, err)
 			util.WriteBackError(w, msg, http.StatusNotFound)
 			return
@@ -68,7 +68,7 @@ func (u *users) postUser() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		body, err := ioutil.ReadAll(r.Body)
 		if err != nil {
-			msg := "Can't read request body"
+			msg := "can't read request body"
 			log.Printf("%s: %s: %v\n", logTag, msg, err)
 			util.WriteBackError(w, msg, http.StatusBadRequest)
 			return
@@ -77,7 +77,7 @@ func (u *users) postUser() http.HandlerFunc {
 		var userBody user.User
 		err = json.Unmarshal(body, &userBody)
 		if err != nil {
-			msg := "Can't parse request body"
+			msg := "can't parse request body"
 			log.Printf("%s: %s: %v\n", logTag, msg, err)
 			util.WriteBackError(w, msg, http.StatusBadRequest)
 			return
@@ -102,16 +102,16 @@ func (u *users) postUser() http.HandlerFunc {
 			opts = append(opts, user.SetIndices(userBody.Indices))
 		}
 		if userBody.Username == "" {
-			util.WriteBackError(w, `Can't create a user without a "username"`, http.StatusBadRequest)
+			util.WriteBackError(w, `can't create a user without a "username"`, http.StatusBadRequest)
 			return
 		}
 		if userBody.Password == "" {
-			util.WriteBackError(w, `User "password" shouldn't be empty`, http.StatusBadRequest)
+			util.WriteBackError(w, `user "password" shouldn't be empty`, http.StatusBadRequest)
 			return
 		}
 		newUser, err := user.New(userBody.Username, userBody.Password, opts...)
 		if err != nil {
-			msg := fmt.Sprintf("An error occurred while creating user: %v", err)
+			msg := fmt.Sprintf("an error occurred while creating user: %v", err)
 			log.Printf("%s: %s: %v\n", logTag, msg, err)
 			util.WriteBackError(w, msg, http.StatusBadRequest)
 			return
@@ -119,7 +119,7 @@ func (u *users) postUser() http.HandlerFunc {
 
 		rawUser, err := json.Marshal(*newUser)
 		if err != nil {
-			msg := fmt.Sprintf(`An error occurred while creating a user with "username"="%s"`, userBody.Username)
+			msg := fmt.Sprintf(`an error occurred while creating a user with "username"="%s"`, userBody.Username)
 			log.Printf("%s: %s: %v\n", logTag, msg, err)
 			util.WriteBackError(w, msg, http.StatusInternalServerError)
 			return
@@ -131,7 +131,7 @@ func (u *users) postUser() http.HandlerFunc {
 			return
 		}
 
-		msg := fmt.Sprintf(`An error occurred while creating a user with "username"="%s": %v`, userBody.Username, err)
+		msg := fmt.Sprintf(`an error occurred while creating a user with "username"="%s": %v`, userBody.Username, err)
 		log.Printf("%s: %s\n", logTag, msg)
 		util.WriteBackError(w, msg, http.StatusInternalServerError)
 	}
@@ -143,7 +143,7 @@ func (u *users) patchUser() http.HandlerFunc {
 
 		body, err := ioutil.ReadAll(r.Body)
 		if err != nil {
-			msg := "Can't read request body"
+			msg := "can't read request body"
 			log.Printf(fmt.Sprintf("%s: %s: %v\n", logTag, msg, err))
 			util.WriteBackError(w, msg, http.StatusBadRequest)
 			return
@@ -152,7 +152,7 @@ func (u *users) patchUser() http.HandlerFunc {
 		var userBody user.User
 		err = json.Unmarshal(body, &userBody)
 		if err != nil {
-			msg := "Can't parse request body"
+			msg := "can't parse request body"
 			log.Printf("%s: %s: %v\n", logTag, msg, err)
 			util.WriteBackError(w, msg, http.StatusBadRequest)
 			return
@@ -172,7 +172,7 @@ func (u *users) patchUser() http.HandlerFunc {
 			// to patch against the acls it already has.
 			reqUser, err := u.es.getUser(username)
 			if err != nil {
-				msg := fmt.Sprintf(`An error occurred while fetching user with username="%s"`, username)
+				msg := fmt.Sprintf(`an error occurred while fetching user with username="%s"`, username)
 				log.Printf("%s: %v\n", logTag, err)
 				util.WriteBackError(w, msg, http.StatusInternalServerError)
 				return
@@ -180,7 +180,7 @@ func (u *users) patchUser() http.HandlerFunc {
 
 			categories, ok := patch["categories"].([]category.Category)
 			if !ok {
-				msg := fmt.Sprintf(`An error occurred while validating categories patch for user "%s"`, username)
+				msg := fmt.Sprintf(`an error occurred while validating categories patch for user "%s"`, username)
 				log.Printf("%s: unable to cast categories patch to []category.Category\n", logTag)
 				util.WriteBackError(w, msg, http.StatusInternalServerError)
 				return
@@ -198,7 +198,7 @@ func (u *users) patchUser() http.HandlerFunc {
 			return
 		}
 
-		msg := fmt.Sprintf(`User with "username"="%s" Not Found`, username)
+		msg := fmt.Sprintf(`user with "username"="%s" Not Found`, username)
 		log.Printf("%s: %s: %v\n", logTag, msg, err)
 		util.WriteBackError(w, msg, http.StatusNotFound)
 	}
@@ -209,13 +209,13 @@ func (u *users) patchUserWithUsername() http.HandlerFunc {
 		vars := mux.Vars(r)
 		username, ok := vars["username"]
 		if !ok {
-			util.WriteBackError(w, `Can't patch user without a "username"`, http.StatusBadRequest)
+			util.WriteBackError(w, `can't patch user without a "username"`, http.StatusBadRequest)
 			return
 		}
 
 		body, err := ioutil.ReadAll(r.Body)
 		if err != nil {
-			msg := "Can't read request body"
+			msg := "can't read request body"
 			log.Printf("%s: %s: %v\n", logTag, msg, err)
 			util.WriteBackError(w, msg, http.StatusBadRequest)
 			return
@@ -224,7 +224,7 @@ func (u *users) patchUserWithUsername() http.HandlerFunc {
 		var userBody user.User
 		err = json.Unmarshal(body, &userBody)
 		if err != nil {
-			msg := "Can't parse request body"
+			msg := "can't parse request body"
 			log.Printf("%s: %s: %v\n", logTag, msg, err)
 			util.WriteBackError(w, msg, http.StatusBadRequest)
 			return
@@ -244,7 +244,7 @@ func (u *users) patchUserWithUsername() http.HandlerFunc {
 			// to patch against the acls it already has.
 			reqUser, err := u.es.getUser(username)
 			if err != nil {
-				msg := fmt.Sprintf(`An error occurred while fetching user with username="%s"`, username)
+				msg := fmt.Sprintf(`an error occurred while fetching user with username="%s"`, username)
 				log.Printf("%s: %v\n", logTag, err)
 				util.WriteBackError(w, msg, http.StatusInternalServerError)
 				return
@@ -252,7 +252,7 @@ func (u *users) patchUserWithUsername() http.HandlerFunc {
 
 			categories, ok := patch["categories"].([]category.Category)
 			if !ok {
-				msg := fmt.Sprintf(`An error occurred while validating categories patch for user "%s"`, username)
+				msg := fmt.Sprintf(`an error occurred while validating categories patch for user "%s"`, username)
 				log.Printf("%s: unable to cast categories patch to []category.Category\n", logTag)
 				util.WriteBackError(w, msg, http.StatusInternalServerError)
 				return
@@ -270,7 +270,7 @@ func (u *users) patchUserWithUsername() http.HandlerFunc {
 			return
 		}
 
-		msg := fmt.Sprintf(`User with "username"="%s" Not Found`, username)
+		msg := fmt.Sprintf(`user with "username"="%s" not found`, username)
 		log.Printf("%s: %s: %v\n", logTag, msg, err)
 		util.WriteBackError(w, msg, http.StatusNotFound)
 	}
@@ -282,12 +282,12 @@ func (u *users) deleteUser() http.HandlerFunc {
 
 		ok, err := u.es.deleteUser(username)
 		if ok && err == nil {
-			msg := fmt.Sprintf(`User with "username"="%s" deleted`, username)
+			msg := fmt.Sprintf(`user with "username"="%s" deleted`, username)
 			util.WriteBackMessage(w, msg, http.StatusOK)
 			return
 		}
 
-		msg := fmt.Sprintf(`User with "username"="%s" Not Found`, username)
+		msg := fmt.Sprintf(`user with "username"="%s" not found`, username)
 		log.Printf("%s: %s: %v\n", logTag, msg, err)
 		util.WriteBackError(w, msg, http.StatusNotFound)
 	}
@@ -298,18 +298,18 @@ func (u *users) deleteUserWithUsername() http.HandlerFunc {
 		vars := mux.Vars(r)
 		username, ok := vars["username"]
 		if !ok {
-			util.WriteBackError(w, `Can't delete a user without a "username"`, http.StatusBadRequest)
+			util.WriteBackError(w, `can't delete a user without a "username"`, http.StatusBadRequest)
 			return
 		}
 
 		ok, err := u.es.deleteUser(username)
 		if ok && err == nil {
-			msg := fmt.Sprintf(`User with "username"="%s" deleted`, username)
+			msg := fmt.Sprintf(`user with "username"="%s" deleted`, username)
 			util.WriteBackMessage(w, msg, http.StatusOK)
 			return
 		}
 
-		msg := fmt.Sprintf(`User with "username"="%s" Not Found`, username)
+		msg := fmt.Sprintf(`user with "username"="%s" Not Found`, username)
 		log.Printf("%s: %s: %v\n", logTag, msg, err)
 		util.WriteBackError(w, msg, http.StatusNotFound)
 	}
