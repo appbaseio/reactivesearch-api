@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/appbaseio-confidential/arc/internal/types/category"
 	"github.com/appbaseio-confidential/arc/internal/types/permission"
 	"github.com/appbaseio-confidential/arc/internal/types/user"
 	"github.com/appbaseio-confidential/arc/internal/util"
@@ -66,6 +67,9 @@ func (p *permissions) postPermission() http.HandlerFunc {
 		if permissionBody.ACLs != nil {
 			opts = append(opts, permission.SetACLs(permissionBody.ACLs))
 		}
+		if permissionBody.Categories != nil {
+			opts = append(opts, permission.SetCategories(permissionBody.Categories))
+		}
 		if permissionBody.Limits != nil {
 			opts = append(opts, permission.SetLimits(permissionBody.Limits))
 		}
@@ -80,15 +84,14 @@ func (p *permissions) postPermission() http.HandlerFunc {
 			newPermission, err = permission.New(creator, opts...)
 		}
 		if err != nil {
-			msg := fmt.Sprintf("Error constructing permission object: %v", err)
-			log.Printf("%s: %s: %v\n", logTag, msg, err)
-			util.WriteBackError(w, msg, http.StatusInternalServerError)
+			log.Printf("%s: %v\n", logTag, err)
+			util.WriteBackError(w, err.Error(), http.StatusBadRequest)
 			return
 		}
 
 		rawPermission, err := json.Marshal(*newPermission)
 		if err != nil {
-			msg := fmt.Sprintf(`An error occurred while creating a permission for "creator"="%s"`, creator)
+			msg := fmt.Sprintf(`An error occurred while creating permission for "creator"="%s"`, creator)
 			log.Printf("%s: unable to marshal newPermission object: %v\n", logTag, err)
 			util.WriteBackError(w, msg, http.StatusInternalServerError)
 			return
@@ -100,7 +103,7 @@ func (p *permissions) postPermission() http.HandlerFunc {
 			return
 		}
 
-		msg := fmt.Sprintf(`An error occurred while creating a permission for "creator"="%s"`, creator)
+		msg := fmt.Sprintf(`An error occurred while creating permission for "creator"="%s"`, creator)
 		log.Printf("%s: %s: %v\n", logTag, msg, err)
 		util.WriteBackError(w, msg, http.StatusInternalServerError)
 		return
@@ -134,6 +137,32 @@ func (p *permissions) patchPermission() http.HandlerFunc {
 			log.Printf("%s: %v\n", logTag, err)
 			util.WriteBackError(w, err.Error(), http.StatusBadRequest)
 			return
+		}
+
+		// If user is trying to patch categories with providing acls.
+		if patch["acls"] == nil && patch["categories"] != nil {
+			// we need to fetch the permission object from elasticsearch before we make
+			// a patch request in order to validate the categories that the user intends
+			// to patch against the acls it already has.
+			reqPermission, err := p.es.getPermission(username)
+			if err != nil {
+				log.Printf("%s: %v\n", logTag, err)
+				util.WriteBackError(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+
+			categories, ok := patch["categories"].([]category.Category)
+			if !ok {
+				msg := fmt.Sprintf(`An error occurred while validating categories patch for user "%s"`, username)
+				log.Printf("%s: unable to cast categories patch to []category.Category\n", logTag)
+				util.WriteBackError(w, msg, http.StatusInternalServerError)
+				return
+			}
+
+			if err := reqPermission.ValidateCategories(categories...); err != nil {
+				util.WriteBackError(w, err.Error(), http.StatusBadRequest)
+				return
+			}
 		}
 
 		raw, err := p.es.patchPermission(username, patch)

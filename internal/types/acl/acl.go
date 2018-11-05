@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/appbaseio-confidential/arc/internal/errors"
+	"github.com/appbaseio-confidential/arc/internal/types/category"
 )
 
 type contextKey string
@@ -119,6 +120,106 @@ func (a ACL) IsFromES() bool {
 		a == Cat ||
 		a == Clusters ||
 		a == Misc
+}
+
+// HasCategory checks whether the given category is a value in the acl categories.
+func (a ACL) HasCategory(c category.Category) bool {
+	return category.Contains(a.Categories(), c)
+}
+
+// Categories returns the categories associated with the acl.
+func (a ACL) Categories() []category.Category {
+	switch a {
+	case Docs:
+		return []category.Category{
+			category.Reindex,
+			category.Termvectors,
+			category.Update,
+			category.Create,
+			category.Mtermvectors,
+			category.Bulk,
+			category.Delete,
+			category.Source,
+			category.DeleteByQuery,
+			category.Get,
+			category.Mget,
+			category.UpdateByQuery,
+			category.Index,
+			category.Exists,
+		}
+	case Search:
+		return []category.Category{
+			category.FieldCaps,
+			category.Msearch,
+			category.Validate,
+			category.RankEval,
+			category.Render,
+			category.SearchShards,
+			category.Search,
+			category.Count,
+			category.Explain,
+		}
+	case Cat:
+		return []category.Category{
+			category.Cat,
+		}
+	case Indices:
+		return []category.Category{
+			category.Upgrade,
+			category.Settings,
+			category.Indices,
+			category.Split,
+			category.Aliases,
+			category.Stats,
+			category.Template,
+			category.Open,
+			category.Mapping,
+			category.Recovery,
+			category.Analyze,
+			category.Cache,
+			category.Forcemerge,
+			category.Alias,
+			category.Refresh,
+			category.Segments,
+			category.Close,
+			category.Flush,
+			category.Shrink,
+			category.ShardStores,
+			category.Rollover,
+		}
+	case Clusters:
+		return []category.Category{
+			category.Remote,
+			category.Cat,
+			category.Nodes,
+			category.Tasks,
+			category.Cluster,
+		}
+	case Misc:
+		return []category.Category{
+			category.Scripts,
+			category.Get,
+			category.Ingest,
+			category.Snapshot,
+		}
+	default:
+		return []category.Category{}
+	}
+}
+
+// CategoriesFor returns a list of all the categories for given acls.
+func CategoriesFor(acls ...ACL) []category.Category {
+	var categories []category.Category
+	set := make(map[category.Category]bool)
+	for _, acl := range acls {
+		for _, c := range acl.Categories() {
+			if _, ok := set[c]; !ok {
+				set[c] = true
+				categories = append(categories, c)
+			}
+		}
+	}
+	return categories
 }
 
 // FromContext retrieves the acl stored against the acl.CtxKey from the context.

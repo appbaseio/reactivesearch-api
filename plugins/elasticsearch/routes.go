@@ -22,6 +22,7 @@ import (
 var (
 	routes     []route.Route
 	routeSpecs = make(map[string]api)
+	categories = make(map[acl.ACL]map[category.Category]bool)
 )
 
 type api struct {
@@ -82,6 +83,12 @@ func (es *elasticsearch) preprocess() error {
 				key := fmt.Sprintf("%s:%s", method, path)
 				routeSpecs[key] = api
 			}
+		}
+		if _, ok := categories[api.acl]; !ok {
+			categories[api.acl] = make(map[category.Category]bool)
+		}
+		if _, ok := categories[api.acl][api.category]; !ok {
+			categories[api.acl][api.category] = true
 		}
 	}
 
@@ -193,7 +200,6 @@ func decodeSpecFile(file string, wg *sync.WaitGroup, apis chan<- api) {
 	specCategory, err := decodeCategory(specName, &s)
 	if err != nil {
 		log.Printf(`%s: unable to categorize spec "%s": %v\n`, logTag, specName, err)
-		return
 	}
 
 	apis <- api{
@@ -262,8 +268,19 @@ func decodeCategory(specName string, spec *spec) (*category.Category, error) {
 	categoryString := strings.Split(specName, ".")[0]
 	c, err := category.FromString(categoryString)
 	if err != nil {
-		return nil, err
+		defaultCategory := category.Get
+		return &defaultCategory, err
 	}
 
 	return &c, nil
+}
+
+func printCategoriesByACL() {
+	for a, c := range categories {
+		fmt.Printf("%-10s: ", a)
+		for k := range c {
+			fmt.Printf("%s, ", k)
+		}
+		fmt.Printf("\n")
+	}
 }

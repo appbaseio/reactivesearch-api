@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/appbaseio-confidential/arc/internal/types/category"
 	"github.com/appbaseio-confidential/arc/internal/types/user"
 	"github.com/appbaseio-confidential/arc/internal/util"
 	"github.com/gorilla/mux"
@@ -91,6 +92,9 @@ func (u *users) postUser() http.HandlerFunc {
 		if userBody.ACLs != nil {
 			opts = append(opts, user.SetACLs(userBody.ACLs))
 		}
+		if userBody.Categories != nil {
+			opts = append(opts, user.SetCategories(userBody.Categories))
+		}
 		if userBody.Ops != nil {
 			opts = append(opts, user.SetOps(userBody.Ops))
 		}
@@ -107,9 +111,9 @@ func (u *users) postUser() http.HandlerFunc {
 		}
 		newUser, err := user.New(userBody.Username, userBody.Password, opts...)
 		if err != nil {
-			msg := fmt.Sprintf("Error constructing user object: %v", err)
+			msg := fmt.Sprintf("An error occurred while creating user: %v", err)
 			log.Printf("%s: %s: %v\n", logTag, msg, err)
-			util.WriteBackError(w, msg, http.StatusInternalServerError)
+			util.WriteBackError(w, msg, http.StatusBadRequest)
 			return
 		}
 
@@ -161,6 +165,33 @@ func (u *users) patchUser() http.HandlerFunc {
 			return
 		}
 
+		// If user is trying to patch categories without providing acls.
+		if patch["acls"] == nil && patch["categories"] != nil {
+			// we need to fetch the user object from elasticsearch before we make
+			// a patch request in order to validate the categories that the user intends
+			// to patch against the acls it already has.
+			reqUser, err := u.es.getUser(username)
+			if err != nil {
+				msg := fmt.Sprintf(`An error occurred while fetching user with username="%s"`, username)
+				log.Printf("%s: %v\n", logTag, err)
+				util.WriteBackError(w, msg, http.StatusInternalServerError)
+				return
+			}
+
+			categories, ok := patch["categories"].([]category.Category)
+			if !ok {
+				msg := fmt.Sprintf(`An error occurred while validating categories patch for user "%s"`, username)
+				log.Printf("%s: unable to cast categories patch to []category.Category\n", logTag)
+				util.WriteBackError(w, msg, http.StatusInternalServerError)
+				return
+			}
+
+			if err := reqUser.ValidateCategories(categories...); err != nil {
+				util.WriteBackError(w, err.Error(), http.StatusBadRequest)
+				return
+			}
+		}
+
 		raw, err := u.es.patchUser(username, patch)
 		if err == nil {
 			util.WriteBackRaw(w, raw, http.StatusOK)
@@ -204,6 +235,33 @@ func (u *users) patchUserWithUsername() http.HandlerFunc {
 			log.Printf("%s: %v", logTag, err)
 			util.WriteBackError(w, err.Error(), http.StatusBadRequest)
 			return
+		}
+
+		// If user is trying to patch categories without providing acls.
+		if patch["acls"] == nil && patch["categories"] != nil {
+			// we need to fetch the user object from elasticsearch before we make
+			// a patch request in order to validate the categories that the user intends
+			// to patch against the acls it already has.
+			reqUser, err := u.es.getUser(username)
+			if err != nil {
+				msg := fmt.Sprintf(`An error occurred while fetching user with username="%s"`, username)
+				log.Printf("%s: %v\n", logTag, err)
+				util.WriteBackError(w, msg, http.StatusInternalServerError)
+				return
+			}
+
+			categories, ok := patch["categories"].([]category.Category)
+			if !ok {
+				msg := fmt.Sprintf(`An error occurred while validating categories patch for user "%s"`, username)
+				log.Printf("%s: unable to cast categories patch to []category.Category\n", logTag)
+				util.WriteBackError(w, msg, http.StatusInternalServerError)
+				return
+			}
+
+			if err := reqUser.ValidateCategories(categories...); err != nil {
+				util.WriteBackError(w, err.Error(), http.StatusBadRequest)
+				return
+			}
 		}
 
 		raw, err := u.es.patchUser(username, patch)

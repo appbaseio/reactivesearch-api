@@ -52,8 +52,23 @@ func newClient(url, indexName, mapping string) (*elasticsearch, error) {
 	return es, nil
 }
 
+func (es *elasticsearch) getPermission(username string) (*permission.Permission, error) {
+	raw, err := es.getRawPermission(username)
+	if err != nil {
+		return nil, err
+	}
+
+	var p permission.Permission
+	err = json.Unmarshal(raw, &p)
+	if err != nil {
+		return nil, err
+	}
+
+	return &p, nil
+}
+
 func (es *elasticsearch) getRawPermission(username string) ([]byte, error) {
-	resp, err := es.client.Get().
+	response, err := es.client.Get().
 		Index(es.indexName).
 		Type(es.typeName).
 		Id(username).
@@ -63,7 +78,7 @@ func (es *elasticsearch) getRawPermission(username string) ([]byte, error) {
 		return nil, err
 	}
 
-	src, err := resp.Source.MarshalJSON()
+	src, err := response.Source.MarshalJSON()
 	if err != nil {
 		return nil, err
 	}

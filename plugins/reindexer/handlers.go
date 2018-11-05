@@ -44,10 +44,10 @@ func (rx *reindexer) reindex() http.HandlerFunc {
 		err = rx.es.reindex(indexName, body.Mappings, body.Settings, body.Include, body.Exclude, body.Types)
 		if err != nil {
 			log.Printf("%s: %v\n", logTag, err)
-			util.WriteBackError(w, err.Error(), http.StatusInternalServerError)
+			util.WriteBackError(w, err.Error(), http.StatusNotFound)
 			return
 		}
 
-		util.WriteBackMessage(w, "Reindex successfull", http.StatusOK)
+		util.WriteBackMessage(w, "Reindex successful", http.StatusOK)
 	}
 }

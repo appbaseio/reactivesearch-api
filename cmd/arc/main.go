@@ -68,9 +68,9 @@ func main() {
 
 	plugins := arc.ListPlugins()
 	criteria := func(p1, p2 arc.Plugin) bool {
-		if p1.Name() == "[es]" {
+		if p1.Name() == "[elasticsearch]" {
 			return false
-		} else if p2.Name() == "[es]" {
+		} else if p2.Name() == "[elasticsearch]" {
 			return true
 		} else {
 			return p1.Name() < p2.Name()

@@ -53,6 +53,7 @@ func SetIsAdmin(isAdmin bool) Options {
 }
 
 // SetACLs sets the acls a user can have access to.
+// ACLs must always be set before setting the Categories.
 func SetACLs(acls []acl.ACL) Options {
 	return func(u *User) error {
 		if acls == nil {
@@ -64,11 +65,17 @@ func SetACLs(acls []acl.ACL) Options {
 }
 
 // SetCategories sets the categories a user can have access to.
+// Categories must always be set after setting the acls.
 func SetCategories(categories []category.Category) Options {
 	return func(u *User) error {
 		if categories == nil {
 			return errors.ErrNilCategories
 		}
+
+		if err := u.ValidateCategories(categories...); err != nil {
+			return err
+		}
+
 		u.Categories = categories
 		return nil
 	}
@@ -119,14 +126,13 @@ func New(username, password string, opts ...Options) (*User, error) {
 
 	// create a default user
 	u := &User{
-		Username:   username,
-		Password:   password,
-		IsAdmin:    &isAdminFalse, // pointer to bool
-		ACLs:       defaultACLs,
-		Categories: defaultCategories,
-		Ops:        defaultOps,
-		Indices:    []string{},
-		CreatedAt:  time.Now().Format(time.RFC3339),
+		Username:  username,
+		Password:  password,
+		IsAdmin:   &isAdminFalse, // pointer to bool
+		ACLs:      defaultACLs,
+		Ops:       defaultOps,
+		Indices:   []string{},
+		CreatedAt: time.Now().Format(time.RFC3339),
 	}
 
 	// run the options on it
@@ -134,6 +140,11 @@ func New(username, password string, opts ...Options) (*User, error) {
 		if err := option(u); err != nil {
 			return nil, err
 		}
+	}
+
+	// set the categories if not set by Options explicitly
+	if u.Categories == nil {
+		u.Categories = acl.CategoriesFor(u.ACLs...)
 	}
 
 	return u, nil
@@ -148,14 +159,13 @@ func NewAdmin(username, password string, opts ...Options) (*User, error) {
 
 	// create an admin user
 	u := &User{
-		Username:   username,
-		Password:   password,
-		IsAdmin:    &isAdminTrue,
-		ACLs:       adminACLs,
-		Categories: adminCategories,
-		Ops:        adminOps,
-		Indices:    []string{"*"},
-		CreatedAt:  time.Now().Format(time.RFC3339),
+		Username:  username,
+		Password:  password,
+		IsAdmin:   &isAdminTrue,
+		ACLs:      adminACLs,
+		Ops:       adminOps,
+		Indices:   []string{"*"},
+		CreatedAt: time.Now().Format(time.RFC3339),
 	}
 
 	// run the options on it
@@ -163,6 +173,11 @@ func NewAdmin(username, password string, opts ...Options) (*User, error) {
 		if err := option(u); err != nil {
 			return nil, err
 		}
+	}
+
+	// set the categories if not set by Options explicitly
+	if u.Categories == nil {
+		u.Categories = acl.CategoriesFor(u.ACLs...)
 	}
 
 	return u, nil
@@ -189,6 +204,25 @@ func (u *User) HasACL(acl acl.ACL) bool {
 		}
 	}
 	return false
+}
+
+func (u *User) hasACLForCategory(category category.Category) bool {
+	for _, acl := range u.ACLs {
+		if acl.HasCategory(category) {
+			return true
+		}
+	}
+	return false
+}
+
+// ValidateCategories checks if the user can possess the given set of categories.
+func (u *User) ValidateCategories(categories ...category.Category) error {
+	for _, c := range categories {
+		if !u.hasACLForCategory(c) {
+			return fmt.Errorf(`user doesn't have acls to access "%s" category`, c)
+		}
+	}
+	return nil
 }
 
 // HasCategory checks whether the user has access to the given category.
@@ -244,6 +278,13 @@ func (u *User) GetPatch() (map[string]interface{}, error) {
 	}
 	if u.ACLs != nil {
 		patch["acls"] = u.ACLs
+		if u.Categories != nil {
+			if err := u.ValidateCategories(u.Categories...); err != nil {
+				return nil, err
+			}
+		} else {
+			patch["categories"] = acl.CategoriesFor(u.ACLs...)
+		}
 	}
 	if u.Categories != nil {
 		patch["categories"] = u.Categories

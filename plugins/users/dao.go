@@ -2,6 +2,7 @@ package users
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"log"
 
@@ -50,6 +51,21 @@ func newClient(url, indexName, mapping string) (*elasticsearch, error) {
 
 	log.Printf("%s successfully created index named '%s'", logTag, indexName)
 	return es, nil
+}
+
+func (es *elasticsearch) getUser(username string) (*user.User, error) {
+	raw, err := es.getRawUser(username)
+	if err != nil {
+		return nil, err
+	}
+
+	var u user.User
+	err = json.Unmarshal(raw, &u)
+	if err != nil {
+		return nil, err
+	}
+
+	return &u, nil
 }
 
 func (es *elasticsearch) getRawUser(username string) ([]byte, error) {

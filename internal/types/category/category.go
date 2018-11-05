@@ -84,3 +84,13 @@ func FromContext(ctx context.Context) (*Category, error) {
 	}
 	return reqCategory, nil
 }
+
+// Contains checks if the given slice of categories contains the given category.
+func Contains(categories []Category, category Category) bool {
+	for _, c := range categories {
+		if c == category {
+			return true
+		}
+	}
+	return false
+}

@@ -88,6 +88,13 @@ func SetCategories(categories []category.Category) Options {
 		if categories == nil {
 			return errors.ErrNilCategories
 		}
+
+		for _, c := range categories {
+			if !p.hasACLForCategory(c) {
+				return fmt.Errorf(`permission doesn't have acls to access "%s" category`, c)
+			}
+		}
+
 		p.Categories = categories
 		return nil
 	}
@@ -139,17 +146,16 @@ func New(creator string, opts ...Options) (*Permission, error) {
 
 	// create a default permission
 	p := &Permission{
-		Username:   util.RandStr(),
-		Password:   uuid.New().String(),
-		Owner:      creator,
-		Creator:    creator,
-		ACLs:       defaultACLs,
-		Categories: defaultCategories,
-		Ops:        defaultOps,
-		Indices:    []string{},
-		CreatedAt:  time.Now().Format(time.RFC3339),
-		TTL:        time.Duration(util.DaysInCurrentYear()) * 24 * time.Hour,
-		Limits:     &defaultLimits,
+		Username:  util.RandStr(),
+		Password:  uuid.New().String(),
+		Owner:     creator,
+		Creator:   creator,
+		ACLs:      defaultACLs,
+		Ops:       defaultOps,
+		Indices:   []string{},
+		CreatedAt: time.Now().Format(time.RFC3339),
+		TTL:       time.Duration(util.DaysInCurrentYear()) * 24 * time.Hour,
+		Limits:    &defaultLimits,
 	}
 
 	// run the options on it
@@ -157,6 +163,11 @@ func New(creator string, opts ...Options) (*Permission, error) {
 		if err := option(p); err != nil {
 			return nil, err
 		}
+	}
+
+	// set the categories if not set by options explicitly
+	if p.Categories == nil {
+		p.Categories = acl.CategoriesFor(p.ACLs...)
 	}
 
 	return p, nil
@@ -171,17 +182,16 @@ func NewAdmin(creator string, opts ...Options) (*Permission, error) {
 	}
 
 	p := &Permission{
-		Username:   util.RandStr(),
-		Password:   uuid.New().String(),
-		Owner:      creator,
-		Creator:    creator,
-		ACLs:       adminACLs,
-		Categories: adminCategories,
-		Ops:        adminOps,
-		Indices:    []string{"*"},
-		CreatedAt:  time.Now().Format(time.RFC3339),
-		TTL:        time.Duration(util.DaysInCurrentYear()) * 24 * time.Hour,
-		Limits:     &defaultAdminLimits,
+		Username:  util.RandStr(),
+		Password:  uuid.New().String(),
+		Owner:     creator,
+		Creator:   creator,
+		ACLs:      adminACLs,
+		Ops:       adminOps,
+		Indices:   []string{"*"},
+		CreatedAt: time.Now().Format(time.RFC3339),
+		TTL:       time.Duration(util.DaysInCurrentYear()) * 24 * time.Hour,
+		Limits:    &defaultAdminLimits,
 	}
 
 	// run the options on it
@@ -189,6 +199,11 @@ func NewAdmin(creator string, opts ...Options) (*Permission, error) {
 		if err := option(p); err != nil {
 			return nil, err
 		}
+	}
+
+	// set the categories if not set by options explicitly
+	if p.Categories == nil {
+		p.Categories = acl.CategoriesFor(p.ACLs...)
 	}
 
 	return p, nil
@@ -224,6 +239,25 @@ func (p *Permission) HasACL(acl acl.ACL) bool {
 		}
 	}
 	return false
+}
+
+func (p *Permission) hasACLForCategory(category category.Category) bool {
+	for _, acl := range p.ACLs {
+		if acl.HasCategory(category) {
+			return true
+		}
+	}
+	return false
+}
+
+// ValidateCategories checks if the permission can possess the given set of categories.
+func (p *Permission) ValidateCategories(categories ...category.Category) error {
+	for _, c := range categories {
+		if !p.hasACLForCategory(c) {
+			return fmt.Errorf(`permission doesn't have acls to access "%s" category`, c)
+		}
+	}
+	return nil
 }
 
 // HasCategory checks whether the permission has access to the given category.
@@ -305,6 +339,13 @@ func (p *Permission) GetPatch() (map[string]interface{}, error) {
 	}
 	if p.ACLs != nil {
 		patch["acls"] = p.ACLs
+		if p.Categories != nil {
+			if err := p.ValidateCategories(p.Categories...); err != nil {
+				return nil, err
+			}
+		} else {
+			patch["categories"] = acl.CategoriesFor(p.ACLs...)
+		}
 	}
 	if p.Categories != nil {
 		patch["categories"] = p.Categories
@@ -321,7 +362,7 @@ func (p *Permission) GetPatch() (map[string]interface{}, error) {
 	if p.TTL.String() != "0s" {
 		patch["ttl"] = p.TTL
 	}
-	// TODO: cannot currently patch individual limits to 0
+	// Cannot patch individual limits to 0
 	if p.Limits != nil {
 		limits := make(map[string]interface{})
 		if p.Limits.IPLimit != 0 {
