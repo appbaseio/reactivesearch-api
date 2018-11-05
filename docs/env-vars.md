@@ -21,3 +21,6 @@ List of specific env vars required by respective plugins are listed below:
 
 ##### 4. Analytics
 - `ANALYTICS_ES_INDEX`
+
+##### 5. Logs
+- `LOGS_ES_INDEX`
