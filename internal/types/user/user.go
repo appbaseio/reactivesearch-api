@@ -16,7 +16,7 @@ import (
 type contextKey string
 
 const (
-	// Credential is a value stored against request.Crdential key in the context.
+	// Credential is a value stored against request.Credential key in the context.
 	// It basically acts as an identifier that tells whether the request uses user
 	// credentials.
 	Credential = contextKey("user_credential")
@@ -33,10 +33,10 @@ type User struct {
 	Username   string              `json:"username"`
 	Password   string              `json:"password"`
 	IsAdmin    *bool               `json:"is_admin"`
+	Categories []category.Category `json:"categories"`
 	ACLs       []acl.ACL           `json:"acls"`
 	Email      string              `json:"email"`
 	Ops        []op.Operation      `json:"ops"`
-	Categories []category.Category `json:"categories"`
 	Indices    []string            `json:"indices"`
 	CreatedAt  string              `json:"created_at"`
 }
@@ -52,31 +52,29 @@ func SetIsAdmin(isAdmin bool) Options {
 	}
 }
 
-// SetACLs sets the acls a user can have access to.
-// ACLs must always be set before setting the Categories.
-func SetACLs(acls []acl.ACL) Options {
-	return func(u *User) error {
-		if acls == nil {
-			return errors.NilACLsError
-		}
-		u.ACLs = acls
-		return nil
-	}
-}
-
 // SetCategories sets the categories a user can have access to.
-// Categories must always be set after setting the acls.
+// Categories must always be set before setting the ACLs.
 func SetCategories(categories []category.Category) Options {
 	return func(u *User) error {
 		if categories == nil {
 			return errors.ErrNilCategories
 		}
+		u.Categories = categories
+		return nil
+	}
+}
 
-		if err := u.ValidateCategories(categories...); err != nil {
+// SetACLs sets the acls a user can have access to.
+// ACLs must always be set after setting the Categories.
+func SetACLs(acls []acl.ACL) Options {
+	return func(u *User) error {
+		if acls == nil {
+			return errors.ErrNilACLs
+		}
+		if err := u.ValidateACLs(acls...); err != nil {
 			return err
 		}
-
-		u.Categories = categories
+		u.ACLs = acls
 		return nil
 	}
 }
@@ -93,7 +91,7 @@ func SetEmail(email string) Options {
 func SetOps(ops []op.Operation) Options {
 	return func(u *User) error {
 		if ops == nil {
-			return errors.NilOpsError
+			return errors.ErrNilOps
 		}
 		u.Ops = ops
 		return nil
@@ -104,7 +102,7 @@ func SetOps(ops []op.Operation) Options {
 func SetIndices(indices []string) Options {
 	return func(u *User) error {
 		if indices == nil {
-			return errors.NilIndicesError
+			return errors.ErrNilIndices
 		}
 		for _, pattern := range indices {
 			pattern = strings.Replace(pattern, "*", ".*", -1)
@@ -126,13 +124,13 @@ func New(username, password string, opts ...Options) (*User, error) {
 
 	// create a default user
 	u := &User{
-		Username:  username,
-		Password:  password,
-		IsAdmin:   &isAdminFalse, // pointer to bool
-		ACLs:      defaultACLs,
-		Ops:       defaultOps,
-		Indices:   []string{},
-		CreatedAt: time.Now().Format(time.RFC3339),
+		Username:   username,
+		Password:   password,
+		IsAdmin:    &isAdminFalse, // pointer to bool
+		Categories: defaultCategories,
+		Ops:        defaultOps,
+		Indices:    []string{},
+		CreatedAt:  time.Now().Format(time.RFC3339),
 	}
 
 	// run the options on it
@@ -142,9 +140,9 @@ func New(username, password string, opts ...Options) (*User, error) {
 		}
 	}
 
-	// set the categories if not set by Options explicitly
-	if u.Categories == nil {
-		u.Categories = acl.CategoriesFor(u.ACLs...)
+	// set the acls if not set by Options explicitly
+	if u.ACLs == nil {
+		u.ACLs = category.ACLsFor(u.Categories...)
 	}
 
 	return u, nil
@@ -159,13 +157,13 @@ func NewAdmin(username, password string, opts ...Options) (*User, error) {
 
 	// create an admin user
 	u := &User{
-		Username:  username,
-		Password:  password,
-		IsAdmin:   &isAdminTrue,
-		ACLs:      adminACLs,
-		Ops:       adminOps,
-		Indices:   []string{"*"},
-		CreatedAt: time.Now().Format(time.RFC3339),
+		Username:   username,
+		Password:   password,
+		IsAdmin:    &isAdminTrue,
+		Categories: adminCategories,
+		Ops:        adminOps,
+		Indices:    []string{"*"},
+		CreatedAt:  time.Now().Format(time.RFC3339),
 	}
 
 	// run the options on it
@@ -175,9 +173,9 @@ func NewAdmin(username, password string, opts ...Options) (*User, error) {
 		}
 	}
 
-	// set the categories if not set by Options explicitly
-	if u.Categories == nil {
-		u.Categories = acl.CategoriesFor(u.ACLs...)
+	// set the acls if not set by Options explicitly
+	if u.ACLs == nil {
+		u.ACLs = category.ACLsFor(u.Categories...)
 	}
 
 	return u, nil
@@ -187,7 +185,7 @@ func NewAdmin(username, password string, opts ...Options) (*User, error) {
 func FromContext(ctx context.Context) (*User, error) {
 	ctxUser := ctx.Value(CtxKey)
 	if ctxUser == nil {
-		return nil, errors.NewNotFoundInRequestContextError("*user.User")
+		return nil, errors.NewNotFoundInContextError("*user.User")
 	}
 	reqUser, ok := ctxUser.(*User)
 	if !ok {
@@ -196,39 +194,39 @@ func FromContext(ctx context.Context) (*User, error) {
 	return reqUser, nil
 }
 
-// HasACL checks whether the user has access to the given acl.
-func (u *User) HasACL(acl acl.ACL) bool {
-	for _, a := range u.ACLs {
-		if a == acl {
+// HasCategory checks whether the user has access to the given category.
+func (u *User) HasCategory(category category.Category) bool {
+	for _, c := range u.Categories {
+		if c == category {
 			return true
 		}
 	}
 	return false
 }
 
-func (u *User) hasACLForCategory(category category.Category) bool {
-	for _, acl := range u.ACLs {
-		if acl.HasCategory(category) {
+func (u *User) hasCategoryForACL(acl acl.ACL) bool {
+	for _, c := range u.Categories {
+		if c.HasACL(acl) {
 			return true
 		}
 	}
 	return false
 }
 
-// ValidateCategories checks if the user can possess the given set of categories.
-func (u *User) ValidateCategories(categories ...category.Category) error {
-	for _, c := range categories {
-		if !u.hasACLForCategory(c) {
-			return fmt.Errorf(`user doesn't have acls to access "%s" category`, c)
+// ValidateACLs checks if the user can possess the given set of acls.
+func (u *User) ValidateACLs(acls ...acl.ACL) error {
+	for _, a := range acls {
+		if !u.hasCategoryForACL(a) {
+			return fmt.Errorf(`user doesn't have category to access "%s" acl`, a)
 		}
 	}
 	return nil
 }
 
-// HasCategory checks whether the user has access to the given category.
-func (u *User) HasCategory(category category.Category) bool {
-	for _, c := range u.Categories {
-		if c == category {
+// HasCategory checks whether the user has access to the given acl.
+func (u *User) HasACL(acl acl.ACL) bool {
+	for _, a := range u.ACLs {
+		if a == acl {
 			return true
 		}
 	}
@@ -276,18 +274,16 @@ func (u *User) GetPatch() (map[string]interface{}, error) {
 	if u.Email != "" {
 		patch["email"] = u.Email
 	}
-	if u.ACLs != nil {
-		patch["acls"] = u.ACLs
-		if u.Categories != nil {
-			if err := u.ValidateCategories(u.Categories...); err != nil {
+	if u.Categories != nil {
+		patch["category"] = u.Categories
+		if u.ACLs != nil {
+			if err := u.ValidateACLs(u.ACLs...); err != nil {
 				return nil, err
 			}
+			patch["acls"] = u.ACLs
 		} else {
-			patch["categories"] = acl.CategoriesFor(u.ACLs...)
+			patch["acls"] = category.ACLsFor(u.Categories...)
 		}
-	}
-	if u.Categories != nil {
-		patch["categories"] = u.Categories
 	}
 	if u.Ops != nil {
 		patch["ops"] = u.Ops

@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/appbaseio-confidential/arc/internal/iplookup"
-	"github.com/appbaseio-confidential/arc/internal/types/acl"
+	"github.com/appbaseio-confidential/arc/internal/types/category"
 	"github.com/appbaseio-confidential/arc/internal/types/permission"
 	"github.com/appbaseio-confidential/arc/internal/util"
 	goredis "github.com/go-redis/redis"
@@ -31,7 +31,7 @@ var (
 	once     sync.Once
 )
 
-// Ratelimiter limits the number of requests made by a permission per acls
+// Ratelimiter limits the number of requests made by a permission per category
 // as well as per IP. Creating direct instances of RateLimiter should be avoided.
 // ratelimiter.Instance returns the singleton instance of the Ratelimiter.
 type Ratelimiter struct {
@@ -63,14 +63,14 @@ func (rl *Ratelimiter) RateLimit(h http.HandlerFunc) http.HandlerFunc {
 			return
 		}
 
-		reqACL, err := acl.FromContext(ctx)
+		reqACL, err := category.FromContext(ctx)
 		if err != nil {
 			log.Printf("%s: %v", logTag, err)
 			util.WriteBackError(w, errMsg, http.StatusInternalServerError)
 			return
 		}
 
-		// limit on ACLs per second
+		// limit on Categories per second
 		aclLimit, err := reqPermission.GetLimitFor(*reqACL)
 		if err != nil {
 			util.WriteBackError(w, err.Error(), http.StatusUnauthorized)

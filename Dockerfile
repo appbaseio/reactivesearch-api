@@ -23,7 +23,7 @@ RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o /go/bin/arc cmd/a
 ## This results in a single layer image
 FROM scratch
 COPY --from=build /go/bin/arc arc
-COPY --from=build /go/src/github.com/appbaseio-confidential/arc/plugins/es/api /plugins/es/api
+COPY --from=build /go/src/github.com/appbaseio-confidential/arc/plugins/elasticsearch/api /plugins/elasticsearch/api
 ENTRYPOINT ["/arc"]
 
 EXPOSE 8000

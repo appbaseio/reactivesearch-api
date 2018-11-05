@@ -6,9 +6,9 @@ import (
 )
 
 var (
-	NilIndicesError  = errors.New("indices cannot be set 'nil'")
-	NilACLsError     = errors.New("acls cannot be set 'nil'")
-	NilOpsError      = errors.New("ops cannot be set 'nil'")
+	ErrNilIndices    = errors.New("indices cannot be set to 'nil'")
+	ErrNilACLs       = errors.New("acls cannot be set to 'nil'")
+	ErrNilOps        = errors.New("ops cannot be set to 'nil'")
 	ErrNilCategories = errors.New(`categories cannot be set to "nil"`)
 )
 
@@ -54,7 +54,7 @@ type NotFoundInRequestContextError struct {
 	Field string
 }
 
-func NewNotFoundInRequestContextError(field string) *NotFoundInRequestContextError {
+func NewNotFoundInContextError(field string) *NotFoundInRequestContextError {
 	return &NotFoundInRequestContextError{field}
 }
 

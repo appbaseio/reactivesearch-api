@@ -41,6 +41,7 @@ func (es *elasticsearch) getCredential(username, password string) (interface{}, 
 	matchPassword := elastic.NewTermQuery("password.keyword", password)
 	query := elastic.NewBoolQuery().
 		Must(matchUsername, matchPassword)
+
 	response, err := es.client.Search().
 		Index(es.userIndex, es.permissionIndex).
 		Query(query).

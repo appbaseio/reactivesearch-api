@@ -23,7 +23,7 @@ const (
 	Delete
 )
 
-// String is the implementation of Stringer interface that returns the string representaiton of op.Operation.
+// String is the implementation of Stringer interface that returns the string representation of op.Operation.
 func (o Operation) String() string {
 	return [...]string{
 		"read",
@@ -72,7 +72,7 @@ func (o Operation) MarshalJSON() ([]byte, error) {
 func FromContext(ctx context.Context) (*Operation, error) {
 	ctxOp := ctx.Value(CtxKey)
 	if ctxOp == nil {
-		return nil, errors.NewNotFoundInRequestContextError("*op.Operation")
+		return nil, errors.NewNotFoundInContextError("*op.Operation")
 	}
 	reqOp, ok := ctxOp.(*Operation)
 	if !ok {

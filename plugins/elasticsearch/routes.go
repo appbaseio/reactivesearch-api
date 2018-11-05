@@ -22,14 +22,14 @@ import (
 var (
 	routes     []route.Route
 	routeSpecs = make(map[string]api)
-	categories = make(map[acl.ACL]map[category.Category]bool)
+	acls       = make(map[category.Category]map[acl.ACL]bool)
 )
 
 type api struct {
 	name     string
+	category category.Category
 	acl      acl.ACL
 	op       op.Operation
-	category category.Category
 	spec     *spec
 }
 
@@ -55,7 +55,7 @@ func (es *elasticsearch) preprocess() error {
 
 	path, err := getWD()
 	if err != nil {
-		return fmt.Errorf("unable to get the current working directory: %v", err)
+		return fmt.Errorf("unable to get the working directory: %v", err)
 	}
 
 	go fetchSpecFiles(path, files)
@@ -71,24 +71,24 @@ func (es *elasticsearch) preprocess() error {
 			if path == "/" {
 				continue
 			}
-			route := route.Route{
+			r := route.Route{
 				Name:        api.name,
 				Methods:     api.spec.Methods,
 				Path:        path,
 				HandlerFunc: middleware(es.handler()),
 				Description: api.spec.Documentation,
 			}
-			routes = append(routes, route)
+			routes = append(routes, r)
 			for _, method := range api.spec.Methods {
 				key := fmt.Sprintf("%s:%s", method, path)
 				routeSpecs[key] = api
 			}
 		}
-		if _, ok := categories[api.acl]; !ok {
-			categories[api.acl] = make(map[category.Category]bool)
+		if _, ok := acls[api.category]; !ok {
+			acls[api.category] = make(map[acl.ACL]bool)
 		}
-		if _, ok := categories[api.acl][api.category]; !ok {
-			categories[api.acl][api.category] = true
+		if _, ok := acls[api.category][api.acl]; !ok {
+			acls[api.category][api.acl] = true
 		}
 	}
 
@@ -125,7 +125,7 @@ func getWD() (string, error) {
 	if err != nil {
 		return "", nil
 	}
-	return filepath.Join(wd, "plugins/es/api"), nil
+	return filepath.Join(wd, "plugins/elasticsearch/api"), nil
 }
 
 func fetchSpecFiles(path string, files chan<- string) {
@@ -195,28 +195,51 @@ func decodeSpecFile(file string, wg *sync.WaitGroup, apis chan<- api) {
 	}
 
 	specName := strings.TrimSuffix(filepath.Base(file), ".json")
-	specACL := decodeACL(&s)
+	specCategory := decodeCategory(&s)
 	specOp := decodeOp(&s)
-	specCategory, err := decodeCategory(specName, &s)
+	specACL, err := decodeACL(specName, &s)
 	if err != nil {
 		log.Printf(`%s: unable to categorize spec "%s": %v\n`, logTag, specName, err)
 	}
 
 	apis <- api{
 		name:     specName,
-		acl:      specACL,
+		category: specCategory,
 		op:       specOp,
-		category: *specCategory,
+		acl:      *specACL,
 		spec:     &s,
 	}
 }
 
-func decodeACL(spec *spec) acl.ACL {
+func decodeCategory(spec *spec) category.Category {
 	docTokens := strings.Split(spec.Documentation, "/")
 	tag := strings.TrimSuffix(docTokens[len(docTokens)-1], ".html")
 	tagTokens := strings.Split(tag, "-")
 	tagName := tagTokens[0]
-	return acl.FromString(tagName)
+	return category.FromString(tagName)
+}
+
+func decodeACL(specName string, spec *spec) (*acl.ACL, error) {
+	pathTokens := strings.Split(spec.URL.Path, "/")
+	for _, pathToken := range pathTokens {
+		if strings.HasPrefix(pathToken, "_") {
+			pathToken = strings.TrimPrefix(pathToken, "_")
+			c, err := acl.FromString(pathToken)
+			if err != nil {
+				return nil, err
+			}
+			return &c, nil
+		}
+	}
+
+	aclString := strings.Split(specName, ".")[0]
+	a, err := acl.FromString(aclString)
+	if err != nil {
+		defaultACL := acl.Get
+		return &defaultACL, err
+	}
+
+	return &a, nil
 }
 
 func decodeOp(spec *spec) op.Operation {
@@ -252,31 +275,8 @@ out:
 	return specOp
 }
 
-func decodeCategory(specName string, spec *spec) (*category.Category, error) {
-	pathTokens := strings.Split(spec.URL.Path, "/")
-	for _, pathToken := range pathTokens {
-		if strings.HasPrefix(pathToken, "_") {
-			pathToken = strings.TrimPrefix(pathToken, "_")
-			c, err := category.FromString(pathToken)
-			if err != nil {
-				return nil, err
-			}
-			return &c, nil
-		}
-	}
-
-	categoryString := strings.Split(specName, ".")[0]
-	c, err := category.FromString(categoryString)
-	if err != nil {
-		defaultCategory := category.Get
-		return &defaultCategory, err
-	}
-
-	return &c, nil
-}
-
 func printCategoriesByACL() {
-	for a, c := range categories {
+	for a, c := range acls {
 		fmt.Printf("%-10s: ", a)
 		for k := range c {
 			fmt.Printf("%s, ", k)

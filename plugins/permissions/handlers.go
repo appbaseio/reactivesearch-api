@@ -7,7 +7,7 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/appbaseio-confidential/arc/internal/types/category"
+	"github.com/appbaseio-confidential/arc/internal/types/acl"
 	"github.com/appbaseio-confidential/arc/internal/types/permission"
 	"github.com/appbaseio-confidential/arc/internal/types/user"
 	"github.com/appbaseio-confidential/arc/internal/util"
@@ -21,7 +21,7 @@ func (p *permissions) getPermission() http.HandlerFunc {
 
 		rawPermission, err := p.es.getRawPermission(username)
 		if err != nil {
-			msg := fmt.Sprintf(`permission with "username"="%s" Not Found`, username)
+			msg := fmt.Sprintf(`permission with "username"="%s" not found`, username)
 			log.Printf("%s: %s: %v\n", logTag, msg, err)
 			util.WriteBackError(w, msg, http.StatusNotFound)
 			return
@@ -64,11 +64,11 @@ func (p *permissions) postPermission() http.HandlerFunc {
 		if permissionBody.Ops != nil {
 			opts = append(opts, permission.SetOps(permissionBody.Ops))
 		}
+		if permissionBody.Categories != nil {
+			opts = append(opts, permission.SetCategory(permissionBody.Categories))
+		}
 		if permissionBody.ACLs != nil {
 			opts = append(opts, permission.SetACLs(permissionBody.ACLs))
-		}
-		if permissionBody.Categories != nil {
-			opts = append(opts, permission.SetCategories(permissionBody.Categories))
 		}
 		if permissionBody.Limits != nil {
 			opts = append(opts, permission.SetLimits(permissionBody.Limits))
@@ -139,11 +139,11 @@ func (p *permissions) patchPermission() http.HandlerFunc {
 			return
 		}
 
-		// If user is trying to patch categories with providing acls.
-		if patch["acls"] == nil && patch["categories"] != nil {
-			// we need to fetch the permission object from elasticsearch before we make
-			// a patch request in order to validate the categories that the user intends
-			// to patch against the acls it already has.
+		// If user is trying to patch acls without providing categories.
+		if patch["categories"] == nil && patch["acls"] != nil {
+			// we need to fetch the permission from elasticsearch before we make
+			// a patch request in order to validate the acls that the user intends
+			// to patch against the categories it already has.
 			reqPermission, err := p.es.getPermission(username)
 			if err != nil {
 				log.Printf("%s: %v\n", logTag, err)
@@ -151,15 +151,15 @@ func (p *permissions) patchPermission() http.HandlerFunc {
 				return
 			}
 
-			categories, ok := patch["categories"].([]category.Category)
+			acls, ok := patch["acls"].([]acl.ACL)
 			if !ok {
 				msg := fmt.Sprintf(`an error occurred while validating categories patch for user "%s"`, username)
-				log.Printf("%s: unable to cast categories patch to []category.Category\n", logTag)
+				log.Printf("%s: unable to cast categories patch to []acl.ACL\n", logTag)
 				util.WriteBackError(w, msg, http.StatusInternalServerError)
 				return
 			}
 
-			if err := reqPermission.ValidateCategories(categories...); err != nil {
+			if err := reqPermission.ValidateACLs(acls...); err != nil {
 				util.WriteBackError(w, err.Error(), http.StatusBadRequest)
 				return
 			}
@@ -171,7 +171,7 @@ func (p *permissions) patchPermission() http.HandlerFunc {
 			return
 		}
 
-		msg := fmt.Sprintf(`permission with "username"="%s" Not Found`, username)
+		msg := fmt.Sprintf(`permission with "username"="%s" not found`, username)
 		log.Printf("%s: %s: %v\n", logTag, msg, err)
 		util.WriteBackError(w, msg, http.StatusInternalServerError)
 	}
@@ -189,7 +189,7 @@ func (p *permissions) deletePermission() http.HandlerFunc {
 			return
 		}
 
-		msg := fmt.Sprintf(`permission with "username"="%s" Not Found`, username)
+		msg := fmt.Sprintf(`permission with "username"="%s" not found`, username)
 		log.Printf("%s: %s: %v\n", logTag, msg, err)
 		util.WriteBackError(w, msg, http.StatusNotFound)
 	}

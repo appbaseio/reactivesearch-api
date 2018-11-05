@@ -1,7 +1,7 @@
 package elasticsearch
 
 import (
-	"github.com/appbaseio-confidential/arc/internal/types/category"
+	"github.com/appbaseio-confidential/arc/internal/types/acl"
 	"context"
 	"fmt"
 	"log"
@@ -9,7 +9,7 @@ import (
 
 	"github.com/appbaseio-confidential/arc/arc/middleware"
 	"github.com/appbaseio-confidential/arc/arc/middleware/order"
-	"github.com/appbaseio-confidential/arc/internal/types/acl"
+	"github.com/appbaseio-confidential/arc/internal/types/category"
 	"github.com/appbaseio-confidential/arc/internal/types/credential"
 	"github.com/appbaseio-confidential/arc/internal/types/index"
 	"github.com/appbaseio-confidential/arc/internal/types/op"
@@ -40,14 +40,45 @@ func list() []middleware.Middleware {
 	return []middleware.Middleware{
 		cleanPath,
 		logRequests,
-		classifyACL,
 		classifyCategory,
+		classifyACL,
 		classifyOp,
+		identifyIndices,
 		basicAuth,
+		validateIndices,
 		validateOp,
-		// validateCategory,
 		validateACL,
+		validateCategory,
 		redirectRequests,
+	}
+}
+
+func classifyCategory(h http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		route := mux.CurrentRoute(r)
+
+		template, err := route.GetPathTemplate()
+		if err != nil {
+			log.Printf("%s: %v\n", logTag, err)
+			util.WriteBackError(w, "page not found", http.StatusNotFound)
+			return
+		}
+		key := fmt.Sprintf("%s:%s", r.Method, template)
+		routeSpec := routeSpecs[key]
+		routeCategory := routeSpec.category
+
+		// classify streams explicitly
+		params := r.URL.Query()
+		stream := params.Get("stream")
+		if stream == "true" {
+			routeCategory = category.Streams
+		}
+
+		ctx := r.Context()
+		ctx = context.WithValue(ctx, category.CtxKey, &routeCategory)
+		r = r.WithContext(ctx)
+
+		h(w, r)
 	}
 }
 
@@ -58,19 +89,12 @@ func classifyACL(h http.HandlerFunc) http.HandlerFunc {
 		template, err := currentRoute.GetPathTemplate()
 		if err != nil {
 			log.Printf("%s: %v\n", logTag, err)
-			util.WriteBackError(w, "Page not found", http.StatusNotFound)
+			util.WriteBackError(w, "page not found", http.StatusNotFound)
 			return
 		}
 		key := fmt.Sprintf("%s:%s", r.Method, template)
 		routeSpec := routeSpecs[key]
 		routeACL := routeSpec.acl
-
-		// classify streams explicitly
-		params := r.URL.Query()
-		stream := params.Get("stream")
-		if stream == "true" {
-			routeACL = acl.Streams
-		}
 
 		ctx := r.Context()
 		ctx = context.WithValue(ctx, acl.CtxKey, &routeACL)
@@ -102,31 +126,12 @@ func classifyOp(h http.HandlerFunc) http.HandlerFunc {
 	}
 }
 
-func classifyCategory(h http.HandlerFunc) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		route := mux.CurrentRoute(r)
-
-		template, err := route.GetPathTemplate()
-		if err != nil {
-			log.Printf("%s: %v\n", logTag, err)
-			util.WriteBackError(w, "Page not found", http.StatusNotFound)
-			return
-		}
-		key := fmt.Sprintf("%s:%s", r.Method, template)
-		routeSpec := routeSpecs[key]
-		routeCategory := routeSpec.category
-
-		ctx := r.Context()
-		ctx = context.WithValue(ctx, category.CtxKey, &routeCategory)
-		r = r.WithContext(ctx)
-
-		h(w, r)
-	}
-}
-
 func identifyIndices(h http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		indices, _ := util.IndicesFromRequest(r)
+		indices, ok := util.IndicesFromRequest(r)
+		if !ok {
+			indices = []string{}
+		}
 
 		ctx := r.Context()
 		ctx = context.WithValue(ctx, index.CtxKey, indices)
@@ -140,7 +145,7 @@ func validateACL(h http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
 
-		errMsg := "An error occurred while validating request acl"
+		errMsg := "an error occurred while validating request acl"
 		reqACL, err := acl.FromContext(ctx)
 		if err != nil {
 			log.Printf("%s: %v", logTag, err)
@@ -162,7 +167,7 @@ func validateACL(h http.HandlerFunc) http.HandlerFunc {
 				return
 			}
 			if !reqUser.HasACL(*reqACL) {
-				msg := fmt.Sprintf(`User with "username"="%s" does not have "%s" acl`,
+				msg := fmt.Sprintf(`user with "username"="%s" does not have "%s" acl`,
 					reqUser.Username, *reqACL)
 				util.WriteBackError(w, msg, http.StatusUnauthorized)
 				return
@@ -176,7 +181,7 @@ func validateACL(h http.HandlerFunc) http.HandlerFunc {
 			}
 
 			if !reqPermission.HasACL(*reqACL) {
-				msg := fmt.Sprintf(`Permission with "username"="%s" does not have "%s" acl`,
+				msg := fmt.Sprintf(`permission with "username"="%s" does not have "%s" acl`,
 					reqPermission.Username, *reqACL)
 				util.WriteBackError(w, msg, http.StatusUnauthorized)
 				return
@@ -232,6 +237,8 @@ func validateCategory(h http.HandlerFunc) http.HandlerFunc {
 				return
 			}
 		}
+
+		h(w, r)
 	}
 }
 
@@ -286,6 +293,7 @@ func validateOp(h http.HandlerFunc) http.HandlerFunc {
 	}
 }
 
+// TODO: Refactor
 func validateIndices(h http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()

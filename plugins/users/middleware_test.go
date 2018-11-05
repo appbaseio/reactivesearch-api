@@ -6,7 +6,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/appbaseio-confidential/arc/internal/types/acl"
+	"github.com/appbaseio-confidential/arc/internal/types/category"
 	"github.com/appbaseio-confidential/arc/internal/types/op"
 	"github.com/appbaseio-confidential/arc/internal/types/user"
 )
@@ -41,25 +41,17 @@ func TestClassifier(t *testing.T) {
 	testHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
 
-		ctxACL := ctx.Value(acl.CtxKey)
-		if ctxACL == nil {
-			t.Errorf("*acl.ACL not in request context: got %v", ctxACL)
+		reqCategory, err := category.FromContext(ctx)
+		if err != nil {
+			t.Errorf("%v", err)
 		}
-		reqACL, ok := ctxACL.(*acl.ACL)
-		if !ok {
-			t.Errorf("cannot cast context acl to *acl.ACL: got %v", ctxACL)
-		}
-		if *reqACL != acl.User {
-			t.Errorf("incorrect acl received in context: got %v expected %s", *reqACL, acl.User)
+		if *reqCategory != category.User {
+			t.Errorf("incorrect category received in context: got %v expected %s", *reqCategory, category.User)
 		}
 
-		ctxOp := ctx.Value(op.CtxKey)
-		if ctxOp == nil {
-			t.Errorf("*op.Operation not in request context: got %v", ctxOp)
-		}
-		reqOp, ok := ctxOp.(*op.Operation)
-		if !ok {
-			t.Errorf("cannot cast context to *op.Operation: got %v", ctxOp)
+		reqOp, err := op.FromContext(ctx)
+		if err != nil {
+			t.Errorf("%v", err)
 		}
 
 		switch r.Method {
@@ -94,7 +86,7 @@ func TestClassifier(t *testing.T) {
 	})
 
 	rr := httptest.NewRecorder()
-	handler := classifyACL(testHandler)
+	handler := classifyCategory(testHandler)
 
 	for _, test := range tests {
 		req, err := http.NewRequest(test.method, test.path, nil)

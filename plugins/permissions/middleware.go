@@ -8,7 +8,7 @@ import (
 
 	"github.com/appbaseio-confidential/arc/arc/middleware"
 	"github.com/appbaseio-confidential/arc/arc/middleware/order"
-	"github.com/appbaseio-confidential/arc/internal/types/acl"
+	"github.com/appbaseio-confidential/arc/internal/types/category"
 	"github.com/appbaseio-confidential/arc/internal/types/op"
 	"github.com/appbaseio-confidential/arc/internal/types/user"
 	"github.com/appbaseio-confidential/arc/internal/util"
@@ -45,8 +45,8 @@ func list() []middleware.Middleware {
 
 func aclClassifier(h http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		permissionACL := acl.Permission
-		ctx := context.WithValue(r.Context(), acl.CtxKey, &permissionACL)
+		permissionACL := category.Permission
+		ctx := context.WithValue(r.Context(), category.CtxKey, &permissionACL)
 		r = r.WithContext(ctx)
 		h(w, r)
 	}
@@ -88,12 +88,12 @@ func validateACL(h http.HandlerFunc) http.HandlerFunc {
 		reqUser, err := user.FromContext(ctx)
 		if err != nil {
 			log.Printf("%s: %v", logTag, err)
-			util.WriteBackError(w, "An error occurred while validating request acl", http.StatusInternalServerError)
+			util.WriteBackError(w, "An error occurred while validating request category", http.StatusInternalServerError)
 			return
 		}
 
-		if !reqUser.HasACL(acl.Permission) {
-			msg := fmt.Sprintf(`User with "username"="%s" does not have "%s" acl`, reqUser.Username, acl.Permission)
+		if !reqUser.HasCategory(category.Permission) {
+			msg := fmt.Sprintf(`User with "username"="%s" does not have "%s" category`, reqUser.Username, category.Permission)
 			util.WriteBackError(w, msg, http.StatusUnauthorized)
 			return
 		}

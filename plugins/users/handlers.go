@@ -7,7 +7,7 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/appbaseio-confidential/arc/internal/types/category"
+	"github.com/appbaseio-confidential/arc/internal/types/acl"
 	"github.com/appbaseio-confidential/arc/internal/types/user"
 	"github.com/appbaseio-confidential/arc/internal/util"
 	"github.com/gorilla/mux"
@@ -34,7 +34,7 @@ func (u *users) getUser() http.HandlerFunc {
 		// fetch the user from elasticsearch
 		rawUser, err := u.es.getRawUser(username)
 		if err != nil {
-			msg := fmt.Sprintf(`user with "username"="%s" Not Found`, username)
+			msg := fmt.Sprintf(`user with "username"="%s" not found`, username)
 			log.Printf("%s: %s: %v\n", logTag, msg, err)
 			util.WriteBackError(w, msg, http.StatusNotFound)
 			return
@@ -89,11 +89,11 @@ func (u *users) postUser() http.HandlerFunc {
 		if userBody.IsAdmin != nil {
 			opts = append(opts, user.SetIsAdmin(*userBody.IsAdmin))
 		}
-		if userBody.ACLs != nil {
-			opts = append(opts, user.SetACLs(userBody.ACLs))
-		}
 		if userBody.Categories != nil {
 			opts = append(opts, user.SetCategories(userBody.Categories))
+		}
+		if userBody.ACLs != nil {
+			opts = append(opts, user.SetACLs(userBody.ACLs))
 		}
 		if userBody.Ops != nil {
 			opts = append(opts, user.SetOps(userBody.Ops))
@@ -165,11 +165,11 @@ func (u *users) patchUser() http.HandlerFunc {
 			return
 		}
 
-		// If user is trying to patch categories without providing acls.
-		if patch["acls"] == nil && patch["categories"] != nil {
-			// we need to fetch the user object from elasticsearch before we make
-			// a patch request in order to validate the categories that the user intends
-			// to patch against the acls it already has.
+		// If user is trying to patch acls without providing categories.
+		if patch["categories"] == nil && patch["acls"] != nil {
+			// we need to fetch the user from elasticsearch before we make
+			// a patch request in order to validate the acls that the user intends
+			// to patch against the categories it already has.
 			reqUser, err := u.es.getUser(username)
 			if err != nil {
 				msg := fmt.Sprintf(`an error occurred while fetching user with username="%s"`, username)
@@ -178,15 +178,15 @@ func (u *users) patchUser() http.HandlerFunc {
 				return
 			}
 
-			categories, ok := patch["categories"].([]category.Category)
+			acls, ok := patch["acls"].([]acl.ACL)
 			if !ok {
-				msg := fmt.Sprintf(`an error occurred while validating categories patch for user "%s"`, username)
-				log.Printf("%s: unable to cast categories patch to []category.Category\n", logTag)
+				msg := fmt.Sprintf(`an error occurred while validating acls patch for user "%s"`, username)
+				log.Printf("%s: unable to cast acls patch to []acl.ACL\n", logTag)
 				util.WriteBackError(w, msg, http.StatusInternalServerError)
 				return
 			}
 
-			if err := reqUser.ValidateCategories(categories...); err != nil {
+			if err := reqUser.ValidateACLs(acls...); err != nil {
 				util.WriteBackError(w, err.Error(), http.StatusBadRequest)
 				return
 			}
@@ -198,7 +198,7 @@ func (u *users) patchUser() http.HandlerFunc {
 			return
 		}
 
-		msg := fmt.Sprintf(`user with "username"="%s" Not Found`, username)
+		msg := fmt.Sprintf(`user with "username"="%s" not found`, username)
 		log.Printf("%s: %s: %v\n", logTag, msg, err)
 		util.WriteBackError(w, msg, http.StatusNotFound)
 	}
@@ -237,11 +237,11 @@ func (u *users) patchUserWithUsername() http.HandlerFunc {
 			return
 		}
 
-		// If user is trying to patch categories without providing acls.
-		if patch["acls"] == nil && patch["categories"] != nil {
+		// If user is trying to patch acls without providing categories.
+		if patch["categories"] == nil && patch["acls"] != nil {
 			// we need to fetch the user object from elasticsearch before we make
-			// a patch request in order to validate the categories that the user intends
-			// to patch against the acls it already has.
+			// a patch request in order to validate the acls that the user intends
+			// to patch against the categories it already has.
 			reqUser, err := u.es.getUser(username)
 			if err != nil {
 				msg := fmt.Sprintf(`an error occurred while fetching user with username="%s"`, username)
@@ -250,15 +250,15 @@ func (u *users) patchUserWithUsername() http.HandlerFunc {
 				return
 			}
 
-			categories, ok := patch["categories"].([]category.Category)
+			acls, ok := patch["acls"].([]acl.ACL)
 			if !ok {
-				msg := fmt.Sprintf(`an error occurred while validating categories patch for user "%s"`, username)
-				log.Printf("%s: unable to cast categories patch to []category.Category\n", logTag)
+				msg := fmt.Sprintf(`an error occurred while validating acls patch for user "%s"`, username)
+				log.Printf("%s: unable to cast acl patch to []acl.ACL\n", logTag)
 				util.WriteBackError(w, msg, http.StatusInternalServerError)
 				return
 			}
 
-			if err := reqUser.ValidateCategories(categories...); err != nil {
+			if err := reqUser.ValidateACLs(acls...); err != nil {
 				util.WriteBackError(w, err.Error(), http.StatusBadRequest)
 				return
 			}
@@ -309,7 +309,7 @@ func (u *users) deleteUserWithUsername() http.HandlerFunc {
 			return
 		}
 
-		msg := fmt.Sprintf(`user with "username"="%s" Not Found`, username)
+		msg := fmt.Sprintf(`user with "username"="%s" not found`, username)
 		log.Printf("%s: %s: %v\n", logTag, msg, err)
 		util.WriteBackError(w, msg, http.StatusNotFound)
 	}

@@ -37,8 +37,8 @@ type Permission struct {
 	Password   string              `json:"password"`
 	Owner      string              `json:"owner"`
 	Creator    string              `json:"creator"`
-	ACLs       []acl.ACL           `json:"acls"`
 	Categories []category.Category `json:"categories"`
+	ACLs       []acl.ACL           `json:"acls"`
 	Ops        []op.Operation      `json:"ops"`
 	Indices    []string            `json:"indices"`
 	CreatedAt  string              `json:"created_at"`
@@ -46,7 +46,7 @@ type Permission struct {
 	Limits     *Limits             `json:"limits"`
 }
 
-// Limits defines the rate limits for each acls.
+// Limits defines the rate limits for each category.
 type Limits struct {
 	IPLimit       int64 `json:"ip_limit"`
 	DocsLimit     int64 `json:"docs_limit"`
@@ -71,31 +71,31 @@ func SetOwner(owner string) Options {
 	}
 }
 
-// SetACLs sets the acls a permission can have access to.
-func SetACLs(acls []acl.ACL) Options {
-	return func(p *Permission) error {
-		if acls == nil {
-			return errors.NilACLsError
-		}
-		p.ACLs = acls
-		return nil
-	}
-}
-
-// SetCategories sets the categories a permission can have access to.
-func SetCategories(categories []category.Category) Options {
+// SetCategory sets the categories a permission can have access to.
+func SetCategory(categories []category.Category) Options {
 	return func(p *Permission) error {
 		if categories == nil {
 			return errors.ErrNilCategories
 		}
+		p.Categories = categories
+		return nil
+	}
+}
 
-		for _, c := range categories {
-			if !p.hasACLForCategory(c) {
-				return fmt.Errorf(`permission doesn't have acls to access "%s" category`, c)
+// SetACLs sets the acls a permission can have access to.
+func SetACLs(acls []acl.ACL) Options {
+	return func(p *Permission) error {
+		if acls == nil {
+			return errors.ErrNilCategories
+		}
+
+		for _, c := range acls {
+			if !p.hasCategoryForACL(c) {
+				return fmt.Errorf(`permission doesn't have category to access "%s" acl`, c)
 			}
 		}
 
-		p.Categories = categories
+		p.ACLs = acls
 		return nil
 	}
 }
@@ -104,7 +104,7 @@ func SetCategories(categories []category.Category) Options {
 func SetOps(ops []op.Operation) Options {
 	return func(p *Permission) error {
 		if ops == nil {
-			return errors.NilOpsError
+			return errors.ErrNilOps
 		}
 		p.Ops = ops
 		return nil
@@ -115,7 +115,7 @@ func SetOps(ops []op.Operation) Options {
 func SetIndices(indices []string) Options {
 	return func(p *Permission) error {
 		if indices == nil {
-			return errors.NilIndicesError
+			return errors.ErrNilIndices
 		}
 		for _, pattern := range indices {
 			pattern = strings.Replace(pattern, "*", ".*", -1)
@@ -128,7 +128,7 @@ func SetIndices(indices []string) Options {
 	}
 }
 
-// SetLimits sets the rate limits for each acl in a permission.
+// SetLimits sets the rate limits for each category in a permission.
 func SetLimits(limits *Limits) Options {
 	return func(p *Permission) error {
 		p.Limits = limits
@@ -146,16 +146,16 @@ func New(creator string, opts ...Options) (*Permission, error) {
 
 	// create a default permission
 	p := &Permission{
-		Username:  util.RandStr(),
-		Password:  uuid.New().String(),
-		Owner:     creator,
-		Creator:   creator,
-		ACLs:      defaultACLs,
-		Ops:       defaultOps,
-		Indices:   []string{},
-		CreatedAt: time.Now().Format(time.RFC3339),
-		TTL:       time.Duration(util.DaysInCurrentYear()) * 24 * time.Hour,
-		Limits:    &defaultLimits,
+		Username:   util.RandStr(),
+		Password:   uuid.New().String(),
+		Owner:      creator,
+		Creator:    creator,
+		Categories: defaultCategories,
+		Ops:        defaultOps,
+		Indices:    []string{},
+		CreatedAt:  time.Now().Format(time.RFC3339),
+		TTL:        time.Duration(util.DaysInCurrentYear()) * 24 * time.Hour,
+		Limits:     &defaultLimits,
 	}
 
 	// run the options on it
@@ -165,9 +165,9 @@ func New(creator string, opts ...Options) (*Permission, error) {
 		}
 	}
 
-	// set the categories if not set by options explicitly
-	if p.Categories == nil {
-		p.Categories = acl.CategoriesFor(p.ACLs...)
+	// set the acls if not set by options explicitly
+	if p.ACLs == nil {
+		p.ACLs = category.ACLsFor(p.Categories...)
 	}
 
 	return p, nil
@@ -182,16 +182,16 @@ func NewAdmin(creator string, opts ...Options) (*Permission, error) {
 	}
 
 	p := &Permission{
-		Username:  util.RandStr(),
-		Password:  uuid.New().String(),
-		Owner:     creator,
-		Creator:   creator,
-		ACLs:      adminACLs,
-		Ops:       adminOps,
-		Indices:   []string{"*"},
-		CreatedAt: time.Now().Format(time.RFC3339),
-		TTL:       time.Duration(util.DaysInCurrentYear()) * 24 * time.Hour,
-		Limits:    &defaultAdminLimits,
+		Username:   util.RandStr(),
+		Password:   uuid.New().String(),
+		Owner:      creator,
+		Creator:    creator,
+		Categories: adminCategories,
+		Ops:        adminOps,
+		Indices:    []string{"*"},
+		CreatedAt:  time.Now().Format(time.RFC3339),
+		TTL:        time.Duration(util.DaysInCurrentYear()) * 24 * time.Hour,
+		Limits:     &defaultAdminLimits,
 	}
 
 	// run the options on it
@@ -201,9 +201,9 @@ func NewAdmin(creator string, opts ...Options) (*Permission, error) {
 		}
 	}
 
-	// set the categories if not set by options explicitly
-	if p.Categories == nil {
-		p.Categories = acl.CategoriesFor(p.ACLs...)
+	// set the acls if not set by options explicitly
+	if p.ACLs == nil {
+		p.ACLs = category.ACLsFor(p.Categories...)
 	}
 
 	return p, nil
@@ -213,7 +213,7 @@ func NewAdmin(creator string, opts ...Options) (*Permission, error) {
 func FromContext(ctx context.Context) (*Permission, error) {
 	ctxPermission := ctx.Value(CtxKey)
 	if ctxPermission == nil {
-		return nil, errors.NewNotFoundInRequestContextError("*permission.Permission")
+		return nil, errors.NewNotFoundInContextError("*permission.Permission")
 	}
 	reqPermission, ok := ctxPermission.(*Permission)
 	if !ok {
@@ -231,39 +231,39 @@ func (p *Permission) IsExpired() (bool, error) {
 	return time.Since(createdAt) > p.TTL, nil
 }
 
-// HasACL checks whether the permission has access to the given acl.
-func (p *Permission) HasACL(acl acl.ACL) bool {
-	for _, a := range p.ACLs {
-		if a == acl {
+// HasCategory checks whether the permission has access to the given category.
+func (p *Permission) HasCategory(category category.Category) bool {
+	for _, c := range p.Categories {
+		if c == category {
 			return true
 		}
 	}
 	return false
 }
 
-func (p *Permission) hasACLForCategory(category category.Category) bool {
-	for _, acl := range p.ACLs {
-		if acl.HasCategory(category) {
+func (p *Permission) hasCategoryForACL(acl acl.ACL) bool {
+	for _, c := range p.Categories {
+		if c.HasACL(acl) {
 			return true
 		}
 	}
 	return false
 }
 
-// ValidateCategories checks if the permission can possess the given set of categories.
-func (p *Permission) ValidateCategories(categories ...category.Category) error {
-	for _, c := range categories {
-		if !p.hasACLForCategory(c) {
-			return fmt.Errorf(`permission doesn't have acls to access "%s" category`, c)
+// ValidateACLs checks if the permission can possess the given set of categories.
+func (p *Permission) ValidateACLs(acls ...acl.ACL) error {
+	for _, a := range acls {
+		if !p.hasCategoryForACL(a) {
+			return fmt.Errorf(`permission doesn't have category to access "%s" acl`, a)
 		}
 	}
 	return nil
 }
 
-// HasCategory checks whether the permission has access to the given category.
-func (p *Permission) HasCategory(category category.Category) bool {
-	for _, c := range p.Categories {
-		if c == category {
+// HasCategory checks whether the permission has access to the given acl.
+func (p *Permission) HasACL(acl acl.ACL) bool {
+	for _, a := range p.ACLs {
+		if a == acl {
 			return true
 		}
 	}
@@ -296,23 +296,23 @@ func (p *Permission) CanAccessIndex(name string) (bool, error) {
 	return false, nil
 }
 
-// GetLimitFor returns the rate limit for the given acl in the permission.
-func (p *Permission) GetLimitFor(a acl.ACL) (int64, error) {
-	switch a {
-	case acl.Docs:
+// GetLimitFor returns the rate limit for the given category in the permission.
+func (p *Permission) GetLimitFor(c category.Category) (int64, error) {
+	switch c {
+	case category.Docs:
 		return p.Limits.DocsLimit, nil
-	case acl.Search:
+	case category.Search:
 		return p.Limits.SearchLimit, nil
-	case acl.Indices:
+	case category.Indices:
 		return p.Limits.IndicesLimit, nil
-	case acl.Cat:
+	case category.Cat:
 		return p.Limits.CatLimit, nil
-	case acl.Clusters:
+	case category.Clusters:
 		return p.Limits.ClustersLimit, nil
-	case acl.Misc:
+	case category.Misc:
 		return p.Limits.MiscLimit, nil
 	default:
-		return -1, fmt.Errorf(`we do not rate limit "%s" acl`, a)
+		return -1, fmt.Errorf(`we do not rate limit "%s" category`, c)
 	}
 }
 
@@ -337,18 +337,16 @@ func (p *Permission) GetPatch() (map[string]interface{}, error) {
 	if p.Creator != "" {
 		return nil, errors.NewUnsupportedPatchError("permission", "creator")
 	}
-	if p.ACLs != nil {
-		patch["acls"] = p.ACLs
-		if p.Categories != nil {
-			if err := p.ValidateCategories(p.Categories...); err != nil {
-				return nil, err
-			}
-		} else {
-			patch["categories"] = acl.CategoriesFor(p.ACLs...)
-		}
-	}
 	if p.Categories != nil {
 		patch["categories"] = p.Categories
+		if p.ACLs != nil {
+			if err := p.ValidateACLs(p.ACLs...); err != nil {
+				return nil, err
+			}
+			patch["acls"] = p.ACLs
+		} else {
+			patch["acls"] = category.ACLsFor(p.Categories...)
+		}
 	}
 	if p.Ops != nil {
 		patch["ops"] = p.Ops

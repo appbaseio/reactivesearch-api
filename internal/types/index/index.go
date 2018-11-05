@@ -15,7 +15,7 @@ const CtxKey = contextKey("indices")
 func FromContext(ctx context.Context) ([]string, error) {
 	ctxIndices := ctx.Value(CtxKey)
 	if ctxIndices == nil {
-		return nil, errors.NewNotFoundInRequestContextError("indices")
+		return nil, errors.NewNotFoundInContextError("indices")
 	}
 	reqIndices, ok := ctxIndices.([]string)
 	if !ok {

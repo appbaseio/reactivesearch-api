@@ -2,95 +2,255 @@ package category
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
 
 	"github.com/appbaseio-confidential/arc/internal/errors"
+	"github.com/appbaseio-confidential/arc/internal/types/acl"
 )
 
 type contextKey string
 
-// CtxKey is a key against which an category.Category is stored in the context.
-const CtxKey = contextKey("category")
+// CtxKey is a key against which an category.Categories is stored in the context.
+const CtxKey = contextKey("acl")
 
-// Category is a type that represents an elasticsearch category.
+// Categories represents category type
 type Category int
 
-// Elasticsearch request categories.
+// Currently supported category.
 const (
-	Cat Category = iota
-	Bulk
-	Cluster
+	Docs Category = iota
 	Search
-	Remote
-	Create
-	Count
-	Scripts
-	Delete
-	Doc
-	Source
-	FieldCaps
-	Close
-	Analyze
-	Exists
-	Get
-	Template
-	Explain
 	Indices
-	Alias
-	Aliases
-	DeleteByQuery
-	Cache
-	Index
-	Mapping
-	Flush
-	Forcemerge
-	Upgrade
-	Settings
-	Open
-	Recovery
-	Mappings
-	Rollover
-	Refresh
-	Segments
-	Shrink
-	Split
-	ShardStores
-	Stats
-	Ingest
-	Validate
-	Msearch
-	Mget
-	Nodes
-	Mtermvectors
-	Reindex
-	UpdateByQuery
-	Render
-	RankEval
-	SearchShards
-	Snapshot
-	Tasks
-	Termvectors
-	Update
+	Cat
+	Clusters
+	Misc
+	User
+	Permission
+	Analytics
+	Streams
 )
+
+// String is an implementation of Stringer interface that returns the string representation of category.Categories.
+func (c Category) String() string {
+	return [...]string{
+		"docs",
+		"search",
+		"indices",
+		"cat",
+		"clusters",
+		"misc",
+		"user",
+		"permission",
+		"analytics",
+		"streams",
+	}[c]
+}
+
+// UnmarshalJSON is an implementation of Unmarshaler interface for unmarshaling category.Categories.
+func (c *Category) UnmarshalJSON(bytes []byte) error {
+	var category string
+	err := json.Unmarshal(bytes, &category)
+	if err != nil {
+		return err
+	}
+	switch category {
+	case Docs.String():
+		*c = Docs
+	case Search.String():
+		*c = Search
+	case Indices.String():
+		*c = Indices
+	case Cat.String():
+		*c = Cat
+	case Clusters.String():
+		*c = Clusters
+	case Misc.String():
+		*c = Misc
+	case User.String():
+		*c = User
+	case Permission.String():
+		*c = Permission
+	case Analytics.String():
+		*c = Analytics
+	case Streams.String():
+		*c = Streams
+	default:
+		return fmt.Errorf("invalid acl encountered: %v" + category)
+	}
+	return nil
+}
+
+// MarshalJSON is the implementation of Marshaler interface for marshaling category.Categories type.
+func (c Category) MarshalJSON() ([]byte, error) {
+	var category string
+	switch c {
+	case Docs:
+		category = Docs.String()
+	case Search:
+		category = Search.String()
+	case Indices:
+		category = Indices.String()
+	case Cat:
+		category = Cat.String()
+	case Clusters:
+		category = Clusters.String()
+	case Misc:
+		category = Misc.String()
+	case User:
+		category = User.String()
+	case Permission:
+		category = Permission.String()
+	case Analytics:
+		category = Analytics.String()
+	case Streams:
+		category = Streams.String()
+	default:
+		return nil, fmt.Errorf("invalid category encountered: %v" + c.String())
+	}
+	return json.Marshal(category)
+}
+
+// IsFromES checks whether the category is one of the elasticsearch category, i.e.
+// one of [docs, search, indices, cat, clusters, misc]
+func (c Category) IsFromES() bool {
+	return c == Docs ||
+		c == Search ||
+		c == Indices ||
+		c == Cat ||
+		c == Clusters ||
+		c == Misc
+}
+
+// HasCategory checks whether the given acl is a value in the category categories.
+func (c Category) HasACL(a acl.ACL) bool {
+	return acl.Contains(c.ACLs(), a)
+}
+
+// Categories returns the categories associated with the category.
+func (c Category) ACLs() []acl.ACL {
+	switch c {
+	case Docs:
+		return []acl.ACL{
+			acl.Reindex,
+			acl.Termvectors,
+			acl.Update,
+			acl.Create,
+			acl.Mtermvectors,
+			acl.Bulk,
+			acl.Delete,
+			acl.Source,
+			acl.DeleteByQuery,
+			acl.Get,
+			acl.Mget,
+			acl.UpdateByQuery,
+			acl.Index,
+			acl.Exists,
+		}
+	case Search:
+		return []acl.ACL{
+			acl.FieldCaps,
+			acl.Msearch,
+			acl.Validate,
+			acl.RankEval,
+			acl.Render,
+			acl.SearchShards,
+			acl.Search,
+			acl.Count,
+			acl.Explain,
+		}
+	case Cat:
+		return []acl.ACL{
+			acl.Cat,
+		}
+	case Indices:
+		return []acl.ACL{
+			acl.Upgrade,
+			acl.Settings,
+			acl.Indices,
+			acl.Split,
+			acl.Aliases,
+			acl.Stats,
+			acl.Template,
+			acl.Open,
+			acl.Mapping,
+			acl.Recovery,
+			acl.Analyze,
+			acl.Cache,
+			acl.Forcemerge,
+			acl.Alias,
+			acl.Refresh,
+			acl.Segments,
+			acl.Close,
+			acl.Flush,
+			acl.Shrink,
+			acl.ShardStores,
+			acl.Rollover,
+		}
+	case Clusters:
+		return []acl.ACL{
+			acl.Remote,
+			acl.Cat,
+			acl.Nodes,
+			acl.Tasks,
+			acl.Cluster,
+		}
+	case Misc:
+		return []acl.ACL{
+			acl.Scripts,
+			acl.Get,
+			acl.Ingest,
+			acl.Snapshot,
+		}
+	default:
+		return []acl.ACL{}
+	}
+}
+
+// ACLsFor given categories returns a list of all the acls that belong to those categories.
+func ACLsFor(categories ...Category) []acl.ACL {
+	var acls []acl.ACL
+	set := make(map[acl.ACL]bool)
+	for _, c := range categories {
+		for _, a := range c.ACLs() {
+			if _, ok := set[a]; !ok {
+				set[a] = true
+				acls = append(acls, a)
+			}
+		}
+	}
+	return acls
+}
 
 // FromContext retrieves the category stored against the category.CtxKey from the context.
 func FromContext(ctx context.Context) (*Category, error) {
-	ctxCategory := ctx.Value(CtxKey)
-	if ctxCategory == nil {
-		return nil, errors.NewNotFoundInRequestContextError("*category.Category")
+	ctxACL := ctx.Value(CtxKey)
+	if ctxACL == nil {
+		return nil, errors.NewNotFoundInContextError("*category.Categories")
 	}
-	reqCategory, ok := ctxCategory.(*Category)
+	reqACL, ok := ctxACL.(*Category)
 	if !ok {
-		return nil, errors.NewInvalidCastError("ctxCategory", "*category.Category")
+		return nil, errors.NewInvalidCastError("ctxACL", "*category.Categories")
 	}
-	return reqCategory, nil
+	return reqACL, nil
 }
 
-// Contains checks if the given slice of categories contains the given category.
-func Contains(categories []Category, category Category) bool {
-	for _, c := range categories {
-		if c == category {
-			return true
-		}
+// FromString returns the Categories from string tags.
+func FromString(tag string) Category {
+	switch tag {
+	case "docs":
+		return Docs
+	case "search":
+		return Search
+	case "indices":
+		return Indices
+	case "cat":
+		return Cat
+	case "tasks":
+		return Clusters
+	case "cluster":
+		return Clusters
+	default:
+		return Misc
 	}
-	return false
 }

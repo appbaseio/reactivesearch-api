@@ -1,11 +1,12 @@
 package elasticsearch
 
 import (
+	"github.com/appbaseio-confidential/arc/internal/types/acl"
 	"io"
 	"log"
 	"net/http"
 
-	"github.com/appbaseio-confidential/arc/internal/types/acl"
+	"github.com/appbaseio-confidential/arc/internal/types/category"
 	"github.com/appbaseio-confidential/arc/internal/types/op"
 	"github.com/appbaseio-confidential/arc/internal/util"
 )
@@ -14,11 +15,27 @@ func (es *elasticsearch) handler() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
 
-		ctxACL := ctx.Value(acl.CtxKey).(*acl.ACL)
-		log.Printf("%s: acl=%s\n", logTag, ctxACL)
+		reqCategory, err := category.FromContext(ctx)
+		if err != nil {
+			log.Printf("%s: %v\n", logTag, err)
+			util.WriteBackError(w, "error classifying request acl", http.StatusInternalServerError)
+			return
+		}
 
-		ctxOp := ctx.Value(op.CtxKey).(*op.Operation)
-		log.Printf("%s: operation=%s\n", logTag, ctxOp)
+		reqACL, err := acl.FromContext(ctx)
+		if err != nil {
+			log.Printf("%s: %v\n", logTag, err)
+			util.WriteBackError(w, "error classifyig request category", http.StatusInternalServerError)
+			return
+		}
+
+		reqOp, err := op.FromContext(ctx)
+		if err != nil {
+			log.Printf("%s: %v\n", logTag, err)
+			util.WriteBackError(w, "error classifying request op", http.StatusInternalServerError)
+			return
+		}
+		log.Printf(`%s: acl="%s", category="%s", op="%s"\n`, logTag, *reqCategory, *reqACL, *reqOp)
 
 		// Forward the request to elasticsearch
 		client := util.HTTPClient()

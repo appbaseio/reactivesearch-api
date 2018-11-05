@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/appbaseio-confidential/arc/internal/types/acl"
+	"github.com/appbaseio-confidential/arc/internal/types/category"
 	"github.com/appbaseio-confidential/arc/internal/types/credential"
 	"github.com/appbaseio-confidential/arc/internal/types/permission"
 	"github.com/appbaseio-confidential/arc/internal/types/user"
@@ -78,7 +78,7 @@ func (a *Auth) BasicAuth(h http.HandlerFunc) http.HandlerFunc {
 			}
 		}
 
-		reqACL, err := acl.FromContext(ctx)
+		reqCategory, err := category.FromContext(ctx)
 		if err != nil {
 			msg := "An error occurred while authenticating the request"
 			log.Printf("%s: %v", logTag, err)
@@ -86,7 +86,7 @@ func (a *Auth) BasicAuth(h http.HandlerFunc) http.HandlerFunc {
 			return
 		}
 
-		if reqACL.IsFromES() {
+		if reqCategory.IsFromES() {
 			if reqCredential == credential.User {
 				if !(*reqUser.IsAdmin) {
 					msg := fmt.Sprintf(`User with "username"="%s" is not an admin`, username)
@@ -116,10 +116,10 @@ func (a *Auth) BasicAuth(h http.HandlerFunc) http.HandlerFunc {
 			// respective objects from the cache, otherwise the changes won't be
 			// reflected the next time user tries to get the user or permission object.
 			if r.Method == http.MethodPatch || r.Method == http.MethodDelete {
-				switch *reqACL {
-				case acl.User:
+				switch *reqCategory {
+				case category.User:
 					a.removeUserFromCache(username)
-				case acl.Permission:
+				case category.Permission:
 					username := mux.Vars(r)["username"]
 					a.removePermissionFromCache(username)
 				}

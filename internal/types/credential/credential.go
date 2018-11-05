@@ -25,7 +25,7 @@ const (
 func FromContext(ctx context.Context) (Credential, error) {
 	ctxCredential := ctx.Value(CtxKey)
 	if ctxCredential == nil {
-		return -1, errors.NewNotFoundInRequestContextError("request.Credential")
+		return -1, errors.NewNotFoundInContextError("request.Credential")
 	}
 	reqCredential, ok := ctxCredential.(Credential)
 	if !ok {

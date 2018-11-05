@@ -16,7 +16,7 @@ import (
 	"github.com/appbaseio-confidential/arc/arc/middleware"
 	"github.com/appbaseio-confidential/arc/arc/middleware/order"
 	"github.com/appbaseio-confidential/arc/internal/iplookup"
-	"github.com/appbaseio-confidential/arc/internal/types/acl"
+	"github.com/appbaseio-confidential/arc/internal/types/category"
 	"github.com/appbaseio-confidential/arc/internal/types/index"
 	"github.com/appbaseio-confidential/arc/internal/types/op"
 	"github.com/appbaseio-confidential/arc/internal/types/user"
@@ -48,21 +48,21 @@ func (c *chain) Wrap(h http.HandlerFunc) http.HandlerFunc {
 }
 
 func list() []middleware.Middleware {
-	basicAuth := auth.Instance().BasicAuth
-	classifyOp := classifier.Instance().OpClassifier
-	logRequests := logger.Instance().Log
 	cleanPath := path.Clean
+	logRequests := logger.Instance().Log
+	classifyOp := classifier.Instance().OpClassifier
+	basicAuth := auth.Instance().BasicAuth
 
 	return []middleware.Middleware{
 		cleanPath,
 		logRequests,
+		classifyCategory,
 		classifyOp,
-		classifyACL,
-		extractIndices,
+		identifyIndices,
 		basicAuth,
-		validateOp,
-		validateACL,
 		validateIndices,
+		validateOp,
+		validateCategory,
 	}
 }
 
@@ -88,16 +88,16 @@ func (a *Analytics) Recorder(h http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
 
-		reqACL, err := acl.FromContext(ctx)
+		reqACL, err := category.FromContext(ctx)
 		if err != nil {
 			log.Printf("%s: %v", logTag, err)
-			util.WriteBackError(w, "An error occurred while recording search request", http.StatusInternalServerError)
+			util.WriteBackError(w, "an error occurred while recording search request", http.StatusInternalServerError)
 			return
 		}
 
 		searchQuery := r.Header.Get(XSearchQuery)
 		searchID := r.Header.Get(XSearchID)
-		if *reqACL != acl.Search || (searchQuery == "" && searchID == "") {
+		if *reqACL != category.Search || (searchQuery == "" && searchID == "") {
 			h(w, r)
 			return
 		}
@@ -261,16 +261,16 @@ func (a *Analytics) recordResponse(docID, searchID string, w *httptest.ResponseR
 	a.es.indexRecord(docID, record)
 }
 
-func classifyACL(h http.HandlerFunc) http.HandlerFunc {
+func classifyCategory(h http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		requestACL := acl.Analytics
-		ctx := context.WithValue(r.Context(), acl.CtxKey, &requestACL)
+		requestCategory := category.Analytics
+		ctx := context.WithValue(r.Context(), category.CtxKey, &requestCategory)
 		r = r.WithContext(ctx)
 		h(w, r)
 	}
 }
 
-func extractIndices(h http.HandlerFunc) http.HandlerFunc {
+func identifyIndices(h http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		indices, ok := util.IndicesFromRequest(r)
 		if !ok {
@@ -289,7 +289,7 @@ func validateOp(h http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
 
-		errMsg := "An error occurred while validating request op"
+		errMsg := "an error occurred while validating request op"
 		reqUser, err := user.FromContext(ctx)
 		if err != nil {
 			log.Printf("%s: %v", logTag, err)
@@ -305,7 +305,7 @@ func validateOp(h http.HandlerFunc) http.HandlerFunc {
 		}
 
 		if !reqUser.CanDo(*reqOp) {
-			msg := fmt.Sprintf(`User with "username"="%s" does not have "%s" op`, reqUser.Username, *reqOp)
+			msg := fmt.Sprintf(`user with "username"="%s" does not have "%s" op`, reqUser.Username, *reqOp)
 			util.WriteBackError(w, msg, http.StatusUnauthorized)
 			return
 		}
@@ -314,11 +314,11 @@ func validateOp(h http.HandlerFunc) http.HandlerFunc {
 	}
 }
 
-func validateACL(h http.HandlerFunc) http.HandlerFunc {
+func validateCategory(h http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
 
-		errMsg := "An error occurred while validating request acl"
+		errMsg := "an error occurred while validating request category"
 		reqUser, err := user.FromContext(ctx)
 		if err != nil {
 			log.Printf("%s: %v", logTag, err)
@@ -326,8 +326,9 @@ func validateACL(h http.HandlerFunc) http.HandlerFunc {
 			return
 		}
 
-		if !reqUser.HasACL(acl.Analytics) {
-			msg := fmt.Sprintf(`User with "username"="%s" does not have "%s" acl`, reqUser.Username, acl.Analytics)
+		if !reqUser.HasCategory(category.Analytics) {
+			msg := fmt.Sprintf(`user with "username"="%s" does not have "%s" category`,
+				reqUser.Username, category.Analytics)
 			util.WriteBackError(w, msg, http.StatusUnauthorized)
 			return
 		}

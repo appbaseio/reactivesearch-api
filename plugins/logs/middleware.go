@@ -9,14 +9,14 @@ import (
 	"net/http/httptest"
 	"time"
 
-	"github.com/appbaseio-confidential/arc/internal/types/acl"
+	"github.com/appbaseio-confidential/arc/internal/types/category"
 	"github.com/appbaseio-confidential/arc/internal/util"
 )
 
 type record struct {
-	Indices []string `json:"indices"`
-	ACL     acl.ACL  `json:"acl"`
-	Request struct {
+	Indices  []string          `json:"indices"`
+	Category category.Category `json:"category"`
+	Request  struct {
 		URI     string              `json:"uri"`
 		Method  string              `json:"method"`
 		Headers map[string][]string `json:"header"`
@@ -78,7 +78,7 @@ func (l *Logs) Recorder(h http.HandlerFunc) http.HandlerFunc {
 func (l *Logs) recordResponse(reqBody []byte, w *httptest.ResponseRecorder, r *http.Request) {
 	ctx := r.Context()
 
-	reqACL, err := acl.FromContext(ctx)
+	reqCategory, err := category.FromContext(ctx)
 	if err != nil {
 		log.Printf("%s: %v", logTag, err)
 		return
@@ -92,7 +92,7 @@ func (l *Logs) recordResponse(reqBody []byte, w *httptest.ResponseRecorder, r *h
 
 	var record record
 	record.Indices = reqIndices
-	record.ACL = *reqACL
+	record.Category = *reqCategory
 	record.Timestamp = time.Now()
 
 	// record request
@@ -113,7 +113,7 @@ func (l *Logs) recordResponse(reqBody []byte, w *httptest.ResponseRecorder, r *h
 		return
 	}
 	// we unmarshal the response inorder to trim down the number of hits to 10
-	if *reqACL == acl.Search || *reqACL == acl.Streams {
+	if *reqCategory == category.Search || *reqCategory == category.Streams {
 		var response esResponse
 		err := json.Unmarshal(reqBody, &response)
 		if err != nil {
