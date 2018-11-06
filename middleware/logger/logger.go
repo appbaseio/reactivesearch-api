@@ -18,9 +18,7 @@ var (
 type logger struct{}
 
 func Instance() *logger {
-	once.Do(func() {
-		instance = &logger{}
-	})
+	once.Do(func() { instance = &logger{} })
 	return instance
 }
 

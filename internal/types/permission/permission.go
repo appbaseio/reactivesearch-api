@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"net"
 	"regexp"
 	"strings"
 	"time"
@@ -41,6 +42,8 @@ type Permission struct {
 	ACLs       []acl.ACL           `json:"acls"`
 	Ops        []op.Operation      `json:"ops"`
 	Indices    []string            `json:"indices"`
+	Sources    []string            `json:"sources"`
+	Referers   []string            `json:"referers"`
 	CreatedAt  string              `json:"created_at"`
 	TTL        time.Duration       `json:"ttl"`
 	Limits     *Limits             `json:"limits"`
@@ -71,8 +74,8 @@ func SetOwner(owner string) Options {
 	}
 }
 
-// SetCategory sets the categories a permission can have access to.
-func SetCategory(categories []category.Category) Options {
+// SetCategories sets the categories a permission can have access to.
+func SetCategories(categories []category.Category) Options {
 	return func(p *Permission) error {
 		if categories == nil {
 			return errors.ErrNilCategories
@@ -128,6 +131,38 @@ func SetIndices(indices []string) Options {
 	}
 }
 
+func SetSources(sources []string) Options {
+	return func(p *Permission) error {
+		if sources == nil {
+			return errors.ErrNilSources
+		}
+		for _, source := range sources {
+			_, _, err := net.ParseCIDR(source)
+			if err != nil {
+				return fmt.Errorf(`source "%s" is not in CIDR notation: %v`, source, err)
+			}
+		}
+		p.Sources = sources
+		return nil
+	}
+}
+
+func SetReferers(referers []string) Options {
+	return func(p *Permission) error {
+		if referers == nil {
+			return errors.ErrNilReferers
+		}
+		for _, referer := range referers {
+			referer = strings.Replace(referer, "*", ".*", -1)
+			if _, err := regexp.Compile(referer); err != nil {
+				return err
+			}
+		}
+		p.Referers = referers
+		return nil
+	}
+}
+
 // SetLimits sets the rate limits for each category in a permission.
 func SetLimits(limits *Limits) Options {
 	return func(p *Permission) error {
@@ -153,6 +188,8 @@ func New(creator string, opts ...Options) (*Permission, error) {
 		Categories: defaultCategories,
 		Ops:        defaultOps,
 		Indices:    []string{},
+		Sources:    []string{"0.0.0.0/0"},
+		Referers:   []string{"*"},
 		CreatedAt:  time.Now().Format(time.RFC3339),
 		TTL:        time.Duration(util.DaysInCurrentYear()) * 24 * time.Hour,
 		Limits:     &defaultLimits,
@@ -189,6 +226,8 @@ func NewAdmin(creator string, opts ...Options) (*Permission, error) {
 		Categories: adminCategories,
 		Ops:        adminOps,
 		Indices:    []string{"*"},
+		Sources:    []string{"0.0.0.0/0"},
+		Referers:   []string{"*"},
 		CreatedAt:  time.Now().Format(time.RFC3339),
 		TTL:        time.Duration(util.DaysInCurrentYear()) * 24 * time.Hour,
 		Limits:     &defaultAdminLimits,
@@ -353,6 +392,14 @@ func (p *Permission) GetPatch() (map[string]interface{}, error) {
 	}
 	if p.Indices != nil {
 		patch["indices"] = p.Indices
+	}
+	if p.Sources != nil {
+		// TODO: validate sources values
+		patch["sources"] = p.Sources
+	}
+	if p.Referers != nil {
+		// TODO: validate referers values
+		patch["referers"] = p.Referers
 	}
 	if p.CreatedAt != "" {
 		return nil, errors.NewUnsupportedPatchError("permission", "created_at")

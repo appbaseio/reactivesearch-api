@@ -65,16 +65,22 @@ func (p *permissions) postPermission() http.HandlerFunc {
 			opts = append(opts, permission.SetOps(permissionBody.Ops))
 		}
 		if permissionBody.Categories != nil {
-			opts = append(opts, permission.SetCategory(permissionBody.Categories))
+			opts = append(opts, permission.SetCategories(permissionBody.Categories))
 		}
 		if permissionBody.ACLs != nil {
 			opts = append(opts, permission.SetACLs(permissionBody.ACLs))
 		}
-		if permissionBody.Limits != nil {
-			opts = append(opts, permission.SetLimits(permissionBody.Limits))
+		if permissionBody.Sources != nil {
+			opts = append(opts, permission.SetSources(permissionBody.Sources))
+		}
+		if permissionBody.Referers != nil {
+			opts = append(opts, permission.SetReferers(permissionBody.Referers))
 		}
 		if permissionBody.Indices != nil {
 			opts = append(opts, permission.SetIndices(permissionBody.Indices))
+		}
+		if permissionBody.Limits != nil {
+			opts = append(opts, permission.SetLimits(permissionBody.Limits))
 		}
 
 		var newPermission *permission.Permission
