@@ -275,12 +275,16 @@ out:
 	return specOp
 }
 
-func printCategoriesByACL() {
-	for a, c := range acls {
-		fmt.Printf("%-10s: ", a)
-		for k := range c {
-			fmt.Printf("%s, ", k)
+func printCategoryACLMDTable() {
+	fmt.Printf("| **Category** | **ACLs** |\n")
+	fmt.Printf("|----------|------|\n")
+	for c, a := range acls {
+		fmt.Printf("| `%s` | ", c)
+		fmt.Printf("<ul>")
+		for k := range a {
+			fmt.Printf("<li>`%s`</li>", k)
 		}
+		fmt.Printf("</ul> |")
 		fmt.Printf("\n")
 	}
 }

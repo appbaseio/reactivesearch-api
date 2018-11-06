@@ -260,7 +260,7 @@ func (p *Permission) ValidateACLs(acls ...acl.ACL) error {
 	return nil
 }
 
-// HasCategory checks whether the permission has access to the given acl.
+// HasACL checks whether the permission has access to the given acl.
 func (p *Permission) HasACL(acl acl.ACL) bool {
 	for _, a := range p.ACLs {
 		if a == acl {

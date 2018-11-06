@@ -291,6 +291,9 @@ func (u *User) GetPatch() (map[string]interface{}, error) {
 	if u.Indices != nil {
 		patch["indices"] = u.Indices
 	}
+	if u.CreatedAt != "" {
+		return nil, errors.NewUnsupportedPatchError("user", "created_at")
+	}
 
 	return patch, nil
 }
