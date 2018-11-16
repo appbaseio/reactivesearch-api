@@ -31,7 +31,7 @@ Quick Setup
 Example ENV file
 
 ```
-USER_ID=admin
+USERNAME=admin
 PASSWORD=password
 PERMISSIONS_ES_INDEX=.permissions
 USERS_ES_INDEX=.users
