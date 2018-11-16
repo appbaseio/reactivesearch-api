@@ -80,14 +80,9 @@ func main() {
 
 	router := mux.NewRouter().StrictSlash(true)
 	c := cors.New(cors.Options{
-		AllowedOrigins: []string{
-			"http://127.0.0.1:3333",
-			"http://localhost:3333",
-			"https://dejavu.appbase.io",
-		},
-		AllowedMethods:   []string{"HEAD", "GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
-		AllowedHeaders:   []string{"*"},
-		AllowCredentials: true,
+		AllowedOrigins: []string{"*"},
+		AllowedMethods: []string{"HEAD", "GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
+		AllowedHeaders: []string{"*"},
 	})
 	handler := c.Handler(router)
 
@@ -98,7 +93,7 @@ func main() {
 	}
 
 	if listPlugins {
-		fmt.Println(arc.ListPluginsStr())
+		log.Printf("%s: %s\n", logTag, arc.ListPluginsStr())
 	}
 
 	addr := fmt.Sprintf("%s:%d", address, port)
