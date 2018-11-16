@@ -136,15 +136,22 @@ func SetSources(sources []string) Options {
 		if sources == nil {
 			return errors.ErrNilSources
 		}
-		for _, source := range sources {
-			_, _, err := net.ParseCIDR(source)
-			if err != nil {
-				return fmt.Errorf(`source "%s" is not in CIDR notation: %v`, source, err)
-			}
+		if err := validateSources(sources); err != nil {
+			return err
 		}
 		p.Sources = sources
 		return nil
 	}
+}
+
+func validateSources(sources []string) error {
+	for _, source := range sources {
+		_, _, err := net.ParseCIDR(source)
+		if err != nil {
+			return fmt.Errorf(`source "%s" is not a valid CIDR notation: %v`, source, err)
+		}
+	}
+	return nil
 }
 
 func SetReferers(referers []string) Options {
@@ -152,15 +159,22 @@ func SetReferers(referers []string) Options {
 		if referers == nil {
 			return errors.ErrNilReferers
 		}
-		for _, referer := range referers {
-			referer = strings.Replace(referer, "*", ".*", -1)
-			if _, err := regexp.Compile(referer); err != nil {
-				return err
-			}
+		if err := validateReferers(referers); err != nil {
+			return err
 		}
 		p.Referers = referers
 		return nil
 	}
+}
+
+func validateReferers(referers []string) error {
+	for _, referer := range referers {
+		referer = strings.Replace(referer, "*", ".*", -1)
+		if _, err := regexp.Compile(referer); err != nil {
+			return fmt.Errorf(`invalid referer regexp "%s" encountered: %v`, referer, err)
+		}
+	}
+	return nil
 }
 
 // SetLimits sets the rate limits for each category in a permission.
@@ -394,11 +408,15 @@ func (p *Permission) GetPatch() (map[string]interface{}, error) {
 		patch["indices"] = p.Indices
 	}
 	if p.Sources != nil {
-		// TODO: validate sources values
+		if err := validateSources(p.Sources); err != nil {
+			return nil, err
+		}
 		patch["sources"] = p.Sources
 	}
 	if p.Referers != nil {
-		// TODO: validate referers values
+		if err := validateReferers(p.Referers); err != nil {
+			return nil, err
+		}
 		patch["referers"] = p.Referers
 	}
 	if p.CreatedAt != "" {

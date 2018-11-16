@@ -80,7 +80,11 @@ func main() {
 
 	router := mux.NewRouter().StrictSlash(true)
 	c := cors.New(cors.Options{
-		AllowedOrigins:   []string{"http://127.0.0.1:3333", "http://localhost:3333"},
+		AllowedOrigins: []string{
+			"http://127.0.0.1:3333",
+			"http://localhost:3333",
+			"https://dejavu.appbase.io",
+		},
 		AllowedMethods:   []string{"HEAD", "GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
 		AllowedHeaders:   []string{"*"},
 		AllowCredentials: true,
