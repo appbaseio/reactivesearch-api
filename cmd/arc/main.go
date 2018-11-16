@@ -106,7 +106,7 @@ func main() {
 	log.Fatal(http.ListenAndServe(addr, handler))
 }
 
-// LoadEnvFromFile loads env vars fron envFile. Envs in the file
+// LoadEnvFromFile loads env vars from envFile. Envs in the file
 // should be in KEY=VALUE format.
 func LoadEnvFromFile(envFile string) error {
 	if envFile == "" {
