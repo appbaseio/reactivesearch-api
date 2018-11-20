@@ -19,6 +19,8 @@ import (
 	"github.com/appbaseio-confidential/arc/middleware/logger"
 	"github.com/appbaseio-confidential/arc/middleware/path"
 	"github.com/appbaseio-confidential/arc/plugins/auth"
+	"github.com/appbaseio-confidential/arc/plugins/analytics"
+	"github.com/appbaseio-confidential/arc/plugins/logs"
 	"github.com/appbaseio-confidential/arc/internal/util"
 	"github.com/gorilla/mux"
 )
@@ -36,6 +38,8 @@ func list() []middleware.Middleware {
 	logRequests := logger.Instance().Log
 	basicAuth := auth.Instance().BasicAuth
 	redirectRequests := interceptor.Instance().Redirect
+	recordAnalytics := analytics.Instance().Recorder
+	recordLogs := logs.Instance().Recorder
 
 	return []middleware.Middleware{
 		cleanPath,
@@ -49,6 +53,8 @@ func list() []middleware.Middleware {
 		validateOp,
 		validateACL,
 		validateCategory,
+		recordLogs,
+		recordAnalytics,
 		redirectRequests,
 	}
 }
