@@ -4,6 +4,7 @@ import (
 	"os"
 	"sync"
 
+	"github.com/appbaseio-confidential/arc/arc"
 	"github.com/appbaseio-confidential/arc/arc/route"
 	"github.com/appbaseio-confidential/arc/internal/errors"
 )
@@ -23,6 +24,10 @@ var (
 // Logs plugin records an elasticsearch request and its response.
 type Logs struct {
 	es *elasticsearch
+}
+
+func init() {
+	arc.RegisterPlugin(Instance())
 }
 
 // Instance returns the singleton instance of Logs plugin.
