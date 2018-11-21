@@ -272,10 +272,7 @@ func classifyCategory(h http.HandlerFunc) http.HandlerFunc {
 
 func identifyIndices(h http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		indices, ok := util.IndicesFromRequest(r)
-		if !ok {
-			indices = []string{}
-		}
+		indices := util.IndicesFromRequest(r)
 
 		ctx := r.Context()
 		ctx = context.WithValue(ctx, index.CtxKey, indices)

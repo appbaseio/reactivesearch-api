@@ -117,7 +117,7 @@ func (l *Logs) recordResponse(reqBody []byte, w *httptest.ResponseRecorder, r *h
 		var response esResponse
 		err := json.Unmarshal(reqBody, &response)
 		if err != nil {
-			log.Printf("%s: error unmarshalling es response, unable to record logs: %v", logTag, err)
+			log.Printf("%s: error unmarshaling es response, unable to record logs: %v", logTag, err)
 			return
 		}
 		if len(response.Hits.Hits) > 10 {

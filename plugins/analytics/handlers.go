@@ -18,7 +18,7 @@ func (a *Analytics) getOverview() http.HandlerFunc {
 		from, to, size := rangeQueryParams(r.URL.Query())
 		indices, err := util.IndicesFromContext(r.Context())
 		if err != nil {
-			msg := "An error occurred while fetching analytics overview"
+			msg := "error occurred while fetching analytics overview"
 			log.Printf("%s: %v\n", logTag, err)
 			util.WriteBackError(w, msg, http.StatusInternalServerError)
 			return
@@ -26,7 +26,7 @@ func (a *Analytics) getOverview() http.HandlerFunc {
 
 		raw, err := a.es.analyticsOverview(from, to, size, clickAnalytics, indices...)
 		if err != nil {
-			msg := "An error occurred while aggregating analytics overview results"
+			msg := "error occurred while aggregating analytics overview results"
 			log.Printf("%s: %v\n", logTag, err)
 			util.WriteBackError(w, msg, http.StatusInternalServerError)
 			return
@@ -45,7 +45,7 @@ func (a *Analytics) getAdvanced() http.HandlerFunc {
 		from, to, size := rangeQueryParams(r.URL.Query())
 		indices, err := util.IndicesFromContext(r.Context())
 		if err != nil {
-			msg := "An error occurred while fetching advanced analytics"
+			msg := "error occurred while fetching advanced analytics"
 			log.Printf("%s: %v\n", logTag, err)
 			util.WriteBackError(w, msg, http.StatusInternalServerError)
 			return
@@ -53,7 +53,7 @@ func (a *Analytics) getAdvanced() http.HandlerFunc {
 
 		raw, err := a.es.advancedAnalytics(from, to, size, clickAnalytics, indices...)
 		if err != nil {
-			msg := "An error occurred while aggregating advanced analytics results"
+			msg := "error occurred while aggregating advanced analytics results"
 			log.Printf("%s: %v\n", logTag, err)
 			util.WriteBackError(w, msg, http.StatusInternalServerError)
 			return
@@ -72,7 +72,7 @@ func (a *Analytics) getPopularSearches() http.HandlerFunc {
 		from, to, size := rangeQueryParams(r.URL.Query())
 		indices, err := util.IndicesFromContext(r.Context())
 		if err != nil {
-			msg := "An error occurred while fetching popular searches"
+			msg := "error occurred while fetching popular searches"
 			log.Printf("%s: %v\n", logTag, err)
 			util.WriteBackError(w, msg, http.StatusInternalServerError)
 			return
@@ -80,7 +80,7 @@ func (a *Analytics) getPopularSearches() http.HandlerFunc {
 
 		raw, err := a.es.popularSearchesRaw(from, to, size, clickAnalytics, indices...)
 		if err != nil {
-			msg := "An error occurred while parsing popular searches response"
+			msg := "error occurred while parsing popular searches response"
 			log.Printf("%s: %v\n", logTag, err)
 			util.WriteBackError(w, msg, http.StatusInternalServerError)
 			return
@@ -94,7 +94,7 @@ func (a *Analytics) getNoResultSearches() http.HandlerFunc {
 		from, to, size := rangeQueryParams(r.URL.Query())
 		indices, err := util.IndicesFromContext(r.Context())
 		if err != nil {
-			msg := "An error occurred while fetching no result searches"
+			msg := "error occurred while fetching no result searches"
 			log.Printf("%s: %v\n", logTag, err)
 			util.WriteBackError(w, msg, http.StatusInternalServerError)
 			return
@@ -102,7 +102,7 @@ func (a *Analytics) getNoResultSearches() http.HandlerFunc {
 
 		raw, err := a.es.noResultSearchesRaw(from, to, size, indices...)
 		if err != nil {
-			msg := "An error occurred while parsing no result searches response"
+			msg := "error occurred while parsing no result searches response"
 			log.Printf("%s: %v\n", logTag, err)
 			util.WriteBackError(w, msg, http.StatusInternalServerError)
 			return
@@ -121,7 +121,7 @@ func (a *Analytics) getPopularFilters() http.HandlerFunc {
 		from, to, size := rangeQueryParams(r.URL.Query())
 		indices, err := util.IndicesFromContext(r.Context())
 		if err != nil {
-			msg := "An error occurred while fetching popular filters"
+			msg := "error occurred while fetching popular filters"
 			log.Printf("%s: %v\n", logTag, err)
 			util.WriteBackError(w, msg, http.StatusInternalServerError)
 			return
@@ -129,7 +129,7 @@ func (a *Analytics) getPopularFilters() http.HandlerFunc {
 
 		raw, err := a.es.popularFiltersRaw(from, to, size, clickAnalytics, indices...)
 		if err != nil {
-			msg := "An error occurred while parsing popular filters response"
+			msg := "error occurred while parsing popular filters response"
 			log.Printf("%s: %v\n", logTag, err)
 			util.WriteBackError(w, msg, http.StatusInternalServerError)
 			return
@@ -148,7 +148,7 @@ func (a *Analytics) getPopularResults() http.HandlerFunc {
 		from, to, size := rangeQueryParams(r.URL.Query())
 		indices, err := util.IndicesFromContext(r.Context())
 		if err != nil {
-			msg := "An error occurred while fetching popular results"
+			msg := "error occurred while fetching popular results"
 			log.Printf("%s: %v\n", logTag, err)
 			util.WriteBackError(w, msg, http.StatusInternalServerError)
 			return
@@ -156,7 +156,7 @@ func (a *Analytics) getPopularResults() http.HandlerFunc {
 
 		raw, err := a.es.popularResultsRaw(from, to, size, clickAnalytics, indices...)
 		if err != nil {
-			msg := "An error occurred while parsing popular results response"
+			msg := "error occurred while parsing popular results response"
 			log.Printf("%s: %v\n", logTag, err)
 			util.WriteBackError(w, msg, http.StatusInternalServerError)
 			return
@@ -170,7 +170,7 @@ func (a *Analytics) getGeoRequestsDistribution() http.HandlerFunc {
 		from, to, size := rangeQueryParams(r.URL.Query())
 		indices, err := util.IndicesFromContext(r.Context())
 		if err != nil {
-			msg := "An error occurred while fetching geo requests distribution"
+			msg := "error occurred while fetching geo requests distribution"
 			log.Printf("%s: %v\n", logTag, err)
 			util.WriteBackError(w, msg, http.StatusInternalServerError)
 			return
@@ -178,7 +178,7 @@ func (a *Analytics) getGeoRequestsDistribution() http.HandlerFunc {
 
 		raw, err := a.es.geoRequestsDistribution(from, to, size, indices...)
 		if err != nil {
-			msg := "An error occurred while parsing geo requests distribution response"
+			msg := "error occurred while parsing geo requests distribution response"
 			log.Printf("%s: %v\n", logTag, err)
 			util.WriteBackError(w, msg, http.StatusInternalServerError)
 			return
@@ -192,7 +192,7 @@ func (a *Analytics) getSearchLatencies() http.HandlerFunc {
 		from, to, size := rangeQueryParams(r.URL.Query())
 		indices, err := util.IndicesFromContext(r.Context())
 		if err != nil {
-			msg := "An error occurred while fetching search latencies"
+			msg := "error occurred while fetching search latencies"
 			log.Printf("%s: %v\n", logTag, err)
 			util.WriteBackError(w, msg, http.StatusInternalServerError)
 			return
@@ -200,7 +200,7 @@ func (a *Analytics) getSearchLatencies() http.HandlerFunc {
 
 		raw, err := a.es.latencies(from, to, size, indices...)
 		if err != nil {
-			msg := "An error occurred while parsing search latencies response"
+			msg := "error occurred while parsing search latencies response"
 			log.Printf("%s: %v\n", logTag, err)
 			util.WriteBackError(w, msg, http.StatusInternalServerError)
 			return
@@ -214,7 +214,7 @@ func (a *Analytics) getSummary() http.HandlerFunc {
 		from, to, _ := rangeQueryParams(r.URL.Query())
 		indices, err := util.IndicesFromContext(r.Context())
 		if err != nil {
-			msg := "An error occurred while fetching analytics summary"
+			msg := "error occurred while fetching analytics summary"
 			log.Printf("%s: %v\n", logTag, err)
 			util.WriteBackError(w, msg, http.StatusInternalServerError)
 			return
@@ -222,7 +222,7 @@ func (a *Analytics) getSummary() http.HandlerFunc {
 
 		raw, err := a.es.summary(from, to, indices...)
 		if err != nil {
-			msg := "An error occurred while parsing analytics summary response"
+			msg := "error occurred while parsing analytics summary response"
 			log.Printf("%s: %v\n", logTag, err)
 			util.WriteBackError(w, msg, http.StatusInternalServerError)
 			return

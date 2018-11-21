@@ -70,5 +70,5 @@ func (l *Logs) InitFunc() error {
 
 // Routes returns an empty slice of routes, since Logs is solely a middleware.
 func (l *Logs) Routes() []route.Route {
-	return []route.Route{}
+	return l.routes()
 }
