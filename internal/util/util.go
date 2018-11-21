@@ -73,6 +73,38 @@ func Contains(slice []string, val string) bool {
 	return false
 }
 
+// IsSubset returns true if the first slice is completely contained in the
+// second slice. There must be at least the same number of duplicate values
+// in second as there are in first.
+func IsSubset(sub, super []string) bool {
+	set := make(map[string]bool)
+	for _, value := range super {
+		set[value] = true
+	}
+
+	for _, value := range sub {
+		if found := set[value]; !found {
+			return false
+		}
+	}
+
+	return true
+}
+
+// ToStringSlice converts a interface{} type to []string. It basically converts
+// all the elements of the slice to its string representation using fmt.Sprint.
+func ToStringSlice(g interface{}) ([]string, error) {
+	slice, ok := g.([]interface{})
+	if !ok {
+		return nil, fmt.Errorf("unable to cast interface{} to []interface{}")
+	}
+	s := make([]string, len(slice))
+	for i, v := range slice {
+		s[i] = fmt.Sprint(v)
+	}
+	return s, nil
+}
+
 // DaysInMonth returns the number of days in a month for a given year.
 func DaysInMonth(m time.Month, year int) int {
 	return time.Date(year, m+1, 0, 0, 0, 0, 0, time.UTC).Day()
@@ -95,11 +127,11 @@ func WithPrecision(num float64, precision int) float64 {
 }
 
 // IndicesFromRequest extracts index patterns from the request url (from var "{index}").
-func IndicesFromRequest(r *http.Request) ([]string, bool) {
+func IndicesFromRequest(r *http.Request) []string {
 	vars := mux.Vars(r)
 	indexVar, ok := vars["index"]
 	if !ok {
-		return nil, false
+		return []string{}
 	}
 
 	var indices []string
@@ -109,7 +141,7 @@ func IndicesFromRequest(r *http.Request) ([]string, bool) {
 		indices = append(indices, pattern)
 	}
 
-	return indices, true
+	return indices
 }
 
 // IndicesFromContext fetches index patterns from the request context.

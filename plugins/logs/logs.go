@@ -13,7 +13,34 @@ const (
 	logTag         = "[logs]"
 	envEsURL       = "ES_CLUSTER_URL"
 	envLogsEsIndex = "LOGS_ES_INDEX"
-	mapping        = `{"settings":{"number_of_shards":3, "number_of_replicas":2}}`
+	config         = `
+	{
+		"mappings": {
+			"_doc": {
+				"properties": {
+					"indices": { 
+						"type": "nested" 
+					},
+					"category": { 
+						"type": "text" 
+					},
+					"request": { 
+						"type": "object" 
+					},
+					"response": {
+						"type": "object" 
+					},
+					"timestamp": {
+						"type": "date"
+					}
+				}
+			}
+		},
+		"settings": {
+			"number_of_shards": 3,
+			"number_of_replicas": 2
+		}
+	}`
 )
 
 var (
@@ -34,9 +61,7 @@ func init() {
 // Note: Only this function must be used (both within and outside the package) to
 // obtain the instance Logs in order to avoid stateless instances of the plugin.
 func Instance() *Logs {
-	once.Do(func() {
-		singleton = &Logs{}
-	})
+	once.Do(func() { singleton = &Logs{} })
 	return singleton
 }
 
@@ -60,7 +85,7 @@ func (l *Logs) InitFunc() error {
 
 	// initialize the elasticsearch client
 	var err error
-	l.es, err = newClient(url, indexName, mapping)
+	l.es, err = newClient(url, indexName, config)
 	if err != nil {
 		return err
 	}
@@ -70,5 +95,5 @@ func (l *Logs) InitFunc() error {
 
 // Routes returns an empty slice of routes, since Logs is solely a middleware.
 func (l *Logs) Routes() []route.Route {
-	return []route.Route{}
+	return l.routes()
 }

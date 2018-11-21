@@ -2,16 +2,155 @@ package logs
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"net/http/httptest"
 	"time"
 
+	"github.com/appbaseio-confidential/arc/arc/middleware"
+	"github.com/appbaseio-confidential/arc/arc/middleware/order"
 	"github.com/appbaseio-confidential/arc/internal/types/category"
+	"github.com/appbaseio-confidential/arc/internal/types/index"
+	"github.com/appbaseio-confidential/arc/internal/types/op"
+	"github.com/appbaseio-confidential/arc/internal/types/user"
 	"github.com/appbaseio-confidential/arc/internal/util"
+	"github.com/appbaseio-confidential/arc/middleware/classifier"
+	"github.com/appbaseio-confidential/arc/middleware/logger"
+	"github.com/appbaseio-confidential/arc/middleware/path"
+	"github.com/appbaseio-confidential/arc/plugins/auth"
 )
+
+type chain struct {
+	order.Fifo
+}
+
+func (c *chain) Wrap(h http.HandlerFunc) http.HandlerFunc {
+	return c.Adapt(h, list()...)
+}
+
+func list() []middleware.Middleware {
+	cleanPath := path.Clean
+	logRequests := logger.Instance().Log
+	classifyOp := classifier.Instance().OpClassifier
+	basicAuth := auth.Instance().BasicAuth
+
+	return []middleware.Middleware{
+		cleanPath,
+		logRequests,
+		classifyOp,
+		identifyIndices,
+		basicAuth,
+		validateIndices,
+		validateOp,
+	}
+}
+
+func identifyIndices(h http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		indices := util.IndicesFromRequest(r)
+
+		fmt.Println(indices)
+
+		ctx := r.Context()
+		ctx = context.WithValue(ctx, index.CtxKey, indices)
+		r = r.WithContext(ctx)
+
+		h(w, r)
+	}
+}
+
+func validateOp(h http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		ctx := r.Context()
+
+		errMsg := "an error occurred while validating request op"
+		reqUser, err := user.FromContext(ctx)
+		if err != nil {
+			log.Printf("%s: %v", logTag, err)
+			util.WriteBackError(w, errMsg, http.StatusInternalServerError)
+			return
+		}
+
+		reqOp, err := op.FromContext(ctx)
+		if err != nil {
+			log.Printf("%s: %v", logTag, err)
+			util.WriteBackError(w, errMsg, http.StatusInternalServerError)
+			return
+		}
+
+		if !reqUser.CanDo(*reqOp) {
+			msg := fmt.Sprintf(`user with "username"="%s" does not have "%s" op`, reqUser.Username, *reqOp)
+			util.WriteBackError(w, msg, http.StatusUnauthorized)
+			return
+		}
+
+		h(w, r)
+	}
+}
+
+func validateIndices(h http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		ctx := r.Context()
+
+		errMsg := "An error occurred while validating request indices"
+		reqUser, err := user.FromContext(ctx)
+		if err != nil {
+			log.Printf("%s: %v", logTag, err)
+			util.WriteBackError(w, errMsg, http.StatusInternalServerError)
+			return
+		}
+
+		ctxIndices := ctx.Value(index.CtxKey)
+		if ctxIndices == nil {
+			log.Printf("%s: unable to fetch indices from request context\n", logTag)
+			util.WriteBackError(w, errMsg, http.StatusInternalServerError)
+			return
+		}
+		indices, ok := ctxIndices.([]string)
+		if !ok {
+			log.Printf("%s: unable to cast context indices to []string\n", logTag)
+			util.WriteBackError(w, errMsg, http.StatusInternalServerError)
+			return
+		}
+
+		if len(indices) == 0 {
+			// cluster level route
+			ok, err := reqUser.CanAccessIndex("*")
+			if err != nil {
+				log.Printf("%s: %v\n", logTag, err)
+				util.WriteBackError(w, `Invalid index pattern "*"`, http.StatusUnauthorized)
+				return
+			}
+			if !ok {
+				util.WriteBackError(w, "User is unauthorized to access cluster level routes", http.StatusUnauthorized)
+				return
+			}
+		} else {
+			// index level route
+			for _, indexName := range indices {
+				ok, err := reqUser.CanAccessIndex(indexName)
+				if err != nil {
+					msg := fmt.Sprintf(`Invalid index pattern encountered "%s"`, indexName)
+					log.Printf("%s: invalid index pattern encountered %s: %v\n", logTag, indexName, err)
+					util.WriteBackError(w, msg, http.StatusUnauthorized)
+					return
+				}
+
+				if !ok {
+					msg := fmt.Sprintf(`User is unauthorized to access index names "%s"`, indexName)
+					util.WriteBackError(w, msg, http.StatusUnauthorized)
+					return
+				}
+			}
+		}
+
+		h(w, r)
+	}
+}
 
 type record struct {
 	Indices  []string          `json:"indices"`
@@ -27,7 +166,7 @@ type record struct {
 		Status  string `json:"status"`
 		Headers map[string][]string
 		Body    string `json:"body"`
-	}
+	} `json:"response"`
 	Timestamp time.Time `json:"timestamp"`
 }
 
@@ -117,7 +256,7 @@ func (l *Logs) recordResponse(reqBody []byte, w *httptest.ResponseRecorder, r *h
 		var response esResponse
 		err := json.Unmarshal(reqBody, &response)
 		if err != nil {
-			log.Printf("%s: error unmarshalling es response, unable to record logs: %v", logTag, err)
+			log.Printf("%s: error unmarshaling es response, unable to record logs: %v", logTag, err)
 			return
 		}
 		if len(response.Hits.Hits) > 10 {
