@@ -235,7 +235,7 @@ func (l *Logs) recordResponse(reqBody []byte, w *httptest.ResponseRecorder, r *h
 	record.Timestamp = time.Now()
 
 	// record request
-	record.Request.URI = r.RequestURI
+	record.Request.URI = r.URL.Path
 	record.Request.Headers = r.Header
 	record.Request.Method = r.Method
 	record.Request.Body = string(reqBody)
