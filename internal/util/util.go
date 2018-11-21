@@ -91,8 +91,8 @@ func IsSubset(sub, super []string) bool {
 	return true
 }
 
-// ToStringSlice converts a slice of interface{} type to string. It basically converts
-// all the elements of the slice to its string representation (fmt.Sprint).
+// ToStringSlice converts a interface{} type to []string. It basically converts
+// all the elements of the slice to its string representation using fmt.Sprint.
 func ToStringSlice(g interface{}) ([]string, error) {
 	slice, ok := g.([]interface{})
 	if !ok {
