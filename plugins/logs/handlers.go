@@ -20,7 +20,7 @@ func (l *Logs) getLogs() http.HandlerFunc {
 			size = "100"
 		}
 
-		raw, err := l.es.getLogsRaw(from, size, indices...)
+		raw, err := l.es.getRawLogs(from, size, indices...)
 		if err != nil {
 			log.Printf("%s: error fetching logs: %v\n", logTag, err)
 			util.WriteBackError(w, err.Error(), http.StatusInternalServerError)

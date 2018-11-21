@@ -229,7 +229,7 @@ func (a *Auth) createAdminPermission(creator string) (*permission.Permission, er
 
 func (a *Auth) isMaster(username, password string) (*user.User, error) {
 	masterUser, masterPassword := os.Getenv("USERNAME"), os.Getenv("PASSWORD")
-	if masterUser != username && masterPassword != password {
+	if masterUser != username || masterPassword != password {
 		return nil, nil
 	}
 

@@ -67,7 +67,7 @@ func (es *elasticsearch) indexRecord(record record) {
 	}
 }
 
-func (es *elasticsearch) getLogsRaw(from, size string, indices ...string) ([]byte, error) {
+func (es *elasticsearch) getRawLogs(from, size string, indices ...string) ([]byte, error) {
 	offset, err := strconv.Atoi(from)
 	if err != nil {
 		return nil, fmt.Errorf(`invalid value "%v" for query param "from"`, from)
@@ -77,9 +77,6 @@ func (es *elasticsearch) getLogsRaw(from, size string, indices ...string) ([]byt
 		return nil, fmt.Errorf(`invalid value "%v" for query param "size"`, size)
 	}
 
-	// not sorting the logs here as mappings are not defined until
-	// a record is indexed and sorting on empty index without mappings
-	// throws an error.
 	response, err := es.client.Search(es.indexName).
 		From(offset).
 		Size(s).
@@ -89,7 +86,6 @@ func (es *elasticsearch) getLogsRaw(from, size string, indices ...string) ([]byt
 		return nil, err
 	}
 
-	logs := make(map[string]interface{})
 	hits := []*elastic.SearchHit{}
 	for _, hit := range response.Hits.Hits {
 		var source map[string]interface{}
@@ -114,6 +110,7 @@ func (es *elasticsearch) getLogsRaw(from, size string, indices ...string) ([]byt
 		}
 	}
 
+	logs := make(map[string]interface{})
 	logs["logs"] = hits
 	logs["total"] = len(hits)
 	logs["took"] = response.TookInMillis
