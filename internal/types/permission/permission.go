@@ -34,19 +34,20 @@ const (
 
 // Permission defines a permission type.
 type Permission struct {
-	Username   string              `json:"username"`
-	Password   string              `json:"password"`
-	Owner      string              `json:"owner"`
-	Creator    string              `json:"creator"`
-	Categories []category.Category `json:"categories"`
-	ACLs       []acl.ACL           `json:"acls"`
-	Ops        []op.Operation      `json:"ops"`
-	Indices    []string            `json:"indices"`
-	Sources    []string            `json:"sources"`
-	Referers   []string            `json:"referers"`
-	CreatedAt  string              `json:"created_at"`
-	TTL        time.Duration       `json:"ttl"`
-	Limits     *Limits             `json:"limits"`
+	Username    string              `json:"username"`
+	Password    string              `json:"password"`
+	Owner       string              `json:"owner"`
+	Creator     string              `json:"creator"`
+	Categories  []category.Category `json:"categories"`
+	ACLs        []acl.ACL           `json:"acls"`
+	Ops         []op.Operation      `json:"ops"`
+	Indices     []string            `json:"indices"`
+	Sources     []string            `json:"sources"`
+	Referers    []string            `json:"referers"`
+	CreatedAt   string              `json:"created_at"`
+	TTL         time.Duration       `json:"ttl"`
+	Limits      *Limits             `json:"limits"`
+	Description string              `json:"description"`
 }
 
 // Limits defines the rate limits for each category.
@@ -181,6 +182,14 @@ func validateReferers(referers []string) error {
 func SetLimits(limits *Limits) Options {
 	return func(p *Permission) error {
 		p.Limits = limits
+		return nil
+	}
+}
+
+// SetDescription sets the permission description.
+func SetDescription(description string) Options {
+	return func(p *Permission) error {
+		p.Description = description
 		return nil
 	}
 }
@@ -450,6 +459,9 @@ func (p *Permission) GetPatch() (map[string]interface{}, error) {
 			limits["misc_limit"] = p.Limits.MiscLimit
 		}
 		patch["limits"] = limits
+	}
+	if p.Description != "" {
+		patch["description"] = p.Description
 	}
 
 	return patch, nil
