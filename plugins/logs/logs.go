@@ -18,9 +18,6 @@ const (
 		"mappings": {
 			"_doc": {
 				"properties": {
-					"indices": { 
-						"type": "nested" 
-					},
 					"category": { 
 						"type": "text" 
 					},

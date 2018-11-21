@@ -173,14 +173,14 @@ type record struct {
 type esResponse struct {
 	Hits struct {
 		Hits []struct {
-			Source map[string]interface{} `json:"_source"`
-			ID     string                 `json:"_id"`
-			Type   string                 `json:"_type"`
-			Score  float64                `json:"_score"`
-			Index  string                 `json:"_index"`
+			Source map[string]interface{} `json:"_source,omitempty"`
+			ID     string                 `json:"_id,omitempty"`
+			Type   string                 `json:"_type,omitempty"`
+			Score  float64                `json:"_score,omitempty"`
+			Index  string                 `json:"_index,omitempty"`
 		} `json:"hits"`
 		Total    int     `json:"total"`
-		MaxScore float64 `json:"max_score"`
+		MaxScore interface{} `json:"max_score"`
 	} `json:"hits"`
 	TimedOut bool  `json:"timed_out"`
 	Took     int64 `json:"took"`
@@ -254,7 +254,7 @@ func (l *Logs) recordResponse(reqBody []byte, w *httptest.ResponseRecorder, r *h
 	// we unmarshal the response inorder to trim down the number of hits to 10
 	if *reqCategory == category.Search || *reqCategory == category.Streams {
 		var response esResponse
-		err := json.Unmarshal(reqBody, &response)
+		err := json.Unmarshal(responseBody, &response)
 		if err != nil {
 			log.Printf("%s: error unmarshaling es response, unable to record logs: %v", logTag, err)
 			return
