@@ -27,7 +27,7 @@ type record struct {
 		Status  string `json:"status"`
 		Headers map[string][]string
 		Body    string `json:"body"`
-	}
+	} `json:"response"`
 	Timestamp time.Time `json:"timestamp"`
 }
 

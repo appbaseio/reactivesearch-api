@@ -17,7 +17,7 @@ type elasticsearch struct {
 	client    *elastic.Client
 }
 
-func newClient(url, indexName, mapping string) (*elasticsearch, error) {
+func newClient(url, indexName, config string) (*elasticsearch, error) {
 	opts := []elastic.ClientOptionFunc{
 		elastic.SetURL(url),
 		elastic.SetSniff(false),
@@ -32,7 +32,8 @@ func newClient(url, indexName, mapping string) (*elasticsearch, error) {
 	es := &elasticsearch{url, indexName, client}
 
 	// Check if meta index already exists
-	exists, err := client.IndexExists(indexName).Do(ctx)
+	exists, err := client.IndexExists(indexName).
+		Do(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("error while checking if index already exists: %v", err)
 	}
@@ -42,7 +43,9 @@ func newClient(url, indexName, mapping string) (*elasticsearch, error) {
 	}
 
 	// Meta index doesn't exist, create one
-	_, err = client.CreateIndex(indexName).Body(mapping).Do(ctx)
+	_, err = client.CreateIndex(indexName).
+		Body(config).
+		Do(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("error while creating index named \"%s\"", indexName)
 	}
@@ -74,7 +77,10 @@ func (es *elasticsearch) getLogsRaw(from, size string, indices ...string) ([]byt
 		return nil, fmt.Errorf(`invalid value "%v" for query param "size"`, size)
 	}
 
-	response, err := es.client.Search().
+	// not sorting the logs here as mappings are not defined until
+	// a record is indexed and sorting on empty index without mappings
+	// throws an error.
+	response, err := es.client.Search(es.indexName).
 		From(offset).
 		Size(s).
 		Sort("timestamp", false).
