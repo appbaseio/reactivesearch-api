@@ -8,6 +8,7 @@ import (
 	"sync"
 
 	"github.com/appbaseio-confidential/arc/internal/errors"
+	"github.com/appbaseio-confidential/arc/internal/util"
 )
 
 const (
@@ -48,19 +49,41 @@ func (i *interceptor) Redirect(h http.HandlerFunc) http.HandlerFunc {
 		r.URL.Host = esURL.Host
 		r.URL.User = esURL.User
 
+		req, err := redirectRequest(r)
+		if err != nil {
+			log.Printf("%s: %v\n", logTag, err)
+			util.WriteBackError(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		req = req.WithContext(r.Context())
+
 		// disable gzip compression
-		encoding := r.Header.Get("Accept-Encoding")
+		encoding := req.Header.Get("Accept-Encoding")
 		if encoding != "" {
-			r.Header.Set("Accept-Encoding", "identity")
+			req.Header.Set("Accept-Encoding", "identity")
 		}
 
 		// set request content type
-		v := r.Header.Get("Content-Type")
+		v := req.Header.Get("Content-Type")
 		if v == "" {
-			r.Header.Set("Content-Type", "application/json")
+			req.Header.Set("Content-Type", "application/json")
 		}
-		r.RequestURI = ""
 
-		h(w, r)
+		h(w, req)
 	}
+}
+
+func redirectRequest(r *http.Request) (*http.Request, error) {
+	redirectRequest, err := http.NewRequest(r.Method, r.URL.String(), r.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	// set request content type
+	v := redirectRequest.Header.Get("Content-Type")
+	if v == "" {
+		redirectRequest.Header.Set("Content-Type", "application/json")
+	}
+
+	return redirectRequest, nil
 }
