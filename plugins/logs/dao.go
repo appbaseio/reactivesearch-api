@@ -42,9 +42,16 @@ func newClient(url, indexName, config string) (*elasticsearch, error) {
 		return es, nil
 	}
 
+	// set number_of_replicas to (nodes-1)
+	nodes, err := es.getTotalNodes()
+	if err != nil {
+		return nil, err
+	}
+	settings := fmt.Sprintf(config, (nodes - 1))
+
 	// Meta index doesn't exist, create one
 	_, err = client.CreateIndex(indexName).
-		Body(config).
+		Body(settings).
 		Do(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("error while creating index named \"%s\"", indexName)
@@ -52,6 +59,17 @@ func newClient(url, indexName, config string) (*elasticsearch, error) {
 
 	log.Printf("%s: successfully created index name \"%s\"", logTag, indexName)
 	return es, nil
+}
+
+func (es *elasticsearch) getTotalNodes() (int, error) {
+	response, err := es.client.NodesInfo().
+		Metric("nodes").
+		Do(context.Background())
+	if err != nil {
+		return -1, err
+	}
+
+	return len(response.Nodes), nil
 }
 
 func (es *elasticsearch) indexRecord(record record) {

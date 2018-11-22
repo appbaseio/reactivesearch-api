@@ -32,7 +32,8 @@ func newClient(url, indexName, mapping string) (*elasticsearch, error) {
 	es := &elasticsearch{url, indexName, "_doc", client}
 
 	// Check if the meta index already exists
-	exists, err := client.IndexExists(indexName).Do(ctx)
+	exists, err := client.IndexExists(indexName).
+		Do(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("%s: error while checking if index already exists: %v",
 			logTag, err)
@@ -42,8 +43,17 @@ func newClient(url, indexName, mapping string) (*elasticsearch, error) {
 		return es, nil
 	}
 
+	// set the number_of_replicas to (nodes-1)
+	nodes, err := es.getTotalNodes()
+	if err != nil {
+		return nil, err
+	}
+	settings := fmt.Sprintf(mapping, (nodes - 1))
+
 	// Meta index does not exists, create a new one
-	_, err = client.CreateIndex(indexName).Body(mapping).Do(ctx)
+	_, err = client.CreateIndex(indexName).
+		Body(settings).
+		Do(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("%s: error while creating index named %s: %v",
 			logTag, indexName, err)
@@ -51,6 +61,17 @@ func newClient(url, indexName, mapping string) (*elasticsearch, error) {
 
 	log.Printf("%s successfully created index named '%s'", logTag, indexName)
 	return es, nil
+}
+
+func (es *elasticsearch) getTotalNodes() (int, error) {
+	response, err := es.client.NodesInfo().
+		Metric("nodes").
+		Do(context.Background())
+	if err != nil {
+		return -1, err
+	}
+
+	return len(response.Nodes), nil
 }
 
 func (es *elasticsearch) getUser(username string) (*user.User, error) {

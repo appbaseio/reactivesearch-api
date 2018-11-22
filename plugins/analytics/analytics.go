@@ -13,7 +13,7 @@ const (
 	logTag              = "[analytics]"
 	envEsURL            = "ES_CLUSTER_URL"
 	envAnalyticsEsIndex = "ANALYTICS_ES_INDEX"
-	mapping             = `{"settings":{"number_of_shards":3, "number_of_replicas":2}}`
+	mapping             = `{ "settings": { "number_of_shards": 3, "number_of_replicas": %d } }`
 )
 
 var (
@@ -34,9 +34,7 @@ func init() {
 // Note: Only this function must be used (both within and outside the package) to
 // obtain the instance analytics in order to avoid stateless instances of the plugin.
 func Instance() *Analytics {
-	once.Do(func() {
-		instance = &Analytics{}
-	})
+	once.Do(func() { instance = &Analytics{} })
 	return instance
 }
 
