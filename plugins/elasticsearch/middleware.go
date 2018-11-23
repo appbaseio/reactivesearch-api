@@ -18,6 +18,8 @@ import (
 	"github.com/appbaseio-confidential/arc/middleware/interceptor"
 	"github.com/appbaseio-confidential/arc/middleware/logger"
 	"github.com/appbaseio-confidential/arc/middleware/path"
+	"github.com/appbaseio-confidential/arc/middleware/referers"
+	"github.com/appbaseio-confidential/arc/middleware/sources"
 	"github.com/appbaseio-confidential/arc/plugins/auth"
 	"github.com/appbaseio-confidential/arc/plugins/analytics"
 	"github.com/appbaseio-confidential/arc/plugins/logs"
@@ -37,6 +39,8 @@ func list() []middleware.Middleware {
 	cleanPath := path.Clean
 	logRequests := logger.Instance().Log
 	basicAuth := auth.Instance().BasicAuth
+	validateSources := sources.Validate
+	validateReferers := referers.Validate
 	redirectRequests := interceptor.Instance().Redirect
 	recordAnalytics := analytics.Instance().Recorder
 	recordLogs := logs.Instance().Recorder
@@ -49,6 +53,8 @@ func list() []middleware.Middleware {
 		classifyOp,
 		identifyIndices,
 		basicAuth,
+		validateSources,
+		validateReferers,
 		validateIndices,
 		validateOp,
 		validateACL,
