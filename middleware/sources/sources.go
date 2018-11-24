@@ -18,14 +18,6 @@ func Validate(h http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
 
-		reqIP := iplookup.FromRequest(r)
-		if reqIP == "" {
-			msg := fmt.Sprintf(`failed to recognise request ip "%s"`, reqIP)
-			util.WriteBackError(w, msg, http.StatusUnauthorized)
-			return
-		}
-		ip := net.ParseIP(reqIP)
-
 		reqCredential, err := credential.FromContext(ctx)
 		if err != nil {
 			log.Printf("%s: %v\n", logTag, err)
@@ -34,6 +26,14 @@ func Validate(h http.HandlerFunc) http.HandlerFunc {
 		}
 
 		if reqCredential == credential.Permission {
+			reqIP := iplookup.FromRequest(r)
+			if reqIP == "" {
+				msg := fmt.Sprintf(`failed to recognise request ip "%s"`, reqIP)
+				util.WriteBackError(w, msg, http.StatusUnauthorized)
+				return
+			}
+			ip := net.ParseIP(reqIP)
+
 			reqPermission, err := permission.FromContext(ctx)
 			if err != nil {
 				log.Printf("%s: %v\n", logTag, err)

@@ -16,12 +16,6 @@ func Validate(h http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
 
-		reqDomain := r.Header.Get("Referer")
-		if reqDomain == "" {
-			util.WriteBackError(w, "failed to identify request domain, empty header: Referer", http.StatusUnauthorized)
-			return
-		}
-
 		reqCredential, err := credential.FromContext(ctx)
 		if err != nil {
 			log.Printf("%s: %v\n", logTag, err)
@@ -30,6 +24,12 @@ func Validate(h http.HandlerFunc) http.HandlerFunc {
 		}
 
 		if reqCredential == credential.Permission {
+			reqDomain := r.Header.Get("Referer")
+			if reqDomain == "" {
+				util.WriteBackError(w, "failed to identify request domain, empty header: Referer", http.StatusUnauthorized)
+				return
+			}
+
 			reqPermission, err := permission.FromContext(ctx)
 			if err != nil {
 				log.Printf("%s: %v\n", logTag, err)
