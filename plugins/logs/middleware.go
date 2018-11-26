@@ -41,11 +41,22 @@ func list() []middleware.Middleware {
 	return []middleware.Middleware{
 		cleanPath,
 		logRequests,
+		classifyCategory,
 		classifyOp,
 		identifyIndices,
 		basicAuth,
 		validateIndices,
 		validateOp,
+		validateCategory,
+	}
+}
+
+func classifyCategory(h http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		requestCategory := category.User
+		ctx := context.WithValue(r.Context(), category.CtxKey, &requestCategory)
+		r = r.WithContext(ctx)
+		h(w, r)
 	}
 }
 
@@ -58,6 +69,30 @@ func identifyIndices(h http.HandlerFunc) http.HandlerFunc {
 		ctx := r.Context()
 		ctx = context.WithValue(ctx, index.CtxKey, indices)
 		r = r.WithContext(ctx)
+
+		h(w, r)
+	}
+}
+
+
+func validateCategory(h http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		ctx := r.Context()
+
+		errMsg := "error occurred while validating request category"
+		reqUser, err := user.FromContext(ctx)
+		if err != nil {
+			log.Printf("%s: %v", logTag, err)
+			util.WriteBackError(w, errMsg, http.StatusInternalServerError)
+			return
+		}
+
+		if !reqUser.HasCategory(category.User) {
+			msg := fmt.Sprintf(`user with "username"="%s" does not have "%s" category`,
+				reqUser.Username, category.Analytics)
+			util.WriteBackError(w, msg, http.StatusUnauthorized)
+			return
+		}
 
 		h(w, r)
 	}

@@ -80,7 +80,7 @@ func (a *Auth) BasicAuth(h http.HandlerFunc) http.HandlerFunc {
 
 		reqCategory, err := category.FromContext(ctx)
 		if err != nil {
-			msg := "An error occurred while authenticating the request"
+			msg := "error occurred while authenticating the request"
 			log.Printf("%s: %v", logTag, err)
 			util.WriteBackError(w, msg, http.StatusInternalServerError)
 			return
