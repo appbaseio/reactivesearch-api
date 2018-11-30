@@ -1,11 +1,11 @@
 package elasticsearch
 
 import (
-	"github.com/appbaseio-confidential/arc/internal/types/acl"
 	"io"
 	"log"
 	"net/http"
 
+	"github.com/appbaseio-confidential/arc/internal/types/acl"
 	"github.com/appbaseio-confidential/arc/internal/types/category"
 	"github.com/appbaseio-confidential/arc/internal/types/op"
 	"github.com/appbaseio-confidential/arc/internal/util"

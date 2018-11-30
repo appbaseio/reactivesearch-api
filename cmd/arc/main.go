@@ -12,6 +12,11 @@ import (
 	"strings"
 
 	"github.com/appbaseio-confidential/arc/arc"
+	"github.com/gorilla/mux"
+	"github.com/rs/cors"
+
+	"gopkg.in/natefinch/lumberjack.v2"
+
 	_ "github.com/appbaseio-confidential/arc/plugins/analytics"
 	_ "github.com/appbaseio-confidential/arc/plugins/auth"
 	_ "github.com/appbaseio-confidential/arc/plugins/elasticsearch"
@@ -19,9 +24,6 @@ import (
 	_ "github.com/appbaseio-confidential/arc/plugins/permissions"
 	_ "github.com/appbaseio-confidential/arc/plugins/reindexer"
 	_ "github.com/appbaseio-confidential/arc/plugins/users"
-	"github.com/gorilla/mux"
-	"github.com/rs/cors"
-	"gopkg.in/natefinch/lumberjack.v2"
 )
 
 const logTag = "[cmd]"
