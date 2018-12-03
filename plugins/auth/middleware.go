@@ -7,11 +7,11 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/appbaseio-confidential/arc/internal/types/category"
-	"github.com/appbaseio-confidential/arc/internal/types/credential"
-	"github.com/appbaseio-confidential/arc/internal/types/permission"
-	"github.com/appbaseio-confidential/arc/internal/types/user"
-	"github.com/appbaseio-confidential/arc/internal/util"
+	"github.com/appbaseio-confidential/arc/model/category"
+	"github.com/appbaseio-confidential/arc/model/credential"
+	"github.com/appbaseio-confidential/arc/model/permission"
+	"github.com/appbaseio-confidential/arc/model/user"
+	"github.com/appbaseio-confidential/arc/util"
 	"github.com/gorilla/mux"
 )
 

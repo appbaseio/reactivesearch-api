@@ -9,7 +9,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/appbaseio-confidential/arc/internal/util"
+	"github.com/appbaseio-confidential/arc/util"
 	"github.com/olivere/elastic"
 )
 

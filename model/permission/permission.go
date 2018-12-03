@@ -9,11 +9,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/appbaseio-confidential/arc/internal/errors"
-	"github.com/appbaseio-confidential/arc/internal/types/acl"
-	"github.com/appbaseio-confidential/arc/internal/types/category"
-	"github.com/appbaseio-confidential/arc/internal/types/op"
-	"github.com/appbaseio-confidential/arc/internal/util"
+	"github.com/appbaseio-confidential/arc/errors"
+	"github.com/appbaseio-confidential/arc/model/acl"
+	"github.com/appbaseio-confidential/arc/model/category"
+	"github.com/appbaseio-confidential/arc/model/op"
+	"github.com/appbaseio-confidential/arc/util"
 	"github.com/google/uuid"
 )
 

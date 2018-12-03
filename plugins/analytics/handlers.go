@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/appbaseio-confidential/arc/internal/util"
+	"github.com/appbaseio-confidential/arc/util"
 )
 
 func (a *Analytics) getOverview() http.HandlerFunc {

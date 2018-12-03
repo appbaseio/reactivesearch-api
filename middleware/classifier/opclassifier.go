@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"sync"
 
-	"github.com/appbaseio-confidential/arc/internal/types/op"
+	"github.com/appbaseio-confidential/arc/model/op"
 )
 
 type classifier struct{}

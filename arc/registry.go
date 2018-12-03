@@ -59,11 +59,11 @@ func LoadPlugin(router *mux.Router, p Plugin) error {
 	if err != nil {
 		return err
 	}
-	for _, route := range p.Routes() {
-		err := router.Methods(route.Methods...).
-			Name(route.Name).
-			Path(route.Path).
-			HandlerFunc(route.HandlerFunc).
+	for _, r := range p.Routes() {
+		err := router.Methods(r.Methods...).
+			Name(r.Name).
+			Path(r.Path).
+			HandlerFunc(r.HandlerFunc).
 			GetError()
 		if err != nil {
 			return err

@@ -13,10 +13,10 @@ import (
 	"sync"
 
 	"github.com/appbaseio-confidential/arc/arc/route"
-	"github.com/appbaseio-confidential/arc/internal/types/acl"
-	"github.com/appbaseio-confidential/arc/internal/types/category"
-	"github.com/appbaseio-confidential/arc/internal/types/op"
-	"github.com/appbaseio-confidential/arc/internal/util"
+	"github.com/appbaseio-confidential/arc/model/acl"
+	"github.com/appbaseio-confidential/arc/model/category"
+	"github.com/appbaseio-confidential/arc/model/op"
+	"github.com/appbaseio-confidential/arc/util"
 )
 
 var (

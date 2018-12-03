@@ -6,8 +6,8 @@ import (
 
 	"github.com/appbaseio-confidential/arc/arc"
 	"github.com/appbaseio-confidential/arc/arc/route"
-	"github.com/appbaseio-confidential/arc/internal/errors"
-	"github.com/appbaseio-confidential/arc/internal/types/user"
+	"github.com/appbaseio-confidential/arc/errors"
+	"github.com/appbaseio-confidential/arc/model/user"
 )
 
 const (

@@ -4,7 +4,7 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/appbaseio-confidential/arc/internal/util"
+	"github.com/appbaseio-confidential/arc/util"
 )
 
 func (l *Logs) getLogs() http.HandlerFunc {

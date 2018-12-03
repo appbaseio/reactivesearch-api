@@ -7,9 +7,9 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/appbaseio-confidential/arc/internal/types/acl"
-	"github.com/appbaseio-confidential/arc/internal/types/user"
-	"github.com/appbaseio-confidential/arc/internal/util"
+	"github.com/appbaseio-confidential/arc/model/acl"
+	"github.com/appbaseio-confidential/arc/model/user"
+	"github.com/appbaseio-confidential/arc/util"
 	"github.com/gorilla/mux"
 )
 

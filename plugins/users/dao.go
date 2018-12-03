@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/appbaseio-confidential/arc/internal/types/user"
+	"github.com/appbaseio-confidential/arc/model/user"
 	"github.com/olivere/elastic"
 )
 

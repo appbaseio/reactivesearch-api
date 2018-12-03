@@ -7,8 +7,8 @@ import (
 	"os"
 	"sync"
 
-	"github.com/appbaseio-confidential/arc/internal/errors"
-	"github.com/appbaseio-confidential/arc/internal/util"
+	"github.com/appbaseio-confidential/arc/errors"
+	"github.com/appbaseio-confidential/arc/util"
 )
 
 const (

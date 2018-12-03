@@ -6,10 +6,10 @@ import (
 	"net"
 	"net/http"
 
-	"github.com/appbaseio-confidential/arc/internal/iplookup"
-	"github.com/appbaseio-confidential/arc/internal/types/credential"
-	"github.com/appbaseio-confidential/arc/internal/types/permission"
-	"github.com/appbaseio-confidential/arc/internal/util"
+	"github.com/appbaseio-confidential/arc/util/iplookup"
+	"github.com/appbaseio-confidential/arc/model/credential"
+	"github.com/appbaseio-confidential/arc/model/permission"
+	"github.com/appbaseio-confidential/arc/util"
 )
 
 const logTag = "[sources]"

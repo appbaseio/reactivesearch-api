@@ -6,9 +6,9 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/appbaseio-confidential/arc/internal/types/category"
-	"github.com/appbaseio-confidential/arc/internal/types/op"
-	"github.com/appbaseio-confidential/arc/internal/types/user"
+	"github.com/appbaseio-confidential/arc/model/category"
+	"github.com/appbaseio-confidential/arc/model/op"
+	"github.com/appbaseio-confidential/arc/model/user"
 )
 
 func TestClassifier(t *testing.T) {
