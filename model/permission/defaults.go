@@ -1,8 +1,8 @@
 package permission
 
 import (
-	"github.com/appbaseio-confidential/arc/internal/types/category"
-	"github.com/appbaseio-confidential/arc/internal/types/op"
+	"github.com/appbaseio-confidential/arc/model/category"
+	"github.com/appbaseio-confidential/arc/model/op"
 )
 
 var (

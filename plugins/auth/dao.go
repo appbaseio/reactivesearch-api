@@ -5,8 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/appbaseio-confidential/arc/internal/types/permission"
-	"github.com/appbaseio-confidential/arc/internal/types/user"
+	"github.com/appbaseio-confidential/arc/model/permission"
+	"github.com/appbaseio-confidential/arc/model/user"
 	"github.com/olivere/elastic"
 )
 

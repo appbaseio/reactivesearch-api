@@ -1,7 +1,7 @@
 package elasticsearch
 
 import (
-	"github.com/appbaseio-confidential/arc/internal/types/acl"
+	"github.com/appbaseio-confidential/arc/model/acl"
 	"context"
 	"fmt"
 	"log"
@@ -9,12 +9,12 @@ import (
 
 	"github.com/appbaseio-confidential/arc/arc/middleware"
 	"github.com/appbaseio-confidential/arc/arc/middleware/order"
-	"github.com/appbaseio-confidential/arc/internal/types/category"
-	"github.com/appbaseio-confidential/arc/internal/types/credential"
-	"github.com/appbaseio-confidential/arc/internal/types/index"
-	"github.com/appbaseio-confidential/arc/internal/types/op"
-	"github.com/appbaseio-confidential/arc/internal/types/permission"
-	"github.com/appbaseio-confidential/arc/internal/types/user"
+	"github.com/appbaseio-confidential/arc/model/category"
+	"github.com/appbaseio-confidential/arc/model/credential"
+	"github.com/appbaseio-confidential/arc/model/index"
+	"github.com/appbaseio-confidential/arc/model/op"
+	"github.com/appbaseio-confidential/arc/model/permission"
+	"github.com/appbaseio-confidential/arc/model/user"
 	"github.com/appbaseio-confidential/arc/middleware/interceptor"
 	"github.com/appbaseio-confidential/arc/middleware/logger"
 	"github.com/appbaseio-confidential/arc/middleware/path"
@@ -23,7 +23,7 @@ import (
 	"github.com/appbaseio-confidential/arc/plugins/auth"
 	"github.com/appbaseio-confidential/arc/plugins/analytics"
 	"github.com/appbaseio-confidential/arc/plugins/logs"
-	"github.com/appbaseio-confidential/arc/internal/util"
+	"github.com/appbaseio-confidential/arc/util"
 	"github.com/gorilla/mux"
 )
 

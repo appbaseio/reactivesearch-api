@@ -9,11 +9,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/appbaseio-confidential/arc/internal/errors"
-	"github.com/appbaseio-confidential/arc/internal/types/acl"
-	"github.com/appbaseio-confidential/arc/internal/types/category"
-	"github.com/appbaseio-confidential/arc/internal/types/op"
-	"github.com/appbaseio-confidential/arc/internal/util"
+	"github.com/appbaseio-confidential/arc/errors"
+	"github.com/appbaseio-confidential/arc/model/acl"
+	"github.com/appbaseio-confidential/arc/model/category"
+	"github.com/appbaseio-confidential/arc/model/op"
+	"github.com/appbaseio-confidential/arc/util"
 	"github.com/google/uuid"
 )
 
@@ -115,7 +115,7 @@ func SetOps(ops []op.Operation) Options {
 	}
 }
 
-// SetIndices sets the indices or index pattens a permission can have access to.
+// SetIndices sets the indices or index patterns a permission can have access to.
 func SetIndices(indices []string) Options {
 	return func(p *Permission) error {
 		if indices == nil {
@@ -132,6 +132,8 @@ func SetIndices(indices []string) Options {
 	}
 }
 
+// SetSources sets the sources from which the permission can make request from.
+// Sources are accepted and parsed in CIDR notation.
 func SetSources(sources []string) Options {
 	return func(p *Permission) error {
 		if sources == nil {
@@ -155,6 +157,7 @@ func validateSources(sources []string) error {
 	return nil
 }
 
+// SetReferers sets the referers from which the permission can make request from.
 func SetReferers(referers []string) Options {
 	return func(p *Permission) error {
 		if referers == nil {

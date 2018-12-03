@@ -3,7 +3,7 @@ package index
 import (
 	"context"
 
-	"github.com/appbaseio-confidential/arc/internal/errors"
+	"github.com/appbaseio-confidential/arc/errors"
 )
 
 type contextKey string

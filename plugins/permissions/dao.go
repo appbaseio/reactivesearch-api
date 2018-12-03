@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/appbaseio-confidential/arc/internal/types/permission"
+	"github.com/appbaseio-confidential/arc/model/permission"
 	"github.com/olivere/elastic"
 )
 

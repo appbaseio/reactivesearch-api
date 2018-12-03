@@ -5,13 +5,14 @@ import (
 	"net/http"
 	"regexp"
 
-	"github.com/appbaseio-confidential/arc/internal/types/credential"
-	"github.com/appbaseio-confidential/arc/internal/types/permission"
-	"github.com/appbaseio-confidential/arc/internal/util"
+	"github.com/appbaseio-confidential/arc/model/credential"
+	"github.com/appbaseio-confidential/arc/model/permission"
+	"github.com/appbaseio-confidential/arc/util"
 )
 
 const logTag = "[referers]"
 
+// Validate validates the referers on a permission credential.
 func Validate(h http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()

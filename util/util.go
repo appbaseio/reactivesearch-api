@@ -12,7 +12,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/appbaseio-confidential/arc/internal/types/index"
+	"github.com/appbaseio-confidential/arc/model/index"
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 )

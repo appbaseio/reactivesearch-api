@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/appbaseio-confidential/arc/internal/errors"
+	"github.com/appbaseio-confidential/arc/errors"
 )
 
 type contextKey string

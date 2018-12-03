@@ -69,6 +69,8 @@ func main() {
 		log.Printf("%s: reading env file %q: %v", logTag, envFile, err)
 	}
 
+	// Sort plugins such that elasticsearch plugin routes are loaded after all the other plugin routes.
+	// This is necessary because the elasticsearch routes might shadow the routes in other plugins.
 	plugins := arc.ListPlugins()
 	criteria := func(p1, p2 arc.Plugin) bool {
 		if p1.Name() == "[elasticsearch]" {
@@ -81,6 +83,7 @@ func main() {
 	}
 	arc.By(criteria).Sort(plugins)
 
+	// CORS policy
 	router := mux.NewRouter().StrictSlash(true)
 	c := cors.New(cors.Options{
 		AllowedOrigins: []string{"*"},
@@ -89,6 +92,7 @@ func main() {
 	})
 	handler := c.Handler(router)
 
+	// Load plugin routes
 	for _, p := range plugins {
 		if err := arc.LoadPlugin(router, p); err != nil {
 			log.Fatalf("%v", err)
@@ -99,6 +103,7 @@ func main() {
 		log.Printf("%s: %s\n", logTag, arc.ListPluginsStr())
 	}
 
+	// Listen and serve ...
 	addr := fmt.Sprintf("%s:%d", address, port)
 	log.Printf("%s: listening on %s", logTag, addr)
 	log.Fatal(http.ListenAndServe(addr, handler))
