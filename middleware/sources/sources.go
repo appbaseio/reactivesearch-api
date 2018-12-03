@@ -6,14 +6,15 @@ import (
 	"net"
 	"net/http"
 
-	"github.com/appbaseio-confidential/arc/util/iplookup"
 	"github.com/appbaseio-confidential/arc/model/credential"
 	"github.com/appbaseio-confidential/arc/model/permission"
 	"github.com/appbaseio-confidential/arc/util"
+	"github.com/appbaseio-confidential/arc/util/iplookup"
 )
 
 const logTag = "[sources]"
 
+// Validate validates the sources on a permission credential.
 func Validate(h http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()

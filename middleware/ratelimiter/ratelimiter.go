@@ -8,10 +8,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/appbaseio-confidential/arc/util/iplookup"
 	"github.com/appbaseio-confidential/arc/model/category"
 	"github.com/appbaseio-confidential/arc/model/permission"
 	"github.com/appbaseio-confidential/arc/util"
+	"github.com/appbaseio-confidential/arc/util/iplookup"
 	goredis "github.com/go-redis/redis"
 	"github.com/ulule/limiter"
 	"github.com/ulule/limiter/drivers/store/memory"

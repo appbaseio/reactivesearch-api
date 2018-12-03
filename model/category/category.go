@@ -12,9 +12,9 @@ import (
 type contextKey string
 
 // CtxKey is a key against which an category.Categories is stored in the context.
-const CtxKey = contextKey("acl")
+const CtxKey = contextKey("category")
 
-// Categories represents category type
+// Category represents category type
 type Category int
 
 // Currently supported category.
@@ -122,12 +122,12 @@ func (c Category) IsFromES() bool {
 		c == Misc
 }
 
-// HasCategory checks whether the given acl is a value in the category categories.
+// HasACL checks whether the given acl is a value in the category categories.
 func (c Category) HasACL(a acl.ACL) bool {
 	return acl.Contains(c.ACLs(), a)
 }
 
-// Categories returns the categories associated with the category.
+// ACLs returns the categories associated with the category.
 func (c Category) ACLs() []acl.ACL {
 	switch c {
 	case Docs:

@@ -223,7 +223,7 @@ func (u *User) ValidateACLs(acls ...acl.ACL) error {
 	return nil
 }
 
-// HasCategory checks whether the user has access to the given acl.
+// HasACL checks whether the user has access to the given acl.
 func (u *User) HasACL(acl acl.ACL) bool {
 	for _, a := range u.ACLs {
 		if a == acl {

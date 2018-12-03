@@ -9,7 +9,7 @@ import (
 type contextKey string
 
 // CtxKey is a key against which a request credential identifier is stored.
-const CtxKey = contextKey("request_maker")
+const CtxKey = contextKey("request_credential")
 
 // Credential is a value stored in the context that identifies
 // whether the request uses a user credential or permission credential.
