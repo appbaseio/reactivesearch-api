@@ -158,7 +158,7 @@ func (es *elasticsearch) getOwnerPermissions(owner string) ([]byte, error) {
 	resp, err := es.client.Search().
 		Index(es.indexName).
 		Type(es.typeName).
-		Query(elastic.NewTermQuery("owner", owner)).
+		Query(elastic.NewTermQuery("owner.keyword", owner)).
 		Do(context.Background())
 	if err != nil {
 		return nil, err
