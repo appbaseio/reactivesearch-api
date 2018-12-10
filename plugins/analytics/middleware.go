@@ -15,16 +15,14 @@ import (
 
 	"github.com/appbaseio-confidential/arc/arc/middleware"
 	"github.com/appbaseio-confidential/arc/arc/middleware/order"
-	"github.com/appbaseio-confidential/arc/util/iplookup"
+	"github.com/appbaseio-confidential/arc/middleware/classifier"
 	"github.com/appbaseio-confidential/arc/model/category"
 	"github.com/appbaseio-confidential/arc/model/index"
 	"github.com/appbaseio-confidential/arc/model/op"
 	"github.com/appbaseio-confidential/arc/model/user"
-	"github.com/appbaseio-confidential/arc/util"
-	"github.com/appbaseio-confidential/arc/middleware/classifier"
-	"github.com/appbaseio-confidential/arc/middleware/logger"
-	"github.com/appbaseio-confidential/arc/middleware/path"
 	"github.com/appbaseio-confidential/arc/plugins/auth"
+	"github.com/appbaseio-confidential/arc/util"
+	"github.com/appbaseio-confidential/arc/util/iplookup"
 	"github.com/google/uuid"
 )
 
@@ -48,14 +46,10 @@ func (c *chain) Wrap(h http.HandlerFunc) http.HandlerFunc {
 }
 
 func list() []middleware.Middleware {
-	cleanPath := path.Clean
-	logRequests := logger.Instance().Log
 	classifyOp := classifier.Instance().OpClassifier
 	basicAuth := auth.Instance().BasicAuth
 
 	return []middleware.Middleware{
-		cleanPath,
-		logRequests,
 		classifyCategory,
 		classifyOp,
 		identifyIndices,

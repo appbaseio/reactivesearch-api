@@ -1,27 +1,25 @@
 package elasticsearch
 
 import (
-	"github.com/appbaseio-confidential/arc/model/acl"
 	"context"
 	"fmt"
+	"github.com/appbaseio-confidential/arc/model/acl"
 	"log"
 	"net/http"
 
 	"github.com/appbaseio-confidential/arc/arc/middleware"
 	"github.com/appbaseio-confidential/arc/arc/middleware/order"
+	"github.com/appbaseio-confidential/arc/middleware/interceptor"
+	"github.com/appbaseio-confidential/arc/middleware/referers"
+	"github.com/appbaseio-confidential/arc/middleware/sources"
 	"github.com/appbaseio-confidential/arc/model/category"
 	"github.com/appbaseio-confidential/arc/model/credential"
 	"github.com/appbaseio-confidential/arc/model/index"
 	"github.com/appbaseio-confidential/arc/model/op"
 	"github.com/appbaseio-confidential/arc/model/permission"
 	"github.com/appbaseio-confidential/arc/model/user"
-	"github.com/appbaseio-confidential/arc/middleware/interceptor"
-	"github.com/appbaseio-confidential/arc/middleware/logger"
-	"github.com/appbaseio-confidential/arc/middleware/path"
-	"github.com/appbaseio-confidential/arc/middleware/referers"
-	"github.com/appbaseio-confidential/arc/middleware/sources"
-	"github.com/appbaseio-confidential/arc/plugins/auth"
 	"github.com/appbaseio-confidential/arc/plugins/analytics"
+	"github.com/appbaseio-confidential/arc/plugins/auth"
 	"github.com/appbaseio-confidential/arc/plugins/logs"
 	"github.com/appbaseio-confidential/arc/util"
 	"github.com/gorilla/mux"
@@ -36,8 +34,6 @@ func (c *chain) Wrap(h http.HandlerFunc) http.HandlerFunc {
 }
 
 func list() []middleware.Middleware {
-	cleanPath := path.Clean
-	logRequests := logger.Instance().Log
 	basicAuth := auth.Instance().BasicAuth
 	validateSources := sources.Validate
 	validateReferers := referers.Validate
@@ -46,8 +42,6 @@ func list() []middleware.Middleware {
 	recordLogs := logs.Instance().Recorder
 
 	return []middleware.Middleware{
-		cleanPath,
-		logRequests,
 		classifyCategory,
 		classifyACL,
 		classifyOp,
@@ -212,7 +206,7 @@ func validateCategory(h http.HandlerFunc) http.HandlerFunc {
 			util.WriteBackError(w, errMsg, http.StatusInternalServerError)
 			return
 		}
-		
+
 		reqCredential, err := credential.FromContext(ctx)
 		if err != nil {
 			log.Printf("%s: %v\n", logTag, err)
