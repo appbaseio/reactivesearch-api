@@ -12,6 +12,7 @@ import (
 	"strings"
 
 	"github.com/appbaseio-confidential/arc/arc"
+	"github.com/appbaseio-confidential/arc/middleware/logger"
 	"github.com/gorilla/mux"
 	"github.com/rs/cors"
 
@@ -83,14 +84,7 @@ func main() {
 	}
 	arc.By(criteria).Sort(plugins)
 
-	// CORS policy
 	router := mux.NewRouter().StrictSlash(true)
-	c := cors.New(cors.Options{
-		AllowedOrigins: []string{"*"},
-		AllowedMethods: []string{"HEAD", "GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
-		AllowedHeaders: []string{"*"},
-	})
-	handler := c.Handler(router)
 
 	// Load plugin routes
 	for _, p := range plugins {
@@ -99,6 +93,14 @@ func main() {
 		}
 	}
 
+	// CORS policy
+	c := cors.New(cors.Options{
+		AllowedOrigins: []string{"*"},
+		AllowedMethods: []string{"HEAD", "GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
+		AllowedHeaders: []string{"*"},
+	})
+	handler := c.Handler(router)
+
 	if listPlugins {
 		log.Printf("%s: %s\n", logTag, arc.ListPluginsStr())
 	}
@@ -106,7 +108,7 @@ func main() {
 	// Listen and serve ...
 	addr := fmt.Sprintf("%s:%d", address, port)
 	log.Printf("%s: listening on %s", logTag, addr)
-	log.Fatal(http.ListenAndServe(addr, handler))
+	log.Fatal(http.ListenAndServe(addr, logger.Log(handler)))
 }
 
 // LoadEnvFromFile loads env vars from envFile. Envs in the file
