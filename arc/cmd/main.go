@@ -13,6 +13,7 @@ import (
 
 	"github.com/appbaseio-confidential/arc/arc"
 	"github.com/appbaseio-confidential/arc/middleware/logger"
+	"github.com/appbaseio-confidential/arc/middleware/panic"
 	"github.com/gorilla/mux"
 	"github.com/rs/cors"
 
@@ -100,6 +101,8 @@ func main() {
 		AllowedHeaders: []string{"*"},
 	})
 	handler := c.Handler(router)
+	handler = logger.Log(handler)
+	handler = panic.Recovery(handler)
 
 	if listPlugins {
 		log.Printf("%s: %s\n", logTag, arc.ListPluginsStr())
@@ -108,7 +111,7 @@ func main() {
 	// Listen and serve ...
 	addr := fmt.Sprintf("%s:%d", address, port)
 	log.Printf("%s: listening on %s", logTag, addr)
-	log.Fatal(http.ListenAndServe(addr, logger.Log(handler)))
+	log.Fatal(http.ListenAndServe(addr, handler))
 }
 
 // LoadEnvFromFile loads env vars from envFile. Envs in the file
