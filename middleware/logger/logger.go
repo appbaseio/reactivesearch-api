@@ -23,8 +23,10 @@ func Log(next http.Handler) http.Handler {
 }
 
 func trimTrailingSlashes(path string) string {
-	for strings.HasSuffix(path, "/") {
-		path = strings.TrimSuffix(path, "/")
+	if path != "/" {
+		for strings.HasSuffix(path, "/") {
+			path = strings.TrimSuffix(path, "/")
+		}
 	}
 	return path
 }

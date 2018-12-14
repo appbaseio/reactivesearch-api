@@ -298,6 +298,6 @@ func (l *Logs) recordResponse(reqBody []byte, w *httptest.ResponseRecorder, r *h
 	}
 	record.Response.Body = string(responseBody)
 
-	log.Printf("%s: %v", logTag, string(responseBody)) // TODO: remove
+	// log.Printf("%s: %v", logTag, string(responseBody)) // TODO: remove
 	l.es.indexRecord(record)
 }
