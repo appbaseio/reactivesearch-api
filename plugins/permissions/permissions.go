@@ -23,7 +23,7 @@ var (
 )
 
 type permissions struct {
-	es *elasticsearch
+	es permissionService
 }
 
 func init() {

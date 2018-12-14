@@ -24,7 +24,7 @@ func init() {
 }
 
 type reindexer struct {
-	es *elasticsearch
+	es reindexService
 }
 
 // Use only this function to fetch the instance of user from within

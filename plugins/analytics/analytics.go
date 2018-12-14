@@ -23,7 +23,7 @@ var (
 
 // Analytics plugin records and serves basic index or cluster level analytics.
 type Analytics struct {
-	es *elasticsearch
+	es analyticsService
 }
 
 func init() {

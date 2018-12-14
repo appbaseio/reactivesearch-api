@@ -1,0 +1,25 @@
+package analytics
+
+type analyticsService interface {
+	analyticsOverview(from, to string, size int, clickAnalytics bool, indices ...string) ([]byte, error)
+	advancedAnalytics(from, to string, size int, clickAnalytics bool, indices ...string) ([]byte, error)
+	popularSearches(from, to string, size int, clickAnalytics bool, indices ...string) (interface{}, error)
+	popularSearchesRaw(from, to string, size int, clickAnalytics bool, indices ...string) ([]byte, error)
+	noResultSearches(from, to string, size int, indices ...string) (interface{}, error)
+	noResultSearchesRaw(from, to string, size int, indices ...string) ([]byte, error)
+	popularFilters(from, to string, size int, clickAnalytics bool, indices ...string) (interface{}, error)
+	popularFiltersRaw(from, to string, size int, clickAnalytics bool, indices ...string) ([]byte, error)
+	popularResults(from, to string, size int, clickAnalytics bool, indices ...string) (interface{}, error)
+	popularResultsRaw(from, to string, size int, clickAnalytics bool, indices ...string) ([]byte, error)
+	geoRequestsDistribution(from, to string, size int, indices ...string) ([]byte, error)
+	latencies(from, to string, size int, indices ...string) ([]byte, error)
+	summary(from, to string, indices ...string) ([]byte, error)
+	totalSearches(from, to string, indices ...string) (float64, error)
+	totalConversions(from, to string, indices ...string) (float64, error)
+	totalClicks(from, to string, indices ...string) (float64, error)
+	searchHistogram(from, to string, size int, indices ...string) (interface{}, error)
+	searchHistogramRaw(from, to string, size int, indices ...string) ([]byte, error)
+	indexRecord(docID string, record map[string]interface{})
+	updateRecord(docID string, record map[string]interface{})
+	deleteOldRecords()
+}
