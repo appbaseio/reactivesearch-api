@@ -22,7 +22,7 @@ var (
 )
 
 type users struct {
-	es *elasticsearch
+	es userService
 }
 
 func init() {

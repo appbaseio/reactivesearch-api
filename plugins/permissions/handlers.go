@@ -208,7 +208,7 @@ func (p *permissions) getUserPermissions() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		owner, _, _ := r.BasicAuth()
 
-		raw, err := p.es.getOwnerPermissions(owner)
+		raw, err := p.es.getRawOwnerPermissions(owner)
 		if err != nil {
 			msg := fmt.Sprintf(`an error occurred while fetching permissions for "owner"="%s"`, owner)
 			log.Printf("%s: %s: %v\n", logTag, msg, err)

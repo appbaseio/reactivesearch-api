@@ -154,7 +154,7 @@ func (es *elasticsearch) deletePermission(username string) (bool, error) {
 	return true, nil
 }
 
-func (es *elasticsearch) getOwnerPermissions(owner string) ([]byte, error) {
+func (es *elasticsearch) getRawOwnerPermissions(owner string) ([]byte, error) {
 	resp, err := es.client.Search().
 		Index(es.indexName).
 		Type(es.typeName).

@@ -28,7 +28,7 @@ type Auth struct {
 	mu               sync.Mutex
 	usersCache       map[string]*user.User
 	permissionsCache map[string]*permission.Permission
-	es               *elasticsearch
+	es               authService
 }
 
 func init() {

@@ -47,7 +47,7 @@ var (
 
 // Logs plugin records an elasticsearch request and its response.
 type Logs struct {
-	es *elasticsearch
+	es logsService
 }
 
 func init() {

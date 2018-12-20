@@ -793,7 +793,7 @@ func (es *elasticsearch) summary(from, to string, indices ...string) ([]byte, er
 	}
 
 	summary := map[string]map[string]float64{
-		"summary": map[string]float64{
+		"summary": {
 			"total_searches":      util.WithPrecision(totalSearches, 2),
 			"avg_click_rate":      util.WithPrecision(avgClickRate, 2),
 			"avg_conversion_rate": util.WithPrecision(avgConversionRate, 2),
