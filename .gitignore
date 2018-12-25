@@ -4,5 +4,3 @@
 
 .env
 main
-local-setup.sh
-apm-server.yml
