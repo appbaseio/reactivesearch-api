@@ -109,6 +109,7 @@ func (es *elasticsearch) getRawPermission(username string) ([]byte, error) {
 
 func (es *elasticsearch) postPermission(p permission.Permission) (bool, error) {
 	_, err := es.client.Index().
+		Refresh("wait_for").
 		Index(es.indexName).
 		Type(es.typeName).
 		Id(p.Username).
