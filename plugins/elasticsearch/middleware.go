@@ -46,6 +46,7 @@ func list() []middleware.Middleware {
 		classifyACL,
 		classifyOp,
 		identifyIndices,
+		recordLogs,
 		basicAuth,
 		validateSources,
 		validateReferers,
@@ -53,7 +54,6 @@ func list() []middleware.Middleware {
 		validateOp,
 		validateACL,
 		validateCategory,
-		recordLogs,
 		recordAnalytics,
 		redirectRequests,
 	}

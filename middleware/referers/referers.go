@@ -4,6 +4,7 @@ import (
 	"log"
 	"net/http"
 	"regexp"
+	"strings"
 
 	"github.com/appbaseio-confidential/arc/model/credential"
 	"github.com/appbaseio-confidential/arc/model/permission"
@@ -41,6 +42,7 @@ func Validate(h http.HandlerFunc) http.HandlerFunc {
 
 			var validated bool
 			for _, referer := range allowedReferers {
+				referer = strings.Replace(referer, "*", ".*", -1)
 				matched, err := regexp.MatchString(referer, reqDomain)
 				if err != nil {
 					log.Printf("%s: %v\n", logTag, err)
