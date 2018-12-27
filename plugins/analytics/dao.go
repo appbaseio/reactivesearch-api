@@ -286,7 +286,7 @@ func (es *elasticsearch) popularSearchesRaw(from, to string, size int, clickAnal
 
 	query := elastic.NewBoolQuery().Filter(duration)
 
-	if indices != nil && len(indices) != 0 {
+	if indices != nil && len(indices) > 0 {
 		var indexQueries []elastic.Query
 		for _, index := range indices {
 			query := elastic.NewTermQuery("indices.keyword", index)
@@ -364,7 +364,7 @@ func (es *elasticsearch) noResultSearchesRaw(from, to string, size int, indices 
 
 	query := elastic.NewBoolQuery().Filter(duration, zeroHits)
 
-	if indices != nil && len(indices) != 0 {
+	if indices != nil && len(indices) > 0 {
 		var indexQueries []elastic.Query
 		for _, index := range indices {
 			query := elastic.NewTermQuery("indices.keyword", index)
@@ -433,7 +433,7 @@ func (es *elasticsearch) popularFiltersRaw(from, to string, size int, clickAnaly
 
 	query := elastic.NewBoolQuery().Filter(duration)
 
-	if indices != nil && len(indices) != 0 {
+	if indices != nil && len(indices) > 0 {
 		var indexQueries []elastic.Query
 		for _, index := range indices {
 			query := elastic.NewTermQuery("indices.keyword", index)
@@ -524,7 +524,7 @@ func (es *elasticsearch) popularResultsRaw(from, to string, size int, clickAnaly
 
 	query := elastic.NewBoolQuery().Filter(duration)
 
-	if indices != nil && len(indices) != 0 {
+	if indices != nil && len(indices) > 0 {
 		var indexQueries []elastic.Query
 		for _, index := range indices {
 			query := elastic.NewTermQuery("indices.keyword", index)
@@ -599,7 +599,7 @@ func (es *elasticsearch) geoRequestsDistribution(from, to string, size int, indi
 
 	query := elastic.NewBoolQuery().Filter(duration)
 
-	if indices != nil && len(indices) != 0 {
+	if indices != nil && len(indices) > 0 {
 		var indexQueries []elastic.Query
 		for _, index := range indices {
 			query := elastic.NewTermQuery("indices.keyword", index)
@@ -658,7 +658,7 @@ func (es *elasticsearch) latencies(from, to string, size int, indices ...string)
 
 	query := elastic.NewBoolQuery().Filter(duration)
 
-	if indices != nil && len(indices) != 0 {
+	if indices != nil && len(indices) > 0 {
 		var indexQueries []elastic.Query
 		for _, index := range indices {
 			query := elastic.NewTermQuery("indices.keyword", index)
@@ -810,7 +810,7 @@ func (es *elasticsearch) totalSearches(from, to string, indices ...string) (floa
 
 	query := elastic.NewBoolQuery().Filter(duration)
 
-	if indices != nil && len(indices) != 0 {
+	if indices != nil && len(indices) > 0 {
 		var indexQueries []elastic.Query
 		for _, index := range indices {
 			query := elastic.NewTermQuery("indices.keyword", index)
@@ -846,7 +846,7 @@ func (es *elasticsearch) totalConversions(from, to string, indices ...string) (f
 
 	query := elastic.NewBoolQuery().Filter(duration, convertedSearches)
 
-	if indices != nil && len(indices) != 0 {
+	if indices != nil && len(indices) > 0 {
 		var indexQueries []elastic.Query
 		for _, index := range indices {
 			query := elastic.NewTermQuery("indices.keyword", index)
@@ -874,7 +874,7 @@ func (es *elasticsearch) totalClicks(from, to string, indices ...string) (float6
 
 	query := elastic.NewBoolQuery().Filter(duration, clicks)
 
-	if indices != nil && len(indices) != 0 {
+	if indices != nil && len(indices) > 0 {
 		var indexQueries []elastic.Query
 		for _, index := range indices {
 			query := elastic.NewTermQuery("indices.keyword", index)
@@ -917,7 +917,7 @@ func (es *elasticsearch) searchHistogramRaw(from, to string, size int, indices .
 
 	query := elastic.NewBoolQuery().Filter(duration)
 
-	if indices != nil && len(indices) != 0 {
+	if indices != nil && len(indices) > 0 {
 		var indexQueries []elastic.Query
 		for _, index := range indices {
 			query := elastic.NewTermQuery("indices.keyword", index)
@@ -961,6 +961,83 @@ func (es *elasticsearch) searchHistogramRaw(from, to string, size int, indices .
 	}
 
 	return json.Marshal(searchHistogram)
+}
+
+func (es *elasticsearch) getRequestDistribution(from, to, interval string, size int, indices ...string) ([]byte, error) {
+	duration := elastic.NewRangeQuery("timestamp").
+		From(from).
+		To(to)
+
+	query := elastic.NewBoolQuery().
+		Filter(duration)
+
+	if indices != nil && len(indices) > 0 {
+		var indexQueries []elastic.Query
+		for _, index := range indices {
+			query := elastic.NewTermQuery("indices.keyword", index)
+			indexQueries = append(indexQueries, query)
+		}
+		query = query.Must(indexQueries...)
+	}
+
+	subAggr := elastic.NewTermsAggregation().
+		Field("response.code").
+		OrderByCountDesc()
+	aggr := elastic.NewDateHistogramAggregation().
+		Interval(interval).
+		Field("timestamp").
+		SubAggregation("responses_with_code_aggr", subAggr)
+
+	// TODO: need a solution for maintaining multiple index urls
+	result, err := es.client.Search("logs").
+		Query(query).
+		Aggregation("request_distribution_aggr", aggr).
+		Size(size).
+		Do(context.Background())
+	if err != nil {
+		return nil, err
+	}
+
+	aggrResult, found := result.Aggregations.DateHistogram("request_distribution_aggr")
+	if !found {
+		return nil, fmt.Errorf(`unable to find aggregation value in "request_distribution_aggr"`)
+	}
+
+	var buckets []map[string]interface{}
+	for _, bucket := range aggrResult.Buckets {
+		subAggr, found := bucket.Terms("responses_with_code_aggr")
+		if !found {
+			log.Printf("%s: unable to find 'responses_with_code_aggr' in aggregation value", logTag)
+			continue
+		}
+		newBucket := make(map[string]interface{})
+		newBucket["key"] = bucket.Key
+		newBucket["key_as_string"] = bucket.KeyAsString
+		newBucket["count"] = bucket.DocCount
+
+		var subBuckets []map[string]interface{}
+		for _, bucket := range subAggr.Buckets {
+			newSubBucket := make(map[string]interface{})
+			newSubBucket["key"] = bucket.Key
+			newSubBucket["count"] = bucket.DocCount
+			subBuckets = append(subBuckets, newSubBucket)
+		}
+		if subBuckets == nil {
+			subBuckets = []map[string]interface{}{}
+		}
+
+		newBucket["buckets"] = subBuckets
+		buckets = append(buckets, newBucket)
+	}
+
+	requestDistribution := make(map[string]interface{})
+	if buckets == nil {
+		requestDistribution["request_distribution"] = []interface{}{}
+	} else {
+		requestDistribution["request_distribution"] = buckets
+	}
+
+	return json.Marshal(requestDistribution)
 }
 
 // applyClickAnalyticsOnTerms is a mutator that applies aggregations

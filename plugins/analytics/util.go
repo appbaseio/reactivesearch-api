@@ -13,6 +13,7 @@ const (
 	defaultResponseSize = 100
 )
 
+// TODO: Make this function to return a map with default values for required query params.
 // rangeQueryParams returns the common query params that every analytics endpoint expects,
 // - "from": start of the duration in consideration
 // - "to"  : end of the duration in consideration

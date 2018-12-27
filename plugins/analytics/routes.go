@@ -135,5 +135,19 @@ func (a *Analytics) routes() []route.Route {
 			HandlerFunc: middleware(a.getSummary()),
 			Description: "Returns total searches, avg click and conversion rates on a cluster",
 		},
+		{
+			Name: "Get request distribution",
+			Methods: []string{http.MethodGet},
+			Path: "/_analytics/{index}/request_distribution",
+			HandlerFunc: middleware(a.getRequestDistribution()),
+			Description: "Returns the request distribution of an index or set of indices over a given period of time",
+		},
+		{
+			Name: "Get request distribution",
+			Methods: []string{http.MethodGet},
+			Path: "/_analytics/request_distribution",
+			HandlerFunc: middleware(a.getRequestDistribution()),
+			Description: "Returns the request distribution of a cluster over a given period of time",
+		},
 	}
 }

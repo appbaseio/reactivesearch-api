@@ -230,3 +230,30 @@ func (a *Analytics) getSummary() http.HandlerFunc {
 		util.WriteBackRaw(w, raw, http.StatusOK)
 	}
 }
+
+func (a *Analytics) getRequestDistribution() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		from, to, size := rangeQueryParams(r.URL.Query())
+		// TODO: Validate interval value?
+		interval := r.URL.Query().Get("interval")
+		if interval == "" {
+			interval = "1h"
+		}
+		indices, err := util.IndicesFromContext(r.Context())
+		if err != nil {
+			msg := "error occurred while fetching request distribution"
+			log.Printf("%s: %v\n", logTag, err)
+			util.WriteBackError(w, msg, http.StatusInternalServerError)
+			return
+		}
+
+		raw, err := a.es.getRequestDistribution(from, to, interval, size, indices...)
+		if err != nil {
+			msg := "error occurred while parsing request distribution response"
+			log.Printf("%s: %v\n", logTag, err)
+			util.WriteBackError(w, msg, http.StatusInternalServerError)
+			return
+		}
+		util.WriteBackRaw(w, raw, http.StatusOK)
+	}
+}

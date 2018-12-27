@@ -19,6 +19,7 @@ type analyticsService interface {
 	totalClicks(from, to string, indices ...string) (float64, error)
 	searchHistogram(from, to string, size int, indices ...string) (interface{}, error)
 	searchHistogramRaw(from, to string, size int, indices ...string) ([]byte, error)
+	getRequestDistribution(from, to, interval string, size int, indices ...string) ([]byte, error)
 	indexRecord(docID string, record map[string]interface{})
 	updateRecord(docID string, record map[string]interface{})
 	deleteOldRecords()
