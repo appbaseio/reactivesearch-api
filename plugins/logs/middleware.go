@@ -242,8 +242,8 @@ func (l *Logs) Recorder(h http.HandlerFunc) http.HandlerFunc {
 	}
 }
 
-func (l *Logs) recordResponse(reqBody []byte, w *httptest.ResponseRecorder, r *http.Request) {
-	ctx := r.Context()
+func (l *Logs) recordResponse(reqBody []byte, w *httptest.ResponseRecorder, req *http.Request) {
+	ctx := req.Context()
 
 	reqCategory, err := category.FromContext(ctx)
 	if err != nil {
@@ -263,9 +263,9 @@ func (l *Logs) recordResponse(reqBody []byte, w *httptest.ResponseRecorder, r *h
 	record.Timestamp = time.Now()
 
 	// record request
-	record.Request.URI = r.URL.Path
-	record.Request.Headers = r.Header
-	record.Request.Method = r.Method
+	record.Request.URI = req.URL.Path
+	record.Request.Headers = req.Header
+	record.Request.Method = req.Method
 	record.Request.Body = string(reqBody)
 
 	// record response
@@ -299,5 +299,5 @@ func (l *Logs) recordResponse(reqBody []byte, w *httptest.ResponseRecorder, r *h
 	record.Response.Body = string(responseBody)
 
 	// log.Printf("%s: %v", logTag, string(responseBody)) // TODO: remove
-	l.es.indexRecord(record)
+	l.es.indexRecord(ctx, record)
 }

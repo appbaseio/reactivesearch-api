@@ -73,8 +73,8 @@ func (es *elasticsearch) getTotalNodes() (int, error) {
 	return len(response.Nodes), nil
 }
 
-func (es *elasticsearch) getPermission(username string) (*permission.Permission, error) {
-	raw, err := es.getRawPermission(username)
+func (es *elasticsearch) getPermission(ctx context.Context, username string) (*permission.Permission, error) {
+	raw, err := es.getRawPermission(ctx, username)
 	if err != nil {
 		return nil, err
 	}
@@ -88,13 +88,13 @@ func (es *elasticsearch) getPermission(username string) (*permission.Permission,
 	return &p, nil
 }
 
-func (es *elasticsearch) getRawPermission(username string) ([]byte, error) {
+func (es *elasticsearch) getRawPermission(ctx context.Context, username string) ([]byte, error) {
 	response, err := es.client.Get().
 		Index(es.indexName).
 		Type(es.typeName).
 		Id(username).
 		FetchSource(true).
-		Do(context.Background())
+		Do(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -107,14 +107,14 @@ func (es *elasticsearch) getRawPermission(username string) ([]byte, error) {
 	return src, nil
 }
 
-func (es *elasticsearch) postPermission(p permission.Permission) (bool, error) {
+func (es *elasticsearch) postPermission(ctx context.Context, p permission.Permission) (bool, error) {
 	_, err := es.client.Index().
 		Refresh("wait_for").
 		Index(es.indexName).
 		Type(es.typeName).
 		Id(p.Username).
 		BodyJson(p).
-		Do(context.Background())
+		Do(ctx)
 	if err != nil {
 		return false, err
 	}
@@ -122,14 +122,14 @@ func (es *elasticsearch) postPermission(p permission.Permission) (bool, error) {
 	return true, nil
 }
 
-func (es *elasticsearch) patchPermission(username string, patch map[string]interface{}) ([]byte, error) {
+func (es *elasticsearch) patchPermission(ctx context.Context, username string, patch map[string]interface{}) ([]byte, error) {
 	response, err := es.client.Update().
 		Index(es.indexName).
 		Type(es.typeName).
 		Id(username).
 		Doc(patch).
 		Fields("_source").
-		Do(context.Background())
+		Do(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -142,12 +142,12 @@ func (es *elasticsearch) patchPermission(username string, patch map[string]inter
 	return src, nil
 }
 
-func (es *elasticsearch) deletePermission(username string) (bool, error) {
+func (es *elasticsearch) deletePermission(ctx context.Context, username string) (bool, error) {
 	_, err := es.client.Delete().
 		Index(es.indexName).
 		Type(es.typeName).
 		Id(username).
-		Do(context.Background())
+		Do(ctx)
 	if err != nil {
 		return false, err
 	}
@@ -155,12 +155,12 @@ func (es *elasticsearch) deletePermission(username string) (bool, error) {
 	return true, nil
 }
 
-func (es *elasticsearch) getRawOwnerPermissions(owner string) ([]byte, error) {
+func (es *elasticsearch) getRawOwnerPermissions(ctx context.Context, owner string) ([]byte, error) {
 	resp, err := es.client.Search().
 		Index(es.indexName).
 		Type(es.typeName).
-		Query(elastic.NewTermQuery("owner.keyword", owner)).
-		Do(context.Background())
+		Query(elastic.NewTermQuery("owner", owner)).
+		Do(ctx)
 	if err != nil {
 		return nil, err
 	}

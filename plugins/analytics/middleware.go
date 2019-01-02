@@ -252,7 +252,7 @@ func (a *Analytics) recordResponse(docID, searchID string, w *httptest.ResponseR
 	}
 
 	logRaw(record) // TODO: remove
-	a.es.indexRecord(docID, record)
+	a.es.indexRecord(r.Context(), docID, record)
 }
 
 func classifyCategory(h http.HandlerFunc) http.HandlerFunc {

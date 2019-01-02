@@ -15,11 +15,11 @@ import (
 )
 
 func (p *permissions) getPermission() http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		vars := mux.Vars(r)
+	return func(w http.ResponseWriter, req *http.Request) {
+		vars := mux.Vars(req)
 		username := vars["username"]
 
-		rawPermission, err := p.es.getRawPermission(username)
+		rawPermission, err := p.es.getRawPermission(req.Context(), username)
 		if err != nil {
 			msg := fmt.Sprintf(`permission with "username"="%s" not found`, username)
 			log.Printf("%s: %s: %v\n", logTag, msg, err)
@@ -31,16 +31,16 @@ func (p *permissions) getPermission() http.HandlerFunc {
 }
 
 func (p *permissions) postPermission() http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		creator, _, _ := r.BasicAuth()
-		reqUser, err := user.FromContext(r.Context())
+	return func(w http.ResponseWriter, req *http.Request) {
+		creator, _, _ := req.BasicAuth()
+		reqUser, err := user.FromContext(req.Context())
 		if err != nil {
 			log.Printf("%s: %v\n", logTag, err)
 			util.WriteBackError(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 
-		body, err := ioutil.ReadAll(r.Body)
+		body, err := ioutil.ReadAll(req.Body)
 		if err != nil {
 			msg := "can't read request body"
 			log.Printf("%s: %s: %v\n", logTag, msg, err)
@@ -106,7 +106,7 @@ func (p *permissions) postPermission() http.HandlerFunc {
 			return
 		}
 
-		ok, err := p.es.postPermission(*newPermission)
+		ok, err := p.es.postPermission(req.Context(), *newPermission)
 		if ok && err == nil {
 			util.WriteBackRaw(w, rawPermission, http.StatusOK)
 			return
@@ -120,11 +120,11 @@ func (p *permissions) postPermission() http.HandlerFunc {
 }
 
 func (p *permissions) patchPermission() http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		vars := mux.Vars(r)
+	return func(w http.ResponseWriter, req *http.Request) {
+		vars := mux.Vars(req)
 		username := vars["username"]
 
-		body, err := ioutil.ReadAll(r.Body)
+		body, err := ioutil.ReadAll(req.Body)
 		if err != nil {
 			msg := "can't read request body"
 			log.Printf("%s: %s: %v\n", logTag, msg, err)
@@ -153,7 +153,7 @@ func (p *permissions) patchPermission() http.HandlerFunc {
 			// we need to fetch the permission from elasticsearch before we make
 			// a patch request in order to validate the acls that the user intends
 			// to patch against the categories it already has.
-			reqPermission, err := p.es.getPermission(username)
+			reqPermission, err := p.es.getPermission(req.Context(), username)
 			if err != nil {
 				log.Printf("%s: %v\n", logTag, err)
 				util.WriteBackError(w, err.Error(), http.StatusInternalServerError)
@@ -174,7 +174,7 @@ func (p *permissions) patchPermission() http.HandlerFunc {
 			}
 		}
 
-		raw, err := p.es.patchPermission(username, patch)
+		raw, err := p.es.patchPermission(req.Context(), username, patch)
 		if err == nil {
 			util.WriteBackRaw(w, raw, http.StatusOK)
 			return
@@ -187,11 +187,11 @@ func (p *permissions) patchPermission() http.HandlerFunc {
 }
 
 func (p *permissions) deletePermission() http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		vars := mux.Vars(r)
+	return func(w http.ResponseWriter, req *http.Request) {
+		vars := mux.Vars(req)
 		username := vars["username"]
 
-		ok, err := p.es.deletePermission(username)
+		ok, err := p.es.deletePermission(req.Context(), username)
 		if ok && err == nil {
 			msg := fmt.Sprintf(`permission with "username"="%s" deleted`, username)
 			util.WriteBackMessage(w, msg, http.StatusOK)
@@ -205,10 +205,10 @@ func (p *permissions) deletePermission() http.HandlerFunc {
 }
 
 func (p *permissions) getUserPermissions() http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		owner, _, _ := r.BasicAuth()
+	return func(w http.ResponseWriter, req *http.Request) {
+		owner, _, _ := req.BasicAuth()
 
-		raw, err := p.es.getRawOwnerPermissions(owner)
+		raw, err := p.es.getRawOwnerPermissions(req.Context(), owner)
 		if err != nil {
 			msg := fmt.Sprintf(`an error occurred while fetching permissions for "owner"="%s"`, owner)
 			log.Printf("%s: %s: %v\n", logTag, msg, err)

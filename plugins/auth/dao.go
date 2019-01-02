@@ -36,9 +36,10 @@ func newClient(url, userIndex, permissionIndex string) (*elasticsearch, error) {
 	return es, nil
 }
 
-func (es *elasticsearch) getCredential(username, password string) (interface{}, error) {
+func (es *elasticsearch) getCredential(ctx context.Context, username, password string) (interface{}, error) {
 	matchUsername := elastic.NewTermQuery("username.keyword", username)
 	matchPassword := elastic.NewTermQuery("password.keyword", password)
+
 	query := elastic.NewBoolQuery().
 		Must(matchUsername, matchPassword)
 
@@ -46,7 +47,7 @@ func (es *elasticsearch) getCredential(username, password string) (interface{}, 
 		Index(es.userIndex, es.permissionIndex).
 		Query(query).
 		FetchSource(true).
-		Do(context.Background())
+		Do(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -78,13 +79,13 @@ func (es *elasticsearch) getCredential(username, password string) (interface{}, 
 	return obj, nil
 }
 
-func (es *elasticsearch) putUser(u user.User) (bool, error) {
+func (es *elasticsearch) putUser(ctx context.Context, u user.User) (bool, error) {
 	_, err := es.client.Index().
 		Index(es.userIndex).
 		Type(es.userType).
 		Id(u.Username).
 		BodyJson(u).
-		Do(context.Background())
+		Do(ctx)
 	if err != nil {
 		return false, err
 	}
@@ -92,8 +93,8 @@ func (es *elasticsearch) putUser(u user.User) (bool, error) {
 	return true, nil
 }
 
-func (es *elasticsearch) getUser(username string) (*user.User, error) {
-	data, err := es.getRawUser(username)
+func (es *elasticsearch) getUser(ctx context.Context, username string) (*user.User, error) {
+	data, err := es.getRawUser(ctx, username)
 	if err != nil {
 		return nil, err
 	}
@@ -105,13 +106,13 @@ func (es *elasticsearch) getUser(username string) (*user.User, error) {
 	return &u, nil
 }
 
-func (es *elasticsearch) getRawUser(username string) ([]byte, error) {
+func (es *elasticsearch) getRawUser(ctx context.Context, username string) ([]byte, error) {
 	data, err := es.client.Get().
 		Index(es.userIndex).
 		Type(es.userType).
 		Id(username).
 		FetchSource(true).
-		Do(context.Background())
+		Do(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -123,13 +124,13 @@ func (es *elasticsearch) getRawUser(username string) ([]byte, error) {
 	return src, nil
 }
 
-func (es *elasticsearch) putPermission(p permission.Permission) (bool, error) {
+func (es *elasticsearch) putPermission(ctx context.Context, p permission.Permission) (bool, error) {
 	_, err := es.client.Index().
 		Index(es.permissionIndex).
 		Type(es.permissionType).
 		Id(p.Username).
 		BodyJson(p).
-		Do(context.Background())
+		Do(ctx)
 	if err != nil {
 		return false, err
 	}
@@ -137,8 +138,8 @@ func (es *elasticsearch) putPermission(p permission.Permission) (bool, error) {
 	return true, nil
 }
 
-func (es *elasticsearch) getPermission(username string) (*permission.Permission, error) {
-	data, err := es.getRawPermission(username)
+func (es *elasticsearch) getPermission(ctx context.Context, username string) (*permission.Permission, error) {
+	data, err := es.getRawPermission(ctx, username)
 	if err != nil {
 		return nil, err
 	}
@@ -152,13 +153,13 @@ func (es *elasticsearch) getPermission(username string) (*permission.Permission,
 	return &p, nil
 }
 
-func (es *elasticsearch) getRawPermission(username string) ([]byte, error) {
+func (es *elasticsearch) getRawPermission(ctx context.Context, username string) ([]byte, error) {
 	resp, err := es.client.Get().
 		Index(es.permissionIndex).
 		Type(es.permissionType).
 		Id(username).
 		FetchSource(true).
-		Do(context.Background())
+		Do(ctx)
 	if err != nil {
 		return nil, err
 	}

@@ -17,9 +17,9 @@ import (
 
 // BasicAuth middleware that authenticates each requests against the basic auth credentials.
 func (a *Auth) BasicAuth(h http.HandlerFunc) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		ctx := r.Context()
-		username, password, ok := r.BasicAuth()
+	return func(w http.ResponseWriter, req *http.Request) {
+		ctx := req.Context()
+		username, password, ok := req.BasicAuth()
 		if !ok {
 			util.WriteBackError(w, "Not logged in", http.StatusUnauthorized)
 			return
@@ -36,22 +36,22 @@ func (a *Auth) BasicAuth(h http.HandlerFunc) http.HandlerFunc {
 		// if the provided credentials are from .env file
 		// we simply ignore the rest of the checks and serve
 		// the request.
-		reqUser, err = a.isMaster(username, password)
+		reqUser, err = a.isMaster(ctx, username, password)
 		if err != nil {
 			log.Printf("%s: %v", logTag, err)
 			util.WriteBackMessage(w, "Unable create a master user", http.StatusInternalServerError)
 			return
 		}
 		if reqUser != nil {
-			ctx := r.Context()
+			ctx := req.Context()
 			ctx = context.WithValue(ctx, credential.CtxKey, credential.User)
 			ctx = context.WithValue(ctx, user.CtxKey, reqUser)
-			r = r.WithContext(ctx)
-			h(w, r)
+			req = req.WithContext(ctx)
+			h(w, req)
 			return
 		}
 
-		obj, err := a.es.getCredential(username, password)
+		obj, err := a.es.getCredential(req.Context(), username, password)
 		if err != nil {
 			log.Printf("%s: %v\n", logTag, err)
 			util.WriteBackError(w, err.Error(), http.StatusInternalServerError)
@@ -97,30 +97,30 @@ func (a *Auth) BasicAuth(h http.HandlerFunc) http.HandlerFunc {
 					util.WriteBackError(w, "Incorrect credentials", http.StatusUnauthorized)
 					return
 				}
-				ctx := r.Context()
+				ctx := req.Context()
 				ctx = context.WithValue(ctx, credential.CtxKey, reqCredential)
 				ctx = context.WithValue(ctx, user.CtxKey, reqUser)
-				r = r.WithContext(ctx)
+				req = req.WithContext(ctx)
 			} else {
 				if password != reqPermission.Password {
 					util.WriteBackMessage(w, "Incorrect credentials", http.StatusUnauthorized)
 					return
 				}
-				ctx := r.Context()
+				ctx := req.Context()
 				ctx = context.WithValue(ctx, credential.CtxKey, reqCredential)
 				ctx = context.WithValue(ctx, permission.CtxKey, reqPermission)
-				r = r.WithContext(ctx)
+				req = req.WithContext(ctx)
 			}
 		} else {
 			// if we are patching a user or a permission, we must clear their
 			// respective objects from the cache, otherwise the changes won't be
 			// reflected the next time user tries to get the user or permission object.
-			if r.Method == http.MethodPatch || r.Method == http.MethodDelete {
+			if req.Method == http.MethodPatch || req.Method == http.MethodDelete {
 				switch *reqCategory {
 				case category.User:
 					a.removeUserFromCache(username)
 				case category.Permission:
-					username := mux.Vars(r)["username"]
+					username := mux.Vars(req)["username"]
 					a.removePermissionFromCache(username)
 				}
 			}
@@ -128,7 +128,7 @@ func (a *Auth) BasicAuth(h http.HandlerFunc) http.HandlerFunc {
 			// check in the cache
 			reqUser, ok = a.cachedUser(username)
 			if !ok {
-				reqUser, err = a.es.getUser(username)
+				reqUser, err = a.es.getUser(req.Context(), username)
 				if err != nil {
 					msg := fmt.Sprintf(`User with "user_id"="%s" Not Found`, username)
 					log.Printf("%s: %s: %v", logTag, msg, err)
@@ -144,12 +144,12 @@ func (a *Auth) BasicAuth(h http.HandlerFunc) http.HandlerFunc {
 				return
 			}
 
-			ctx := r.Context()
+			ctx := req.Context()
 			ctx = context.WithValue(ctx, user.CtxKey, reqUser)
-			r = r.WithContext(ctx)
+			req = req.WithContext(ctx)
 		}
 
-		h(w, r)
+		h(w, req)
 	}
 }
 
@@ -176,13 +176,13 @@ func (a *Auth) removeUserFromCache(userID string) {
 	delete(a.usersCache, userID)
 }
 
-func (a *Auth) createAdminUser(userID, password string) (*user.User, error) {
+func (a *Auth) createAdminUser(ctx context.Context, userID, password string) (*user.User, error) {
 	u, err := user.NewAdmin(userID, password)
 	if err != nil {
 		return nil, err
 	}
 
-	ok, err := a.es.putUser(*u)
+	ok, err := a.es.putUser(ctx, *u)
 	if !ok || err != nil {
 		return nil, err
 	}
@@ -213,13 +213,13 @@ func (a *Auth) removePermissionFromCache(username string) {
 	delete(a.permissionsCache, username)
 }
 
-func (a *Auth) createAdminPermission(creator string) (*permission.Permission, error) {
+func (a *Auth) createAdminPermission(ctx context.Context, creator string) (*permission.Permission, error) {
 	p, err := permission.NewAdmin(creator)
 	if err != nil {
 		return nil, err
 	}
 
-	ok, err := a.es.putPermission(*p)
+	ok, err := a.es.putPermission(ctx, *p)
 	if !ok || err != nil {
 		return nil, err
 	}
@@ -227,20 +227,20 @@ func (a *Auth) createAdminPermission(creator string) (*permission.Permission, er
 	return p, nil
 }
 
-func (a *Auth) isMaster(username, password string) (*user.User, error) {
+func (a *Auth) isMaster(ctx context.Context, username, password string) (*user.User, error) {
 	masterUser, masterPassword := os.Getenv("USERNAME"), os.Getenv("PASSWORD")
 	if masterUser != username || masterPassword != password {
 		return nil, nil
 	}
 
-	master, err := a.es.getUser(username)
+	master, err := a.es.getUser(ctx, username)
 	if err != nil {
 		log.Printf("%s: master user doesn't exists, creating one... : %v", logTag, err)
 		master, err = user.NewAdmin(masterUser, masterPassword)
 		if err != nil {
 			return nil, err
 		}
-		ok, err := a.es.putUser(*master)
+		ok, err := a.es.putUser(ctx, *master)
 		if !ok || err != nil {
 			return nil, fmt.Errorf("%s: unable to create master user: %v", logTag, err)
 		}

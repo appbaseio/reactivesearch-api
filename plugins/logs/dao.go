@@ -47,7 +47,7 @@ func newClient(url, indexName, config string) (*elasticsearch, error) {
 	if err != nil {
 		return nil, err
 	}
-	settings := fmt.Sprintf(config, (nodes - 1))
+	settings := fmt.Sprintf(config, nodes-1)
 
 	// Meta index doesn't exist, create one
 	_, err = client.CreateIndex(indexName).
@@ -72,20 +72,20 @@ func (es *elasticsearch) getTotalNodes() (int, error) {
 	return len(response.Nodes), nil
 }
 
-func (es *elasticsearch) indexRecord(record record) {
+func (es *elasticsearch) indexRecord(ctx context.Context, rec record) {
 	_, err := es.client.
 		Index().
 		Index(es.indexName).
 		Type("_doc").
-		BodyJson(record).
-		Do(context.Background())
+		BodyJson(rec).
+		Do(ctx)
 	if err != nil {
 		log.Printf("%s: error indexing logs record: %v", logTag, err)
 		return
 	}
 }
 
-func (es *elasticsearch) getRawLogs(from, size string, indices ...string) ([]byte, error) {
+func (es *elasticsearch) getRawLogs(ctx context.Context, from, size string, indices ...string) ([]byte, error) {
 	offset, err := strconv.Atoi(from)
 	if err != nil {
 		return nil, fmt.Errorf(`invalid value "%v" for query param "from"`, from)
@@ -99,7 +99,7 @@ func (es *elasticsearch) getRawLogs(from, size string, indices ...string) ([]byt
 		From(offset).
 		Size(s).
 		Sort("timestamp", false).
-		Do(context.Background())
+		Do(ctx)
 	if err != nil {
 		return nil, err
 	}

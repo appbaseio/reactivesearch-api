@@ -14,9 +14,9 @@ import (
 )
 
 func (u *users) getUser() http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		ctx := r.Context()
-		username, _, _ := r.BasicAuth()
+	return func(w http.ResponseWriter, req *http.Request) {
+		ctx := req.Context()
+		username, _, _ := req.BasicAuth()
 
 		// check the request context
 		if reqUser, err := user.FromContext(ctx); err == nil {
@@ -32,7 +32,7 @@ func (u *users) getUser() http.HandlerFunc {
 		}
 
 		// fetch the user from elasticsearch
-		rawUser, err := u.es.getRawUser(username)
+		rawUser, err := u.es.getRawUser(req.Context(), username)
 		if err != nil {
 			msg := fmt.Sprintf(`user with "username"="%s" not found`, username)
 			log.Printf("%s: %s: %v\n", logTag, msg, err)
@@ -45,15 +45,15 @@ func (u *users) getUser() http.HandlerFunc {
 }
 
 func (u *users) getUserWithUsername() http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		vars := mux.Vars(r)
+	return func(w http.ResponseWriter, req *http.Request) {
+		vars := mux.Vars(req)
 		username, ok := vars["username"]
 		if !ok {
 			util.WriteBackError(w, `can't get a user without a "username"`, http.StatusBadRequest)
 			return
 		}
 
-		rawUser, err := u.es.getRawUser(username)
+		rawUser, err := u.es.getRawUser(req.Context(), username)
 		if err != nil {
 			msg := fmt.Sprintf(`user with "username"="%s" not found`, username)
 			log.Printf("%s: %s: %v\n", logTag, msg, err)
@@ -65,8 +65,8 @@ func (u *users) getUserWithUsername() http.HandlerFunc {
 }
 
 func (u *users) postUser() http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		body, err := ioutil.ReadAll(r.Body)
+	return func(w http.ResponseWriter, req *http.Request) {
+		body, err := ioutil.ReadAll(req.Body)
 		if err != nil {
 			msg := "can't read request body"
 			log.Printf("%s: %s: %v\n", logTag, msg, err)
@@ -125,7 +125,7 @@ func (u *users) postUser() http.HandlerFunc {
 			return
 		}
 
-		ok, err := u.es.postUser(*newUser)
+		ok, err := u.es.postUser(req.Context(), *newUser)
 		if ok && err == nil {
 			util.WriteBackRaw(w, rawUser, http.StatusCreated)
 			return
@@ -138,10 +138,10 @@ func (u *users) postUser() http.HandlerFunc {
 }
 
 func (u *users) patchUser() http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		username, _, _ := r.BasicAuth()
+	return func(w http.ResponseWriter, req *http.Request) {
+		username, _, _ := req.BasicAuth()
 
-		body, err := ioutil.ReadAll(r.Body)
+		body, err := ioutil.ReadAll(req.Body)
 		if err != nil {
 			msg := "can't read request body"
 			log.Printf(fmt.Sprintf("%s: %s: %v\n", logTag, msg, err))
@@ -170,7 +170,7 @@ func (u *users) patchUser() http.HandlerFunc {
 			// we need to fetch the user from elasticsearch before we make
 			// a patch request in order to validate the acls that the user intends
 			// to patch against the categories it already has.
-			reqUser, err := u.es.getUser(username)
+			reqUser, err := u.es.getUser(req.Context(), username)
 			if err != nil {
 				msg := fmt.Sprintf(`an error occurred while fetching user with username="%s"`, username)
 				log.Printf("%s: %v\n", logTag, err)
@@ -192,7 +192,7 @@ func (u *users) patchUser() http.HandlerFunc {
 			}
 		}
 
-		raw, err := u.es.patchUser(username, patch)
+		raw, err := u.es.patchUser(req.Context(), username, patch)
 		if err == nil {
 			util.WriteBackRaw(w, raw, http.StatusOK)
 			return
@@ -205,15 +205,15 @@ func (u *users) patchUser() http.HandlerFunc {
 }
 
 func (u *users) patchUserWithUsername() http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		vars := mux.Vars(r)
+	return func(w http.ResponseWriter, req *http.Request) {
+		vars := mux.Vars(req)
 		username, ok := vars["username"]
 		if !ok {
 			util.WriteBackError(w, `can't patch user without a "username"`, http.StatusBadRequest)
 			return
 		}
 
-		body, err := ioutil.ReadAll(r.Body)
+		body, err := ioutil.ReadAll(req.Body)
 		if err != nil {
 			msg := "can't read request body"
 			log.Printf("%s: %s: %v\n", logTag, msg, err)
@@ -242,7 +242,7 @@ func (u *users) patchUserWithUsername() http.HandlerFunc {
 			// we need to fetch the user object from elasticsearch before we make
 			// a patch request in order to validate the acls that the user intends
 			// to patch against the categories it already has.
-			reqUser, err := u.es.getUser(username)
+			reqUser, err := u.es.getUser(req.Context(), username)
 			if err != nil {
 				msg := fmt.Sprintf(`an error occurred while fetching user with username="%s"`, username)
 				log.Printf("%s: %v\n", logTag, err)
@@ -264,7 +264,7 @@ func (u *users) patchUserWithUsername() http.HandlerFunc {
 			}
 		}
 
-		raw, err := u.es.patchUser(username, patch)
+		raw, err := u.es.patchUser(req.Context(), username, patch)
 		if err == nil {
 			util.WriteBackRaw(w, raw, http.StatusOK)
 			return
@@ -277,10 +277,10 @@ func (u *users) patchUserWithUsername() http.HandlerFunc {
 }
 
 func (u *users) deleteUser() http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		username, _, _ := r.BasicAuth()
+	return func(w http.ResponseWriter, req *http.Request) {
+		username, _, _ := req.BasicAuth()
 
-		ok, err := u.es.deleteUser(username)
+		ok, err := u.es.deleteUser(req.Context(), username)
 		if ok && err == nil {
 			msg := fmt.Sprintf(`user with "username"="%s" deleted`, username)
 			util.WriteBackMessage(w, msg, http.StatusOK)
@@ -294,15 +294,15 @@ func (u *users) deleteUser() http.HandlerFunc {
 }
 
 func (u *users) deleteUserWithUsername() http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		vars := mux.Vars(r)
+	return func(w http.ResponseWriter, req *http.Request) {
+		vars := mux.Vars(req)
 		username, ok := vars["username"]
 		if !ok {
 			util.WriteBackError(w, `can't delete a user without a "username"`, http.StatusBadRequest)
 			return
 		}
 
-		ok, err := u.es.deleteUser(username)
+		ok, err := u.es.deleteUser(req.Context(), username)
 		if ok && err == nil {
 			msg := fmt.Sprintf(`user with "username"="%s" deleted`, username)
 			util.WriteBackMessage(w, msg, http.StatusOK)

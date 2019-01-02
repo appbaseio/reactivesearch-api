@@ -1,12 +1,15 @@
 package permissions
 
-import "github.com/appbaseio-confidential/arc/model/permission"
+import (
+	"context"
+	"github.com/appbaseio-confidential/arc/model/permission"
+)
 
 type permissionService interface {
-	getPermission(username string) (*permission.Permission, error)
-	getRawPermission(username string) ([]byte, error)
-	postPermission(p permission.Permission) (bool, error)
-	patchPermission(username string, patch map[string]interface{}) ([]byte, error)
-	deletePermission(username string) (bool, error)
-	getRawOwnerPermissions(owner string) ([]byte, error)
+	getPermission(ctx context.Context, username string) (*permission.Permission, error)
+	getRawPermission(ctx context.Context, username string) ([]byte, error)
+	postPermission(ctx context.Context, p permission.Permission) (bool, error)
+	patchPermission(ctx context.Context, username string, patch map[string]interface{}) ([]byte, error)
+	deletePermission(ctx context.Context, username string) (bool, error)
+	getRawOwnerPermissions(ctx context.Context, owner string) ([]byte, error)
 }

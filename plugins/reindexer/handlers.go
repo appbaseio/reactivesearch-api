@@ -11,21 +11,21 @@ import (
 )
 
 func (rx *reindexer) reindex() http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		vars := mux.Vars(r)
+	return func(w http.ResponseWriter, req *http.Request) {
+		vars := mux.Vars(req)
 		indexName, ok := vars["index"]
 		if !ok {
 			util.WriteBackError(w, "Route inconsistency, expecting var {index}", http.StatusInternalServerError)
 			return
 		}
 
-		reqBody, err := ioutil.ReadAll(r.Body)
+		reqBody, err := ioutil.ReadAll(req.Body)
 		if err != nil {
 			log.Printf("%s: %v\n", logTag, err)
 			util.WriteBackError(w, "Can't read request body", http.StatusBadRequest)
 			return
 		}
-		defer r.Body.Close()
+		defer req.Body.Close()
 
 		var body struct {
 			Mappings map[string]interface{} `json:"mappings"`
@@ -41,7 +41,7 @@ func (rx *reindexer) reindex() http.HandlerFunc {
 			return
 		}
 
-		err = rx.es.reindex(indexName, body.Mappings, body.Settings, body.Include, body.Exclude, body.Types)
+		err = rx.es.reindex(req.Context(), indexName, body.Mappings, body.Settings, body.Include, body.Exclude, body.Types)
 		if err != nil {
 			log.Printf("%s: %v\n", logTag, err)
 			util.WriteBackError(w, err.Error(), http.StatusNotFound)

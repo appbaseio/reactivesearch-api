@@ -48,7 +48,7 @@ func newClient(url, indexName, mapping string) (*elasticsearch, error) {
 	if err != nil {
 		return nil, err
 	}
-	settings := fmt.Sprintf(mapping, (nodes - 1))
+	settings := fmt.Sprintf(mapping, nodes-1)
 
 	// Meta index does not exists, create a new one
 	_, err = client.CreateIndex(indexName).
@@ -74,8 +74,8 @@ func (es *elasticsearch) getTotalNodes() (int, error) {
 	return len(response.Nodes), nil
 }
 
-func (es *elasticsearch) getUser(username string) (*user.User, error) {
-	raw, err := es.getRawUser(username)
+func (es *elasticsearch) getUser(ctx context.Context, username string) (*user.User, error) {
+	raw, err := es.getRawUser(ctx, username)
 	if err != nil {
 		return nil, err
 	}
@@ -89,13 +89,13 @@ func (es *elasticsearch) getUser(username string) (*user.User, error) {
 	return &u, nil
 }
 
-func (es *elasticsearch) getRawUser(username string) ([]byte, error) {
+func (es *elasticsearch) getRawUser(ctx context.Context, username string) ([]byte, error) {
 	response, err := es.client.Get().
 		Index(es.indexName).
 		Type(es.typeName).
 		Id(username).
 		FetchSource(true).
-		Do(context.Background())
+		Do(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -108,13 +108,13 @@ func (es *elasticsearch) getRawUser(username string) ([]byte, error) {
 	return src, nil
 }
 
-func (es *elasticsearch) postUser(u user.User) (bool, error) {
+func (es *elasticsearch) postUser(ctx context.Context, u user.User) (bool, error) {
 	_, err := es.client.Index().
 		Index(es.indexName).
 		Type(es.typeName).
 		Id(u.Username).
 		BodyJson(u).
-		Do(context.Background())
+		Do(ctx)
 	if err != nil {
 		return false, err
 	}
@@ -122,14 +122,14 @@ func (es *elasticsearch) postUser(u user.User) (bool, error) {
 	return true, nil
 }
 
-func (es *elasticsearch) patchUser(username string, patch map[string]interface{}) ([]byte, error) {
+func (es *elasticsearch) patchUser(ctx context.Context, username string, patch map[string]interface{}) ([]byte, error) {
 	response, err := es.client.Update().
 		Index(es.indexName).
 		Type(es.typeName).
 		Id(username).
 		Doc(patch).
 		Fields("_source").
-		Do(context.Background())
+		Do(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -142,12 +142,12 @@ func (es *elasticsearch) patchUser(username string, patch map[string]interface{}
 	return src, nil
 }
 
-func (es *elasticsearch) deleteUser(username string) (bool, error) {
+func (es *elasticsearch) deleteUser(ctx context.Context, username string) (bool, error) {
 	_, err := es.client.Delete().
 		Index(es.indexName).
 		Type(es.typeName).
 		Id(username).
-		Do(context.Background())
+		Do(ctx)
 	if err != nil {
 		return false, err
 	}

@@ -49,7 +49,7 @@ func newClient(url, indexName, mapping string) (*elasticsearch, error) {
 	if err != nil {
 		return nil, err
 	}
-	settings := fmt.Sprintf(mapping, (nodes - 1))
+	settings := fmt.Sprintf(mapping, nodes-1)
 
 	// Meta index does not exists, create a new one
 	_, err = client.CreateIndex(indexName).Body(settings).Do(ctx)
@@ -72,28 +72,28 @@ func (es *elasticsearch) getTotalNodes() (int, error) {
 	return len(response.Nodes), nil
 }
 
-func (es *elasticsearch) indexRecord(docID string, record map[string]interface{}) {
+func (es *elasticsearch) indexRecord(ctx context.Context, docID string, record map[string]interface{}) {
 	_, err := es.client.
 		Index().
 		Index(es.indexName).
 		Type(es.typeName).
 		BodyJson(record).
 		Id(docID).
-		Do(context.Background())
+		Do(ctx)
 	if err != nil {
 		log.Printf("%s: error indexing analytics record for id=%s: %v", logTag, docID, err)
 		return
 	}
 }
 
-func (es *elasticsearch) updateRecord(docID string, record map[string]interface{}) {
+func (es *elasticsearch) updateRecord(ctx context.Context, docID string, record map[string]interface{}) {
 	_, err := es.client.
 		Update().
 		Index(es.indexName).
 		Type(es.typeName).
 		Index(docID).
 		Doc(record).
-		Do(context.Background())
+		Do(ctx)
 	if err != nil {
 		log.Printf("%s: error updating analytics record for id=%s: %v", logTag, docID, err)
 		return
@@ -116,14 +116,14 @@ func (es *elasticsearch) deleteOldRecords() {
 	}
 }
 
-func (es *elasticsearch) analyticsOverview(from, to string, size int, clickAnalytics bool, indices ...string) ([]byte, error) {
+func (es *elasticsearch) analyticsOverview(ctx context.Context, from, to string, size int, clickAnalytics bool, indices ...string) ([]byte, error) {
 	var wg sync.WaitGroup
 	out := make(chan interface{})
 
 	wg.Add(1)
 	go func(out chan<- interface{}) {
 		defer wg.Done()
-		popularSearches, err := es.popularSearches(from, to, size, clickAnalytics, indices...)
+		popularSearches, err := es.popularSearches(ctx, from, to, size, clickAnalytics, indices...)
 		if err != nil {
 			log.Printf("%s: %v", logTag, err)
 			out <- map[string]interface{}{
@@ -137,7 +137,7 @@ func (es *elasticsearch) analyticsOverview(from, to string, size int, clickAnaly
 	wg.Add(1)
 	go func(out chan<- interface{}) {
 		defer wg.Done()
-		noResultsSearches, err := es.noResultSearches(from, to, size, indices...)
+		noResultsSearches, err := es.noResultSearches(ctx, from, to, size, indices...)
 		if err != nil {
 			log.Printf("%s: %v", logTag, err)
 			out <- map[string]interface{}{
@@ -151,7 +151,7 @@ func (es *elasticsearch) analyticsOverview(from, to string, size int, clickAnaly
 	wg.Add(1)
 	go func(out chan<- interface{}) {
 		defer wg.Done()
-		searchHistogram, err := es.searchHistogram(from, to, size, indices...)
+		searchHistogram, err := es.searchHistogram(ctx, from, to, size, indices...)
 		if err != nil {
 			log.Printf("%s: %v", err, err)
 			out <- map[string]interface{}{
@@ -175,14 +175,14 @@ func (es *elasticsearch) analyticsOverview(from, to string, size int, clickAnaly
 	return json.Marshal(overview)
 }
 
-func (es *elasticsearch) advancedAnalytics(from, to string, size int, clickAnalytics bool, indices ...string) ([]byte, error) {
+func (es *elasticsearch) advancedAnalytics(ctx context.Context, from, to string, size int, clickAnalytics bool, indices ...string) ([]byte, error) {
 	var wg sync.WaitGroup
 	out := make(chan interface{})
 
 	wg.Add(1)
 	go func(out chan<- interface{}) {
 		defer wg.Done()
-		popularSearches, err := es.popularSearches(from, to, size, clickAnalytics, indices...)
+		popularSearches, err := es.popularSearches(ctx, from, to, size, clickAnalytics, indices...)
 		if err != nil {
 			log.Printf("%s: %v", logTag, err)
 			out <- map[string]interface{}{
@@ -196,7 +196,7 @@ func (es *elasticsearch) advancedAnalytics(from, to string, size int, clickAnaly
 	wg.Add(1)
 	go func(out chan<- interface{}) {
 		defer wg.Done()
-		popularResults, err := es.popularResults(from, to, size, clickAnalytics, indices...)
+		popularResults, err := es.popularResults(ctx, from, to, size, clickAnalytics, indices...)
 		if err != nil {
 			log.Printf("%s: %v", logTag, err)
 			out <- map[string]interface{}{
@@ -210,7 +210,7 @@ func (es *elasticsearch) advancedAnalytics(from, to string, size int, clickAnaly
 	wg.Add(1)
 	go func(out chan<- interface{}) {
 		defer wg.Done()
-		popularFilters, err := es.popularFilters(from, to, size, clickAnalytics, indices...)
+		popularFilters, err := es.popularFilters(ctx, from, to, size, clickAnalytics, indices...)
 		if err != nil {
 			log.Printf("%s: %v", logTag, err)
 			out <- map[string]interface{}{
@@ -224,7 +224,7 @@ func (es *elasticsearch) advancedAnalytics(from, to string, size int, clickAnaly
 	wg.Add(1)
 	go func(out chan<- interface{}) {
 		defer wg.Done()
-		noResultsSearches, err := es.noResultSearches(from, to, size, indices...)
+		noResultsSearches, err := es.noResultSearches(ctx, from, to, size, indices...)
 		if err != nil {
 			log.Printf("%s: %v", logTag, err)
 			out <- map[string]interface{}{
@@ -238,7 +238,7 @@ func (es *elasticsearch) advancedAnalytics(from, to string, size int, clickAnaly
 	wg.Add(1)
 	go func(out chan<- interface{}) {
 		defer wg.Done()
-		searchHistogram, err := es.searchHistogram(from, to, size, indices...)
+		searchHistogram, err := es.searchHistogram(ctx, from, to, size, indices...)
 		if err != nil {
 			log.Printf("%s: %v", logTag, err)
 			out <- map[string]interface{}{
@@ -262,8 +262,8 @@ func (es *elasticsearch) advancedAnalytics(from, to string, size int, clickAnaly
 	return json.Marshal(advancedAnalytics)
 }
 
-func (es *elasticsearch) popularSearches(from, to string, size int, clickAnalytics bool, indices ...string) (interface{}, error) {
-	raw, err := es.popularSearchesRaw(from, to, size, clickAnalytics, indices...)
+func (es *elasticsearch) popularSearches(ctx context.Context, from, to string, size int, clickAnalytics bool, indices ...string) (interface{}, error) {
+	raw, err := es.popularSearchesRaw(ctx, from, to, size, clickAnalytics, indices...)
 	if err != nil {
 		return []interface{}{}, err
 	}
@@ -279,7 +279,7 @@ func (es *elasticsearch) popularSearches(from, to string, size int, clickAnalyti
 	return response, nil
 }
 
-func (es *elasticsearch) popularSearchesRaw(from, to string, size int, clickAnalytics bool, indices ...string) ([]byte, error) {
+func (es *elasticsearch) popularSearchesRaw(ctx context.Context, from, to string, size int, clickAnalytics bool, indices ...string) ([]byte, error) {
 	duration := elastic.NewRangeQuery("timestamp").
 		From(from).
 		To(to)
@@ -307,7 +307,7 @@ func (es *elasticsearch) popularSearchesRaw(from, to string, size int, clickAnal
 		Query(query).
 		Aggregation("popular_searches_aggr", aggr).
 		Size(size).
-		Do(context.Background())
+		Do(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("unable to fetch popular searches response from es: %v", err)
 	}
@@ -338,8 +338,8 @@ func (es *elasticsearch) popularSearchesRaw(from, to string, size int, clickAnal
 	return json.Marshal(popularSearches)
 }
 
-func (es *elasticsearch) noResultSearches(from, to string, size int, indices ...string) (interface{}, error) {
-	raw, err := es.noResultSearchesRaw(from, to, size, indices...)
+func (es *elasticsearch) noResultSearches(ctx context.Context, from, to string, size int, indices ...string) (interface{}, error) {
+	raw, err := es.noResultSearchesRaw(ctx, from, to, size, indices...)
 	if err != nil {
 		return []interface{}{}, err
 	}
@@ -355,7 +355,7 @@ func (es *elasticsearch) noResultSearches(from, to string, size int, indices ...
 	return response, nil
 }
 
-func (es *elasticsearch) noResultSearchesRaw(from, to string, size int, indices ...string) ([]byte, error) {
+func (es *elasticsearch) noResultSearchesRaw(ctx context.Context, from, to string, size int, indices ...string) ([]byte, error) {
 	duration := elastic.NewRangeQuery("timestamp").
 		From(from).
 		To(to)
@@ -381,7 +381,7 @@ func (es *elasticsearch) noResultSearchesRaw(from, to string, size int, indices 
 		Query(query).
 		Aggregation("no_results_searches_aggr", aggr).
 		Size(size).
-		Do(context.Background())
+		Do(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("unable to fetch no results searches from es: %v", err)
 	}
@@ -409,8 +409,8 @@ func (es *elasticsearch) noResultSearchesRaw(from, to string, size int, indices 
 	return json.Marshal(noResultsSearches)
 }
 
-func (es *elasticsearch) popularFilters(from, to string, size int, clickAnalytics bool, indices ...string) (interface{}, error) {
-	raw, err := es.popularFiltersRaw(from, to, size, clickAnalytics, indices...)
+func (es *elasticsearch) popularFilters(ctx context.Context, from, to string, size int, clickAnalytics bool, indices ...string) (interface{}, error) {
+	raw, err := es.popularFiltersRaw(ctx, from, to, size, clickAnalytics, indices...)
 	if err != nil {
 		return []interface{}{}, err
 	}
@@ -426,7 +426,7 @@ func (es *elasticsearch) popularFilters(from, to string, size int, clickAnalytic
 	return response, nil
 }
 
-func (es *elasticsearch) popularFiltersRaw(from, to string, size int, clickAnalytics bool, indices ...string) ([]byte, error) {
+func (es *elasticsearch) popularFiltersRaw(ctx context.Context, from, to string, size int, clickAnalytics bool, indices ...string) ([]byte, error) {
 	duration := elastic.NewRangeQuery("timestamp").
 		From(from).
 		To(to)
@@ -457,7 +457,7 @@ func (es *elasticsearch) popularFiltersRaw(from, to string, size int, clickAnaly
 		Query(query).
 		Aggregation("popular_filters_aggr", aggr).
 		Size(size).
-		Do(context.Background())
+		Do(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("unable to fetch popular filters from es: %v", err)
 	}
@@ -500,8 +500,8 @@ func (es *elasticsearch) popularFiltersRaw(from, to string, size int, clickAnaly
 	return json.Marshal(popularFilters)
 }
 
-func (es *elasticsearch) popularResults(from, to string, size int, clickAnalytics bool, indices ...string) (interface{}, error) {
-	raw, err := es.popularResultsRaw(from, to, size, clickAnalytics, indices...)
+func (es *elasticsearch) popularResults(ctx context.Context, from, to string, size int, clickAnalytics bool, indices ...string) (interface{}, error) {
+	raw, err := es.popularResultsRaw(ctx, from, to, size, clickAnalytics, indices...)
 	if err != nil {
 		return []interface{}{}, err
 	}
@@ -517,7 +517,7 @@ func (es *elasticsearch) popularResults(from, to string, size int, clickAnalytic
 	return response, nil
 }
 
-func (es *elasticsearch) popularResultsRaw(from, to string, size int, clickAnalytics bool, indices ...string) ([]byte, error) {
+func (es *elasticsearch) popularResultsRaw(ctx context.Context, from, to string, size int, clickAnalytics bool, indices ...string) ([]byte, error) {
 	duration := elastic.NewRangeQuery("timestamp").
 		From(from).
 		To(to)
@@ -549,7 +549,7 @@ func (es *elasticsearch) popularResultsRaw(from, to string, size int, clickAnaly
 		Query(query).
 		Aggregation("popular_results_aggr", aggr).
 		Size(size).
-		Do(context.Background())
+		Do(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("unable to fetch popular searches response from es: %v", err)
 	}
@@ -592,7 +592,7 @@ func (es *elasticsearch) popularResultsRaw(from, to string, size int, clickAnaly
 	return json.Marshal(popularResults)
 }
 
-func (es *elasticsearch) geoRequestsDistribution(from, to string, size int, indices ...string) ([]byte, error) {
+func (es *elasticsearch) geoRequestsDistribution(ctx context.Context, from, to string, size int, indices ...string) ([]byte, error) {
 	duration := elastic.NewRangeQuery("timestamp").
 		From(from).
 		To(to)
@@ -616,7 +616,7 @@ func (es *elasticsearch) geoRequestsDistribution(from, to string, size int, indi
 		Query(query).
 		Aggregation("geo_dist_aggr", aggr).
 		Size(size).
-		Do(context.Background())
+		Do(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("unable to fetch request distributions from es: %v", err)
 	}
@@ -651,7 +651,7 @@ func (es *elasticsearch) geoRequestsDistribution(from, to string, size int, indi
 	return json.Marshal(geoDist)
 }
 
-func (es *elasticsearch) latencies(from, to string, size int, indices ...string) ([]byte, error) {
+func (es *elasticsearch) latencies(ctx context.Context, from, to string, size int, indices ...string) ([]byte, error) {
 	duration := elastic.NewRangeQuery("timestamp").
 		From(from).
 		To(to)
@@ -675,7 +675,7 @@ func (es *elasticsearch) latencies(from, to string, size int, indices ...string)
 		Query(query).
 		Aggregation("latency_aggr", aggr).
 		Size(size).
-		Do(context.Background())
+		Do(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("unable to fetch latency from es: %v", err)
 	}
@@ -703,7 +703,7 @@ func (es *elasticsearch) latencies(from, to string, size int, indices ...string)
 	return json.Marshal(latencies)
 }
 
-func (es *elasticsearch) summary(from, to string, indices ...string) ([]byte, error) {
+func (es *elasticsearch) summary(ctx context.Context, from, to string, indices ...string) ([]byte, error) {
 	type result struct {
 		field string
 		value float64
@@ -716,7 +716,7 @@ func (es *elasticsearch) summary(from, to string, indices ...string) ([]byte, er
 	wg.Add(1)
 	go func(out chan<- result) {
 		defer wg.Done()
-		totalSearches, err := es.totalSearches(from, to, indices...)
+		totalSearches, err := es.totalSearches(ctx, from, to, indices...)
 		if err != nil {
 			out <- result{
 				field: "total_searches",
@@ -733,7 +733,7 @@ func (es *elasticsearch) summary(from, to string, indices ...string) ([]byte, er
 	wg.Add(1)
 	go func(out chan<- result) {
 		defer wg.Done()
-		totalClicks, err := es.totalClicks(from, to, indices...)
+		totalClicks, err := es.totalClicks(ctx, from, to, indices...)
 		if err != nil {
 			out <- result{
 				field: "total_clicks",
@@ -750,7 +750,7 @@ func (es *elasticsearch) summary(from, to string, indices ...string) ([]byte, er
 	wg.Add(1)
 	go func(out chan<- result) {
 		defer wg.Done()
-		totalConversions, err := es.totalConversions(from, to, indices...)
+		totalConversions, err := es.totalConversions(ctx, from, to, indices...)
 		if err != nil {
 			out <- result{
 				field: "total_conversions",
@@ -803,7 +803,7 @@ func (es *elasticsearch) summary(from, to string, indices ...string) ([]byte, er
 	return json.Marshal(summary)
 }
 
-func (es *elasticsearch) totalSearches(from, to string, indices ...string) (float64, error) {
+func (es *elasticsearch) totalSearches(ctx context.Context, from, to string, indices ...string) (float64, error) {
 	duration := elastic.NewRangeQuery("timestamp").
 		From(from).
 		To(to)
@@ -824,7 +824,7 @@ func (es *elasticsearch) totalSearches(from, to string, indices ...string) (floa
 	result, err := es.client.Search(es.indexName).
 		Query(query).
 		Aggregation("total_searches_aggr", aggr).
-		Do(context.Background())
+		Do(ctx)
 	if err != nil {
 		return 0, nil
 	}
@@ -837,7 +837,7 @@ func (es *elasticsearch) totalSearches(from, to string, indices ...string) (floa
 	return *aggrResult.Value, nil
 }
 
-func (es *elasticsearch) totalConversions(from, to string, indices ...string) (float64, error) {
+func (es *elasticsearch) totalConversions(ctx context.Context, from, to string, indices ...string) (float64, error) {
 	duration := elastic.NewRangeQuery("timestamp").
 		From(from).
 		To(to)
@@ -857,7 +857,7 @@ func (es *elasticsearch) totalConversions(from, to string, indices ...string) (f
 
 	count, err := elastic.NewCountService(es.client).
 		Query(query).
-		Do(context.Background())
+		Do(ctx)
 	if err != nil {
 		return 0, err
 	}
@@ -865,7 +865,7 @@ func (es *elasticsearch) totalConversions(from, to string, indices ...string) (f
 	return float64(count), nil
 }
 
-func (es *elasticsearch) totalClicks(from, to string, indices ...string) (float64, error) {
+func (es *elasticsearch) totalClicks(ctx context.Context, from, to string, indices ...string) (float64, error) {
 	duration := elastic.NewRangeQuery("timestamp").
 		From(from).
 		To(to)
@@ -885,7 +885,7 @@ func (es *elasticsearch) totalClicks(from, to string, indices ...string) (float6
 
 	count, err := elastic.NewCountService(es.client).
 		Query(query).
-		Do(context.Background())
+		Do(ctx)
 	if err != nil {
 		return 0, err
 	}
@@ -893,8 +893,8 @@ func (es *elasticsearch) totalClicks(from, to string, indices ...string) (float6
 	return float64(count), nil
 }
 
-func (es *elasticsearch) searchHistogram(from, to string, size int, indices ...string) (interface{}, error) {
-	raw, err := es.searchHistogramRaw(from, to, size, indices...)
+func (es *elasticsearch) searchHistogram(ctx context.Context, from, to string, size int, indices ...string) (interface{}, error) {
+	raw, err := es.searchHistogramRaw(ctx, from, to, size, indices...)
 	if err != nil {
 		return []interface{}{}, err
 	}
@@ -910,7 +910,7 @@ func (es *elasticsearch) searchHistogram(from, to string, size int, indices ...s
 	return response, nil
 }
 
-func (es *elasticsearch) searchHistogramRaw(from, to string, size int, indices ...string) ([]byte, error) {
+func (es *elasticsearch) searchHistogramRaw(ctx context.Context, from, to string, size int, indices ...string) ([]byte, error) {
 	duration := elastic.NewRangeQuery("timestamp").
 		From(from).
 		To(to)
@@ -934,7 +934,7 @@ func (es *elasticsearch) searchHistogramRaw(from, to string, size int, indices .
 		Query(query).
 		Aggregation("search_histogram_aggr", aggr).
 		Size(0).
-		Do(context.Background())
+		Do(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("unable to fetch date histogram from es: %v", err)
 	}
@@ -963,7 +963,7 @@ func (es *elasticsearch) searchHistogramRaw(from, to string, size int, indices .
 	return json.Marshal(searchHistogram)
 }
 
-func (es *elasticsearch) getRequestDistribution(from, to, interval string, size int, indices ...string) ([]byte, error) {
+func (es *elasticsearch) getRequestDistribution(ctx context.Context, from, to, interval string, size int, indices ...string) ([]byte, error) {
 	duration := elastic.NewRangeQuery("timestamp").
 		From(from).
 		To(to)
@@ -993,7 +993,7 @@ func (es *elasticsearch) getRequestDistribution(from, to, interval string, size 
 		Query(query).
 		Aggregation("request_distribution_aggr", aggr).
 		Size(size).
-		Do(context.Background())
+		Do(ctx)
 	if err != nil {
 		return nil, err
 	}

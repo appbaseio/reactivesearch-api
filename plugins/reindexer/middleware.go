@@ -3,10 +3,6 @@ package reindexer
 import (
 	"context"
 	"fmt"
-	"log"
-	"net/http"
-	"time"
-
 	"github.com/appbaseio-confidential/arc/arc/middleware"
 	"github.com/appbaseio-confidential/arc/arc/middleware/order"
 	"github.com/appbaseio-confidential/arc/middleware/classifier"
@@ -16,6 +12,8 @@ import (
 	"github.com/appbaseio-confidential/arc/model/user"
 	"github.com/appbaseio-confidential/arc/plugins/auth"
 	"github.com/appbaseio-confidential/arc/util"
+	"log"
+	"net/http"
 )
 
 type chain struct {
@@ -174,22 +172,4 @@ func validateIndices(h http.HandlerFunc) http.HandlerFunc {
 
 		h(w, r)
 	}
-}
-
-type record struct {
-	Indices  []string          `json:"indices"`
-	Category category.Category `json:"category"`
-	Request  struct {
-		URI     string              `json:"uri"`
-		Method  string              `json:"method"`
-		Headers map[string][]string `json:"header"`
-		Body    string              `json:"body"`
-	} `json:"request"`
-	Response struct {
-		Code    int    `json:"code"`
-		Status  string `json:"status"`
-		Headers map[string][]string
-		Body    string `json:"body"`
-	} `json:"response"`
-	Timestamp time.Time `json:"timestamp"`
 }
