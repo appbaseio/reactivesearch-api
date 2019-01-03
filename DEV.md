@@ -25,6 +25,35 @@ may execute the installed plugins, essentially extending the Elasticsearch API f
 becomes an entry point for every API request made to Elasticsearch. Arc can be used and deployed against any 
 Elasticsearch cluster (locally and hosted as provided by [Appbase.io](https://appbase.io)).
 
+```
+
+
+                                 .------------------------------------------.
+                                 |                     |                    |
+                                 |                     |                    |
+                                 |   Authentication    |  Administration    |
+                                 |                     |                    |
+                                 |_____________________|____________________|
+                                 |                     |                    |
+                                 |                     |                    |
+                                 |   Security   _______________  Caching    |
+                                 |             |               |            |
+    .----------------.           |             |               |            |           .-----------------.
+    |   Dashboard/   | --------> |_____________|      Arc      |____________| --------> |  Elasticsearch  |
+    |   REST APIs    | <-------- |             |               |            | <-------- |    upstream     |
+    .----------------.           |             |               |            |           .-----------------.
+                                 |             |_______________|            |
+                                 |    Logging          |         ACLs       |
+                                 |                     |                    |
+                                 |_____________________|____________________|
+                                 |                     |                    |
+                                 |                     |                    |
+                                 |   Query Rules       |   Rate-Limiting    |
+                                 |                     |                    |
+                                 |                     |                    |
+                                 .------------------------------------------.
+```
+
 ## Installation
 
 ### Running it
