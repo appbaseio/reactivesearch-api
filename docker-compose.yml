@@ -1,0 +1,31 @@
+version: '3'
+services:
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:6.5.3
+    container_name: elasticsearch
+    environment:
+      - cluster.name=docker-cluster
+      - bootstrap.memory_lock=true
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    ports:
+      - "9200:9200"
+
+  kibana:
+    image: docker.elastic.co/kibana/kibana:6.5.3
+    container_name: kibana
+    ports:
+      - "5601:5601"
+
+#  arc:
+#    image: utsavoza/playground:arc_latest
+#    container_name: arc
+#    env_file:
+#      - .env
+#    ports:
+#      - "8000:8000"
+#    depends_on:
+#      - elasticsearch
