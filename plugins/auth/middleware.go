@@ -16,7 +16,7 @@ import (
 )
 
 // BasicAuth middleware that authenticates each requests against the basic auth credentials.
-func (a *Auth) BasicAuth(h http.HandlerFunc) http.HandlerFunc {
+func (a *Auth) Authorize(h http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
 		ctx := req.Context()
 		username, password, ok := req.BasicAuth()
@@ -153,79 +153,6 @@ func (a *Auth) BasicAuth(h http.HandlerFunc) http.HandlerFunc {
 	}
 }
 
-func (a *Auth) cachedUser(userID string) (*user.User, bool) {
-	a.mu.Lock()
-	defer a.mu.Unlock()
-	u, ok := a.usersCache[userID]
-	return u, ok
-}
-
-func (a *Auth) cacheUser(userID string, u *user.User) {
-	if u == nil {
-		log.Printf("%s: cannot cache 'nil' user, skipping...", logTag)
-		return
-	}
-	a.mu.Lock()
-	defer a.mu.Unlock()
-	a.usersCache[userID] = u
-}
-
-func (a *Auth) removeUserFromCache(userID string) {
-	a.mu.Lock()
-	defer a.mu.Unlock()
-	delete(a.usersCache, userID)
-}
-
-func (a *Auth) createAdminUser(ctx context.Context, userID, password string) (*user.User, error) {
-	u, err := user.NewAdmin(userID, password)
-	if err != nil {
-		return nil, err
-	}
-
-	ok, err := a.es.putUser(ctx, *u)
-	if !ok || err != nil {
-		return nil, err
-	}
-
-	return u, nil
-}
-
-func (a *Auth) cachedPermission(username string) (*permission.Permission, bool) {
-	a.mu.Lock()
-	defer a.mu.Unlock()
-	p, ok := a.permissionsCache[username]
-	return p, ok
-}
-
-func (a *Auth) cachePermission(username string, p *permission.Permission) {
-	if p == nil {
-		log.Printf("%s: cannot cache 'nil' permission, skipping...", logTag)
-		return
-	}
-	a.mu.Lock()
-	defer a.mu.Unlock()
-	a.permissionsCache[username] = p
-}
-
-func (a *Auth) removePermissionFromCache(username string) {
-	a.mu.Lock()
-	defer a.mu.Unlock()
-	delete(a.permissionsCache, username)
-}
-
-func (a *Auth) createAdminPermission(ctx context.Context, creator string) (*permission.Permission, error) {
-	p, err := permission.NewAdmin(creator)
-	if err != nil {
-		return nil, err
-	}
-
-	ok, err := a.es.putPermission(ctx, *p)
-	if !ok || err != nil {
-		return nil, err
-	}
-
-	return p, nil
-}
 
 func (a *Auth) isMaster(ctx context.Context, username, password string) (*user.User, error) {
 	masterUser, masterPassword := os.Getenv("USERNAME"), os.Getenv("PASSWORD")

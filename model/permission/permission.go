@@ -274,6 +274,11 @@ func NewAdmin(creator string, opts ...Options) (*Permission, error) {
 	return p, nil
 }
 
+// NewContext returns a new context carrying the permission 'p'.
+func NewContext(ctx context.Context, p *Permission) context.Context {
+	return context.WithValue(ctx, CtxKey, p)
+}
+
 // FromContext retrieves the permission stored against permission.CtxKey from the context.
 func FromContext(ctx context.Context) (*Permission, error) {
 	ctxPermission := ctx.Value(CtxKey)

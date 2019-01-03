@@ -33,3 +33,8 @@ func FromContext(ctx context.Context) (Credential, error) {
 	}
 	return reqCredential, nil
 }
+
+// NewContext returns a new context carrying credential 'c'.
+func NewContext(ctx context.Context, c Credential) context.Context {
+	return context.WithValue(ctx, CtxKey, c)
+}

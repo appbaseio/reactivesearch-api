@@ -181,6 +181,10 @@ func NewAdmin(username, password string, opts ...Options) (*User, error) {
 	return u, nil
 }
 
+func NewContext(ctx context.Context, u *User) context.Context {
+	return context.WithValue(ctx, CtxKey, u)
+}
+
 // FromContext retrieves the *user.User stored against user.CtxKey from the context.
 func FromContext(ctx context.Context) (*User, error) {
 	ctxUser := ctx.Value(CtxKey)

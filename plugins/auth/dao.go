@@ -4,6 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
+	"os"
 
 	"github.com/appbaseio-confidential/arc/model/permission"
 	"github.com/appbaseio-confidential/arc/model/user"
@@ -11,12 +13,11 @@ import (
 )
 
 type elasticsearch struct {
-	url             string
-	userIndex       string
-	userType        string
-	permissionIndex string
-	permissionType  string
-	client          *elastic.Client
+	url                             string
+	userIndex, userType             string
+	permissionIndex, permissionType string
+	adminUsername, adminPassword    string
+	client                          *elastic.Client
 }
 
 func newClient(url, userIndex, permissionIndex string) (*elasticsearch, error) {
@@ -31,7 +32,31 @@ func newClient(url, userIndex, permissionIndex string) (*elasticsearch, error) {
 	if err != nil {
 		return nil, fmt.Errorf("%s: error while initializing elastic client: %v", logTag, err)
 	}
-	es := &elasticsearch{url, userIndex, "_doc", permissionIndex, "_doc", client}
+
+	// Create a master user, if credentials are not provided, we create a default
+	// master user. Arc shouldn't be initialized without a root user.
+	username, password := os.Getenv("USERNAME"), os.Getenv("PASSWORD")
+	if username == "" {
+		username, password = "foo", "bar"
+	}
+
+	es := &elasticsearch{
+		url,
+		userIndex, "_doc",
+		permissionIndex, "_doc",
+		username, password,
+		client,
+	}
+
+	admin, err := user.NewAdmin(username, password)
+	if err != nil {
+		return nil, fmt.Errorf("%s: error while creating a master user: %v", logTag, err)
+	}
+	ctx := context.Background()
+	if created, err := es.putUser(ctx, *admin); !created || err != nil {
+		return nil, fmt.Errorf("%s: error while creating a master user: %v", logTag, err)
+	}
+	log.Printf("%s: successfully created the master user ...\n", logTag)
 
 	return es, nil
 }
@@ -53,7 +78,7 @@ func (es *elasticsearch) getCredential(ctx context.Context, username, password s
 	}
 
 	if len(response.Hits.Hits) > 1 {
-		return nil, fmt.Errorf(`more than one results for "username"="%s" and "password"="%s"`, username, password)
+		return nil, fmt.Errorf(`more than one result for "username"="%s" and "password"="%s"`, username, password)
 	}
 
 	// there should be either 0 or 1 hit
