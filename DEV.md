@@ -34,7 +34,7 @@ Elasticsearch cluster (locally and hosted as provided by [Appbase.io](https://ap
                              |_____________________|____________________|
                              |                     |                    |
                              |                     |                    |
-                             |   Security   _______________  Caching    |
+                             |   Security   _______|_______  Caching    |
                              |             |               |            |
 .----------------.           |             |               |            |           .-----------------.
 |   Dashboard/   | --------> |_____________|      Arc      |____________| --------> |  Elasticsearch  |

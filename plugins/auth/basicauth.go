@@ -14,6 +14,7 @@ import (
 	"net/http"
 )
 
+// BasicAuth middleware authenticates each requests against the basic auth credentials.
 func (a *Auth) BasicAuth(h http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
 		ctx := req.Context()

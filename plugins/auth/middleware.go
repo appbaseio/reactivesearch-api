@@ -15,7 +15,7 @@ import (
 	"github.com/gorilla/mux"
 )
 
-// BasicAuth middleware that authenticates each requests against the basic auth credentials.
+// Authorize middleware authenticates each requests against the basic auth credentials.
 func (a *Auth) Authorize(h http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
 		ctx := req.Context()
@@ -152,7 +152,6 @@ func (a *Auth) Authorize(h http.HandlerFunc) http.HandlerFunc {
 		h(w, req)
 	}
 }
-
 
 func (a *Auth) isMaster(ctx context.Context, username, password string) (*user.User, error) {
 	masterUser, masterPassword := os.Getenv("USERNAME"), os.Getenv("PASSWORD")

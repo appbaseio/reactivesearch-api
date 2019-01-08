@@ -3,7 +3,6 @@ package elasticsearch
 import (
 	"context"
 	"fmt"
-	"github.com/appbaseio-confidential/arc/model/acl"
 	"log"
 	"net/http"
 
@@ -12,6 +11,7 @@ import (
 	"github.com/appbaseio-confidential/arc/middleware/interceptor"
 	"github.com/appbaseio-confidential/arc/middleware/referers"
 	"github.com/appbaseio-confidential/arc/middleware/sources"
+	"github.com/appbaseio-confidential/arc/model/acl"
 	"github.com/appbaseio-confidential/arc/model/category"
 	"github.com/appbaseio-confidential/arc/model/credential"
 	"github.com/appbaseio-confidential/arc/model/index"
@@ -21,6 +21,7 @@ import (
 	"github.com/appbaseio-confidential/arc/plugins/analytics"
 	"github.com/appbaseio-confidential/arc/plugins/auth"
 	"github.com/appbaseio-confidential/arc/plugins/logs"
+	"github.com/appbaseio-confidential/arc/plugins/rules"
 	"github.com/appbaseio-confidential/arc/util"
 	"github.com/gorilla/mux"
 )
@@ -40,6 +41,7 @@ func list() []middleware.Middleware {
 	redirectRequests := interceptor.Instance().Redirect
 	recordAnalytics := analytics.Instance().Recorder
 	recordLogs := logs.Instance().Recorder
+	applyQueryRules := rules.Instance().Intercept
 
 	return []middleware.Middleware{
 		classifyCategory,
@@ -55,6 +57,7 @@ func list() []middleware.Middleware {
 		validateACL,
 		validateCategory,
 		recordAnalytics,
+		applyQueryRules,
 		redirectRequests,
 	}
 }

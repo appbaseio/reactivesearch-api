@@ -81,7 +81,6 @@ func (es *elasticsearch) indexRecord(ctx context.Context, rec record) {
 		Do(ctx)
 	if err != nil {
 		log.Printf("%s: error indexing logs record: %v", logTag, err)
-		return
 	}
 }
 

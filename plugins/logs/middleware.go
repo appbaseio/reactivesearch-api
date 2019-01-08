@@ -299,5 +299,5 @@ func (l *Logs) recordResponse(reqBody []byte, w *httptest.ResponseRecorder, req 
 	record.Response.Body = string(responseBody)
 
 	// log.Printf("%s: %v", logTag, string(responseBody)) // TODO: remove
-	l.es.indexRecord(ctx, record)
+	l.es.indexRecord(context.Background(), record)
 }

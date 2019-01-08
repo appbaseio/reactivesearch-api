@@ -63,7 +63,7 @@ func (o Operation) MarshalJSON() ([]byte, error) {
 	case Delete:
 		op = Delete.String()
 	default:
-		return nil, fmt.Errorf("invalid op encountered: %v", op)
+		return nil, fmt.Errorf("invalid op encountered: %v", o)
 	}
 	return json.Marshal(op)
 }

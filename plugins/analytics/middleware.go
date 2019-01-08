@@ -251,8 +251,9 @@ func (a *Analytics) recordResponse(docID, searchID string, w *httptest.ResponseR
 		record["custom_events"] = customEvents
 	}
 
-	logRaw(record) // TODO: remove
-	a.es.indexRecord(r.Context(), docID, record)
+	// TODO: remove
+	//logRaw(record)
+	a.es.indexRecord(context.Background(), docID, record)
 }
 
 func classifyCategory(h http.HandlerFunc) http.HandlerFunc {

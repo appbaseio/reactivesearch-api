@@ -25,6 +25,7 @@ import (
 	_ "github.com/appbaseio-confidential/arc/plugins/logs"
 	_ "github.com/appbaseio-confidential/arc/plugins/permissions"
 	_ "github.com/appbaseio-confidential/arc/plugins/reindexer"
+	_ "github.com/appbaseio-confidential/arc/plugins/rules"
 	_ "github.com/appbaseio-confidential/arc/plugins/users"
 )
 

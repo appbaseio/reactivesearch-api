@@ -29,6 +29,7 @@ const (
 	Permission
 	Analytics
 	Streams
+	Rules
 )
 
 // String is an implementation of Stringer interface that returns the string representation of category.Categories.
@@ -44,6 +45,7 @@ func (c Category) String() string {
 		"permission",
 		"analytics",
 		"streams",
+		"rules",
 	}[c]
 }
 
@@ -75,6 +77,8 @@ func (c *Category) UnmarshalJSON(bytes []byte) error {
 		*c = Analytics
 	case Streams.String():
 		*c = Streams
+	case Rules.String():
+		*c = Rules
 	default:
 		return fmt.Errorf("invalid acl encountered: %v" + category)
 	}
@@ -105,6 +109,8 @@ func (c Category) MarshalJSON() ([]byte, error) {
 		category = Analytics.String()
 	case Streams:
 		category = Streams.String()
+	case Rules:
+		category = Rules.String()
 	default:
 		return nil, fmt.Errorf("invalid category encountered: %v" + c.String())
 	}

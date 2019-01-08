@@ -22,6 +22,7 @@ var (
 		category.Permission,
 		category.Analytics,
 		category.Streams,
+		category.Rules,
 	}
 
 	defaultOps = []op.Operation{
