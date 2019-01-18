@@ -1,20 +1,18 @@
 package rules
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
-	"sync"
 
 	"github.com/appbaseio-confidential/arc/plugins/rules/query"
 	"github.com/appbaseio-confidential/arc/util"
 	"github.com/gorilla/mux"
 )
 
-func (r *Rules) postRule() http.HandlerFunc {
+func (r *Rules) postIndexRule() http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
 		indexName := mux.Vars(req)["index"]
 
@@ -24,6 +22,7 @@ func (r *Rules) postRule() http.HandlerFunc {
 			util.WriteBackError(w, "error reading request body", http.StatusBadRequest)
 			return
 		}
+		defer req.Body.Close()
 
 		var rule query.Rule
 		err = json.Unmarshal(body, &rule)
@@ -33,88 +32,126 @@ func (r *Rules) postRule() http.HandlerFunc {
 			return
 		}
 
+		// set the "_id" field to random string, if not assigned by the user
+		if rule.ID == "" {
+			// e.g: starts_with_apple, is_apple, ends_with_apple, contains_apple
+			rule.ID = fmt.Sprintf("%s_%s", rule.If.Operator, rule.If.Query)
+		}
+
+		// validate the rule provided by the user
+		if err = validateRule(&rule); err != nil {
+			log.Printf("%s: %v", logTag, err)
+			util.WriteBackError(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		response, _ := json.Marshal(rule)
+
 		// construct the percolator query to be indexed alongside the query rules
-		err = r.withQuery(&rule)
-		if err != nil {
+		if err = withQuery(&rule); err != nil {
 			log.Printf("%s: %v", logTag, err)
 			util.WriteBackError(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 
-		// fetch and construct the required payload before indexing the rule
-		err = r.withPayload(indexName, &rule)
-		if err != nil {
-			log.Printf("%s: %v", logTag, err)
-			util.WriteBackError(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-
-		// index the rule
-		ok, err := r.es.postRule(req.Context(), indexName, rule)
-		if !ok || err != nil {
+		if ok, err := r.es.postIndexRule(req.Context(), indexName, &rule); !ok || err != nil {
 			log.Printf("%s: %v", logTag, err)
 			util.WriteBackError(w, "error creating the query rule", http.StatusInternalServerError)
 			return
 		}
 
-		util.WriteBackMessage(w, "Rule created", http.StatusCreated)
+		util.WriteBackRaw(w, response, http.StatusCreated)
 	}
 }
 
-func (r *Rules) withQuery(rule *query.Rule) error {
-	var err error
+func (r *Rules) postIndexRules() http.HandlerFunc {
+	return func(w http.ResponseWriter, req *http.Request) {
+		indexName := mux.Vars(req)["index"]
+
+		body, err := ioutil.ReadAll(req.Body)
+		if err != nil {
+			log.Printf("%s: %v", logTag, err)
+			util.WriteBackError(w, "error reading request body", http.StatusBadRequest)
+			return
+		}
+		defer req.Body.Close()
+
+		var rules, rulesWithID []query.Rule
+		err = json.Unmarshal(body, &rules)
+		if err != nil {
+			log.Printf("%s: %v", logTag, err)
+			util.WriteBackError(w, "error parsing request body", http.StatusBadRequest)
+			return
+		}
+
+		for i := range rules {
+			// set the "id" field to random string, if not assigned by the user
+			if rules[i].ID == "" {
+				// e.g: starts_with_apple, is_apple, ends_with_apple, contains_apple
+				rules[i].ID = fmt.Sprintf("%s_%s", rules[i].If.Operator, rules[i].If.Query)
+			}
+
+			// validate the rule provided by the user
+			if err = validateRule(&rules[i]); err != nil {
+				log.Printf("%s: %v", logTag, err)
+				util.WriteBackError(w, err.Error(), http.StatusBadRequest)
+				return
+			}
+			rulesWithID = append(rulesWithID, rules[i])
+
+			// construct the percolator query to be indexed alongside the query rules
+			if err = withQuery(&rules[i]); err != nil {
+				log.Printf("%s: %v", logTag, err)
+				util.WriteBackError(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+		}
+
+		if ok, err := r.es.postIndexRules(req.Context(), indexName, rules); !ok || err != nil {
+			log.Printf("%s: %v", logTag, err)
+			util.WriteBackError(w, "error creating the query rule", http.StatusInternalServerError)
+			return
+		}
+
+		response, _ := json.Marshal(rulesWithID)
+		util.WriteBackRaw(w, response, http.StatusCreated)
+	}
+}
+
+func withQuery(rule *query.Rule) error {
 	// construct the percolator query to be indexed alongside the query rules
-	switch rule.Condition.Operator {
+	rule.Query = new(query.Query)
+	var err error
+	switch rule.If.Operator {
 	case query.Is:
-		{
-			rule.Query.Regexp.Pattern = rule.Condition.Pattern
-		}
+		rule.Query.Regexp.Pattern = rule.If.Query
 	case query.StartsWith:
-		{
-			pattern := fmt.Sprintf("%s.*", rule.Condition.Pattern)
-			rule.Query.Regexp.Pattern = pattern
-		}
+		pattern := fmt.Sprintf("%s.*", rule.If.Query)
+		rule.Query.Regexp.Pattern = pattern
 	case query.EndsWith:
-		{
-			pattern := fmt.Sprintf(".+%s", rule.Condition.Pattern)
-			rule.Query.Regexp.Pattern = pattern
-		}
+		pattern := fmt.Sprintf(".+%s", rule.If.Query)
+		rule.Query.Regexp.Pattern = pattern
 	case query.Contains:
-		{
-			pattern := fmt.Sprintf(".*%s.*", rule.Condition.Pattern)
-			rule.Query.Regexp.Pattern = pattern
-		}
+		pattern := fmt.Sprintf(".*%s.*", rule.If.Query)
+		rule.Query.Regexp.Pattern = pattern
 	default:
 		err = fmt.Errorf("unhandled rule operator")
 	}
 	return err
 }
 
-func (r *Rules) withPayload(indexName string, rule *query.Rule) error {
+func validateRule(rule *query.Rule) error {
 	var err error
-	switch rule.Consequence.Operation {
-	case query.Promote:
-		{
-			var docIDs []string
-			for _, payload := range rule.Consequence.Payload {
-				docIDs = append(docIDs, payload.DocID)
-			}
-			indexDocs := r.fetchDocs(context.Background(), indexName, docIDs...)
-			fmt.Println(indexDocs)
-			for i, payload := range rule.Consequence.Payload {
-				rule.Consequence.Payload[i].Doc = indexDocs[payload.DocID]
+	if rule.Then.Payloads == nil || len(rule.Then.Payloads) == 0 {
+		err = fmt.Errorf("payload is required in order to promote a result")
+	}
+	if rule.Then.Action == query.Hide {
+		for _, payload := range rule.Then.Payloads {
+			if payload.DocID == "" {
+				err = fmt.Errorf(`a rule requires a "doc_id" to be able to hide the doc from search result`)
+				break
 			}
 		}
-	case query.Inject:
-		// In case of query.Inject we expect the client to provide the "doc_id" and "doc"
-		// that it intends to inject along with the search result.
-	case query.Hide:
-		// In case of query.Hide we do not need to fetch the docs at all, instead we
-		// just remove the docs with the provided ids from the search result.
-	default:
-		err = fmt.Errorf("unhandled rule operation")
 	}
-
 	return err
 }
 
@@ -124,8 +161,9 @@ func (r *Rules) getIndexRules() http.HandlerFunc {
 
 		raw, err := r.es.getIndexRules(req.Context(), indexName)
 		if err != nil {
+			msg := fmt.Sprintf("Rules for index=%s not found", indexName)
 			log.Printf("%s: %v", logTag, err)
-			util.WriteBackError(w, "rules for index not found", http.StatusNotFound)
+			util.WriteBackError(w, msg, http.StatusNotFound)
 			return
 		}
 
@@ -133,31 +171,52 @@ func (r *Rules) getIndexRules() http.HandlerFunc {
 	}
 }
 
-type indexDoc struct {
-	id, doc string
+func (r *Rules) getIndexRuleWithID() http.HandlerFunc {
+	return func(w http.ResponseWriter, req *http.Request) {
+		vars := mux.Vars(req)
+		indexName, ruleID := vars["index"], vars["id"]
+
+		raw, err := r.es.getIndexRuleWithID(req.Context(), indexName, ruleID)
+		if err != nil {
+			msg := fmt.Sprintf("Rule for index=%s, id=%s not found", indexName, ruleID)
+			log.Printf("%s: %v", logTag, err)
+			util.WriteBackError(w, msg, http.StatusNotFound)
+			return
+		}
+
+		util.WriteBackRaw(w, raw, http.StatusOK)
+	}
 }
 
-func (r *Rules) fetchDocs(ctx context.Context, indexName string, docIDs ...string) map[string]string {
-	docs := make(chan *indexDoc)
-	var wg sync.WaitGroup
+func (r *Rules) deleteIndexRules() http.HandlerFunc {
+	return func(w http.ResponseWriter, req *http.Request) {
+		indexName := mux.Vars(req)["index"]
 
-	for _, docID := range docIDs {
-		wg.Add(1)
-		go r.es.fetchDoc(ctx, indexName, docID, docs, &wg)
-	}
-
-	go func() {
-		wg.Wait()
-		close(docs)
-	}()
-
-	result := make(map[string]string)
-	for doc := range docs {
-		if doc == nil {
-			continue
+		_, err := r.es.deleteIndexRules(req.Context(), indexName)
+		if err != nil {
+			msg := fmt.Sprintf("Rules for index=%s not found", indexName)
+			log.Printf("%s: %v", logTag, err)
+			util.WriteBackError(w, msg, http.StatusNotFound)
+			return
 		}
-		result[doc.id] = doc.doc
-	}
 
-	return result
+		util.WriteBackMessage(w, "Deleted index rules", http.StatusOK)
+	}
+}
+
+func (r *Rules) deleteIndexRuleWithID() http.HandlerFunc {
+	return func(w http.ResponseWriter, req *http.Request) {
+		vars := mux.Vars(req)
+		indexName, ruleID := vars["index"], vars["id"]
+
+		_, err := r.es.deleteIndexRuleWithID(req.Context(), indexName, ruleID)
+		if err != nil {
+			msg := fmt.Sprintf("Rule for index=%s, id=%s not found", indexName, ruleID)
+			log.Printf("%s: %v", logTag, err)
+			util.WriteBackError(w, msg, http.StatusNotFound)
+			return
+		}
+
+		util.WriteBackMessage(w, "Deleted index rule", http.StatusOK)
+	}
 }

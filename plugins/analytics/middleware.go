@@ -192,7 +192,6 @@ func (a *Analytics) recordResponse(docID, searchID string, w *httptest.ResponseR
 		record["timestamp"] = time.Now().Format(time.RFC3339)
 
 		searchFilters := parse(r.Header.Get(XSearchFilters))
-		log.Printf("%v\n", searchFilters)
 		if len(searchFilters) > 0 {
 			record["search_filters"] = searchFilters
 		}

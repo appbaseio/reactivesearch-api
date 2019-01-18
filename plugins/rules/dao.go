@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
-	"sync"
 
 	"github.com/appbaseio-confidential/arc/plugins/rules/query"
 	"github.com/olivere/elastic"
@@ -67,36 +66,66 @@ func (es *elasticsearch) createIndex(ctx context.Context, indexName string) (boo
 	return response.Acknowledged, nil
 }
 
-func (es *elasticsearch) postRule(ctx context.Context, indexName string, rule query.Rule) (bool, error) {
+func (es *elasticsearch) postIndexRule(ctx context.Context, indexName string, rule *query.Rule) (bool, error) {
 	// e.g: app-rules
-	rulesIndexName := fmt.Sprintf("%s-%s", indexName, es.indexSuffix)
+	indexName = fmt.Sprintf("%s-%s", indexName, es.indexSuffix)
 
 	// check if index already exists, this is important
 	// because we need to set the percolator mapping to the
 	// index before indexing the rules.
-	exists, err := es.client.IndexExists(rulesIndexName).
-		Do(ctx)
+	exists, err := es.indexExists(ctx, indexName)
 	if err != nil {
 		return false, err
 	}
 	if !exists {
-		if created, err := es.createIndex(ctx, rulesIndexName); err != nil || !created {
+		if created, err := es.createIndex(ctx, indexName); err != nil || !created {
 			return false, err
 		}
 	}
 
-	// e.g: contains-apple, is-apple, starts-with-apple, ends-with-apple ...
-	ruleID := fmt.Sprintf("%s-%s", rule.Condition.Operator, rule.Condition.Pattern)
-
 	_, err = es.client.Index().
-		Index(rulesIndexName).
+		Index(indexName).
 		Type(es.typeName).
-		Id(ruleID).
-		BodyJson(rule).
+		Id(rule.ID).
+		BodyJson(*rule).
 		Do(ctx)
 	if err != nil {
 		return false, err
 	}
+	return true, nil
+}
+
+func (es *elasticsearch) postIndexRules(ctx context.Context, indexName string, rules []query.Rule) (bool, error) {
+	// e.g: app-rules
+	indexName = fmt.Sprintf("%s-%s", indexName, es.indexSuffix)
+
+	// check if index already exists, this is important
+	// because we need to set the percolator mapping to the
+	// index before indexing the rules.
+	exists, err := es.indexExists(ctx, indexName)
+	if err != nil {
+		return false, err
+	}
+	if !exists {
+		if created, err := es.createIndex(ctx, indexName); err != nil || !created {
+			return false, err
+		}
+	}
+
+	bulkRequest := es.client.Bulk()
+	for _, rule := range rules {
+		br := elastic.NewBulkIndexRequest().
+			Index(indexName).
+			Type(es.typeName).
+			Id(rule.ID).
+			Doc(rule)
+		bulkRequest.Add(br)
+	}
+	_, err = bulkRequest.Do(ctx)
+	if err != nil {
+		return false, nil
+	}
+
 	return true, nil
 }
 
@@ -121,12 +150,21 @@ func (es *elasticsearch) getIndexRules(ctx context.Context, indexName string) ([
 	return json.Marshal(raw)
 }
 
-func (es *elasticsearch) fetchQueryRules(ctx context.Context, indexName, queryTerm string, rules chan<- query.Rule) {
+func (es *elasticsearch) fetchQueryRules(ctx context.Context, indexName, queryTerm string, rules chan<- *query.Rule) {
 	defer close(rules)
-
 	indexName = fmt.Sprintf("%s-%s", indexName, es.indexSuffix)
 
-	doc := map[string]interface{}{"condition.pattern": queryTerm}
+	exists, err := es.indexExists(ctx, indexName)
+	if err != nil {
+		log.Printf("%s: %v", logTag, err)
+		return
+	}
+	// rules index doesn't exist
+	if !exists {
+		return
+	}
+
+	doc := map[string]interface{}{"if.query": queryTerm}
 	pq := elastic.NewPercolatorQuery().
 		Field("query").
 		Document(doc)
@@ -145,36 +183,65 @@ func (es *elasticsearch) fetchQueryRules(ctx context.Context, indexName, queryTe
 	}
 
 	for _, hit := range response.Hits.Hits {
-		raw, _ := hit.Source.MarshalJSON()
-		fmt.Println(string(raw))
 		var rule query.Rule
 		err := json.Unmarshal(*hit.Source, &rule)
 		if err != nil {
 			log.Printf("%s: error unmarshaling query rule: %v", logTag, err)
 			continue
 		}
-		rules <- rule
+		rules <- &rule
 	}
 }
 
-func (es *elasticsearch) fetchDoc(ctx context.Context, indexName, docID string, docs chan<- *indexDoc, wg *sync.WaitGroup) {
-	defer wg.Done()
+func (es *elasticsearch) indexExists(ctx context.Context, indexName string) (bool, error) {
+	exists, err := es.client.IndexExists(indexName).
+		Do(ctx)
+	if err != nil {
+		return false, err
+	}
+	return exists, nil
+}
+
+func (es *elasticsearch) getIndexRuleWithID(ctx context.Context, indexName, ruleID string) ([]byte, error) {
+	indexName = fmt.Sprintf("%s-%s", indexName, es.indexSuffix)
 
 	response, err := es.client.Get().
 		Index(indexName).
 		Type(es.typeName).
-		Id(docID).
+		Id(ruleID).
+		FetchSourceContext(elastic.NewFetchSourceContext(true).
+			Exclude("query")).
 		Do(ctx)
 	if err != nil {
-		log.Printf("%s: error fetching doc with id=%s from index=%s: %v", logTag, docID, indexName, err)
-		return
+		return nil, err
 	}
 
-	doc, err := response.Source.MarshalJSON()
+	return json.Marshal(response.Source)
+}
+
+func (es *elasticsearch) deleteIndexRules(ctx context.Context, indexName string) (bool, error) {
+	indexName = fmt.Sprintf("%s-%s", indexName, es.indexSuffix)
+
+	response, err := es.client.DeleteIndex(indexName).
+		Do(ctx)
 	if err != nil {
-		log.Printf("%s: error marshaling doc with id=%s from index=%s: %v", logTag, docID, indexName, err)
-		return
+		return false, err
 	}
 
-	docs <- &indexDoc{docID, string(doc)}
+	return response.Acknowledged, nil
+}
+
+func (es *elasticsearch) deleteIndexRuleWithID(ctx context.Context, indexName, ruleID string) (bool, error) {
+	indexName = fmt.Sprintf("%s-%s", indexName, es.indexSuffix)
+
+	_, err := es.client.Delete().
+		Index(indexName).
+		Type(es.typeName).
+		Id(ruleID).
+		Do(ctx)
+	if err != nil {
+		return false, err
+	}
+
+	return true, nil
 }

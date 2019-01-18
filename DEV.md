@@ -188,3 +188,8 @@ both read and write requests but would forbid making delete requests.
 ## Docs
 
 Refer to the RESTful API [docs](https://arc-docs.appbase.io/) that are currently included in Arc for more information.
+
+## Improvements
+
+- Improve the way middleware are handled
+- Propagate the es upstream errors back to the clients

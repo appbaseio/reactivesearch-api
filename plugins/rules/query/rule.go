@@ -5,7 +5,7 @@ package query
 // rule associated with it.
 type Query struct {
 	Regexp struct {
-		Pattern string `json:"condition.pattern"`
+		Pattern string `json:"if.query"`
 	} `json:"regexp,omitempty"`
 }
 
@@ -16,7 +16,8 @@ type Query struct {
 // is run against the incoming search queries and the consequence is triggered if
 // the rule applies to the search query.
 type Rule struct {
-	Query       Query       `json:"query,omitempty"`
-	Condition   Condition   `json:"condition"`
-	Consequence Consequence `json:"consequence"`
+	ID    string `json:"id"`
+	Query *Query `json:"query,omitempty"`
+	If    If     `json:"if"`
+	Then  Then   `json:"then"`
 }

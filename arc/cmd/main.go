@@ -13,7 +13,6 @@ import (
 
 	"github.com/appbaseio-confidential/arc/arc"
 	"github.com/appbaseio-confidential/arc/middleware/logger"
-	"github.com/appbaseio-confidential/arc/middleware/panic"
 	"github.com/gorilla/mux"
 	"github.com/rs/cors"
 
@@ -103,7 +102,7 @@ func main() {
 	})
 	handler := c.Handler(router)
 	handler = logger.Log(handler)
-	handler = panic.Recovery(handler)
+	//handler = panic.Recovery(handler)
 
 	if listPlugins {
 		log.Printf("%s: %s\n", logTag, arc.ListPluginsStr())

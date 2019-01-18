@@ -20,6 +20,15 @@ const (
 	    "_doc": {
 	      "properties": {
 	        "query": { "type": "percolator" },
+<<<<<<< HEAD
+	        "if": {
+	          "properties": {
+	            "query": { "type": "keyword" },
+	            "operator": { "type": "text" }
+	          }
+	        },
+	        "then": {
+=======
 	        "condition": {
 	          "properties": {
 	            "pattern": { "type": "keyword" },
@@ -27,6 +36,7 @@ const (
 	          }
 	        },
 	        "consequence": {
+>>>>>>> master
 	          "properties": {
 	            "operator": { "type": "text" },
 	            "payload": { "type": "object" }

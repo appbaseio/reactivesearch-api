@@ -5,11 +5,11 @@ import (
 	"fmt"
 )
 
-// Condition represents the rule condition that is executed against the
+// If represents the rule condition that is executed against the
 // search requests. If the search request meets the rule condition, then
 // the rule consequence is triggered.
-type Condition struct {
-	Pattern  string   `json:"pattern"`
+type If struct {
+	Query    string   `json:"query"`
 	Operator Operator `json:"operator"`
 }
 

@@ -13,7 +13,7 @@ type contextKey string
 // CtxKey is a key against which an operation is stored in the context.
 const CtxKey = contextKey("op")
 
-// Operation defines an operation type.
+// Action defines an operation type.
 type Operation int
 
 // Operations
@@ -23,7 +23,7 @@ const (
 	Delete
 )
 
-// String is the implementation of Stringer interface that returns the string representation of op.Operation.
+// String is the implementation of Stringer interface that returns the string representation of op.Action.
 func (o Operation) String() string {
 	return [...]string{
 		"read",
@@ -32,7 +32,7 @@ func (o Operation) String() string {
 	}[o]
 }
 
-// UnmarshalJSON is the implementation of the Unmarshaler interface for unmarshaling op.Operation type.
+// UnmarshalJSON is the implementation of the Unmarshaler interface for unmarshaling op.Action type.
 func (o *Operation) UnmarshalJSON(bytes []byte) error {
 	var op string
 	err := json.Unmarshal(bytes, &op)
@@ -52,7 +52,7 @@ func (o *Operation) UnmarshalJSON(bytes []byte) error {
 	return nil
 }
 
-// MarshalJSON is the implementation of the Marshaler interface for marshaling op.Operation type.
+// MarshalJSON is the implementation of the Marshaler interface for marshaling op.Action type.
 func (o Operation) MarshalJSON() ([]byte, error) {
 	var op string
 	switch o {
@@ -68,15 +68,15 @@ func (o Operation) MarshalJSON() ([]byte, error) {
 	return json.Marshal(op)
 }
 
-// FromContext retrieves the *op.Operation stored against the op.CtxKey from the context.
+// FromContext retrieves the *op.Action stored against the op.CtxKey from the context.
 func FromContext(ctx context.Context) (*Operation, error) {
 	ctxOp := ctx.Value(CtxKey)
 	if ctxOp == nil {
-		return nil, errors.NewNotFoundInContextError("*op.Operation")
+		return nil, errors.NewNotFoundInContextError("*op.Action")
 	}
 	reqOp, ok := ctxOp.(*Operation)
 	if !ok {
-		return nil, errors.NewInvalidCastError("ctxOp", "*op.Operation")
+		return nil, errors.NewInvalidCastError("ctxOp", "*op.Action")
 	}
 	return reqOp, nil
 }

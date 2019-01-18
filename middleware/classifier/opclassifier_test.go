@@ -57,12 +57,12 @@ func TestOpClassifier(t *testing.T) {
 
 			ctxOp := ctx.Value(op.CtxKey)
 			if ctxOp == nil {
-				t.Errorf("handler didn't receive *op.Operation in request context")
+				t.Errorf("handler didn't receive *op.Action in request context")
 			}
 
 			operation, ok := ctxOp.(*op.Operation)
 			if !ok {
-				t.Errorf("handler received incorrect op type: got %T expected *op.Operation", ctxOp)
+				t.Errorf("handler received incorrect op type: got %T expected *op.Action", ctxOp)
 			}
 
 			if *operation != test.expectedOp {
