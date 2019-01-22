@@ -980,6 +980,12 @@ func (es *elasticsearch) getRequestDistribution(ctx context.Context, from, to, i
 		query = query.Must(indexQueries...)
 	}
 
+	intervalDuration, err := time.ParseDuration(interval)
+	if err != nil {
+		return nil, err
+	}
+	intervalInSecs := int64(intervalDuration.Seconds())
+
 	subAggr := elastic.NewTermsAggregation().
 		Field("response.code").
 		OrderByCountDesc()
@@ -1014,6 +1020,7 @@ func (es *elasticsearch) getRequestDistribution(ctx context.Context, from, to, i
 		newBucket["key"] = bucket.Key
 		newBucket["key_as_string"] = bucket.KeyAsString
 		newBucket["count"] = bucket.DocCount
+		newBucket["rpm"] = (bucket.DocCount * 60) / intervalInSecs
 
 		var subBuckets []map[string]interface{}
 		for _, bucket := range subAggr.Buckets {

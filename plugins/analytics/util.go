@@ -1,7 +1,6 @@
 package analytics
 
 import (
-	"encoding/json"
 	"log"
 	"net/url"
 	"strconv"
@@ -83,13 +82,4 @@ func parse(header string) []map[string]string {
 		}
 	}
 	return m
-}
-
-func logRaw(record map[string]interface{}) {
-	rawRecord, err := json.Marshal(record)
-	if err != nil {
-		log.Printf("%s: error marshalling analytics record: %v", logTag, err)
-	}
-	log.Printf("%s: %s", logTag, string(rawRecord))
-
 }

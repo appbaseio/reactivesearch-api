@@ -1,6 +1,7 @@
 package analytics
 
 import (
+	"fmt"
 	"log"
 	"net/http"
 	"strconv"
@@ -234,11 +235,15 @@ func (a *Analytics) getSummary() http.HandlerFunc {
 func (a *Analytics) getRequestDistribution() http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
 		from, to, size := rangeQueryParams(req.URL.Query())
-		// TODO: Validate interval value?
-		interval := req.URL.Query().Get("interval")
-		if interval == "" {
-			interval = "1h"
+
+		interval, err := util.IntervalForRange(from, to)
+		if err != nil {
+			msg := fmt.Sprintf("invalid query params passed: %v", err)
+			log.Printf("%s: %v", logTag, err)
+			util.WriteBackError(w, msg, http.StatusBadRequest)
+			return
 		}
+
 		indices, err := util.IndicesFromContext(req.Context())
 		if err != nil {
 			msg := "error occurred while fetching request distribution"

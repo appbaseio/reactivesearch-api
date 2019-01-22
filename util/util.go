@@ -199,3 +199,23 @@ func HTTPClient() *http.Client {
 	})
 	return client
 }
+
+// IntervalForRange returns the interval in seconds for a given time range.
+// It expects the time arguments in RFC3339 format. The interval is calculated by:
+// I = (25 * D) seconds, where D = duration (in hours), I = interval.
+func IntervalForRange(from, to string) (string, error) {
+	start, err := time.Parse(time.RFC3339, from)
+	if err != nil {
+		return "", err
+	}
+	end, err := time.Parse(time.RFC3339, to)
+	if err != nil {
+		return "", err
+	}
+	durationInHours := end.Sub(start).Hours()
+	if durationInHours < 0 {
+		return "", fmt.Errorf("negative time range isn't permitted")
+	}
+	intervalInSecs := math.Round(durationInHours * 25)
+	return fmt.Sprintf("%ds", int64(intervalInSecs)), nil
+}
