@@ -20,7 +20,6 @@ const (
 	    "_doc": {
 	      "properties": {
 	        "query": { "type": "percolator" },
-<<<<<<< HEAD
 	        "if": {
 	          "properties": {
 	            "query": { "type": "keyword" },
@@ -28,15 +27,6 @@ const (
 	          }
 	        },
 	        "then": {
-=======
-	        "condition": {
-	          "properties": {
-	            "pattern": { "type": "keyword" },
-	            "operator": { "type": "text" }
-	          }
-	        },
-	        "consequence": {
->>>>>>> master
 	          "properties": {
 	            "operator": { "type": "text" },
 	            "payload": { "type": "object" }
@@ -89,7 +79,7 @@ func (r *Rules) InitFunc() error {
 	}
 	indexPrefix := os.Getenv(envRulesEsIndexSuffix)
 	if indexPrefix == "" {
-		return errors.NewEnvVarNotSetError(envRulesEsIndexSuffix)
+		indexPrefix = "rules"
 	}
 
 	// initialize the dao
