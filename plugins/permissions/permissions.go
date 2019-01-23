@@ -8,13 +8,14 @@ import (
 	"github.com/appbaseio-confidential/arc/arc"
 	"github.com/appbaseio-confidential/arc/arc/route"
 	"github.com/appbaseio-confidential/arc/errors"
-	"github.com/appbaseio-confidential/arc/model/permission"
 )
 
 const (
-	logTag               = "[permissions]"
-	envEsURL             = "ES_CLUSTER_URL"
-	envPermissionEsIndex = "PERMISSIONS_ES_INDEX"
+	logTag                    = "[permissions]"
+	defaultPermissionsEsIndex = ".permissions"
+	envEsURL                  = "ES_CLUSTER_URL"
+	envPermissionEsIndex      = "PERMISSIONS_ES_INDEX"
+	settings                  = `{ "settings" : { "number_of_shards" : 3, "number_of_replicas" : %d } }`
 )
 
 var (
@@ -51,13 +52,12 @@ func (p *permissions) InitFunc() error {
 	}
 	indexName := os.Getenv(envPermissionEsIndex)
 	if indexName == "" {
-		return errors.NewEnvVarNotSetError(envPermissionEsIndex)
+		indexName = defaultPermissionsEsIndex
 	}
-	mapping := permission.IndexMapping
 
 	// initialize the dao
 	var err error
-	p.es, err = newClient(url, indexName, mapping)
+	p.es, err = newClient(url, indexName, settings)
 	if err != nil {
 		return err
 	}

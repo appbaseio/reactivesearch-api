@@ -11,10 +11,10 @@ import (
 
 const (
 	logTag                = "[rules]"
+	defaultRulesEsIndex   = ".rules"
 	envEsURL              = "ES_CLUSTER_URL"
 	envRulesEsIndexSuffix = "RULES_ES_INDEX_SUFFIX"
-
-	indexConfig = `
+	indexConfig           = `
 	{
 	  "mappings": {
 	    "_doc": {
@@ -79,7 +79,7 @@ func (r *Rules) InitFunc() error {
 	}
 	indexPrefix := os.Getenv(envRulesEsIndexSuffix)
 	if indexPrefix == "" {
-		indexPrefix = "rules"
+		indexPrefix = defaultRulesEsIndex
 	}
 
 	// initialize the dao

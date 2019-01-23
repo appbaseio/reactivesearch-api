@@ -27,9 +27,6 @@ const (
 
 	// CtxKey is the key against which a permission is stored in a context.
 	CtxKey = contextKey("permission")
-
-	// IndexMapping for the index that houses permission data.
-	IndexMapping = `{ "settings" : { "number_of_shards" : 3, "number_of_replicas" : %d } }`
 )
 
 // Permission defines a permission type.

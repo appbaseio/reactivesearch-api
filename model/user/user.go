@@ -23,9 +23,6 @@ const (
 
 	// CtxKey is a key against which a *User is stored in the context.
 	CtxKey = contextKey("user")
-
-	// IndexMapping for the index that houses the user data.
-	IndexMapping = `{ "settings" : { "number_of_shards" : 3, "number_of_replicas" : %d } }`
 )
 
 // User defines a user type.

@@ -12,10 +12,12 @@ import (
 )
 
 const (
-	logTag                = "[auth]"
-	envEsURL              = "ES_CLUSTER_URL"
-	envUsersEsIndex       = "USERS_ES_INDEX"
-	envPermissionsEsIndex = "PERMISSIONS_ES_INDEX"
+	logTag                    = "[auth]"
+	envEsURL                  = "ES_CLUSTER_URL"
+	envUsersEsIndex           = "USERS_ES_INDEX"
+	defaultUsersEsIndex       = ".users"
+	envPermissionsEsIndex     = "PERMISSIONS_ES_INDEX"
+	defaultPermissionsEsIndex = ".permissions"
 )
 
 var (
@@ -63,11 +65,11 @@ func (a *Auth) InitFunc() error {
 	}
 	userIndex := os.Getenv(envUsersEsIndex)
 	if userIndex == "" {
-		return errors.NewEnvVarNotSetError(envUsersEsIndex)
+		userIndex = defaultUsersEsIndex
 	}
 	permissionIndex := os.Getenv(envPermissionsEsIndex)
 	if permissionIndex == "" {
-		return errors.NewEnvVarNotSetError(envPermissionsEsIndex)
+		permissionIndex = defaultPermissionsEsIndex
 	}
 
 	// initialize the dao
