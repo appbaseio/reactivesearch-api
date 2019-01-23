@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/appbaseio-confidential/arc/arc/middleware"
 	"github.com/appbaseio-confidential/arc/model/category"
 	"github.com/appbaseio-confidential/arc/model/credential"
 	"github.com/appbaseio-confidential/arc/model/permission"
@@ -14,6 +15,10 @@ import (
 	"github.com/appbaseio-confidential/arc/util"
 	"github.com/gorilla/mux"
 )
+
+func BasicAuth() middleware.Middleware {
+	return Instance().Authorize
+}
 
 // Authorize middleware authenticates each requests against the basic auth credentials.
 func (a *Auth) Authorize(h http.HandlerFunc) http.HandlerFunc {

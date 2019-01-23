@@ -35,12 +35,12 @@ func (c *chain) Wrap(h http.HandlerFunc) http.HandlerFunc {
 }
 
 func list() []middleware.Middleware {
-	basicAuth := auth.Instance().BasicAuth
+	basicAuth := auth.BasicAuth()
+	logsRecorder := logs.Recorder()
 	validateSources := sources.Validate
 	validateReferers := referers.Validate
 	redirectRequests := interceptor.Instance().Redirect
 	recordAnalytics := analytics.Instance().Recorder
-	recordLogs := logs.Instance().Recorder
 	applyQueryRules := rules.Instance().Intercept
 
 	return []middleware.Middleware{
@@ -48,7 +48,7 @@ func list() []middleware.Middleware {
 		classifyACL,
 		classifyOp,
 		identifyIndices,
-		recordLogs,
+		logsRecorder,
 		basicAuth,
 		validateSources,
 		validateReferers,

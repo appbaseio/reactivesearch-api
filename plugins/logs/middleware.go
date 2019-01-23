@@ -14,12 +14,14 @@ import (
 	"github.com/appbaseio-confidential/arc/arc/middleware"
 	"github.com/appbaseio-confidential/arc/arc/middleware/order"
 	"github.com/appbaseio-confidential/arc/middleware/classifier"
+	"github.com/appbaseio-confidential/arc/model/acl"
 	"github.com/appbaseio-confidential/arc/model/category"
 	"github.com/appbaseio-confidential/arc/model/index"
 	"github.com/appbaseio-confidential/arc/model/op"
 	"github.com/appbaseio-confidential/arc/model/user"
 	"github.com/appbaseio-confidential/arc/plugins/auth"
 	"github.com/appbaseio-confidential/arc/util"
+	"github.com/olivere/elastic"
 )
 
 type chain struct {
@@ -198,20 +200,8 @@ type record struct {
 	Timestamp time.Time `json:"timestamp"`
 }
 
-type esResponse struct {
-	Hits struct {
-		Hits []struct {
-			Source map[string]interface{} `json:"_source,omitempty"`
-			ID     string                 `json:"_id,omitempty"`
-			Type   string                 `json:"_type,omitempty"`
-			Score  float64                `json:"_score,omitempty"`
-			Index  string                 `json:"_index,omitempty"`
-		} `json:"hits"`
-		Total    int         `json:"total"`
-		MaxScore interface{} `json:"max_score"`
-	} `json:"hits"`
-	TimedOut bool  `json:"timed_out"`
-	Took     int64 `json:"took"`
+func Recorder() middleware.Middleware {
+	return Instance().Recorder
 }
 
 // Recorder records a log "record" for every request.
@@ -251,6 +241,12 @@ func (l *Logs) recordResponse(reqBody []byte, w *httptest.ResponseRecorder, req 
 		return
 	}
 
+	reqACL, err := acl.FromContext(ctx)
+	if err != nil {
+		log.Printf("%s: %v", logTag, err)
+		return
+	}
+
 	reqIndices, err := util.IndicesFromContext(ctx)
 	if err != nil {
 		log.Printf("%s: %v", logTag, err)
@@ -266,6 +262,9 @@ func (l *Logs) recordResponse(reqBody []byte, w *httptest.ResponseRecorder, req 
 	record.Request.URI = req.URL.Path
 	record.Request.Headers = req.Header
 	record.Request.Method = req.Method
+	if *reqACL == acl.Bulk {
+		reqBody = reqBody[:1000]
+	}
 	record.Request.Body = string(reqBody)
 
 	// record response
@@ -281,13 +280,13 @@ func (l *Logs) recordResponse(reqBody []byte, w *httptest.ResponseRecorder, req 
 	}
 	// we unmarshal the response inorder to trim down the number of hits to 10
 	if *reqCategory == category.Search || *reqCategory == category.Streams {
-		var response esResponse
+		var response elastic.SearchResult
 		err := json.Unmarshal(responseBody, &response)
 		if err != nil {
 			log.Printf("%s: error unmarshaling es response, unable to record logs: %v", logTag, err)
 			return
 		}
-		if len(response.Hits.Hits) > 10 {
+		if response.Hits != nil && len(response.Hits.Hits) > 10 {
 			response.Hits.Hits = response.Hits.Hits[0:10]
 		}
 		responseBody, err = json.Marshal(response)
@@ -295,6 +294,11 @@ func (l *Logs) recordResponse(reqBody []byte, w *httptest.ResponseRecorder, req 
 			log.Printf("%s: error marshalling es response, unable to record logs: %v", logTag, err)
 			return
 		}
+	}
+
+	// if request acl is _bulk, we restrict the response body to 1000 bytes.
+	if *reqACL == acl.Bulk && len(responseBody) > 1000 {
+		responseBody = responseBody[:1000]
 	}
 	record.Response.Body = string(responseBody)
 
