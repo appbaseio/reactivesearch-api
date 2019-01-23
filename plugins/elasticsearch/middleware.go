@@ -42,8 +42,8 @@ func list() []middleware.Middleware {
 	validateReferers := referers.Validate
 	ratelimit := ratelimiter.Limit()
 	redirectRequests := interceptor.Redirect
-	recordAnalytics := analytics.Instance().Recorder
-	applyQueryRules := rules.Instance().Intercept
+	recordAnalytics := analytics.Recorder()
+	applyQueryRules := rules.Apply()
 
 	return []middleware.Middleware{
 		classifyCategory,
