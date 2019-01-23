@@ -7,13 +7,14 @@ import (
 	"github.com/appbaseio-confidential/arc/arc"
 	"github.com/appbaseio-confidential/arc/arc/route"
 	"github.com/appbaseio-confidential/arc/errors"
-	"github.com/appbaseio-confidential/arc/model/user"
 )
 
 const (
-	logTag          = "[users]"
-	envEsURL        = "ES_CLUSTER_URL"
-	envUsersEsIndex = "USERS_ES_INDEX"
+	logTag              = "[users]"
+	envEsURL            = "ES_CLUSTER_URL"
+	envUsersEsIndex     = "USERS_ES_INDEX"
+	defaultUsersEsIndex = ".users"
+	settings            = `{ "settings" : { "number_of_shards" : 3, "number_of_replicas" : %d } }`
 )
 
 var (
@@ -48,13 +49,12 @@ func (u *users) InitFunc() error {
 	}
 	indexName := os.Getenv(envUsersEsIndex)
 	if indexName == "" {
-		return errors.NewEnvVarNotSetError(envUsersEsIndex)
+		indexName = defaultUsersEsIndex
 	}
-	mapping := user.IndexMapping
 
 	// initialize the dao
 	var err error
-	u.es, err = newClient(esURL, indexName, mapping)
+	u.es, err = newClient(esURL, indexName, settings)
 	if err != nil {
 		return err
 	}

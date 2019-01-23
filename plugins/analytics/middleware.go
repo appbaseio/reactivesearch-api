@@ -15,7 +15,8 @@ import (
 
 	"github.com/appbaseio-confidential/arc/arc/middleware"
 	"github.com/appbaseio-confidential/arc/arc/middleware/order"
-	"github.com/appbaseio-confidential/arc/middleware/classifier"
+	"github.com/appbaseio-confidential/arc/middleware/classify"
+	"github.com/appbaseio-confidential/arc/middleware/validate"
 	"github.com/appbaseio-confidential/arc/model/category"
 	"github.com/appbaseio-confidential/arc/model/index"
 	"github.com/appbaseio-confidential/arc/model/op"
@@ -46,17 +47,14 @@ func (c *chain) Wrap(h http.HandlerFunc) http.HandlerFunc {
 }
 
 func list() []middleware.Middleware {
-	classifyOp := classifier.Instance().OpClassifier
-	basicAuth := auth.Instance().BasicAuth
-
 	return []middleware.Middleware{
 		classifyCategory,
-		classifyOp,
-		identifyIndices,
-		basicAuth,
-		validateIndices,
-		validateOp,
-		validateCategory,
+		classify.Op(),
+		classify.Indices(),
+		auth.BasicAuth(),
+		validate.Indices(),
+		validate.Operation(),
+		validate.Category(),
 	}
 }
 
@@ -76,9 +74,13 @@ type mSearchResponse struct {
 	Responses []searchResponse `json:"responses"`
 }
 
+func Recorder() middleware.Middleware {
+	return Instance().recorder
+}
+
 // Recorder parses and records the search requests made to elasticsearch along with some other
 // user information in order to calculate and serve useful analytics.
-func (a *Analytics) Recorder(h http.HandlerFunc) http.HandlerFunc {
+func (a *Analytics) recorder(h http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
 
@@ -118,7 +120,7 @@ func (a *Analytics) Recorder(h http.HandlerFunc) http.HandlerFunc {
 	}
 }
 
-// TODO: For urls ending with _search or _msearch? Stricter checks should make it hard to misuse
+// TODO: For urls ending with _search or _msearch? Stricter checks should make it hard to misuse.
 func (a *Analytics) recordResponse(docID, searchID string, w *httptest.ResponseRecorder, r *http.Request) {
 	// read the response from elasticsearch
 	respBody, err := ioutil.ReadAll(w.Result().Body)

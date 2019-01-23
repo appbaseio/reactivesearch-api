@@ -8,7 +8,9 @@ import (
 	"sync"
 	"time"
 
+	"github.com/appbaseio-confidential/arc/arc/middleware"
 	"github.com/appbaseio-confidential/arc/model/category"
+	"github.com/appbaseio-confidential/arc/model/credential"
 	"github.com/appbaseio-confidential/arc/model/permission"
 	"github.com/appbaseio-confidential/arc/util"
 	"github.com/appbaseio-confidential/arc/util/iplookup"
@@ -49,46 +51,59 @@ func Instance() *Ratelimiter {
 	return instance
 }
 
-// RateLimit middleware limits the requests made to elasticsearch for each permission.
-func (rl *Ratelimiter) RateLimit(h http.HandlerFunc) http.HandlerFunc {
+// Limit middleware limits the requests made to elasticsearch for each permission.
+func Limit() middleware.Middleware {
+	return Instance().rateLimit
+}
+
+func (rl *Ratelimiter) rateLimit(h http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
-		remoteIP := iplookup.FromRequest(r)
 
-		errMsg := "An error occurred while validating rate limit"
-		reqPermission, err := permission.FromContext(ctx)
+		reqCredential, err := credential.FromContext(ctx)
 		if err != nil {
-			log.Printf("%s: %v", logTag, err)
-			util.WriteBackError(w, errMsg, http.StatusInternalServerError)
+			log.Printf("%s: %v\n", logTag, err)
+			util.WriteBackError(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 
-		reqACL, err := category.FromContext(ctx)
-		if err != nil {
-			log.Printf("%s: %v", logTag, err)
-			util.WriteBackError(w, errMsg, http.StatusInternalServerError)
-			return
-		}
+		if reqCredential == credential.Permission {
+			remoteIP := iplookup.FromRequest(r)
+			errMsg := "An error occurred while validating rate limit"
+			reqPermission, err := permission.FromContext(ctx)
+			if err != nil {
+				log.Printf("%s: %v", logTag, err)
+				util.WriteBackError(w, errMsg, http.StatusInternalServerError)
+				return
+			}
 
-		// limit on Categories per second
-		aclLimit, err := reqPermission.GetLimitFor(*reqACL)
-		if err != nil {
-			util.WriteBackError(w, err.Error(), http.StatusUnauthorized)
-			return
-		}
+			reqCategory, err := category.FromContext(ctx)
+			if err != nil {
+				log.Printf("%s: %v", logTag, err)
+				util.WriteBackError(w, errMsg, http.StatusInternalServerError)
+				return
+			}
 
-		key := fmt.Sprintf("%s:%s", reqPermission.Username, *reqACL)
-		if rl.limitExceededByACL(key, aclLimit) {
-			util.WriteBackMessage(w, "Rate limit exceeded", http.StatusTooManyRequests)
-			return
-		}
+			// limit on Categories per second
+			categoryLimit, err := reqPermission.GetLimitFor(*reqCategory)
+			if err != nil {
+				util.WriteBackError(w, err.Error(), http.StatusUnauthorized)
+				return
+			}
 
-		// limit on IP per hour
-		ipLimit := reqPermission.GetIPLimit()
-		key = fmt.Sprintf("%s:%s", reqPermission.Username, remoteIP)
-		if rl.limitExceededByIP(key, ipLimit) {
-			util.WriteBackMessage(w, "Rate limit exceeded", http.StatusTooManyRequests)
-			return
+			key := fmt.Sprintf("%s:%s", reqPermission.Username, *reqCategory)
+			if rl.limitExceededByACL(key, categoryLimit) {
+				util.WriteBackMessage(w, "Rate limit exceeded", http.StatusTooManyRequests)
+				return
+			}
+
+			// limit on IP per hour
+			ipLimit := reqPermission.GetIPLimit()
+			key = fmt.Sprintf("%s:%s", reqPermission.Username, remoteIP)
+			if rl.limitExceededByIP(key, ipLimit) {
+				util.WriteBackMessage(w, "Rate limit exceeded", http.StatusTooManyRequests)
+				return
+			}
 		}
 
 		h(w, r)

@@ -1,23 +1,24 @@
-package sources
+package validate
 
 import (
-	"fmt"
 	"log"
-	"net"
 	"net/http"
+	"regexp"
+	"strings"
 
+	"github.com/appbaseio-confidential/arc/arc/middleware"
 	"github.com/appbaseio-confidential/arc/model/credential"
 	"github.com/appbaseio-confidential/arc/model/permission"
 	"github.com/appbaseio-confidential/arc/util"
-	"github.com/appbaseio-confidential/arc/util/iplookup"
 )
 
-const logTag = "[sources]"
+func Referers() middleware.Middleware {
+	return referers
+}
 
-// Validate validates the sources on a permission credential.
-func Validate(h http.HandlerFunc) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		ctx := r.Context()
+func referers(h http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, req *http.Request) {
+		ctx := req.Context()
 
 		reqCredential, err := credential.FromContext(ctx)
 		if err != nil {
@@ -27,13 +28,11 @@ func Validate(h http.HandlerFunc) http.HandlerFunc {
 		}
 
 		if reqCredential == credential.Permission {
-			reqIP := iplookup.FromRequest(r)
-			if reqIP == "" {
-				msg := fmt.Sprintf(`failed to recognise request ip "%s"`, reqIP)
-				util.WriteBackError(w, msg, http.StatusUnauthorized)
+			reqDomain := req.Header.Get("Referer")
+			if reqDomain == "" {
+				util.WriteBackError(w, "failed to identify request domain, empty header: Referer", http.StatusUnauthorized)
 				return
 			}
-			ip := net.ParseIP(reqIP)
 
 			reqPermission, err := permission.FromContext(ctx)
 			if err != nil {
@@ -41,30 +40,29 @@ func Validate(h http.HandlerFunc) http.HandlerFunc {
 				util.WriteBackError(w, err.Error(), http.StatusInternalServerError)
 				return
 			}
-			allowedSources := reqPermission.Sources
+			allowedReferers := reqPermission.Referers
 
 			var validated bool
-			for _, source := range allowedSources {
-				_, ipNet, err := net.ParseCIDR(source)
+			for _, referer := range allowedReferers {
+				referer = strings.Replace(referer, "*", ".*", -1)
+				matched, err := regexp.MatchString(referer, reqDomain)
 				if err != nil {
 					log.Printf("%s: %v\n", logTag, err)
 					util.WriteBackError(w, err.Error(), http.StatusInternalServerError)
 					return
 				}
-				if ipNet.Contains(ip) {
+				if matched {
 					validated = true
 					break
 				}
 			}
 
 			if !validated {
-				msg := fmt.Sprintf(`permission with username "%s" doesn't have required sources`,
-					reqPermission.Username)
-				util.WriteBackError(w, msg, http.StatusUnauthorized)
+				util.WriteBackError(w, "permission doeesn't have required referers", http.StatusInternalServerError)
 				return
 			}
 		}
 
-		h(w, r)
+		h(w, req)
 	}
 }

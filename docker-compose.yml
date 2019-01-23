@@ -3,10 +3,13 @@ services:
   elasticsearch:
     image: docker.elastic.co/elasticsearch/elasticsearch:6.5.3
     container_name: elasticsearch
-    environment:
-      - cluster.name=docker-cluster
-      - bootstrap.memory_lock=true
-      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+    entrypoint:
+      - elasticsearch
+      - -Ehttp.port=9200
+      - -Ehttp.cors.enabled=true
+      - -Ehttp.cors.allow-origin=http://localhost:8000
+      - -Ebootstrap.memory_lock=true
+    user: elasticsearch
     ulimits:
       memlock:
         soft: -1
@@ -19,13 +22,19 @@ services:
     container_name: kibana
     ports:
       - "5601:5601"
+    depends_on:
+      - elasticsearch
+    restart: on-failure
 
-#  arc:
-#    image: utsavoza/playground:arc_latest
-#    container_name: arc
-#    env_file:
-#      - .env
-#    ports:
-#      - "8000:8000"
-#    depends_on:
-#      - elasticsearch
+  arc:
+    image: siddharthlatest/arc:latest
+    container_name: arc
+    env_file:
+      - .env
+    ports:
+      - "8000:8000"
+    depends_on:
+      - elasticsearch
+    restart: on-failure
+    links:
+      - elasticsearch

@@ -23,3 +23,7 @@ func FromContext(ctx context.Context) ([]string, error) {
 	}
 	return reqIndices, nil
 }
+
+func NewContext(ctx context.Context, indices []string) context.Context {
+	return context.WithValue(ctx, CtxKey, indices)
+}

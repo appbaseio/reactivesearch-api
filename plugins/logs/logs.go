@@ -10,33 +10,26 @@ import (
 )
 
 const (
-	logTag         = "[logs]"
-	envEsURL       = "ES_CLUSTER_URL"
-	envLogsEsIndex = "LOGS_ES_INDEX"
-	config         = `
+	logTag             = "[logs]"
+	defaultLogsEsIndex = ".logs"
+	envEsURL           = "ES_CLUSTER_URL"
+	envLogsEsIndex     = "LOGS_ES_INDEX"
+	config             = `
 	{
-		"mappings": {
-			"_doc": {
-				"properties": {
-					"category": { 
-						"type": "text" 
-					},
-					"request": { 
-						"type": "object" 
-					},
-					"response": {
-						"type": "object" 
-					},
-					"timestamp": {
-						"type": "date"
-					}
-				}
-			}
-		},
-		"settings": {
-			"number_of_shards": 3,
-			"number_of_replicas": %d
-		}
+	  "mappings": {
+	    "_doc": {
+	      "properties": {
+	        "category": { "type": "text" },
+	        "request": { "type": "object" },
+	        "response": { "type": "object" },
+	        "timestamp": { "type": "date" }
+	      }
+	    }
+	  },
+	  "settings": {
+	    "number_of_shards": 3,
+	    "number_of_replicas": %d
+	  }
 	}`
 )
 
@@ -77,7 +70,7 @@ func (l *Logs) InitFunc() error {
 	}
 	indexName := os.Getenv(envLogsEsIndex)
 	if indexName == "" {
-		return errors.NewEnvVarNotSetError(envLogsEsIndex)
+		indexName = defaultLogsEsIndex
 	}
 
 	// initialize the elasticsearch client

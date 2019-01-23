@@ -8,13 +8,13 @@ import (
 
 	"github.com/appbaseio-confidential/arc/arc/middleware"
 	"github.com/appbaseio-confidential/arc/arc/middleware/order"
+	"github.com/appbaseio-confidential/arc/middleware/classify"
 	"github.com/appbaseio-confidential/arc/middleware/interceptor"
-	"github.com/appbaseio-confidential/arc/middleware/referers"
-	"github.com/appbaseio-confidential/arc/middleware/sources"
+	"github.com/appbaseio-confidential/arc/middleware/ratelimiter"
+	"github.com/appbaseio-confidential/arc/middleware/validate"
 	"github.com/appbaseio-confidential/arc/model/acl"
 	"github.com/appbaseio-confidential/arc/model/category"
 	"github.com/appbaseio-confidential/arc/model/credential"
-	"github.com/appbaseio-confidential/arc/model/index"
 	"github.com/appbaseio-confidential/arc/model/op"
 	"github.com/appbaseio-confidential/arc/model/permission"
 	"github.com/appbaseio-confidential/arc/model/user"
@@ -35,30 +35,23 @@ func (c *chain) Wrap(h http.HandlerFunc) http.HandlerFunc {
 }
 
 func list() []middleware.Middleware {
-	basicAuth := auth.Instance().BasicAuth
-	validateSources := sources.Validate
-	validateReferers := referers.Validate
-	redirectRequests := interceptor.Instance().Redirect
-	recordAnalytics := analytics.Instance().Recorder
-	recordLogs := logs.Instance().Recorder
-	applyQueryRules := rules.Instance().Intercept
-
 	return []middleware.Middleware{
 		classifyCategory,
 		classifyACL,
 		classifyOp,
-		identifyIndices,
-		recordLogs,
-		basicAuth,
-		validateSources,
-		validateReferers,
-		validateIndices,
-		validateOp,
-		validateACL,
-		validateCategory,
-		recordAnalytics,
-		applyQueryRules,
-		redirectRequests,
+		classify.Indices(),
+		logs.Recorder(),
+		auth.BasicAuth(),
+		ratelimiter.Limit(),
+		validate.Sources(),
+		validate.Referers(),
+		validate.Indices(),
+		validate.Operation(),
+		validate.ACL(),
+		validate.Category(),
+		analytics.Recorder(),
+		rules.Apply(),
+		interceptor.Redirect(),
 	}
 }
 
@@ -129,18 +122,6 @@ func classifyOp(h http.HandlerFunc) http.HandlerFunc {
 
 		ctx := r.Context()
 		ctx = context.WithValue(ctx, op.CtxKey, &routeOp)
-		r = r.WithContext(ctx)
-
-		h(w, r)
-	}
-}
-
-func identifyIndices(h http.HandlerFunc) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		indices := util.IndicesFromRequest(r)
-
-		ctx := r.Context()
-		ctx = context.WithValue(ctx, index.CtxKey, indices)
 		r = r.WithContext(ctx)
 
 		h(w, r)
@@ -292,129 +273,6 @@ func validateOp(h http.HandlerFunc) http.HandlerFunc {
 					reqPermission.Username, *reqOp)
 				util.WriteBackError(w, msg, http.StatusUnauthorized)
 				return
-			}
-		}
-
-		h(w, r)
-	}
-}
-
-// TODO: Refactor
-func validateIndices(h http.HandlerFunc) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		ctx := r.Context()
-
-		errMsg := "An error occurred while validating request indices"
-		ctxIndices := ctx.Value(index.CtxKey)
-		if ctxIndices == nil {
-			log.Printf("%s: unable to fetch indices from request context", logTag)
-			util.WriteBackError(w, errMsg, http.StatusInternalServerError)
-			return
-		}
-		indices, ok := ctxIndices.([]string)
-		if !ok {
-			log.Printf("%s: unable to cast ctxIndices to []string\n", logTag)
-			util.WriteBackError(w, errMsg, http.StatusInternalServerError)
-			return
-		}
-
-		if len(indices) == 0 {
-			// cluster level route
-			reqCredential, err := credential.FromContext(ctx)
-			if err != nil {
-				log.Printf("%s: %v\n", logTag, err)
-				util.WriteBackError(w, errMsg, http.StatusInternalServerError)
-				return
-			}
-			if reqCredential == credential.User {
-				reqUser, err := user.FromContext(ctx)
-				if err != nil {
-					log.Printf("%s: %v\n", logTag, err)
-					util.WriteBackError(w, errMsg, http.StatusInternalServerError)
-					return
-				}
-				canAccess, err := reqUser.CanAccessIndex("*")
-				if err != nil {
-					log.Printf("%s: %v", logTag, err)
-					util.WriteBackError(w, err.Error(), http.StatusInternalServerError)
-					return
-				}
-				if !canAccess {
-					msg := fmt.Sprintf(`User with "username"="%s" is unauthorized to access cluster level routes`,
-						reqUser.Username)
-					util.WriteBackError(w, msg, http.StatusUnauthorized)
-					return
-				}
-			} else if reqCredential == credential.Permission {
-				reqPermission, err := permission.FromContext(ctx)
-				if err != nil {
-					log.Printf("%s: %v\n", logTag, err)
-					util.WriteBackError(w, errMsg, http.StatusInternalServerError)
-					return
-				}
-				canAccess, err := reqPermission.CanAccessIndex("*")
-				if err != nil {
-					log.Printf("%s: %v", logTag, err)
-					util.WriteBackError(w, err.Error(), http.StatusInternalServerError)
-					return
-				}
-				if !canAccess {
-					msg := fmt.Sprintf(`Permission with "username"="%s" is unauthorized to access cluster level routes`,
-						reqPermission.Username)
-					util.WriteBackError(w, msg, http.StatusUnauthorized)
-					return
-				}
-			}
-		} else {
-			// index level route
-			reqCredential, err := credential.FromContext(ctx)
-			if err != nil {
-				log.Printf("%s: %v", logTag, err)
-				util.WriteBackError(w, errMsg, http.StatusInternalServerError)
-				return
-			}
-			if reqCredential == credential.User {
-				reqUser, err := user.FromContext(ctx)
-				if err != nil {
-					log.Printf("%s: %v\n", logTag, err)
-					util.WriteBackError(w, errMsg, http.StatusInternalServerError)
-					return
-				}
-				for _, index := range indices {
-					canAccess, err := reqUser.CanAccessIndex(index)
-					if err != nil {
-						log.Printf("%s: %v\n", logTag, err)
-						util.WriteBackError(w, err.Error(), http.StatusInternalServerError)
-						return
-					}
-					if !canAccess {
-						msg := fmt.Sprintf(`User with "username"="%s" is unauthprized to access index names "%s"`,
-							reqUser.Username, index)
-						util.WriteBackError(w, msg, http.StatusUnauthorized)
-						return
-					}
-				}
-			} else if reqCredential == credential.Permission {
-				reqPermission, err := permission.FromContext(ctx)
-				if err != nil {
-					log.Printf("%s: %v\n", logTag, err)
-					util.WriteBackError(w, errMsg, http.StatusInternalServerError)
-					return
-				}
-				for _, index := range indices {
-					canAccess, err := reqPermission.CanAccessIndex(index)
-					if err != nil {
-						log.Printf("%s: %v\n", logTag, err)
-						util.WriteBackError(w, err.Error(), http.StatusInternalServerError)
-						return
-					}
-					if !canAccess {
-						msg := fmt.Sprintf(`Permission with "username"="%s" is unauthorized to access index named "%s"`,
-							reqPermission.Username, index)
-						util.WriteBackError(w, msg, http.StatusUnauthorized)
-						return
-					}
-				}
 			}
 		}
 

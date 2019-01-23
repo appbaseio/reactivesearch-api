@@ -8,15 +8,20 @@ import (
 	"net/http"
 	"net/http/httptest"
 
+	"github.com/appbaseio-confidential/arc/arc/middleware"
 	"github.com/appbaseio-confidential/arc/model/category"
 	"github.com/appbaseio-confidential/arc/model/index"
 	"github.com/appbaseio-confidential/arc/plugins/rules/query"
 	"github.com/appbaseio-confidential/arc/util"
 )
 
+func Apply() middleware.Middleware {
+	return Instance().intercept
+}
+
 // Intercept middleware intercepts the search requests and applies query rules to the search results.
 // TODO: Define middleware chain for rules plugin
-func (r *Rules) Intercept(h http.HandlerFunc) http.HandlerFunc {
+func (r *Rules) intercept(h http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
 		ctx := req.Context()
 

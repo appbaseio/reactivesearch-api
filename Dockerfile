@@ -24,6 +24,7 @@ RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o /go/bin/arc arc/c
 FROM scratch
 COPY --from=build /go/bin/arc arc
 COPY --from=build /go/src/github.com/appbaseio-confidential/arc/plugins/elasticsearch/api /plugins/elasticsearch/api
-CMD ["/arc", "--log", "stdout", "--plugins"]
 
 EXPOSE 8000
+CMD ["/arc", "--log", "stdout", "--plugins"]
+
