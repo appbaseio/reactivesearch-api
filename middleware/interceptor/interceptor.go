@@ -5,7 +5,6 @@ import (
 	"net/http"
 	"net/url"
 	"os"
-	"sync"
 
 	"github.com/appbaseio-confidential/arc/errors"
 	"github.com/appbaseio-confidential/arc/util"
@@ -16,22 +15,7 @@ const (
 	envEsClusterURL = "ES_CLUSTER_URL"
 )
 
-var (
-	instance *interceptor
-	once     sync.Once
-)
-
-type interceptor struct{}
-
-func Instance() *interceptor {
-	once.Do(func() {
-		instance = &interceptor{}
-	})
-	return instance
-}
-
-// TODO: Create a new request or mutate current request?
-func (i *interceptor) Redirect(h http.HandlerFunc) http.HandlerFunc {
+func Redirect(h http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		rawURL := os.Getenv("ES_CLUSTER_URL")
 		if rawURL == "" {

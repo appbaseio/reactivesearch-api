@@ -13,7 +13,7 @@ import (
 
 const logTag = "[referers]"
 
-// Validate validates the referers on a permission credential.
+// Validate the referers on a permission credential.
 func Validate(h http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()

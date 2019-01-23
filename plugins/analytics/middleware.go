@@ -118,7 +118,7 @@ func (a *Analytics) Recorder(h http.HandlerFunc) http.HandlerFunc {
 	}
 }
 
-// TODO: For urls ending with _search or _msearch? Stricter checks should make it hard to misuse
+// TODO: For urls ending with _search or _msearch? Stricter checks should make it hard to misuse.
 func (a *Analytics) recordResponse(docID, searchID string, w *httptest.ResponseRecorder, r *http.Request) {
 	// read the response from elasticsearch
 	respBody, err := ioutil.ReadAll(w.Result().Body)

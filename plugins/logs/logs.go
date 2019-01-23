@@ -70,7 +70,7 @@ func (l *Logs) InitFunc() error {
 	}
 	indexName := os.Getenv(envLogsEsIndex)
 	if indexName == "" {
-		return errors.NewEnvVarNotSetError(envLogsEsIndex)
+		indexName = defaultLogsEsIndex
 	}
 
 	// initialize the elasticsearch client

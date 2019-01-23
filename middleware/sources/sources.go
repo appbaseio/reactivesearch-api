@@ -14,7 +14,7 @@ import (
 
 const logTag = "[sources]"
 
-// Validate validates the sources on a permission credential.
+// Validate the sources on a permission credential.
 func Validate(h http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()

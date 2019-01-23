@@ -9,6 +9,7 @@ import (
 	"github.com/appbaseio-confidential/arc/arc/middleware"
 	"github.com/appbaseio-confidential/arc/arc/middleware/order"
 	"github.com/appbaseio-confidential/arc/middleware/interceptor"
+	"github.com/appbaseio-confidential/arc/middleware/ratelimiter"
 	"github.com/appbaseio-confidential/arc/middleware/referers"
 	"github.com/appbaseio-confidential/arc/middleware/sources"
 	"github.com/appbaseio-confidential/arc/model/acl"
@@ -39,7 +40,8 @@ func list() []middleware.Middleware {
 	logsRecorder := logs.Recorder()
 	validateSources := sources.Validate
 	validateReferers := referers.Validate
-	redirectRequests := interceptor.Instance().Redirect
+	ratelimit := ratelimiter.Limit()
+	redirectRequests := interceptor.Redirect
 	recordAnalytics := analytics.Instance().Recorder
 	applyQueryRules := rules.Instance().Intercept
 
@@ -50,6 +52,7 @@ func list() []middleware.Middleware {
 		identifyIndices,
 		logsRecorder,
 		basicAuth,
+		ratelimit,
 		validateSources,
 		validateReferers,
 		validateIndices,

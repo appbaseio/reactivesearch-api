@@ -33,9 +33,6 @@ Example ENV file
 ```
 USERNAME=admin
 PASSWORD=password
-PERMISSIONS_ES_INDEX=.permissions
-USERS_ES_INDEX=.users
-ANALYTICS_ES_INDEX=.analytics
 ES_CLUSTER_URL=http://localhost:9200
 ```
 
