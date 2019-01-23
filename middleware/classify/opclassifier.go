@@ -1,28 +1,18 @@
-package classifier
+package classify
 
 import (
 	"context"
 	"net/http"
-	"sync"
 
+	"github.com/appbaseio-confidential/arc/arc/middleware"
 	"github.com/appbaseio-confidential/arc/model/op"
 )
 
-type classifier struct{}
-
-var (
-	instance *classifier
-	once     sync.Once
-)
-
-func Instance() *classifier {
-	once.Do(func() {
-		instance = &classifier{}
-	})
-	return instance
+func Op() middleware.Middleware {
+	return classifyOp
 }
 
-func (c *classifier) OpClassifier(h http.HandlerFunc) http.HandlerFunc {
+func classifyOp(h http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var operation op.Operation
 		switch r.Method {

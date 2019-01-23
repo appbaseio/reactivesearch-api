@@ -1,4 +1,4 @@
-package sources
+package validate
 
 import (
 	"fmt"
@@ -6,18 +6,22 @@ import (
 	"net"
 	"net/http"
 
+	"github.com/appbaseio-confidential/arc/arc/middleware"
 	"github.com/appbaseio-confidential/arc/model/credential"
 	"github.com/appbaseio-confidential/arc/model/permission"
 	"github.com/appbaseio-confidential/arc/util"
 	"github.com/appbaseio-confidential/arc/util/iplookup"
 )
 
-const logTag = "[sources]"
+const logTag = "[validate]"
 
-// Validate the sources on a permission credential.
-func Validate(h http.HandlerFunc) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		ctx := r.Context()
+func Sources() middleware.Middleware {
+	return sources
+}
+
+func sources(h http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, req *http.Request) {
+		ctx := req.Context()
 
 		reqCredential, err := credential.FromContext(ctx)
 		if err != nil {
@@ -27,9 +31,9 @@ func Validate(h http.HandlerFunc) http.HandlerFunc {
 		}
 
 		if reqCredential == credential.Permission {
-			reqIP := iplookup.FromRequest(r)
+			reqIP := iplookup.FromRequest(req)
 			if reqIP == "" {
-				msg := fmt.Sprintf(`failed to recognise request ip "%s"`, reqIP)
+				msg := fmt.Sprintf(`failed to recognise request ip: "%s"`, reqIP)
 				util.WriteBackError(w, msg, http.StatusUnauthorized)
 				return
 			}
@@ -65,6 +69,6 @@ func Validate(h http.HandlerFunc) http.HandlerFunc {
 			}
 		}
 
-		h(w, r)
+		h(w, req)
 	}
 }

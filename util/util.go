@@ -127,6 +127,7 @@ func WithPrecision(num float64, precision int) float64 {
 }
 
 // IndicesFromRequest extracts index patterns from the request url (from var "{index}").
+// It returns an empty slice if {index} is not present in the route.
 func IndicesFromRequest(r *http.Request) []string {
 	vars := mux.Vars(r)
 	indexVar, ok := vars["index"]

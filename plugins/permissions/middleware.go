@@ -8,7 +8,8 @@ import (
 
 	"github.com/appbaseio-confidential/arc/arc/middleware"
 	"github.com/appbaseio-confidential/arc/arc/middleware/order"
-	"github.com/appbaseio-confidential/arc/middleware/classifier"
+	"github.com/appbaseio-confidential/arc/middleware/classify"
+	"github.com/appbaseio-confidential/arc/middleware/validate"
 	"github.com/appbaseio-confidential/arc/model/category"
 	"github.com/appbaseio-confidential/arc/model/op"
 	"github.com/appbaseio-confidential/arc/model/user"
@@ -25,19 +26,16 @@ func (c *chain) Wrap(h http.HandlerFunc) http.HandlerFunc {
 }
 
 func list() []middleware.Middleware {
-	basicAuth := auth.Instance().BasicAuth
-	opClassifier := classifier.Instance().OpClassifier
-
 	return []middleware.Middleware{
-		opClassifier,
-		aclClassifier,
-		basicAuth,
-		validateOp,
-		validateACL,
+		classify.Op(),
+		classifyCategory,
+		auth.BasicAuth(),
+		validate.Operation(),
+		validate.Category(),
 	}
 }
 
-func aclClassifier(h http.HandlerFunc) http.HandlerFunc {
+func classifyCategory(h http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		permissionACL := category.Permission
 		ctx := context.WithValue(r.Context(), category.CtxKey, &permissionACL)

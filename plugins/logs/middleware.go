@@ -13,7 +13,8 @@ import (
 
 	"github.com/appbaseio-confidential/arc/arc/middleware"
 	"github.com/appbaseio-confidential/arc/arc/middleware/order"
-	"github.com/appbaseio-confidential/arc/middleware/classifier"
+	"github.com/appbaseio-confidential/arc/middleware/classify"
+	"github.com/appbaseio-confidential/arc/middleware/validate"
 	"github.com/appbaseio-confidential/arc/model/acl"
 	"github.com/appbaseio-confidential/arc/model/category"
 	"github.com/appbaseio-confidential/arc/model/index"
@@ -33,17 +34,14 @@ func (c *chain) Wrap(h http.HandlerFunc) http.HandlerFunc {
 }
 
 func list() []middleware.Middleware {
-	classifyOp := classifier.Instance().OpClassifier
-	basicAuth := auth.Instance().BasicAuth
-
 	return []middleware.Middleware{
 		classifyCategory,
-		classifyOp,
-		identifyIndices,
-		basicAuth,
-		validateIndices,
-		validateOp,
-		validateCategory,
+		classify.Op(),
+		classify.Indices(),
+		auth.BasicAuth(),
+		validate.Indices(),
+		validate.Operation(),
+		validate.Category(),
 	}
 }
 

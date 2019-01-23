@@ -3,6 +3,10 @@ package auth
 import (
 	"context"
 	"fmt"
+	"log"
+	"net/http"
+
+	"github.com/appbaseio-confidential/arc/arc/middleware"
 	"github.com/appbaseio-confidential/arc/model/category"
 	"github.com/appbaseio-confidential/arc/model/credential"
 	"github.com/appbaseio-confidential/arc/model/op"
@@ -10,9 +14,11 @@ import (
 	"github.com/appbaseio-confidential/arc/model/user"
 	"github.com/appbaseio-confidential/arc/util"
 	"github.com/gorilla/mux"
-	"log"
-	"net/http"
 )
+
+func BasicAuth() middleware.Middleware {
+	return Instance().BasicAuth
+}
 
 // BasicAuth middleware authenticates each requests against the basic auth credentials.
 func (a *Auth) BasicAuth(h http.HandlerFunc) http.HandlerFunc {

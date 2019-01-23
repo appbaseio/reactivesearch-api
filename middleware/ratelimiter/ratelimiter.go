@@ -51,11 +51,11 @@ func Instance() *Ratelimiter {
 	return instance
 }
 
+// Limit middleware limits the requests made to elasticsearch for each permission.
 func Limit() middleware.Middleware {
 	return Instance().rateLimit
 }
 
-// RateLimit middleware limits the requests made to elasticsearch for each permission.
 func (rl *Ratelimiter) rateLimit(h http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()

@@ -244,6 +244,21 @@ func (u *User) CanDo(op op.Operation) bool {
 	return false
 }
 
+// CanAccessCluster checks whether the user can access cluster level routes.
+func (u *User) CanAccessCluster() (bool, error) {
+	for _, pattern := range u.Indices {
+		pattern := strings.Replace(pattern, "*", ".*", -1)
+		matched, err := regexp.MatchString(pattern, "*")
+		if err != nil {
+			return false, err
+		}
+		if matched {
+			return true, nil
+		}
+	}
+	return false, nil
+}
+
 // CanAccessIndex checks whether the user has access to the given index or index pattern.
 func (u *User) CanAccessIndex(name string) (bool, error) {
 	for _, pattern := range u.Indices {
@@ -257,6 +272,16 @@ func (u *User) CanAccessIndex(name string) (bool, error) {
 		}
 	}
 	return false, nil
+}
+
+// CanAccessIndices checks whether the user has access to the given indices.
+func (u *User) CanAccessIndices(indices ...string) (bool, error) {
+	for _, index := range indices {
+		if ok, err := u.CanAccessIndex(index); !ok || err != nil {
+			return ok, err
+		}
+	}
+	return true, nil
 }
 
 // GetPatch generates a patch doc from the non-zero fields set in the user.

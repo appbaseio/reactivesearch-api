@@ -347,6 +347,21 @@ func (p *Permission) CanDo(op op.Operation) bool {
 	return false
 }
 
+// CanAccessCluster checks whether the user can access cluster level routes.
+func (p *Permission) CanAccessCluster() (bool, error) {
+	for _, pattern := range p.Indices {
+		pattern := strings.Replace(pattern, "*", ".*", -1)
+		matched, err := regexp.MatchString(pattern, "*")
+		if err != nil {
+			return false, err
+		}
+		if matched {
+			return true, nil
+		}
+	}
+	return false, nil
+}
+
 // CanAccessIndex checks whether the permission has access to given index or index pattern.
 func (p *Permission) CanAccessIndex(name string) (bool, error) {
 	for _, pattern := range p.Indices {
@@ -361,6 +376,16 @@ func (p *Permission) CanAccessIndex(name string) (bool, error) {
 		}
 	}
 	return false, nil
+}
+
+// CanAccessIndices checks whether the user has access to the given indices.
+func (p *Permission) CanAccessIndices(indices ...string) (bool, error) {
+	for _, index := range indices {
+		if ok, err := p.CanAccessIndex(index); !ok || err != nil {
+			return ok, err
+		}
+	}
+	return true, nil
 }
 
 // GetLimitFor returns the rate limit for the given category in the permission.

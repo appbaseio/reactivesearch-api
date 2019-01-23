@@ -6,6 +6,7 @@ import (
 	"net/url"
 	"os"
 
+	"github.com/appbaseio-confidential/arc/arc/middleware"
 	"github.com/appbaseio-confidential/arc/errors"
 	"github.com/appbaseio-confidential/arc/util"
 )
@@ -15,7 +16,11 @@ const (
 	envEsClusterURL = "ES_CLUSTER_URL"
 )
 
-func Redirect(h http.HandlerFunc) http.HandlerFunc {
+func Redirect() middleware.Middleware {
+	return redirect
+}
+
+func redirect(h http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		rawURL := os.Getenv("ES_CLUSTER_URL")
 		if rawURL == "" {

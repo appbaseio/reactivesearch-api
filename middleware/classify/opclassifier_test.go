@@ -1,4 +1,4 @@
-package classifier
+package classify
 
 import (
 	"net/http"

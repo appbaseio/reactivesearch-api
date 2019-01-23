@@ -1,4 +1,4 @@
-package referers
+package validate
 
 import (
 	"log"
@@ -6,17 +6,19 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/appbaseio-confidential/arc/arc/middleware"
 	"github.com/appbaseio-confidential/arc/model/credential"
 	"github.com/appbaseio-confidential/arc/model/permission"
 	"github.com/appbaseio-confidential/arc/util"
 )
 
-const logTag = "[referers]"
+func Referers() middleware.Middleware {
+	return referers
+}
 
-// Validate the referers on a permission credential.
-func Validate(h http.HandlerFunc) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		ctx := r.Context()
+func referers(h http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, req *http.Request) {
+		ctx := req.Context()
 
 		reqCredential, err := credential.FromContext(ctx)
 		if err != nil {
@@ -26,7 +28,7 @@ func Validate(h http.HandlerFunc) http.HandlerFunc {
 		}
 
 		if reqCredential == credential.Permission {
-			reqDomain := r.Header.Get("Referer")
+			reqDomain := req.Header.Get("Referer")
 			if reqDomain == "" {
 				util.WriteBackError(w, "failed to identify request domain, empty header: Referer", http.StatusUnauthorized)
 				return
@@ -61,6 +63,6 @@ func Validate(h http.HandlerFunc) http.HandlerFunc {
 			}
 		}
 
-		h(w, r)
+		h(w, req)
 	}
 }
