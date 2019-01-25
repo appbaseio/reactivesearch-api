@@ -198,12 +198,12 @@ type record struct {
 	Timestamp time.Time `json:"timestamp"`
 }
 
+// Recorder records a log "record" for every request.
 func Recorder() middleware.Middleware {
-	return Instance().Recorder
+	return Instance().recorder
 }
 
-// Recorder records a log "record" for every request.
-func (l *Logs) Recorder(h http.HandlerFunc) http.HandlerFunc {
+func (l *Logs) recorder(h http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		// Read the request body
 		reqBody, err := ioutil.ReadAll(r.Body)

@@ -27,8 +27,8 @@ func (c *chain) Wrap(h http.HandlerFunc) http.HandlerFunc {
 
 func list() []middleware.Middleware {
 	return []middleware.Middleware{
-		classify.Op(),
 		classifyCategory,
+		classify.Op(),
 		auth.BasicAuth(),
 		validate.Operation(),
 		validate.Category(),

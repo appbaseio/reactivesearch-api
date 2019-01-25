@@ -7,12 +7,12 @@ import (
 
 // Nil field errors.
 var (
-	ErrNilIndices    = errors.New(`arc: indices cannot be set to "nil"`)
-	ErrNilACLs       = errors.New(`arc: acls cannot be set to "nil"`)
-	ErrNilOps        = errors.New(`arc: ops cannot be set to "nil"`)
-	ErrNilCategories = errors.New(`arc: categories cannot be set to "nil"`)
-	ErrNilSources    = errors.New(`arc: sources cannot be set to "nil"`)
-	ErrNilReferers   = errors.New(`arc: referers cannot be set to "nil"`)
+	ErrNilIndices    = errors.New(`indices cannot be set to "nil"`)
+	ErrNilACLs       = errors.New(`acls cannot be set to "nil"`)
+	ErrNilOps        = errors.New(`ops cannot be set to "nil"`)
+	ErrNilCategories = errors.New(`categories cannot be set to "nil"`)
+	ErrNilSources    = errors.New(`sources cannot be set to "nil"`)
+	ErrNilReferers   = errors.New(`referers cannot be set to "nil"`)
 )
 
 // EnvVarNotSetError is an error which is returned when a required env var is not set.
@@ -27,7 +27,7 @@ func NewEnvVarNotSetError(envVarName string) *EnvVarNotSetError {
 
 // Error implements the error interface.
 func (e *EnvVarNotSetError) Error() string {
-	return fmt.Sprintf("arc: %s env variable not set", e.Var)
+	return fmt.Sprintf("%s env variable not set", e.Var)
 }
 
 // UnsupportedPatchError is an error which is returned when a patch request is received for a readonly field.
@@ -43,7 +43,7 @@ func NewUnsupportedPatchError(typeName, field string) *UnsupportedPatchError {
 
 // Error implements the error interface.
 func (u *UnsupportedPatchError) Error() string {
-	return fmt.Sprintf("arc: cannot patch field %s in %s", u.Field, u.Type)
+	return fmt.Sprintf("cannot patch field \"%s\" in %s", u.Field, u.Type)
 }
 
 // NotFoundInContextError is an error which is returned when an expected value in the context is missing.

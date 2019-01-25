@@ -182,7 +182,7 @@ func (p *permissions) patchPermission() http.HandlerFunc {
 
 		msg := fmt.Sprintf(`permission with "username"="%s" not found`, username)
 		log.Printf("%s: %s: %v\n", logTag, msg, err)
-		util.WriteBackError(w, msg, http.StatusInternalServerError)
+		util.WriteBackError(w, msg, http.StatusNotFound)
 	}
 }
 

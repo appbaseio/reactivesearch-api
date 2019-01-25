@@ -45,7 +45,7 @@ func validateCategory(h http.HandlerFunc) http.HandlerFunc {
 		}
 
 		if !ok {
-			msg := fmt.Sprintf(`credential doesn't have "%s" category`, reqCategory.String())
+			msg := fmt.Sprintf(`credential can't access "%s" category`, reqCategory.String())
 			util.WriteBackError(w, msg, http.StatusUnauthorized)
 			return
 		}

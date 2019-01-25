@@ -27,7 +27,7 @@ const (
 	    }
 	  },
 	  "settings": {
-	    "number_of_shards": 3,
+	    "number_of_shards": %d,
 	    "number_of_replicas": %d
 	  }
 	}`

@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"os"
 
 	"github.com/appbaseio-confidential/arc/model/user"
 	"github.com/olivere/elastic"
@@ -30,6 +31,13 @@ func newClient(url, indexName, mapping string) (*elasticsearch, error) {
 		return nil, fmt.Errorf("%s: error while initializing elastic client: %v", logTag, err)
 	}
 	es := &elasticsearch{url, indexName, "_doc", client}
+	defer func() {
+		if es != nil {
+			if err := es.postMasterUser(); err != nil {
+				log.Printf("%s: %v", logTag, err)
+			}
+		}
+	}()
 
 	// Check if the meta index already exists
 	exists, err := client.IndexExists(indexName).
@@ -48,8 +56,7 @@ func newClient(url, indexName, mapping string) (*elasticsearch, error) {
 	if err != nil {
 		return nil, err
 	}
-	settings := fmt.Sprintf(mapping, nodes-1)
-
+	settings := fmt.Sprintf(mapping, nodes, nodes-1)
 	// Meta index does not exists, create a new one
 	_, err = client.CreateIndex(indexName).
 		Body(settings).
@@ -61,6 +68,23 @@ func newClient(url, indexName, mapping string) (*elasticsearch, error) {
 
 	log.Printf("%s successfully created index named '%s'", logTag, indexName)
 	return es, nil
+}
+
+func (es *elasticsearch) postMasterUser() error {
+	// Create a master user, if credentials are not provided, we create a default
+	// master user. Arc shouldn't be initialized without a root user.
+	username, password := os.Getenv("USERNAME"), os.Getenv("PASSWORD")
+	if username == "" {
+		username, password = "foo", "bar"
+	}
+	admin, err := user.NewAdmin(username, password)
+	if err != nil {
+		return fmt.Errorf("%s: error while creating a master user: %v", logTag, err)
+	}
+	if created, err := es.postUser(context.Background(), *admin); !created || err != nil {
+		return fmt.Errorf("%s: error while creating a master user: %v", logTag, err)
+	}
+	return nil
 }
 
 func (es *elasticsearch) getTotalNodes() (int, error) {

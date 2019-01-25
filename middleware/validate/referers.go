@@ -29,10 +29,6 @@ func referers(h http.HandlerFunc) http.HandlerFunc {
 
 		if reqCredential == credential.Permission {
 			reqDomain := req.Header.Get("Referer")
-			if reqDomain == "" {
-				util.WriteBackError(w, "failed to identify request domain, empty header: Referer", http.StatusUnauthorized)
-				return
-			}
 
 			reqPermission, err := permission.FromContext(ctx)
 			if err != nil {
@@ -40,10 +36,13 @@ func referers(h http.HandlerFunc) http.HandlerFunc {
 				util.WriteBackError(w, err.Error(), http.StatusInternalServerError)
 				return
 			}
-			allowedReferers := reqPermission.Referers
 
 			var validated bool
-			for _, referer := range allowedReferers {
+			for _, referer := range reqPermission.Referers {
+				if referer == "*" {
+					validated = true
+					break
+				}
 				referer = strings.Replace(referer, "*", ".*", -1)
 				matched, err := regexp.MatchString(referer, reqDomain)
 				if err != nil {

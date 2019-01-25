@@ -14,7 +14,7 @@ const (
 	defaultAnalyticsEsIndex = ".analytics"
 	envEsURL                = "ES_CLUSTER_URL"
 	envAnalyticsEsIndex     = "ANALYTICS_ES_INDEX"
-	mapping                 = `{ "settings": { "number_of_shards": 3, "number_of_replicas": %d } }`
+	mapping                 = `{ "settings": { "number_of_shards": %d, "number_of_replicas": %d } }`
 )
 
 var (

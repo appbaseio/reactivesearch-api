@@ -74,12 +74,12 @@ type mSearchResponse struct {
 	Responses []searchResponse `json:"responses"`
 }
 
+// Recorder parses and records the search requests made to elasticsearch along with some other
+// user information in order to calculate and serve useful analytics.
 func Recorder() middleware.Middleware {
 	return Instance().recorder
 }
 
-// Recorder parses and records the search requests made to elasticsearch along with some other
-// user information in order to calculate and serve useful analytics.
 func (a *Analytics) recorder(h http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()

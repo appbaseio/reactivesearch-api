@@ -15,12 +15,12 @@ import (
 	"github.com/appbaseio-confidential/arc/util"
 )
 
+// Apply middleware intercepts the search requests and applies query rules to the search results.
+// TODO: Define middleware chain for rules plugin
 func Apply() middleware.Middleware {
 	return Instance().intercept
 }
 
-// Intercept middleware intercepts the search requests and applies query rules to the search results.
-// TODO: Define middleware chain for rules plugin
 func (r *Rules) intercept(h http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
 		ctx := req.Context()

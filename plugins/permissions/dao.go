@@ -48,7 +48,7 @@ func newClient(url, indexName, mapping string) (*elasticsearch, error) {
 	if err != nil {
 		return nil, err
 	}
-	settings := fmt.Sprintf(mapping, (nodes - 1))
+	settings := fmt.Sprintf(mapping, nodes, nodes-1)
 
 	// Create a new meta index
 	_, err = client.CreateIndex(indexName).

@@ -47,7 +47,7 @@ func newClient(url, indexName, config string) (*elasticsearch, error) {
 	if err != nil {
 		return nil, err
 	}
-	settings := fmt.Sprintf(config, nodes-1)
+	settings := fmt.Sprintf(config, nodes, nodes-1)
 
 	// Meta index doesn't exist, create one
 	_, err = client.CreateIndex(indexName).

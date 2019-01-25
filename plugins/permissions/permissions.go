@@ -15,7 +15,7 @@ const (
 	defaultPermissionsEsIndex = ".permissions"
 	envEsURL                  = "ES_CLUSTER_URL"
 	envPermissionEsIndex      = "PERMISSIONS_ES_INDEX"
-	settings                  = `{ "settings" : { "number_of_shards" : 3, "number_of_replicas" : %d } }`
+	settings                  = `{ "settings" : { "number_of_shards" : %d, "number_of_replicas" : %d } }`
 )
 
 var (

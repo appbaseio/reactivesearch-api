@@ -4,8 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
-	"os"
 
 	"github.com/appbaseio-confidential/arc/model/permission"
 	"github.com/appbaseio-confidential/arc/model/user"
@@ -16,7 +14,6 @@ type elasticsearch struct {
 	url                             string
 	userIndex, userType             string
 	permissionIndex, permissionType string
-	adminUsername, adminPassword    string
 	client                          *elastic.Client
 }
 
@@ -33,30 +30,12 @@ func newClient(url, userIndex, permissionIndex string) (*elasticsearch, error) {
 		return nil, fmt.Errorf("%s: error while initializing elastic client: %v", logTag, err)
 	}
 
-	// Create a master user, if credentials are not provided, we create a default
-	// master user. Arc shouldn't be initialized without a root user.
-	username, password := os.Getenv("USERNAME"), os.Getenv("PASSWORD")
-	if username == "" {
-		username, password = "foo", "bar"
-	}
-
 	es := &elasticsearch{
 		url,
 		userIndex, "_doc",
 		permissionIndex, "_doc",
-		username, password,
 		client,
 	}
-
-	admin, err := user.NewAdmin(username, password)
-	if err != nil {
-		return nil, fmt.Errorf("%s: error while creating a master user: %v", logTag, err)
-	}
-	ctx := context.Background()
-	if created, err := es.putUser(ctx, *admin); !created || err != nil {
-		return nil, fmt.Errorf("%s: error while creating a master user: %v", logTag, err)
-	}
-	log.Printf("%s: successfully created the master user ...\n", logTag)
 
 	return es, nil
 }

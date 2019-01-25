@@ -39,7 +39,7 @@ func newClient(url, indexSuffix, mapping string) (rulesService, error) {
 	if err != nil {
 		return nil, err
 	}
-	es.indexConfig = fmt.Sprintf(mapping, nodes-1)
+	es.indexConfig = fmt.Sprintf(mapping, nodes, nodes-1)
 
 	return es, nil
 }

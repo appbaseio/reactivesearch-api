@@ -16,12 +16,12 @@ import (
 	"github.com/gorilla/mux"
 )
 
+// BasicAuth middleware authenticates each requests against the basic auth credentials.
 func BasicAuth() middleware.Middleware {
-	return Instance().BasicAuth
+	return Instance().basicAuth
 }
 
-// BasicAuth middleware authenticates each requests against the basic auth credentials.
-func (a *Auth) BasicAuth(h http.HandlerFunc) http.HandlerFunc {
+func (a *Auth) basicAuth(h http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
 		ctx := req.Context()
 
@@ -111,7 +111,7 @@ func (a *Auth) BasicAuth(h http.HandlerFunc) http.HandlerFunc {
 		}
 
 		// remove user/permission from cache on write operation
-		if *reqOp == op.Write {
+		if *reqOp == op.Write || *reqOp == op.Delete {
 			switch *reqCategory {
 			case category.User:
 				a.removeUserFromCache(username)

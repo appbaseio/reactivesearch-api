@@ -58,7 +58,8 @@ func indices(h http.HandlerFunc) http.HandlerFunc {
 				return
 			}
 			if !ok {
-				util.WriteBackError(w, "credentials cannot access the index/indices", http.StatusUnauthorized)
+				msg := fmt.Sprintf("credentials cannot access %v index/indices", reqIndices)
+				util.WriteBackError(w, msg, http.StatusUnauthorized)
 				return
 			}
 		}

@@ -80,7 +80,7 @@ func (c *Category) UnmarshalJSON(bytes []byte) error {
 	case Rules.String():
 		*c = Rules
 	default:
-		return fmt.Errorf("invalid acl encountered: %v" + category)
+		return fmt.Errorf("invalid category encountered: %v", category)
 	}
 	return nil
 }
@@ -215,7 +215,7 @@ func (c Category) ACLs() []acl.ACL {
 
 // ACLsFor given categories returns a list of all the acls that belong to those categories.
 func ACLsFor(categories ...Category) []acl.ACL {
-	var acls []acl.ACL
+	acls := make([]acl.ACL, 0)
 	set := make(map[acl.ACL]bool)
 	for _, c := range categories {
 		for _, a := range c.ACLs() {
