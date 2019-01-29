@@ -11,7 +11,7 @@ import (
 
 const (
 	logTag                = "[rules]"
-	defaultRulesEsIndex   = ".rules"
+	defaultRulesEsIndex   = "rules"
 	envEsURL              = "ES_CLUSTER_URL"
 	envRulesEsIndexSuffix = "RULES_ES_INDEX_SUFFIX"
 	indexConfig           = `

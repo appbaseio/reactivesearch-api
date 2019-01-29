@@ -18,6 +18,6 @@ type Query struct {
 type Rule struct {
 	ID    string `json:"id"`
 	Query *Query `json:"query,omitempty"`
-	If    If     `json:"if"`
-	Then  Then   `json:"then"`
+	If    *If    `json:"if,omitempty"`
+	Then  *Then  `json:"then,omitempty"`
 }
