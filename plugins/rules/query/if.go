@@ -9,8 +9,8 @@ import (
 // search requests. If the search request meets the rule condition, then
 // the rule consequence is triggered.
 type If struct {
-	Query    string   `json:"query"`
-	Operator Operator `json:"operator"`
+	Query    *string   `json:"query"`
+	Operator *Operator `json:"operator"`
 }
 
 // Operator represents the criterias that are matched against the search requests.

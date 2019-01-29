@@ -2,7 +2,7 @@ package rules
 
 import (
 	"encoding/json"
-	"fmt"
+	// "fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -88,42 +88,42 @@ func (r *Rules) intercept(h http.HandlerFunc) http.HandlerFunc {
 
 func applyRule(searchResult map[string]interface{}, rule *query.Rule) error {
 	var err error
-	switch rule.Then.Action {
-	case query.Promote:
-		var promotedResults []interface{}
-		for _, payload := range rule.Then.Payloads {
-			promotedResults = append(promotedResults, payload.Doc)
-		}
-		searchResult["promoted"] = promotedResults
+	// switch rule.Then.Action {
+	// case query.Promote:
+	// 	var promotedResults []interface{}
+	// 	for _, payload := range rule.Then.Payloads {
+	// 		promotedResults = append(promotedResults, payload.Doc)
+	// 	}
+	// 	searchResult["promoted"] = promotedResults
 
-	// TODO: modify this ugly workaround
-	case query.Hide:
-		totalHits, ok := searchResult["hits"].(map[string]interface{})
-		if !ok {
-			return fmt.Errorf("unable to cast search hits to map[string]interface{}")
-		}
-		hits, ok := totalHits["hits"].([]interface{})
-		if !ok {
-			return fmt.Errorf("unable to cast hits.hits to []interface{}")
-		}
+	// // TODO: modify this ugly workaround
+	// case query.Hide:
+	// 	totalHits, ok := searchResult["hits"].(map[string]interface{})
+	// 	if !ok {
+	// 		return fmt.Errorf("unable to cast search hits to map[string]interface{}")
+	// 	}
+	// 	hits, ok := totalHits["hits"].([]interface{})
+	// 	if !ok {
+	// 		return fmt.Errorf("unable to cast hits.hits to []interface{}")
+	// 	}
 
-		for _, payload := range rule.Then.Payloads {
-			for j, h := range hits {
-				hit, ok := h.(map[string]interface{})
-				if !ok {
-					return fmt.Errorf("unable to cast hit to map[string]interface{}")
-				}
-				if hit["_id"] != nil && payload.DocID == fmt.Sprintf("%v", hit["_id"]) {
-					hits = append(hits[:j], hits[j+1:]...)
-				}
-			}
-		}
+	// 	for _, payload := range rule.Then.Payloads {
+	// 		for j, h := range hits {
+	// 			hit, ok := h.(map[string]interface{})
+	// 			if !ok {
+	// 				return fmt.Errorf("unable to cast hit to map[string]interface{}")
+	// 			}
+	// 			if hit["_id"] != nil && payload.DocID == fmt.Sprintf("%v", hit["_id"]) {
+	// 				hits = append(hits[:j], hits[j+1:]...)
+	// 			}
+	// 		}
+	// 	}
 
-		totalHits["hits"] = hits
-		totalHits["total"] = len(hits)
-		searchResult["hits"] = totalHits
-	default:
-		err = fmt.Errorf("unhandled then action")
-	}
+	// 	totalHits["hits"] = hits
+	// 	totalHits["total"] = len(hits)
+	// 	searchResult["hits"] = totalHits
+	// default:
+	// 	err = fmt.Errorf("unhandled then action")
+	// }
 	return err
 }
