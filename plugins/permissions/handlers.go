@@ -85,6 +85,9 @@ func (p *permissions) postPermission() http.HandlerFunc {
 		if permissionBody.Description != "" {
 			opts = append(opts, permission.SetDescription(permissionBody.Description))
 		}
+		if permissionBody.TTL != 0 {
+			opts = append(opts, permission.SetTTL(permissionBody.TTL))
+		}
 
 		var newPermission *permission.Permission
 		if *reqUser.IsAdmin {
