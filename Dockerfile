@@ -27,4 +27,3 @@ COPY --from=build /go/src/github.com/appbaseio-confidential/arc/plugins/elastics
 
 EXPOSE 8000
 CMD ["/arc", "--log", "stdout", "--plugins"]
-
