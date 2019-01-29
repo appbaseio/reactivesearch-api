@@ -194,6 +194,14 @@ func SetDescription(description string) Options {
 	}
 }
 
+// SetTTL sets the permission's time-to-live.
+func SetTTL(duration time.Duration) Options {
+	return func(p *Permission) error {
+		p.TTL = duration
+		return nil
+	}
+}
+
 // New creates a new permission by running the Options on it. It returns a
 // default permission in case no Options are provided. The default owner of
 // the permission is the creator itself.
@@ -214,7 +222,7 @@ func New(creator string, opts ...Options) (*Permission, error) {
 		Sources:    []string{"0.0.0.0/0"},
 		Referers:   []string{"*"},
 		CreatedAt:  time.Now().Format(time.RFC3339),
-		TTL:        time.Duration(util.DaysInCurrentYear()) * 24 * time.Hour,
+		TTL:        -1,
 		Limits:     &defaultLimits,
 	}
 
@@ -252,7 +260,7 @@ func NewAdmin(creator string, opts ...Options) (*Permission, error) {
 		Sources:    []string{"0.0.0.0/0"},
 		Referers:   []string{"*"},
 		CreatedAt:  time.Now().Format(time.RFC3339),
-		TTL:        time.Duration(util.DaysInCurrentYear()) * 24 * time.Hour,
+		TTL:        -1,
 		Limits:     &defaultAdminLimits,
 	}
 
@@ -295,7 +303,7 @@ func (p *Permission) IsExpired() (bool, error) {
 	if err != nil {
 		return false, fmt.Errorf("invalid time format for field \"created_at\": %s", p.CreatedAt)
 	}
-	return time.Since(createdAt) > p.TTL, nil
+	return p.TTL >= 0 && time.Since(createdAt) > p.TTL, nil
 }
 
 // HasCategory checks whether the permission has access to the given category.

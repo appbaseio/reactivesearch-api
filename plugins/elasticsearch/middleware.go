@@ -49,6 +49,7 @@ func list() []middleware.Middleware {
 		validate.Operation(),
 		validate.Category(),
 		validate.ACL(),
+		validate.PermissionExpiry(),
 		analytics.Recorder(),
 		rules.Apply(),
 		interceptor.Redirect(),
