@@ -40,8 +40,9 @@ if [[ "$(docker images -q docker.elastic.co/elasticsearch/elasticsearch:${ES_VER
 fi
 
 # Start elasticsearch
+# https://github.com/olivere/elastic-with-docker/blob/v6/docker-compose.local.yml
 echo "starting elasticsearch at localhost:9200 ..."
-docker run -d --rm --name elasticsearch -p 9200:9200 -p 9300:9300 --net=arc -e "discovery.type=single-node" docker.elastic.co/elasticsearch/elasticsearch:${ES_VERSION} 1> /dev/null
+docker run -d --rm --name elasticsearch -p 9200:9200 -p 9300:9300 --net=arc -e "discovery.type=single-node" -e "network.host=_local_,_site_" -e "network.publish_host=_local_" docker.elastic.co/elasticsearch/elasticsearch:${ES_VERSION} 1> /dev/null
 
 # Pull kibana if not found locally
 if [[ "$(docker images -q docker.elastic.co/kibana/kibana:${KIBANA_VERSION} 2> /dev/null)" == "" ]]; then

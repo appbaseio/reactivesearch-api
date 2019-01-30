@@ -247,16 +247,15 @@ func (a *Analytics) getRequestDistribution() http.HandlerFunc {
 		indices, err := util.IndicesFromContext(req.Context())
 		if err != nil {
 			msg := "error occurred while fetching request distribution"
-			log.Printf("%s: %v\n", logTag, err)
+			log.Printf("%s: %v", logTag, err)
 			util.WriteBackError(w, msg, http.StatusInternalServerError)
 			return
 		}
 
 		raw, err := a.es.getRequestDistribution(req.Context(), from, to, interval, size, indices...)
 		if err != nil {
-			msg := "error occurred while parsing request distribution response"
-			log.Printf("%s: %v\n", logTag, err)
-			util.WriteBackError(w, msg, http.StatusInternalServerError)
+			log.Printf("%s: %v", logTag, err)
+			util.WriteBackError(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 		util.WriteBackRaw(w, raw, http.StatusOK)

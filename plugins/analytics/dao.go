@@ -14,33 +14,33 @@ import (
 )
 
 type elasticsearch struct {
-	url       string
-	indexName string
-	typeName  string
-	client    *elastic.Client
+	url            string
+	analyticsIndex string
+	logsIndex      string
+	typeName       string
+	client         *elastic.Client
 }
 
-func newClient(url, indexName, mapping string) (*elasticsearch, error) {
-	opts := []elastic.ClientOptionFunc{
-		elastic.SetURL(url),
-		elastic.SetSniff(false),
-	}
+func newClient(url, analyticsIndex, logsIndex, mapping string) (*elasticsearch, error) {
 	ctx := context.Background()
 
 	// Initialize the client
-	client, err := elastic.NewClient(opts...)
+	client, err := elastic.NewClient(
+		elastic.SetURL(url),
+		elastic.SetRetrier(util.NewRetrier()),
+	)
 	if err != nil {
 		return nil, fmt.Errorf("error while initializing elastic client: %v", err)
 	}
-	es := &elasticsearch{url, indexName, "_doc", client}
+	es := &elasticsearch{url, analyticsIndex, logsIndex, "_doc", client}
 
 	// Check if the meta index already exists
-	exists, err := client.IndexExists(indexName).Do(ctx)
+	exists, err := client.IndexExists(analyticsIndex).Do(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("error while checking if index already exists: %v", err)
 	}
 	if exists {
-		log.Printf("%s: index named '%s' already exists, skipping...", logTag, indexName)
+		log.Printf("%s: index named '%s' already exists, skipping...", logTag, analyticsIndex)
 		return es, nil
 	}
 
@@ -52,12 +52,12 @@ func newClient(url, indexName, mapping string) (*elasticsearch, error) {
 	settings := fmt.Sprintf(mapping, nodes, nodes-1)
 
 	// Meta index does not exists, create a new one
-	_, err = client.CreateIndex(indexName).Body(settings).Do(ctx)
+	_, err = client.CreateIndex(analyticsIndex).Body(settings).Do(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("error while creating index named %s: %v", indexName, err)
+		return nil, fmt.Errorf("error while creating index named %s: %v", analyticsIndex, err)
 	}
 
-	log.Printf("%s successfully created index named '%s'", logTag, indexName)
+	log.Printf("%s successfully created index named '%s'", logTag, analyticsIndex)
 	return es, nil
 }
 
@@ -75,7 +75,7 @@ func (es *elasticsearch) getTotalNodes() (int, error) {
 func (es *elasticsearch) indexRecord(ctx context.Context, docID string, record map[string]interface{}) {
 	_, err := es.client.
 		Index().
-		Index(es.indexName).
+		Index(es.analyticsIndex).
 		Type(es.typeName).
 		BodyJson(record).
 		Id(docID).
@@ -89,7 +89,7 @@ func (es *elasticsearch) indexRecord(ctx context.Context, docID string, record m
 func (es *elasticsearch) updateRecord(ctx context.Context, docID string, record map[string]interface{}) {
 	_, err := es.client.
 		Update().
-		Index(es.indexName).
+		Index(es.analyticsIndex).
 		Type(es.typeName).
 		Index(docID).
 		Doc(record).
@@ -106,7 +106,7 @@ func (es *elasticsearch) deleteOldRecords() {
 	for range ticker.C {
 		_, err := es.client.
 			DeleteByQuery().
-			Index(es.indexName).
+			Index(es.analyticsIndex).
 			Type(es.typeName).
 			Body(body).
 			Do(context.Background())
@@ -303,7 +303,7 @@ func (es *elasticsearch) popularSearchesRaw(ctx context.Context, from, to string
 		applyClickAnalyticsOnTerms(aggr)
 	}
 
-	result, err := es.client.Search(es.indexName).
+	result, err := es.client.Search(es.analyticsIndex).
 		Query(query).
 		Aggregation("popular_searches_aggr", aggr).
 		Size(size).
@@ -377,7 +377,7 @@ func (es *elasticsearch) noResultSearchesRaw(ctx context.Context, from, to strin
 		Field("search_query.keyword").
 		OrderByCountDesc()
 
-	result, err := es.client.Search(es.indexName).
+	result, err := es.client.Search(es.analyticsIndex).
 		Query(query).
 		Aggregation("no_results_searches_aggr", aggr).
 		Size(size).
@@ -453,7 +453,7 @@ func (es *elasticsearch) popularFiltersRaw(ctx context.Context, from, to string,
 		applyClickAnalyticsOnTerms(aggr)
 	}
 
-	result, err := es.client.Search(es.indexName).
+	result, err := es.client.Search(es.analyticsIndex).
 		Query(query).
 		Aggregation("popular_filters_aggr", aggr).
 		Size(size).
@@ -545,7 +545,7 @@ func (es *elasticsearch) popularResultsRaw(ctx context.Context, from, to string,
 		applyClickAnalyticsOnTerms(aggr)
 	}
 
-	result, err := es.client.Search(es.indexName).
+	result, err := es.client.Search(es.analyticsIndex).
 		Query(query).
 		Aggregation("popular_results_aggr", aggr).
 		Size(size).
@@ -561,21 +561,18 @@ func (es *elasticsearch) popularResultsRaw(ctx context.Context, from, to string,
 
 	var buckets []map[string]interface{}
 	for _, bucket := range aggrResult.Buckets {
-		sourceAggrResult, found := bucket.Terms("source_aggr")
-		if !found {
-			log.Printf("%s: unable to find 'source_aggr' in aggregation value", logTag)
-			continue
+		// sourceAggrResult, found := bucket.TopHits("source_aggr")
+		// if !found {
+		// 	log.Printf("%s: unable to find 'source_aggr' in aggregation value", logTag)
+		// 	continue
+		// }
+		newBucket := make(map[string]interface{})
+		newBucket["key"] = bucket.Key
+		newBucket["count"] = bucket.DocCount
+		if clickAnalytics {
+			newBucket = addClickAnalytics(bucket, bucket.DocCount, newBucket)
 		}
-		for _, sourceBucket := range sourceAggrResult.Buckets {
-			newBucket := make(map[string]interface{})
-			newBucket["key"] = bucket.Key
-			newBucket["source"] = sourceBucket.Key
-			newBucket["count"] = sourceBucket.DocCount
-			if clickAnalytics {
-				newBucket = addClickAnalytics(bucket, sourceBucket.DocCount, newBucket)
-			}
-			buckets = append(buckets, newBucket)
-		}
+		buckets = append(buckets, newBucket)
 	}
 
 	sort.SliceStable(buckets, func(i, j int) bool {
@@ -612,7 +609,7 @@ func (es *elasticsearch) geoRequestsDistribution(ctx context.Context, from, to s
 		Field("country.keyword").
 		OrderByCountDesc()
 
-	result, err := es.client.Search(es.indexName).
+	result, err := es.client.Search(es.analyticsIndex).
 		Query(query).
 		Aggregation("geo_dist_aggr", aggr).
 		Size(size).
@@ -671,7 +668,7 @@ func (es *elasticsearch) latencies(ctx context.Context, from, to string, size in
 		Field("took").
 		Interval(10)
 
-	result, err := es.client.Search(es.indexName).
+	result, err := es.client.Search(es.analyticsIndex).
 		Query(query).
 		Aggregation("latency_aggr", aggr).
 		Size(size).
@@ -821,7 +818,7 @@ func (es *elasticsearch) totalSearches(ctx context.Context, from, to string, ind
 
 	aggr := elastic.NewValueCountAggregation().Field("indices.keyword")
 
-	result, err := es.client.Search(es.indexName).
+	result, err := es.client.Search(es.analyticsIndex).
 		Query(query).
 		Aggregation("total_searches_aggr", aggr).
 		Do(ctx)
@@ -930,7 +927,7 @@ func (es *elasticsearch) searchHistogramRaw(ctx context.Context, from, to string
 		Interval("day").
 		Field("timestamp")
 
-	result, err := es.client.Search(es.indexName).
+	result, err := es.client.Search(es.analyticsIndex).
 		Query(query).
 		Aggregation("search_histogram_aggr", aggr).
 		Size(0).
@@ -994,8 +991,8 @@ func (es *elasticsearch) getRequestDistribution(ctx context.Context, from, to, i
 		Field("timestamp").
 		SubAggregation("responses_with_code_aggr", subAggr)
 
-	// TODO: need a solution for maintaining multiple index urls
-	result, err := es.client.Search("logs").
+	// Assumes that logs plugin creates an index.
+	result, err := es.client.Search(es.logsIndex).
 		Query(query).
 		Aggregation("request_distribution_aggr", aggr).
 		Size(size).

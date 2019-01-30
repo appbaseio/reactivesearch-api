@@ -7,6 +7,7 @@ import (
 	"log"
 
 	"github.com/appbaseio-confidential/arc/plugins/rules/query"
+	"github.com/appbaseio-confidential/arc/util"
 	"github.com/olivere/elastic"
 )
 
@@ -19,12 +20,10 @@ type elasticsearch struct {
 }
 
 func newClient(url, indexSuffix, mapping string) (rulesService, error) {
-	opts := []elastic.ClientOptionFunc{
+	client, err := elastic.NewClient(
 		elastic.SetURL(url),
-		elastic.SetSniff(false),
-	}
-
-	client, err := elastic.NewClient(opts...)
+		elastic.SetRetrier(util.NewRetrier()),
+	)
 	if err != nil {
 		return nil, fmt.Errorf("%s: error while initializing elastic client: %v", logTag, err)
 	}

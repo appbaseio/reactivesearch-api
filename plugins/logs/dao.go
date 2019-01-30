@@ -18,14 +18,13 @@ type elasticsearch struct {
 }
 
 func newClient(url, indexName, config string) (*elasticsearch, error) {
-	opts := []elastic.ClientOptionFunc{
-		elastic.SetURL(url),
-		elastic.SetSniff(false),
-	}
 	ctx := context.Background()
 
 	// Initialize the client
-	client, err := elastic.NewClient(opts...)
+	client, err := elastic.NewClient(
+		elastic.SetURL(url),
+		elastic.SetRetrier(util.NewRetrier()),
+	)
 	if err != nil {
 		return nil, fmt.Errorf("error while initializing elastic client: %v", err)
 	}

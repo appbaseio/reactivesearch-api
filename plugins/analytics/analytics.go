@@ -12,8 +12,10 @@ import (
 const (
 	logTag                  = "[analytics]"
 	defaultAnalyticsEsIndex = ".analytics"
-	envEsURL                = "ES_CLUSTER_URL"
 	envAnalyticsEsIndex     = "ANALYTICS_ES_INDEX"
+	defaultLogsEsIndex      = ".logs"
+	envLogsEsIndex          = "LOGS_ES_INDEX"
+	envEsURL                = "ES_CLUSTER_URL"
 	mapping                 = `{ "settings": { "number_of_shards": %d, "number_of_replicas": %d } }`
 )
 
@@ -52,14 +54,18 @@ func (a *Analytics) InitFunc() error {
 	if url == "" {
 		return errors.NewEnvVarNotSetError(envEsURL)
 	}
-	indexName := os.Getenv(envAnalyticsEsIndex)
-	if indexName == "" {
-		indexName = defaultAnalyticsEsIndex
+	analyticsIndex := os.Getenv(envAnalyticsEsIndex)
+	if analyticsIndex == "" {
+		analyticsIndex = defaultAnalyticsEsIndex
+	}
+	logsIndex := os.Getenv(envLogsEsIndex)
+	if logsIndex == "" {
+		logsIndex = defaultLogsEsIndex
 	}
 
 	// initialize the dao
 	var err error
-	a.es, err = newClient(url, indexName, mapping)
+	a.es, err = newClient(url, analyticsIndex, logsIndex, mapping)
 	if err != nil {
 		return err
 	}

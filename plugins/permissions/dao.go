@@ -7,6 +7,7 @@ import (
 	"log"
 
 	"github.com/appbaseio-confidential/arc/model/permission"
+	"github.com/appbaseio-confidential/arc/util"
 	"github.com/olivere/elastic"
 )
 
@@ -19,14 +20,13 @@ type elasticsearch struct {
 }
 
 func newClient(url, indexName, mapping string) (*elasticsearch, error) {
-	opts := []elastic.ClientOptionFunc{
-		elastic.SetURL(url),
-		elastic.SetSniff(false),
-	}
 	ctx := context.Background()
 
 	// Initialize the client
-	client, err := elastic.NewClient(opts...)
+	client, err := elastic.NewClient(
+		elastic.SetURL(url),
+		elastic.SetRetrier(util.NewRetrier()),
+	)
 	if err != nil {
 		return nil, fmt.Errorf("%s: error while initializing elastic client: %v", logTag, err)
 	}
