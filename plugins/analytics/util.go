@@ -10,6 +10,7 @@ import (
 
 const (
 	defaultResponseSize = 100
+	defaultTimeFormat   = "2006/01/02"
 )
 
 // TODO: Make this function to return a map with default values for required query params.
@@ -23,23 +24,23 @@ func rangeQueryParams(values url.Values) (from, to string, size int) {
 
 	value := values.Get("from")
 	if value != "" {
-		_, err := time.Parse(time.RFC3339, value)
+		t, err := time.Parse(defaultTimeFormat, value)
 		if err != nil {
 			log.Printf(`%s: unsupported "from" value provided, defaulting to previous week: %v`,
 				logTag, err)
 		} else {
-			from = value
+			from = t.Format(time.RFC3339)
 		}
 	}
 
 	value = values.Get("to")
 	if value != "" {
-		_, err := time.Parse(time.RFC3339, value)
+		t, err := time.Parse(defaultTimeFormat, value)
 		if err != nil {
 			log.Printf(`%s: unsupported "to" value provided, defaulting to current time: %v`,
 				logTag, err)
 		} else {
-			to = value
+			to = t.Format(time.RFC3339)
 		}
 	}
 
