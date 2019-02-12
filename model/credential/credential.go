@@ -8,8 +8,8 @@ import (
 
 type contextKey string
 
-// CtxKey is a key against which a request credential identifier is stored.
-const CtxKey = contextKey("request_credential")
+// ctxKey is a key against which a request credential identifier is stored.
+const ctxKey = contextKey("request_credential")
 
 // Credential is a value stored in the context that identifies
 // whether the request uses a user credential or permission credential.
@@ -21,9 +21,14 @@ const (
 	Permission
 )
 
+// NewContext returns a new context carrying credential 'c'.
+func NewContext(ctx context.Context, c Credential) context.Context {
+	return context.WithValue(ctx, ctxKey, c)
+}
+
 // FromContext retrieves credential type stored in the context against credential.CtxKey.
 func FromContext(ctx context.Context) (Credential, error) {
-	ctxCredential := ctx.Value(CtxKey)
+	ctxCredential := ctx.Value(ctxKey)
 	if ctxCredential == nil {
 		return -1, errors.NewNotFoundInContextError("request.Credential")
 	}
@@ -32,9 +37,4 @@ func FromContext(ctx context.Context) (Credential, error) {
 		return -1, errors.NewInvalidCastError("ctxCredential", "request.Credential")
 	}
 	return reqCredential, nil
-}
-
-// NewContext returns a new context carrying credential 'c'.
-func NewContext(ctx context.Context, c Credential) context.Context {
-	return context.WithValue(ctx, CtxKey, c)
 }

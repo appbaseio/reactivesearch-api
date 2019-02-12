@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/appbaseio-confidential/arc/model/index"
 	"github.com/appbaseio-confidential/arc/util"
 )
 
@@ -17,7 +18,7 @@ func (a *Analytics) getOverview() http.HandlerFunc {
 			clickAnalytics = v
 		}
 		from, to, size := rangeQueryParams(req.URL.Query())
-		indices, err := util.IndicesFromContext(req.Context())
+		indices, err := index.FromContext(req.Context())
 		if err != nil {
 			msg := "error occurred while fetching analytics overview"
 			log.Printf("%s: %v\n", logTag, err)
@@ -44,7 +45,7 @@ func (a *Analytics) getAdvanced() http.HandlerFunc {
 			clickAnalytics = v
 		}
 		from, to, size := rangeQueryParams(req.URL.Query())
-		indices, err := util.IndicesFromContext(req.Context())
+		indices, err := index.FromContext(req.Context())
 		if err != nil {
 			msg := "error occurred while fetching advanced analytics"
 			log.Printf("%s: %v\n", logTag, err)
@@ -71,7 +72,7 @@ func (a *Analytics) getPopularSearches() http.HandlerFunc {
 			clickAnalytics = v
 		}
 		from, to, size := rangeQueryParams(req.URL.Query())
-		indices, err := util.IndicesFromContext(req.Context())
+		indices, err := index.FromContext(req.Context())
 		if err != nil {
 			msg := "error occurred while fetching popular searches"
 			log.Printf("%s: %v\n", logTag, err)
@@ -93,7 +94,7 @@ func (a *Analytics) getPopularSearches() http.HandlerFunc {
 func (a *Analytics) getNoResultSearches() http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
 		from, to, size := rangeQueryParams(req.URL.Query())
-		indices, err := util.IndicesFromContext(req.Context())
+		indices, err := index.FromContext(req.Context())
 		if err != nil {
 			msg := "error occurred while fetching no result searches"
 			log.Printf("%s: %v\n", logTag, err)
@@ -120,7 +121,7 @@ func (a *Analytics) getPopularFilters() http.HandlerFunc {
 			clickAnalytics = v
 		}
 		from, to, size := rangeQueryParams(req.URL.Query())
-		indices, err := util.IndicesFromContext(req.Context())
+		indices, err := index.FromContext(req.Context())
 		if err != nil {
 			msg := "error occurred while fetching popular filters"
 			log.Printf("%s: %v\n", logTag, err)
@@ -147,7 +148,7 @@ func (a *Analytics) getPopularResults() http.HandlerFunc {
 			clickAnalytics = v
 		}
 		from, to, size := rangeQueryParams(req.URL.Query())
-		indices, err := util.IndicesFromContext(req.Context())
+		indices, err := index.FromContext(req.Context())
 		if err != nil {
 			msg := "error occurred while fetching popular results"
 			log.Printf("%s: %v\n", logTag, err)
@@ -169,7 +170,7 @@ func (a *Analytics) getPopularResults() http.HandlerFunc {
 func (a *Analytics) getGeoRequestsDistribution() http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
 		from, to, size := rangeQueryParams(req.URL.Query())
-		indices, err := util.IndicesFromContext(req.Context())
+		indices, err := index.FromContext(req.Context())
 		if err != nil {
 			msg := "error occurred while fetching geo requests distribution"
 			log.Printf("%s: %v\n", logTag, err)
@@ -191,7 +192,7 @@ func (a *Analytics) getGeoRequestsDistribution() http.HandlerFunc {
 func (a *Analytics) getSearchLatencies() http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
 		from, to, size := rangeQueryParams(req.URL.Query())
-		indices, err := util.IndicesFromContext(req.Context())
+		indices, err := index.FromContext(req.Context())
 		if err != nil {
 			msg := "error occurred while fetching search latencies"
 			log.Printf("%s: %v\n", logTag, err)
@@ -213,7 +214,7 @@ func (a *Analytics) getSearchLatencies() http.HandlerFunc {
 func (a *Analytics) getSummary() http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
 		from, to, _ := rangeQueryParams(req.URL.Query())
-		indices, err := util.IndicesFromContext(req.Context())
+		indices, err := index.FromContext(req.Context())
 		if err != nil {
 			msg := "error occurred while fetching analytics summary"
 			log.Printf("%s: %v\n", logTag, err)
@@ -244,7 +245,7 @@ func (a *Analytics) getRequestDistribution() http.HandlerFunc {
 			return
 		}
 
-		indices, err := util.IndicesFromContext(req.Context())
+		indices, err := index.FromContext(req.Context())
 		if err != nil {
 			msg := "error occurred while fetching request distribution"
 			log.Printf("%s: %v", logTag, err)

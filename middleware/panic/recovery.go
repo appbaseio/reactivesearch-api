@@ -10,7 +10,7 @@ import (
 
 // Recovery is a middleware that wraps an http handler to recover from panics.
 func Recovery(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		var err error
 		defer func() {
 			r := recover()
@@ -26,6 +26,6 @@ func Recovery(next http.Handler) http.Handler {
 				util.WriteBackError(w, err.Error(), http.StatusInternalServerError)
 			}
 		}()
-		next.ServeHTTP(w, r)
+		next.ServeHTTP(w, req)
 	})
 }

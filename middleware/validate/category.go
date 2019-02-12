@@ -14,6 +14,7 @@ import (
 	"github.com/appbaseio-confidential/arc/util"
 )
 
+// Category returns a middleware that validates the request category against credential categories.
 func Category() middleware.Middleware {
 	return validateCategory
 }

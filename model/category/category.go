@@ -11,8 +11,8 @@ import (
 
 type contextKey string
 
-// CtxKey is a key against which an category.Categories is stored in the context.
-const CtxKey = contextKey("category")
+// ctxKey is a key against which an category.Categories is stored in the context.
+const ctxKey = contextKey("category")
 
 // Category represents category type
 type Category int
@@ -228,9 +228,14 @@ func ACLsFor(categories ...Category) []acl.ACL {
 	return acls
 }
 
+// NewContext returns a new context with the given Category.
+func NewContext(ctx context.Context, c *Category) context.Context {
+	return context.WithValue(ctx, ctxKey, c)
+}
+
 // FromContext retrieves the category stored against the category.CtxKey from the context.
 func FromContext(ctx context.Context) (*Category, error) {
-	ctxACL := ctx.Value(CtxKey)
+	ctxACL := ctx.Value(ctxKey)
 	if ctxACL == nil {
 		return nil, errors.NewNotFoundInContextError("*category.Categories")
 	}

@@ -14,18 +14,16 @@ import (
 	"github.com/appbaseio-confidential/arc/model/permission"
 	"github.com/appbaseio-confidential/arc/util"
 	"github.com/appbaseio-confidential/arc/util/iplookup"
-	goredis "github.com/go-redis/redis"
 	"github.com/ulule/limiter"
 	"github.com/ulule/limiter/drivers/store/memory"
-	"github.com/ulule/limiter/drivers/store/redis"
 )
 
 const (
 	logTag          = "[ratelimiter]"
 	defaultRedisDB  = 0
 	defaultMaxRetry = 4
-	redisAddr       = "accapi-staging.redis.cache.windows.net:6379"
-	redisPassword   = "OJ5CsLWo+jxFWQ+XjNrT5smNSilvaQnSUkq8QVwMGR0="
+	redisAddr       = ""
+	redisPassword   = ""
 )
 
 var (
@@ -57,8 +55,8 @@ func Limit() middleware.Middleware {
 }
 
 func (rl *Ratelimiter) rateLimit(h http.HandlerFunc) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		ctx := r.Context()
+	return func(w http.ResponseWriter, req *http.Request) {
+		ctx := req.Context()
 
 		reqCredential, err := credential.FromContext(ctx)
 		if err != nil {
@@ -68,7 +66,7 @@ func (rl *Ratelimiter) rateLimit(h http.HandlerFunc) http.HandlerFunc {
 		}
 
 		if reqCredential == credential.Permission {
-			remoteIP := iplookup.FromRequest(r)
+			remoteIP := iplookup.FromRequest(req)
 			errMsg := "An error occurred while validating rate limit"
 			reqPermission, err := permission.FromContext(ctx)
 			if err != nil {
@@ -106,7 +104,7 @@ func (rl *Ratelimiter) rateLimit(h http.HandlerFunc) http.HandlerFunc {
 			}
 		}
 
-		h(w, r)
+		h(w, req)
 	}
 }
 
@@ -175,26 +173,26 @@ func (rl *Ratelimiter) newLimiter(key string, limit int64, period time.Duration)
 	return instance
 }
 
-func (rl *Ratelimiter) newLimiterWithRedis(key string, limit int64, period time.Duration) *limiter.Limiter {
-	option := &goredis.Options{
-		Addr:     redisAddr,
-		Password: redisPassword,
-		DB:       defaultRedisDB,
-	}
-	client := goredis.NewClient(option)
-	store, err := redis.NewStoreWithOptions(client, limiter.StoreOptions{
-		Prefix:   key,
-		MaxRetry: defaultMaxRetry,
-	})
-	if err != nil {
-		log.Printf("%s: cannot create redis store for the rate limiter: %v", logTag, err)
-		return nil
-	}
-	rate := limiter.Rate{
-		Limit:  limit,
-		Period: period,
-	}
-	instance := limiter.New(store, rate)
-	rl.limiters[key] = instance
-	return instance
-}
+// func (rl *Ratelimiter) newLimiterWithRedis(key string, limit int64, period time.Duration) *limiter.Limiter {
+// 	option := &goredis.Options{
+// 		Addr:     redisAddr,
+// 		Password: redisPassword,
+// 		DB:       defaultRedisDB,
+// 	}
+// 	client := goredis.NewClient(option)
+// 	store, err := redis.NewStoreWithOptions(client, limiter.StoreOptions{
+// 		Prefix:   key,
+// 		MaxRetry: defaultMaxRetry,
+// 	})
+// 	if err != nil {
+// 		log.Printf("%s: cannot create redis store for the rate limiter: %v", logTag, err)
+// 		return nil
+// 	}
+// 	rate := limiter.Rate{
+// 		Limit:  limit,
+// 		Period: period,
+// 	}
+// 	instance := limiter.New(store, rate)
+// 	rl.limiters[key] = instance
+// 	return instance
+// }

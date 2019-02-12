@@ -1,7 +1,6 @@
 package users
 
 import (
-	"context"
 	"fmt"
 	"log"
 	"net/http"
@@ -11,7 +10,6 @@ import (
 	"github.com/appbaseio-confidential/arc/middleware/classify"
 	"github.com/appbaseio-confidential/arc/middleware/validate"
 	"github.com/appbaseio-confidential/arc/model/category"
-	"github.com/appbaseio-confidential/arc/model/op"
 	"github.com/appbaseio-confidential/arc/model/user"
 	"github.com/appbaseio-confidential/arc/plugins/auth"
 	"github.com/appbaseio-confidential/arc/util"
@@ -30,66 +28,20 @@ func list() []middleware.Middleware {
 		classifyCategory,
 		classify.Op(),
 		auth.BasicAuth(),
+		isAdmin,
 		validate.Operation(),
 		validate.Category(),
 	}
 }
 
 func classifyCategory(h http.HandlerFunc) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
+	return func(w http.ResponseWriter, req *http.Request) {
 		userCategory := category.User
-		ctx := context.WithValue(r.Context(), category.CtxKey, &userCategory)
-		r = r.WithContext(ctx)
-		h(w, r)
-	}
-}
 
-func validateOp(h http.HandlerFunc) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		ctx := r.Context()
+		ctx := category.NewContext(req.Context(), &userCategory)
+		req = req.WithContext(ctx)
 
-		errMsg := "an error occurred while validating request op"
-		reqUser, err := user.FromContext(ctx)
-		if err != nil {
-			log.Printf("%s: %v", logTag, err)
-			util.WriteBackError(w, errMsg, http.StatusInternalServerError)
-			return
-		}
-
-		reqOp, err := op.FromContext(ctx)
-		if err != nil {
-			log.Printf("%s: %v", logTag, err)
-			util.WriteBackError(w, errMsg, http.StatusInternalServerError)
-			return
-		}
-
-		if !reqUser.CanDo(*reqOp) {
-			msg := fmt.Sprintf(`user with "username"="%s" cannot perform "%s" op`, reqUser.Username, *reqOp)
-			util.WriteBackError(w, msg, http.StatusUnauthorized)
-			return
-		}
-
-		h(w, r)
-	}
-}
-
-func validateCategory(h http.HandlerFunc) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		ctx := r.Context()
-
-		reqUser, err := user.FromContext(ctx)
-		if err != nil {
-			log.Printf("%s: %v", logTag, err)
-			util.WriteBackError(w, "an error occurred while validating request category", http.StatusInternalServerError)
-		}
-
-		if !reqUser.HasCategory(category.User) {
-			msg := fmt.Sprintf(`user with "username"="%s" does not have "%s" category`, reqUser.Username, category.User)
-			util.WriteBackError(w, msg, http.StatusUnauthorized)
-			return
-		}
-
-		h(w, r)
+		h(w, req)
 	}
 }
 

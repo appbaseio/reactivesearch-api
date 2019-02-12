@@ -8,15 +8,18 @@ import (
 	"github.com/appbaseio-confidential/arc/util"
 )
 
+// Indices returns a middleware that identifies the indices present in the es route.
 func Indices() middleware.Middleware {
 	return indices
 }
 
 func indices(h http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
-		ctx := req.Context()
 		indices := util.IndicesFromRequest(req)
-		req = req.WithContext(index.NewContext(ctx, indices))
+
+		ctx := index.NewContext(req.Context(), indices)
+		req = req.WithContext(ctx)
+
 		h(w, req)
 	}
 }

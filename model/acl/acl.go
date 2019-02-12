@@ -8,8 +8,8 @@ import (
 
 type contextKey string
 
-// CtxKey is a key against which an acl.ACL is stored in the context.
-const CtxKey = contextKey("acl")
+// ctxKey is a key against which an acl.ACL is stored in the context.
+const ctxKey = contextKey("acl")
 
 // ACL is a type that represents an elasticsearch acl.
 type ACL int
@@ -72,9 +72,14 @@ const (
 	Update
 )
 
+// NewContext returns a new context with the given ACL.
+func NewContext(ctx context.Context, acl *ACL) context.Context {
+	return context.WithValue(ctx, ctxKey, acl)
+}
+
 // FromContext retrieves the acl stored against the acl.CtxKey from the context.
 func FromContext(ctx context.Context) (*ACL, error) {
-	ctxCategory := ctx.Value(CtxKey)
+	ctxCategory := ctx.Value(ctxKey)
 	if ctxCategory == nil {
 		return nil, errors.NewNotFoundInContextError("*acl.ACL")
 	}

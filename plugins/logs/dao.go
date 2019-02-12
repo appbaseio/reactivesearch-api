@@ -72,14 +72,16 @@ func (es *elasticsearch) getTotalNodes() (int, error) {
 }
 
 func (es *elasticsearch) indexRecord(ctx context.Context, rec record) {
-	_, err := es.client.
-		Index().
+	bulkIndex := elastic.NewBulkIndexRequest().
 		Index(es.indexName).
 		Type("_doc").
-		BodyJson(rec).
+		Doc(rec)
+
+	_, err := es.client.Bulk().
+		Add(bulkIndex).
 		Do(ctx)
 	if err != nil {
-		log.Printf("%s: error indexing logs record: %v", logTag, err)
+		log.Printf("%s: error indexing log record: %v", logTag, err)
 	}
 }
 

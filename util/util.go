@@ -1,7 +1,6 @@
 package util
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"math"
@@ -12,7 +11,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/appbaseio-confidential/arc/model/index"
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 )
@@ -143,19 +141,6 @@ func IndicesFromRequest(r *http.Request) []string {
 	}
 
 	return indices
-}
-
-// IndicesFromContext fetches index patterns from the request context.
-func IndicesFromContext(ctx context.Context) ([]string, error) {
-	ctxIndices := ctx.Value(index.CtxKey)
-	if ctxIndices == nil {
-		return nil, fmt.Errorf("cannot fetch indices from request context")
-	}
-	indices, ok := ctxIndices.([]string)
-	if !ok {
-		return nil, fmt.Errorf("cannot cast ctxIndices to []string")
-	}
-	return indices, nil
 }
 
 // CountComponents returns the numbers of "/" and "vars" present in the route.

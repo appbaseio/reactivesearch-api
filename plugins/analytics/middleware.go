@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -19,8 +18,6 @@ import (
 	"github.com/appbaseio-confidential/arc/middleware/validate"
 	"github.com/appbaseio-confidential/arc/model/category"
 	"github.com/appbaseio-confidential/arc/model/index"
-	"github.com/appbaseio-confidential/arc/model/op"
-	"github.com/appbaseio-confidential/arc/model/user"
 	"github.com/appbaseio-confidential/arc/plugins/auth"
 	"github.com/appbaseio-confidential/arc/util"
 	"github.com/appbaseio-confidential/arc/util/iplookup"
@@ -55,6 +52,17 @@ func list() []middleware.Middleware {
 		validate.Indices(),
 		validate.Operation(),
 		validate.Category(),
+	}
+}
+
+func classifyCategory(h http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, req *http.Request) {
+		requestCategory := category.Analytics
+
+		ctx := category.NewContext(req.Context(), &requestCategory)
+		req = req.WithContext(ctx)
+
+		h(w, req)
 	}
 }
 
@@ -176,18 +184,13 @@ func (a *Analytics) recordResponse(docID, searchID string, w *httptest.ResponseR
 	record := make(map[string]interface{})
 	record["took"] = esResponse.Took
 	if searchID == "" {
-		ctxIndices := r.Context().Value(index.CtxKey)
-		if ctxIndices == nil {
-			log.Printf("%s: cannot fetch indices from request context, failed to record es response\n", logTag)
-			return
-		}
-		indices, ok := ctxIndices.([]string)
-		if !ok {
-			log.Printf("%s: unable to cast context indices to []string, failed to record es response\n", logTag)
+		ctxIndices, err := index.FromContext(r.Context())
+		if err != nil {
+			log.Printf("%s: cannot fetch indices from request context, %v\n", logTag, err)
 			return
 		}
 
-		record["indices"] = indices
+		record["indices"] = ctxIndices
 		record["search_query"] = r.Header.Get(XSearchQuery)
 		record["hits_in_response"] = hits
 		record["total_hits"] = esResponse.Hits.Total
@@ -255,137 +258,4 @@ func (a *Analytics) recordResponse(docID, searchID string, w *httptest.ResponseR
 	// TODO: remove
 	//logRaw(record)
 	a.es.indexRecord(context.Background(), docID, record)
-}
-
-func classifyCategory(h http.HandlerFunc) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		requestCategory := category.Analytics
-		ctx := context.WithValue(r.Context(), category.CtxKey, &requestCategory)
-		r = r.WithContext(ctx)
-		h(w, r)
-	}
-}
-
-func identifyIndices(h http.HandlerFunc) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		indices := util.IndicesFromRequest(r)
-
-		ctx := r.Context()
-		ctx = context.WithValue(ctx, index.CtxKey, indices)
-		r = r.WithContext(ctx)
-
-		h(w, r)
-	}
-}
-
-func validateOp(h http.HandlerFunc) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		ctx := r.Context()
-
-		errMsg := "an error occurred while validating request op"
-		reqUser, err := user.FromContext(ctx)
-		if err != nil {
-			log.Printf("%s: %v", logTag, err)
-			util.WriteBackError(w, errMsg, http.StatusInternalServerError)
-			return
-		}
-
-		reqOp, err := op.FromContext(ctx)
-		if err != nil {
-			log.Printf("%s: %v", logTag, err)
-			util.WriteBackError(w, errMsg, http.StatusInternalServerError)
-			return
-		}
-
-		if !reqUser.CanDo(*reqOp) {
-			msg := fmt.Sprintf(`user with "username"="%s" does not have "%s" op`, reqUser.Username, *reqOp)
-			util.WriteBackError(w, msg, http.StatusUnauthorized)
-			return
-		}
-
-		h(w, r)
-	}
-}
-
-func validateCategory(h http.HandlerFunc) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		ctx := r.Context()
-
-		errMsg := "an error occurred while validating request category"
-		reqUser, err := user.FromContext(ctx)
-		if err != nil {
-			log.Printf("%s: %v", logTag, err)
-			util.WriteBackError(w, errMsg, http.StatusInternalServerError)
-			return
-		}
-
-		if !reqUser.HasCategory(category.Analytics) {
-			msg := fmt.Sprintf(`user with "username"="%s" does not have "%s" category`,
-				reqUser.Username, category.Analytics)
-			util.WriteBackError(w, msg, http.StatusUnauthorized)
-			return
-		}
-
-		h(w, r)
-	}
-}
-
-func validateIndices(h http.HandlerFunc) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		ctx := r.Context()
-
-		errMsg := "An error occurred while validating request indices"
-		reqUser, err := user.FromContext(ctx)
-		if err != nil {
-			log.Printf("%s: %v", logTag, err)
-			util.WriteBackError(w, errMsg, http.StatusInternalServerError)
-			return
-		}
-
-		ctxIndices := ctx.Value(index.CtxKey)
-		if ctxIndices == nil {
-			log.Printf("%s: unable to fetch indices from request context\n", logTag)
-			util.WriteBackError(w, errMsg, http.StatusInternalServerError)
-			return
-		}
-		indices, ok := ctxIndices.([]string)
-		if !ok {
-			log.Printf("%s: unable to cast context indices to []string\n", logTag)
-			util.WriteBackError(w, errMsg, http.StatusInternalServerError)
-			return
-		}
-
-		if len(indices) == 0 {
-			// cluster level route
-			ok, err := reqUser.CanAccessIndex("*")
-			if err != nil {
-				log.Printf("%s: %v\n", logTag, err)
-				util.WriteBackError(w, `Invalid index pattern "*"`, http.StatusUnauthorized)
-				return
-			}
-			if !ok {
-				util.WriteBackError(w, "User is unauthorized to access cluster level routes", http.StatusUnauthorized)
-				return
-			}
-		} else {
-			// index level route
-			for _, indexName := range indices {
-				ok, err := reqUser.CanAccessIndex(indexName)
-				if err != nil {
-					msg := fmt.Sprintf(`Invalid index pattern encountered "%s"`, indexName)
-					log.Printf("%s: invalid index pattern encountered %s: %v\n", logTag, indexName, err)
-					util.WriteBackError(w, msg, http.StatusUnauthorized)
-					return
-				}
-
-				if !ok {
-					msg := fmt.Sprintf(`User is unauthorized to access index names "%s"`, indexName)
-					util.WriteBackError(w, msg, http.StatusUnauthorized)
-					return
-				}
-			}
-		}
-
-		h(w, r)
-	}
 }

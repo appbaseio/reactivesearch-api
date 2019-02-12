@@ -12,6 +12,7 @@ import (
 	"github.com/appbaseio-confidential/arc/util"
 )
 
+// Referers returns a middleware that validates the request referers against the permission referers.
 func Referers() middleware.Middleware {
 	return referers
 }

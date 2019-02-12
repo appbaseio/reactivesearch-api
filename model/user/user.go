@@ -21,8 +21,8 @@ const (
 	// credentials.
 	Credential = contextKey("user_credential")
 
-	// CtxKey is a key against which a *User is stored in the context.
-	CtxKey = contextKey("user")
+	// ctxKey is a key against which a *User is stored in the context.
+	ctxKey = contextKey("user")
 )
 
 // User defines a user type.
@@ -178,13 +178,14 @@ func NewAdmin(username, password string, opts ...Options) (*User, error) {
 	return u, nil
 }
 
+// NewContext returns the context with the given User.
 func NewContext(ctx context.Context, u *User) context.Context {
-	return context.WithValue(ctx, CtxKey, u)
+	return context.WithValue(ctx, ctxKey, u)
 }
 
 // FromContext retrieves the *user.User stored against user.CtxKey from the context.
 func FromContext(ctx context.Context) (*User, error) {
-	ctxUser := ctx.Value(CtxKey)
+	ctxUser := ctx.Value(ctxKey)
 	if ctxUser == nil {
 		return nil, errors.NewNotFoundInContextError("*user.User")
 	}
@@ -247,7 +248,7 @@ func (u *User) CanDo(op op.Operation) bool {
 // CanAccessCluster checks whether the user can access cluster level routes.
 func (u *User) CanAccessCluster() (bool, error) {
 	for _, pattern := range u.Indices {
-		pattern := strings.Replace(pattern, "*", ".*", -1)
+		pattern = strings.Replace(pattern, "*", ".*", -1)
 		matched, err := regexp.MatchString(pattern, "*")
 		if err != nil {
 			return false, err
@@ -262,7 +263,7 @@ func (u *User) CanAccessCluster() (bool, error) {
 // CanAccessIndex checks whether the user has access to the given index or index pattern.
 func (u *User) CanAccessIndex(name string) (bool, error) {
 	for _, pattern := range u.Indices {
-		pattern := strings.Replace(pattern, "*", ".*", -1)
+		pattern = strings.Replace(pattern, "*", ".*", -1)
 		matched, err := regexp.MatchString(pattern, name)
 		if err != nil {
 			return false, err

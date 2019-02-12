@@ -2,14 +2,16 @@ package validate
 
 import (
 	"fmt"
+	"log"
+	"net/http"
+
 	"github.com/appbaseio-confidential/arc/arc/middleware"
 	"github.com/appbaseio-confidential/arc/model/credential"
 	"github.com/appbaseio-confidential/arc/model/permission"
 	"github.com/appbaseio-confidential/arc/util"
-	"log"
-	"net/http"
 )
 
+// PermissionExpiry returns a middleware that checks whether a permission is expired or not.
 func PermissionExpiry() middleware.Middleware {
 	return validateExpiry
 }

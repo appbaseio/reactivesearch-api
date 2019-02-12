@@ -14,6 +14,7 @@ import (
 	"github.com/appbaseio-confidential/arc/util"
 )
 
+// ACL returns a middleware that validates the request acl against the credential acls.
 func ACL() middleware.Middleware {
 	return validateACL
 }

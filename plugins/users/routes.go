@@ -6,7 +6,7 @@ import (
 	"github.com/appbaseio-confidential/arc/arc/route"
 )
 
-func (u *users) routes() []route.Route {
+func (u *Users) routes() []route.Route {
 	middleware := (&chain{}).Wrap
 	routes := []route.Route{
 		{

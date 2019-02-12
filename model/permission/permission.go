@@ -25,8 +25,8 @@ const (
 	// permission credential.
 	Credential = contextKey("permission_credential")
 
-	// CtxKey is the key against which a permission is stored in a context.
-	CtxKey = contextKey("permission")
+	// ctxKey is the key against which a permission is stored in a context.
+	ctxKey = contextKey("permission")
 )
 
 // Permission defines a permission type.
@@ -279,14 +279,14 @@ func NewAdmin(creator string, opts ...Options) (*Permission, error) {
 	return p, nil
 }
 
-// NewContext returns a new context carrying the permission 'p'.
+// NewContext returns a new context with the given permission.
 func NewContext(ctx context.Context, p *Permission) context.Context {
-	return context.WithValue(ctx, CtxKey, p)
+	return context.WithValue(ctx, ctxKey, p)
 }
 
 // FromContext retrieves the permission stored against permission.CtxKey from the context.
 func FromContext(ctx context.Context) (*Permission, error) {
-	ctxPermission := ctx.Value(CtxKey)
+	ctxPermission := ctx.Value(ctxKey)
 	if ctxPermission == nil {
 		return nil, errors.NewNotFoundInContextError("*permission.Permission")
 	}
@@ -358,7 +358,7 @@ func (p *Permission) CanDo(op op.Operation) bool {
 // CanAccessCluster checks whether the user can access cluster level routes.
 func (p *Permission) CanAccessCluster() (bool, error) {
 	for _, pattern := range p.Indices {
-		pattern := strings.Replace(pattern, "*", ".*", -1)
+		pattern = strings.Replace(pattern, "*", ".*", -1)
 		matched, err := regexp.MatchString(pattern, "*")
 		if err != nil {
 			return false, err

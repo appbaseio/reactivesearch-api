@@ -16,6 +16,7 @@ const (
 	envEsClusterURL = "ES_CLUSTER_URL"
 )
 
+// Redirect returns a middleware that redirects the es requests to upstream elasticsearch.
 func Redirect() middleware.Middleware {
 	return redirect
 }

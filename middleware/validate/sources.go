@@ -15,6 +15,7 @@ import (
 
 const logTag = "[validate]"
 
+// Sources returns a middleware that validates the request sources against the permission sources.
 func Sources() middleware.Middleware {
 	return sources
 }

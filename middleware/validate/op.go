@@ -14,6 +14,7 @@ import (
 	"github.com/appbaseio-confidential/arc/util"
 )
 
+// Operation returns a middleware that validates the request operation against the credential operations.
 func Operation() middleware.Middleware {
 	return operation
 }

@@ -78,11 +78,7 @@ In order to run arc, you'll require an Elasticsearch node. There are multiple wa
 
 **Note**: Step 3 is optional, however, Kibana provides excellant debugging/monitoring tools when developing with Elasticsearch.
   
-For convinience, the steps described above are combined into a single script (located in `scipts` dir) that one can execute to get arc up and running locally.
-
-    sh scripts/local-setup.sh
-
-Or alternatively, you can execute the setup with `docker-compose` command:
+For convinience, the steps described above are combined into a single `docker-compose` file. You can execute the file with command:
 
     docker-compose up
 

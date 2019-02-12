@@ -18,30 +18,34 @@ const (
 )
 
 var (
-	singleton *users
+	singleton *Users
 	once      sync.Once
 )
 
-type users struct {
+// Users plugin deals with user management.
+type Users struct {
 	es userService
 }
 
 func init() {
-	arc.RegisterPlugin(instance())
+	arc.RegisterPlugin(Instance())
 }
 
 // Use only this function to fetch the instance of user from within
 // this package to avoid creating stateless duplicates of the plugin.
-func instance() *users {
-	once.Do(func() { singleton = &users{} })
+// However, instance of Users is not meant to be used outside the package.
+func Instance() *Users {
+	once.Do(func() { singleton = &Users{} })
 	return singleton
 }
 
-func (u *users) Name() string {
+// Name is the implementation of Plugin interface.
+func (u *Users) Name() string {
 	return logTag
 }
 
-func (u *users) InitFunc() error {
+// InitFunc is the implementation of Plugin interface.
+func (u *Users) InitFunc() error {
 	// fetch vars from env
 	esURL := os.Getenv(envEsURL)
 	if esURL == "" {
@@ -62,6 +66,7 @@ func (u *users) InitFunc() error {
 	return nil
 }
 
-func (u *users) Routes() []route.Route {
+// Routes is the implementation of plugin interface.
+func (u *Users) Routes() []route.Route {
 	return u.routes()
 }

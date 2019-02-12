@@ -1,21 +1,21 @@
 package classify
 
 import (
-	"context"
 	"net/http"
 
 	"github.com/appbaseio-confidential/arc/arc/middleware"
 	"github.com/appbaseio-confidential/arc/model/op"
 )
 
+// Op returns a middleware that classifies request operation.
 func Op() middleware.Middleware {
 	return classifyOp
 }
 
 func classifyOp(h http.HandlerFunc) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
+	return func(w http.ResponseWriter, req *http.Request) {
 		var operation op.Operation
-		switch r.Method {
+		switch req.Method {
 		case http.MethodGet:
 			operation = op.Read
 		case http.MethodPost:
@@ -32,10 +32,9 @@ func classifyOp(h http.HandlerFunc) http.HandlerFunc {
 			operation = op.Read
 		}
 
-		ctx := r.Context()
-		ctx = context.WithValue(ctx, op.CtxKey, &operation)
-		r = r.WithContext(ctx)
+		ctx := op.NewContext(req.Context(), &operation)
+		req = req.WithContext(ctx)
 
-		h(w, r)
+		h(w, req)
 	}
 }

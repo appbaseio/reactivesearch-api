@@ -14,6 +14,7 @@ import (
 	"github.com/appbaseio-confidential/arc/util"
 )
 
+// Indices returns a middleware that validates the request indices against the credential indices.
 func Indices() middleware.Middleware {
 	return indices
 }

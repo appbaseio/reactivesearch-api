@@ -10,10 +10,10 @@ import (
 
 type contextKey string
 
-// CtxKey is a key against which an operation is stored in the context.
-const CtxKey = contextKey("op")
+// ctxKey is a key against which an operation is stored in the context.
+const ctxKey = contextKey("op")
 
-// Action defines an operation type.
+// Operation defines an operation type.
 type Operation int
 
 // Operations
@@ -68,9 +68,14 @@ func (o Operation) MarshalJSON() ([]byte, error) {
 	return json.Marshal(op)
 }
 
+// NewContext returns a new context with the given Operation.
+func NewContext(ctx context.Context, op *Operation) context.Context {
+	return context.WithValue(ctx, ctxKey, op)
+}
+
 // FromContext retrieves the *op.Action stored against the op.CtxKey from the context.
 func FromContext(ctx context.Context) (*Operation, error) {
-	ctxOp := ctx.Value(CtxKey)
+	ctxOp := ctx.Value(ctxKey)
 	if ctxOp == nil {
 		return nil, errors.NewNotFoundInContextError("*op.Action")
 	}
