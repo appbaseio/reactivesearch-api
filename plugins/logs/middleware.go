@@ -13,7 +13,6 @@ import (
 	"github.com/appbaseio-confidential/arc/arc/middleware/order"
 	"github.com/appbaseio-confidential/arc/middleware/classify"
 	"github.com/appbaseio-confidential/arc/middleware/validate"
-	"github.com/appbaseio-confidential/arc/model/acl"
 	"github.com/appbaseio-confidential/arc/model/category"
 	"github.com/appbaseio-confidential/arc/model/index"
 	"github.com/appbaseio-confidential/arc/plugins/auth"
@@ -110,43 +109,34 @@ func (l *Logs) recordResponse(reqBody []byte, w *httptest.ResponseRecorder, req 
 		return
 	}
 
-	reqACL, err := acl.FromContext(ctx)
-	if err != nil {
-		log.Printf("%s: %v", logTag, err)
-		return
-	}
-
 	reqIndices, err := index.FromContext(ctx)
 	if err != nil {
 		log.Printf("%s: %v", logTag, err)
 		return
 	}
 
-	var record record
-	record.Indices = reqIndices
-	record.Category = *reqCategory
-	record.Timestamp = time.Now()
+	var rec record
+	rec.Indices = reqIndices
+	rec.Category = *reqCategory
+	rec.Timestamp = time.Now()
 
 	// record request
-	record.Request.URI = req.URL.Path
-	record.Request.Headers = req.Header
-	record.Request.Method = req.Method
-	if *reqACL == acl.Bulk {
-		reqBody = reqBody[:1000]
-	}
-	record.Request.Body = string(reqBody)
+	rec.Request.URI = req.URL.Path
+	rec.Request.Headers = req.Header
+	rec.Request.Method = req.Method
+	rec.Request.Body = string(reqBody)
 
 	// record response
 	response := w.Result()
-	record.Response.Code = response.StatusCode
-	record.Response.Status = http.StatusText(response.StatusCode)
-	record.Response.Headers = response.Header
+	rec.Response.Code = response.StatusCode
+	rec.Response.Status = http.StatusText(response.StatusCode)
+	rec.Response.Headers = response.Header
 
 	responseBody, err := ioutil.ReadAll(response.Body)
 	if err != nil {
 		log.Printf("%s: can't read response body: %v", logTag, err)
 		return
 	}
-	record.Response.Body = string(responseBody)
-	l.es.indexRecord(context.Background(), record)
+	rec.Response.Body = string(responseBody)
+	l.es.indexRecord(context.Background(), rec)
 }

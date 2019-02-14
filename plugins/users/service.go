@@ -6,6 +6,7 @@ import (
 )
 
 type userService interface {
+	getRawUsers(ctx context.Context) ([]byte, error)
 	getUser(ctx context.Context, username string) (*user.User, error)
 	getRawUser(ctx context.Context, username string) ([]byte, error)
 	postUser(ctx context.Context, u user.User) (bool, error)

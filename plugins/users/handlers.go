@@ -314,3 +314,17 @@ func (u *Users) deleteUserWithUsername() http.HandlerFunc {
 		util.WriteBackError(w, msg, http.StatusNotFound)
 	}
 }
+
+func (u *Users) getAllUsers() http.HandlerFunc {
+	return func(w http.ResponseWriter, req *http.Request) {
+		raw, err := u.es.getRawUsers(req.Context())
+		if err != nil {
+			msg := `an error occurred while fetching users`
+			log.Printf("%s: %v", logTag, err)
+			util.WriteBackError(w, msg, http.StatusNotFound)
+			return
+		}
+
+		util.WriteBackRaw(w, raw, http.StatusOK)
+	}
+}

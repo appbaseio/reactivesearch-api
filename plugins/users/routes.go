@@ -24,6 +24,13 @@ func (u *Users) routes() []route.Route {
 			Description: "Returns the user with {username}",
 		},
 		{
+			Name:        "Get all users",
+			Methods:     []string{http.MethodGet},
+			Path:        "/_users",
+			HandlerFunc: middleware(isAdmin(u.getAllUsers())),
+			Description: "Returns all the users",
+		},
+		{
 			Name:        "Post user",
 			Methods:     []string{http.MethodPost},
 			Path:        "/_user",

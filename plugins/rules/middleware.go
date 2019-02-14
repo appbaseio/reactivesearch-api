@@ -9,14 +9,55 @@ import (
 	"net/http/httptest"
 
 	"github.com/appbaseio-confidential/arc/arc/middleware"
+	"github.com/appbaseio-confidential/arc/arc/middleware/order"
+	"github.com/appbaseio-confidential/arc/middleware/classify"
+	"github.com/appbaseio-confidential/arc/middleware/validate"
 	"github.com/appbaseio-confidential/arc/model/category"
 	"github.com/appbaseio-confidential/arc/model/index"
+	"github.com/appbaseio-confidential/arc/plugins/auth"
 	"github.com/appbaseio-confidential/arc/plugins/rules/query"
 	"github.com/appbaseio-confidential/arc/util"
 )
 
+type chain struct {
+	order.Fifo
+}
+
+func (c *chain) Wrap(h http.HandlerFunc) http.HandlerFunc {
+	return c.Adapt(h, list()...)
+}
+
+func list() []middleware.Middleware {
+	return []middleware.Middleware{
+		classifyCategory,
+		classifyIndices,
+		classify.Op(),
+		auth.BasicAuth(),
+		validate.Operation(),
+		validate.Category(),
+	}
+}
+
+func classifyCategory(h http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, req *http.Request) {
+		userCategory := category.User
+
+		ctx := category.NewContext(req.Context(), &userCategory)
+		req = req.WithContext(ctx)
+
+		h(w, req)
+	}
+}
+
+func classifyIndices(h http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, req *http.Request) {
+		ctx := index.NewContext(req.Context(), []string{defaultRulesEsIndex})
+		req = req.WithContext(ctx)
+		h(w, req)
+	}
+}
+
 // Apply middleware intercepts the search requests and applies query rules to the search results.
-// TODO: Define middleware chain for rules plugin
 func Apply() middleware.Middleware {
 	return Instance().intercept
 }

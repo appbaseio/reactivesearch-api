@@ -34,10 +34,8 @@ func list() []middleware.Middleware {
 func classifyCategory(h http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
 		requestCategory := category.User
-
 		ctx := category.NewContext(req.Context(), &requestCategory)
 		req = req.WithContext(ctx)
-
 		h(w, req)
 	}
 }

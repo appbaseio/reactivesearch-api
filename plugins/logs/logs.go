@@ -19,7 +19,7 @@ const (
 	  "mappings": {
 	    "_doc": {
 	      "properties": {
-	        "category": { "type": "text" },
+	        "category": { "type": "keyword" },
 	        "request": { "type": "object" },
 	        "response": { "type": "object" },
 	        "timestamp": { "type": "date" }
