@@ -4,10 +4,8 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"net/http"
-	"os"
 	"path/filepath"
 	"strings"
 	"sync"
@@ -17,6 +15,7 @@ import (
 	"github.com/appbaseio-confidential/arc/model/category"
 	"github.com/appbaseio-confidential/arc/model/op"
 	"github.com/appbaseio-confidential/arc/util"
+	"github.com/gobuffalo/packr"
 )
 
 var (
@@ -53,13 +52,10 @@ func (es *elasticsearch) preprocess() error {
 	files := make(chan string)
 	apis := make(chan api)
 
-	path, err := getWD()
-	if err != nil {
-		return fmt.Errorf("unable to get the working directory: %v", err)
-	}
+	box := packr.NewBox("./api")
 
-	go fetchSpecFiles(path, files)
-	go decodeSpecFiles(files, apis)
+	go fetchSpecFiles(&box, files)
+	go decodeSpecFiles(&box, files, apis)
 
 	middleware := (&chain{}).Wrap
 
@@ -120,44 +116,20 @@ func (es *elasticsearch) routes() []route.Route {
 	return routes
 }
 
-func getWD() (string, error) {
-	wd, err := os.Getwd()
-	if err != nil {
-		return "", nil
-	}
-	return filepath.Join(wd, "plugins/elasticsearch/api"), nil
-}
-
-func fetchSpecFiles(path string, files chan<- string) {
+func fetchSpecFiles(box *packr.Box, files chan<- string) {
 	defer close(files)
-
-	info, err := os.Stat(path)
-	if err != nil {
-		log.Fatal(err)
-		return
-	}
-	if !info.IsDir() {
-		log.Printf("cannot walk through a file %s", path)
-		return
-	}
-
-	err = filepath.Walk(path, func(path string, info os.FileInfo, err error) error {
-		if !info.IsDir() && filepath.Ext(path) == ".json" && !strings.HasPrefix(info.Name(), "_") {
-			files <- path
+	for _, file := range box.List() {
+		if filepath.Ext(file) == ".json" && !strings.HasPrefix(file, "_") {
+			files <- file
 		}
-		return nil
-	})
-	if err != nil {
-		log.Fatal(err)
-		return
 	}
 }
 
-func decodeSpecFiles(files <-chan string, apis chan<- api) {
+func decodeSpecFiles(box *packr.Box, files <-chan string, apis chan<- api) {
 	var wg sync.WaitGroup
 	for file := range files {
 		wg.Add(1)
-		go decodeSpecFile(file, &wg, apis)
+		go decodeSpecFile(box, file, &wg, apis)
 	}
 
 	go func() {
@@ -166,10 +138,10 @@ func decodeSpecFiles(files <-chan string, apis chan<- api) {
 	}()
 }
 
-func decodeSpecFile(file string, wg *sync.WaitGroup, apis chan<- api) {
+func decodeSpecFile(box *packr.Box, file string, wg *sync.WaitGroup, apis chan<- api) {
 	defer wg.Done()
 
-	content, err := ioutil.ReadFile(file)
+	content, err := box.Find(file)
 	if err != nil {
 		log.Printf("can't read file: %v", err)
 		return

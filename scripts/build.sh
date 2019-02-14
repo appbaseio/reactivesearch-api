@@ -4,16 +4,20 @@ mkdir -p build && cd build
 
 VERSION=0.1.0
 
+if ! type "packr" > /dev/null; then
+  go get -u github.com/gobuffalo/packr/packr
+fi
+
 export GOARCH=amd64
 
 export GOOS=darwin
-go build -o "arc-${GOOS}-${VERSION}" ./../arc/cmd/...
+packr build -o "arc-${GOOS}-${VERSION}" ./../arc/cmd/...
 zip -r "arc-${GOOS}-${VERSION}.zip" "arc-${GOOS}-${VERSION}"
 
 export GOOS=windows
-go build -o "arc-${GOOS}-${VERSION}.exe" ./../arc/cmd/...
+packr build -o "arc-${GOOS}-${VERSION}.exe" ./../arc/cmd/...
 zip -r "arc-${GOOS}-${VERSION}.zip" "arc-${GOOS}-${VERSION}.exe"
 
 export GOOS=linux
-go build -o "abc-${GOOS}-${VERSION}" ./../arc/cmd/...
+packr build -o "abc-${GOOS}-${VERSION}" ./../arc/cmd/...
 zip -r "abc-${GOOS}-${VERSION}.zip" "abc-${GOOS}-${VERSION}"
