@@ -31,6 +31,7 @@ services:
 
   arc:
     build: ./
+    container_name: arc
     restart: on-failure
     environment:
     - ES_CLUSTER_URL=http://elasticsearch:9200
