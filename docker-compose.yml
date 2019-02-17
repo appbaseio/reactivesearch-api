@@ -3,10 +3,12 @@ services:
   elasticsearch:
     image: docker.elastic.co/elasticsearch/elasticsearch:6.5.3
     container_name: elasticsearch
+    networks:
+      - arc
     environment:
-    - bootstrap.memory_lock=true
-    - xpack.security.enabled=false
-    - "ES_JAVA_OPTS=-Xms1g -Xmx1g"
+      - "ES_JAVA_OPTS=-Xms1g -Xmx1g"
+      - "bootstrap.memory_lock=true"
+      - "xpack.security.enabled=false"
     ulimits:
       nproc: 65536
       nofile:
@@ -21,23 +23,47 @@ services:
   kibana:
     image: docker.elastic.co/kibana/kibana:6.5.3
     container_name: kibana
+    networks:
+      - arc
     restart: on-failure
     ports:
       - 5601:5601
     depends_on:
       - elasticsearch
-    links:
-      - elasticsearch
 
   arc:
     build: ./
     container_name: arc
+    networks:
+      - arc
     restart: on-failure
     environment:
-    - ES_CLUSTER_URL=http://elasticsearch:9200
+      - ES_CLUSTER_URL=http://elasticsearch:9200
     ports:
       - 8000:8000
     depends_on:
       - elasticsearch
-    links:
-      - elasticsearch
+
+  streams:
+    image: appbaseio/streams:latest
+    container_name: streams
+    networks:
+      - arc
+    environment:
+      - ES_NODES=arc:8000
+      - SSL_OFF=yes
+      - AUTH_OFF=yes
+      - DNS_SERVER=127.0.0.11
+      - DOMAIN_NAME=localhost
+      - ARC_USER=foo
+      - ARC_PASS=bar
+    ports:
+      - 80:80
+      - 443:443
+      - 5678:5678
+    depends_on:
+      - arc
+
+networks:
+  arc:
+    driver: bridge
