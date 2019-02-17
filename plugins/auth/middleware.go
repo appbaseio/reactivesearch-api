@@ -114,7 +114,11 @@ func (a *Auth) basicAuth(h http.HandlerFunc) http.HandlerFunc {
 		if *reqOp == op.Write || *reqOp == op.Delete {
 			switch *reqCategory {
 			case category.User:
-				a.removeUserFromCache(username)
+				if username, ok := mux.Vars(req)["username"]; ok {
+					a.removeUserFromCache(username)
+				} else {
+					a.removeUserFromCache(username)
+				}
 			case category.Permission:
 				// in case of permission, username is to be taken from request route
 				username := mux.Vars(req)["username"]

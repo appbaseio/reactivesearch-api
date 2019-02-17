@@ -40,9 +40,9 @@ func list() []middleware.Middleware {
 		validate.Sources(),
 		validate.Referers(),
 		validate.Indices(),
-		validate.Operation(),
 		validate.Category(),
 		validate.ACL(),
+		validate.Operation(),
 		validate.PermissionExpiry(),
 		interceptor.Redirect(),
 	}
@@ -63,9 +63,8 @@ func classifyCategory(h http.HandlerFunc) http.HandlerFunc {
 		routeCategory := routeSpec.category
 
 		// classify streams explicitly
-		params := req.URL.Query()
-		stream := params.Get("stream")
-		if stream == "true" {
+		stream := req.Header.Get("X-Request-Category")
+		if stream == "streams" {
 			routeCategory = category.Streams
 		}
 
