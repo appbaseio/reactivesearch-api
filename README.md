@@ -13,7 +13,7 @@ to Elasticsearch's RESTful API.
 - [Building](#building)
 - [Installation](#installation)
 - [Implementation](#implementation)
-- [Abstractions](#abstractions)
+- [Available Plugins](#available-plugins)
 - [Use cases](#use-cases)
 - [Docs](#docs)
 
@@ -119,6 +119,8 @@ Each plugin is structured in a particular way for brevity. Refer to the plugin [
 Since every request made to Elasticsearch hits Arc first, it becomes beneficial to provide a set of abstractions that allows
 the client to define control over the Elasticsearch RESTful API and Arc's functionality. Arc provides several essential abstractions that are required in order to interact with Elasticsearch and Arc itself.
 
+## Available Plugins
+
 ### User
 
 In order to interact with Arc, the client must define a `User`. A `User` encapsulates its own set of [properties](https://arc-docs.appbase.io/#68385301-6ec3-44ff-99fa-a6015d68a3fa) that defines its capabilities.
@@ -152,21 +154,21 @@ A `User` grants a `Permission` to a certain `User`, predefining its capabilities
 - `limits`: request limits per `categories` given to the permission
 - `description`: describes the use-case of the permission
 
-### Category
+#### Category
 
 Categories can be used to control access to data and APIs in Arc. Along with Elasticsearch APIs, Categories cover the APIs provided by Arc itself to allow fine-grained control over the API consumption. For Elasticsearch, Categories broadly resembles to the API [classification](https://www.elastic.co/guide/en/elasticsearch/reference/current/index.html) that Elasticsearch 
 provides such as **Document APIs**, **Search APIs**, **Indices APIs** and so on. For Arc, Categories resembles to the 
 additional APIs on top of Elasticsearch APIs, such as analytics and book keeping. Refer to category [docs](https://github.com/appbaseio-confidential/arc/blob/ugo/update-readme/31-12-2018/docs/categories.md) for the list of
 categories that Arc supports.
 
-### ACL
+#### ACL
 
 ACLs allow a fine grained control over the Elasticsearch APIs in addition to the Categories. Each ACL resembles an
 action performed by an Elasticsearch API. For brevity, setting and organising Categories automatically sets the default 
 ACLs associated with the set Categories. Setting ACLs adds just another level of control to provide access to 
 Elasticsearch APIs within a given Category. Refer to acl [docs](https://github.com/appbaseio-confidential/arc/blob/ugo/update-readme/31-12-2018/docs/acls.md) for the list of acls that Arc supports.
 
-### Op
+#### Op
 
 Operation delineates the kind of operation a request intends to make. The operation of the request is identified
 before the request is served. The classification of the request operation depends on the use-case and the implementation
@@ -180,6 +182,9 @@ In order to allow a user or permission to make requests that involve modifying t
 operations would be required. For example: `["read", "write"]` operation would allow a user or permission to perform 
 both read and write requests but would forbid making delete requests.
 
+### Request Logging
+
+(TBD)
 
 ## Docs
 
