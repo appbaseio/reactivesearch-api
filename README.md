@@ -182,9 +182,11 @@ In order to allow a user or permission to make requests that involve modifying t
 operations would be required. For example: `["read", "write"]` operation would allow a user or permission to perform 
 both read and write requests but would forbid making delete requests.
 
-### Request Logging
+#### Request Logging
 
-(TBD)
+Arc currently maintains records for all the requests made to elasticsearch. Both request and responses are stored
+for the users to view and inspect it later. The request logs can be fetched for both specific indices or the whole
+cluster. The dedicated endpoints to fetch the index/cluster logs can be found [here](https://arc-docs.appbase.io/).
 
 ## Docs
 
