@@ -75,7 +75,7 @@ func (a *Auth) basicAuth(h http.HandlerFunc) http.HandlerFunc {
 				}
 
 				// cache the user
-				if _, ok := a.cachedUser(username); !ok {
+				if _, ok := a.cachedUser(username, password); !ok {
 					a.cacheUser(username, reqUser)
 				}
 
@@ -92,7 +92,7 @@ func (a *Auth) basicAuth(h http.HandlerFunc) http.HandlerFunc {
 
 				// cache the permission
 				reqPermission := obj.(*permission.Permission)
-				if _, ok := a.cachedPermission(username); !ok {
+				if _, ok := a.cachedPermission(username, password); !ok {
 					a.cachePermission(username, reqPermission)
 				}
 
@@ -128,12 +128,12 @@ func (a *Auth) basicAuth(h http.HandlerFunc) http.HandlerFunc {
 
 func (a *Auth) getCredential(ctx context.Context, username, password string) (interface{}, error) {
 	// look for the credential in the cache first, if not found then make an es request
-	user, ok := a.cachedUser(username)
+	user, ok := a.cachedUser(username, password)
 	if ok {
 		return user, nil
 	}
 
-	permission, ok := a.cachedPermission(username)
+	permission, ok := a.cachedPermission(username, password)
 	if ok {
 		return permission, nil
 	}
@@ -141,11 +141,13 @@ func (a *Auth) getCredential(ctx context.Context, username, password string) (in
 	return a.es.getCredential(ctx, username, password)
 }
 
-func (a *Auth) cachedUser(userID string) (*user.User, bool) {
+func (a *Auth) cachedUser(userID, password string) (*user.User, bool) {
 	a.mu.Lock()
 	defer a.mu.Unlock()
-	u, ok := a.usersCache[userID]
-	return u, ok
+	if u, ok := a.usersCache[userID]; ok && u.Password == password {
+		return u, ok
+	}
+	return nil, false
 }
 
 func (a *Auth) cacheUser(userID string, u *user.User) {
@@ -164,11 +166,13 @@ func (a *Auth) removeUserFromCache(userID string) {
 	delete(a.usersCache, userID)
 }
 
-func (a *Auth) cachedPermission(username string) (*permission.Permission, bool) {
+func (a *Auth) cachedPermission(username, password string) (*permission.Permission, bool) {
 	a.mu.Lock()
 	defer a.mu.Unlock()
-	p, ok := a.permissionsCache[username]
-	return p, ok
+	if p, ok := a.permissionsCache[username]; ok && p.Password == password {
+		return p, ok
+	}
+	return nil, false
 }
 
 func (a *Auth) cachePermission(username string, p *permission.Permission) {
