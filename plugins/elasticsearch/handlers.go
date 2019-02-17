@@ -35,7 +35,7 @@ func (es *elasticsearch) handler() http.HandlerFunc {
 			util.WriteBackError(w, "error classifying request op", http.StatusInternalServerError)
 			return
 		}
-		log.Printf(`%s: acl="%s", category="%s", op="%s"\n`, logTag, *reqCategory, *reqACL, *reqOp)
+		log.Printf(`%s: category="%s", acl="%s", op="%s"\n`, logTag, *reqCategory, *reqACL, *reqOp)
 
 		// Forward the request to elasticsearch
 		client := util.HTTPClient()

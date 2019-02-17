@@ -75,6 +75,12 @@ func Recorder() middleware.Middleware {
 
 func (l *Logs) recorder(h http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		// skip logs from streams
+		if r.Header.Get("X-Request-Category") == "streams" {
+			h(w, r)
+			return
+		}
+
 		// Read the request body
 		reqBody, err := ioutil.ReadAll(r.Body)
 		if err != nil {
