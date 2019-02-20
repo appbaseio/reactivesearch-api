@@ -152,6 +152,7 @@ func (es *elasticsearch) getRawUser(ctx context.Context, username string) ([]byt
 
 func (es *elasticsearch) postUser(ctx context.Context, u user.User) (bool, error) {
 	_, err := es.client.Index().
+		Refresh("wait_for").
 		Index(es.indexName).
 		Type(es.typeName).
 		Id(u.Username).
@@ -166,6 +167,7 @@ func (es *elasticsearch) postUser(ctx context.Context, u user.User) (bool, error
 
 func (es *elasticsearch) patchUser(ctx context.Context, username string, patch map[string]interface{}) ([]byte, error) {
 	response, err := es.client.Update().
+		Refresh("wait_for").
 		Index(es.indexName).
 		Type(es.typeName).
 		Id(username).
@@ -186,6 +188,7 @@ func (es *elasticsearch) patchUser(ctx context.Context, username string, patch m
 
 func (es *elasticsearch) deleteUser(ctx context.Context, username string) (bool, error) {
 	_, err := es.client.Delete().
+		Refresh("wait_for").
 		Index(es.indexName).
 		Type(es.typeName).
 		Id(username).
