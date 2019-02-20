@@ -124,6 +124,7 @@ func (es *elasticsearch) postPermission(ctx context.Context, p permission.Permis
 
 func (es *elasticsearch) patchPermission(ctx context.Context, username string, patch map[string]interface{}) ([]byte, error) {
 	response, err := es.client.Update().
+		Refresh("wait_for").
 		Index(es.indexName).
 		Type(es.typeName).
 		Id(username).
@@ -144,6 +145,7 @@ func (es *elasticsearch) patchPermission(ctx context.Context, username string, p
 
 func (es *elasticsearch) deletePermission(ctx context.Context, username string) (bool, error) {
 	_, err := es.client.Delete().
+		Refresh("wait_for").
 		Index(es.indexName).
 		Type(es.typeName).
 		Id(username).
