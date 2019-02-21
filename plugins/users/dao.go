@@ -26,6 +26,7 @@ func newClient(url, indexName, mapping string) (*elasticsearch, error) {
 	client, err := elastic.NewClient(
 		elastic.SetURL(url),
 		elastic.SetRetrier(util.NewRetrier()),
+		elastic.SetHttpClient(util.HTTPClient()),
 	)
 
 	if err != nil {
