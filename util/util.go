@@ -173,12 +173,12 @@ func HTTPClient() *http.Client {
 	once.Do(func() {
 		var netTransport = &http.Transport{
 			DialContext: (&net.Dialer{
-				Timeout: 5 * time.Second,
+				Timeout: 10 * time.Second,
 			}).DialContext,
-			TLSHandshakeTimeout: 5 * time.Second,
+			TLSHandshakeTimeout: 10 * time.Second,
 		}
 		var netClient = &http.Client{
-			Timeout:   time.Second * 10,
+			Timeout:   time.Minute * 2,
 			Transport: netTransport,
 		}
 		client = netClient
