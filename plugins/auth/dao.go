@@ -24,6 +24,7 @@ func newClient(url, userIndex, permissionIndex string) (*elasticsearch, error) {
 	client, err := elastic.NewClient(
 		elastic.SetURL(url),
 		elastic.SetRetrier(util.NewRetrier()),
+		elastic.SetHttpClient(util.HTTPClient()),
 	)
 	if err != nil {
 		return nil, fmt.Errorf("%s: error while initializing elastic client: %v", logTag, err)
