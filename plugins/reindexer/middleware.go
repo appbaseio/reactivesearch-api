@@ -9,6 +9,7 @@ import (
 	"github.com/appbaseio-confidential/arc/middleware/validate"
 	"github.com/appbaseio-confidential/arc/model/category"
 	"github.com/appbaseio-confidential/arc/plugins/auth"
+	"github.com/appbaseio-confidential/arc/plugins/logs"
 )
 
 type chain struct {
@@ -24,6 +25,7 @@ func list() []middleware.Middleware {
 		classifyCategory,
 		classify.Op(),
 		classify.Indices(),
+		logs.Recorder(),
 		auth.BasicAuth(),
 		validate.Indices(),
 		validate.Operation(),
