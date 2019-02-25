@@ -23,6 +23,7 @@ func newClient(url, indexSuffix, mapping string) (rulesService, error) {
 	client, err := elastic.NewClient(
 		elastic.SetURL(url),
 		elastic.SetRetrier(util.NewRetrier()),
+		elastic.SetSnifferInterval(1*time.Minute),
 		elastic.SetHttpClient(util.HTTPClient()),
 	)
 	if err != nil {
