@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"time"
 
 	"github.com/appbaseio-confidential/arc/util"
 	"github.com/olivere/elastic"
@@ -18,7 +19,7 @@ func newClient(url string) (*elasticsearch, error) {
 	client, err := elastic.NewClient(
 		elastic.SetURL(url),
 		elastic.SetRetrier(util.NewRetrier()),
-		elastic.SetHttpClient(util.HTTPClient()),
+		elastic.SetSnifferInterval(1*time.Minute),
 	)
 	if err != nil {
 		return nil, fmt.Errorf("%s: error while initializing elastic client: %v", logTag, err)
