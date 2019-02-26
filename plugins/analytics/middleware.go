@@ -20,6 +20,7 @@ import (
 	"github.com/appbaseio-confidential/arc/model/category"
 	"github.com/appbaseio-confidential/arc/model/index"
 	"github.com/appbaseio-confidential/arc/plugins/auth"
+	"github.com/appbaseio-confidential/arc/plugins/logs"
 	"github.com/appbaseio-confidential/arc/util"
 	"github.com/appbaseio-confidential/arc/util/iplookup"
 	"github.com/google/uuid"
@@ -49,6 +50,7 @@ func list() []middleware.Middleware {
 		classifyCategory,
 		classify.Op(),
 		classify.Indices(),
+		logs.Recorder(),
 		auth.BasicAuth(),
 		validate.Indices(),
 		validate.Operation(),
