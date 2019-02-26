@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -101,9 +100,9 @@ func (a *Analytics) recorder(h http.HandlerFunc) http.HandlerFunc {
 			return
 		}
 		//decode headers and set it back if it relates to analytics
-		for header, value := range r.Header {
+		for header, _ := range r.Header {
 			if strings.HasPrefix(header, "X-Search-") {
-				parsedValue, err := url.QueryUnescape(fmt.Sprint(value))
+				parsedValue, err := url.QueryUnescape(r.Header.Get(header))
 				if err != nil {
 					log.Println("error while decoding header: ", err)
 					h(w, r)
