@@ -8,6 +8,7 @@ import (
 	"log"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"strconv"
 	"strings"
 	"time"
@@ -98,7 +99,18 @@ func (a *Analytics) recorder(h http.HandlerFunc) http.HandlerFunc {
 			util.WriteBackError(w, "an error occurred while recording search request", http.StatusInternalServerError)
 			return
 		}
-
+		//decode headers and set it back if it relates to analytics
+		for header, _ := range r.Header {
+			if strings.HasPrefix(header, "X-Search-") {
+				parsedValue, err := url.QueryUnescape(r.Header.Get(header))
+				if err != nil {
+					log.Println("error while decoding header: ", err)
+					h(w, r)
+					return
+				}
+				r.Header.Set(header, parsedValue)
+			}
+		}
 		searchQuery := r.Header.Get(XSearchQuery)
 		searchID := r.Header.Get(XSearchID)
 		if *reqACL != category.Search || (searchQuery == "" && searchID == "") {
