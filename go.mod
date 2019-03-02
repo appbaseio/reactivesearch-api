@@ -8,7 +8,7 @@ require (
 	github.com/gorilla/context v1.1.1 // indirect
 	github.com/gorilla/mux v1.6.2
 	github.com/mailru/easyjson v0.0.0-20180823135443-60711f1a8329 // indirect
-	github.com/olivere/elastic v6.2.11+incompatible
+	github.com/olivere/elastic v6.2.16+incompatible
 	github.com/rogpeppe/go-internal v1.2.2 // indirect
 	github.com/rs/cors v1.6.0
 	github.com/ulule/limiter v2.2.0+incompatible
