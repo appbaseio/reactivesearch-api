@@ -1,7 +1,7 @@
 version: '3'
 services:
   elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch:6.5.3
+    image: docker.elastic.co/elasticsearch/elasticsearch:6.6.1
     container_name: elasticsearch
     environment:
     - bootstrap.memory_lock=true
@@ -17,24 +17,14 @@ services:
         hard: -1
     ports:
       - 9200:9200
-
-  kibana:
-    image: docker.elastic.co/kibana/kibana:6.5.3
-    container_name: kibana
-    restart: on-failure
-    ports:
-      - 5601:5601
-    depends_on:
-      - elasticsearch
-    links:
-      - elasticsearch
-
   arc:
     build: ./
     container_name: arc
     restart: on-failure
     environment:
     - ES_CLUSTER_URL=http://elasticsearch:9200
+    - USERNAME=foo
+    - PASSWORD=bar
     ports:
       - 8000:8000
     depends_on:
