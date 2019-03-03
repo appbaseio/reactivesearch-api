@@ -2,6 +2,7 @@ package reindexer
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"log"
 	"time"
@@ -40,7 +41,10 @@ func newClient(url string) (*elasticsearch, error) {
 // 	  a. Delete the old index.
 //	  b. Add an alias with the old index name to the new index.
 // 	  c. Add any aliases that existed on the old index to the new index.
-func (es *elasticsearch) reindex(ctx context.Context, indexName string, mappings, settings map[string]interface{}, includes, excludes, types []string) error {
+//
+// We accept a query param `wait_for_completion` which defaults to true, which when false, we don't create any aliases
+// and delete the old index, we instead return the tasks API response.
+func (es *elasticsearch) reindex(ctx context.Context, indexName string, config *reindexConfig, waitForCompletion bool) ([]byte, error) {
 	var err error
 
 	// We fetch the index name pointing to the given alias first.
@@ -55,99 +59,106 @@ func (es *elasticsearch) reindex(ctx context.Context, indexName string, mappings
 		log.Println(err)
 	}
 	if len(indices) > 1 {
-		return fmt.Errorf(`multiple indices pointing to alias "%s"`, indexName)
+		return nil, fmt.Errorf(`multiple indices pointing to alias "%s"`, indexName)
 	}
 	if len(indices) == 1 {
 		indexName = indices[0]
 	}
 
 	// If mappings are not passed, we fetch the mappings of the old index.
-	if mappings == nil {
-		mappings, err = es.mappingsOf(ctx, indexName)
+	if config.Mappings == nil {
+		config.Mappings, err = es.mappingsOf(ctx, indexName)
 		if err != nil {
-			return fmt.Errorf(`error fetching mappings of index "%s": %v`, indexName, err)
+			return nil, fmt.Errorf(`error fetching mappings of index "%s": %v`, indexName, err)
 		}
 	}
 
 	// If settings are not passed, we fetch the settings of the old index.
-	if settings == nil {
-		settings, err = es.settingsOf(ctx, indexName)
+	if config.Settings == nil {
+		config.Settings, err = es.settingsOf(ctx, indexName)
 		if err != nil {
-			return fmt.Errorf(`error fetching settings of index "%s": %v`, indexName, err)
+			return nil, fmt.Errorf(`error fetching settings of index "%s": %v`, indexName, err)
 		}
 	}
 
 	// Setup the destination index prior to running the _reindex action.
 	body := make(map[string]interface{})
-	body["mappings"] = mappings
-	body["settings"] = settings
+	body["mappings"] = config.Mappings
+	body["settings"] = config.Settings
 
 	newIndexName, err := reindexedName(indexName)
 	if err != nil {
-		return fmt.Errorf(`error generating a new index name for index "%s": %v`, indexName, err)
+		return nil, fmt.Errorf(`error generating a new index name for index "%s": %v`, indexName, err)
 	}
 
+	// Create the new index.
 	err = es.createIndex(ctx, newIndexName, body)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	// _source filtering to include/exclude fields while reindexing.
-	ctxSource := make(map[string][]string)
-	if includes != nil && len(includes) > 0 {
-		ctxSource["includes"] = includes
-	}
-	if excludes != nil && len(excludes) > 0 {
-		ctxSource["excludes"] = excludes
-	}
+	// Configure reindex source
+	src := elastic.NewReindexSource().
+		Index(indexName).
+		Type(config.Types...).
+		FetchSourceIncludeExclude(config.Include, config.Exclude)
 
-	// Configure reindex source.
-	reindexSource := make(map[string]interface{})
-	reindexSource["index"] = indexName
-	if types != nil && len(types) > 0 {
-		reindexSource["types"] = types
-	}
-	if len(ctxSource) > 0 {
-		reindexSource["_source"] = ctxSource
-	}
-
-	// Configure reindex destination.
-	reindexDest := make(map[string]interface{})
-	reindexDest["index"] = newIndexName
-
-	// Configure reindex body.
-	reindexBody := make(map[string]interface{})
-	reindexBody["source"] = reindexSource
-	reindexBody["dest"] = reindexDest
+	// Configure reindex dest
+	dest := elastic.NewReindexDestination().
+		Index(newIndexName)
 
 	// Reindex action.
-	_, err = es.client.Reindex().
-		Body(reindexBody).
-		Do(ctx)
-	if err != nil {
-		return fmt.Errorf(`error reindexing index "%s": %v`, indexName, err)
+	reindex := es.client.Reindex().
+		Source(src).
+		Destination(dest).
+		WaitForCompletion(waitForCompletion)
+
+	// If wait_for_completion = true, then we carry out the task synchronously along with three more steps:
+	// 	- fetch any aliases of the old index
+	//  - delete the old index
+	//  - set the aliases of the old index to the new index
+	if waitForCompletion {
+		response, err := reindex.Do(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		// Fetch all the aliases of old index
+		aliases, err := es.aliasesOf(ctx, indexName)
+		if err != nil {
+			return nil, fmt.Errorf(`error fetching aliases of index "%s": %v`, indexName, err)
+		}
+		aliases = append(aliases, indexName)
+
+		// Delete old index
+		err = es.deleteIndex(ctx, indexName)
+		if err != nil {
+			return nil, fmt.Errorf(`error deleting index "%s": %v\n`, indexName, err)
+		}
+
+		// Set aliases of old index to the new index.
+		err = es.setAlias(ctx, newIndexName, aliases...)
+		if err != nil {
+			return nil, fmt.Errorf(`error setting alias "%s" for index "%s"`, indexName, newIndexName)
+		}
+
+		return json.Marshal(response)
 	}
 
-	// Fetch all the aliases of old index
-	aliases, err := es.aliasesOf(ctx, indexName)
+	// If wait_for_completion = false, we carry out the reindexing asynchronously and return the task ID.
+	response, err := reindex.DoAsync(context.Background())
 	if err != nil {
-		return err
+		return nil, err
 	}
-	aliases = append(aliases, indexName)
+	taskID := response.TaskId
 
-	// Delete old index
-	err = es.deleteIndex(ctx, indexName)
+	// Get the reindex task by ID
+	task, err := es.client.TasksGetTask().TaskId(taskID).Do(context.Background())
 	if err != nil {
-		return fmt.Errorf(`error deleting index "%s": %v\n`, indexName, err)
-	}
-
-	// Set aliases of old index to the new index.
-	err = es.setAlias(ctx, newIndexName, aliases...)
-	if err != nil {
-		return fmt.Errorf(`error setting alias "%s" for index "%s"`, indexName, newIndexName)
+		return nil, err
 	}
 
-	return nil
+	return json.Marshal(task)
 }
 
 func (es *elasticsearch) mappingsOf(ctx context.Context, indexName string) (map[string]interface{}, error) {
