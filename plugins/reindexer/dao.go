@@ -44,7 +44,7 @@ func newClient(url string) (*elasticsearch, error) {
 //
 // We accept a query param `wait_for_completion` which defaults to true, which when false, we don't create any aliases
 // and delete the old index, we instead return the tasks API response.
-func (es *elasticsearch) reindex(ctx context.Context, indexName string, config *reindexConfig, waitForCompletion bool) ([]byte, error) {
+func (es *elasticsearch) reindex(ctx context.Context, esService reindexService, indexName string, config *reindexConfig, waitForCompletion bool) ([]byte, error) {
 	var err error
 
 	// We fetch the index name pointing to the given alias first.
@@ -54,7 +54,7 @@ func (es *elasticsearch) reindex(ctx context.Context, indexName string, config *
 	// from the given alias. If alias name doesn't exist we get an
 	// empty slice of indices, which means the index has never been
 	// reindexed before.
-	indices, err := es.getIndicesByAlias(ctx, indexName)
+	indices, err := esService.getIndicesByAlias(ctx, indexName)
 	if err != nil {
 		log.Println(err)
 	}
@@ -67,7 +67,7 @@ func (es *elasticsearch) reindex(ctx context.Context, indexName string, config *
 
 	// If mappings are not passed, we fetch the mappings of the old index.
 	if config.Mappings == nil {
-		config.Mappings, err = es.mappingsOf(ctx, indexName)
+		config.Mappings, err = esService.mappingsOf(ctx, indexName)
 		if err != nil {
 			return nil, fmt.Errorf(`error fetching mappings of index "%s": %v`, indexName, err)
 		}
@@ -75,7 +75,7 @@ func (es *elasticsearch) reindex(ctx context.Context, indexName string, config *
 
 	// If settings are not passed, we fetch the settings of the old index.
 	if config.Settings == nil {
-		config.Settings, err = es.settingsOf(ctx, indexName)
+		config.Settings, err = esService.settingsOf(ctx, indexName)
 		if err != nil {
 			return nil, fmt.Errorf(`error fetching settings of index "%s": %v`, indexName, err)
 		}
@@ -92,7 +92,7 @@ func (es *elasticsearch) reindex(ctx context.Context, indexName string, config *
 	}
 
 	// Create the new index.
-	err = es.createIndex(ctx, newIndexName, body)
+	err = esService.createIndex(ctx, newIndexName, body)
 	if err != nil {
 		return nil, err
 	}
@@ -124,20 +124,20 @@ func (es *elasticsearch) reindex(ctx context.Context, indexName string, config *
 		}
 
 		// Fetch all the aliases of old index
-		aliases, err := es.aliasesOf(ctx, indexName)
+		aliases, err := esService.aliasesOf(ctx, indexName)
 		if err != nil {
 			return nil, fmt.Errorf(`error fetching aliases of index "%s": %v`, indexName, err)
 		}
 		aliases = append(aliases, indexName)
 
 		// Delete old index
-		err = es.deleteIndex(ctx, indexName)
+		err = esService.deleteIndex(ctx, indexName)
 		if err != nil {
 			return nil, fmt.Errorf(`error deleting index "%s": %v\n`, indexName, err)
 		}
 
 		// Set aliases of old index to the new index.
-		err = es.setAlias(ctx, newIndexName, aliases...)
+		err = esService.setAlias(ctx, newIndexName, aliases...)
 		if err != nil {
 			return nil, fmt.Errorf(`error setting alias "%s" for index "%s"`, indexName, newIndexName)
 		}

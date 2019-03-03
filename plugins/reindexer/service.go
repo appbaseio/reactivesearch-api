@@ -3,7 +3,7 @@ package reindexer
 import "context"
 
 type reindexService interface {
-	reindex(ctx context.Context, index string, body *reindexConfig, waitForCompletion bool) ([]byte, error)
+	reindex(ctx context.Context, esService reindexService, index string, body *reindexConfig, waitForCompletion bool) ([]byte, error)
 	mappingsOf(ctx context.Context, index string) (map[string]interface{}, error)
 	settingsOf(ctx context.Context, index string) (map[string]interface{}, error)
 	aliasesOf(ctx context.Context, index string) ([]string, error)
