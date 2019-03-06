@@ -9,6 +9,7 @@ var (
 	defaultCategories = []category.Category{
 		category.Docs,
 		category.Search,
+		category.Indices,
 	}
 
 	adminCategories = []category.Category{
