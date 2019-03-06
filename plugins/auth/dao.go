@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"time"
 
 	"github.com/appbaseio-confidential/arc/model/permission"
 	"github.com/appbaseio-confidential/arc/model/user"
@@ -25,7 +24,7 @@ func newClient(url, userIndex, permissionIndex string) (*elasticsearch, error) {
 	client, err := elastic.NewClient(
 		elastic.SetURL(url),
 		elastic.SetRetrier(util.NewRetrier()),
-		elastic.SetSnifferInterval(1*time.Minute),
+		elastic.SetSniff(false),
 		elastic.SetHttpClient(util.HTTPClient()),
 	)
 	if err != nil {

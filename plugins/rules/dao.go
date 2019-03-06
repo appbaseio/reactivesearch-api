@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
-	"time"
 
 	"github.com/appbaseio-confidential/arc/plugins/rules/query"
 	"github.com/appbaseio-confidential/arc/util"
@@ -24,7 +23,7 @@ func newClient(url, indexSuffix, mapping string) (rulesService, error) {
 	client, err := elastic.NewClient(
 		elastic.SetURL(url),
 		elastic.SetRetrier(util.NewRetrier()),
-		elastic.SetSnifferInterval(1*time.Minute),
+		elastic.SetSniff(false),
 		elastic.SetHttpClient(util.HTTPClient()),
 	)
 	if err != nil {

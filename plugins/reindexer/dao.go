@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
-	"time"
 
 	"github.com/appbaseio-confidential/arc/util"
 	"github.com/olivere/elastic"
@@ -20,7 +19,7 @@ func newClient(url string) (*elasticsearch, error) {
 	client, err := elastic.NewClient(
 		elastic.SetURL(url),
 		elastic.SetRetrier(util.NewRetrier()),
-		elastic.SetSnifferInterval(1*time.Minute),
+		elastic.SetSniff(false),
 		elastic.SetHttpClient(util.HTTPClient()),
 	)
 	if err != nil {

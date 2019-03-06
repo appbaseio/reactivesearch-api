@@ -28,7 +28,7 @@ func newClient(url, analyticsIndex, logsIndex, mapping string) (*elasticsearch, 
 	client, err := elastic.NewClient(
 		elastic.SetURL(url),
 		elastic.SetRetrier(util.NewRetrier()),
-		elastic.SetSnifferInterval(1*time.Minute),
+		elastic.SetSniff(false),
 		elastic.SetHttpClient(util.HTTPClient()),
 	)
 	if err != nil {
