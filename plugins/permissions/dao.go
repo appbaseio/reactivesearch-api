@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
-	"time"
 
 	"github.com/appbaseio-confidential/arc/model/permission"
 	"github.com/appbaseio-confidential/arc/util"
@@ -28,6 +27,7 @@ func newClient(url, indexName, mapping string) (*elasticsearch, error) {
 		elastic.SetURL(url),
 		elastic.SetRetrier(util.NewRetrier()),
 		elastic.SetSniff(false),
+		elastic.SetHttpClient(util.HTTPClient()),
 	)
 	if err != nil {
 		return nil, fmt.Errorf("%s: error while initializing elastic client: %v", logTag, err)
