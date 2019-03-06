@@ -38,12 +38,12 @@ var (
 
 	defaultLimits = Limits{
 		IPLimit:       7200,
-		DocsLimit:     5,
-		SearchLimit:   5,
-		IndicesLimit:  5,
-		CatLimit:      5,
-		ClustersLimit: 5,
-		MiscLimit:     5,
+		DocsLimit:     10,
+		SearchLimit:   10,
+		IndicesLimit:  10,
+		CatLimit:      10,
+		ClustersLimit: 10,
+		MiscLimit:     10,
 	}
 
 	defaultAdminLimits = Limits{
