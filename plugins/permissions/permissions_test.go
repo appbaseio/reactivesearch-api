@@ -1,0 +1,82 @@
+package permissions
+
+import (
+	"fmt"
+	"net/http"
+	"net/http/httptest"
+	"os"
+	"reflect"
+	"testing"
+
+	"github.com/appbaseio-confidential/arc/errors"
+)
+
+var esTestServer = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	w.Write([]byte(""))
+}))
+
+func TestName(t *testing.T) {
+	p := instance()
+	name := p.Name()
+	if name != logTag {
+		t.Errorf("unexpected plugin name, expected %s and got %s\n", logTag, name)
+	}
+}
+
+func TestRoutes(t *testing.T) {
+	p := instance()
+	routes := p.Routes()
+	// TODO: Add a better test
+	if routes[0].Methods == nil {
+		t.Fatalf("Invalid method")
+	}
+}
+
+var InitTests = []struct {
+	instance  *permissions
+	esURL     string
+	permIndex string
+	expected  error
+}{
+	{
+		instance(),
+		esTestServer.URL,
+		defaultPermissionsEsIndex,
+		nil,
+	},
+	{
+		instance(),
+		"",
+		defaultPermissionsEsIndex,
+		errors.NewEnvVarNotSetError(envEsURL),
+	},
+	{
+		instance(),
+		esTestServer.URL,
+		"",
+		nil,
+	},
+	// invalid url to simulate a failure
+	{
+		instance(),
+		"elastic://localhost:9200/error",
+		"",
+		fmt.Errorf("[permissions]: error while initializing elastic client: health check timeout: no Elasticsearch node available"),
+	},
+}
+
+func TestInit(t *testing.T) {
+	defer func() {
+		esTestServer.Close()
+		os.Clearenv()
+	}()
+
+	for _, it := range InitTests {
+		os.Setenv(envEsURL, it.esURL)
+		os.Setenv(envPermissionEsIndex, it.permIndex)
+		actual := it.instance.InitFunc()
+		if !reflect.DeepEqual(actual, it.expected) {
+			t.Errorf("got: %v want: %v\n", actual, it.expected)
+		}
+	}
+}
