@@ -41,12 +41,18 @@ func newClient(url, userIndex, permissionIndex string) (*elasticsearch, error) {
 	return es, nil
 }
 
-func (es *elasticsearch) getCredential(ctx context.Context, username, password string) (interface{}, error) {
+func (es *elasticsearch) getCredential(ctx context.Context, username, password string, checkPassword bool) (interface{}, error) {
 	matchUsername := elastic.NewTermQuery("username.keyword", username)
 	matchPassword := elastic.NewTermQuery("password.keyword", password)
 
-	query := elastic.NewBoolQuery().
-		Must(matchUsername, matchPassword)
+	var query elastic.Query
+	if checkPassword {
+		query = elastic.NewBoolQuery().
+			Must(matchUsername, matchPassword)
+	} else {
+		query = matchUsername
+	}
+
 
 	response, err := es.client.Search().
 		Index(es.userIndex, es.permissionIndex).

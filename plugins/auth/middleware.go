@@ -13,6 +13,8 @@ import (
 	"github.com/appbaseio-confidential/arc/model/permission"
 	"github.com/appbaseio-confidential/arc/model/user"
 	"github.com/appbaseio-confidential/arc/util"
+	"github.com/dgrijalva/jwt-go"
+	"github.com/dgrijalva/jwt-go/request"
 	"github.com/gorilla/mux"
 )
 
@@ -40,13 +42,28 @@ func (a *Auth) basicAuth(h http.HandlerFunc) http.HandlerFunc {
 		}
 
 		username, password, ok := req.BasicAuth()
-		if !ok {
-			util.WriteBackError(w, "request credentials are required", http.StatusUnauthorized)
+		jwtToken, err := request.ParseFromRequest(req, request.AuthorizationHeaderExtractor, func(token *jwt.Token) (interface{}, error) {
+			if _, ok := token.Method.(*jwt.SigningMethodRSA); !ok {
+				return nil, fmt.Errorf("Unexpected signing method: %v", token.Header["alg"])
+			}
+			return a.jwtRsaPublicKey, nil
+		})
+		if !ok && err != nil {
+			util.WriteBackError(w, "request credentials or jwt token is required", http.StatusUnauthorized)
 			return
 		}
 
+		var checkPassword bool
+		if ok {
+			checkPassword = true
+		} else if err == nil {
+			checkPassword = false
+			if claims, ok := jwtToken.Claims.(jwt.MapClaims); ok && jwtToken.Valid {
+				username = claims["username"].(string)
+			}
+		}
 		// we don't know if the credentials provided here are of a 'user' or a 'permission'
-		obj, err := a.getCredential(ctx, username, password)
+		obj, err := a.getCredential(ctx, username, password, checkPassword)
 		if err != nil {
 			msg := fmt.Sprintf("unable to fetch credentials with username: %s", username)
 			log.Printf("%s: %v", logTag, err)
@@ -75,7 +92,7 @@ func (a *Auth) basicAuth(h http.HandlerFunc) http.HandlerFunc {
 				}
 
 				// cache the user
-				if _, ok := a.cachedUser(username, password); !ok {
+				if _, ok := a.cachedUser(username, password, checkPassword); !ok {
 					a.cacheUser(username, reqUser)
 				}
 
@@ -92,7 +109,7 @@ func (a *Auth) basicAuth(h http.HandlerFunc) http.HandlerFunc {
 
 				// cache the permission
 				reqPermission := obj.(*permission.Permission)
-				if _, ok := a.cachedPermission(username, password); !ok {
+				if _, ok := a.cachedPermission(username, password, checkPassword); !ok {
 					a.cachePermission(username, reqPermission)
 				}
 
@@ -130,25 +147,25 @@ func (a *Auth) basicAuth(h http.HandlerFunc) http.HandlerFunc {
 	}
 }
 
-func (a *Auth) getCredential(ctx context.Context, username, password string) (interface{}, error) {
+func (a *Auth) getCredential(ctx context.Context, username, password string, checkPassword bool) (interface{}, error) {
 	// look for the credential in the cache first, if not found then make an es request
-	user, ok := a.cachedUser(username, password)
+	user, ok := a.cachedUser(username, password, checkPassword)
 	if ok {
 		return user, nil
 	}
 
-	permission, ok := a.cachedPermission(username, password)
+	permission, ok := a.cachedPermission(username, password, checkPassword)
 	if ok {
 		return permission, nil
 	}
 
-	return a.es.getCredential(ctx, username, password)
+	return a.es.getCredential(ctx, username, password, checkPassword)
 }
 
-func (a *Auth) cachedUser(userID, password string) (*user.User, bool) {
+func (a *Auth) cachedUser(userID, password string, checkPassword bool) (*user.User, bool) {
 	a.mu.Lock()
 	defer a.mu.Unlock()
-	if u, ok := a.usersCache[userID]; ok && u.Password == password {
+	if u, ok := a.usersCache[userID]; ok && (!checkPassword || u.Password == password) {
 		return u, ok
 	}
 	return nil, false
@@ -170,10 +187,10 @@ func (a *Auth) removeUserFromCache(userID string) {
 	delete(a.usersCache, userID)
 }
 
-func (a *Auth) cachedPermission(username, password string) (*permission.Permission, bool) {
+func (a *Auth) cachedPermission(username, password string, checkPassword bool) (*permission.Permission, bool) {
 	a.mu.Lock()
 	defer a.mu.Unlock()
-	if p, ok := a.permissionsCache[username]; ok && p.Password == password {
+	if p, ok := a.permissionsCache[username]; ok && (!checkPassword || p.Password == password) {
 		return p, ok
 	}
 	return nil, false

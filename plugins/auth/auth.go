@@ -3,6 +3,9 @@ package auth
 import (
 	"os"
 	"sync"
+	"io/ioutil"
+	"crypto/rsa"
+	"github.com/dgrijalva/jwt-go"
 
 	"github.com/appbaseio-confidential/arc/arc"
 	"github.com/appbaseio-confidential/arc/arc/route"
@@ -18,6 +21,7 @@ const (
 	defaultUsersEsIndex       = ".users"
 	envPermissionsEsIndex     = "PERMISSIONS_ES_INDEX"
 	defaultPermissionsEsIndex = ".permissions"
+	envJwtRsaPublicKeyLoc     = "JWT_RSA_PUBLIC_KEY_LOC"
 )
 
 var (
@@ -30,6 +34,7 @@ type Auth struct {
 	mu               sync.Mutex
 	usersCache       map[string]*user.User
 	permissionsCache map[string]*permission.Permission
+	jwtRsaPublicKey     *rsa.PublicKey
 	es               authService
 }
 
@@ -71,9 +76,22 @@ func (a *Auth) InitFunc() error {
 	if permissionIndex == "" {
 		permissionIndex = defaultPermissionsEsIndex
 	}
+	var err error
+	jwtRsaPublicKeyLoc := os.Getenv(envJwtRsaPublicKeyLoc)
+	if jwtRsaPublicKeyLoc != "" {
+		var publicKeyBuf []byte
+		publicKeyBuf, err = ioutil.ReadFile(jwtRsaPublicKeyLoc)
+		if err == nil {
+			a.jwtRsaPublicKey, err = jwt.ParseRSAPublicKeyFromPEM(publicKeyBuf)
+		} else {
+			return err
+		}
+	}
+	if err != nil {
+		return err
+	}
 
 	// initialize the dao
-	var err error
 	a.es, err = newClient(esURL, userIndex, permissionIndex)
 	if err != nil {
 		return err

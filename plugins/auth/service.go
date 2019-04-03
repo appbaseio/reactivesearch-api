@@ -7,7 +7,7 @@ import (
 )
 
 type authService interface {
-	getCredential(ctx context.Context, username, password string) (interface{}, error)
+	getCredential(ctx context.Context, username, password string, checkPassword bool) (interface{}, error)
 	putUser(ctx context.Context, u user.User) (bool, error)
 	getUser(ctx context.Context, username string) (*user.User, error)
 	getRawUser(ctx context.Context, username string) ([]byte, error)
