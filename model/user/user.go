@@ -9,7 +9,6 @@ import (
 
 	"github.com/appbaseio-confidential/arc/errors"
 	"github.com/appbaseio-confidential/arc/model/acl"
-	"github.com/appbaseio-confidential/arc/model/credential"
 	"github.com/appbaseio-confidential/arc/model/category"
 	"github.com/appbaseio-confidential/arc/model/op"
 )
@@ -37,7 +36,6 @@ type User struct {
 	Ops        []op.Operation      `json:"ops"`
 	Indices    []string            `json:"indices"`
 	CreatedAt  string              `json:"created_at"`
-	*credential.Credential
 }
 
 // Options is a function type used to define a user's properties.

@@ -81,7 +81,7 @@ func (es *elasticsearch) getCredential(ctx context.Context, username string) (cr
 	return obj, nil
 }
 
-/*func (es *elasticsearch) putUser(ctx context.Context, u user.User) (bool, error) {
+func (es *elasticsearch) putUser(ctx context.Context, u user.User) (bool, error) {
 	_, err := es.client.Index().
 		Index(es.userIndex).
 		Type(es.userType).
@@ -172,4 +172,4 @@ func (es *elasticsearch) getRawPermission(ctx context.Context, username string) 
 	}
 
 	return src, nil
-}*/
+}

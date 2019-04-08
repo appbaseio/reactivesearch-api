@@ -8,6 +8,7 @@ import (
 	"net/http/httptest"
 	"github.com/appbaseio-confidential/arc/model/credential"
 	"github.com/appbaseio-confidential/arc/model/user"
+	"github.com/appbaseio-confidential/arc/model/permission"
 	"github.com/appbaseio-confidential/arc/model/category"
 	//"fmt"
 	"github.com/appbaseio-confidential/arc/model/op"
@@ -33,7 +34,7 @@ func (m *mockAuthService) getCredential(ctx context.Context, username string) (c
 	}
 }
 
-/*func (m *mockAuthService) putUser(ctx context.Context, u user.User) (bool, error) {
+func (m *mockAuthService) putUser(ctx context.Context, u user.User) (bool, error) {
 	args := m.Called(ctx, u)
 	return args.Bool(0), args.Error(1)
 }
@@ -57,7 +58,7 @@ func (m *mockAuthService) getPermission(ctx context.Context, username string) (*
 func (m *mockAuthService) getRawPermission(ctx context.Context, username string) ([]byte, error) {
 	args := m.Called(ctx, username)
 	return args.Get(0).([]byte), args.Error(1)
-}*/
+}
 
 func TestBasicAuthWithUserPasswordBasic(t *testing.T) {
 	u, _ := user.New("foo", "bar")
