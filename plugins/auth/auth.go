@@ -1,17 +1,16 @@
 package auth
 
 import (
-	"os"
-	"sync"
-	"io/ioutil"
 	"crypto/rsa"
 	"github.com/dgrijalva/jwt-go"
+	"io/ioutil"
+	"os"
+	"sync"
 
+	"github.com/appbaseio-confidential/arc/model/credential"
 	"github.com/appbaseio-confidential/arc/arc"
 	"github.com/appbaseio-confidential/arc/arc/route"
 	"github.com/appbaseio-confidential/arc/errors"
-	"github.com/appbaseio-confidential/arc/model/permission"
-	"github.com/appbaseio-confidential/arc/model/user"
 )
 
 const (
@@ -31,11 +30,10 @@ var (
 
 // Auth (TODO - clear cache after fixed entries: LRU?)
 type Auth struct {
-	mu               sync.Mutex
-	usersCache       map[string]*user.User
-	permissionsCache map[string]*permission.Permission
-	jwtRsaPublicKey     *rsa.PublicKey
-	es               authService
+	mu              sync.Mutex
+	credentialCache map[string]credential.AuthCredential
+	jwtRsaPublicKey *rsa.PublicKey
+	es              authService
 }
 
 func init() {
@@ -48,8 +46,7 @@ func init() {
 func Instance() *Auth {
 	once.Do(func() {
 		singleton = &Auth{
-			usersCache:       make(map[string]*user.User),
-			permissionsCache: make(map[string]*permission.Permission),
+			credentialCache: make(map[string]credential.AuthCredential),
 		}
 	})
 	return singleton
@@ -81,14 +78,13 @@ func (a *Auth) InitFunc() error {
 	if jwtRsaPublicKeyLoc != "" {
 		var publicKeyBuf []byte
 		publicKeyBuf, err = ioutil.ReadFile(jwtRsaPublicKeyLoc)
-		if err == nil {
-			a.jwtRsaPublicKey, err = jwt.ParseRSAPublicKeyFromPEM(publicKeyBuf)
-		} else {
+		if err != nil {
 			return err
 		}
-	}
-	if err != nil {
-		return err
+		a.jwtRsaPublicKey, err = jwt.ParseRSAPublicKeyFromPEM(publicKeyBuf)
+		if err != nil {
+			return err
+		}
 	}
 
 	// initialize the dao

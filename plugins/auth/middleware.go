@@ -41,29 +41,36 @@ func (a *Auth) basicAuth(h http.HandlerFunc) http.HandlerFunc {
 			return
 		}
 
-		username, password, ok := req.BasicAuth()
+		username, password, hasBasicAuth := req.BasicAuth()
 		jwtToken, err := request.ParseFromRequest(req, request.AuthorizationHeaderExtractor, func(token *jwt.Token) (interface{}, error) {
 			if _, ok := token.Method.(*jwt.SigningMethodRSA); !ok {
 				return nil, fmt.Errorf("Unexpected signing method: %v", token.Header["alg"])
 			}
+			if (a.jwtRsaPublicKey == nil) {
+				return nil, fmt.Errorf("No Public Key Registered")
+			}
 			return a.jwtRsaPublicKey, nil
 		})
-		if !ok && err != nil {
-			util.WriteBackError(w, "request credentials or jwt token is required", http.StatusUnauthorized)
+		if !hasBasicAuth && err != nil {
+			var msg string
+			if (err == request.ErrNoTokenInRequest) {
+				msg = "Basic Auth or JWT is required"
+			} else {
+				msg = fmt.Sprintf("Unable to parse JWT: %v", err)
+			}
+			util.WriteBackError(w, msg, http.StatusUnauthorized)
 			return
 		}
-
-		var checkPassword bool
-		if ok {
-			checkPassword = true
-		} else if err == nil {
-			checkPassword = false
+		if !hasBasicAuth {
 			if claims, ok := jwtToken.Claims.(jwt.MapClaims); ok && jwtToken.Valid {
 				username = claims["username"].(string)
+			} else {
+				util.WriteBackError(w, fmt.Sprintf("Invalid JWT"), http.StatusUnauthorized)
 			}
 		}
+
 		// we don't know if the credentials provided here are of a 'user' or a 'permission'
-		obj, err := a.getCredential(ctx, username, password, checkPassword)
+		obj, err := a.getCredential(ctx, username)
 		if err != nil {
 			msg := fmt.Sprintf("unable to fetch credentials with username: %s", username)
 			log.Printf("%s: %v", logTag, err)
@@ -71,7 +78,7 @@ func (a *Auth) basicAuth(h http.HandlerFunc) http.HandlerFunc {
 			return
 		}
 		if obj == nil {
-			msg := fmt.Sprintf("credential with username=%s, password=%s not found", username, password)
+			msg := fmt.Sprintf("credential with username=%s not found", username)
 			util.WriteBackError(w, msg, http.StatusUnauthorized)
 			return
 		}
@@ -85,6 +92,10 @@ func (a *Auth) basicAuth(h http.HandlerFunc) http.HandlerFunc {
 			{
 				// if the request is made to elasticsearch using user credentials, then the user has to be an admin
 				reqUser := obj.(*user.User)
+				if (hasBasicAuth && reqUser.Password != password) {
+					util.WriteBackError(w, "invalid password", http.StatusUnauthorized)
+					return
+				}
 				if reqCategory.IsFromES() {
 					authenticated = *reqUser.IsAdmin
 				} else {
@@ -92,8 +103,8 @@ func (a *Auth) basicAuth(h http.HandlerFunc) http.HandlerFunc {
 				}
 
 				// cache the user
-				if _, ok := a.cachedUser(username, password, checkPassword); !ok {
-					a.cacheUser(username, reqUser)
+				if _, ok := a.cachedCredential(username); !ok {
+					a.cacheCredential(username, reqUser)
 				}
 
 				// store request user and credential identifier in the context
@@ -103,14 +114,19 @@ func (a *Auth) basicAuth(h http.HandlerFunc) http.HandlerFunc {
 			}
 		case *permission.Permission:
 			{
+				reqPermission := obj.(*permission.Permission)
+				if (hasBasicAuth && reqPermission.Password != password) {
+					util.WriteBackError(w, "invalid password", http.StatusUnauthorized)
+					return
+				}
+
 				if reqCategory.IsFromES() {
 					authenticated = true
 				}
 
 				// cache the permission
-				reqPermission := obj.(*permission.Permission)
-				if _, ok := a.cachedPermission(username, password, checkPassword); !ok {
-					a.cachePermission(username, reqPermission)
+				if _, ok := a.cachedCredential(username); !ok {
+					a.cacheCredential(username, reqPermission)
 				}
 
 				// store the request permission and credential identifier in the context
@@ -129,85 +145,45 @@ func (a *Auth) basicAuth(h http.HandlerFunc) http.HandlerFunc {
 
 		// remove user/permission from cache on write operation
 		if *reqOp == op.Write || *reqOp == op.Delete {
-			switch *reqCategory {
-			case category.User:
-				if username, ok := mux.Vars(req)["username"]; ok {
-					a.removeUserFromCache(username)
-				} else {
-					a.removeUserFromCache(username)
-				}
-			case category.Permission:
-				// in case of permission, username is to be taken from request route
-				username := mux.Vars(req)["username"]
-				a.removePermissionFromCache(username)
-			}
+			username := mux.Vars(req)["username"]
+			a.removeCredentialFromCache(username)
 		}
 
 		h(w, req)
 	}
 }
 
-func (a *Auth) getCredential(ctx context.Context, username, password string, checkPassword bool) (interface{}, error) {
+func (a *Auth) getCredential(ctx context.Context, username string) (credential.AuthCredential, error) {
 	// look for the credential in the cache first, if not found then make an es request
-	user, ok := a.cachedUser(username, password, checkPassword)
+	credential, ok := a.cachedCredential(username)
 	if ok {
-		return user, nil
+		return credential, nil
+	} else {
+		return a.es.getCredential(ctx, username)
 	}
-
-	permission, ok := a.cachedPermission(username, password, checkPassword)
-	if ok {
-		return permission, nil
-	}
-
-	return a.es.getCredential(ctx, username, password, checkPassword)
 }
 
-func (a *Auth) cachedUser(userID, password string, checkPassword bool) (*user.User, bool) {
+func (a *Auth) cachedCredential(username string) (credential.AuthCredential, bool) {
 	a.mu.Lock()
 	defer a.mu.Unlock()
-	if u, ok := a.usersCache[userID]; ok && (!checkPassword || u.Password == password) {
-		return u, ok
+	if c, ok := a.credentialCache[username]; ok {
+		return c, ok
 	}
 	return nil, false
 }
 
-func (a *Auth) cacheUser(userID string, u *user.User) {
-	if u == nil {
-		log.Printf("%s: cannot cache 'nil' user, skipping...", logTag)
+func (a *Auth) removeCredentialFromCache(username string) {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+	delete(a.credentialCache, username)
+}
+
+func (a *Auth) cacheCredential(username string, c credential.AuthCredential) {
+	if c == nil {
+		log.Printf("%s: cannot cache 'nil' credential, skipping...", logTag)
 		return
 	}
 	a.mu.Lock()
 	defer a.mu.Unlock()
-	a.usersCache[userID] = u
-}
-
-func (a *Auth) removeUserFromCache(userID string) {
-	a.mu.Lock()
-	defer a.mu.Unlock()
-	delete(a.usersCache, userID)
-}
-
-func (a *Auth) cachedPermission(username, password string, checkPassword bool) (*permission.Permission, bool) {
-	a.mu.Lock()
-	defer a.mu.Unlock()
-	if p, ok := a.permissionsCache[username]; ok && (!checkPassword || p.Password == password) {
-		return p, ok
-	}
-	return nil, false
-}
-
-func (a *Auth) cachePermission(username string, p *permission.Permission) {
-	if p == nil {
-		log.Printf("%s: cannot cache 'nil' permission, skipping...", logTag)
-		return
-	}
-	a.mu.Lock()
-	defer a.mu.Unlock()
-	a.permissionsCache[username] = p
-}
-
-func (a *Auth) removePermissionFromCache(username string) {
-	a.mu.Lock()
-	defer a.mu.Unlock()
-	delete(a.permissionsCache, username)
+	a.credentialCache[username] = c
 }
