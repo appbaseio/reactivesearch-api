@@ -63,18 +63,22 @@ func (es *elasticsearch) getCredential(ctx context.Context, username string) (cr
 	for _, hit := range response.Hits.Hits {
 		if hit.Index == es.userIndex {
 			var u user.User
-			err := json.Unmarshal(*hit.Source, &u)
-			if err != nil {
-				return nil, err
+			if hit.Source != nil {
+				err := json.Unmarshal(*hit.Source, &u)
+				if err != nil {
+					return nil, err
+				}
+				obj = &u
 			}
-			obj = &u
 		} else if hit.Index == es.permissionIndex {
 			var p permission.Permission
-			err := json.Unmarshal(*hit.Source, &p)
-			if err != nil {
-				return nil, err
+			if hit.Source != nil {
+				err := json.Unmarshal(*hit.Source, &p)
+				if err != nil {
+					return nil, err
+				}
+				obj = &p
 			}
-			obj = &p
 		}
 	}
 
