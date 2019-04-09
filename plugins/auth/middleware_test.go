@@ -92,8 +92,7 @@ func TestBasicAuthWithUserPasswordBasic(t *testing.T) {
 
 func TestBasicAuthWithUserPasswordWithoutUser(t *testing.T) {
 	ehf := func (_ http.ResponseWriter, req *http.Request) {
-		aU, _ := user.FromContext(req.Context())
-		assert.Nil(t, aU)
+		assert.Fail(t, "Should not be run")
 	}
 
 	c := new(category.Category)
@@ -118,6 +117,83 @@ func TestBasicAuthWithUserPasswordWithoutUser(t *testing.T) {
 
 	mas.AssertExpectations(t)
 	assert.Equal(t, http.StatusUnauthorized, recorder.Result().StatusCode)
+	aU, _ := user.FromContext(request.Context())
+	assert.Nil(t, aU)
+}
+
+func TestBasicAuthWithUserWrongPassword(t *testing.T) {
+	u, _ := user.New("user3", "bar")
+	ehf := func (_ http.ResponseWriter, request *http.Request) {
+		assert.Fail(t, "Should not be run")
+	}
+
+	c := new(category.Category)
+	*c = category.User
+	ctx := category.NewContext(context.Background(), c)
+
+	oper := new(op.Operation)
+	*oper = op.Read
+	ctx = op.NewContext(ctx, oper)
+
+	request := httptest.NewRequest("GET", "/", nil)
+	request = request.WithContext(ctx)
+	request.SetBasicAuth("user3", "bar2")
+	recorder := httptest.NewRecorder()
+
+	mas := new(mockAuthService)
+	mas.On("getCredential", ctx, "user3").Return(u, nil)
+
+	Instance().es = mas
+
+	BasicAuth()(ehf)(recorder, request)
+	mas.AssertExpectations(t)
+	assert.Equal(t, http.StatusUnauthorized, recorder.Result().StatusCode)
+	aU, _ := user.FromContext(request.Context())
+	assert.Nil(t, aU)
+	assert.NotEqual(t, u, aU)
+}
+
+func TestBasicAuthTwoRequests(t *testing.T) {
+	u, _ := user.New("user4", "bar")
+	ehf := func (_ http.ResponseWriter, req *http.Request) {
+		aU, _ := user.FromContext(req.Context())
+		assert.Equal(t, u, aU)
+	}
+
+	c := new(category.Category)
+	*c = category.User
+	ctx := category.NewContext(context.Background(), c)
+
+	oper := new(op.Operation)
+	*oper = op.Read
+	ctx = op.NewContext(ctx, oper)
+
+	mas := new(mockAuthService)
+	mas.On("getCredential", ctx, "user4").Return(u, nil)
+	Instance().es = mas
+
+	request := httptest.NewRequest("GET", "/", nil)
+	request = request.WithContext(ctx)
+	request.SetBasicAuth("user4", "bar")
+	recorder := httptest.NewRecorder()
+
+
+	BasicAuth()(ehf)(recorder, request)
+	assert.Equal(t, http.StatusOK, recorder.Result().StatusCode)
+
+	ehf = func (_ http.ResponseWriter, request *http.Request) {
+		assert.Fail(t, "Should not be run")
+	}
+	request = httptest.NewRequest("GET", "/", nil)
+	request = request.WithContext(ctx)
+	request.SetBasicAuth("user4", "bar2")
+	recorder = httptest.NewRecorder()
+	BasicAuth()(ehf)(recorder, request)
+	assert.Equal(t, http.StatusUnauthorized, recorder.Result().StatusCode)
+	aU, _ := user.FromContext(request.Context())
+	assert.Nil(t, aU)
+
+	mas.AssertExpectations(t)
 }
 
 
@@ -163,8 +239,7 @@ func TestBasicAuthWithJWToken(t *testing.T) {
 
 func TestBasicAuthWithJWTokenWithoutUser(t *testing.T) {
 	ehf := func (_ http.ResponseWriter, req *http.Request) {
-		aU, _ := user.FromContext(req.Context())
-		assert.Nil(t, aU)
+		assert.Fail(t, "Should not be run")
 	}
 
 	c := new(category.Category)
@@ -198,4 +273,6 @@ func TestBasicAuthWithJWTokenWithoutUser(t *testing.T) {
 	BasicAuth()(ehf)(recorder, request)
 	mas.AssertExpectations(t)
 	assert.Equal(t, http.StatusUnauthorized, recorder.Result().StatusCode)
+	aU, _ := user.FromContext(request.Context())
+	assert.Nil(t, aU)
 }
