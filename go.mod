@@ -6,7 +6,7 @@ require (
 	github.com/gobuffalo/packr v1.22.0
 	github.com/google/uuid v1.0.0
 	github.com/gorilla/context v1.1.1 // indirect
-	github.com/gorilla/mux v1.6.2
+	github.com/gorilla/mux v1.7.1
 	github.com/mailru/easyjson v0.0.0-20180823135443-60711f1a8329 // indirect
 	github.com/olivere/elastic v6.2.16+incompatible
 	github.com/rogpeppe/go-internal v1.2.2 // indirect

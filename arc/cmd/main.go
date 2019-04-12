@@ -86,7 +86,7 @@ func main() {
 	arc.By(criteria).Sort(plugins)
 
 	router := mux.NewRouter().StrictSlash(true)
-
+	router.Use(BillingMiddleware)
 	// Load plugin routes
 	for _, p := range plugins {
 		if err := arc.LoadPlugin(router, p); err != nil {
@@ -102,6 +102,7 @@ func main() {
 	})
 	handler := c.Handler(router)
 	handler = logger.Log(handler)
+
 	//handler = panic.Recovery(handler)
 
 	if listPlugins {
