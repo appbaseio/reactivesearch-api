@@ -15,7 +15,7 @@ import (
 	"github.com/appbaseio-confidential/arc/middleware/logger"
 	"github.com/gorilla/mux"
 	"github.com/rs/cors"
-
+	"github.com/robfig/cron"
 	"github.com/appbaseio-confidential/arc/util"
 	"gopkg.in/natefinch/lumberjack.v2"
 
@@ -71,7 +71,9 @@ func main() {
 	if err := LoadEnvFromFile(envFile); err != nil {
 		log.Printf("%s: reading env file %q: %v", logTag, envFile, err)
 	}
-
+	cronjob := cron.New()
+	cronjob.AddFunc("@every 1h", util.ReportUsage)
+	cronjob.Start()
 	// Sort plugins such that elasticsearch plugin routes are loaded after all the other plugin routes.
 	// This is necessary because the elasticsearch routes might shadow the routes in other plugins.
 	plugins := arc.ListPlugins()
