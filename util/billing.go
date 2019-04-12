@@ -1,4 +1,4 @@
-package main
+package util
 
 import (
 	"bytes"
@@ -9,11 +9,8 @@ import (
 	"net/http"
 	"os"
 	"time"
-
-	"github.com/appbaseio-confidential/arc/util"
 	"github.com/olivere/elastic"
 )
-
 const (
 	envEsURL       = "ES_CLUSTER_URL"
 	arcIdentifier  = "ARC_ID"
@@ -24,7 +21,7 @@ const (
 // Middleware function, which will be called for each request
 func BillingMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if util.BillingOK {
+		if BillingOK {
 			next.ServeHTTP(w, r)
 		} else {
 			// Write an error and stop the handler chain
@@ -98,14 +95,14 @@ func ReportUsage() {
 	if url == "" {
 		log.Println("SUBSCRIPTION_ID not found. Initializing in trial mode")
 	}
-	nodeCount, err := FetchNodeCount()
+	nodeCount, err := FetchNodeCount(url)
 	if err != nil || nodeCount == -1 {
 		log.Println("unable to fetch node count: ", err)
 	}
 	usageBody := ArcUsage{}
 	usageBody.ArcID = arcID
 	usageBody.Email = email
-	usageBody.SubscriptionID = subscriptionID
+	usageBody.SubscriptionID = subID
 	usageBody.Timestamp = time.Now().Unix()
 	usageBody.Quantity = nodeCount
 	response, err := ReportUsageRequest(usageBody)
@@ -114,13 +111,13 @@ func ReportUsage() {
 	}
 
 	if response.StatusCode != 0 {
-		util.BillingOK = response.Accepted
+		BillingOK = response.Accepted
 	}
 	if response.Accepted {
-		util.BillingErrorCount = 0
+		BillingErrorCount = 0
 	}
 	if response.ErrorMsg != "" || response.StatusCode == 402 || !response.Accepted {
-		util.BillingErrorCount++
+		BillingErrorCount++
 	}
 	if response.WarningMsg != "" {
 		log.Println("warning:", response.WarningMsg)
@@ -130,23 +127,23 @@ func ReportUsage() {
 	}
 }
 
-func FetchNodeCount() (int, error) {
+func FetchNodeCount(url string) (int, error) {
 	ctx := context.Background()
 	// Initialize the client
 	client, err := elastic.NewClient(
 		elastic.SetURL(url),
-		elastic.SetRetrier(util.NewRetrier()),
+		elastic.SetRetrier(NewRetrier()),
 		elastic.SetSniff(false),
-		elastic.SetHttpClient(util.HTTPClient()),
+		elastic.SetHttpClient(HTTPClient()),
 	)
 	if err != nil {
 		log.Fatalln("unable to initialize elastic client: ", err)
 	}
 	nodes, err := client.NodesInfo().
 		Metric("nodes").
-		Do(context.Background())
+		Do(ctx)
 	if err != nil {
 		return -1, err
 	}
-	return nodes.Nodes, nil
+	return len(nodes.Nodes), nil
 }

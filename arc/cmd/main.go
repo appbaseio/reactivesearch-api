@@ -16,6 +16,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/rs/cors"
 
+	"github.com/appbaseio-confidential/arc/util"
 	"gopkg.in/natefinch/lumberjack.v2"
 
 	_ "github.com/appbaseio-confidential/arc/plugins/analytics"
@@ -86,7 +87,8 @@ func main() {
 	arc.By(criteria).Sort(plugins)
 
 	router := mux.NewRouter().StrictSlash(true)
-	router.Use(BillingMiddleware)
+	router.Use(util.BillingMiddleware)
+	
 	// Load plugin routes
 	for _, p := range plugins {
 		if err := arc.LoadPlugin(router, p); err != nil {
