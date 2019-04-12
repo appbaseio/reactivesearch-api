@@ -37,6 +37,7 @@ var (
 	listPlugins bool
 	address     string
 	port        int
+	Billing		bool
 )
 
 func init() {
@@ -45,6 +46,7 @@ func init() {
 	flag.BoolVar(&listPlugins, "plugins", false, "List currently registered plugins")
 	flag.StringVar(&address, "addr", "", "Address to serve on")
 	flag.IntVar(&port, "port", 8000, "Port number")
+	flag.BoolVar(&Billing, "billing", false, "enable or disable billing")
 }
 
 func main() {
@@ -71,9 +73,14 @@ func main() {
 	if err := LoadEnvFromFile(envFile); err != nil {
 		log.Printf("%s: reading env file %q: %v", logTag, envFile, err)
 	}
+	if Billing {
+	log.Println("billing enabled")
 	cronjob := cron.New()
 	cronjob.AddFunc("@every 1h", util.ReportUsage)
 	cronjob.Start()
+	} else {
+		log.Println("billing not enabled")
+	}
 	// Sort plugins such that elasticsearch plugin routes are loaded after all the other plugin routes.
 	// This is necessary because the elasticsearch routes might shadow the routes in other plugins.
 	plugins := arc.ListPlugins()
@@ -89,7 +96,9 @@ func main() {
 	arc.By(criteria).Sort(plugins)
 
 	router := mux.NewRouter().StrictSlash(true)
+	if Billing {
 	router.Use(util.BillingMiddleware)
+	}
 	
 	// Load plugin routes
 	for _, p := range plugins {
