@@ -23,6 +23,9 @@ func BillingMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if BillingOK {
 			next.ServeHTTP(w, r)
+		} else if !BillingOK && BillingErrorCount < 24{
+			log.Println("warning: payment required. arc will start sending out error messages in next", (24 - BillingErrorCount), "hours")
+			next.ServeHTTP(w, r)
 		} else {
 			// Write an error and stop the handler chain
 			http.Error(w, "payment required", http.StatusPaymentRequired)
