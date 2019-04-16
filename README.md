@@ -94,6 +94,8 @@ This produces an executable in the root project directory. To start the Arc serv
 
     ./build/arc --log=stdout --env=.env
 
+To build the image with billing support enabled, we need to add `--billing` tag in CMD and set it true. This modification needs to be done in the dockerfile. Example dockerfile is present in this repo. Refer to Billing-Dockerfile.
+
 Alternatively, you could execute the following command to start the server without producing an executable:
 
     go run cmd/arc/main.go --env=path/to/.env --log=stdout
