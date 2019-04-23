@@ -76,6 +76,7 @@ func main() {
 	}
 	if Billing {
 	log.Println("billing enabled")
+	util.ReportUsage()
 	cronjob := cron.New()
 	cronjob.AddFunc("@every 1h", util.ReportUsage)
 	cronjob.Start()
