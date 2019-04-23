@@ -27,6 +27,7 @@ import (
 	_ "github.com/appbaseio-confidential/arc/plugins/reindexer"
 	_ "github.com/appbaseio-confidential/arc/plugins/rules"
 	_ "github.com/appbaseio-confidential/arc/plugins/users"
+	_ "github.com/appbaseio-confidential/arc/plugins/proxy"
 )
 
 const logTag = "[cmd]"
