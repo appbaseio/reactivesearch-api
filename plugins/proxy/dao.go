@@ -6,9 +6,9 @@ import (
 	"net/http"
 	"os"
 	"bytes"
+	"crypto/tls"
 
 	appbase_errors "github.com/appbaseio-confidential/arc/errors"
-	"github.com/appbaseio-confidential/arc/util"
 )
 
 type arcProxy struct {
@@ -19,7 +19,10 @@ type arcProxy struct {
 }
 
 func newClient(arcID, subID, email string) (*arcProxy, error) {
-	client := util.HTTPClient()
+	tr := &http.Transport{
+		TLSClientConfig: &tls.Config{InsecureSkipVerify : true},
+	}
+	client := &http.Client{Transport: tr}
 	ap := &arcProxy{arcID, subID,email, client}
 	return ap, nil
 }
