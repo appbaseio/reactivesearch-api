@@ -103,6 +103,9 @@ func main() {
 	
 	// Load plugin routes
 	for _, p := range plugins {
+		if !Billing && p.Name() == "proxy" {
+			continue
+		}
 		if err := arc.LoadPlugin(router, p); err != nil {
 			log.Fatalf("%v", err)
 		}
