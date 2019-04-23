@@ -104,7 +104,7 @@ func (px *Proxy) getSubscription() http.HandlerFunc {
 			}
 			px.email = emailID
 		}
-		response, statusCode, err := px.ap.sendRequest(fmt.Sprint("https://accapi.appbase.io/arc/instance/", px.email, "?", px.arcID), "GET", nil)
+		response, statusCode, err := px.ap.sendRequest(fmt.Sprint("https://accapi.appbase.io/arc/instance/", px.email, "?arcid=", px.arcID), "GET", nil)
 		if err != nil {
 			log.Printf("%s: %v\n", proxyTag, err)
 			util.WriteBackError(w, err.Error(), http.StatusBadRequest)

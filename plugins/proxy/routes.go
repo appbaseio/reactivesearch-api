@@ -20,14 +20,14 @@ func (px *Proxy) routes() []route.Route {
 			Name:    "Delete arc subscription",
 			Methods: []string{http.MethodDelete},
 			Path:    "/arc/subscription",
-			//HandlerFunc: middleware(rx.reindex()),
+			HandlerFunc: px.deleteSubscription(),
 			Description: "A proxy route to delete ARC subscription.",
 		},
 		{
 			Name:    "Get arc subscription",
-			Methods: []string{http.MethodDelete},
+			Methods: []string{http.MethodGet},
 			Path:    "/arc/instance",
-			//HandlerFunc: middleware(rx.reindex()),
+			HandlerFunc: px.getSubscription(),
 			Description: "A proxy route to get ARC subscription details.",
 		},
 	}
