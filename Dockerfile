@@ -23,4 +23,4 @@ FROM scratch
 COPY --from=build /go/bin/arc arc
 
 EXPOSE 8000
-CMD ["/arc", "--log", "stdout", "--plugins", "--billing", "true"]
+CMD ["/arc", "--log", "stdout", "--plugins"]
