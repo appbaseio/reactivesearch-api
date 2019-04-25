@@ -1,11 +1,12 @@
 package proxy
 
 import (
-	"io/ioutil"
 	"encoding/json"
+	"fmt"
+	"io/ioutil"
 	"log"
 	"net/http"
-	"fmt"
+
 	"github.com/appbaseio-confidential/arc/util"
 )
 

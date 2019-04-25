@@ -1,9 +1,10 @@
 package proxy
 
 import (
+	"log"
 	"os"
 	"sync"
-	"log"
+
 	"github.com/appbaseio-confidential/arc/arc"
 	"github.com/appbaseio-confidential/arc/arc/route"
 	"github.com/appbaseio-confidential/arc/errors"
@@ -13,7 +14,7 @@ const (
 	proxyTag = "[proxy]"
 	arcUUID  = "ARC_ID"
 	subID    = "SUBSCRIPTION_ID"
-	email	= "EMAIL"
+	email    = "EMAIL"
 )
 
 var (
@@ -26,7 +27,7 @@ type Proxy struct {
 	arcID string
 	subID string
 	email string
-	ap proxyService
+	ap    proxyService
 }
 
 func init() {
