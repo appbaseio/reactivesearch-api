@@ -50,6 +50,34 @@ func (px *Proxy) postSubscription() http.HandlerFunc {
 	}
 }
 
+func (px *Proxy) postMetadata() http.HandlerFunc {
+	return func(w http.ResponseWriter, req *http.Request) {
+		if px.arcID == "" {
+			arcID, err := px.ap.getArcID()
+			if err != nil {
+				util.WriteBackError(w, "arcID not found", http.StatusBadRequest)
+				return
+			}
+			px.arcID = arcID
+		}
+
+		reqBody, err := ioutil.ReadAll(req.Body)
+		if err != nil {
+			log.Printf("%s: %v\n", proxyTag, err)
+			util.WriteBackError(w, "Can't read request body", http.StatusBadRequest)
+			return
+		}
+		defer req.Body.Close()
+		response, statusCode, err := px.ap.sendRequest(fmt.Sprint("https://accapi.appbase.io/arc/", px.arcID, "/metadata"), "POST", reqBody)
+		if err != nil {
+			log.Printf("%s: %v\n", proxyTag, err)
+			util.WriteBackError(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		util.WriteBackRaw(w, response, statusCode)
+	}
+}
+
 func (px *Proxy) deleteSubscription() http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
 		if px.arcID == "" {

@@ -17,6 +17,13 @@ func (px *Proxy) routes() []route.Route {
 			Description: "A proxy route to create ARC subscription.",
 		},
 		{
+			Name:        "Post arc billing metadata",
+			Methods:     []string{http.MethodPost},
+			Path:        "/arc/metadata",
+			HandlerFunc: px.postMetadata(),
+			Description: "A proxy route to post metadata for an ARC subscription.",
+		},
+		{
 			Name:        "Delete arc subscription",
 			Methods:     []string{http.MethodDelete},
 			Path:        "/arc/subscription",
