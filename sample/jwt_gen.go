@@ -13,8 +13,12 @@ func main() {
 			"exp": time.Now().Unix() + 1000,
 		})
         // generate rsa private key using ssh-keygen
-        // or use sample/rsa-private
-	buf, err1 := ioutil.ReadFile(os.Getenv("JWT_RSA_PRIVATE_KEY"))
+	
+        private_key_loc := os.Getenv("JWT_RSA_PRIVATE_KEY_LOC")
+	if private_key_loc == "" {
+		private_key_loc = "sample/rsa-private"
+        }
+	buf, err1 := ioutil.ReadFile(private_key_loc)
 	if err1 != nil {
 		panic(err1)
 	}

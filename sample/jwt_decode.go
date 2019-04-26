@@ -14,9 +14,12 @@ func main() {
 	// generate the public key from the private key in pkcs8
         // using the command:
         // ssh-keygen -e -m pkcs8 -f *privatekeyloc*
-        // or use sample/rsa-public
-        // export JWT_RSA_PUBLIC_KEY=sample/rsa-public
-	buf, err2 := ioutil.ReadFile(os.Getenv("JWT_RSA_PUBLIC_KEY"))
+
+	public_key_loc := os.Getenv("JWT_RSA_PUBLIC_KEY_LOC")
+	if public_key_loc == "" {
+		public_key_loc = "sample/rsa-public"
+        }
+	buf, err2 := ioutil.ReadFile(public_key_loc)
 	if err2 != nil {
 		panic(err2)
 	}
