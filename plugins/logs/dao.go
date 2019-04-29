@@ -109,7 +109,7 @@ func (es *elasticsearch) getRawLogs(ctx context.Context, from, size string, indi
 	hits := []*json.RawMessage{}
 	for _, hit := range response.Hits.Hits {
 		var source map[string]interface{}
-		err := json.Unmarshal(*hit.Source, &source)
+		err := json.Unmarshal(hit.Source, &source)
 		if err != nil {
 			return nil, err
 		}
@@ -124,9 +124,9 @@ func (es *elasticsearch) getRawLogs(ctx context.Context, from, size string, indi
 		}
 
 		if len(indices) == 0 {
-			hits = append(hits, hit.Source)
+			hits = append(hits, &hit.Source)
 		} else if util.IsSubset(indices, logIndices) {
-			hits = append(hits, hit.Source)
+			hits = append(hits, &hit.Source)
 		}
 	}
 

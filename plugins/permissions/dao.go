@@ -171,7 +171,7 @@ func (es *elasticsearch) getRawOwnerPermissions(ctx context.Context, owner strin
 
 	rawPermissions := []*json.RawMessage{}
 	for _, hit := range resp.Hits.Hits {
-		rawPermissions = append(rawPermissions, hit.Source)
+		rawPermissions = append(rawPermissions, &hit.Source)
 	}
 
 	raw, err := json.Marshal(rawPermissions)
