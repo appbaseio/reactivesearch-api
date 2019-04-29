@@ -61,19 +61,44 @@ In order to run arc, you'll require an Elasticsearch node. There are multiple wa
 
 1. Create a docker network
 
-        docker network create arc
+    ```
+    docker network create arc
+    ```
 
 2. Start a single node Elasticsearch cluster locally
 
-        docker run -d --rm --name elasticsearch -p 9200:9200 -p 9300:9300 --net=arc -e "discovery.type=single-node" docker.elastic.co/elasticsearch/elasticsearch:6.5.3
+    ```
+    docker run -d --rm \
+    --name elasticsearch \
+    --net=arc \
+    -p 9200:9200 \
+    -p 9300:9300 \
+    -e "discovery.type=single-node"\
+    elasticsearch:6.7.1
+    ```
 
 3. Start the Kibana dashboard locally
 
-        docker run -d --rm --name kibana -p 5601:5601 --net=arc --link elasticsearch docker.elastic.co/kibana/kibana:6.5.3
+    ```
+    docker run -d --rm \
+    --name kibana \
+    --net=arc \
+    -p 5601:5601 \
+    --link elasticsearch:elasticsearch \
+    kibana:6.7.1
+    ```
 
 4. Start Arc locally 
 
-        docker run --rm --name arc -p 8000:8000 --env-file .env --net=arc appbaseio-confidential/arc:latest
+    ```
+    docker run --rm \
+    --name arc \
+    --net=arc \
+    -p 8000:8000 \
+    --env-file .envsample \
+    appbaseio-confidential/arc:latest
+    ```
+    
 
 
 **Note**: Step 3 is optional, however, Kibana provides excellant debugging/monitoring tools when developing with Elasticsearch.

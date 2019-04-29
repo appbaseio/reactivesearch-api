@@ -1,0 +1,3 @@
+ES_CLUSTER_URL=http://elasticsearch:9200
+USERNAME=foo
+PASSWORD=bar
