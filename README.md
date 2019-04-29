@@ -69,12 +69,9 @@ In order to run arc, you'll require an Elasticsearch node. There are multiple wa
 
 3. Start Arc locally
 
-        docker build -t arc . && docker run --rm --name arc -p 8000:8000 --env-file .env --net=arc arc
-
-
-**Note**: Step 3 is optional, however, Kibana provides excellant debugging/monitoring tools when developing with Elasticsearch.
+        docker build -t arc . && docker run --rm --name arc -p 8000:8000 -e ES_CLUSTER_URL=http://elasticsearch:9200 -e USERNAME=foo -e PASSWORD=bar --net=arc arc
   
-For convinience, the steps described above are combined into a single `docker-compose` file. You can execute the file with command:
+For convenience, the steps described above are combined into a single `docker-compose` file. You can execute the file with command:
 
     docker-compose up
 
