@@ -10,6 +10,7 @@ import (
 	"github.com/appbaseio-confidential/arc/model/user"
 	"github.com/appbaseio-confidential/arc/util"
 	"github.com/olivere/elastic"
+	"golang.org/x/crypto/bcrypt"
 )
 
 type elasticsearch struct {
@@ -153,7 +154,17 @@ func (es *elasticsearch) getRawUser(ctx context.Context, username string) ([]byt
 }
 
 func (es *elasticsearch) postUser(ctx context.Context, u user.User) (bool, error) {
-	_, err := es.client.Index().
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(u.Password), bcrypt.DefaultCost)
+
+	if err != nil {
+		msg := fmt.Sprintf("an error occurred while hashing password: %v", u.Password)
+		log.Printf("%s: %s: %v", logTag, msg, err)
+		return false, err
+	}
+
+	u.Password = string(hashedPassword)
+
+	_, err = es.client.Index().
 		Refresh("wait_for").
 		Index(es.indexName).
 		Type(es.typeName).

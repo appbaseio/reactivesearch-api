@@ -7,6 +7,8 @@ import (
 	"log"
 	"net/http"
 
+	"golang.org/x/crypto/bcrypt"
+
 	"github.com/appbaseio-confidential/arc/model/acl"
 	"github.com/appbaseio-confidential/arc/model/user"
 	"github.com/appbaseio-confidential/arc/util"
@@ -121,6 +123,16 @@ func (u *Users) postUser() http.HandlerFunc {
 			util.WriteBackError(w, msg, http.StatusBadRequest)
 			return
 		}
+
+		hashedPassword, err := bcrypt.GenerateFromPassword([]byte(newUser.Password), bcrypt.DefaultCost)
+
+		if err != nil {
+			msg := fmt.Sprintf("an error occurred while hashing password: %v", newUser.Password)
+			log.Printf("%s: %s: %v", logTag, msg, err)
+			util.WriteBackError(w, msg, http.StatusInternalServerError)
+		}
+
+		newUser.Password = string(hashedPassword)
 
 		rawUser, err := json.Marshal(*newUser)
 		if err != nil {
