@@ -1,6 +1,7 @@
 package rules
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -161,6 +162,48 @@ func applyRule(searchResult map[string]interface{}, rule *query.Rule) error {
 		totalHits["total"] = len(hits)
 		searchResult["hits"] = totalHits
 	}
+
+	// handle the webhook if there is one
+	if rule.If.WebHook != nil {
+		if err := handleWebHook(searchResult, rule); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func handleWebHook(searchResult map[string]interface{}, rule *query.Rule) error {
+	// marshal the search results
+	searchResultJSON, err := json.Marshal(searchResult)
+	if err != nil {
+		return err
+	}
+
+	// create a http client
+	httpClient := &http.Client{}
+
+	// construct the request
+	// pass the marshalled search results as body
+	req, err := http.NewRequest(http.MethodGet, rule.If.WebHook.URL, bytes.NewBuffer(searchResultJSON))
+	if err != nil {
+		return err
+	}
+
+	// apply the headers if any
+	for k, v := range rule.If.WebHook.Headers {
+		req.Header.Set(k, v)
+	}
+
+	// call the webhook
+	resp, err := httpClient.Do(req)
+	if err != nil {
+		return err
+	}
+
+	// do something with the response body??
+
+	resp.Body.Close()
 
 	return nil
 }
