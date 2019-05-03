@@ -8,7 +8,6 @@ import (
 	"log"
 	"net/http"
 	"net/http/httptest"
-	"sync"
 
 	"github.com/appbaseio-confidential/arc/arc/middleware"
 	"github.com/appbaseio-confidential/arc/arc/middleware/order"
@@ -139,26 +138,6 @@ func applyRule(searchResult map[string]interface{}, rule *query.Rule) error {
 		searchResult["promoted"] = rule.Then.Promote
 	}
 
-	// using this to run the webhook sequentially if needed
-	webhookPending := true
-	var webhookError error
-	webhookWg := &sync.WaitGroup{}
-
-	// handle the webhook if there is one
-	// if there is no payload template inside the webhook
-	// run it parallely, without passing any payload
-	// else run the it sequentially
-	if rule.Then.WebHook != nil {
-		if rule.Then.WebHook.PayloadTemplate == nil {
-			webhookWg.Add(1)
-			webhookPending = false
-			go func(rule *query.Rule) {
-				webhookError = handleWebHook(nil, rule)
-				webhookWg.Done()
-			}(rule)
-		}
-	}
-
 	// apply hide action
 	if rule.Then.Hide != nil {
 		totalHits, ok := searchResult["hits"].(map[string]interface{})
@@ -186,35 +165,29 @@ func applyRule(searchResult map[string]interface{}, rule *query.Rule) error {
 		searchResult["hits"] = totalHits
 	}
 
-	// run the webhook if it's pending
-	if webhookPending {
-		webhookError = handleWebHook(searchResult, rule)
-	}
-
-	// wait for the webhook to complete if it's running parallely
-	webhookWg.Wait()
-
-	// if the webhook error if it isn't nil
-	if webhookError != nil {
-		return webhookError
+	// handle the webhook if there is one
+	if rule.Then.WebHook != nil {
+		if err := handleWebHook(searchResult, rule); err != nil {
+			return err
+		}
 	}
 
 	return nil
 }
 
 func handleWebHook(searchResult map[string]interface{}, rule *query.Rule) error {
+	// the webhook payload template can either be a string, or a json object
+	// the json object has to be a string -> string mapping
+
+	// if it's a string, then the payload body will be a string
+	// if it's a JSON object, then the payload body will be a JSON object
+
 	// payloadBytes is what we would be sending to the webhook
 	var err error
 	var payloadBytes []byte
 
-	// if searchResult is nil, there is no need to construct the payloadd
+	// if searchResult is nil, there is no need to construct the payload
 	if searchResult != nil {
-
-		// the webhook payload template can either be a string, or a json object
-		// the json object has to be a string -> string mapping
-
-		// if it's a string, then the payload body will be a string
-		// if it's a JSON object, then the payload body will be a JSON object
 		switch v := rule.Then.WebHook.PayloadTemplate.(type) {
 		case string:
 			payload, err := mustache.Render(v, searchResult)
