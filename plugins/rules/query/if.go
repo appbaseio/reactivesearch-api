@@ -11,18 +11,10 @@ import (
 type If struct {
 	Query    *string   `json:"query"`
 	Operator *Operator `json:"operator"`
-	WebHook  *WebHook  `json:"webhook,omitempty"`
 }
 
 // Operator represents the criterias that are matched against the search requests.
 type Operator int
-
-// WebHook will contain information about the webhook which has to be called.
-// If headers are not provided by the user, we will apply some default headers.
-type WebHook struct {
-	URL     string            `json:"url"`
-	Headers map[string]string `json:"headers,omitempty"`
-}
 
 const (
 	// Is operator looks for exact pattern in a search query, i.e.

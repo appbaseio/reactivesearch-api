@@ -7,4 +7,12 @@ type Then struct {
 	Hide    []struct {
 		DocID *string `json:"doc_id"`
 	} `json:"hide,omitempty"`
+	WebHook *WebHook `json:"webhook,omitempty"`
+}
+
+// WebHook will contain information about the webhook which has to be called.
+type WebHook struct {
+	URL             string            `json:"url"`
+	Headers         map[string]string `json:"headers"`
+	PayloadTemplate interface{}       `json:"payload_template"`
 }
