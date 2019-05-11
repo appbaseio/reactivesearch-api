@@ -241,6 +241,15 @@ func handleWebHook(searchResult map[string]interface{}, rule *query.Rule) error 
 		return err
 	}
 
+	respArray := []interface{}{}
+
+	if err := json.NewDecoder(resp.Body).Decode(&respArray); err != nil {
+		resp.Body.Close()
+		return err
+	}
+
+	searchResult["hits"].(map[string]interface{})["hits"] = respArray
+
 	resp.Body.Close()
 
 	return nil
