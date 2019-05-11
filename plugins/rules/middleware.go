@@ -20,7 +20,7 @@ import (
 	"github.com/appbaseio-confidential/arc/plugins/rules/query"
 	"github.com/appbaseio-confidential/arc/util"
 
-	"github.com/cbroglie/mustache"
+	"github.com/siddharthlatest/mustache"
 )
 
 type chain struct {
@@ -190,7 +190,7 @@ func handleWebHook(searchResult map[string]interface{}, rule *query.Rule) error 
 	if searchResult != nil {
 		switch v := rule.Then.WebHook.PayloadTemplate.(type) {
 		case string:
-			payload, err := mustache.Render(v, searchResult)
+			payload, err := mustache.Render(v, searchResult["hits"])
 			if err != nil {
 				return err
 			}
@@ -204,7 +204,7 @@ func handleWebHook(searchResult map[string]interface{}, rule *query.Rule) error 
 				if !ok {
 					return fmt.Errorf("the values of the webhook payload json object must be strings")
 				}
-				payload[key], err = mustache.Render(templateString, searchResult)
+				payload[key], err = mustache.Render(templateString, searchResult["hits"])
 				if err != nil {
 					return err
 				}
