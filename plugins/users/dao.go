@@ -9,7 +9,7 @@ import (
 
 	"github.com/appbaseio-confidential/arc/model/user"
 	"github.com/appbaseio-confidential/arc/util"
-	"github.com/olivere/elastic"
+	"gopkg.in/olivere/elastic.v6"
 )
 
 type elasticsearch struct {
@@ -127,7 +127,7 @@ func (es *elasticsearch) getRawUsers(ctx context.Context) ([]byte, error) {
 
 	var users []*json.RawMessage
 	for _, hit := range response.Hits.Hits {
-		users = append(users, &hit.Source)
+		users = append(users, hit.Source)
 	}
 
 	return json.Marshal(users)
