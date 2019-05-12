@@ -9,6 +9,7 @@ import (
 
 	"github.com/appbaseio-confidential/arc/model/user"
 	"github.com/appbaseio-confidential/arc/util"
+	"golang.org/x/crypto/bcrypt"
 	"gopkg.in/olivere/elastic.v6"
 )
 
@@ -51,6 +52,13 @@ func newClient(url, indexName, mapping string) (*elasticsearch, error) {
 	}
 	if exists {
 		log.Printf("%s: index named '%s' already exists, skipping...", logTag, indexName)
+
+		// hash the passwords if not hashed already
+		err := es.hashPasswords()
+		if err != nil {
+			return nil, err
+		}
+
 		return es, nil
 	}
 
@@ -73,6 +81,49 @@ func newClient(url, indexName, mapping string) (*elasticsearch, error) {
 	return es, nil
 }
 
+func (es *elasticsearch) hashPasswords() error {
+	// get all users
+	rawUsers, err := es.getRawUsers(context.Background())
+	if err != nil {
+		return err
+	}
+
+	// unmarshal into list of users
+	users := []user.User{}
+	err = json.Unmarshal(rawUsers, &users)
+	if err != nil {
+		return err
+	}
+
+	for _, user := range users {
+		// don't do anything if already hashed
+		if user.PasswordHashType != "" {
+			continue
+		}
+
+		// hash the password
+		hashedPassword, err := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
+		if err != nil {
+			msg := fmt.Sprintf("an error occurred while hashing password: %v", user.Password)
+			log.Printf("%s: %s: %v", logTag, msg, err)
+		}
+
+		// patch the user
+		_, err = es.patchUser(context.Background(), user.Username, map[string]interface{}{
+			"password":           string(hashedPassword),
+			"password_hash_type": "bcrypt",
+		})
+
+		if err != nil {
+			return err
+		}
+
+		log.Println(logTag, "hashed password for user", user.Username, "using bcrypt")
+	}
+
+	return nil
+}
+
 func (es *elasticsearch) postMasterUser() error {
 	// Create a master user, if credentials are not provided, we create a default
 	// master user. Arc shouldn't be initialized without a root user.
@@ -80,10 +131,21 @@ func (es *elasticsearch) postMasterUser() error {
 	if username == "" {
 		username, password = "foo", "bar"
 	}
-	admin, err := user.NewAdmin(username, password)
+
+	// hash the password
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	if err != nil {
+		msg := fmt.Sprintf("an error occurred while hashing password: %v", password)
+		log.Printf("%s: %s: %v", logTag, msg, err)
+	}
+
+	admin, err := user.NewAdmin(username, string(hashedPassword))
 	if err != nil {
 		return fmt.Errorf("%s: error while creating a master user: %v", logTag, err)
 	}
+
+	admin.PasswordHashType = "bcrypt"
+
 	if created, err := es.postUser(context.Background(), *admin); !created || err != nil {
 		return fmt.Errorf("%s: error while creating a master user: %v", logTag, err)
 	}

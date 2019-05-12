@@ -163,9 +163,7 @@ func (a *Auth) getCredential(ctx context.Context, username string) (credential.A
 		if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password)); err != nil {
 			return nil, nil
 		}
-		// if user.Password != password {
-		// 	return nil, nil
-		// }
+
 		return user, nil
 	}
 
@@ -174,10 +172,8 @@ func (a *Auth) getCredential(ctx context.Context, username string) (credential.A
 		if err := bcrypt.CompareHashAndPassword([]byte(permission.Password), []byte(password)); err != nil {
 			return nil, nil
 		}
-		// if permission.Password != password {
-		// 	return nil, nil
-		// }
-		return user, nil
+
+		return permission, nil
 	}
 }
 

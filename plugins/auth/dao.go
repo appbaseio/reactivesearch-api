@@ -84,23 +84,33 @@ func (es *elasticsearch) getCredential(ctx context.Context, username string) (cr
 				}
 				obj = &p
 			}
+
+			// unmarshal into user
 			err := json.Unmarshal(*hit.Source, &u)
 			if err != nil {
 				return nil, err
 			}
+
+			// verify password
 			if err = bcrypt.CompareHashAndPassword([]byte(u.Password), []byte(password)); err != nil {
 				return nil, err
 			}
+
 			obj = &u
 		} else if hit.Index == es.permissionIndex {
 			var p permission.Permission
+
+			// unmarshal into permission
 			err := json.Unmarshal(*hit.Source, &p)
 			if err != nil {
 				return nil, err
 			}
+
+			// verify password
 			if err = bcrypt.CompareHashAndPassword([]byte(p.Password), []byte(password)); err != nil {
 				return nil, err
 			}
+
 			obj = &p
 		}
 	}

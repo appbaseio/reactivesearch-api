@@ -109,7 +109,7 @@ func (es *elasticsearch) getRawLogs(ctx context.Context, from, size string, indi
 	hits := []*json.RawMessage{}
 	for _, hit := range response.Hits.Hits {
 		var source map[string]interface{}
-		err := json.Unmarshal(*hit.Source, source)
+		err := json.Unmarshal(*hit.Source, &source)
 		if err != nil {
 			return nil, err
 		}

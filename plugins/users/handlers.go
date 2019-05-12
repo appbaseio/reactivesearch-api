@@ -7,12 +7,11 @@ import (
 	"log"
 	"net/http"
 
-	"golang.org/x/crypto/bcrypt"
-
 	"github.com/appbaseio-confidential/arc/model/acl"
 	"github.com/appbaseio-confidential/arc/model/user"
 	"github.com/appbaseio-confidential/arc/util"
 	"github.com/gorilla/mux"
+	"golang.org/x/crypto/bcrypt"
 )
 
 func (u *Users) getUser() http.HandlerFunc {
@@ -132,6 +131,8 @@ func (u *Users) postUser() http.HandlerFunc {
 			util.WriteBackError(w, msg, http.StatusBadRequest)
 			return
 		}
+
+		newUser.PasswordHashType = "bcrypt"
 
 		rawUser, err := json.Marshal(*newUser)
 		if err != nil {
