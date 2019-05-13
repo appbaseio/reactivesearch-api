@@ -97,8 +97,21 @@ func (px *Proxy) deleteSubscription() http.HandlerFunc {
 			px.subID = subID
 		}
 		defer req.Body.Close()
-		payload := []byte{}
-		payload, _ = ioutil.ReadAll(req.Body)
+		d := json.NewDecoder(req.Body)
+		body := deleteArcSubscription{}
+		err := d.Decode(&body)
+		if err != nil {
+			if err.Error() == "decoding err:  EOF" {
+				log.Println("empty request body: ", err)
+			}
+		}
+		body.SubscriptionID = px.subID
+		payload, err := json.Marshal(body)
+		if err != nil {
+			log.Println("error while marshalling the body: ", err)
+			util.WriteBackError(w, "unable to parse request", http.StatusBadRequest)
+			return
+		}
 		response, statusCode, err := px.ap.sendRequest(fmt.Sprint("https://accapi.appbase.io/arc/", px.arcID, "/subscription"), "DELETE", payload)
 		if err != nil {
 			log.Printf("%s: %v\n", proxyTag, err)
