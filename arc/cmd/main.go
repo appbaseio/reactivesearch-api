@@ -13,10 +13,10 @@ import (
 
 	"github.com/appbaseio-confidential/arc/arc"
 	"github.com/appbaseio-confidential/arc/middleware/logger"
-	"github.com/gorilla/mux"
-	"github.com/rs/cors"
-	"github.com/robfig/cron"
 	"github.com/appbaseio-confidential/arc/util"
+	"github.com/gorilla/mux"
+	"github.com/robfig/cron"
+	"github.com/rs/cors"
 	"gopkg.in/natefinch/lumberjack.v2"
 
 	_ "github.com/appbaseio-confidential/arc/plugins/analytics"
@@ -24,10 +24,10 @@ import (
 	_ "github.com/appbaseio-confidential/arc/plugins/elasticsearch"
 	_ "github.com/appbaseio-confidential/arc/plugins/logs"
 	_ "github.com/appbaseio-confidential/arc/plugins/permissions"
+	_ "github.com/appbaseio-confidential/arc/plugins/proxy"
 	_ "github.com/appbaseio-confidential/arc/plugins/reindexer"
 	_ "github.com/appbaseio-confidential/arc/plugins/rules"
 	_ "github.com/appbaseio-confidential/arc/plugins/users"
-	_ "github.com/appbaseio-confidential/arc/plugins/proxy"
 )
 
 const logTag = "[cmd]"
@@ -38,7 +38,7 @@ var (
 	listPlugins bool
 	address     string
 	port        int
-	Billing		bool
+	Billing     bool
 )
 
 func init() {
@@ -75,11 +75,11 @@ func main() {
 		log.Printf("%s: reading env file %q: %v", logTag, envFile, err)
 	}
 	if Billing {
-	log.Println("billing enabled")
-	util.ReportUsage()
-	cronjob := cron.New()
-	cronjob.AddFunc("@every 1h", util.ReportUsage)
-	cronjob.Start()
+		log.Println("billing enabled")
+		util.ReportUsage()
+		cronjob := cron.New()
+		cronjob.AddFunc("@every 1h", util.ReportUsage)
+		cronjob.Start()
 	} else {
 		log.Println("billing not enabled")
 	}
@@ -99,9 +99,9 @@ func main() {
 
 	router := mux.NewRouter().StrictSlash(true)
 	if Billing {
-	router.Use(util.BillingMiddleware)
+		router.Use(util.BillingMiddleware)
 	}
-	
+
 	// Load plugin routes
 	for _, p := range plugins {
 		if !Billing && p.Name() == "proxy" {
