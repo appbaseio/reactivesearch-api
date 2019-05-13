@@ -8,7 +8,6 @@ import (
 	"sync"
 
 	"github.com/appbaseio-confidential/arc/model/credential"
-	"github.com/appbaseio-confidential/arc/arc"
 	"github.com/appbaseio-confidential/arc/arc/route"
 	"github.com/appbaseio-confidential/arc/errors"
 )
@@ -34,10 +33,6 @@ type Auth struct {
 	credentialCache map[string]credential.AuthCredential
 	jwtRsaPublicKey *rsa.PublicKey
 	es              authService
-}
-
-func init() {
-	arc.RegisterPlugin(Instance())
 }
 
 // Instance returns the singleton instance of the auth plugin. Instance
