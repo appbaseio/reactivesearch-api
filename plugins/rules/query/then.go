@@ -12,7 +12,8 @@ type Then struct {
 
 // WebHook will contain information about the webhook which has to be called.
 type WebHook struct {
-	URL             string            `json:"url"`
-	Headers         map[string]string `json:"headers"`
-	PayloadTemplate interface{}       `json:"payload_template"`
+	URL                    string            `json:"url"`
+	Headers                map[string]string `json:"headers"`
+	PayloadTemplate        interface{}       `json:"payload_template"`
+	OverwriteSearchResults bool              `json:"overwrite_search_results"`
 }

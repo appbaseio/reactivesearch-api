@@ -241,16 +241,22 @@ func handleWebHook(searchResult map[string]interface{}, rule *query.Rule) error 
 		return err
 	}
 
+	defer resp.Body.Close()
+
+	// return immediately if search results aren't to be overwritten
+	if !rule.Then.WebHook.OverwriteSearchResults {
+		return nil
+	}
+
+	// unmarshal search results into list of objects
+	// assign them to searchResults["hits"]["hits"]
 	respArray := []interface{}{}
 
 	if err := json.NewDecoder(resp.Body).Decode(&respArray); err != nil {
-		resp.Body.Close()
 		return err
 	}
 
 	searchResult["hits"].(map[string]interface{})["hits"] = respArray
-
-	resp.Body.Close()
 
 	return nil
 }
