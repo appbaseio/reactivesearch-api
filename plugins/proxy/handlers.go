@@ -97,7 +97,9 @@ func (px *Proxy) deleteSubscription() http.HandlerFunc {
 			px.subID = subID
 		}
 		defer req.Body.Close()
-		response, statusCode, err := px.ap.sendRequest(fmt.Sprint("https://accapi.appbase.io/arc/", px.arcID, "/subscription"), "DELETE", nil)
+		payload := []byte{}
+		payload, _ = ioutil.ReadAll(req.Body)
+		response, statusCode, err := px.ap.sendRequest(fmt.Sprint("https://accapi.appbase.io/arc/", px.arcID, "/subscription"), "DELETE", payload)
 		if err != nil {
 			log.Printf("%s: %v\n", proxyTag, err)
 			util.WriteBackError(w, err.Error(), http.StatusBadRequest)
