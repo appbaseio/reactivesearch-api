@@ -4,7 +4,6 @@ import (
 	"os"
 	"sync"
 
-	"github.com/appbaseio-confidential/arc/arc"
 	"github.com/appbaseio-confidential/arc/arc/route"
 	"github.com/appbaseio-confidential/arc/errors"
 )
@@ -27,10 +26,6 @@ var (
 // Analytics plugin records and serves basic index or cluster level analytics.
 type Analytics struct {
 	es analyticsService
-}
-
-func init() {
-	arc.RegisterPlugin(Instance())
 }
 
 // Instance returns the singleton instace of Analytics plugin.

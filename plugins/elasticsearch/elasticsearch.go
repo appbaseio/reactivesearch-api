@@ -3,7 +3,6 @@ package elasticsearch
 import (
 	"sync"
 
-	"github.com/appbaseio-confidential/arc/arc"
 	"github.com/appbaseio-confidential/arc/arc/route"
 )
 
@@ -18,11 +17,7 @@ type elasticsearch struct {
 	specs []api
 }
 
-func init() {
-	arc.RegisterPlugin(instance())
-}
-
-func instance() *elasticsearch {
+func Instance() *elasticsearch {
 	once.Do(func() { singleton = &elasticsearch{} })
 	return singleton
 }

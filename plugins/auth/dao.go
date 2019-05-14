@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/appbaseio-confidential/arc/model/credential"
 	"github.com/appbaseio-confidential/arc/model/permission"
 	"github.com/appbaseio-confidential/arc/model/user"
 	"github.com/appbaseio-confidential/arc/util"
@@ -41,16 +42,12 @@ func newClient(url, userIndex, permissionIndex string) (*elasticsearch, error) {
 	return es, nil
 }
 
-func (es *elasticsearch) getCredential(ctx context.Context, username, password string) (interface{}, error) {
+func (es *elasticsearch) getCredential(ctx context.Context, username string) (credential.AuthCredential, error) {
 	matchUsername := elastic.NewTermQuery("username.keyword", username)
-	matchPassword := elastic.NewTermQuery("password.keyword", password)
-
-	query := elastic.NewBoolQuery().
-		Must(matchUsername, matchPassword)
 
 	response, err := es.client.Search().
 		Index(es.userIndex, es.permissionIndex).
-		Query(query).
+		Query(matchUsername).
 		FetchSource(true).
 		Do(ctx)
 	if err != nil {
@@ -58,26 +55,30 @@ func (es *elasticsearch) getCredential(ctx context.Context, username, password s
 	}
 
 	if len(response.Hits.Hits) > 1 {
-		return nil, fmt.Errorf(`more than one result for "username"="%s" and "password"="%s"`, username, password)
+		return nil, fmt.Errorf(`more than one result for "username"="%s"`, username)
 	}
 
 	// there should be either 0 or 1 hit
-	var obj interface{}
+	var obj credential.AuthCredential
 	for _, hit := range response.Hits.Hits {
 		if hit.Index == es.userIndex {
 			var u user.User
-			err := json.Unmarshal(*hit.Source, &u)
-			if err != nil {
-				return nil, err
+			if hit.Source != nil {
+				err := json.Unmarshal(*hit.Source, &u)
+				if err != nil {
+					return nil, err
+				}
+				obj = &u
 			}
-			obj = &u
 		} else if hit.Index == es.permissionIndex {
 			var p permission.Permission
-			err := json.Unmarshal(*hit.Source, &p)
-			if err != nil {
-				return nil, err
+			if hit.Source != nil {
+				err := json.Unmarshal(*hit.Source, &p)
+				if err != nil {
+					return nil, err
+				}
+				obj = &p
 			}
-			obj = &p
 		}
 	}
 

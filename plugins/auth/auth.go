@@ -1,14 +1,15 @@
 package auth
 
 import (
+	"crypto/rsa"
+	"github.com/dgrijalva/jwt-go"
+	"io/ioutil"
 	"os"
 	"sync"
 
-	"github.com/appbaseio-confidential/arc/arc"
+	"github.com/appbaseio-confidential/arc/model/credential"
 	"github.com/appbaseio-confidential/arc/arc/route"
 	"github.com/appbaseio-confidential/arc/errors"
-	"github.com/appbaseio-confidential/arc/model/permission"
-	"github.com/appbaseio-confidential/arc/model/user"
 )
 
 const (
@@ -18,6 +19,7 @@ const (
 	defaultUsersEsIndex       = ".users"
 	envPermissionsEsIndex     = "PERMISSIONS_ES_INDEX"
 	defaultPermissionsEsIndex = ".permissions"
+	envJwtRsaPublicKeyLoc     = "JWT_RSA_PUBLIC_KEY_LOC"
 )
 
 var (
@@ -27,14 +29,10 @@ var (
 
 // Auth (TODO - clear cache after fixed entries: LRU?)
 type Auth struct {
-	mu               sync.Mutex
-	usersCache       map[string]*user.User
-	permissionsCache map[string]*permission.Permission
-	es               authService
-}
-
-func init() {
-	arc.RegisterPlugin(Instance())
+	mu              sync.Mutex
+	credentialCache map[string]credential.AuthCredential
+	jwtRsaPublicKey *rsa.PublicKey
+	es              authService
 }
 
 // Instance returns the singleton instance of the auth plugin. Instance
@@ -43,8 +41,7 @@ func init() {
 func Instance() *Auth {
 	once.Do(func() {
 		singleton = &Auth{
-			usersCache:       make(map[string]*user.User),
-			permissionsCache: make(map[string]*permission.Permission),
+			credentialCache: make(map[string]credential.AuthCredential),
 		}
 	})
 	return singleton
@@ -71,9 +68,21 @@ func (a *Auth) InitFunc() error {
 	if permissionIndex == "" {
 		permissionIndex = defaultPermissionsEsIndex
 	}
+	var err error
+	jwtRsaPublicKeyLoc := os.Getenv(envJwtRsaPublicKeyLoc)
+	if jwtRsaPublicKeyLoc != "" {
+		var publicKeyBuf []byte
+		publicKeyBuf, err = ioutil.ReadFile(jwtRsaPublicKeyLoc)
+		if err != nil {
+			return err
+		}
+		a.jwtRsaPublicKey, err = jwt.ParseRSAPublicKeyFromPEM(publicKeyBuf)
+		if err != nil {
+			return err
+		}
+	}
 
 	// initialize the dao
-	var err error
 	a.es, err = newClient(esURL, userIndex, permissionIndex)
 	if err != nil {
 		return err

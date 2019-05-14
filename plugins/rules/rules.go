@@ -4,7 +4,6 @@ import (
 	"os"
 	"sync"
 
-	"github.com/appbaseio-confidential/arc/arc"
 	"github.com/appbaseio-confidential/arc/arc/route"
 	"github.com/appbaseio-confidential/arc/errors"
 )
@@ -52,9 +51,6 @@ type Rules struct {
 	es rulesService
 }
 
-func init() {
-	arc.RegisterPlugin(Instance())
-}
 
 // Instance returns the singleton instance of the plugin. Instance
 // should be the only way (both within or outside the package) to fetch
