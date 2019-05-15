@@ -186,8 +186,8 @@ func handleWebHook(searchResult map[string]interface{}, rule *query.Rule) error 
 	var err error
 	var payloadBytes []byte
 
-	// if searchResult is nil, there is no need to construct the payload
-	if searchResult != nil {
+	// if searchResult or payload template is nil, there is no need to construct the payload
+	if searchResult != nil && rule.Then.WebHook.PayloadTemplate != nil {
 		switch v := rule.Then.WebHook.PayloadTemplate.(type) {
 		case string:
 			payload, err := mustache.Render(v, searchResult["hits"])
