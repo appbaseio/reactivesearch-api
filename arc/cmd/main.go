@@ -11,6 +11,7 @@ import (
 	"os"
 	"strings"
 	"plugin"
+	"path/filepath"
 
 	"github.com/appbaseio-confidential/arc/arc"
 	"github.com/appbaseio-confidential/arc/middleware/logger"
@@ -29,6 +30,7 @@ var (
 	listPlugins bool
 	address     string
 	port        int
+	pluginDir   string
 )
 
 func init() {
@@ -37,6 +39,7 @@ func init() {
 	flag.BoolVar(&listPlugins, "plugins", false, "List currently registered plugins")
 	flag.StringVar(&address, "addr", "", "Address to serve on")
 	flag.IntVar(&port, "port", 8000, "Port number")
+	flag.StringVar(&pluginDir, "pluginDir", "build/plugins", "Directory containing the compiled plugins")
 }
 
 func main() {
@@ -66,15 +69,18 @@ func main() {
 
 	router := mux.NewRouter().StrictSlash(true)
 
-	pluginString := os.Getenv("PLUGINS")
-	for _, pl := range strings.SplitN(pluginString, "\\ ", -1) {
-		pf, err1 := plugin.Open("build/plugins/" + pl + ".so")
-		if err1 != nil { log.Fatalf("%v", err1) }
-		pi, err2 := pf.Lookup("PluginInstance")
-		if err2 != nil { log.Fatalf("%v", err2) }
-		err3 := arc.LoadPlugin(router, *pi.(*arc.Plugin))
-		if err3 != nil { log.Fatalf("%v", err3) }
-	}
+	err := filepath.Walk(pluginDir, func(path string, info os.FileInfo, err error) error {
+		if !info.IsDir() && filepath.Ext(info.Name()) == ".so" {
+			pf, err1 := plugin.Open(path)
+			if err1 != nil { return err1 }
+			pi, err2 := pf.Lookup("PluginInstance")
+			if err2 != nil { return err2 }
+			err3 := arc.LoadPlugin(router, *pi.(*arc.Plugin))
+			if err3 != nil { return err3 }
+		}
+		return nil
+	})
+	if err != nil { log.Fatal("error loading plugins: %v", err) }
 
 	// CORS policy
 	c := cors.New(cors.Options{
