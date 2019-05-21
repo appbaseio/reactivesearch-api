@@ -69,18 +69,18 @@ func main() {
 
 	router := mux.NewRouter().StrictSlash(true)
 
+	var elasticSearchPath string	
 	err := filepath.Walk(pluginDir, func(path string, info os.FileInfo, err error) error {
-		if !info.IsDir() && filepath.Ext(info.Name()) == ".so" {
-			pf, err1 := plugin.Open(path)
-			if err1 != nil { return err1 }
-			pi, err2 := pf.Lookup("PluginInstance")
-			if err2 != nil { return err2 }
-			err3 := arc.LoadPlugin(router, *pi.(*arc.Plugin))
-			if err3 != nil { return err3 }
+		if err != nil { return err }
+		if !info.IsDir() && filepath.Ext(info.Name()) == ".so" && info.Name() != "elasticsearch.so" {
+			LoadPluginFromFile(router, path)
+		} else if info.Name() == "elasticsearch.so" {
+			elasticSearchPath = path
 		}
 		return nil
 	})
-	if err != nil { log.Fatal("error loading plugins: %v", err) }
+	LoadPluginFromFile(router, elasticSearchPath)
+	if err != nil { log.Fatal("error loading plugins: ", err) }
 
 	// CORS policy
 	c := cors.New(cors.Options{
@@ -95,6 +95,16 @@ func main() {
 	addr := fmt.Sprintf("%s:%d", address, port)
 	log.Printf("%s: listening on %s", logTag, addr)
 	log.Fatal(http.ListenAndServe(addr, handler))
+}
+
+// LoadPluginFromFile loads a plugin at the given location
+func LoadPluginFromFile(router *mux.Router, path string) error {
+	pf, err1 := plugin.Open(path)
+	if err1 != nil { return err1 }
+	pi, err2 := pf.Lookup("PluginInstance")
+	if err2 != nil { return err2 }
+	err3 := arc.LoadPlugin(router, *pi.(*arc.Plugin))
+	return err3
 }
 
 // LoadEnvFromFile loads env vars from envFile. Envs in the file
