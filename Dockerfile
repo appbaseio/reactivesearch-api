@@ -2,7 +2,7 @@ FROM golang:1.11-alpine as build
 
 # Install tools required for project
 # Run `docker build --no-cache .` to update dependencies
-RUN apk add --no-cache build-base
+RUN apk add --no-cache build-base git
 WORKDIR /arc
 
 # List project dependencies with go.mod and go.sum
