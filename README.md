@@ -69,7 +69,7 @@ In order to run arc, you'll require an Elasticsearch node. There are multiple wa
 
 3. Start Arc locally
 
-        docker build -t arc . && docker run --rm --name arc -p 8000:8000 -e ES_CLUSTER_URL=http://elasticsearch:9200 -e USERNAME=foo -e PASSWORD=bar --net=arc arc
+        docker build -t arc . && docker run --rm --name arc -p 8000:8000 --net=arc arc
   
 For convenience, the steps described above are combined into a single `docker-compose` file. You can execute the file with command:
 
@@ -77,21 +77,22 @@ For convenience, the steps described above are combined into a single `docker-co
 
 ## Building
 
-To build from source you need [Git](https://git-scm.com/downloads) and [Go](https://golang.org/doc/install) (version 1.11 or higher). You can produce the binaries for following `GOOS` (`darwin`, `windows` and `linux`) by executing the `scripts/build.sh`.
+To build from source you need [Git](https://git-scm.com/downloads) and [Go](https://golang.org/doc/install) (version 1.11 or higher).
 
-You can also fetch the source the build the binary locally by executing the following command from the project directory:
+You can build the binary locally by executing the following command from the project directory:
 
-    go build -o ./build/arc arc/cmd/main.go
+    make
 
-This produces an executable in the root project directory. To start the Arc server, run:
+This produces an executable & plugin libraries in the root project directory. To start the Arc server, run:
 
-    ./build/arc --log=stdout --env=.env
+    ./build/arc --log=stdout --env=config/manual.env
 
-Alternatively, you could execute the following command to start the server without producing an executable:
+Alternatively, you could execute the following commands to start the server without producing an executable, (but still produce the plugin libraries):
 
-    go run cmd/arc/main.go --env=path/to/.env --log=stdout
+    make plugins
+    go run cmd/arc/main.go --log=stdout --env=config/manual.env
 
-**Note**: Running the executable assumes an active Elasticsearch connection whose url is to be provided in the `.env` file.
+**Note**: Running the executable assumes an active Elasticsearch connection whose url is to be provided in the `.env` file. manual.env configures it to be the localhost.
 
 ### Implementation
 

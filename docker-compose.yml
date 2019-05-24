@@ -7,6 +7,7 @@ services:
       - arc
     environment:
     - bootstrap.memory_lock=true
+    - discovery.type=single-node
     - "ES_JAVA_OPTS=-Xms1g -Xmx1g"
     ulimits:
       nproc: 65536
@@ -24,10 +25,6 @@ services:
     networks:
       - arc
     restart: on-failure
-    environment:
-    - ES_CLUSTER_URL=http://elasticsearch:9200
-    - USERNAME=foo
-    - PASSWORD=bar
     ports:
       - 8000:8000
     depends_on:
