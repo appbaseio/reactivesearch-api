@@ -13,8 +13,10 @@ import (
 	"github.com/appbaseio-confidential/arc/model/acl"
 	"github.com/appbaseio-confidential/arc/model/category"
 	"github.com/appbaseio-confidential/arc/model/op"
+	"github.com/appbaseio-confidential/arc/plugins/analytics"
 	"github.com/appbaseio-confidential/arc/plugins/auth"
 	"github.com/appbaseio-confidential/arc/plugins/logs"
+	"github.com/appbaseio-confidential/arc/plugins/rules"
 	"github.com/appbaseio-confidential/arc/util"
 	"github.com/gorilla/mux"
 )
@@ -43,6 +45,8 @@ func list() []middleware.Middleware {
 		validate.ACL(),
 		validate.Operation(),
 		validate.PermissionExpiry(),
+		analytics.Recorder(),
+		rules.Apply(),
 		interceptor.Redirect(),
 	}
 }
