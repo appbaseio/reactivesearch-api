@@ -8,7 +8,7 @@ import (
 	"sync"
 
 	"github.com/appbaseio-confidential/arc/model/credential"
-	"github.com/appbaseio-confidential/arc/arc/route"
+	"github.com/appbaseio-confidential/arc/plugins"
 	"github.com/appbaseio-confidential/arc/errors"
 )
 
@@ -92,6 +92,6 @@ func (a *Auth) InitFunc() error {
 }
 
 // Routes returns an empty slices since the plugin solely acts as a middleware.
-func (a *Auth) Routes() []route.Route {
-	return []route.Route{}
+func (a *Auth) Routes() []plugins.Route {
+	return []plugins.Route{}
 }

@@ -1,11 +1,10 @@
-package arc
+package plugins
 
 import (
 	"log"
 	"sort"
 	"strconv"
 
-	"github.com/appbaseio-confidential/arc/arc/route"
 	"github.com/gorilla/mux"
 )
 
@@ -29,7 +28,7 @@ type Plugin interface {
 
 	// Routes returns the http routes that a plugin handles or is
 	// associated with.
-	Routes() []route.Route
+	Routes() []Route
 }
 
 // RegisterPlugin plugs in plugin. All plugins must have a name:
@@ -92,11 +91,11 @@ func ListPlugins() []Plugin {
 }
 
 // By is the type of a "less" function that defines the ordering of Plugins.
-type By func(p1, p2 Plugin) bool
+type PluginBy func(p1, p2 Plugin) bool
 
 // Sort is a method on the function type, By, that sorts
 // the argument slice according to the function.
-func (by By) Sort(plugins []Plugin) {
+func (by PluginBy) PluginSort(plugins []Plugin) {
 	ps := &pluginSorter{
 		plugins: plugins,
 		by:      by,
@@ -107,7 +106,7 @@ func (by By) Sort(plugins []Plugin) {
 // pluginSorter joins a By function and a slice of Plugins to be sorted.
 type pluginSorter struct {
 	plugins []Plugin
-	by      By
+	by      PluginBy
 }
 
 // Len is part of sort.Interface that returns the length

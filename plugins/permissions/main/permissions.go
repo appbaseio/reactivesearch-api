@@ -1,6 +1,6 @@
 package main
 
 import "github.com/appbaseio-confidential/arc/plugins/permissions"
-import "github.com/appbaseio-confidential/arc/arc"
+import "github.com/appbaseio-confidential/arc/plugins"
 
-var PluginInstance arc.Plugin = permissions.Instance()
+var PluginInstance plugins.Plugin = permissions.Instance()

@@ -3,8 +3,7 @@ package reindexer
 import (
 	"net/http"
 
-	"github.com/appbaseio-confidential/arc/arc/middleware"
-	"github.com/appbaseio-confidential/arc/arc/middleware/order"
+	"github.com/appbaseio-confidential/arc/middleware"
 	"github.com/appbaseio-confidential/arc/middleware/classify"
 	"github.com/appbaseio-confidential/arc/middleware/validate"
 	"github.com/appbaseio-confidential/arc/model/category"
@@ -13,7 +12,7 @@ import (
 )
 
 type chain struct {
-	order.Fifo
+	middleware.Fifo
 }
 
 func (c *chain) Wrap(h http.HandlerFunc) http.HandlerFunc {

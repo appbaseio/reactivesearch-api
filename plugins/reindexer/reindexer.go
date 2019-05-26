@@ -4,7 +4,7 @@ import (
 	"os"
 	"sync"
 
-	"github.com/appbaseio-confidential/arc/arc/route"
+	"github.com/appbaseio-confidential/arc/plugins"
 	"github.com/appbaseio-confidential/arc/errors"
 )
 
@@ -50,6 +50,6 @@ func (rx *reindexer) InitFunc() error {
 	return nil
 }
 
-func (rx *reindexer) Routes() []route.Route {
+func (rx *reindexer) Routes() []plugins.Route {
 	return rx.routes()
 }

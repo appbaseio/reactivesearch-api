@@ -3,7 +3,7 @@ package elasticsearch
 import (
 	"sync"
 
-	"github.com/appbaseio-confidential/arc/arc/route"
+	"github.com/appbaseio-confidential/arc/plugins"
 )
 
 const logTag = "[elasticsearch]"
@@ -30,6 +30,6 @@ func (es *elasticsearch) InitFunc() error {
 	return es.preprocess()
 }
 
-func (es *elasticsearch) Routes() []route.Route {
+func (es *elasticsearch) Routes() []plugins.Route {
 	return es.routes()
 }

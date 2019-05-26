@@ -3,12 +3,12 @@ package logs
 import (
 	"net/http"
 
-	"github.com/appbaseio-confidential/arc/arc/route"
+	"github.com/appbaseio-confidential/arc/plugins"
 )
 
-func (l *Logs) routes() []route.Route {
+func (l *Logs) routes() []plugins.Route {
 	middleware := (&chain{}).Wrap
-	return []route.Route{
+	return []plugins.Route{
 		{
 			Name:        "Get index logs",
 			Methods:     []string{http.MethodGet},

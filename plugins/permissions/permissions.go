@@ -5,7 +5,7 @@ import (
 	"os"
 	"sync"
 
-	"github.com/appbaseio-confidential/arc/arc/route"
+	"github.com/appbaseio-confidential/arc/plugins"
 	"github.com/appbaseio-confidential/arc/errors"
 )
 
@@ -60,6 +60,6 @@ func (p *permissions) InitFunc() error {
 	return nil
 }
 
-func (p *permissions) Routes() []route.Route {
+func (p *permissions) Routes() []plugins.Route {
 	return p.routes()
 }
