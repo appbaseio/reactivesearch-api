@@ -64,7 +64,7 @@ func TestGetPermissionHandler(t *testing.T) {
 	defer tearDown(ts)
 
 	for _, tt := range getPermissionHandlerTests {
-		p := instance()
+		p := Instance()
 		setUp(ts.URL)
 		p.mockInitFunc()
 
@@ -135,7 +135,7 @@ func TestPostPermissionHandler(t *testing.T) {
 	defer tearDown(ts)
 
 	for _, tt := range postPermissionHandlerTests {
-		p := instance()
+		p := Instance()
 		setUp(ts.URL)
 		p.mockInitFunc()
 
@@ -200,7 +200,7 @@ func TestPatchPermissionHandler(t *testing.T) {
 	defer tearDown(ts)
 
 	for _, tt := range patchPermissionHandlerTests {
-		p := instance()
+		p := Instance()
 		setUp(ts.URL)
 		p.mockInitFunc()
 
@@ -255,7 +255,7 @@ func TestDeletePermissionHandler(t *testing.T) {
 	defer tearDown(ts)
 
 	for _, tt := range deletePermissionHandlerTests {
-		p := instance()
+		p := Instance()
 		setUp(ts.URL)
 		p.mockInitFunc()
 
@@ -310,7 +310,7 @@ func TestGetUserPermissionHandler(t *testing.T) {
 	defer tearDown(ts)
 
 	for _, tt := range getUserPermissionHandlerTests {
-		p := instance()
+		p := Instance()
 		setUp(ts.URL)
 		p.mockInitFunc()
 

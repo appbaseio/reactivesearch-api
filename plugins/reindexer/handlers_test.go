@@ -127,7 +127,7 @@ func TestReindexHandler(t *testing.T) {
 	defer tearDown(ts)
 
 	for _, tt := range handlerTests {
-		rx := instance()
+		rx := Instance()
 		setUp(ts.URL)
 		rx.mockInitFunc()
 
