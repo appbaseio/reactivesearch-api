@@ -16,7 +16,7 @@ var esTestServer = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWrite
 }))
 
 func TestName(t *testing.T) {
-	p := instance()
+	p := Instance()
 	name := p.Name()
 	if name != logTag {
 		t.Errorf("unexpected plugin name, expected %s and got %s\n", logTag, name)
@@ -24,7 +24,7 @@ func TestName(t *testing.T) {
 }
 
 func TestRoutes(t *testing.T) {
-	p := instance()
+	p := Instance()
 	routes := p.Routes()
 	// TODO: Add a better test
 	if routes[0].Methods == nil {
@@ -33,32 +33,32 @@ func TestRoutes(t *testing.T) {
 }
 
 var InitTests = []struct {
-	instance  *permissions
+	Instance  *permissions
 	esURL     string
 	permIndex string
 	expected  error
 }{
 	{
-		instance(),
+		Instance(),
 		esTestServer.URL,
 		defaultPermissionsEsIndex,
 		nil,
 	},
 	{
-		instance(),
+		Instance(),
 		"",
 		defaultPermissionsEsIndex,
 		errors.NewEnvVarNotSetError(envEsURL),
 	},
 	{
-		instance(),
+		Instance(),
 		esTestServer.URL,
 		"",
 		nil,
 	},
 	// invalid url to simulate a failure
 	{
-		instance(),
+		Instance(),
 		"elastic://localhost:9200/error",
 		"",
 		fmt.Errorf("[permissions]: error while initializing elastic client: health check timeout: no Elasticsearch node available"),
@@ -74,7 +74,7 @@ func TestInit(t *testing.T) {
 	for _, it := range InitTests {
 		os.Setenv(envEsURL, it.esURL)
 		os.Setenv(envPermissionEsIndex, it.permIndex)
-		actual := it.instance.InitFunc()
+		actual := it.Instance.InitFunc()
 		if !reflect.DeepEqual(actual, it.expected) {
 			t.Errorf("got: %v want: %v\n", actual, it.expected)
 		}

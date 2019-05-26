@@ -14,7 +14,7 @@ var testServer = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter,
 }))
 
 func TestName(t *testing.T) {
-	r := instance()
+	r := Instance()
 	name := r.Name()
 	if name != logTag {
 		t.Errorf("unexpected plugin name, expected %s and got %s\n", logTag, name)
@@ -22,17 +22,17 @@ func TestName(t *testing.T) {
 }
 
 var initTests = []struct {
-	instance *reindexer
+	Instance *reindexer
 	esURL    string
 	expected error
 }{
 	{
-		instance(),
+		Instance(),
 		testServer.URL,
 		nil,
 	},
 	{
-		instance(),
+		Instance(),
 		"",
 		errors.NewEnvVarNotSetError(envEsURL),
 	},
@@ -46,7 +46,7 @@ func TestInit(t *testing.T) {
 
 	for _, it := range initTests {
 		os.Setenv(envEsURL, it.esURL)
-		actual := it.instance.InitFunc()
+		actual := it.Instance.InitFunc()
 		if !reflect.DeepEqual(actual, it.expected) {
 			t.Errorf("got: %v want: %v\n", actual, it.expected)
 		}
