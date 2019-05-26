@@ -8,7 +8,7 @@ import "github.com/dgrijalva/jwt-go"
 
 func main() {
 	token := jwt.NewWithClaims(jwt.SigningMethodRS256, jwt.MapClaims{
-		    "username": "foo",
+			"username": "foo",
 		        "iat": time.Now().Unix(),
 			"exp": time.Now().Unix() + 1000,
 		})

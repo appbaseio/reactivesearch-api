@@ -10,7 +10,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/appbaseio-confidential/arc/arc/route"
+	"github.com/appbaseio-confidential/arc/plugins"
 	"github.com/appbaseio-confidential/arc/model/acl"
 	"github.com/appbaseio-confidential/arc/model/category"
 	"github.com/appbaseio-confidential/arc/model/op"
@@ -19,7 +19,7 @@ import (
 )
 
 var (
-	routes     []route.Route
+	routes     []plugins.Route
 	routeSpecs = make(map[string]api)
 	acls       = make(map[category.Category]map[acl.ACL]bool)
 )
@@ -67,7 +67,7 @@ func (es *elasticsearch) preprocess() error {
 			if path == "/" {
 				continue
 			}
-			r := route.Route{
+			r := plugins.Route{
 				Name:        api.name,
 				Methods:     api.spec.Methods,
 				Path:        path,
@@ -89,7 +89,7 @@ func (es *elasticsearch) preprocess() error {
 	}
 
 	// sort the routes
-	criteria := func(r1, r2 route.Route) bool {
+	criteria := func(r1, r2 plugins.Route) bool {
 		f1, c1 := util.CountComponents(r1.Path)
 		f2, c2 := util.CountComponents(r2.Path)
 		if f1 == f2 {
@@ -97,10 +97,10 @@ func (es *elasticsearch) preprocess() error {
 		}
 		return f1 > f2
 	}
-	route.By(criteria).Sort(routes)
+	plugins.RouteBy(criteria).RouteSort(routes)
 
 	// append index route last in order to avoid early matches for other specific routes
-	indexRoute := route.Route{
+	indexRoute := plugins.Route{
 		Name:        "ping",
 		Methods:     []string{http.MethodGet},
 		Path:        "/",
@@ -112,7 +112,7 @@ func (es *elasticsearch) preprocess() error {
 	return nil
 }
 
-func (es *elasticsearch) routes() []route.Route {
+func (es *elasticsearch) routes() []plugins.Route {
 	return routes
 }
 

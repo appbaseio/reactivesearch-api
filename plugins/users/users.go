@@ -4,7 +4,7 @@ import (
 	"os"
 	"sync"
 
-	"github.com/appbaseio-confidential/arc/arc/route"
+	"github.com/appbaseio-confidential/arc/plugins"
 	"github.com/appbaseio-confidential/arc/errors"
 )
 
@@ -62,6 +62,6 @@ func (u *Users) InitFunc() error {
 }
 
 // Routes is the implementation of plugin interface.
-func (u *Users) Routes() []route.Route {
+func (u *Users) Routes() []plugins.Route {
 	return u.routes()
 }

@@ -1,9 +1,7 @@
-package order
+package middleware
 
 import (
 	"net/http"
-
-	"github.com/appbaseio-confidential/arc/arc/middleware"
 )
 
 // Fifo is a type that implements Adapter. It provides
@@ -13,7 +11,7 @@ type Fifo string
 // Adapt adapts the handler in First-In, First-Out manner.
 // The request will pass through the middleware in the sequence
 // in which they are passed in the function.
-func (f *Fifo) Adapt(h http.HandlerFunc, m ...middleware.Middleware) http.HandlerFunc {
+func (f *Fifo) Adapt(h http.HandlerFunc, m ...Middleware) http.HandlerFunc {
 	for i := len(m) - 1; i >= 0; i-- {
 		h = m[i](h)
 	}
@@ -27,7 +25,7 @@ type Lifo string
 // Adapt adapts the handler in Last-In, First-Out manner.
 // The request will pass through the middleware in the opposite
 // sequence in which they are passed.
-func (l *Lifo) Adapt(h http.HandlerFunc, m ...middleware.Middleware) http.HandlerFunc {
+func (l *Lifo) Adapt(h http.HandlerFunc, m ...Middleware) http.HandlerFunc {
 	for i := 0; i < len(m); i++ {
 		h = m[i](h)
 	}
@@ -41,7 +39,7 @@ func (l *Lifo) Adapt(h http.HandlerFunc, m ...middleware.Middleware) http.Handle
 type Single string
 
 // Adapt adapts the handler to a single middleware.
-func (s *Single) Adapt(h http.HandlerFunc, m ...middleware.Middleware) http.HandlerFunc {
+func (s *Single) Adapt(h http.HandlerFunc, m ...Middleware) http.HandlerFunc {
 	if len(m) != 0 {
 		return m[0](h)
 	}

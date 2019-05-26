@@ -90,7 +90,7 @@ This produces an executable & plugin libraries in the root project directory. To
 Alternatively, you could execute the following commands to start the server without producing an executable, (but still produce the plugin libraries):
 
     make plugins
-    go run cmd/arc/main.go --log=stdout --env=config/manual.env
+    go run main.go --log=stdout --env=config/manual.env
 
 **Note**: Running the executable assumes an active Elasticsearch connection whose url is to be provided in the `.env` file. manual.env configures it to be the localhost.
 

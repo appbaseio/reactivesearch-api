@@ -10,14 +10,12 @@ import (
 	"github.com/appbaseio-confidential/arc/model/user"
 	"github.com/appbaseio-confidential/arc/model/permission"
 	"github.com/appbaseio-confidential/arc/model/category"
-	//"fmt"
 	"github.com/appbaseio-confidential/arc/model/op"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/assert"
 	"crypto/rsa"
 	"crypto/rand"
 	"github.com/dgrijalva/jwt-go"
-	//"errors"
 )
 
 type mockAuthService struct {

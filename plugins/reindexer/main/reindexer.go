@@ -1,6 +1,6 @@
 package main
 
 import "github.com/appbaseio-confidential/arc/plugins/reindexer"
-import "github.com/appbaseio-confidential/arc/arc"
+import "github.com/appbaseio-confidential/arc/plugins"
 
-var PluginInstance arc.Plugin = reindexer.Instance()
+var PluginInstance plugins.Plugin = reindexer.Instance()
