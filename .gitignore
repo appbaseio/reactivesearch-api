@@ -2,7 +2,7 @@
 .idea
 .DS_Store
 
-.env
-main
 build
 *.http
+
+tags

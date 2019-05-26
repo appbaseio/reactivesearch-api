@@ -15,6 +15,12 @@ const ctxKey = contextKey("request_credential")
 // whether the request uses a user credential or permission credential.
 type Credential int
 
+// Auth credential is an interface to be implemented by credentials,
+// i.e. user & permission
+type AuthCredential interface {
+	Id() string
+}
+
 // Credentials
 const (
 	User Credential = iota

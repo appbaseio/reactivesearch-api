@@ -3,7 +3,7 @@ package classify
 import (
 	"net/http"
 
-	"github.com/appbaseio-confidential/arc/arc/middleware"
+	"github.com/appbaseio-confidential/arc/middleware"
 	"github.com/appbaseio-confidential/arc/model/index"
 	"github.com/appbaseio-confidential/arc/util"
 )

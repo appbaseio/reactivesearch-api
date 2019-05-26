@@ -4,8 +4,7 @@ import (
 	"os"
 	"sync"
 
-	"github.com/appbaseio-confidential/arc/arc"
-	"github.com/appbaseio-confidential/arc/arc/route"
+	"github.com/appbaseio-confidential/arc/plugins"
 	"github.com/appbaseio-confidential/arc/errors"
 )
 
@@ -19,17 +18,13 @@ var (
 	once      sync.Once
 )
 
-func init() {
-	arc.RegisterPlugin(instance())
-}
-
 type reindexer struct {
 	es reindexService
 }
 
 // Use only this function to fetch the instance of user from within
 // this package to avoid creating stateless duplicates of the plugin.
-func instance() *reindexer {
+func Instance() *reindexer {
 	once.Do(func() { singleton = &reindexer{} })
 	return singleton
 }
@@ -55,6 +50,6 @@ func (rx *reindexer) InitFunc() error {
 	return nil
 }
 
-func (rx *reindexer) Routes() []route.Route {
+func (rx *reindexer) Routes() []plugins.Route {
 	return rx.routes()
 }

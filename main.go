@@ -9,21 +9,16 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"path/filepath"
+	"plugin"
 	"strings"
 
-	"github.com/appbaseio-confidential/arc/arc"
 	"github.com/appbaseio-confidential/arc/middleware/logger"
+	"github.com/appbaseio-confidential/arc/plugins"
 	"github.com/gorilla/mux"
 	"github.com/rs/cors"
 
 	"gopkg.in/natefinch/lumberjack.v2"
-
-	_ "github.com/appbaseio-confidential/arc/plugins/auth"
-	_ "github.com/appbaseio-confidential/arc/plugins/elasticsearch"
-	_ "github.com/appbaseio-confidential/arc/plugins/logs"
-	_ "github.com/appbaseio-confidential/arc/plugins/permissions"
-	_ "github.com/appbaseio-confidential/arc/plugins/reindexer"
-	_ "github.com/appbaseio-confidential/arc/plugins/users"
 )
 
 const logTag = "[cmd]"
@@ -34,6 +29,7 @@ var (
 	listPlugins bool
 	address     string
 	port        int
+	pluginDir   string
 )
 
 func init() {
@@ -42,6 +38,7 @@ func init() {
 	flag.BoolVar(&listPlugins, "plugins", false, "List currently registered plugins")
 	flag.StringVar(&address, "addr", "", "Address to serve on")
 	flag.IntVar(&port, "port", 8000, "Port number")
+	flag.StringVar(&pluginDir, "pluginDir", "build/plugins", "Directory containing the compiled plugins")
 }
 
 func main() {
@@ -69,27 +66,23 @@ func main() {
 		log.Printf("%s: reading env file %q: %v", logTag, envFile, err)
 	}
 
-	// Sort plugins such that elasticsearch plugin routes are loaded after all the other plugin routes.
-	// This is necessary because the elasticsearch routes might shadow the routes in other plugins.
-	plugins := arc.ListPlugins()
-	criteria := func(p1, p2 arc.Plugin) bool {
-		if p1.Name() == "[elasticsearch]" {
-			return false
-		} else if p2.Name() == "[elasticsearch]" {
-			return true
-		} else {
-			return p1.Name() < p2.Name()
-		}
-	}
-	arc.By(criteria).Sort(plugins)
-
 	router := mux.NewRouter().StrictSlash(true)
 
-	// Load plugin routes
-	for _, p := range plugins {
-		if err := arc.LoadPlugin(router, p); err != nil {
-			log.Fatalf("%v", err)
+	var elasticSearchPath string
+	err := filepath.Walk(pluginDir, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
 		}
+		if !info.IsDir() && filepath.Ext(info.Name()) == ".so" && info.Name() != "elasticsearch.so" {
+			LoadPluginFromFile(router, path)
+		} else if info.Name() == "elasticsearch.so" {
+			elasticSearchPath = path
+		}
+		return nil
+	})
+	LoadPluginFromFile(router, elasticSearchPath)
+	if err != nil {
+		log.Fatal("error loading plugins: ", err)
 	}
 
 	// CORS policy
@@ -100,16 +93,25 @@ func main() {
 	})
 	handler := c.Handler(router)
 	handler = logger.Log(handler)
-	//handler = panic.Recovery(handler)
-
-	if listPlugins {
-		log.Printf("%s: %s\n", logTag, arc.ListPluginsStr())
-	}
 
 	// Listen and serve ...
 	addr := fmt.Sprintf("%s:%d", address, port)
 	log.Printf("%s: listening on %s", logTag, addr)
 	log.Fatal(http.ListenAndServe(addr, handler))
+}
+
+// LoadPluginFromFile loads a plugin at the given location
+func LoadPluginFromFile(router *mux.Router, path string) error {
+	pf, err1 := plugin.Open(path)
+	if err1 != nil {
+		return err1
+	}
+	pi, err2 := pf.Lookup("PluginInstance")
+	if err2 != nil {
+		return err2
+	}
+	err3 := plugins.LoadPlugin(router, *pi.(*plugins.Plugin))
+	return err3
 }
 
 // LoadEnvFromFile loads env vars from envFile. Envs in the file

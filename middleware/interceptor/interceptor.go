@@ -6,7 +6,7 @@ import (
 	"net/url"
 	"os"
 
-	"github.com/appbaseio-confidential/arc/arc/middleware"
+	"github.com/appbaseio-confidential/arc/middleware"
 	"github.com/appbaseio-confidential/arc/errors"
 	"github.com/appbaseio-confidential/arc/util"
 )

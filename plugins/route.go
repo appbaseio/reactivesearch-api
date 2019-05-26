@@ -1,4 +1,4 @@
-package route
+package plugins
 
 import (
 	"net/http"
@@ -40,11 +40,11 @@ type Route struct {
 }
 
 // By is the type of a "less" function that defines the ordering of routes.
-type By func(r1, r2 Route) bool
+type RouteBy func(r1, r2 Route) bool
 
 // Sort is a method on the function type, By, that sorts
 // the argument slice according to the function.
-func (by By) Sort(routes []Route) {
+func (by RouteBy) RouteSort(routes []Route) {
 	rs := &routeSorter{
 		routes: routes,
 		by:     by,
@@ -55,7 +55,7 @@ func (by By) Sort(routes []Route) {
 // routeSorter joins a By function and a slice of routes to be sorted.
 type routeSorter struct {
 	routes []Route
-	by     By
+	by     RouteBy
 }
 
 // Len is part of sort.Interface that returns the length

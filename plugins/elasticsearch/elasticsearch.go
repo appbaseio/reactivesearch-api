@@ -3,8 +3,7 @@ package elasticsearch
 import (
 	"sync"
 
-	"github.com/appbaseio-confidential/arc/arc"
-	"github.com/appbaseio-confidential/arc/arc/route"
+	"github.com/appbaseio-confidential/arc/plugins"
 )
 
 const logTag = "[elasticsearch]"
@@ -18,11 +17,7 @@ type elasticsearch struct {
 	specs []api
 }
 
-func init() {
-	arc.RegisterPlugin(instance())
-}
-
-func instance() *elasticsearch {
+func Instance() *elasticsearch {
 	once.Do(func() { singleton = &elasticsearch{} })
 	return singleton
 }
@@ -35,6 +30,6 @@ func (es *elasticsearch) InitFunc() error {
 	return es.preprocess()
 }
 
-func (es *elasticsearch) Routes() []route.Route {
+func (es *elasticsearch) Routes() []plugins.Route {
 	return es.routes()
 }

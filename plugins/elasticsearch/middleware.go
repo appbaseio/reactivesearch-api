@@ -5,8 +5,7 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/appbaseio-confidential/arc/arc/middleware"
-	"github.com/appbaseio-confidential/arc/arc/middleware/order"
+	"github.com/appbaseio-confidential/arc/middleware"
 	"github.com/appbaseio-confidential/arc/middleware/classify"
 	"github.com/appbaseio-confidential/arc/middleware/interceptor"
 	"github.com/appbaseio-confidential/arc/middleware/ratelimiter"
@@ -21,7 +20,7 @@ import (
 )
 
 type chain struct {
-	order.Fifo
+	middleware.Fifo
 }
 
 func (c *chain) Wrap(h http.HandlerFunc) http.HandlerFunc {
@@ -40,9 +39,9 @@ func list() []middleware.Middleware {
 		validate.Sources(),
 		validate.Referers(),
 		validate.Indices(),
-		validate.Operation(),
 		validate.Category(),
 		validate.ACL(),
+		validate.Operation(),
 		validate.PermissionExpiry(),
 		interceptor.Redirect(),
 	}
@@ -63,9 +62,8 @@ func classifyCategory(h http.HandlerFunc) http.HandlerFunc {
 		routeCategory := routeSpec.category
 
 		// classify streams explicitly
-		params := req.URL.Query()
-		stream := params.Get("stream")
-		if stream == "true" {
+		stream := req.Header.Get("X-Request-Category")
+		if stream == "streams" {
 			routeCategory = category.Streams
 		}
 

@@ -275,7 +275,7 @@ var getCredentialTest = []struct {
 		&ServerSetup{
 			Method: "POST",
 			Path:   "/test%2Cperm/_search",
-			Body:   `{"_source":true,"query":{"bool":{"must":[{"term":{"username.keyword":"user1"}},{"term":{"password.keyword":"pass1"}}]}}}`,
+			Body:   `{"_source":true,"query":{"term":{"username.keyword":"user1"}}}`,
 			//Response: `{"took":70,"timed_out":false,"_shards":{"total":5,"successful":5,"skipped":0,"failed":0},"hits":{"total":0,"max_score":null,"hits":[]}}`,
 			Response: `{
 				"took": 2,
@@ -310,7 +310,7 @@ func TestGetCredential(t *testing.T) {
 			ts := buildTestServer(t, []*ServerSetup{tt.setup})
 			defer ts.Close()
 			es, _ := newStubClient(ts.URL, "test", "perm")
-			_, err := es.getCredential(context.Background(), "user1", "pass1")
+			_, err := es.getCredential(context.Background(), "user1")
 
 			if !compareErrs(tt.err, err) {
 				t.Fatalf("Cat aliases should have failed with error: %v got: %v instead\n", tt.err, err)

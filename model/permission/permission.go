@@ -504,3 +504,7 @@ func (p *Permission) GetPatch() (map[string]interface{}, error) {
 
 	return patch, nil
 }
+
+func (p *Permission) Id() string {
+	return p.Username
+}

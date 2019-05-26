@@ -5,8 +5,7 @@ import (
 	"os"
 	"sync"
 
-	"github.com/appbaseio-confidential/arc/arc"
-	"github.com/appbaseio-confidential/arc/arc/route"
+	"github.com/appbaseio-confidential/arc/plugins"
 	"github.com/appbaseio-confidential/arc/errors"
 )
 
@@ -27,13 +26,9 @@ type permissions struct {
 	es permissionService
 }
 
-func init() {
-	arc.RegisterPlugin(instance())
-}
-
 // Use only this function to fetch the instance of permission from within
 // this package to avoid creating stateless duplicates of the plugin.
-func instance() *permissions {
+func Instance() *permissions {
 	once.Do(func() { singleton = &permissions{} })
 	return singleton
 }
@@ -65,6 +60,6 @@ func (p *permissions) InitFunc() error {
 	return nil
 }
 
-func (p *permissions) Routes() []route.Route {
+func (p *permissions) Routes() []plugins.Route {
 	return p.routes()
 }

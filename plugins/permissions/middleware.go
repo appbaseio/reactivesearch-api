@@ -3,17 +3,17 @@ package permissions
 import (
 	"net/http"
 
-	"github.com/appbaseio-confidential/arc/arc/middleware"
-	"github.com/appbaseio-confidential/arc/arc/middleware/order"
+	"github.com/appbaseio-confidential/arc/middleware"
 	"github.com/appbaseio-confidential/arc/middleware/classify"
 	"github.com/appbaseio-confidential/arc/middleware/validate"
 	"github.com/appbaseio-confidential/arc/model/category"
 	"github.com/appbaseio-confidential/arc/model/index"
+	"github.com/appbaseio-confidential/arc/plugins/logs"
 	"github.com/appbaseio-confidential/arc/plugins/auth"
 )
 
 type chain struct {
-	order.Fifo
+	middleware.Fifo
 }
 
 func (c *chain) Wrap(h http.HandlerFunc) http.HandlerFunc {
@@ -24,6 +24,7 @@ func list() []middleware.Middleware {
 	return []middleware.Middleware{
 		classifyCategory,
 		classifyIndices,
+		logs.Recorder(),
 		classify.Op(),
 		auth.BasicAuth(),
 		validate.Operation(),

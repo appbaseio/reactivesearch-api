@@ -324,3 +324,7 @@ func (u *User) GetPatch() (map[string]interface{}, error) {
 
 	return patch, nil
 }
+
+func (u *User) Id() string {
+	return u.Username
+}
