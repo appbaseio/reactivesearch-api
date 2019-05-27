@@ -181,11 +181,11 @@ both read and write requests but would forbid making delete requests.
 
 Arc currently maintains records for all the requests made to elasticsearch. Both request and responses are stored
 for the users to view and inspect it later. The request logs can be fetched for both specific indices or the whole
-cluster. The dedicated endpoints to fetch the index/cluster logs can be found [here](https://arc-docs.appbase.io/).
+cluster. The dedicated endpoints to fetch the index/cluster logs can be found [here](https://arc-api.appbase.io/).
 
 ## Docs
 
-Refer to the RESTful API [docs](https://arc-docs.appbase.io/) that are currently included in Arc for more information.
+Refer to the RESTful API [docs](https://arc-api.appbase.io/) that are currently included in Arc for more information.
 
 ## Improvements
 
