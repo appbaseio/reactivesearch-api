@@ -5,6 +5,7 @@ import (
 	"sync"
 
 	"github.com/appbaseio-confidential/arc/plugins"
+	"github.com/appbaseio-confidential/arc/middleware"
 	"github.com/appbaseio-confidential/arc/errors"
 )
 
@@ -33,7 +34,7 @@ func (rx *reindexer) Name() string {
 	return logTag
 }
 
-func (rx *reindexer) InitFunc() error {
+func (rx *reindexer) InitFunc(_ [] middleware.Middleware) error {
 	// fetch env vars
 	esURL := os.Getenv(envEsURL)
 	if esURL == "" {
@@ -52,4 +53,9 @@ func (rx *reindexer) InitFunc() error {
 
 func (rx *reindexer) Routes() []plugins.Route {
 	return rx.routes()
+}
+
+// Default empty middleware array function
+func (rx *reindexer) ESMiddleware() [] middleware.Middleware {
+	return make([] middleware.Middleware, 0)
 }
