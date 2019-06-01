@@ -1,6 +1,6 @@
 package main
 
 import "github.com/appbaseio-confidential/arc/plugins/analytics"
-import "github.com/appbaseio-confidential/arc/arc"
+import "github.com/appbaseio-confidential/arc/plugins"
 
-var PluginInstance arc.Plugin = analytics.Instance()
+var PluginInstance plugins.Plugin = analytics.Instance()

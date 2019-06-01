@@ -3,12 +3,12 @@ package rules
 import (
 	"net/http"
 
-	"github.com/appbaseio-confidential/arc/arc/route"
+	"github.com/appbaseio-confidential/arc/plugins"
 )
 
-func (r *Rules) routes() []route.Route {
+func (r *Rules) routes() []plugins.Route {
 	middleware := (&chain{}).Wrap
-	return []route.Route{
+	return []plugins.Route{
 		{
 			Name:        "Create a query rule",
 			Methods:     []string{http.MethodPost},

@@ -3,8 +3,10 @@ package rules
 import (
 	"os"
 	"sync"
+	"net/http"
 
-	"github.com/appbaseio-confidential/arc/arc/route"
+	"github.com/appbaseio-confidential/arc/plugins"
+	"github.com/appbaseio-confidential/arc/middleware"
 	"github.com/appbaseio-confidential/arc/errors"
 )
 
@@ -67,7 +69,7 @@ func (r *Rules) Name() string {
 
 // InitFunc initializes the dao, i.e. elasticsearch client, and should be executed
 // only once in the lifetime of the plugin.
-func (r *Rules) InitFunc() error {
+func (r *Rules) InitFunc(_ [] middleware.Middleware) error {
 	// fetch vars from env
 	esURL := os.Getenv(envEsURL)
 	if esURL == "" {
@@ -89,6 +91,14 @@ func (r *Rules) InitFunc() error {
 }
 
 // Routes returns an empty slices since the plugin solely acts as a middleware.
-func (r *Rules) Routes() []route.Route {
+func (r *Rules) Routes() []plugins.Route {
 	return r.routes()
+}
+
+func (r *Rules) ESMiddleware() []middleware.Middleware {
+	return [] middleware.Middleware {
+		func(h http.HandlerFunc) http.HandlerFunc {
+			return r.intercept(h)
+		},
+	}
 }

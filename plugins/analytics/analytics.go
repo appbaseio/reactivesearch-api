@@ -3,9 +3,11 @@ package analytics
 import (
 	"os"
 	"sync"
+	"net/http"
 
-	"github.com/appbaseio-confidential/arc/arc/route"
+	"github.com/appbaseio-confidential/arc/plugins"
 	"github.com/appbaseio-confidential/arc/errors"
+	"github.com/appbaseio-confidential/arc/middleware"
 )
 
 const (
@@ -43,7 +45,7 @@ func (a *Analytics) Name() string {
 
 // InitFunc is a part of Plugin interface that gets executed only once, and initializes
 // the dao, i.e. elasticsearch before the plugin is operational.
-func (a *Analytics) InitFunc() error {
+func (a *Analytics) InitFunc(_ [] middleware.Middleware) error {
 	// fetch the required env vars
 	url := os.Getenv(envEsURL)
 	if url == "" {
@@ -69,6 +71,14 @@ func (a *Analytics) InitFunc() error {
 }
 
 // Routes returns the analytics routes that the plugin serves.
-func (a *Analytics) Routes() []route.Route {
+func (a *Analytics) Routes() []plugins.Route {
 	return a.routes()
+}
+
+func (a *Analytics) ESMiddleware() []middleware.Middleware {
+	return [] middleware.Middleware {
+		func(h http.HandlerFunc) http.HandlerFunc {
+			return a.recorder(h)
+		},
+	}
 }

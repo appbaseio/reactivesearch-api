@@ -3,12 +3,12 @@ package analytics
 import (
 	"net/http"
 
-	"github.com/appbaseio-confidential/arc/arc/route"
+	"github.com/appbaseio-confidential/arc/plugins"
 )
 
-func (a *Analytics) routes() []route.Route {
+func (a *Analytics) routes() []plugins.Route {
 	middleware := (&chain{}).Wrap
-	return []route.Route{
+	return []plugins.Route{
 		{
 			Name:        "Get overview",
 			Methods:     []string{http.MethodGet},
