@@ -3,10 +3,40 @@ package main
 import "fmt"
 import "io/ioutil"
 import "os"
-import "github.com/dgrijalva/jwt-go"
+import "time"
 import "strings"
+import "flag"
 
-func main() {
+import "github.com/dgrijalva/jwt-go"
+
+func encode() {
+	token := jwt.NewWithClaims(jwt.SigningMethodRS256, jwt.MapClaims{
+			"username": "foo",
+		        "iat": time.Now().Unix(),
+			"exp": time.Now().Unix() + 1000,
+		})
+        // generate rsa private key using ssh-keygen
+	
+        private_key_loc := os.Getenv("JWT_RSA_PRIVATE_KEY_LOC")
+	if private_key_loc == "" {
+		private_key_loc = "sample/rsa-private"
+        }
+	buf, err1 := ioutil.ReadFile(private_key_loc)
+	if err1 != nil {
+		panic(err1)
+	}
+	pvt_key, err3 := jwt.ParseRSAPrivateKeyFromPEM(buf)
+        if err3 != nil {
+		panic(err3)
+        }
+	tokenString, err4 := token.SignedString(pvt_key)
+	if err4  != nil {
+		panic(err4)
+	}
+	fmt.Println(tokenString)
+}
+
+func decode() {
 	tokenString, err1 := ioutil.ReadAll(os.Stdin)
 	if err1 != nil {
 		panic(err1)
@@ -45,4 +75,16 @@ func main() {
 		}
 	}
 	fmt.Println(token.Claims)
+}
+
+var decodeFlag = flag.Bool("decode", false, "decode the provided jwt")
+var encodeFlag = flag.Bool("encode", false, "encode a jwt")
+
+func main() {
+	flag.Parse()
+	if *encodeFlag {
+		encode()
+	} else if *decodeFlag {
+		decode()
+	}
 }
