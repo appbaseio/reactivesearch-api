@@ -1,12 +1,7 @@
 # Arc
 
-Arc is a simple, modular API Gateway that sits between a client and an [Elasticsearch](https://elastic.co) cluster. 
-It acts as a reverse proxy, routing requests from clients to services. Arc is extended through plugins, 
-which provide extra functionality and services beyond the Elasticsearch's RESTful API. It can perform 
-various cross-cutting tasks such as basic authentication, logging, ratelimiting, source/referer whitelisting, 
-analytics etc. These functionalities can clearly be extended by adding a plugin encapsulating a desired 
-functionality. It also provides some useful abstractions that helps in managing and controlling the access 
-to Elasticsearch's RESTful API. 
+Arc is a simple, modular API Gateway that sits between a client and an [ElasticSearch](https://elastic.co) cluster. It acts as a reverse proxy, routing requests from clients to services. Arc is extended through plugins, which provide extra functionality and services beyond the ElasticSearch's RESTful API. It can perform various cross-cutting tasks such as basic authentication, logging, rate-limiting, source/referers whitelisting, analytics etc. These functionalities can clearly be extended by adding a plugin encapsulating a desired  functionality. It also provides some useful abstractions that helps in managing and controlling the access 
+to ElasticSearch's RESTful API.
 
 ## Table of contents
 - [Overview](#overview)
@@ -65,7 +60,7 @@ In order to run arc, you'll require an Elasticsearch node. There are multiple wa
 
 2. Start a single node Elasticsearch cluster locally
 
-        docker run -d --rm --name elasticsearch -p 9200:9200 -p 9300:9300 --net=arc -e "discovery.type=single-node" docker.elastic.co/elasticsearch/elasticsearch-oss:6.7.1
+        docker run -d --rm --name elasticsearch -p 9200:9200 -p 9300:9300 --net=arc -e "discovery.type=single-node" docker.elastic.co/elasticsearch/elasticsearch-oss:6.8.0
 
 3. Start Arc locally
 
@@ -94,6 +89,12 @@ Alternatively, you could execute the following commands to start the server with
 
 **Note**: Running the executable assumes an active Elasticsearch connection whose url is to be provided in the `.env` file. manual.env configures it to be the localhost.
 
+#### Run Tests
+
+Currently, tests are WIP and implemented for auth and logs modules. You can run tests using:
+
+    go test ./...
+
 ### Implementation
 
 The functionality in Arc can extended via plugins. An Arc plugin can be considered as a service in itself; it can have its
@@ -117,7 +118,7 @@ the client to define control over the Elasticsearch RESTful API and Arc's functi
 
 ### User
 
-In order to interact with Arc, the client must define a `User`. A `User` encapsulates its own set of [properties](https://arc-docs.appbase.io/#68385301-6ec3-44ff-99fa-a6015d68a3fa) that defines its capabilities.
+In order to interact with Arc, the client must define a `User`. A `User` encapsulates its own set of [properties](https://arc-api.appbase.io/) that defines its capabilities.
 
 - `username`: uniquely identifies the user
 - `password`: verifies the identity of the user
@@ -180,11 +181,11 @@ both read and write requests but would forbid making delete requests.
 
 Arc currently maintains records for all the requests made to elasticsearch. Both request and responses are stored
 for the users to view and inspect it later. The request logs can be fetched for both specific indices or the whole
-cluster. The dedicated endpoints to fetch the index/cluster logs can be found [here](https://arc-docs.appbase.io/).
+cluster. The dedicated endpoints to fetch the index/cluster logs can be found [here](https://arc-api.appbase.io/).
 
 ## Docs
 
-Refer to the RESTful API [docs](https://arc-docs.appbase.io/) that are currently included in Arc for more information.
+Refer to the RESTful API [docs](https://arc-api.appbase.io/) that are currently included in Arc for more information.
 
 ## Improvements
 
