@@ -5,6 +5,7 @@ import (
 	"os"
 	"sync"
 
+	"github.com/appbaseio-confidential/arc/middleware"
 	"github.com/appbaseio-confidential/arc/plugins"
 	"github.com/appbaseio-confidential/arc/errors"
 )
@@ -37,7 +38,7 @@ func (p *permissions) Name() string {
 	return logTag
 }
 
-func (p *permissions) InitFunc() error {
+func (p *permissions) InitFunc(_ [] middleware.Middleware) error {
 	log.Printf("%s: initializing plugin\n", logTag)
 
 	// fetch vars from env
@@ -62,4 +63,9 @@ func (p *permissions) InitFunc() error {
 
 func (p *permissions) Routes() []plugins.Route {
 	return p.routes()
+}
+
+// Default empty middleware array function
+func (p *permissions) ESMiddleware() [] middleware.Middleware {
+	return make([] middleware.Middleware, 0)
 }
