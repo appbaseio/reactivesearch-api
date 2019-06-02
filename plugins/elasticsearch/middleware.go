@@ -23,8 +23,8 @@ type chain struct {
 	middleware.Fifo
 }
 
-func (c *chain) Wrap(h http.HandlerFunc) http.HandlerFunc {
-	return c.Adapt(h, list()...)
+func (c *chain) Wrap(mw [] middleware.Middleware, h http.HandlerFunc) http.HandlerFunc {
+	return c.Adapt(h, append(append(list(), mw...), interceptor.Redirect())...)
 }
 
 func list() []middleware.Middleware {
@@ -43,7 +43,6 @@ func list() []middleware.Middleware {
 		validate.ACL(),
 		validate.Operation(),
 		validate.PermissionExpiry(),
-		interceptor.Redirect(),
 	}
 }
 

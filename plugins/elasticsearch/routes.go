@@ -10,6 +10,7 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/appbaseio-confidential/arc/middleware"
 	"github.com/appbaseio-confidential/arc/plugins"
 	"github.com/appbaseio-confidential/arc/model/acl"
 	"github.com/appbaseio-confidential/arc/model/category"
@@ -48,7 +49,7 @@ type spec struct {
 	} `json:"body,omitempty"`
 }
 
-func (es *elasticsearch) preprocess() error {
+func (es *elasticsearch) preprocess(mw [] middleware.Middleware) error {
 	files := make(chan string)
 	apis := make(chan api)
 
@@ -57,7 +58,7 @@ func (es *elasticsearch) preprocess() error {
 	go fetchSpecFiles(&box, files)
 	go decodeSpecFiles(&box, files, apis)
 
-	middleware := (&chain{}).Wrap
+	middlewareFunction := (&chain{}).Wrap
 
 	for api := range apis {
 		for _, path := range api.spec.URL.Paths {
@@ -71,7 +72,7 @@ func (es *elasticsearch) preprocess() error {
 				Name:        api.name,
 				Methods:     api.spec.Methods,
 				Path:        path,
-				HandlerFunc: middleware(es.handler()),
+				HandlerFunc: middlewareFunction(mw, es.handler()),
 				Description: api.spec.Documentation,
 			}
 			routes = append(routes, r)
@@ -104,7 +105,7 @@ func (es *elasticsearch) preprocess() error {
 		Name:        "ping",
 		Methods:     []string{http.MethodGet},
 		Path:        "/",
-		HandlerFunc: middleware(es.handler()),
+		HandlerFunc: middlewareFunction(mw, es.handler()),
 		Description: "You know, for search",
 	}
 	routes = append(routes, indexRoute)

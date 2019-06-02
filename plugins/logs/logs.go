@@ -5,6 +5,7 @@ import (
 	"sync"
 
 	"github.com/appbaseio-confidential/arc/plugins"
+	"github.com/appbaseio-confidential/arc/middleware"
 	"github.com/appbaseio-confidential/arc/errors"
 )
 
@@ -57,7 +58,7 @@ func (l *Logs) Name() string {
 
 // InitFunc is a part of Plugin interface that gets executed only once, and initializes
 // the dao, i.e. elasticsearch before the plugin is operational.
-func (l *Logs) InitFunc() error {
+func (l *Logs) InitFunc(_ [] middleware.Middleware) error {
 	// fetch the required env vars
 	url := os.Getenv(envEsURL)
 	if url == "" {
@@ -81,4 +82,9 @@ func (l *Logs) InitFunc() error {
 // Routes returns an empty slice of routes, since Logs is solely a middleware.
 func (l *Logs) Routes() []plugins.Route {
 	return l.routes()
+}
+
+// Default empty middleware array function
+func (l *Logs) ESMiddleware() [] middleware.Middleware {
+	return make([] middleware.Middleware, 0)
 }
