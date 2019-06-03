@@ -3,7 +3,7 @@ package permissions
 import (
 	"net/http"
 
-	"github.com/appbaseio-confidential/arc/plugins"
+	"github.com/appbaseio/arc/plugins"
 )
 
 func (p *permissions) routes() []plugins.Route {

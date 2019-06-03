@@ -1,4 +1,4 @@
-module github.com/appbaseio-confidential/arc
+module github.com/appbaseio/arc
 
 require (
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible

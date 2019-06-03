@@ -48,7 +48,7 @@ to register itself as a plugin:
 	import (
 		"fmt"
 	
-		"github.com/appbaseio-confidential/arc/arc/plugin"
+		"github.com/appbaseio/arc/arc/plugin"
 	)
 
 	const pluginName = "greeter"
@@ -87,7 +87,7 @@ Define a list of routes that the plugin aims to handle.
 	import (
 	 	"net/http"
  	
-  		"github.com/appbaseio-confidential/arc/arc/plugin"
+  		"github.com/appbaseio/arc/arc/plugin"
 	)
 	
 	func (g *Greeter) routes() []plugin.Route {

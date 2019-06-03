@@ -3,7 +3,7 @@ package logs
 import (
 	"net/http"
 
-	"github.com/appbaseio-confidential/arc/plugins"
+	"github.com/appbaseio/arc/plugins"
 )
 
 func (l *Logs) routes() []plugins.Route {

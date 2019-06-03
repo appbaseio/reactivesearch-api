@@ -6,10 +6,10 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/appbaseio-confidential/arc/middleware"
-	"github.com/appbaseio-confidential/arc/model/credential"
-	"github.com/appbaseio-confidential/arc/model/permission"
-	"github.com/appbaseio-confidential/arc/util"
+	"github.com/appbaseio/arc/middleware"
+	"github.com/appbaseio/arc/model/credential"
+	"github.com/appbaseio/arc/model/permission"
+	"github.com/appbaseio/arc/util"
 )
 
 // Referers returns a middleware that validates the request referers against the permission referers.

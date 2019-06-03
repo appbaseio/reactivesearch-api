@@ -3,7 +3,7 @@ package reindexer
 import (
 	"net/http"
 
-	"github.com/appbaseio-confidential/arc/plugins"
+	"github.com/appbaseio/arc/plugins"
 )
 
 func (rx *reindexer) routes() []plugins.Route {

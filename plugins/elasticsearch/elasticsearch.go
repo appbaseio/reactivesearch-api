@@ -3,8 +3,8 @@ package elasticsearch
 import (
 	"sync"
 
-	"github.com/appbaseio-confidential/arc/plugins"
-	"github.com/appbaseio-confidential/arc/middleware"
+	"github.com/appbaseio/arc/plugins"
+	"github.com/appbaseio/arc/middleware"
 )
 
 const logTag = "[elasticsearch]"

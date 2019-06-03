@@ -8,7 +8,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/appbaseio-confidential/arc/errors"
+	"github.com/appbaseio/arc/errors"
 	"github.com/olivere/elastic"
 )
 

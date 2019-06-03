@@ -3,7 +3,7 @@ package credential
 import (
 	"context"
 
-	"github.com/appbaseio-confidential/arc/errors"
+	"github.com/appbaseio/arc/errors"
 )
 
 type contextKey string

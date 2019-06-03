@@ -2,7 +2,7 @@ package permissions
 
 import (
 	"context"
-	"github.com/appbaseio-confidential/arc/model/permission"
+	"github.com/appbaseio/arc/model/permission"
 )
 
 type permissionService interface {

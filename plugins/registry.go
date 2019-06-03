@@ -5,7 +5,7 @@ import (
 	"sort"
 	"strconv"
 
-	"github.com/appbaseio-confidential/arc/middleware"
+	"github.com/appbaseio/arc/middleware"
 
 	"github.com/gorilla/mux"
 )

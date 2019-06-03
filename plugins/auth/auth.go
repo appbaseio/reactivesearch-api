@@ -7,10 +7,10 @@ import (
 	"os"
 	"sync"
 
-	"github.com/appbaseio-confidential/arc/model/credential"
-	"github.com/appbaseio-confidential/arc/plugins"
-	"github.com/appbaseio-confidential/arc/middleware"
-	"github.com/appbaseio-confidential/arc/errors"
+	"github.com/appbaseio/arc/model/credential"
+	"github.com/appbaseio/arc/plugins"
+	"github.com/appbaseio/arc/middleware"
+	"github.com/appbaseio/arc/errors"
 )
 
 const (

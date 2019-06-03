@@ -7,7 +7,7 @@ import (
 	"log"
 	"strconv"
 
-	"github.com/appbaseio-confidential/arc/util"
+	"github.com/appbaseio/arc/util"
 	"github.com/olivere/elastic"
 )
 

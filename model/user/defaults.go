@@ -1,8 +1,8 @@
 package user
 
 import (
-	"github.com/appbaseio-confidential/arc/model/category"
-	"github.com/appbaseio-confidential/arc/model/op"
+	"github.com/appbaseio/arc/model/category"
+	"github.com/appbaseio/arc/model/op"
 )
 
 var (

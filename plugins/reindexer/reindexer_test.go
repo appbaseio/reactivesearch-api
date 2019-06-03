@@ -7,8 +7,8 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/appbaseio-confidential/arc/errors"
-	"github.com/appbaseio-confidential/arc/middleware"
+	"github.com/appbaseio/arc/errors"
+	"github.com/appbaseio/arc/middleware"
 )
 
 var testServer = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

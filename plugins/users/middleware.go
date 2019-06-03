@@ -5,15 +5,15 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/appbaseio-confidential/arc/middleware"
-	"github.com/appbaseio-confidential/arc/middleware/classify"
-	"github.com/appbaseio-confidential/arc/middleware/validate"
-	"github.com/appbaseio-confidential/arc/model/category"
-	"github.com/appbaseio-confidential/arc/model/index"
-	"github.com/appbaseio-confidential/arc/model/user"
-	"github.com/appbaseio-confidential/arc/plugins/logs"
-	"github.com/appbaseio-confidential/arc/plugins/auth"
-	"github.com/appbaseio-confidential/arc/util"
+	"github.com/appbaseio/arc/middleware"
+	"github.com/appbaseio/arc/middleware/classify"
+	"github.com/appbaseio/arc/middleware/validate"
+	"github.com/appbaseio/arc/model/category"
+	"github.com/appbaseio/arc/model/index"
+	"github.com/appbaseio/arc/model/user"
+	"github.com/appbaseio/arc/plugins/logs"
+	"github.com/appbaseio/arc/plugins/auth"
+	"github.com/appbaseio/arc/util"
 )
 
 type chain struct {

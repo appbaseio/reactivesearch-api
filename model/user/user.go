@@ -7,10 +7,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/appbaseio-confidential/arc/errors"
-	"github.com/appbaseio-confidential/arc/model/acl"
-	"github.com/appbaseio-confidential/arc/model/category"
-	"github.com/appbaseio-confidential/arc/model/op"
+	"github.com/appbaseio/arc/errors"
+	"github.com/appbaseio/arc/model/acl"
+	"github.com/appbaseio/arc/model/category"
+	"github.com/appbaseio/arc/model/op"
 )
 
 type contextKey string

@@ -13,9 +13,9 @@ import (
 	"plugin"
 	"strings"
 
-	"github.com/appbaseio-confidential/arc/middleware"
-	"github.com/appbaseio-confidential/arc/middleware/logger"
-	"github.com/appbaseio-confidential/arc/plugins"
+	"github.com/appbaseio/arc/middleware"
+	"github.com/appbaseio/arc/middleware/logger"
+	"github.com/appbaseio/arc/plugins"
 	"github.com/gorilla/mux"
 	"github.com/rs/cors"
 

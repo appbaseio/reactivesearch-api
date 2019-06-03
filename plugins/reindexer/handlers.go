@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/appbaseio-confidential/arc/util"
+	"github.com/appbaseio/arc/util"
 	"github.com/gorilla/mux"
 )
 
