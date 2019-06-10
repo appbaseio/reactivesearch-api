@@ -96,7 +96,7 @@ Defaults are server.key & server.cert.
     go run main.go --log=stdout --env=config/manual.env --https --httpsKey server.key --httpsCert server.cert
 
 If you wish to manually test TLS support at localhost, you need to first generate a root CA key & certificate,
-and then generating server key & certificate. You can use scripts/ssl_certificate_gen.sh for this purpose.
+and then generate server key & certificate. You can use scripts/ssl_certificate_gen.sh for this purpose.
 Curl needs to be also passed an extra parameter providing the cacert, in this case.
     curl https://foo:bar@localhost:8000/_user --cacert rootCA.pem
 
