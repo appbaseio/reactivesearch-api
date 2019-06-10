@@ -89,6 +89,17 @@ Alternatively, you could execute the following commands to start the server with
 
 **Note**: Running the executable assumes an active Elasticsearch connection whose url is to be provided in the `.env` file. manual.env configures it to be the localhost.
 
+#### TLS Support
+
+You can optionally start arc to serve https requests instead of http requests. You need to also give the server key & certificate file location.
+Defaults are server.key & server.cert.
+    go run main.go --log=stdout --env=config/manual.env --https --httpsKey server.key --httpsCert server.cert
+
+If you wish to manually test TLS support at localhost, you need to first generate a root CA key & certificate,
+and then generating server key & certificate. You can use scripts/ssl_certificate_gen.sh for this purpose.
+Curl needs to be also passed an extra parameter providing the cacert, in this case.
+    curl https://foo:bar@localhost:8000/_user --cacert rootCA.pem
+
 #### Run Tests
 
 Currently, tests are WIP and implemented for auth and logs modules. You can run tests using:
