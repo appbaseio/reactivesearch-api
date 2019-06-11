@@ -32,8 +32,6 @@ var (
 	port        int
 	pluginDir   string
 	https bool
-	httpsCert   string
-	httpsKey    string
 )
 
 func init() {
@@ -44,8 +42,6 @@ func init() {
 	flag.IntVar(&port, "port", 8000, "Port number")
 	flag.StringVar(&pluginDir, "pluginDir", "build/plugins", "Directory containing the compiled plugins")
 	flag.BoolVar(&https, "https", false, "Starts a https server instead of a http server if true")
-	flag.StringVar(&httpsCert, "httpsCert", "server.crt", "Certificate location")
-	flag.StringVar(&httpsKey, "httpsKey", "server.key", "Private Key location")
 }
 
 func main() {
@@ -110,6 +106,8 @@ func main() {
 	addr := fmt.Sprintf("%s:%d", address, port)
 	log.Printf("%s: listening on %s", logTag, addr)
 	if https {
+		httpsCert := os.Getenv("HTTPS_CERT")
+		httpsKey := os.Getenv("HTTPS_KEY")
 		log.Fatal(http.ListenAndServeTLS(addr, httpsCert, httpsKey, handler))
 	} else {
 		log.Fatal(http.ListenAndServe(addr, handler))

@@ -91,14 +91,14 @@ Alternatively, you could execute the following commands to start the server with
 
 #### TLS Support
 
-You can optionally start arc to serve https requests instead of http requests. You need to also give the server key & certificate file location.
-Defaults are server.key & server.cert.
-    go run main.go --log=stdout --env=config/manual.env --https --httpsKey server.key --httpsCert server.cert
+You can optionally start arc to serve https requests instead of http requests using the flag https.
+You also need to provide the server key & certificate file location through the environment file.
+manual.env is configured to use demo server key & certificates, which work for localhost.
+    go run main.go --log=stdout --env=config/manual.env --https
 
-If you wish to manually test TLS support at localhost, you need to first generate a root CA key & certificate,
-and then generate server key & certificate. You can use scripts/ssl_certificate_gen.sh for this purpose.
-Curl needs to be also passed an extra parameter providing the cacert, in this case.
-    curl https://foo:bar@localhost:8000/_user --cacert rootCA.pem
+If you wish to manually test TLS support at localhost,
+curl needs to be also passed an extra parameter providing the cacert, in this case.
+    curl https://foo:bar@localhost:8000/_user --cacert sample/rootCA.pem
 
 #### Run Tests
 
