@@ -100,6 +100,16 @@ If you wish to manually test TLS support at localhost,
 curl needs to be also passed an extra parameter providing the cacert, in this case.
     curl https://foo:bar@localhost:8000/_user --cacert sample/rootCA.pem
 
+#### JWT Key Loading through HTTP
+
+If you wish to test loading JWT Key through HTTP, you can use the following commands to start a HTTP
+server serving the key
+    cd sample
+    python -m SimpleHTTPServer 8500
+
+Then start arc using the command:
+    go run main.go --log=stdout --env=config/manual-http-jwt.env
+
 #### Run Tests
 
 Currently, tests are WIP and implemented for auth and logs modules. You can run tests using:

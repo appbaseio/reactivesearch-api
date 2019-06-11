@@ -6,6 +6,8 @@ import (
 	"io/ioutil"
 	"os"
 	"sync"
+	"net/http"
+	"fmt"
 
 	"github.com/appbaseio/arc/model/credential"
 	"github.com/appbaseio/arc/plugins"
@@ -21,6 +23,7 @@ const (
 	envPermissionsEsIndex     = "PERMISSIONS_ES_INDEX"
 	defaultPermissionsEsIndex = ".permissions"
 	envJwtRsaPublicKeyLoc     = "JWT_RSA_PUBLIC_KEY_LOC"
+	envJwtRsaPublicKeyDest     = "JWT_RSA_PUBLIC_KEY_DEST"
 )
 
 var (
@@ -80,6 +83,26 @@ func (a *Auth) InitFunc(_ [] middleware.Middleware) error {
 		a.jwtRsaPublicKey, err = jwt.ParseRSAPublicKeyFromPEM(publicKeyBuf)
 		if err != nil {
 			return err
+		}
+	} else if jwtRsaPublicKeyDest := os.Getenv(envJwtRsaPublicKeyDest); jwtRsaPublicKeyDest != "" {
+		publicKeyResp, err := http.Get(jwtRsaPublicKeyDest)
+		if err != nil {
+			return err
+		}
+		if publicKeyResp.StatusCode == 200 {
+			publicKeyBuf := make([]byte, 2048)
+			n, err2 := publicKeyResp.Body.Read(publicKeyBuf)
+			err3 := publicKeyResp.Body.Close()
+			if n == 0 && err2 != nil {
+				return fmt.Errorf("Reader Error: %d %s", n, err2.Error())
+			}
+			if err3 != nil {
+				return fmt.Errorf("Closer Error: %s", err3.Error())
+			}
+			a.jwtRsaPublicKey, err = jwt.ParseRSAPublicKeyFromPEM(publicKeyBuf)
+			if err != nil {
+				return fmt.Errorf("Parser Error: %s", err.Error())
+			}
 		}
 	}
 
