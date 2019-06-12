@@ -31,6 +31,7 @@ var (
 	address     string
 	port        int
 	pluginDir   string
+	https bool
 )
 
 func init() {
@@ -40,6 +41,7 @@ func init() {
 	flag.StringVar(&address, "addr", "", "Address to serve on")
 	flag.IntVar(&port, "port", 8000, "Port number")
 	flag.StringVar(&pluginDir, "pluginDir", "build/plugins", "Directory containing the compiled plugins")
+	flag.BoolVar(&https, "https", false, "Starts a https server instead of a http server if true")
 }
 
 func main() {
@@ -103,7 +105,13 @@ func main() {
 	// Listen and serve ...
 	addr := fmt.Sprintf("%s:%d", address, port)
 	log.Printf("%s: listening on %s", logTag, addr)
-	log.Fatal(http.ListenAndServe(addr, handler))
+	if https {
+		httpsCert := os.Getenv("HTTPS_CERT")
+		httpsKey := os.Getenv("HTTPS_KEY")
+		log.Fatal(http.ListenAndServeTLS(addr, httpsCert, httpsKey, handler))
+	} else {
+		log.Fatal(http.ListenAndServe(addr, handler))
+	}
 }
 
 // LoadPluginFromFile loads a plugin at the given location
