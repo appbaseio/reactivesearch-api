@@ -58,7 +58,7 @@ func (l *Logs) Name() string {
 
 // InitFunc is a part of Plugin interface that gets executed only once, and initializes
 // the dao, i.e. elasticsearch before the plugin is operational.
-func (l *Logs) InitFunc(_ [] middleware.Middleware) error {
+func (l *Logs) InitFunc() error {
 	// fetch the required env vars
 	url := os.Getenv(envEsURL)
 	if url == "" {

@@ -34,7 +34,7 @@ func (rx *reindexer) Name() string {
 	return logTag
 }
 
-func (rx *reindexer) InitFunc(_ [] middleware.Middleware) error {
+func (rx *reindexer) InitFunc() error {
 	// fetch env vars
 	esURL := os.Getenv(envEsURL)
 	if esURL == "" {
