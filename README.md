@@ -64,7 +64,7 @@ In order to run arc, you'll require an Elasticsearch node. There are multiple wa
 
 3. Start Arc locally
 
-        docker build -t arc . && docker run --rm --name arc -p 8000:8000 --net=arc arc
+        docker build -t arc . && docker run --rm --name arc -p 8000:8000 --net=arc --env-file=config/docker.env arc
   
 For convenience, the steps described above are combined into a single `docker-compose` file. You can execute the file with command:
 
