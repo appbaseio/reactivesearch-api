@@ -38,7 +38,7 @@ func (p *permissions) Name() string {
 	return logTag
 }
 
-func (p *permissions) InitFunc(_ [] middleware.Middleware) error {
+func (p *permissions) InitFunc() error {
 	log.Printf("%s: initializing plugin\n", logTag)
 
 	// fetch vars from env

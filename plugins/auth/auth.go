@@ -58,7 +58,7 @@ func (a *Auth) Name() string {
 
 // InitFunc initializes the dao, i.e. elasticsearch client, and should be executed
 // only once in the lifetime of the plugin.
-func (a *Auth) InitFunc(_ [] middleware.Middleware) error {
+func (a *Auth) InitFunc() error {
 	// fetch vars from env
 	esURL := os.Getenv(envEsURL)
 	if esURL == "" {

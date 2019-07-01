@@ -78,7 +78,7 @@ func main() {
 			return err
 		}
 		if !info.IsDir() && filepath.Ext(info.Name()) == ".so" && info.Name() != "elasticsearch.so" {
-			err1, mw := LoadPluginFromFile(router, path, make([] middleware.Middleware, 0))
+			mw, err1 := LoadPluginFromFile(router, path)
 			if err1 != nil {
 				return err1
 			}
@@ -88,7 +88,7 @@ func main() {
 		}
 		return nil
 	})
-	LoadPluginFromFile(router, elasticSearchPath, elasticSearchMiddleware)
+	LoadESPluginFromFile(router, elasticSearchPath, elasticSearchMiddleware)
 	if err != nil {
 		log.Fatal("error loading plugins: ", err)
 	}
@@ -114,23 +114,37 @@ func main() {
 	}
 }
 
-// LoadPluginFromFile loads a plugin at the given location
-func LoadPluginFromFile(router *mux.Router, path string, mw [] middleware.Middleware) (error, [] middleware.Middleware) {
+func LoadPIFromFile(path string) (plugin.Symbol, error) {
 	pf, err1 := plugin.Open(path)
 	if err1 != nil {
-		return err1, nil
+		return nil, err1
 	}
-	pi, err2 := pf.Lookup("PluginInstance")
+	return pf.Lookup("PluginInstance")
+}
+
+// LoadPluginFromFile loads a plugin at the given location
+func LoadPluginFromFile(router *mux.Router, path string) ([]middleware.Middleware, error) {
+	pi, err2 := LoadPIFromFile(path)
 	if err2 != nil {
-		return err2, nil
+		return nil, err2
 	}
 	var p plugins.Plugin
 	p = *pi.(*plugins.Plugin)
-	err3 := plugins.LoadPlugin(router, p, mw)
+	err3 := plugins.LoadPlugin(router, p)
 	if err3 != nil {
-		return err3, nil
+		return nil, err3
 	}
-	return nil, p.ESMiddleware()
+	return p.ESMiddleware(), nil
+}
+
+func LoadESPluginFromFile(router *mux.Router, path string, mw []middleware.Middleware) error {
+	pi, err2 := LoadPIFromFile(path)
+	if err2 != nil {
+		return err2
+	}
+	var p plugins.ESPlugin
+	p = *pi.(*plugins.ESPlugin)
+	return plugins.LoadESPlugin(router, p, mw)
 }
 
 // LoadEnvFromFile loads env vars from envFile. Envs in the file

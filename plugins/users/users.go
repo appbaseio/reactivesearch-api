@@ -41,7 +41,7 @@ func (u *Users) Name() string {
 }
 
 // InitFunc is the implementation of Plugin interface.
-func (u *Users) InitFunc(_ [] middleware.Middleware) error {
+func (u *Users) InitFunc() error {
 	// fetch vars from env
 	esURL := os.Getenv(envEsURL)
 	if esURL == "" {

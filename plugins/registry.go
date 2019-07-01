@@ -17,26 +17,35 @@ const logTag = "[registry]"
 // preferably following the same practice while naming a package.
 var plugins = make(map[string]Plugin)
 
-// Plugin is a type that holds information about the plugin.
-type Plugin interface {
+type nameRoutes interface {
 	// Name returns the name of the plugin. Name of the plugin must be
 	// unique as it is the name of the plugin that is used as a key
 	// to identify a plugin in the plugins map.
 	Name() string
 
-	// InitFunc returns the plugin's setup function that is executed
-	// before the plugin routes are loaded in the router.
-	// 
-	// mw takes a array of middleware to be intialized by the plugin.
-        // This is expected to be populated only for the ES plugin.
-	InitFunc(mw []middleware.Middleware) error
-
 	// Routes returns the http routes that a plugin handles or is
 	// associated with.
 	Routes() []Route
+}
+
+// Plugin is a type that holds information about the plugin.
+type Plugin interface {
+	nameRoutes
+
+	// InitFunc returns the plugin's setup function that is executed
+	// before the plugin routes are loaded in the router.
+	InitFunc() error
 
 	// The plugin's elastic search middleware, if any.
 	ESMiddleware() [] middleware.Middleware
+}
+
+// ElasticSearchPlugin holds the plugin for ES
+type ESPlugin interface {
+	nameRoutes
+	
+        // mw takes a array of middleware to be intialized by ES Plugin
+	InitFunc(mw []middleware.Middleware) error
 }
 
 // RegisterPlugin plugs in plugin. All plugins must have a name:
@@ -57,15 +66,28 @@ func RegisterPlugin(p Plugin) {
 // LoadPlugin is currently responsible for two things: firstly,
 // it executes the plugin's initFunc to ensure it makes all the
 // initializations before the plugin is functional and second,
-// it registers the routes to the router that are associated with
-// that plugin.
-func LoadPlugin(router *mux.Router, p Plugin, mw [] middleware.Middleware) error {
-	// TODO: asynchronous and more validation before loading plugin routes?
+// calling loadRoutes
+func LoadPlugin(router *mux.Router, p Plugin) error {
+	log.Printf("%s: Initializing plugin: %s", logTag, p.Name())
+	err := p.InitFunc()
+	if err != nil {
+		return err
+	}
+	return loadRoutes(router, p)
+}
+
+func LoadESPlugin(router *mux.Router, p ESPlugin, mw []middleware.Middleware) error {
 	log.Printf("%s: Initializing plugin: %s", logTag, p.Name())
 	err := p.InitFunc(mw)
 	if err != nil {
 		return err
 	}
+	return loadRoutes(router, p)
+}
+
+// loadRoutes registers the routes to the router that are associated with
+// that plugin.
+func loadRoutes(router *mux.Router, p nameRoutes) error {
 	for _, r := range p.Routes() {
 		err := router.Methods(r.Methods...).
 			Name(r.Name).
