@@ -18,4 +18,4 @@ COPY . .
 RUN make
 
 EXPOSE 8000
-CMD ["build/arc", "--log", "stdout", "--env", "config/docker.env", "--plugins"]
+CMD ["build/arc", "--log", "stdout", "--plugins"]
