@@ -7,10 +7,10 @@ import (
 	"log"
 	"os"
 
-	"github.com/appbaseio-confidential/arc/model/user"
-	"github.com/appbaseio-confidential/arc/util"
+	"github.com/appbaseio/arc/model/user"
+	"github.com/appbaseio/arc/util"
+	"github.com/olivere/elastic"
 	"golang.org/x/crypto/bcrypt"
-	"gopkg.in/olivere/elastic.v6"
 )
 
 type elasticsearch struct {

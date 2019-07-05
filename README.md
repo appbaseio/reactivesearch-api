@@ -107,7 +107,7 @@ that can be used by other plugins with no new defined routes whatsoever. A middl
 not is an implementation choice, but the important point here is that a plugin can be used by other plugins as long as it
 doesn't end up being a cyclic dependency.
 
-Each plugin is structured in a particular way for brevity. Refer to the plugin [docs](https://github.com/appbaseio-confidential/arc/blob/master/docs/plugins.md) which describes a basic plugin implementation.
+Each plugin is structured in a particular way for brevity. Refer to the plugin [docs](https://github.com/appbaseio/arc/blob/master/docs/plugins.md) which describes a basic plugin implementation.
 
 ### Abstractions
 
@@ -153,7 +153,7 @@ A `User` grants a `Permission` to a certain `User`, predefining its capabilities
 
 Categories can be used to control access to data and APIs in Arc. Along with Elasticsearch APIs, Categories cover the APIs provided by Arc itself to allow fine-grained control over the API consumption. For Elasticsearch, Categories broadly resembles to the API [classification](https://www.elastic.co/guide/en/elasticsearch/reference/current/index.html) that Elasticsearch 
 provides such as **Document APIs**, **Search APIs**, **Indices APIs** and so on. For Arc, Categories resembles to the 
-additional APIs on top of Elasticsearch APIs, such as analytics and book keeping. Refer to category [docs](https://github.com/appbaseio-confidential/arc/blob/ugo/update-readme/31-12-2018/docs/categories.md) for the list of
+additional APIs on top of Elasticsearch APIs, such as analytics and book keeping. Refer to category [docs](https://github.com/appbaseio/arc/blob/ugo/update-readme/31-12-2018/docs/categories.md) for the list of
 categories that Arc supports.
 
 #### ACL
@@ -161,7 +161,7 @@ categories that Arc supports.
 ACLs allow a fine grained control over the Elasticsearch APIs in addition to the Categories. Each ACL resembles an
 action performed by an Elasticsearch API. For brevity, setting and organising Categories automatically sets the default 
 ACLs associated with the set Categories. Setting ACLs adds just another level of control to provide access to 
-Elasticsearch APIs within a given Category. Refer to acl [docs](https://github.com/appbaseio-confidential/arc/blob/ugo/update-readme/31-12-2018/docs/acls.md) for the list of acls that Arc supports.
+Elasticsearch APIs within a given Category. Refer to acl [docs](https://github.com/appbaseio/arc/blob/ugo/update-readme/31-12-2018/docs/acls.md) for the list of acls that Arc supports.
 
 #### Op
 

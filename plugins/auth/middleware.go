@@ -6,19 +6,17 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/appbaseio-confidential/arc/middleware"
-	"golang.org/x/crypto/bcrypt"
-
-	"github.com/appbaseio-confidential/arc/arc/middleware"
-	"github.com/appbaseio-confidential/arc/model/category"
-	"github.com/appbaseio-confidential/arc/model/credential"
-	"github.com/appbaseio-confidential/arc/model/op"
-	"github.com/appbaseio-confidential/arc/model/permission"
-	"github.com/appbaseio-confidential/arc/model/user"
-	"github.com/appbaseio-confidential/arc/util"
+	"github.com/appbaseio/arc/middleware"
+	"github.com/appbaseio/arc/model/category"
+	"github.com/appbaseio/arc/model/credential"
+	"github.com/appbaseio/arc/model/op"
+	"github.com/appbaseio/arc/model/permission"
+	"github.com/appbaseio/arc/model/user"
+	"github.com/appbaseio/arc/util"
 	"github.com/dgrijalva/jwt-go"
 	"github.com/dgrijalva/jwt-go/request"
 	"github.com/gorilla/mux"
+	"golang.org/x/crypto/bcrypt"
 )
 
 // BasicAuth middleware authenticates each requests against the basic auth credentials.

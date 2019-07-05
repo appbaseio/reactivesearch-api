@@ -1,44 +1,35 @@
 # Plugins
 
-Arc can be extended with **plugins**. Plugins add missing functionality to Arc. They are "plugged-in"
-at compile time. Arc presents a set of functionalities on top of Elasticsearch such as book keeping, 
-analytics, streaming and more. An arc plugin can usually interacts with HTTP requests and responses
-to implement an arbitrary logic. A plugin can extend the functionality of Arc by handling a set of 
-routes or it can serve as a simple middleware to other plugins. 
+Arc can be extended with **plugins**. Plugins add missing functionality to Arc. They are "plugged-in" at compile time. Arc presents a set of functionalities on top of Elasticsearch such as book keeping, 
+analytics, streaming and more. An arc plugin can usually interacts with HTTP requests and responses to implement an arbitrary logic. A plugin can extend the functionality of Arc by handling a set of routes or it can serve as a simple middleware to other plugins. 
 
 ## File structure
 
-For brevity, all the plugins should (but is not restricted to) follow the following file structure
-that outline the individual functionalities of each plugin component:
+For brevity, all the plugins should (but is not restricted to) follow the following file structure that outline the individual functionalities of each plugin component:
 
 * `routes.go`: Defines a list of routes to interact with the entities and logic that is handled by the plugin.
 * `handlers.go`: Defines the respective handlers for the routes handled by the plugin.
 * `dao.go`: Plugins might probably require to retain and manage some configuration or information provided by the user. 
-			This file should contain the *database access object* that is required to interact with the data store of your choice.
-* `middleware.go`: Defines middleware or *chain* of middleware required to wrap the handlers to perform operations before 
-				   the request is actually served.
+	This file should contain the *database access object* that is required to interact with the data store of your choice.
+* `middleware.go`: Defines middleware or *chain* of middleware required to wrap the handlers to perform operations before the request is actually served.
 * `plugin_name.go`: This is the core of the plugin. This is where the plugin gets registered to Arc.
 
 These are the main components that plugins usually deal with, however a plugin is not restricted to these files structure strictly.
 
 ## Implementing a custom plugin
 
-We will consider creating a simple `greeter` plugin that handles the route `GET /greet` and returns
-a simple greeting message in response to the request.
+We will consider creating a simple `greeter` plugin that handles the route `GET /greet` and returns a simple greeting message in response to the request.
 
 ### 1. Create a package and a type that implements the plugin interface
 
-Following the above directory structure we will create the following required files in a separate Go package
-called `greeter`:
+Following the above directory structure we will create the following required files in a separate Go package called `greeter`:
 ```
 greeter
 ├── greeter.go
 ├── routes.go
 └── handlers.go
 ```
-The `greeter.go` would be responsible for implementing the `Plugin` interface and registering itself 
-as a plugin to the Arc. The `Plugin` interface has three methods that a type must implement in order
-to register itself as a plugin:
+The `greeter.go` would be responsible for implementing the `Plugin` interface and registering itself as a plugin to the Arc. The `Plugin` interface has three methods that a type must implement in order to register itself as a plugin:
 
 - `greeter.go`
 		
@@ -48,7 +39,7 @@ to register itself as a plugin:
 	import (
 		"fmt"
 	
-		"github.com/appbaseio-confidential/arc/arc/plugin"
+		"github.com/appbaseio/arc/arc/plugin"
 	)
 
 	const pluginName = "greeter"
@@ -87,7 +78,7 @@ Define a list of routes that the plugin aims to handle.
 	import (
 	 	"net/http"
  	
-  		"github.com/appbaseio-confidential/arc/arc/plugin"
+  		"github.com/appbaseio/arc/arc/plugin"
 	)
 	
 	func (g *Greeter) routes() []plugin.Route {

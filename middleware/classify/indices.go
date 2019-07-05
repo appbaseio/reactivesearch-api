@@ -3,9 +3,9 @@ package classify
 import (
 	"net/http"
 
-	"github.com/appbaseio-confidential/arc/middleware"
-	"github.com/appbaseio-confidential/arc/model/index"
-	"github.com/appbaseio-confidential/arc/util"
+	"github.com/appbaseio/arc/middleware"
+	"github.com/appbaseio/arc/model/index"
+	"github.com/appbaseio/arc/util"
 )
 
 // Indices returns a middleware that identifies the indices present in the es route.

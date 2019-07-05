@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/appbaseio-confidential/arc/util"
-	"gopkg.in/olivere/elastic.v6"
+	"github.com/appbaseio/arc/util"
+	"github.com/olivere/elastic"
 )
 
 type elasticsearch struct {

@@ -8,11 +8,11 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/appbaseio-confidential/arc/model/acl"
-	"github.com/appbaseio-confidential/arc/model/category"
-	"github.com/appbaseio-confidential/arc/model/op"
-	"github.com/appbaseio-confidential/arc/model/permission"
-	"github.com/appbaseio-confidential/arc/model/user"
+	"github.com/appbaseio/arc/model/acl"
+	"github.com/appbaseio/arc/model/category"
+	"github.com/appbaseio/arc/model/op"
+	"github.com/appbaseio/arc/model/permission"
+	"github.com/appbaseio/arc/model/user"
 	"github.com/olivere/elastic"
 )
 

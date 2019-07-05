@@ -3,8 +3,8 @@ package classify
 import (
 	"net/http"
 
-	"github.com/appbaseio-confidential/arc/middleware"
-	"github.com/appbaseio-confidential/arc/model/op"
+	"github.com/appbaseio/arc/middleware"
+	"github.com/appbaseio/arc/model/op"
 )
 
 // Op returns a middleware that classifies request operation.

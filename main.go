@@ -13,8 +13,9 @@ import (
 	"plugin"
 	"strings"
 
-	"github.com/appbaseio-confidential/arc/middleware/logger"
-	"github.com/appbaseio-confidential/arc/plugins"
+	"github.com/appbaseio/arc/middleware"
+	"github.com/appbaseio/arc/middleware/logger"
+	"github.com/appbaseio/arc/plugins"
 	"github.com/gorilla/mux"
 	"github.com/rs/cors"
 
@@ -69,18 +70,23 @@ func main() {
 	router := mux.NewRouter().StrictSlash(true)
 
 	var elasticSearchPath string
+	elasticSearchMiddleware := make([] middleware.Middleware, 0)
 	err := filepath.Walk(pluginDir, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
 		if !info.IsDir() && filepath.Ext(info.Name()) == ".so" && info.Name() != "elasticsearch.so" {
-			LoadPluginFromFile(router, path)
+			err1, mw := LoadPluginFromFile(router, path, make([] middleware.Middleware, 0))
+			if err1 != nil {
+				return err1
+			}
+			elasticSearchMiddleware = append(elasticSearchMiddleware, mw...)
 		} else if info.Name() == "elasticsearch.so" {
 			elasticSearchPath = path
 		}
 		return nil
 	})
-	LoadPluginFromFile(router, elasticSearchPath)
+	LoadPluginFromFile(router, elasticSearchPath, elasticSearchMiddleware)
 	if err != nil {
 		log.Fatal("error loading plugins: ", err)
 	}
@@ -101,17 +107,22 @@ func main() {
 }
 
 // LoadPluginFromFile loads a plugin at the given location
-func LoadPluginFromFile(router *mux.Router, path string) error {
+func LoadPluginFromFile(router *mux.Router, path string, mw [] middleware.Middleware) (error, [] middleware.Middleware) {
 	pf, err1 := plugin.Open(path)
 	if err1 != nil {
-		return err1
+		return err1, nil
 	}
 	pi, err2 := pf.Lookup("PluginInstance")
 	if err2 != nil {
-		return err2
+		return err2, nil
 	}
-	err3 := plugins.LoadPlugin(router, *pi.(*plugins.Plugin))
-	return err3
+	var p plugins.Plugin
+	p = *pi.(*plugins.Plugin)
+	err3 := plugins.LoadPlugin(router, p, mw)
+	if err3 != nil {
+		return err3, nil
+	}
+	return nil, p.ESMiddleware()
 }
 
 // LoadEnvFromFile loads env vars from envFile. Envs in the file

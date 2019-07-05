@@ -5,10 +5,10 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/appbaseio-confidential/arc/model/acl"
-	"github.com/appbaseio-confidential/arc/model/category"
-	"github.com/appbaseio-confidential/arc/model/op"
-	"github.com/appbaseio-confidential/arc/util"
+	"github.com/appbaseio/arc/model/acl"
+	"github.com/appbaseio/arc/model/category"
+	"github.com/appbaseio/arc/model/op"
+	"github.com/appbaseio/arc/util"
 )
 
 func (es *elasticsearch) handler() http.HandlerFunc {

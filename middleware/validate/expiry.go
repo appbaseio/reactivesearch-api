@@ -5,10 +5,10 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/appbaseio-confidential/arc/middleware"
-	"github.com/appbaseio-confidential/arc/model/credential"
-	"github.com/appbaseio-confidential/arc/model/permission"
-	"github.com/appbaseio-confidential/arc/util"
+	"github.com/appbaseio/arc/middleware"
+	"github.com/appbaseio/arc/model/credential"
+	"github.com/appbaseio/arc/model/permission"
+	"github.com/appbaseio/arc/util"
 )
 
 // PermissionExpiry returns a middleware that checks whether a permission is expired or not.

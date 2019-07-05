@@ -7,7 +7,8 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/appbaseio-confidential/arc/errors"
+	"github.com/appbaseio/arc/errors"
+	"github.com/appbaseio/arc/middleware"
 )
 
 var testServer = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -46,7 +47,7 @@ func TestInit(t *testing.T) {
 
 	for _, it := range initTests {
 		os.Setenv(envEsURL, it.esURL)
-		actual := it.Instance.InitFunc()
+		actual := it.Instance.InitFunc(make([]middleware.Middleware, 0))
 		if !reflect.DeepEqual(actual, it.expected) {
 			t.Errorf("got: %v want: %v\n", actual, it.expected)
 		}

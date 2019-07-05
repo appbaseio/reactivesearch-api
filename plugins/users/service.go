@@ -2,7 +2,7 @@ package users
 
 import (
 	"context"
-	"github.com/appbaseio-confidential/arc/model/user"
+	"github.com/appbaseio/arc/model/user"
 )
 
 type userService interface {

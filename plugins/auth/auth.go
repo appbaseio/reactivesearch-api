@@ -7,9 +7,10 @@ import (
 	"os"
 	"sync"
 
-	"github.com/appbaseio-confidential/arc/model/credential"
-	"github.com/appbaseio-confidential/arc/plugins"
-	"github.com/appbaseio-confidential/arc/errors"
+	"github.com/appbaseio/arc/model/credential"
+	"github.com/appbaseio/arc/plugins"
+	"github.com/appbaseio/arc/middleware"
+	"github.com/appbaseio/arc/errors"
 )
 
 const (
@@ -54,7 +55,7 @@ func (a *Auth) Name() string {
 
 // InitFunc initializes the dao, i.e. elasticsearch client, and should be executed
 // only once in the lifetime of the plugin.
-func (a *Auth) InitFunc() error {
+func (a *Auth) InitFunc(_ [] middleware.Middleware) error {
 	// fetch vars from env
 	esURL := os.Getenv(envEsURL)
 	if esURL == "" {
@@ -94,4 +95,9 @@ func (a *Auth) InitFunc() error {
 // Routes returns an empty slices since the plugin solely acts as a middleware.
 func (a *Auth) Routes() []plugins.Route {
 	return []plugins.Route{}
+}
+
+// Default empty middleware array function
+func (a *Auth) ESMiddleware() [] middleware.Middleware {
+	return make([] middleware.Middleware, 0)
 }

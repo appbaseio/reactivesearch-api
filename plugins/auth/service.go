@@ -2,9 +2,9 @@ package auth
 
 import (
 	"context"
-	"github.com/appbaseio-confidential/arc/model/credential"
-	"github.com/appbaseio-confidential/arc/model/permission"
-	"github.com/appbaseio-confidential/arc/model/user"
+	"github.com/appbaseio/arc/model/credential"
+	"github.com/appbaseio/arc/model/permission"
+	"github.com/appbaseio/arc/model/user"
 )
 
 type authService interface {

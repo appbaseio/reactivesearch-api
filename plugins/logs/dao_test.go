@@ -5,7 +5,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/appbaseio-confidential/arc/model/category"
+	"github.com/appbaseio/arc/model/category"
 )
 
 var getTotalNodesTest = []struct {

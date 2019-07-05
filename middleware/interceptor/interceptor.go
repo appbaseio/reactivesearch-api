@@ -6,9 +6,9 @@ import (
 	"net/url"
 	"os"
 
-	"github.com/appbaseio-confidential/arc/middleware"
-	"github.com/appbaseio-confidential/arc/errors"
-	"github.com/appbaseio-confidential/arc/util"
+	"github.com/appbaseio/arc/middleware"
+	"github.com/appbaseio/arc/errors"
+	"github.com/appbaseio/arc/util"
 )
 
 const (

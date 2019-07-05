@@ -13,7 +13,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/appbaseio-confidential/arc/model/user"
+	"github.com/appbaseio/arc/model/user"
 
 	"github.com/gorilla/mux"
 )

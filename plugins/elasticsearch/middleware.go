@@ -5,17 +5,17 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/appbaseio-confidential/arc/middleware"
-	"github.com/appbaseio-confidential/arc/middleware/classify"
-	"github.com/appbaseio-confidential/arc/middleware/interceptor"
-	"github.com/appbaseio-confidential/arc/middleware/ratelimiter"
-	"github.com/appbaseio-confidential/arc/middleware/validate"
-	"github.com/appbaseio-confidential/arc/model/acl"
-	"github.com/appbaseio-confidential/arc/model/category"
-	"github.com/appbaseio-confidential/arc/model/op"
-	"github.com/appbaseio-confidential/arc/plugins/auth"
-	"github.com/appbaseio-confidential/arc/plugins/logs"
-	"github.com/appbaseio-confidential/arc/util"
+	"github.com/appbaseio/arc/middleware"
+	"github.com/appbaseio/arc/middleware/classify"
+	"github.com/appbaseio/arc/middleware/interceptor"
+	"github.com/appbaseio/arc/middleware/ratelimiter"
+	"github.com/appbaseio/arc/middleware/validate"
+	"github.com/appbaseio/arc/model/acl"
+	"github.com/appbaseio/arc/model/category"
+	"github.com/appbaseio/arc/model/op"
+	"github.com/appbaseio/arc/plugins/auth"
+	"github.com/appbaseio/arc/plugins/logs"
+	"github.com/appbaseio/arc/util"
 	"github.com/gorilla/mux"
 )
 
@@ -23,8 +23,8 @@ type chain struct {
 	middleware.Fifo
 }
 
-func (c *chain) Wrap(h http.HandlerFunc) http.HandlerFunc {
-	return c.Adapt(h, list()...)
+func (c *chain) Wrap(mw [] middleware.Middleware, h http.HandlerFunc) http.HandlerFunc {
+	return c.Adapt(h, append(append(list(), mw...), interceptor.Redirect())...)
 }
 
 func list() []middleware.Middleware {
@@ -43,7 +43,6 @@ func list() []middleware.Middleware {
 		validate.ACL(),
 		validate.Operation(),
 		validate.PermissionExpiry(),
-		interceptor.Redirect(),
 	}
 }
 

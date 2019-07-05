@@ -5,6 +5,8 @@ import (
 	"sort"
 	"strconv"
 
+	"github.com/appbaseio/arc/middleware"
+
 	"github.com/gorilla/mux"
 )
 
@@ -24,11 +26,17 @@ type Plugin interface {
 
 	// InitFunc returns the plugin's setup function that is executed
 	// before the plugin routes are loaded in the router.
-	InitFunc() error
+	// 
+	// mw takes a array of middleware to be intialized by the plugin.
+        // This is expected to be populated only for the ES plugin.
+	InitFunc(mw []middleware.Middleware) error
 
 	// Routes returns the http routes that a plugin handles or is
 	// associated with.
 	Routes() []Route
+
+	// The plugin's elastic search middleware, if any.
+	ESMiddleware() [] middleware.Middleware
 }
 
 // RegisterPlugin plugs in plugin. All plugins must have a name:
@@ -51,10 +59,10 @@ func RegisterPlugin(p Plugin) {
 // initializations before the plugin is functional and second,
 // it registers the routes to the router that are associated with
 // that plugin.
-func LoadPlugin(router *mux.Router, p Plugin) error {
+func LoadPlugin(router *mux.Router, p Plugin, mw [] middleware.Middleware) error {
 	// TODO: asynchronous and more validation before loading plugin routes?
 	log.Printf("%s: Initializing plugin: %s", logTag, p.Name())
-	err := p.InitFunc()
+	err := p.InitFunc(mw)
 	if err != nil {
 		return err
 	}

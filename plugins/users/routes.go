@@ -3,7 +3,7 @@ package users
 import (
 	"net/http"
 
-	"github.com/appbaseio-confidential/arc/plugins"
+	"github.com/appbaseio/arc/plugins"
 )
 
 func (u *Users) routes() []plugins.Route {

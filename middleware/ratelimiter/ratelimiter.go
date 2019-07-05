@@ -8,12 +8,12 @@ import (
 	"sync"
 	"time"
 
-	"github.com/appbaseio-confidential/arc/middleware"
-	"github.com/appbaseio-confidential/arc/model/category"
-	"github.com/appbaseio-confidential/arc/model/credential"
-	"github.com/appbaseio-confidential/arc/model/permission"
-	"github.com/appbaseio-confidential/arc/util"
-	"github.com/appbaseio-confidential/arc/util/iplookup"
+	"github.com/appbaseio/arc/middleware"
+	"github.com/appbaseio/arc/model/category"
+	"github.com/appbaseio/arc/model/credential"
+	"github.com/appbaseio/arc/model/permission"
+	"github.com/appbaseio/arc/util"
+	"github.com/appbaseio/arc/util/iplookup"
 	"github.com/ulule/limiter"
 	"github.com/ulule/limiter/drivers/store/memory"
 )

@@ -4,8 +4,9 @@ import (
 	"os"
 	"sync"
 
-	"github.com/appbaseio-confidential/arc/plugins"
-	"github.com/appbaseio-confidential/arc/errors"
+	"github.com/appbaseio/arc/plugins"
+	"github.com/appbaseio/arc/middleware"
+	"github.com/appbaseio/arc/errors"
 )
 
 const (
@@ -40,7 +41,7 @@ func (u *Users) Name() string {
 }
 
 // InitFunc is the implementation of Plugin interface.
-func (u *Users) InitFunc() error {
+func (u *Users) InitFunc(_ [] middleware.Middleware) error {
 	// fetch vars from env
 	esURL := os.Getenv(envEsURL)
 	if esURL == "" {
@@ -64,4 +65,9 @@ func (u *Users) InitFunc() error {
 // Routes is the implementation of plugin interface.
 func (u *Users) Routes() []plugins.Route {
 	return u.routes()
+}
+
+// Default empty middleware array function
+func (u *Users) ESMiddleware() [] middleware.Middleware {
+	return make([] middleware.Middleware, 0)
 }

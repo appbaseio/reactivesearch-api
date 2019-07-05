@@ -3,12 +3,12 @@ package reindexer
 import (
 	"net/http"
 
-	"github.com/appbaseio-confidential/arc/middleware"
-	"github.com/appbaseio-confidential/arc/middleware/classify"
-	"github.com/appbaseio-confidential/arc/middleware/validate"
-	"github.com/appbaseio-confidential/arc/model/category"
-	"github.com/appbaseio-confidential/arc/plugins/auth"
-	"github.com/appbaseio-confidential/arc/plugins/logs"
+	"github.com/appbaseio/arc/middleware"
+	"github.com/appbaseio/arc/middleware/classify"
+	"github.com/appbaseio/arc/middleware/validate"
+	"github.com/appbaseio/arc/model/category"
+	"github.com/appbaseio/arc/plugins/auth"
+	"github.com/appbaseio/arc/plugins/logs"
 )
 
 type chain struct {

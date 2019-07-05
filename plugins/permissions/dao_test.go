@@ -5,9 +5,9 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/appbaseio-confidential/arc/model/category"
-	"github.com/appbaseio-confidential/arc/model/op"
-	"github.com/appbaseio-confidential/arc/model/permission"
+	"github.com/appbaseio/arc/model/category"
+	"github.com/appbaseio/arc/model/op"
+	"github.com/appbaseio/arc/model/permission"
 )
 
 // We don't use mocks for this DAO since none of the methods are dependent on each other
