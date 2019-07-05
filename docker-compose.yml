@@ -22,6 +22,8 @@ services:
   arc:
     build: ./
     container_name: arc
+    env_file:
+      - config/docker.env
     networks:
       - arc
     restart: on-failure
