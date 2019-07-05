@@ -103,7 +103,7 @@ func (es *elasticsearch) preprocess(mw [] middleware.Middleware) error {
 	// append index route last in order to avoid early matches for other specific routes
 	indexRoute := plugins.Route{
 		Name:        "ping",
-		Methods:     []string{http.MethodGet},
+		Methods:     []string{http.MethodGet, http.MethodHead},
 		Path:        "/",
 		HandlerFunc: middlewareFunction(mw, es.handler()),
 		Description: "You know, for search",
