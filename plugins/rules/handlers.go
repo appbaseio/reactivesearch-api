@@ -186,6 +186,13 @@ func validateRule(rule *query.Rule) error {
 		return fmt.Errorf(`field "then" must contain atleast one action`)
 	}
 
+	// if there is a webhook, check that a URL is provided
+	if rule.Then.WebHook != nil {
+		if rule.Then.WebHook.URL == "" {
+			return fmt.Errorf(`field "webhook" must contain a "url"`)
+		}
+	}
+
 	return nil
 }
 

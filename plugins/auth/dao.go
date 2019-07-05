@@ -9,7 +9,7 @@ import (
 	"github.com/appbaseio-confidential/arc/model/permission"
 	"github.com/appbaseio-confidential/arc/model/user"
 	"github.com/appbaseio-confidential/arc/util"
-	"github.com/olivere/elastic"
+	"gopkg.in/olivere/elastic.v6"
 )
 
 type elasticsearch struct {
