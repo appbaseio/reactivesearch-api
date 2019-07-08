@@ -16,6 +16,7 @@ import (
 	"github.com/dgrijalva/jwt-go"
 	"github.com/dgrijalva/jwt-go/request"
 	"github.com/gorilla/mux"
+	"golang.org/x/crypto/bcrypt"
 )
 
 // BasicAuth middleware authenticates each requests against the basic auth credentials.
@@ -46,14 +47,14 @@ func (a *Auth) basicAuth(h http.HandlerFunc) http.HandlerFunc {
 			if _, ok := token.Method.(*jwt.SigningMethodRSA); !ok {
 				return nil, fmt.Errorf("Unexpected signing method: %v", token.Header["alg"])
 			}
-			if (a.jwtRsaPublicKey == nil) {
+			if a.jwtRsaPublicKey == nil {
 				return nil, fmt.Errorf("No Public Key Registered")
 			}
 			return a.jwtRsaPublicKey, nil
 		})
 		if !hasBasicAuth && err != nil {
 			var msg string
-			if (err == request.ErrNoTokenInRequest) {
+			if err == request.ErrNoTokenInRequest {
 				msg = "Basic Auth or JWT is required"
 			} else {
 				msg = fmt.Sprintf("Unable to parse JWT: %v", err)
@@ -92,7 +93,7 @@ func (a *Auth) basicAuth(h http.HandlerFunc) http.HandlerFunc {
 			{
 				// if the request is made to elasticsearch using user credentials, then the user has to be an admin
 				reqUser := obj.(*user.User)
-				if (hasBasicAuth && reqUser.Password != password) {
+				if hasBasicAuth && reqUser.Password != password {
 					util.WriteBackError(w, "invalid password", http.StatusUnauthorized)
 					return
 				}
@@ -115,7 +116,7 @@ func (a *Auth) basicAuth(h http.HandlerFunc) http.HandlerFunc {
 		case *permission.Permission:
 			{
 				reqPermission := obj.(*permission.Permission)
-				if (hasBasicAuth && reqPermission.Password != password) {
+				if hasBasicAuth && reqPermission.Password != password {
 					util.WriteBackError(w, "invalid password", http.StatusUnauthorized)
 					return
 				}
@@ -155,11 +156,22 @@ func (a *Auth) basicAuth(h http.HandlerFunc) http.HandlerFunc {
 
 func (a *Auth) getCredential(ctx context.Context, username string) (credential.AuthCredential, error) {
 	// look for the credential in the cache first, if not found then make an es request
-	credential, ok := a.cachedCredential(username)
+	user, ok := a.cachedUser(username)
 	if ok {
-		return credential, nil
-	} else {
-		return a.es.getCredential(ctx, username)
+		if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password)); err != nil {
+			return nil, nil
+		}
+
+		return user, nil
+	}
+
+	permission, ok := a.cachedPermission(username)
+	if ok {
+		if err := bcrypt.CompareHashAndPassword([]byte(permission.Password), []byte(password)); err != nil {
+			return nil, nil
+		}
+
+		return permission, nil
 	}
 }
 

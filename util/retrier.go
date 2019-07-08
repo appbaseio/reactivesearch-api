@@ -7,7 +7,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/olivere/elastic"
+	"gopkg.in/olivere/elastic.v6"
 )
 
 // Retrier is a custom Retry implementation.
