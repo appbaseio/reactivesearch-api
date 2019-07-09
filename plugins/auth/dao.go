@@ -9,7 +9,7 @@ import (
 	"github.com/appbaseio/arc/model/permission"
 	"github.com/appbaseio/arc/model/user"
 	"github.com/appbaseio/arc/util"
-	"github.com/olivere/elastic"
+	"gopkg.in/olivere/elastic.v6"
 	"golang.org/x/crypto/bcrypt"
 )
 

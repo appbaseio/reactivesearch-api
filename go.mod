@@ -13,7 +13,9 @@ require (
 	github.com/olivere/elastic v6.2.16+incompatible
 	github.com/rogpeppe/go-internal v1.2.2 // indirect
 	github.com/rs/cors v1.6.0
+	github.com/siddharthlatest/mustache v0.0.0-20160118163553-00029677272d
 	github.com/stretchr/testify v1.3.0
 	github.com/ulule/limiter v2.2.0+incompatible
 	gopkg.in/natefinch/lumberjack.v2 v2.0.0
+	gopkg.in/olivere/elastic.v6 v6.2.21
 )
