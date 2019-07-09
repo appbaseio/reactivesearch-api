@@ -7,7 +7,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/olivere/elastic"
+	"gopkg.in/olivere/elastic.v6"
 )
 
 func newStubClient(url, indexName string) (*elasticsearch, error) {

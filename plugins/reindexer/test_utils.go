@@ -7,7 +7,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/olivere/elastic"
+	"gopkg.in/olivere/elastic.v6"
 )
 
 // TODO: Move it to the separate package and make it exportable since it is used by all plugin tests
