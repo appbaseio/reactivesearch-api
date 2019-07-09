@@ -16,6 +16,7 @@ require (
 	github.com/siddharthlatest/mustache v0.0.0-20160118163553-00029677272d
 	github.com/stretchr/testify v1.3.0
 	github.com/ulule/limiter v2.2.0+incompatible
+	golang.org/x/crypto v0.0.0-20190103213133-ff983b9c42bc
 	gopkg.in/natefinch/lumberjack.v2 v2.0.0
 	gopkg.in/olivere/elastic.v6 v6.2.21
 )
