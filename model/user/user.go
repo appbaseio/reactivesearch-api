@@ -27,15 +27,16 @@ const (
 
 // User defines a user type.
 type User struct {
-	Username   string              `json:"username"`
-	Password   string              `json:"password"`
-	IsAdmin    *bool               `json:"is_admin"`
-	Categories []category.Category `json:"categories"`
-	ACLs       []acl.ACL           `json:"acls"`
-	Email      string              `json:"email"`
-	Ops        []op.Operation      `json:"ops"`
-	Indices    []string            `json:"indices"`
-	CreatedAt  string              `json:"created_at"`
+	Username         string              `json:"username"`
+	Password         string              `json:"password"`
+	PasswordHashType string              `json:"password_hash_type"`
+	IsAdmin          *bool               `json:"is_admin"`
+	Categories       []category.Category `json:"categories"`
+	ACLs             []acl.ACL           `json:"acls"`
+	Email            string              `json:"email"`
+	Ops              []op.Operation      `json:"ops"`
+	Indices          []string            `json:"indices"`
+	CreatedAt        string              `json:"created_at"`
 }
 
 // Options is a function type used to define a user's properties.

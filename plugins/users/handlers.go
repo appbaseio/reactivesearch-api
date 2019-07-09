@@ -11,6 +11,7 @@ import (
 	"github.com/appbaseio/arc/model/user"
 	"github.com/appbaseio/arc/util"
 	"github.com/gorilla/mux"
+	"golang.org/x/crypto/bcrypt"
 )
 
 func (u *Users) getUser() http.HandlerFunc {
@@ -109,11 +110,20 @@ func (u *Users) postUser() http.HandlerFunc {
 			util.WriteBackError(w, `user "password" shouldn't be empty`, http.StatusBadRequest)
 			return
 		}
+
+		hashedPassword, err := bcrypt.GenerateFromPassword([]byte(userBody.Password), bcrypt.DefaultCost)
+		if err != nil {
+			msg := fmt.Sprintf("an error occurred while hashing password: %v", userBody.Password)
+			log.Printf("%s: %s: %v", logTag, msg, err)
+			util.WriteBackError(w, msg, http.StatusInternalServerError)
+		}
+
 		var newUser *user.User
+
 		if *userBody.IsAdmin {
-			newUser, err = user.NewAdmin(userBody.Username, userBody.Password, opts...)
+			newUser, err = user.NewAdmin(userBody.Username, string(hashedPassword), opts...)
 		} else {
-			newUser, err = user.New(userBody.Username, userBody.Password, opts...)
+			newUser, err = user.New(userBody.Username, string(hashedPassword), opts...)
 		}
 		if err != nil {
 			msg := fmt.Sprintf("an error occurred while creating user: %v", err)
@@ -121,6 +131,8 @@ func (u *Users) postUser() http.HandlerFunc {
 			util.WriteBackError(w, msg, http.StatusBadRequest)
 			return
 		}
+
+		newUser.PasswordHashType = "bcrypt"
 
 		rawUser, err := json.Marshal(*newUser)
 		if err != nil {
