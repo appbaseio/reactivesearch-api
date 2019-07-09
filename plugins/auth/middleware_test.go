@@ -16,6 +16,7 @@ import (
 	"crypto/rsa"
 	"crypto/rand"
 	"github.com/dgrijalva/jwt-go"
+	"golang.org/x/crypto/bcrypt"
 )
 
 type mockAuthService struct {
@@ -59,7 +60,8 @@ func (m *mockAuthService) getRawPermission(ctx context.Context, username string)
 }
 
 func TestBasicAuthWithUserPasswordBasic(t *testing.T) {
-	u, _ := user.New("foo", "bar")
+	hashedPassword, _ := bcrypt.GenerateFromPassword([]byte("bar"), bcrypt.DefaultCost)
+	u, _ := user.New("foo", string(hashedPassword))
 	ehf := func (_ http.ResponseWriter, req *http.Request) {
 		aU, _ := user.FromContext(req.Context())
 		assert.Equal(t, u, aU)
@@ -84,8 +86,9 @@ func TestBasicAuthWithUserPasswordBasic(t *testing.T) {
 	Instance().es = mas
 
 	BasicAuth()(ehf)(recorder, request)
-	mas.AssertExpectations(t)
 	assert.Equal(t, http.StatusOK, recorder.Result().StatusCode)
+	
+	mas.AssertExpectations(t)
 }
 
 func TestBasicAuthWithUserPasswordWithoutUser(t *testing.T) {
@@ -120,7 +123,8 @@ func TestBasicAuthWithUserPasswordWithoutUser(t *testing.T) {
 }
 
 func TestBasicAuthWithUserWrongPassword(t *testing.T) {
-	u, _ := user.New("user3", "bar")
+	hashedPassword, _ := bcrypt.GenerateFromPassword([]byte("bar"), bcrypt.DefaultCost)
+	u, _ := user.New("user3", string(hashedPassword))
 	ehf := func (_ http.ResponseWriter, request *http.Request) {
 		assert.Fail(t, "Should not be run")
 	}
@@ -152,7 +156,8 @@ func TestBasicAuthWithUserWrongPassword(t *testing.T) {
 }
 
 func TestBasicAuthTwoRequests(t *testing.T) {
-	u, _ := user.New("user4", "bar")
+	hashedPassword, _ := bcrypt.GenerateFromPassword([]byte("bar"), bcrypt.DefaultCost)
+	u, _ := user.New("user4", string(hashedPassword))
 	ehf := func (_ http.ResponseWriter, req *http.Request) {
 		aU, _ := user.FromContext(req.Context())
 		assert.Equal(t, u, aU)
@@ -196,7 +201,8 @@ func TestBasicAuthTwoRequests(t *testing.T) {
 
 
 func TestBasicAuthWithJWToken(t *testing.T) {
-	u, _ := user.New("jwtUser", "bar")
+	hashedPassword, _ := bcrypt.GenerateFromPassword([]byte("bar"), bcrypt.DefaultCost)
+	u, _ := user.New("jwtUser", string(hashedPassword))
 	ehf := func (_ http.ResponseWriter, req *http.Request) {
 		aU, _ := user.FromContext(req.Context())
 		assert.Equal(t, u, aU)

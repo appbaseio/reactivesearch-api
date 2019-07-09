@@ -10,7 +10,6 @@ import (
 	"github.com/appbaseio/arc/model/user"
 	"github.com/appbaseio/arc/util"
 	"gopkg.in/olivere/elastic.v6"
-	"golang.org/x/crypto/bcrypt"
 )
 
 type elasticsearch struct {
@@ -46,9 +45,6 @@ func newClient(url, userIndex, permissionIndex string) (*elasticsearch, error) {
 func (es *elasticsearch) getCredential(ctx context.Context, username string) (credential.AuthCredential, error) {
 	matchUsername := elastic.NewTermQuery("username.keyword", username)
 
-	query := elastic.NewBoolQuery().
-		Must(matchUsername)
-
 	response, err := es.client.Search().
 		Index(es.userIndex, es.permissionIndex).
 		Query(matchUsername).
@@ -76,37 +72,10 @@ func (es *elasticsearch) getCredential(ctx context.Context, username string) (cr
 			}
 		} else if hit.Index == es.permissionIndex {
 			var p permission.Permission
-			if hit.Source != nil {
-				err := json.Unmarshal(*hit.Source, &p)
-				if err != nil {
-					return nil, err
-				}
-				obj = &p
-			}
-
-			// unmarshal into user
-			err := json.Unmarshal(*hit.Source, &u)
-			if err != nil {
-				return nil, err
-			}
-
-			// verify password
-			if err = bcrypt.CompareHashAndPassword([]byte(u.Password), []byte(password)); err != nil {
-				return nil, err
-			}
-
-			obj = &u
-		} else if hit.Index == es.permissionIndex {
-			var p permission.Permission
 
 			// unmarshal into permission
 			err := json.Unmarshal(*hit.Source, &p)
 			if err != nil {
-				return nil, err
-			}
-
-			// verify password
-			if err = bcrypt.CompareHashAndPassword([]byte(p.Password), []byte(password)); err != nil {
 				return nil, err
 			}
 

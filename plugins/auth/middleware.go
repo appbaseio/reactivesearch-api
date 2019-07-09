@@ -93,7 +93,7 @@ func (a *Auth) basicAuth(h http.HandlerFunc) http.HandlerFunc {
 			{
 				// if the request is made to elasticsearch using user credentials, then the user has to be an admin
 				reqUser := obj.(*user.User)
-				if hasBasicAuth && reqUser.Password != password {
+				if hasBasicAuth && bcrypt.CompareHashAndPassword([]byte(reqUser.Password), []byte(password)) != nil {
 					util.WriteBackError(w, "invalid password", http.StatusUnauthorized)
 					return
 				}
@@ -116,7 +116,7 @@ func (a *Auth) basicAuth(h http.HandlerFunc) http.HandlerFunc {
 		case *permission.Permission:
 			{
 				reqPermission := obj.(*permission.Permission)
-				if hasBasicAuth && reqPermission.Password != password {
+				if hasBasicAuth && bcrypt.CompareHashAndPassword([]byte(reqPermission.Password), []byte(password)) != nil {
 					util.WriteBackError(w, "invalid password", http.StatusUnauthorized)
 					return
 				}
@@ -155,24 +155,11 @@ func (a *Auth) basicAuth(h http.HandlerFunc) http.HandlerFunc {
 }
 
 func (a *Auth) getCredential(ctx context.Context, username string) (credential.AuthCredential, error) {
-	// look for the credential in the cache first, if not found then make an es request
-	user, ok := a.cachedUser(username)
+	c, ok := a.cachedCredential(username)
 	if ok {
-		if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password)); err != nil {
-			return nil, nil
-		}
-
-		return user, nil
+		return c, nil
 	}
-
-	permission, ok := a.cachedPermission(username)
-	if ok {
-		if err := bcrypt.CompareHashAndPassword([]byte(permission.Password), []byte(password)); err != nil {
-			return nil, nil
-		}
-
-		return permission, nil
-	}
+	return a.es.getCredential(ctx, username)
 }
 
 func (a *Auth) cachedCredential(username string) (credential.AuthCredential, bool) {

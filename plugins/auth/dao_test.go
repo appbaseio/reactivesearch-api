@@ -13,7 +13,7 @@ import (
 	"github.com/appbaseio/arc/model/op"
 	"github.com/appbaseio/arc/model/permission"
 	"github.com/appbaseio/arc/model/user"
-	"github.com/olivere/elastic"
+	"gopkg.in/olivere/elastic.v6"
 )
 
 func newStubClient(url, userIndex, permissionIndex string) (*elasticsearch, error) {
@@ -57,19 +57,8 @@ func buildTestServer(t *testing.T, setups []*ServerSetup) *httptest.Server {
 					t.Fatalf("Unable to write test server response: %v", err)
 				}
 			}
-			/*t.Logf("No requests matched setup. Got method %s, Path %s, body %s\n wanted: method: %s path: %s body: %s\n", r.Method, r.URL.EscapedPath(), requestBody, setup.Method, setup.Path, setup.Body)
-			t.Logf("%v Method: %v Path: %v Body: %v\n", matched, r.Method == setup.Method, r.URL.EscapedPath() == setup.Path, requestBody == setup.Body)
-			if matched {
-				t.Logf("No requests matched setup. Got method %s, Path %s, body %s\n wanted: method: %s path: %s body: %s\n", r.Method, r.URL.EscapedPath(), requestBody, setup.Method, setup.Path, setup.Body)
-				t.Logf("%v Method: %v Path: %v Body: %v\n", matched, r.Method == setup.Method, r.URL.EscapedPath() == setup.Path, requestBody == setup.Body)
-				break
-			}*/
 		}
 
-		// TODO: remove before pushing
-		/*if r.URL.EscapedPath() != setup.Path {
-			t.Fatalf("wanted: %s got: %s\n", setup.Path, r.URL.EscapedPath())
-		}*/
 		if !matched {
 			t.Fatalf("No requests matched setup. Got method %s, Path %s, body %s\n %s\n", r.Method, r.URL.EscapedPath(), requestBody, s)
 		}
@@ -86,7 +75,7 @@ var getPermissionTest = []struct {
 	{
 		&ServerSetup{
 			Method:   "GET",
-			Path:     "/perm1/_doc/user1",
+			Path:     "/test/_doc/perm1",
 			Body:     "",
 			Response: `{"_index":"perm1","_type":"doc","_id":"user1","_version":1,"found":true,"_source":{"first_name":"John","last_name":"Smith","age":25}}`,
 		},
@@ -100,16 +89,12 @@ func TestGetPermission(t *testing.T) {
 		t.Run("getPermissionTest", func(t *testing.T) {
 			ts := buildTestServer(t, []*ServerSetup{tt.setup})
 			defer ts.Close()
-			es, _ := newStubClient(ts.URL, "test", "perm1")
-			_, err := es.getPermission(context.Background(), "user1")
+			es, _ := newStubClient(ts.URL, "test", "test")
+			_, err := es.getPermission(context.Background(), "perm1")
 
 			if !compareErrs(tt.err, err) {
 				t.Fatalf("Cat aliases should have failed with error: %v got: %v instead\n", tt.err, err)
 			}
-
-			/*if !reflect.DeepEqual(actualPermission, expectedPermission) {
-				t.Fatalf("Wrong aliases returned expected: %v got: %v\n", expectedPermission, actualPermission)
-			}*/
 		})
 	}
 }
@@ -136,7 +121,7 @@ func TestGetUser(t *testing.T) {
 		t.Run("getPermissionTest", func(t *testing.T) {
 			ts := buildTestServer(t, []*ServerSetup{tt.setup})
 			defer ts.Close()
-			es, _ := newStubClient(ts.URL, "test", "perm1")
+			es, _ := newStubClient(ts.URL, "test", "test")
 			_, err := es.getUser(context.Background(), "user1")
 
 			if !compareErrs(tt.err, err) {
@@ -176,7 +161,7 @@ var putUserTest = []struct {
 		&ServerSetup{
 			Method:   "PUT",
 			Path:     "/test/_doc/user1",
-			Body:     `{"username":"user1","password":"pass1","is_admin":true,"categories":["docs"],"acls":["update"],"email":"user1@gmail.com","ops":["write"],"indices":["test"],"created_at":"dfds"}`,
+			Body:     `{"username":"user1","password":"pass1","password_hash_type":"","is_admin":true,"categories":["docs"],"acls":["update"],"email":"user1@gmail.com","ops":["write"],"indices":["test"],"created_at":"dfds"}`,
 			Response: `{"_index":"user1","_type":"doc","_id":"user1","_version":1,"found":true,"_source":{"first_name":"John","last_name":"Smith","age":25}}`,
 		},
 		[]byte(`{"_index":"user1","_type":"doc","_id":"user1","_version":1,"found":true,"_source":{"first_name":"John","last_name":"Smith","age":25}}`),
