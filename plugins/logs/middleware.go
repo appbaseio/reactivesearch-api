@@ -3,6 +3,7 @@ package logs
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -143,5 +144,6 @@ func (l *Logs) recordResponse(reqBody []byte, w *httptest.ResponseRecorder, req 
 		return
 	}
 	rec.Response.Body = string(responseBody)
+	fmt.Println("Logs REQ", rec)
 	l.es.indexRecord(context.Background(), rec)
 }

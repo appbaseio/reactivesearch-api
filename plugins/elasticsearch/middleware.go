@@ -23,7 +23,7 @@ type chain struct {
 	middleware.Fifo
 }
 
-func (c *chain) Wrap(mw [] middleware.Middleware, h http.HandlerFunc) http.HandlerFunc {
+func (c *chain) Wrap(mw []middleware.Middleware, h http.HandlerFunc) http.HandlerFunc {
 	return c.Adapt(h, append(append(list(), mw...), interceptor.Redirect())...)
 }
 
@@ -59,7 +59,7 @@ func classifyCategory(h http.HandlerFunc) http.HandlerFunc {
 		key := fmt.Sprintf("%s:%s", req.Method, template)
 		routeSpec := routeSpecs[key]
 		routeCategory := routeSpec.category
-
+		fmt.Println("ROUTE", routeCategory, key)
 		// classify streams explicitly
 		stream := req.Header.Get("X-Request-Category")
 		if stream == "streams" {

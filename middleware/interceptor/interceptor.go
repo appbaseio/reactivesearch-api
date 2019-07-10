@@ -6,8 +6,8 @@ import (
 	"net/url"
 	"os"
 
-	"github.com/appbaseio/arc/middleware"
 	"github.com/appbaseio/arc/errors"
+	"github.com/appbaseio/arc/middleware"
 	"github.com/appbaseio/arc/util"
 )
 
