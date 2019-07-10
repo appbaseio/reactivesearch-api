@@ -24,7 +24,7 @@ const (
 	defaultPermissionsEsIndex = ".permissions"
 	envJwtRsaPublicKeyLoc     = "JWT_RSA_PUBLIC_KEY_LOC"
 	envJwtRsaPublicKeyDest    = "JWT_RSA_PUBLIC_KEY_DEST"
-	envJwtUsernameKey             = "JWT_USERNAME_KEY"
+	envJwtUsernameKey         = "JWT_USERNAME_KEY"
 )
 
 var (
