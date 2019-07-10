@@ -63,8 +63,8 @@ func sources(h http.HandlerFunc) http.HandlerFunc {
 			}
 
 			if !validated {
-				msg := fmt.Sprintf(`permission with username "%s" doesn't have required sources`,
-					reqPermission.Username)
+				msg := fmt.Sprintf(`permission with username %s doesn't have required sources. reqIP = %s, sources = %s`,
+					reqPermission.Username, reqIP, allowedSources)
 				util.WriteBackError(w, msg, http.StatusUnauthorized)
 				return
 			}

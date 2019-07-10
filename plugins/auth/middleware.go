@@ -63,10 +63,10 @@ func (a *Auth) basicAuth(h http.HandlerFunc) http.HandlerFunc {
 			return
 		}
 		if !hasBasicAuth {
-			if claims, ok := jwtToken.Claims.(jwt.MapClaims); ok && jwtToken.Valid {
-				username = claims["username"].(string)
+			if claims, ok := jwtToken.Claims.(jwt.MapClaims); ok && jwtToken.Valid && a.jwtUsernameKey != "" {
+				username = claims[a.jwtUsernameKey].(string)
 			} else {
-				util.WriteBackError(w, fmt.Sprintf("Invalid JWT"), http.StatusUnauthorized)
+				util.WriteBackError(w, fmt.Sprintf("Invalid JWT or Username Key not set"), http.StatusUnauthorized)
 			}
 		}
 
