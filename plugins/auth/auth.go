@@ -23,7 +23,8 @@ const (
 	envPermissionsEsIndex     = "PERMISSIONS_ES_INDEX"
 	defaultPermissionsEsIndex = ".permissions"
 	envJwtRsaPublicKeyLoc     = "JWT_RSA_PUBLIC_KEY_LOC"
-	envJwtRsaPublicKeyDest     = "JWT_RSA_PUBLIC_KEY_DEST"
+	envJwtRsaPublicKeyDest    = "JWT_RSA_PUBLIC_KEY_DEST"
+	envJwtUsernameKey             = "JWT_USERNAME_KEY"
 )
 
 var (
@@ -36,6 +37,7 @@ type Auth struct {
 	mu              sync.Mutex
 	credentialCache map[string]credential.AuthCredential
 	jwtRsaPublicKey *rsa.PublicKey
+	jwtUsernameKey  string
 	es              authService
 }
 
@@ -105,6 +107,7 @@ func (a *Auth) InitFunc() error {
 			}
 		}
 	}
+	a.jwtUsernameKey = os.Getenv(envJwtUsernameKey)
 
 	// initialize the dao
 	a.es, err = newClient(esURL, userIndex, permissionIndex)
