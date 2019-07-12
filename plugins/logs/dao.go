@@ -8,7 +8,7 @@ import (
 	"strconv"
 
 	"github.com/appbaseio/arc/util"
-	"gopkg.in/olivere/elastic.v6"
+	"github.com/olivere/elastic/v7"
 )
 
 type elasticsearch struct {
@@ -106,10 +106,10 @@ func (es *elasticsearch) getRawLogs(ctx context.Context, from, size string, indi
 		return nil, err
 	}
 
-	hits := []*json.RawMessage{}
+	hits := []json.RawMessage{}
 	for _, hit := range response.Hits.Hits {
 		var source map[string]interface{}
-		err := json.Unmarshal(*hit.Source, &source)
+		err := json.Unmarshal(hit.Source, &source)
 		if err != nil {
 			return nil, err
 		}

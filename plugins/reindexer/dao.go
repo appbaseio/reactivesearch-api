@@ -7,7 +7,7 @@ import (
 	"log"
 
 	"github.com/appbaseio/arc/util"
-	"gopkg.in/olivere/elastic.v6"
+	"github.com/olivere/elastic/v7"
 )
 
 type elasticsearch struct {
