@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
 
 	"github.com/appbaseio/arc/model/credential"
 	"github.com/appbaseio/arc/model/permission"
@@ -45,6 +46,9 @@ func newClient(url, userIndex, permissionIndex string) (*elasticsearch, error) {
 func (es *elasticsearch) getCredential(ctx context.Context, username string) (credential.AuthCredential, error) {
 	matchUsername := elastic.NewTermQuery("username.keyword", username)
 
+	// TODO: Parse response into a map[string]interface{} to handle both ES v6, v7 responses
+	// response map[string]interface{}
+	// typecast the response to it.
 	response, err := es.client.Search().
 		Index(es.userIndex, es.permissionIndex).
 		Query(matchUsername).
@@ -53,6 +57,8 @@ func (es *elasticsearch) getCredential(ctx context.Context, username string) (cr
 	if err != nil {
 		return nil, err
 	}
+
+	log.Println("response from ES: ", response)
 
 	if len(response.Hits.Hits) > 1 {
 		return nil, fmt.Errorf(`more than one result for "username"="%s"`, username)

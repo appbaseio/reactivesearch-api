@@ -4,9 +4,9 @@ import (
 	"os"
 	"sync"
 
-	"github.com/appbaseio/arc/plugins"
-	"github.com/appbaseio/arc/middleware"
 	"github.com/appbaseio/arc/errors"
+	"github.com/appbaseio/arc/middleware"
+	"github.com/appbaseio/arc/plugins"
 )
 
 const (
@@ -16,16 +16,6 @@ const (
 	envLogsEsIndex     = "LOGS_ES_INDEX"
 	config             = `
 	{
-	  "mappings": {
-	    "_doc": {
-	      "properties": {
-	        "category": { "type": "keyword" },
-	        "request": { "type": "object" },
-	        "response": { "type": "object" },
-	        "timestamp": { "type": "date" }
-	      }
-	    }
-	  },
 	  "settings": {
 	    "number_of_shards": %d,
 	    "number_of_replicas": %d
@@ -85,6 +75,6 @@ func (l *Logs) Routes() []plugins.Route {
 }
 
 // Default empty middleware array function
-func (l *Logs) ESMiddleware() [] middleware.Middleware {
-	return make([] middleware.Middleware, 0)
+func (l *Logs) ESMiddleware() []middleware.Middleware {
+	return make([]middleware.Middleware, 0)
 }
