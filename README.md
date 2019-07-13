@@ -1,6 +1,6 @@
 # Arc
 
-Arc is a simple, modular API Gateway that sits between a client and an [ElasticSearch](https://elastic.co) cluster. It acts as a reverse proxy, routing requests from clients to services. Arc is extended through plugins, which provide extra functionality and services beyond the ElasticSearch's RESTful API. It can perform various cross-cutting tasks such as basic authentication, logging, rate-limiting, source/referers whitelisting, analytics etc. These functionalities can clearly be extended by adding a plugin encapsulating a desired  functionality. It also provides some useful abstractions that helps in managing and controlling the access 
+Arc is a simple, modular API Gateway that sits between a client and an [ElasticSearch](https://elastic.co) cluster. It acts as a reverse proxy, routing requests from clients to services. Arc is extended through plugins, which provide extra functionality and services beyond the ElasticSearch's RESTful API. It can perform various cross-cutting tasks such as basic authentication, logging, rate-limiting, source/referers whitelisting, analytics etc. These functionalities can clearly be extended by adding a plugin encapsulating a desired  functionality. It also provides some useful abstractions that helps in managing and controlling the access
 to ElasticSearch's RESTful API.
 
 ## Table of contents
@@ -14,10 +14,10 @@ to ElasticSearch's RESTful API.
 
 ## Overview
 
-When Arc is deployed, every client request being made to the Elasticsearch 
-will hit Arc first and then be proxied to the Elasticsearch cluster. In between requests and responses, Arc 
-may execute the installed plugins, essentially extending the Elasticsearch API feature set. Arc effectively 
-becomes an entry point for every API request made to Elasticsearch. Arc can be used and deployed against any 
+When Arc is deployed, every client request being made to the Elasticsearch
+will hit Arc first and then be proxied to the Elasticsearch cluster. In between requests and responses, Arc
+may execute the installed plugins, essentially extending the Elasticsearch API feature set. Arc effectively
+becomes an entry point for every API request made to Elasticsearch. Arc can be used and deployed against any
 Elasticsearch cluster (locally and hosted as provided by [Appbase.io](https://appbase.io)).
 
 ```
@@ -60,12 +60,12 @@ In order to run arc, you'll require an Elasticsearch node. There are multiple wa
 
 2. Start a single node Elasticsearch cluster locally
 
-        docker run -d --rm --name elasticsearch -p 9200:9200 -p 9300:9300 --net=arc -e "discovery.type=single-node" docker.elastic.co/elasticsearch/elasticsearch-oss:6.8.0
+        docker run -d --rm --name elasticsearch -p 9200:9200 -p 9300:9300 --net=arc -e "discovery.type=single-node" docker.elastic.co/elasticsearch/elasticsearch-oss:7.2.0
 
 3. Start Arc locally
 
         docker build -t arc . && docker run --rm --name arc -p 8000:8000 --net=arc --env-file=config/docker.env arc
-  
+
 For convenience, the steps described above are combined into a single `docker-compose` file. You can execute the file with command:
 
     docker-compose up
@@ -172,16 +172,16 @@ A `User` grants a `Permission` to a certain `User`, predefining its capabilities
 
 #### Category
 
-Categories can be used to control access to data and APIs in Arc. Along with Elasticsearch APIs, Categories cover the APIs provided by Arc itself to allow fine-grained control over the API consumption. For Elasticsearch, Categories broadly resembles to the API [classification](https://www.elastic.co/guide/en/elasticsearch/reference/current/index.html) that Elasticsearch 
-provides such as **Document APIs**, **Search APIs**, **Indices APIs** and so on. For Arc, Categories resembles to the 
+Categories can be used to control access to data and APIs in Arc. Along with Elasticsearch APIs, Categories cover the APIs provided by Arc itself to allow fine-grained control over the API consumption. For Elasticsearch, Categories broadly resembles to the API [classification](https://www.elastic.co/guide/en/elasticsearch/reference/current/index.html) that Elasticsearch
+provides such as **Document APIs**, **Search APIs**, **Indices APIs** and so on. For Arc, Categories resembles to the
 additional APIs on top of Elasticsearch APIs, such as analytics and book keeping. Refer to category [docs](https://github.com/appbaseio/arc/blob/ugo/update-readme/31-12-2018/docs/categories.md) for the list of
 categories that Arc supports.
 
 #### ACL
 
 ACLs allow a fine grained control over the Elasticsearch APIs in addition to the Categories. Each ACL resembles an
-action performed by an Elasticsearch API. For brevity, setting and organising Categories automatically sets the default 
-ACLs associated with the set Categories. Setting ACLs adds just another level of control to provide access to 
+action performed by an Elasticsearch API. For brevity, setting and organising Categories automatically sets the default
+ACLs associated with the set Categories. Setting ACLs adds just another level of control to provide access to
 Elasticsearch APIs within a given Category. Refer to acl [docs](https://github.com/appbaseio/arc/blob/ugo/update-readme/31-12-2018/docs/acls.md) for the list of acls that Arc supports.
 
 #### Op
@@ -194,8 +194,8 @@ of the plugin. Operation is currently classified into three kinds:
 - `Write`: operation permits write requests exclusively.
 - `Delete`: operation permits delete requests exclusively.
 
-In order to allow a user or permission to make requests that involve modifying the data, a combination of the above 
-operations would be required. For example: `["read", "write"]` operation would allow a user or permission to perform 
+In order to allow a user or permission to make requests that involve modifying the data, a combination of the above
+operations would be required. For example: `["read", "write"]` operation would allow a user or permission to perform
 both read and write requests but would forbid making delete requests.
 
 #### Request Logging
