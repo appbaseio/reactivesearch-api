@@ -5,7 +5,7 @@ require (
 	github.com/gobuffalo/envy v1.6.15 // indirect
 	github.com/gobuffalo/packr v1.22.0
 	github.com/google/uuid v1.0.0
-	github.com/gorilla/mux v1.6.2
+	github.com/gorilla/mux v1.7.1
 	github.com/olivere/elastic v6.2.21+incompatible
 	github.com/olivere/elastic/v7 v7.0.4
 	github.com/rogpeppe/go-internal v1.2.2 // indirect

@@ -87,7 +87,7 @@ func (es *elasticsearch) indexRecord(ctx context.Context, rec record) {
 	}
 }
 
-func (es *elasticsearch) getRawLogs(ctx context.Context, from, size string, indices ...string) ([]byte, error) {
+func (es *elasticsearch) getRawLogs(ctx context.Context, from, size, filter string, indices ...string) ([]byte, error) {
 	offset, err := strconv.Atoi(from)
 	if err != nil {
 		return nil, fmt.Errorf(`invalid value "%v" for query param "from"`, from)
@@ -96,8 +96,24 @@ func (es *elasticsearch) getRawLogs(ctx context.Context, from, size string, indi
 	if err != nil {
 		return nil, fmt.Errorf(`invalid value "%v" for query param "size"`, size)
 	}
-
+	query := elastic.NewBoolQuery()
+	if filter == "search" {
+		filters := elastic.NewTermQuery("category.keyword", "search")
+		query.Filter(filters)
+	} else if filter == "delete" {
+		filters := elastic.NewMatchQuery("request.method.keyword", "DELETE")
+		query.Filter(filters)
+	} else if filter == "success" {
+		filters := elastic.NewRangeQuery("response.code").Gte(200).Lte(299)
+		query.Filter(filters)
+	} else if filter == "error" {
+		filters := elastic.NewRangeQuery("response.code").Gte(400)
+		query.Filter(filters)
+	} else {
+		query.Filter(elastic.NewMatchAllQuery())
+	}
 	response, err := es.client.Search(es.indexName).
+		Query(query).
 		From(offset).
 		Size(s).
 		Sort("timestamp", false).
