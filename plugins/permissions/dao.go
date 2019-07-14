@@ -131,13 +131,12 @@ func (es *elasticsearch) patchPermission(ctx context.Context, username string, p
 		//Type(es.typeName).
 		Id(username).
 		Doc(patch).
-		Fields("_source").
 		Do(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	src, err := response.GetResult.Source.MarshalJSON()
+	src, err := json.Marshal(response)
 	if err != nil {
 		return nil, err
 	}

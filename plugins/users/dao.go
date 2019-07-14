@@ -236,17 +236,15 @@ func (es *elasticsearch) patchUser(ctx context.Context, username string, patch m
 		//Type(es.typeName).
 		Id(username).
 		Doc(patch).
-		Fields("_source").
 		Do(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	src, err := response.GetResult.Source.MarshalJSON()
+	src, err := json.Marshal(response)
 	if err != nil {
 		return nil, err
 	}
-
 	return src, nil
 }
 
