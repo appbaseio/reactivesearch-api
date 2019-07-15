@@ -148,7 +148,7 @@ func (es *elasticsearch) getRawLogs(ctx context.Context, from, size, filter stri
 
 	logs := make(map[string]interface{})
 	logs["logs"] = hits
-	logs["total"] = len(hits)
+	logs["total"] = response.Hits.TotalHits.Value
 	logs["took"] = response.TookInMillis
 
 	raw, err := json.Marshal(logs)
