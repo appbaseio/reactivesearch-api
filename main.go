@@ -16,7 +16,9 @@ import (
 	"github.com/appbaseio/arc/middleware"
 	"github.com/appbaseio/arc/middleware/logger"
 	"github.com/appbaseio/arc/plugins"
+	"github.com/appbaseio/arc/util"
 	"github.com/gorilla/mux"
+	"github.com/robfig/cron"
 	"github.com/rs/cors"
 
 	"gopkg.in/natefinch/lumberjack.v2"
@@ -31,7 +33,8 @@ var (
 	address     string
 	port        int
 	pluginDir   string
-	https bool
+	https       bool
+	Billing     string
 )
 
 func init() {
@@ -71,8 +74,19 @@ func main() {
 
 	router := mux.NewRouter().StrictSlash(true)
 
+	if Billing == "true" {
+		log.Println("billing enabled")
+		util.ReportUsage()
+		cronjob := cron.New()
+		cronjob.AddFunc("@every 1h", util.ReportUsage)
+		cronjob.Start()
+		router.Use(util.BillingMiddleware)
+	} else {
+		log.Println("billing not enabled")
+	}
+
 	var elasticSearchPath string
-	elasticSearchMiddleware := make([] middleware.Middleware, 0)
+	elasticSearchMiddleware := make([]middleware.Middleware, 0)
 	err := filepath.Walk(pluginDir, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err

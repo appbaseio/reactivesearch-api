@@ -1,5 +1,10 @@
 FROM golang:1.11-alpine as builder
 
+# Default value
+# Run `--build-arg BILLING=true` to enable billing
+ARG BILLING=false
+ENV BILLING="${BILLING}"
+
 # Install tools required for project
 # Run `docker build --no-cache .` to update dependencies
 RUN apk add --no-cache build-base git
@@ -9,7 +14,7 @@ WORKDIR /arc
 COPY go.mod go.sum ./
 
 # Install library dependencies
-RUN go mod download 
+RUN go mod download
 
 # Copy the entire project and build it
 # This layer is rebuilt when a file changes in the project directory
