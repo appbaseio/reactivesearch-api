@@ -15,6 +15,9 @@ import (
 	"github.com/gorilla/mux"
 )
 
+var BillingOK bool
+var BillingErrorCount int64
+
 // RandStr returns "node" field of a UUID.
 // See: https://tools.ietf.org/html/rfc4122#section-4.1.6
 func RandStr() string {

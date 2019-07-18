@@ -1,7 +1,7 @@
 # Plugins
 
-Arc can be extended with **plugins**. Plugins add missing functionality to Arc. They are "plugged-in" at compile time. Arc presents a set of functionalities on top of Elasticsearch such as book keeping, 
-analytics, streaming and more. An arc plugin can usually interacts with HTTP requests and responses to implement an arbitrary logic. A plugin can extend the functionality of Arc by handling a set of routes or it can serve as a simple middleware to other plugins. 
+Arc can be extended with **plugins**. Plugins add missing functionality to Arc. They are "plugged-in" at compile time. Arc presents a set of functionalities on top of Elasticsearch such as book keeping,
+analytics, streaming and more. An arc plugin can usually interacts with HTTP requests and responses to implement an arbitrary logic. A plugin can extend the functionality of Arc by handling a set of routes or it can serve as a simple middleware to other plugins.
 
 ## File structure
 
@@ -9,7 +9,7 @@ For brevity, all the plugins should (but is not restricted to) follow the follow
 
 * `routes.go`: Defines a list of routes to interact with the entities and logic that is handled by the plugin.
 * `handlers.go`: Defines the respective handlers for the routes handled by the plugin.
-* `dao.go`: Plugins might probably require to retain and manage some configuration or information provided by the user. 
+* `dao.go`: Plugins might probably require to retain and manage some configuration or information provided by the user.
 	This file should contain the *database access object* that is required to interact with the data store of your choice.
 * `middleware.go`: Defines middleware or *chain* of middleware required to wrap the handlers to perform operations before the request is actually served.
 * `plugin_name.go`: This is the core of the plugin. This is where the plugin gets registered to Arc.
@@ -32,13 +32,13 @@ greeter
 The `greeter.go` would be responsible for implementing the `Plugin` interface and registering itself as a plugin to the Arc. The `Plugin` interface has three methods that a type must implement in order to register itself as a plugin:
 
 - `greeter.go`
-		
+
 	```go
 	package greeter
 
 	import (
 		"fmt"
-	
+
 		"github.com/appbaseio/arc/arc/plugin"
 	)
 
@@ -52,14 +52,14 @@ The `greeter.go` would be responsible for implementing the `Plugin` interface an
 	// unique as it is the name of the plugin that is used as a key
 	// to identify a plugin in the plugins map.
 	func (g *Greeter) Name() string {
-		return pluginName	
+		return pluginName
 	}
 
 	// InitFunc returns the plugin's setup function that is executed
 	// before the plugin routes are loaded in the router.
 	func (g *Greeter) InitFunc() error {
 		fmt.Printf("%s: initializing plugin...", pluginName)
-		return nil	
+		return nil
 	}
 
 	// Routes returns the http routes that a plugin handles or is
@@ -77,12 +77,12 @@ Define a list of routes that the plugin aims to handle.
 
 	import (
 	 	"net/http"
- 	
-  		"github.com/appbaseio/arc/arc/plugin"
+
+  		"github.com/appbaseio/arc/plugin"
 	)
-	
+
 	func (g *Greeter) routes() []plugin.Route {
-		return []plugin.Route{	
+		return []plugin.Route{
 			{
 				Name: "Get greetings",
 				Methods: []string{http.MethodGet},
@@ -93,12 +93,12 @@ Define a list of routes that the plugin aims to handle.
 		}
 	}
 	```
-	
+
 ### 3. Implement the handlers
 In `handlers.go` implement a method that returns a `http.HandlerFunc` which encapsulates the custom logic to handle a specific route or a set of routes.
 - `handlers.go`
 	```go
-	package greeter 
+	package greeter
 
 	import "net/http"
 

@@ -16,7 +16,9 @@ import (
 	"github.com/appbaseio/arc/middleware"
 	"github.com/appbaseio/arc/middleware/logger"
 	"github.com/appbaseio/arc/plugins"
+	"github.com/appbaseio/arc/util"
 	"github.com/gorilla/mux"
+	"github.com/robfig/cron"
 	"github.com/rs/cors"
 
 	"gopkg.in/natefinch/lumberjack.v2"
@@ -31,7 +33,8 @@ var (
 	address     string
 	port        int
 	pluginDir   string
-	https bool
+	https       bool
+	Billing     bool
 )
 
 func init() {
@@ -40,6 +43,7 @@ func init() {
 	flag.BoolVar(&listPlugins, "plugins", false, "List currently registered plugins")
 	flag.StringVar(&address, "addr", "", "Address to serve on")
 	flag.IntVar(&port, "port", 8000, "Port number")
+	flag.BoolVar(&Billing, "billing", false, "enable or disable billing")
 	flag.StringVar(&pluginDir, "pluginDir", "build/plugins", "Directory containing the compiled plugins")
 	flag.BoolVar(&https, "https", false, "Starts a https server instead of a http server if true")
 }
@@ -69,10 +73,24 @@ func main() {
 		log.Printf("%s: reading env file %q: %v", logTag, envFile, err)
 	}
 
+	if Billing {
+		log.Println("billing enabled")
+		util.ReportUsage()
+		cronjob := cron.New()
+		cronjob.AddFunc("@every 1h", util.ReportUsage)
+		cronjob.Start()
+	} else {
+		log.Println("billing not enabled")
+	}
+
 	router := mux.NewRouter().StrictSlash(true)
 
+	if Billing {
+		router.Use(util.BillingMiddleware)
+	}
+
 	var elasticSearchPath string
-	elasticSearchMiddleware := make([] middleware.Middleware, 0)
+	elasticSearchMiddleware := make([]middleware.Middleware, 0)
 	err := filepath.Walk(pluginDir, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
@@ -144,6 +162,10 @@ func LoadESPluginFromFile(router *mux.Router, path string, mw []middleware.Middl
 	}
 	var p plugins.ESPlugin
 	p = *pi.(*plugins.ESPlugin)
+	// TODO: exclude proxy plugin if billing is not enabled
+	// if !Billing && p.Name() == "proxy" {
+	// 	return nil
+	// }
 	return plugins.LoadESPlugin(router, p, mw)
 }
 

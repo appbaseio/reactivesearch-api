@@ -82,6 +82,8 @@ This produces an executable & plugin libraries in the root project directory. To
 
     ./build/arc --log=stdout --env=config/manual.env
 
+To build the image with billing support enabled, we need to add `--billing` tag in CMD and set it true. This modification needs to be done in the dockerfile. Example dockerfile is present in this repo. Refer to Billing-Dockerfile.
+
 Alternatively, you could execute the following commands to start the server without producing an executable, (but still produce the plugin libraries):
 
     make plugins
