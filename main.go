@@ -75,14 +75,14 @@ func main() {
 	router := mux.NewRouter().StrictSlash(true)
 
 	if Billing == "true" {
-		log.Println("billing enabled")
+		log.Println("You're running Arc with billing module enabled.")
 		util.ReportUsage()
 		cronjob := cron.New()
 		cronjob.AddFunc("@every 1h", util.ReportUsage)
 		cronjob.Start()
 		router.Use(util.BillingMiddleware)
 	} else {
-		log.Println("billing not enabled")
+		log.Println("You're running Arc with billing module disabled.")
 	}
 
 	var elasticSearchPath string
