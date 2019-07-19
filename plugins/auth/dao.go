@@ -178,3 +178,39 @@ func (es *elasticsearch) getRawPermission(ctx context.Context, username string) 
 
 	return src, nil
 }
+
+func (es *elasticsearch) getRolePermission(ctx context.Context, role string) (*permission.Permission, error) {
+	data, err := es.getRawRolePermission(ctx, role)
+	if err != nil {
+		return nil, err
+	}
+
+	var p permission.Permission
+	err = json.Unmarshal(data, &p)
+	if err != nil {
+		return nil, err
+	}
+
+	return &p, nil
+}
+
+func (es *elasticsearch) getRawRolePermission(ctx context.Context, role string) ([]byte, error) {
+	resp, err := es.client.Search().
+		Index(es.permissionIndex).
+		Type(es.permissionType).
+		Query(elastic.NewTermQuery("role", role)).
+		Size(1).
+		FetchSource(true).
+		Do(ctx)
+	if err != nil {
+		return nil, err
+	}
+	for _, hit := range resp.Hits.Hits {
+		src, err := json.Marshal(hit.Source)
+		if err == nil {
+			return src, nil
+		}
+	}
+	return nil, nil
+}
+

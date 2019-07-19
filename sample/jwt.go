@@ -11,7 +11,7 @@ import "github.com/dgrijalva/jwt-go"
 
 func encode() {
 	token := jwt.NewWithClaims(jwt.SigningMethodRS256, jwt.MapClaims{
-			*jwtKeyFlag: *usernameFlag,
+			*keyFlag: *valueFlag,
 		        "iat": time.Now().Unix(),
 			"exp": time.Now().Unix() + 1000,
 		})
@@ -79,8 +79,8 @@ func decode() {
 
 var decodeFlag = flag.Bool("decode", false, "decode the provided jwt")
 var encodeFlag = flag.Bool("encode", false, "encode a jwt")
-var usernameFlag = flag.String("username", "foo", "provide the username")
-var jwtKeyFlag = flag.String("jwtKey", "username", "provide the JWT key for username")
+var valueFlag = flag.String("value", "foo", "provide the value")
+var keyFlag = flag.String("key", "username", "provide the key")
 
 func main() {
 	flag.Parse()

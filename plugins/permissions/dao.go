@@ -181,3 +181,16 @@ func (es *elasticsearch) getRawOwnerPermissions(ctx context.Context, owner strin
 
 	return raw, nil
 }
+
+func (es *elasticsearch) checkRoleExists(ctx context.Context, role string) (bool, error) {
+	resp, err := es.client.Search().
+		Index(es.indexName).
+		Type(es.typeName).
+		Query(elastic.NewTermQuery("role", role)).
+		Do(ctx)
+	if err != nil {
+		return false, err
+	}
+
+	return resp.Hits.TotalHits > 0, nil
+}

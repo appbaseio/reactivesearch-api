@@ -64,6 +64,9 @@ func (p *permissions) postPermission() http.HandlerFunc {
 		if permissionBody.Ops != nil {
 			opts = append(opts, permission.SetOps(permissionBody.Ops))
 		}
+		if permissionBody.Role != "" {
+			opts = append(opts, permission.SetRole(permissionBody.Role))
+		}
 		if permissionBody.Categories != nil {
 			opts = append(opts, permission.SetCategories(permissionBody.Categories))
 		}
@@ -107,6 +110,23 @@ func (p *permissions) postPermission() http.HandlerFunc {
 			log.Printf("%s: unable to marshal newPermission object: %v\n", logTag, err)
 			util.WriteBackError(w, msg, http.StatusInternalServerError)
 			return
+		}
+
+		if newPermission.Role != "" {
+			var roleExists bool
+			roleExists, err = p.es.checkRoleExists(req.Context(), newPermission.Role)
+			if roleExists {
+				msg := fmt.Sprintf(`permission with role=%s already exists`, newPermission.Role)
+				log.Printf("%s: %s\n", logTag, msg)
+				util.WriteBackError(w, msg, http.StatusBadRequest)
+				return
+			}
+			if err != nil {
+				msg := fmt.Sprintf(`an error occurred while creating permission for role=%s`, creator, newPermission.Role)
+				log.Printf("%s: unable to check if role=%s exists: %v\n", logTag, newPermission.Role)
+				util.WriteBackError(w, msg, http.StatusInternalServerError)
+				return
+			}
 		}
 
 		ok, err := p.es.postPermission(req.Context(), *newPermission)

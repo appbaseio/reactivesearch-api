@@ -15,4 +15,5 @@ type authService interface {
 	putPermission(ctx context.Context, p permission.Permission) (bool, error)
 	getPermission(ctx context.Context, username string) (*permission.Permission, error)
 	getRawPermission(ctx context.Context, username string) ([]byte, error)
+	getRolePermission(ctx context.Context, role string) (*permission.Permission, error)
 }

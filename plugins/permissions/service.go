@@ -12,4 +12,5 @@ type permissionService interface {
 	patchPermission(ctx context.Context, username string, patch map[string]interface{}) ([]byte, error)
 	deletePermission(ctx context.Context, username string) (bool, error)
 	getRawOwnerPermissions(ctx context.Context, owner string) ([]byte, error)
+	checkRoleExists(ctx context.Context, role string) (bool, error)
 }
