@@ -62,16 +62,31 @@ func (a *Auth) basicAuth(h http.HandlerFunc) http.HandlerFunc {
 			util.WriteBackError(w, msg, http.StatusUnauthorized)
 			return
 		}
+
+		role := ""
 		if !hasBasicAuth {
-			if claims, ok := jwtToken.Claims.(jwt.MapClaims); ok && jwtToken.Valid && a.jwtUsernameKey != "" {
-				username = claims[a.jwtUsernameKey].(string)
+			if claims, ok := jwtToken.Claims.(jwt.MapClaims); ok && jwtToken.Valid && a.jwtRoleKey != "" {
+				if a.jwtRoleKey != "" {
+					role = claims[a.jwtRoleKey].(string)
+				} else if u, ok := claims["username"]; ok {
+					username = u.(string)
+				} else {
+					util.WriteBackError(w, fmt.Sprintf("Invalid JWT"), http.StatusUnauthorized)
+					return
+				}
 			} else {
-				util.WriteBackError(w, fmt.Sprintf("Invalid JWT or Username Key not set"), http.StatusUnauthorized)
+				util.WriteBackError(w, fmt.Sprintf("Invalid JWT"), http.StatusUnauthorized)
+				return
 			}
 		}
 
 		// we don't know if the credentials provided here are of a 'user' or a 'permission'
-		obj, err := a.getCredential(ctx, username)
+		var obj credential.AuthCredential
+		if role != "" {
+			obj, err = a.es.getRolePermission(ctx, role)
+		} else {
+			obj, err = a.getCredential(ctx, username)
+		}
 		if err != nil {
 			msg := fmt.Sprintf("unable to fetch credentials with username: %s", username)
 			log.Printf("%s: %v", logTag, err)

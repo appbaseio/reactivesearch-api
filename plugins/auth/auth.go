@@ -2,17 +2,18 @@ package auth
 
 import (
 	"crypto/rsa"
-	"github.com/dgrijalva/jwt-go"
+	"fmt"
 	"io/ioutil"
+	"net/http"
 	"os"
 	"sync"
-	"net/http"
-	"fmt"
 
+	"github.com/dgrijalva/jwt-go"
+
+	"github.com/appbaseio/arc/errors"
+	"github.com/appbaseio/arc/middleware"
 	"github.com/appbaseio/arc/model/credential"
 	"github.com/appbaseio/arc/plugins"
-	"github.com/appbaseio/arc/middleware"
-	"github.com/appbaseio/arc/errors"
 )
 
 const (
@@ -24,7 +25,7 @@ const (
 	defaultPermissionsEsIndex = ".permissions"
 	envJwtRsaPublicKeyLoc     = "JWT_RSA_PUBLIC_KEY_LOC"
 	envJwtRsaPublicKeyDest    = "JWT_RSA_PUBLIC_KEY_DEST"
-	envJwtUsernameKey         = "JWT_USERNAME_KEY"
+	envJwtRoleKey             = "JWT_ROLE_KEY"
 )
 
 var (
@@ -37,7 +38,7 @@ type Auth struct {
 	mu              sync.Mutex
 	credentialCache map[string]credential.AuthCredential
 	jwtRsaPublicKey *rsa.PublicKey
-	jwtUsernameKey  string
+	jwtRoleKey      string
 	es              authService
 }
 
@@ -107,7 +108,7 @@ func (a *Auth) InitFunc() error {
 			}
 		}
 	}
-	a.jwtUsernameKey = os.Getenv(envJwtUsernameKey)
+	a.jwtRoleKey = os.Getenv(envJwtRoleKey)
 
 	// initialize the dao
 	a.es, err = newClient(esURL, userIndex, permissionIndex)
@@ -124,6 +125,6 @@ func (a *Auth) Routes() []plugins.Route {
 }
 
 // Default empty middleware array function
-func (a *Auth) ESMiddleware() [] middleware.Middleware {
-	return make([] middleware.Middleware, 0)
+func (a *Auth) ESMiddleware() []middleware.Middleware {
+	return make([]middleware.Middleware, 0)
 }

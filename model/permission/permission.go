@@ -35,6 +35,7 @@ type Permission struct {
 	Password    string              `json:"password"`
 	Owner       string              `json:"owner"`
 	Creator     string              `json:"creator"`
+	Role        string              `json:"role"`
 	Categories  []category.Category `json:"categories"`
 	ACLs        []acl.ACL           `json:"acls"`
 	Ops         []op.Operation      `json:"ops"`
@@ -68,6 +69,13 @@ func SetOwner(owner string) Options {
 			return fmt.Errorf("permission owner cannot be an empty string")
 		}
 		p.Owner = owner
+		return nil
+	}
+}
+
+func SetRole(role string) Options {
+	return func(p *Permission) error {
+		p.Role = role
 		return nil
 	}
 }
@@ -216,6 +224,7 @@ func New(creator string, opts ...Options) (*Permission, error) {
 		Password:   uuid.New().String(),
 		Owner:      creator,
 		Creator:    creator,
+		Role:       "",
 		Categories: defaultCategories,
 		Ops:        defaultOps,
 		Indices:    []string{},
@@ -254,6 +263,7 @@ func NewAdmin(creator string, opts ...Options) (*Permission, error) {
 		Password:   uuid.New().String(),
 		Owner:      creator,
 		Creator:    creator,
+		Role:       "",
 		Categories: adminCategories,
 		Ops:        adminOps,
 		Indices:    []string{"*"},
