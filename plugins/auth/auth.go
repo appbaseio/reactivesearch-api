@@ -37,7 +37,7 @@ type Auth struct {
 	mu              sync.Mutex
 	credentialCache map[string]credential.AuthCredential
 	jwtRsaPublicKey *rsa.PublicKey
-	jwtRoleKey  string
+	jwtRoleKey      string
 	es              authService
 }
 
