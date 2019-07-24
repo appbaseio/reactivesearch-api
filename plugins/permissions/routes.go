@@ -44,6 +44,13 @@ func (p *permissions) routes() []plugins.Route {
 			HandlerFunc: middleware(p.getUserPermissions()),
 			Description: "Returns all the permissions of the user",
 		},
+		{
+			Name:        "Get permission by role",
+			Methods:     []string{http.MethodGet},
+			Path:        "/_permission/_role/{role}",
+			HandlerFunc: middleware(p.getRolePermission()),
+			Description: "Returns the permission with {role}",
+		},
 	}
 	return routes
 }

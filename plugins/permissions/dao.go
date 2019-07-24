@@ -193,3 +193,23 @@ func (es *elasticsearch) checkRoleExists(ctx context.Context, role string) (bool
 
 	return resp.Hits.TotalHits > 0, nil
 }
+
+func (es *elasticsearch) getRawRolePermission(ctx context.Context, role string) ([]byte, error) {
+	resp, err := es.client.Search().
+		Index(es.indexName).
+		Type(es.typeName).
+		Query(elastic.NewTermQuery("role", role)).
+		Size(1).
+		FetchSource(true).
+		Do(ctx)
+	if err != nil {
+		return nil, err
+	}
+	for _, hit := range resp.Hits.Hits {
+		src, err := json.Marshal(hit.Source)
+		if err == nil {
+			return src, nil
+		}
+	}
+	return nil, nil
+}

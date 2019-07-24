@@ -432,7 +432,7 @@ func (p *Permission) GetIPLimit() int64 {
 }
 
 // GetPatch generates a patch doc from the non-zero values in the permission.
-func (p *Permission) GetPatch() (map[string]interface{}, error) {
+func (p *Permission) GetPatch(rolePatched bool) (map[string]interface{}, error) {
 	patch := make(map[string]interface{})
 
 	if p.Owner != "" {
@@ -446,6 +446,9 @@ func (p *Permission) GetPatch() (map[string]interface{}, error) {
 	}
 	if p.Creator != "" {
 		return nil, errors.NewUnsupportedPatchError("permission", "creator")
+	}
+	if rolePatched {
+		patch["role"] = p.Role
 	}
 	if p.Categories != nil {
 		patch["categories"] = p.Categories

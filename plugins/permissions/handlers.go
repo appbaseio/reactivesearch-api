@@ -164,7 +164,17 @@ func (p *permissions) patchPermission() http.HandlerFunc {
 			return
 		}
 
-		patch, err := obj.GetPatch()
+		var perMap map[string]interface{}
+		err = json.Unmarshal(body, &perMap)
+		if err != nil {
+			msg := "can't parse request body"
+			log.Printf("%s: %s: %v\n", logTag, msg, err)
+			util.WriteBackError(w, msg, http.StatusBadRequest)
+			return
+		}
+		_, roleExistsInPatch := perMap["role"]
+
+		patch, err := obj.GetPatch(roleExistsInPatch)
 		if err != nil {
 			log.Printf("%s: %v\n", logTag, err)
 			util.WriteBackError(w, err.Error(), http.StatusBadRequest)
@@ -193,6 +203,23 @@ func (p *permissions) patchPermission() http.HandlerFunc {
 
 			if err := reqPermission.ValidateACLs(acls...); err != nil {
 				util.WriteBackError(w, err.Error(), http.StatusBadRequest)
+				return
+			}
+		}
+
+		if roleExistsInPatch && patch["role"] != "" {
+			var roleExistsInES bool
+			roleExistsInES, err = p.es.checkRoleExists(req.Context(), obj.Role)
+			if roleExistsInES {
+				msg := fmt.Sprintf(`permission with role=%s already exists`, obj.Role)
+				log.Printf("%s: %s\n", logTag, msg)
+				util.WriteBackError(w, msg, http.StatusBadRequest)
+				return
+			}
+			if err != nil {
+				msg := fmt.Sprintf(`an error occurred while creating permission for role=%s`, obj.Role)
+				log.Printf("%s: unable to check if role=%s exists: %v\n", logTag, obj.Role)
+				util.WriteBackError(w, msg, http.StatusInternalServerError)
 				return
 			}
 		}
@@ -234,6 +261,23 @@ func (p *permissions) getUserPermissions() http.HandlerFunc {
 		raw, err := p.es.getRawOwnerPermissions(req.Context(), owner)
 		if err != nil {
 			msg := fmt.Sprintf(`an error occurred while fetching permissions for "owner"="%s"`, owner)
+			log.Printf("%s: %s: %v\n", logTag, msg, err)
+			util.WriteBackError(w, msg, http.StatusNotFound)
+			return
+		}
+
+		util.WriteBackRaw(w, raw, http.StatusOK)
+	}
+}
+
+func (p *permissions) getRolePermission() http.HandlerFunc {
+	return func(w http.ResponseWriter, req *http.Request) {
+		vars := mux.Vars(req)
+		role := vars["role"]
+
+		raw, err := p.es.getRawRolePermission(req.Context(), role)
+		if raw == nil || err != nil {
+			msg := fmt.Sprintf(`an error occurred while fetching permissions for role=%s`, role)
 			log.Printf("%s: %s: %v\n", logTag, msg, err)
 			util.WriteBackError(w, msg, http.StatusNotFound)
 			return
