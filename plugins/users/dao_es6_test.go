@@ -1,4 +1,4 @@
-// +build !es6
+// +build es6
 
 package users
 
@@ -11,7 +11,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/olivere/elastic/v7"
+	"github.com/olivere/elastic"
 )
 
 func newStubClient(url, indexName, typeName string) (*elasticsearch, error) {

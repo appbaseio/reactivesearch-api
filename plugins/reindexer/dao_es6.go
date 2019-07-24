@@ -1,4 +1,4 @@
-// +build !es6
+// +build es6
 
 package reindexer
 
@@ -9,7 +9,7 @@ import (
 	"log"
 
 	"github.com/appbaseio/arc/util"
-	"github.com/olivere/elastic/v7"
+	"github.com/olivere/elastic"
 )
 
 type elasticsearch struct {

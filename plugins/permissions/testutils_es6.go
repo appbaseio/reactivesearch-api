@@ -1,3 +1,5 @@
+// +build es6
+
 package permissions
 
 import (
@@ -9,7 +11,7 @@ import (
 	"testing"
 
 	"github.com/appbaseio/arc/errors"
-	"github.com/olivere/elastic/v7"
+	"github.com/olivere/elastic"
 )
 
 func compareErrs(expectedErr string, actual error) bool {

@@ -1,16 +1,19 @@
-package reindexer
+// +build !es6
+
+package permissions
 
 import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"testing"
 
+	"github.com/appbaseio/arc/errors"
 	"github.com/olivere/elastic/v7"
 )
 
-// TODO: Move it to the separate package and make it exportable since it is used by all plugin tests
 func compareErrs(expectedErr string, actual error) bool {
 	if actual == nil {
 		if expectedErr == "" {
@@ -22,14 +25,37 @@ func compareErrs(expectedErr string, actual error) bool {
 	return expectedErr == actual.Error()
 }
 
-func newTestClient(url string) (*elasticsearch, error) {
+func (p *permissions) mockInitFunc() error {
+	url := os.Getenv(envEsURL)
+	if url == "" {
+		return errors.NewEnvVarNotSetError(envEsURL)
+	}
+
+	index := os.Getenv(envPermissionEsIndex)
+	if index == "" {
+		index = defaultPermissionsEsIndex
+	}
+
+	client, err := newStubClient(url, index, "mapping")
+	if err != nil {
+		return err
+	}
+
+	p.es = client
+	return nil
+}
+
+func newStubClient(url, indexName, mapping string) (*elasticsearch, error) {
 	client, err := elastic.NewSimpleClient(elastic.SetURL(url))
 	if err != nil {
 		return nil, fmt.Errorf("error while initializing elastic client: %v", err)
 	}
 	es := &elasticsearch{
-		url:    url,
-		client: client,
+		url:       url,
+		indexName: indexName,
+		typeName:  "_doc",
+		mapping:   mapping,
+		client:    client,
 	}
 	return es, nil
 }

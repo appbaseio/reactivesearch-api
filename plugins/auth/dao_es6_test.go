@@ -1,4 +1,4 @@
-// +build !es6
+// +build es6
 
 package auth
 
@@ -15,7 +15,7 @@ import (
 	"github.com/appbaseio/arc/model/op"
 	"github.com/appbaseio/arc/model/permission"
 	"github.com/appbaseio/arc/model/user"
-	"github.com/olivere/elastic/v7"
+	"github.com/olivere/elastic"
 )
 
 func newStubClient(url, userIndex, permissionIndex string) (*elasticsearch, error) {

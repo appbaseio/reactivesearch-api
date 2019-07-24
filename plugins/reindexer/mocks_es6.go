@@ -1,4 +1,4 @@
-// +build !es6
+// +build es6
 
 package reindexer
 
@@ -7,7 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/olivere/elastic/v7"
+	"github.com/olivere/elastic"
 )
 
 // Mock for successful reindexing with each ES operation returning a valid result.

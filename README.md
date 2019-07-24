@@ -62,6 +62,10 @@ In order to run arc, you'll require an Elasticsearch node. There are multiple wa
 
         docker run -d --rm --name elasticsearch -p 9200:9200 -p 9300:9300 --net=arc -e "discovery.type=single-node" docker.elastic.co/elasticsearch/elasticsearch-oss:7.2.0
 
+   Alternatively, start a Elasticsearch v6 node
+
+        docker run -d --rm --name elasticsearch -p 9200:9200 -p 9300:9300 --net=arc -e "discovery.type=single-node" docker.elastic.co/elasticsearch/elasticsearch-oss:6.8.0
+
 3. Start Arc locally
 
         docker build -t arc . && docker run --rm --name arc -p 8000:8000 --net=arc --env-file=config/docker.env arc
@@ -77,6 +81,10 @@ To build from source you need [Git](https://git-scm.com/downloads) and [Go](http
 You can build the binary locally by executing the following command from the project directory:
 
     make
+
+You can build the binary for elasticsearch v6 using the following command:
+
+    make es6=1
 
 This produces an executable & plugin libraries in the root project directory. To start the Arc server, run:
 

@@ -1,3 +1,5 @@
+// +build es6
+
 package logs
 
 import (
@@ -7,7 +9,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/olivere/elastic/v7"
+	"github.com/olivere/elastic"
 )
 
 func newStubClient(url, indexName string) (*elasticsearch, error) {

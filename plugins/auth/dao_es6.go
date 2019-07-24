@@ -1,4 +1,4 @@
-// +build !es6
+// +build es6
 
 package auth
 
@@ -11,7 +11,7 @@ import (
 	"github.com/appbaseio/arc/model/permission"
 	"github.com/appbaseio/arc/model/user"
 	"github.com/appbaseio/arc/util"
-	"github.com/olivere/elastic/v7"
+	"github.com/olivere/elastic"
 )
 
 type elasticsearch struct {
@@ -66,7 +66,7 @@ func (es *elasticsearch) getCredential(ctx context.Context, username string) (cr
 		if hit.Index == es.userIndex {
 			var u user.User
 			if hit.Source != nil {
-				err := json.Unmarshal(hit.Source, &u)
+				err := json.Unmarshal(*hit.Source, &u)
 				if err != nil {
 					return nil, err
 				}
@@ -76,7 +76,7 @@ func (es *elasticsearch) getCredential(ctx context.Context, username string) (cr
 			var p permission.Permission
 
 			// unmarshal into permission
-			err := json.Unmarshal(hit.Source, &p)
+			err := json.Unmarshal(*hit.Source, &p)
 			if err != nil {
 				return nil, err
 			}
@@ -208,7 +208,7 @@ func (es *elasticsearch) getRawRolePermission(ctx context.Context, role string) 
 		return nil, err
 	}
 	for _, hit := range resp.Hits.Hits {
-		src, err := json.Marshal(hit.Source)
+		src, err := json.Marshal(*hit.Source)
 		if err == nil {
 			return src, nil
 		}

@@ -1,4 +1,4 @@
-// +build !es6
+// +build es6
 
 package users
 
@@ -11,7 +11,7 @@ import (
 
 	"github.com/appbaseio/arc/model/user"
 	"github.com/appbaseio/arc/util"
-	"github.com/olivere/elastic/v7"
+	"github.com/olivere/elastic"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -192,7 +192,7 @@ func (es *elasticsearch) getRawUsers(ctx context.Context) ([]byte, error) {
 
 	var users []json.RawMessage
 	for _, hit := range response.Hits.Hits {
-		users = append(users, hit.Source)
+		users = append(users, *hit.Source)
 	}
 
 	return json.Marshal(users)

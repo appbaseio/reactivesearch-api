@@ -206,3 +206,38 @@
 2019/07/24 10:12:39 logger.go:20: [logger]: finished PATCH /_permission/a82dd86a6b28, took 0.841817s
 2019/07/24 10:12:46 handlers.go:281: [permissions]: an error occurred while fetching permissions for role=myrole: <nil>
 2019/07/24 10:12:46 logger.go:20: [logger]: finished GET /_permission/_role/myrole, took 0.065416s
+2019/07/24 11:15:33 registry.go:71: [registry]: Initializing plugin: [auth]
+2019/07/24 11:15:33 registry.go:71: [registry]: Initializing plugin: [logs]
+2019/07/24 11:15:33 dao.go:42: [logs]: index named ".logs" already exists, skipping ...
+2019/07/24 11:15:33 registry.go:71: [registry]: Initializing plugin: [permissions]
+2019/07/24 11:15:33 permissions.go:42: [permissions]: initializing plugin
+2019/07/24 11:15:33 dao.go:44: [permissions] index named '.permissions' already exists, skipping...
+2019/07/24 11:15:33 registry.go:71: [registry]: Initializing plugin: [reindexer]
+2019/07/24 11:15:33 registry.go:71: [registry]: Initializing plugin: [users]
+2019/07/24 11:15:33 dao.go:54: [users]: index named '.users' already exists, skipping...
+2019/07/24 11:17:58 registry.go:71: [registry]: Initializing plugin: [auth]
+2019/07/24 11:17:58 registry.go:71: [registry]: Initializing plugin: [logs]
+2019/07/24 11:17:58 dao.go:42: [logs]: index named ".logs" already exists, skipping ...
+2019/07/24 11:17:58 registry.go:71: [registry]: Initializing plugin: [permissions]
+2019/07/24 11:17:58 permissions.go:42: [permissions]: initializing plugin
+2019/07/24 11:17:58 dao.go:44: [permissions] index named '.permissions' already exists, skipping...
+2019/07/24 11:17:58 registry.go:71: [registry]: Initializing plugin: [reindexer]
+2019/07/24 11:17:58 registry.go:71: [registry]: Initializing plugin: [users]
+2019/07/24 11:17:58 dao.go:54: [users]: index named '.users' already exists, skipping...
+2019/07/24 11:17:58 registry.go:80: [registry]: Initializing plugin: [elasticsearch]
+2019/07/24 11:17:58 routes.go:175: [elasticsearch]: unable to categorize spec "ping": ping does not belong to ACL values\n
+2019/07/24 11:17:58 routes.go:175: [elasticsearch]: unable to categorize spec "info": info does not belong to ACL values\n
+2019/07/24 11:17:58 main.go:93: error loading plugins: json: cannot unmarshal number into Go struct field SearchHits.total of type elastic.TotalHits
+2019/07/24 11:22:49 registry.go:71: [registry]: Initializing plugin: [auth]
+2019/07/24 11:22:49 registry.go:71: [registry]: Initializing plugin: [logs]
+2019/07/24 11:22:49 dao.go:42: [logs]: index named ".logs" already exists, skipping ...
+2019/07/24 11:22:49 registry.go:71: [registry]: Initializing plugin: [permissions]
+2019/07/24 11:22:49 permissions.go:42: [permissions]: initializing plugin
+2019/07/24 11:22:49 dao.go:44: [permissions] index named '.permissions' already exists, skipping...
+2019/07/24 11:22:49 registry.go:71: [registry]: Initializing plugin: [reindexer]
+2019/07/24 11:22:49 registry.go:71: [registry]: Initializing plugin: [users]
+2019/07/24 11:22:49 dao.go:54: [users]: index named '.users' already exists, skipping...
+2019/07/24 11:22:50 registry.go:80: [registry]: Initializing plugin: [elasticsearch]
+2019/07/24 11:22:50 routes.go:175: [elasticsearch]: unable to categorize spec "ping": ping does not belong to ACL values\n
+2019/07/24 11:22:50 routes.go:175: [elasticsearch]: unable to categorize spec "info": info does not belong to ACL values\n
+2019/07/24 11:22:50 main.go:93: error loading plugins: json: cannot unmarshal number into Go struct field SearchHits.total of type elastic.TotalHits

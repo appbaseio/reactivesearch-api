@@ -1,4 +1,8 @@
+ifdef es6
+GC=go build -tags es6
+else
 GC=go build
+endif
 
 BUILD_DIR=build
 PLUGIN_FLAGS=--buildmode=plugin

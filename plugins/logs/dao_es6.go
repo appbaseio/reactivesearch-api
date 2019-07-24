@@ -1,4 +1,4 @@
-// +build !es6
+// +build es6
 
 package logs
 
@@ -10,7 +10,7 @@ import (
 	"strconv"
 
 	"github.com/appbaseio/arc/util"
-	"github.com/olivere/elastic/v7"
+	"github.com/olivere/elastic"
 )
 
 type elasticsearch struct {
@@ -127,7 +127,7 @@ func (es *elasticsearch) getRawLogs(ctx context.Context, from, size, filter stri
 	hits := []json.RawMessage{}
 	for _, hit := range response.Hits.Hits {
 		var source map[string]interface{}
-		err := json.Unmarshal(hit.Source, &source)
+		err := json.Unmarshal(*hit.Source, &source)
 		if err != nil {
 			return nil, err
 		}
@@ -142,15 +142,15 @@ func (es *elasticsearch) getRawLogs(ctx context.Context, from, size, filter stri
 		}
 
 		if len(indices) == 0 {
-			hits = append(hits, hit.Source)
+			hits = append(hits, *hit.Source)
 		} else if util.IsSubset(indices, logIndices) {
-			hits = append(hits, hit.Source)
+			hits = append(hits, *hit.Source)
 		}
 	}
 
 	logs := make(map[string]interface{})
 	logs["logs"] = hits
-	logs["total"] = response.Hits.TotalHits.Value
+	logs["total"] = response.Hits.TotalHits
 	logs["took"] = response.TookInMillis
 
 	raw, err := json.Marshal(logs)

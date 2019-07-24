@@ -1,4 +1,4 @@
-// +build !es6
+// +build es6
 
 package permissions
 
@@ -10,7 +10,7 @@ import (
 
 	"github.com/appbaseio/arc/model/permission"
 	"github.com/appbaseio/arc/util"
-	"github.com/olivere/elastic/v7"
+	"github.com/olivere/elastic"
 )
 
 type elasticsearch struct {
@@ -172,7 +172,7 @@ func (es *elasticsearch) getRawOwnerPermissions(ctx context.Context, owner strin
 
 	rawPermissions := []json.RawMessage{}
 	for _, hit := range resp.Hits.Hits {
-		rawPermissions = append(rawPermissions, hit.Source)
+		rawPermissions = append(rawPermissions, *hit.Source)
 	}
 
 	raw, err := json.Marshal(rawPermissions)

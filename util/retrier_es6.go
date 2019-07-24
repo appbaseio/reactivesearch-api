@@ -1,4 +1,4 @@
-// +build !es6
+// +build es6
 
 package util
 
@@ -9,7 +9,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/olivere/elastic/v7"
+	"github.com/olivere/elastic"
 )
 
 // Retrier is a custom Retry implementation.
