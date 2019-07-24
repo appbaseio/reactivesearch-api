@@ -102,7 +102,7 @@ func (es *elasticsearch) reindex(ctx context.Context, esService reindexService, 
 	// Configure reindex source
 	src := elastic.NewReindexSource().
 		Index(indexName).
-		//Type(config.Types...).
+		Type(config.Types...).
 		FetchSourceIncludeExclude(config.Include, config.Exclude)
 
 	// Configure reindex dest

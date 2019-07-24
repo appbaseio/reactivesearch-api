@@ -78,7 +78,7 @@ func (es *elasticsearch) getTotalNodes() (int, error) {
 func (es *elasticsearch) indexRecord(ctx context.Context, rec record) {
 	bulkIndex := elastic.NewBulkIndexRequest().
 		Index(es.indexName).
-		//Type("_doc").
+		Type("_doc").
 		Doc(rec)
 
 	_, err := es.client.Bulk().

@@ -95,7 +95,7 @@ func (es *elasticsearch) getPermission(ctx context.Context, username string) (*p
 func (es *elasticsearch) getRawPermission(ctx context.Context, username string) ([]byte, error) {
 	response, err := es.client.Get().
 		Index(es.indexName).
-		//Type(es.typeName).
+		Type(es.typeName).
 		Id(username).
 		FetchSource(true).
 		Do(ctx)
@@ -115,7 +115,7 @@ func (es *elasticsearch) postPermission(ctx context.Context, p permission.Permis
 	_, err := es.client.Index().
 		Refresh("wait_for").
 		Index(es.indexName).
-		//Type(es.typeName).
+		Type(es.typeName).
 		Id(p.Username).
 		BodyJson(p).
 		Do(ctx)
@@ -130,7 +130,7 @@ func (es *elasticsearch) patchPermission(ctx context.Context, username string, p
 	response, err := es.client.Update().
 		Refresh("wait_for").
 		Index(es.indexName).
-		//Type(es.typeName).
+		Type(es.typeName).
 		Id(username).
 		Doc(patch).
 		Do(ctx)
@@ -150,7 +150,7 @@ func (es *elasticsearch) deletePermission(ctx context.Context, username string) 
 	_, err := es.client.Delete().
 		Refresh("wait_for").
 		Index(es.indexName).
-		//Type(es.typeName).
+		Type(es.typeName).
 		Id(username).
 		Do(ctx)
 	if err != nil {
@@ -163,7 +163,7 @@ func (es *elasticsearch) deletePermission(ctx context.Context, username string) 
 func (es *elasticsearch) getRawOwnerPermissions(ctx context.Context, owner string) ([]byte, error) {
 	resp, err := es.client.Search().
 		Index(es.indexName).
-		//Type(es.typeName).
+		Type(es.typeName).
 		Query(elastic.NewTermQuery("owner.keyword", owner)).
 		Do(ctx)
 	if err != nil {
@@ -186,7 +186,7 @@ func (es *elasticsearch) getRawOwnerPermissions(ctx context.Context, owner strin
 func (es *elasticsearch) checkRoleExists(ctx context.Context, role string) (bool, error) {
 	resp, err := es.client.Search().
 		Index(es.indexName).
-		//Type(es.typeName).
+		Type(es.typeName).
 		Query(elastic.NewTermQuery("role", role)).
 		Do(ctx)
 	if err != nil {
@@ -199,7 +199,7 @@ func (es *elasticsearch) checkRoleExists(ctx context.Context, role string) (bool
 func (es *elasticsearch) getRawRolePermission(ctx context.Context, role string) ([]byte, error) {
 	resp, err := es.client.Search().
 		Index(es.indexName).
-		//Type(es.typeName).
+		Type(es.typeName).
 		Query(elastic.NewTermQuery("role", role)).
 		Size(1).
 		FetchSource(true).

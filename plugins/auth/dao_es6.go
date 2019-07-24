@@ -91,7 +91,7 @@ func (es *elasticsearch) getCredential(ctx context.Context, username string) (cr
 func (es *elasticsearch) putUser(ctx context.Context, u user.User) (bool, error) {
 	_, err := es.client.Index().
 		Index(es.userIndex).
-		//Type(es.userType).
+		Type(es.userType).
 		Id(u.Username).
 		BodyJson(u).
 		Do(ctx)
@@ -118,7 +118,7 @@ func (es *elasticsearch) getUser(ctx context.Context, username string) (*user.Us
 func (es *elasticsearch) getRawUser(ctx context.Context, username string) ([]byte, error) {
 	data, err := es.client.Get().
 		Index(es.userIndex).
-		//Type(es.userType).
+		Type(es.userType).
 		Id(username).
 		FetchSource(true).
 		Do(ctx)
@@ -136,7 +136,7 @@ func (es *elasticsearch) getRawUser(ctx context.Context, username string) ([]byt
 func (es *elasticsearch) putPermission(ctx context.Context, p permission.Permission) (bool, error) {
 	_, err := es.client.Index().
 		Index(es.permissionIndex).
-		//Type(es.permissionType).
+		Type(es.permissionType).
 		Id(p.Username).
 		BodyJson(p).
 		Do(ctx)

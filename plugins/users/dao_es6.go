@@ -201,7 +201,7 @@ func (es *elasticsearch) getRawUsers(ctx context.Context) ([]byte, error) {
 func (es *elasticsearch) getRawUser(ctx context.Context, username string) ([]byte, error) {
 	response, err := es.client.Get().
 		Index(es.indexName).
-		//Type(es.typeName).
+		Type(es.typeName).
 		Id(username).
 		FetchSource(true).
 		Do(ctx)
@@ -221,7 +221,7 @@ func (es *elasticsearch) postUser(ctx context.Context, u user.User) (bool, error
 	_, err := es.client.Index().
 		Refresh("wait_for").
 		Index(es.indexName).
-		//Type(es.typeName).
+		Type(es.typeName).
 		Id(u.Username).
 		BodyJson(u).
 		Do(ctx)
@@ -236,7 +236,7 @@ func (es *elasticsearch) patchUser(ctx context.Context, username string, patch m
 	response, err := es.client.Update().
 		Refresh("wait_for").
 		Index(es.indexName).
-		//Type(es.typeName).
+		Type(es.typeName).
 		Id(username).
 		Doc(patch).
 		Do(ctx)
@@ -255,7 +255,7 @@ func (es *elasticsearch) deleteUser(ctx context.Context, username string) (bool,
 	_, err := es.client.Delete().
 		Refresh("wait_for").
 		Index(es.indexName).
-		//Type(es.typeName).
+		Type(es.typeName).
 		Id(username).
 		Do(ctx)
 	if err != nil {
