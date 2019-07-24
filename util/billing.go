@@ -13,8 +13,7 @@ import (
 	"github.com/olivere/elastic/v7"
 )
 
-var BillingOK bool
-var BillingErrorCount int64
+var TierValidity int64
 
 const (
 	envEsURL       = "ES_CLUSTER_URL"
@@ -26,10 +25,15 @@ const (
 // Middleware function, which will be called for each request
 func BillingMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if BillingOK {
-			next.ServeHTTP(w, r)
-		} else if !BillingOK && BillingErrorCount < 24 {
-			log.Println("warning: payment required. arc will start sending out error messages in next", (24 - BillingErrorCount), "hours")
+		currentTime := time.Now().Unix()
+		// Valid plan
+		if TierValidity > currentTime {
+			remainingTime := TierValidity - currentTime
+			// Check if remaining time is less than 24 hrs
+			if remainingTime <= 3600*24 {
+				// Print waring message if remaining time is less than 24 hrs
+				log.Println("warning: payment required. arc will start sending out error messages in next", remainingTime/3600, "hours")
+			}
 			next.ServeHTTP(w, r)
 		} else {
 			// Write an error and stop the handler chain
@@ -52,6 +56,7 @@ type ArcUsageResponse struct {
 	ErrorMsg      string `json:"error_msg"`
 	WarningMsg    string `json:"warning_msg"`
 	StatusCode    int    `json:"status_code"`
+	TierValidity  int64  `json:"tier_validity"`
 }
 
 func ReportUsageRequest(arcUsage ArcUsage) (ArcUsageResponse, error) {
@@ -118,15 +123,7 @@ func ReportUsage() {
 		log.Println("please contact support. Usage not getting reported: ", err)
 	}
 
-	if response.StatusCode != 0 {
-		BillingOK = response.Accepted
-	}
-	if response.Accepted {
-		BillingErrorCount = 0
-	}
-	if response.ErrorMsg != "" || response.StatusCode == 402 || !response.Accepted {
-		BillingErrorCount++
-	}
+	TierValidity = response.TierValidity
 	if response.WarningMsg != "" {
 		log.Println("warning:", response.WarningMsg)
 	}
