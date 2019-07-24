@@ -75,13 +75,11 @@ func main() {
 	elasticSearchMiddleware := make([] middleware.Middleware, 0)
 	err := filepath.Walk(pluginDir, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
-			log.Fatal("error1: ", err)
 			return err
 		}
 		if !info.IsDir() && filepath.Ext(info.Name()) == ".so" && info.Name() != "elasticsearch.so" {
 			mw, err1 := LoadPluginFromFile(router, path)
 			if err1 != nil {
-				log.Fatal("error2: ", info.Name(), err1)
 				return err1
 			}
 			elasticSearchMiddleware = append(elasticSearchMiddleware, mw...)
