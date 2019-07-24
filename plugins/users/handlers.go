@@ -253,7 +253,6 @@ func (u *Users) patchUserWithUsername() http.HandlerFunc {
 			util.WriteBackError(w, err.Error(), http.StatusBadRequest)
 			return
 		}
-
 		// If user is trying to patch acls without providing categories.
 		if patch["categories"] == nil && patch["acls"] != nil {
 			// we need to fetch the user object from elasticsearch before we make

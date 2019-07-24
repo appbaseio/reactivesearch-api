@@ -20,7 +20,9 @@ func (l *Logs) getLogs() http.HandlerFunc {
 			size = "100"
 		}
 
-		raw, err := l.es.getRawLogs(req.Context(), from, size, indices...)
+		filter := req.URL.Query().Get("filter")
+
+		raw, err := l.es.getRawLogs(req.Context(), from, size, filter, indices...)
 		if err != nil {
 			log.Printf("%s: error fetching logs: %v\n", logTag, err)
 			util.WriteBackError(w, err.Error(), http.StatusInternalServerError)

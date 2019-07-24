@@ -4,9 +4,9 @@ import (
 	"os"
 	"sync"
 
-	"github.com/appbaseio/arc/plugins"
-	"github.com/appbaseio/arc/middleware"
 	"github.com/appbaseio/arc/errors"
+	"github.com/appbaseio/arc/middleware"
+	"github.com/appbaseio/arc/plugins"
 )
 
 const (
@@ -68,6 +68,6 @@ func (u *Users) Routes() []plugins.Route {
 }
 
 // Default empty middleware array function
-func (u *Users) ESMiddleware() [] middleware.Middleware {
-	return make([] middleware.Middleware, 0)
+func (u *Users) ESMiddleware() []middleware.Middleware {
+	return make([]middleware.Middleware, 0)
 }

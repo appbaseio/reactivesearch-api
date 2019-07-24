@@ -9,7 +9,7 @@ import (
 	"github.com/appbaseio/arc/model/permission"
 	"github.com/appbaseio/arc/model/user"
 	"github.com/appbaseio/arc/util"
-	"gopkg.in/olivere/elastic.v6"
+	"github.com/olivere/elastic/v7"
 )
 
 type elasticsearch struct {
@@ -64,7 +64,7 @@ func (es *elasticsearch) getCredential(ctx context.Context, username string) (cr
 		if hit.Index == es.userIndex {
 			var u user.User
 			if hit.Source != nil {
-				err := json.Unmarshal(*hit.Source, &u)
+				err := json.Unmarshal(hit.Source, &u)
 				if err != nil {
 					return nil, err
 				}
@@ -74,7 +74,7 @@ func (es *elasticsearch) getCredential(ctx context.Context, username string) (cr
 			var p permission.Permission
 
 			// unmarshal into permission
-			err := json.Unmarshal(*hit.Source, &p)
+			err := json.Unmarshal(hit.Source, &p)
 			if err != nil {
 				return nil, err
 			}

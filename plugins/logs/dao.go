@@ -8,7 +8,7 @@ import (
 	"strconv"
 
 	"github.com/appbaseio/arc/util"
-	"gopkg.in/olivere/elastic.v6"
+	"github.com/olivere/elastic/v7"
 )
 
 type elasticsearch struct {
@@ -87,7 +87,7 @@ func (es *elasticsearch) indexRecord(ctx context.Context, rec record) {
 	}
 }
 
-func (es *elasticsearch) getRawLogs(ctx context.Context, from, size string, indices ...string) ([]byte, error) {
+func (es *elasticsearch) getRawLogs(ctx context.Context, from, size, filter string, indices ...string) ([]byte, error) {
 	offset, err := strconv.Atoi(from)
 	if err != nil {
 		return nil, fmt.Errorf(`invalid value "%v" for query param "from"`, from)
@@ -96,8 +96,24 @@ func (es *elasticsearch) getRawLogs(ctx context.Context, from, size string, indi
 	if err != nil {
 		return nil, fmt.Errorf(`invalid value "%v" for query param "size"`, size)
 	}
-
+	query := elastic.NewBoolQuery()
+	if filter == "search" {
+		filters := elastic.NewTermQuery("category.keyword", "search")
+		query.Filter(filters)
+	} else if filter == "delete" {
+		filters := elastic.NewMatchQuery("request.method.keyword", "DELETE")
+		query.Filter(filters)
+	} else if filter == "success" {
+		filters := elastic.NewRangeQuery("response.code").Gte(200).Lte(299)
+		query.Filter(filters)
+	} else if filter == "error" {
+		filters := elastic.NewRangeQuery("response.code").Gte(400)
+		query.Filter(filters)
+	} else {
+		query.Filter(elastic.NewMatchAllQuery())
+	}
 	response, err := es.client.Search(es.indexName).
+		Query(query).
 		From(offset).
 		Size(s).
 		Sort("timestamp", false).
@@ -106,10 +122,10 @@ func (es *elasticsearch) getRawLogs(ctx context.Context, from, size string, indi
 		return nil, err
 	}
 
-	hits := []*json.RawMessage{}
+	hits := []json.RawMessage{}
 	for _, hit := range response.Hits.Hits {
 		var source map[string]interface{}
-		err := json.Unmarshal(*hit.Source, &source)
+		err := json.Unmarshal(hit.Source, &source)
 		if err != nil {
 			return nil, err
 		}
@@ -132,7 +148,7 @@ func (es *elasticsearch) getRawLogs(ctx context.Context, from, size string, indi
 
 	logs := make(map[string]interface{})
 	logs["logs"] = hits
-	logs["total"] = len(hits)
+	logs["total"] = response.Hits.TotalHits.Value
 	logs["took"] = response.TookInMillis
 
 	raw, err := json.Marshal(logs)

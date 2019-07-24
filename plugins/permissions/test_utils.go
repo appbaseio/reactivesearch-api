@@ -9,7 +9,7 @@ import (
 	"testing"
 
 	"github.com/appbaseio/arc/errors"
-	"gopkg.in/olivere/elastic.v6"
+	"github.com/olivere/elastic/v7"
 )
 
 func compareErrs(expectedErr string, actual error) bool {

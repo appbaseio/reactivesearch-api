@@ -9,7 +9,7 @@ import (
 
 	"github.com/appbaseio/arc/model/user"
 	"github.com/appbaseio/arc/util"
-	"gopkg.in/olivere/elastic.v6"
+	"github.com/olivere/elastic/v7"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -181,13 +181,13 @@ func (es *elasticsearch) getUser(ctx context.Context, username string) (*user.Us
 func (es *elasticsearch) getRawUsers(ctx context.Context) ([]byte, error) {
 	response, err := es.client.Search().
 		Index(es.indexName).
-		Type(es.typeName).
 		Do(ctx)
+
 	if err != nil {
 
 	}
 
-	var users []*json.RawMessage
+	var users []json.RawMessage
 	for _, hit := range response.Hits.Hits {
 		users = append(users, hit.Source)
 	}
@@ -198,7 +198,7 @@ func (es *elasticsearch) getRawUsers(ctx context.Context) ([]byte, error) {
 func (es *elasticsearch) getRawUser(ctx context.Context, username string) ([]byte, error) {
 	response, err := es.client.Get().
 		Index(es.indexName).
-		Type(es.typeName).
+		//Type(es.typeName).
 		Id(username).
 		FetchSource(true).
 		Do(ctx)
@@ -218,7 +218,7 @@ func (es *elasticsearch) postUser(ctx context.Context, u user.User) (bool, error
 	_, err := es.client.Index().
 		Refresh("wait_for").
 		Index(es.indexName).
-		Type(es.typeName).
+		//Type(es.typeName).
 		Id(u.Username).
 		BodyJson(u).
 		Do(ctx)
@@ -233,20 +233,18 @@ func (es *elasticsearch) patchUser(ctx context.Context, username string, patch m
 	response, err := es.client.Update().
 		Refresh("wait_for").
 		Index(es.indexName).
-		Type(es.typeName).
+		//Type(es.typeName).
 		Id(username).
 		Doc(patch).
-		Fields("_source").
 		Do(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	src, err := response.GetResult.Source.MarshalJSON()
+	src, err := json.Marshal(response)
 	if err != nil {
 		return nil, err
 	}
-
 	return src, nil
 }
 
@@ -254,7 +252,7 @@ func (es *elasticsearch) deleteUser(ctx context.Context, username string) (bool,
 	_, err := es.client.Delete().
 		Refresh("wait_for").
 		Index(es.indexName).
-		Type(es.typeName).
+		//Type(es.typeName).
 		Id(username).
 		Do(ctx)
 	if err != nil {

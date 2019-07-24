@@ -9,7 +9,7 @@ import (
 	"reflect"
 	"testing"
 
-	"gopkg.in/olivere/elastic.v6"
+	"github.com/olivere/elastic/v7"
 )
 
 func newStubClient(url, indexName, typeName string) (*elasticsearch, error) {
