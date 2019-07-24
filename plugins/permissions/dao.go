@@ -191,7 +191,7 @@ func (es *elasticsearch) checkRoleExists(ctx context.Context, role string) (bool
 		return false, err
 	}
 
-	return resp.Hits.TotalHits > 0, nil
+	return resp.TotalHits() > 0, nil
 }
 
 func (es *elasticsearch) getRawRolePermission(ctx context.Context, role string) ([]byte, error) {
