@@ -13,34 +13,7 @@ import (
 	"github.com/olivere/elastic/v7"
 )
 
-var TierValidity int64
-
-const (
-	envEsURL       = "ES_CLUSTER_URL"
-	arcIdentifier  = "ARC_ID"
-	emailID        = "EMAIL"
-	subscriptionID = "SUBSCRIPTION_ID"
-)
-
-// Middleware function, which will be called for each request
-func BillingMiddleware(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		currentTime := time.Now().Unix()
-		// Valid plan
-		if TierValidity > currentTime {
-			remainingTime := TierValidity - currentTime
-			// Check if remaining time is less than 24 hrs
-			if remainingTime <= 3600*24 {
-				// Print waring message if remaining time is less than 24 hrs
-				log.Println("warning: payment required. arc will start sending out error messages in next", remainingTime/3600, "hours")
-			}
-			next.ServeHTTP(w, r)
-		} else {
-			// Write an error and stop the handler chain
-			http.Error(w, "payment required", http.StatusPaymentRequired)
-		}
-	})
-}
+var TimeValidity int64
 
 type ArcUsage struct {
 	ArcID          string `json:"arc_id"`
@@ -56,7 +29,32 @@ type ArcUsageResponse struct {
 	ErrorMsg      string `json:"error_msg"`
 	WarningMsg    string `json:"warning_msg"`
 	StatusCode    int    `json:"status_code"`
-	TierValidity  int64  `json:"tier_validity"`
+	TimeValidity  int64  `json:"time_validity"`
+}
+
+const (
+	envEsURL       = "ES_CLUSTER_URL"
+	arcIdentifier  = "ARC_ID"
+	emailID        = "EMAIL"
+	subscriptionID = "SUBSCRIPTION_ID"
+)
+
+// Middleware function, which will be called for each request
+func BillingMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Valid plan
+		if TimeValidity > 0 {
+			// Check if remaining time is less than 24 hrs
+			if TimeValidity <= 3600*24 {
+				// Print warning message if remaining time is less than 24 hrs
+				log.Println("warning: payment required. arc will start sending out error messages in next", TimeValidity/3600, "hours")
+			}
+			next.ServeHTTP(w, r)
+		} else {
+			// Write an error and stop the handler chain
+			http.Error(w, "payment required", http.StatusPaymentRequired)
+		}
+	})
 }
 
 func ReportUsageRequest(arcUsage ArcUsage) (ArcUsageResponse, error) {
@@ -73,7 +71,7 @@ func ReportUsageRequest(arcUsage ArcUsage) (ArcUsageResponse, error) {
 
 	res, err := http.DefaultClient.Do(req)
 	if err != nil {
-		log.Println("error while sending reequest: ", err)
+		log.Println("error while sending request: ", err)
 		return response, err
 	}
 	defer res.Body.Close()
@@ -123,7 +121,7 @@ func ReportUsage() {
 		log.Println("please contact support. Usage not getting reported: ", err)
 	}
 
-	TierValidity = response.TierValidity
+	TimeValidity = response.TimeValidity
 	if response.WarningMsg != "" {
 		log.Println("warning:", response.WarningMsg)
 	}
