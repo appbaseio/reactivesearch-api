@@ -14,6 +14,7 @@ import (
 )
 
 var TimeValidity int64
+var MAX_ALLOWED_TIME int64 = 24 // in hrs
 
 type ArcUsage struct {
 	ArcID          string `json:"arc_id"`
@@ -42,11 +43,13 @@ const (
 // Middleware function, which will be called for each request
 func BillingMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// Valid plan
-		if TimeValidity > 0 {
-			// Check if remaining time is less than 24 hrs
-			if TimeValidity <= 3600*24 {
-				// Print warning message if remaining time is less than 24 hrs
+		if TimeValidity > 0 { // Valid plan
+			next.ServeHTTP(w, r)
+		} else if -(TimeValidity) <= 3600*MAX_ALLOWED_TIME {
+			// Print warning message if remaining time is less than max allowed time
+			if TimeValidity == 0 { // Rare, but it can happen when tier has been just expired
+				log.Println("warning: payment required. arc will start sending out error messages in some time")
+			} else {
 				log.Println("warning: payment required. arc will start sending out error messages in next", TimeValidity/3600, "hours")
 			}
 			next.ServeHTTP(w, r)
