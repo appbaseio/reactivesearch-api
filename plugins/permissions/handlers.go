@@ -30,7 +30,7 @@ func (p *permissions) getPermission() http.HandlerFunc {
 	}
 }
 
-func (p *permissions) postPermission() http.HandlerFunc {
+func (p *permissions) postPermission(opts ...permission.Options) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
 		creator, _, _ := req.BasicAuth()
 		reqUser, err := user.FromContext(req.Context())
@@ -57,7 +57,6 @@ func (p *permissions) postPermission() http.HandlerFunc {
 			return
 		}
 
-		var opts []permission.Options
 		if permissionBody.Owner != "" {
 			opts = append(opts, permission.SetOwner(permissionBody.Owner))
 		}
@@ -270,19 +269,43 @@ func (p *permissions) getUserPermissions() http.HandlerFunc {
 	}
 }
 
-func (p *permissions) getRolePermission() http.HandlerFunc {
-	return func(w http.ResponseWriter, req *http.Request) {
+func (p *permissions) role() http.HandlerFunc {
+	return func (w http.ResponseWriter, req *http.Request) {
 		vars := mux.Vars(req)
-		role := vars["role"]
+		role := vars["name"]
 
-		raw, err := p.es.getRawRolePermission(req.Context(), role)
-		if raw == nil || err != nil {
-			msg := fmt.Sprintf(`an error occurred while fetching permissions for role=%s`, role)
-			log.Printf("%s: %s: %v\n", logTag, msg, err)
-			util.WriteBackError(w, msg, http.StatusNotFound)
-			return
+		var raw []byte
+		var perm permission.Permission
+		if req.Method != http.MethodPost {
+			var err error
+			raw, err = p.es.getRawRolePermission(req.Context(), role)
+			if raw == nil || err != nil {
+				msg := fmt.Sprintf(`an error occurred while fetching permissions for role=%s`, role)
+				log.Printf("%s: %s: %v\n", logTag, msg, err)
+				util.WriteBackError(w, msg, http.StatusNotFound)
+				return
+			}
+			err = json.Unmarshal(raw, &perm)
+			if err != nil {
+				msg := fmt.Sprintf(`an error occurred while fetching permissions for role=%s`, role)
+				log.Printf("%s: %s: %v\n", logTag, msg, err)
+				util.WriteBackError(w, msg, http.StatusInternalServerError)
+				return			
+			}
 		}
 
-		util.WriteBackRaw(w, raw, http.StatusOK)
+		switch req.Method {
+		case http.MethodGet:
+			util.WriteBackRaw(w, raw, http.StatusOK)
+		case http.MethodPost:
+			p.postPermission(permission.SetRole(role))(w, req)
+			return
+		case http.MethodPatch:
+			http.Redirect(w, req, "/_permission/" + perm.Username, 308)
+			return
+		case http.MethodDelete:
+			http.Redirect(w, req, "/_permission/" + perm.Username, 308)
+			return
+		}
 	}
 }
