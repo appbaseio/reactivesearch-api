@@ -112,6 +112,16 @@ func (es *elasticsearch) getRawLogs(ctx context.Context, from, size, filter stri
 	} else {
 		query.Filter(elastic.NewMatchAllQuery())
 	}
+
+	if indices != nil && len(indices) > 0 {
+		var indexQueries []elastic.Query
+		for _, index := range indices {
+			query := elastic.NewTermQuery("indices.keyword", index)
+			indexQueries = append(indexQueries, query)
+		}
+		query = query.Must(indexQueries...)
+	}
+
 	response, err := es.client.Search(es.indexName).
 		Query(query).
 		From(offset).
@@ -129,21 +139,7 @@ func (es *elasticsearch) getRawLogs(ctx context.Context, from, size, filter stri
 		if err != nil {
 			return nil, err
 		}
-		rawIndices, ok := source["indices"]
-		if !ok {
-			log.Printf(`%s: unable to find "indices" in log record\n`, logTag)
-		}
-		logIndices, err := util.ToStringSlice(rawIndices)
-		if err != nil {
-			log.Printf("%s: %v\n", logTag, err)
-			continue
-		}
-
-		if len(indices) == 0 {
-			hits = append(hits, hit.Source)
-		} else if util.IsSubset(indices, logIndices) {
-			hits = append(hits, hit.Source)
-		}
+		hits = append(hits, hit.Source)
 	}
 
 	logs := make(map[string]interface{})
@@ -155,6 +151,5 @@ func (es *elasticsearch) getRawLogs(ctx context.Context, from, size, filter stri
 	if err != nil {
 		return nil, err
 	}
-
 	return raw, nil
 }
