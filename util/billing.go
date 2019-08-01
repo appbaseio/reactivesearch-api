@@ -21,7 +21,6 @@ type ArcUsage struct {
 	Timestamp      int64  `json:"timestamp"`
 	SubscriptionID string `json:"subscription_id"`
 	Quantity       int    `json:"quantity"`
-	Email          string `json:"email"`
 }
 
 type ArcUsageResponse struct {
@@ -36,7 +35,6 @@ type ArcUsageResponse struct {
 const (
 	envEsURL       = "ES_CLUSTER_URL"
 	arcIdentifier  = "ARC_ID"
-	emailID        = "EMAIL"
 	subscriptionID = "SUBSCRIPTION_ID"
 )
 
@@ -98,15 +96,11 @@ func ReportUsage() {
 		log.Fatalln("ES_CLUSTER_URL not found")
 	}
 	arcID := os.Getenv(arcIdentifier)
-	if url == "" {
+	if arcID == "" {
 		log.Fatalln("ARC_ID not found")
 	}
-	email := os.Getenv(emailID)
-	if url == "" {
-		log.Fatalln("EMAIL not found")
-	}
 	subID := os.Getenv(subscriptionID)
-	if url == "" {
+	if subID == "" {
 		log.Println("SUBSCRIPTION_ID not found. Initializing in trial mode")
 	}
 	nodeCount, err := FetchNodeCount(url)
@@ -115,7 +109,6 @@ func ReportUsage() {
 	}
 	usageBody := ArcUsage{}
 	usageBody.ArcID = arcID
-	usageBody.Email = email
 	usageBody.SubscriptionID = subID
 	usageBody.Timestamp = time.Now().Unix()
 	usageBody.Quantity = nodeCount
