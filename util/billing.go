@@ -15,6 +15,8 @@ import (
 
 var TimeValidity int64
 var MAX_ALLOWED_TIME int64 = 24 // in hrs
+// var ACC_API = "https://accapi.appbase.io/"
+var ACC_API = "http://localhost:3000/"
 
 type ArcUsage struct {
 	ArcID          string `json:"arc_id"`
@@ -32,10 +34,13 @@ type ArcUsageResponse struct {
 	TimeValidity  int64  `json:"time_validity"`
 }
 
+type ArcInstance struct {
+	SubscriptionID string `json:"subscription_id"`
+}
+
 const (
-	envEsURL       = "ES_CLUSTER_URL"
-	arcIdentifier  = "ARC_ID"
-	subscriptionID = "SUBSCRIPTION_ID"
+	envEsURL      = "ES_CLUSTER_URL"
+	arcIdentifier = "ARC_ID"
 )
 
 // Middleware function, which will be called for each request
@@ -58,9 +63,36 @@ func BillingMiddleware(next http.Handler) http.Handler {
 	})
 }
 
+func getArcInstance(arcID string) (ArcInstance, error) {
+	response := ArcInstance{}
+	url := ACC_API + "arc/instance?arcid=" + arcID
+	req, _ := http.NewRequest("GET", url, nil)
+	req.Header.Add("Content-Type", "application/json")
+	req.Header.Add("cache-control", "no-cache")
+
+	res, err := http.DefaultClient.Do(req)
+	if err != nil {
+		log.Println("error while sending request: ", err)
+		return response, err
+	}
+	defer res.Body.Close()
+	body, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		log.Println("error reading res body: ", err)
+		return response, err
+	}
+	err = json.Unmarshal(body, &response)
+
+	if err != nil {
+		log.Println("error while unmarshalling res body: ", err)
+		return response, err
+	}
+	return response, nil
+}
+
 func ReportUsageRequest(arcUsage ArcUsage) (ArcUsageResponse, error) {
 	response := ArcUsageResponse{}
-	url := "http://localhost:3000/" + arcUsage.ArcID + "/report_usage"
+	url := ACC_API + "arc/" + arcUsage.ArcID + "/report_usage"
 	marshalledRequest, err := json.Marshal(arcUsage)
 	if err != nil {
 		log.Println("error while marshalling req body: ", err)
@@ -99,7 +131,13 @@ func ReportUsage() {
 	if arcID == "" {
 		log.Fatalln("ARC_ID not found")
 	}
-	subID := os.Getenv(subscriptionID)
+
+	result, err := getArcInstance(arcID)
+	if err != nil {
+		log.Println("Unable to fetch arc instance")
+	}
+
+	subID := result.SubscriptionID
 	if subID == "" {
 		log.Println("SUBSCRIPTION_ID not found. Initializing in trial mode")
 	}
@@ -112,9 +150,9 @@ func ReportUsage() {
 	usageBody.SubscriptionID = subID
 	usageBody.Timestamp = time.Now().Unix()
 	usageBody.Quantity = nodeCount
-	response, err := ReportUsageRequest(usageBody)
-	if err != nil {
-		log.Println("please contact support. Usage not getting reported: ", err)
+	response, err1 := ReportUsageRequest(usageBody)
+	if err1 != nil {
+		log.Println("please contact support. Usage not getting reported: ", err1)
 	}
 
 	TimeValidity = response.TimeValidity
