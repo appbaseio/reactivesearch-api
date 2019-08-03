@@ -39,6 +39,10 @@ type ArcInstance struct {
 	SubscriptionID string `json:"subscription_id"`
 }
 
+type ArcInstanceResponse struct {
+	ArcRecords []arcInstanceDetails `json:"arc_records"`
+}
+
 type arcInstanceDetails struct {
 	NodeCount            int64                  `json:"node_count"`
 	Description          string                 `json:"description"`
@@ -80,7 +84,7 @@ func BillingMiddleware(next http.Handler) http.Handler {
 
 func getArcInstance(arcID string) (ArcInstance, error) {
 	arcInstance := ArcInstance{}
-	response := []arcInstanceDetails{}
+	response := ArcInstanceResponse{}
 	url := ACC_API + "arc/instance?arcid=" + arcID
 	req, _ := http.NewRequest("GET", url, nil)
 	req.Header.Add("Content-Type", "application/json")
@@ -101,7 +105,7 @@ func getArcInstance(arcID string) (ArcInstance, error) {
 	}
 	err = json.Unmarshal(body, &response)
 	fmt.Println("RESPONSE:", response)
-	arcInstance.SubscriptionID = response[0].SubscriptionID
+	arcInstance.SubscriptionID = response.ArcRecords[0].SubscriptionID
 
 	if err != nil {
 		log.Println("error while unmarshalling res body: ", err)
