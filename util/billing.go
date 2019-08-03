@@ -16,8 +16,7 @@ import (
 
 var TimeValidity int64
 var MAX_ALLOWED_TIME int64 = 24 // in hrs
-// var ACC_API = "https://accapi.appbase.io/"
-var ACC_API = "http://localhost:3000/"
+var ACC_API = "https://accapi.appbase.io/"
 
 type ArcUsage struct {
 	ArcID          string `json:"arc_id"`
