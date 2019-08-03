@@ -72,17 +72,20 @@ func getArcInstance(arcID string) (ArcInstance, error) {
 	req.Header.Add("cache-control", "no-cache")
 
 	res, err := http.DefaultClient.Do(req)
+	fmt.Println("Requesting:", url)
 	if err != nil {
 		log.Println("error while sending request: ", err)
 		return response, err
 	}
 	defer res.Body.Close()
 	body, err := ioutil.ReadAll(res.Body)
+	fmt.Println("bODY:", body)
 	if err != nil {
 		log.Println("error reading res body: ", err)
 		return response, err
 	}
 	err = json.Unmarshal(body, &response)
+	fmt.Println("RESPONSE:", response)
 
 	if err != nil {
 		log.Println("error while unmarshalling res body: ", err)
