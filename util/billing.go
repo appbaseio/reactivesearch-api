@@ -39,6 +39,20 @@ type ArcInstance struct {
 	SubscriptionID string `json:"subscription_id"`
 }
 
+type arcInstanceDetails struct {
+	NodeCount            int64                  `json:"node_count"`
+	Description          string                 `json:"description"`
+	SubscriptionID       string                 `json:"subscription_id"`
+	SubscriptionCanceled bool                   `json:"subscription_canceled"`
+	Trial                bool                   `json:"trial"`
+	TrialValidity        int64                  `json:"trial_validity"`
+	ArcID                string                 `json:"arc_id"`
+	CreatedAt            int64                  `json:"created_at"`
+	Tier                 string                 `json:"tier"`
+	TierValidity         int64                  `json:"tier_validity"`
+	Metadata             map[string]interface{} `json:"metadata"`
+}
+
 const (
 	envEsURL      = "ES_CLUSTER_URL"
 	arcIdentifier = "ARC_ID"
@@ -65,7 +79,8 @@ func BillingMiddleware(next http.Handler) http.Handler {
 }
 
 func getArcInstance(arcID string) (ArcInstance, error) {
-	response := ArcInstance{}
+	arcInstance := ArcInstance{}
+	response := []arcInstanceDetails{}
 	url := ACC_API + "arc/instance?arcid=" + arcID
 	req, _ := http.NewRequest("GET", url, nil)
 	req.Header.Add("Content-Type", "application/json")
@@ -75,23 +90,24 @@ func getArcInstance(arcID string) (ArcInstance, error) {
 	fmt.Println("Requesting:", url)
 	if err != nil {
 		log.Println("error while sending request: ", err)
-		return response, err
+		return arcInstance, err
 	}
 	defer res.Body.Close()
 	body, err := ioutil.ReadAll(res.Body)
 	fmt.Println("bODY:", body)
 	if err != nil {
 		log.Println("error reading res body: ", err)
-		return response, err
+		return arcInstance, err
 	}
 	err = json.Unmarshal(body, &response)
 	fmt.Println("RESPONSE:", response)
+	arcInstance.SubscriptionID = response[0].SubscriptionID
 
 	if err != nil {
 		log.Println("error while unmarshalling res body: ", err)
-		return response, err
+		return arcInstance, err
 	}
-	return response, nil
+	return arcInstance, nil
 }
 
 func ReportUsageRequest(arcUsage ArcUsage) (ArcUsageResponse, error) {
