@@ -98,13 +98,11 @@ func getArcInstance(arcID string) (ArcInstance, error) {
 	}
 	defer res.Body.Close()
 	body, err := ioutil.ReadAll(res.Body)
-	fmt.Println("bODY:", body)
 	if err != nil {
 		log.Println("error reading res body: ", err)
 		return arcInstance, err
 	}
 	err = json.Unmarshal(body, &response)
-	fmt.Println("RESPONSE:", response)
 	arcInstance.SubscriptionID = response.ArcRecords[0].SubscriptionID
 
 	if err != nil {
@@ -160,7 +158,6 @@ func ReportUsage() {
 	if err != nil {
 		log.Println("Unable to fetch arc instance")
 	}
-	fmt.Println("THIS IS RESULT", result)
 
 	subID := result.SubscriptionID
 	if subID == "" {
