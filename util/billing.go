@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -136,6 +137,7 @@ func ReportUsage() {
 	if err != nil {
 		log.Println("Unable to fetch arc instance")
 	}
+	fmt.Println("THIS IS RESULT", result)
 
 	subID := result.SubscriptionID
 	if subID == "" {
