@@ -60,7 +60,7 @@ func BillingMiddleware(next http.Handler) http.Handler {
 
 func ReportUsageRequest(arcUsage ArcUsage) (ArcUsageResponse, error) {
 	response := ArcUsageResponse{}
-	url := "https://accapi.appbase.io/arc/" + arcUsage.ArcID + "/report_usage"
+	url := "http://localhost:3000/" + arcUsage.ArcID + "/report_usage"
 	marshalledRequest, err := json.Marshal(arcUsage)
 	if err != nil {
 		log.Println("error while marshalling req body: ", err)
