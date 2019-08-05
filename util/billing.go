@@ -159,6 +159,7 @@ func ReportUsage() {
 	subID := result.SubscriptionID
 	if subID == "" {
 		log.Println("SUBSCRIPTION_ID not found. Initializing in trial mode")
+		return
 	}
 	nodeCount, err := FetchNodeCount(url)
 	if err != nil || nodeCount == -1 {
