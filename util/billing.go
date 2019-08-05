@@ -15,7 +15,7 @@ import (
 
 var TimeValidity int64
 var MAX_ALLOWED_TIME int64 = 24 // in hrs
-var ACC_API = "https://accapi.appbase.io/"
+var ACC_API = "http://localhost:3000/"
 
 type ArcUsage struct {
 	ArcID          string `json:"arc_id"`
@@ -38,7 +38,7 @@ type ArcInstance struct {
 }
 
 type ArcInstanceResponse struct {
-	ArcRecords []arcInstanceDetails `json:"arc_records"`
+	ArcRecords []arcInstanceDetails `json:"instances"`
 }
 
 type arcInstanceDetails struct {
@@ -83,7 +83,7 @@ func BillingMiddleware(next http.Handler) http.Handler {
 func getArcInstance(arcID string) (ArcInstance, error) {
 	arcInstance := ArcInstance{}
 	response := ArcInstanceResponse{}
-	url := ACC_API + "arc/instance?arcid=" + arcID
+	url := ACC_API + "arc/instances?arcid=" + arcID
 	req, _ := http.NewRequest("GET", url, nil)
 	req.Header.Add("Content-Type", "application/json")
 	req.Header.Add("cache-control", "no-cache")
