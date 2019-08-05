@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -90,7 +89,6 @@ func getArcInstance(arcID string) (ArcInstance, error) {
 	req.Header.Add("cache-control", "no-cache")
 
 	res, err := http.DefaultClient.Do(req)
-	fmt.Println("Requesting:", url)
 	if err != nil {
 		log.Println("error while sending request: ", err)
 		return arcInstance, err
