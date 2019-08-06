@@ -38,7 +38,7 @@ type ArcInstance struct {
 }
 
 type ArcInstanceResponse struct {
-	ArcRecords []arcInstanceDetails `json:"arc_records"`
+	ArcRecords []arcInstanceDetails `json:"instances"`
 }
 
 type arcInstanceDetails struct {
@@ -83,7 +83,7 @@ func BillingMiddleware(next http.Handler) http.Handler {
 func getArcInstance(arcID string) (ArcInstance, error) {
 	arcInstance := ArcInstance{}
 	response := ArcInstanceResponse{}
-	url := ACC_API + "arc/instance?arcid=" + arcID
+	url := ACC_API + "arc/instances?arcid=" + arcID
 	req, _ := http.NewRequest("GET", url, nil)
 	req.Header.Add("Content-Type", "application/json")
 	req.Header.Add("cache-control", "no-cache")
@@ -159,6 +159,7 @@ func ReportUsage() {
 	subID := result.SubscriptionID
 	if subID == "" {
 		log.Println("SUBSCRIPTION_ID not found. Initializing in trial mode")
+		return
 	}
 	nodeCount, err := FetchNodeCount(url)
 	if err != nil || nodeCount == -1 {
