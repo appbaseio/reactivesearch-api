@@ -1,6 +1,7 @@
 package util
 
 import (
+	"crypto/tls"
 	"encoding/json"
 	"fmt"
 	"math"
@@ -176,6 +177,7 @@ func HTTPClient() *http.Client {
 				Timeout: 10 * time.Second,
 			}).DialContext,
 			TLSHandshakeTimeout: 10 * time.Second,
+			TLSClientConfig:     &tls.Config{InsecureSkipVerify: true},
 		}
 		var netClient = &http.Client{
 			Timeout:   time.Minute * 2,
