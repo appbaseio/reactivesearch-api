@@ -38,7 +38,7 @@ type ArcInstance struct {
 }
 
 type ArcInstanceResponse struct {
-	ArcRecords []arcInstanceDetails `json:"instances"`
+	ArcInstances []arcInstanceDetails `json:"instances"`
 }
 
 type arcInstanceDetails struct {
@@ -96,8 +96,8 @@ func getArcInstance(arcID string) (ArcInstance, error) {
 		return arcInstance, err
 	}
 	err = json.Unmarshal(body, &response)
-	if len(response.ArcRecords) != 0 {
-		arcInstance.SubscriptionID = response.ArcRecords[0].SubscriptionID
+	if len(response.ArcInstances) != 0 {
+		arcInstance.SubscriptionID = response.ArcInstances[0].SubscriptionID
 	}
 
 	if err != nil {
