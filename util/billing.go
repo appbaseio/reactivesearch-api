@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -71,9 +72,9 @@ type ArcInstanceDetails struct {
 func BillingMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		log.Println("current time validity value: ", TimeValidity)
-		if TimeValidity >= 0 { // Valid plan
+		if TimeValidity > 0 { // Valid plan
 			next.ServeHTTP(w, r)
-		} else if TimeValidity < 0 && TimeValidity < -3600*MaxErrorTime { // Negative validity, plan has been expired
+		} else if TimeValidity <= 0 && TimeValidity < -3600*MaxErrorTime { // Negative validity, plan has been expired
 			// Print warning message if remaining time is less than max allowed time
 			log.Println("Warning: Payment is required. Arc will start sending out error messages in next", MaxErrorTime, "hours")
 			next.ServeHTTP(w, r)
@@ -107,6 +108,8 @@ func getArcInstance(arcID string) (ArcInstance, error) {
 	if len(response.ArcInstances) != 0 {
 		arcInstance.SubscriptionID = response.ArcInstances[0].SubscriptionID
 		TimeValidity = response.ArcInstances[0].TimeValidity
+	} else {
+		return arcInstance, errors.New("No valid instance found for the provided ARC_ID")
 	}
 
 	if err != nil {
