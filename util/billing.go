@@ -38,7 +38,7 @@ type ArcInstance struct {
 }
 
 type ArcInstanceResponse struct {
-	ArcRecords []arcInstanceDetails `json:"instances"`
+	ArcInstances []arcInstanceDetails `json:"instances"`
 }
 
 type arcInstanceDetails struct {
@@ -65,13 +65,9 @@ func BillingMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if TimeValidity > 0 { // Valid plan
 			next.ServeHTTP(w, r)
-		} else if -(TimeValidity) <= 3600*MAX_ALLOWED_TIME {
+		} else if TimeValidity < 0 && -(TimeValidity) <= 3600*MAX_ALLOWED_TIME { // Negative validity, plan has been expired
 			// Print warning message if remaining time is less than max allowed time
-			if TimeValidity == 0 { // Rare, but it can happen when tier has been just expired
-				log.Println("warning: payment required. arc will start sending out error messages in some time")
-			} else {
-				log.Println("warning: payment required. arc will start sending out error messages in next", TimeValidity/3600, "hours")
-			}
+			log.Println("warning: payment required. arc will start sending out error messages in next", MAX_ALLOWED_TIME, "hours")
 			next.ServeHTTP(w, r)
 		} else {
 			// Write an error and stop the handler chain
@@ -100,7 +96,9 @@ func getArcInstance(arcID string) (ArcInstance, error) {
 		return arcInstance, err
 	}
 	err = json.Unmarshal(body, &response)
-	arcInstance.SubscriptionID = response.ArcRecords[0].SubscriptionID
+	if len(response.ArcInstances) != 0 {
+		arcInstance.SubscriptionID = response.ArcInstances[0].SubscriptionID
+	}
 
 	if err != nil {
 		log.Println("error while unmarshalling res body: ", err)
@@ -145,15 +143,18 @@ func ReportUsage() {
 	url := os.Getenv(envEsURL)
 	if url == "" {
 		log.Fatalln("ES_CLUSTER_URL not found")
+		return
 	}
 	arcID := os.Getenv(arcIdentifier)
 	if arcID == "" {
 		log.Fatalln("ARC_ID not found")
+		return
 	}
 
 	result, err := getArcInstance(arcID)
 	if err != nil {
-		log.Println("Unable to fetch arc instance")
+		log.Println("Unable to fetch arc instance, Please make sure if you're using a valid ARC_ID.")
+		return
 	}
 
 	subID := result.SubscriptionID
