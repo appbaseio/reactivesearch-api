@@ -8,22 +8,30 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"time"
 
 	"github.com/olivere/elastic/v7"
 )
 
-var TimeValidity int64
-var MAX_ALLOWED_TIME int64 = 24 // in hrs
-var ACC_API = "https://accapi.appbase.io/"
+// ACCAPI URL
+var ACCAPI = "https://accapi.appbase.io/"
 
+// TimeValidity to be obtained from ACCAPI
+var TimeValidity int64
+
+// MaxErrorTime before showing errors if invalid trial / plan in hours
+var MaxErrorTime int64 = 24 // in hrs
+
+// NodeCount is the current node count, defaults to 1
+var NodeCount = 1
+
+// ArcUsage struct is used to report time usage
 type ArcUsage struct {
 	ArcID          string `json:"arc_id"`
-	Timestamp      int64  `json:"timestamp"`
 	SubscriptionID string `json:"subscription_id"`
 	Quantity       int    `json:"quantity"`
 }
 
+// ArcUsageResponse stores the response from ACCAPI
 type ArcUsageResponse struct {
 	Accepted      bool   `json:"accepted"`
 	FailureReason string `json:"failure_reason"`
@@ -33,16 +41,19 @@ type ArcUsageResponse struct {
 	TimeValidity  int64  `json:"time_validity"`
 }
 
+// ArcInstance TBD: remove struct
 type ArcInstance struct {
 	SubscriptionID string `json:"subscription_id"`
 }
 
+// ArcInstanceResponse TBD: Remove struct
 type ArcInstanceResponse struct {
-	ArcInstances []arcInstanceDetails `json:"instances"`
+	ArcInstances []ArcInstanceDetails `json:"instances"`
 }
 
-type arcInstanceDetails struct {
-	NodeCount            int64                  `json:"node_count"`
+// ArcInstanceDetails contains the info about an Arc Instance
+type ArcInstanceDetails struct {
+	NodeCount            int                    `json:"node_count"`
 	Description          string                 `json:"description"`
 	SubscriptionID       string                 `json:"subscription_id"`
 	SubscriptionCanceled bool                   `json:"subscription_canceled"`
@@ -52,22 +63,19 @@ type arcInstanceDetails struct {
 	CreatedAt            int64                  `json:"created_at"`
 	Tier                 string                 `json:"tier"`
 	TierValidity         int64                  `json:"tier_validity"`
+	TimeValidity         int64                  `json:"time_validity"`
 	Metadata             map[string]interface{} `json:"metadata"`
 }
 
-const (
-	envEsURL      = "ES_CLUSTER_URL"
-	arcIdentifier = "ARC_ID"
-)
-
-// Middleware function, which will be called for each request
+// BillingMiddleware function to be called for each request
 func BillingMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if TimeValidity > 0 { // Valid plan
+		log.Println("current time validity value: ", TimeValidity)
+		if TimeValidity >= 0 { // Valid plan
 			next.ServeHTTP(w, r)
-		} else if TimeValidity < 0 && -(TimeValidity) <= 3600*MAX_ALLOWED_TIME { // Negative validity, plan has been expired
+		} else if TimeValidity < 0 && TimeValidity < -3600*MaxErrorTime { // Negative validity, plan has been expired
 			// Print warning message if remaining time is less than max allowed time
-			log.Println("warning: payment required. arc will start sending out error messages in next", MAX_ALLOWED_TIME, "hours")
+			log.Println("Warning: Payment is required. Arc will start sending out error messages in next", MaxErrorTime, "hours")
 			next.ServeHTTP(w, r)
 		} else {
 			// Write an error and stop the handler chain
@@ -79,7 +87,7 @@ func BillingMiddleware(next http.Handler) http.Handler {
 func getArcInstance(arcID string) (ArcInstance, error) {
 	arcInstance := ArcInstance{}
 	response := ArcInstanceResponse{}
-	url := ACC_API + "arc/instances?arcid=" + arcID
+	url := ACCAPI + "arc/instances?arcid=" + arcID
 	req, _ := http.NewRequest("GET", url, nil)
 	req.Header.Add("Content-Type", "application/json")
 	req.Header.Add("cache-control", "no-cache")
@@ -98,6 +106,7 @@ func getArcInstance(arcID string) (ArcInstance, error) {
 	err = json.Unmarshal(body, &response)
 	if len(response.ArcInstances) != 0 {
 		arcInstance.SubscriptionID = response.ArcInstances[0].SubscriptionID
+		TimeValidity = response.ArcInstances[0].TimeValidity
 	}
 
 	if err != nil {
@@ -107,10 +116,11 @@ func getArcInstance(arcID string) (ArcInstance, error) {
 	return arcInstance, nil
 }
 
-func ReportUsageRequest(arcUsage ArcUsage) (ArcUsageResponse, error) {
+func reportUsageRequest(arcUsage ArcUsage) (ArcUsageResponse, error) {
 	response := ArcUsageResponse{}
-	url := ACC_API + "arc/" + arcUsage.ArcID + "/report_usage"
+	url := ACCAPI + "arc/" + arcUsage.ArcID + "/report_usage"
 	marshalledRequest, err := json.Marshal(arcUsage)
+	log.Println("Arc usage for Arc ID: ", arcUsage)
 	if err != nil {
 		log.Println("error while marshalling req body: ", err)
 		return response, err
@@ -139,13 +149,14 @@ func ReportUsageRequest(arcUsage ArcUsage) (ArcUsageResponse, error) {
 	return response, nil
 }
 
+// ReportUsage reports Arc usage, intended to be called every hour
 func ReportUsage() {
-	url := os.Getenv(envEsURL)
+	url := os.Getenv("ES_CLUSTER_URL")
 	if url == "" {
 		log.Fatalln("ES_CLUSTER_URL not found")
 		return
 	}
-	arcID := os.Getenv(arcIdentifier)
+	arcID := os.Getenv("ARC_ID")
 	if arcID == "" {
 		log.Fatalln("ARC_ID not found")
 		return
@@ -153,8 +164,13 @@ func ReportUsage() {
 
 	result, err := getArcInstance(arcID)
 	if err != nil {
-		log.Println("Unable to fetch arc instance, Please make sure if you're using a valid ARC_ID.")
+		log.Println("Unable to fetch the arc instance. Please make sure that you're using a valid ARC_ID.")
 		return
+	}
+
+	NodeCount, err = fetchNodeCount(url)
+	if err != nil || NodeCount <= 0 {
+		log.Println("Unable to fetch a correct node count: ", err)
 	}
 
 	subID := result.SubscriptionID
@@ -162,18 +178,14 @@ func ReportUsage() {
 		log.Println("SUBSCRIPTION_ID not found. Initializing in trial mode")
 		return
 	}
-	nodeCount, err := FetchNodeCount(url)
-	if err != nil || nodeCount == -1 {
-		log.Println("unable to fetch node count: ", err)
-	}
+
 	usageBody := ArcUsage{}
 	usageBody.ArcID = arcID
 	usageBody.SubscriptionID = subID
-	usageBody.Timestamp = time.Now().Unix()
-	usageBody.Quantity = nodeCount
-	response, err1 := ReportUsageRequest(usageBody)
+	usageBody.Quantity = NodeCount
+	response, err1 := reportUsageRequest(usageBody)
 	if err1 != nil {
-		log.Println("please contact support. Usage not getting reported: ", err1)
+		log.Println("Please contact support@appbase.io with your ARC_ID or registered e-mail address. Usage is not getting reported: ", err1)
 	}
 
 	TimeValidity = response.TimeValidity
@@ -185,7 +197,8 @@ func ReportUsage() {
 	}
 }
 
-func FetchNodeCount(url string) (int, error) {
+// fetchNodeCount returns the number of current ElasticSearch nodes
+func fetchNodeCount(url string) (int, error) {
 	ctx := context.Background()
 	// Initialize the client
 	client, err := elastic.NewClient(
