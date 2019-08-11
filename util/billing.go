@@ -22,6 +22,9 @@ var TimeValidity int64
 // MaxErrorTime before showing errors if invalid trial / plan in hours
 var MaxErrorTime int64 = 24 // in hrs
 
+// NodeCount is the current node count, defaults to 1
+var NodeCount = 1
+
 // ArcUsage struct is used to report time usage
 type ArcUsage struct {
 	ArcID          string `json:"arc_id"`
@@ -46,10 +49,11 @@ type ArcInstance struct {
 
 // ArcInstanceResponse TBD: Remove struct
 type ArcInstanceResponse struct {
-	ArcInstances []arcInstanceDetails `json:"instances"`
+	ArcInstances []ArcInstanceDetails `json:"instances"`
 }
 
-type arcInstanceDetails struct {
+// ArcInstanceDetails contains the info about an Arc Instance
+type ArcInstanceDetails struct {
 	NodeCount            int64                  `json:"node_count"`
 	Description          string                 `json:"description"`
 	SubscriptionID       string                 `json:"subscription_id"`
@@ -166,19 +170,21 @@ func ReportUsage() {
 		return
 	}
 
+	NodeCount, err = fetchNodeCount(url)
+	if err != nil || NodeCount <= 0 {
+		log.Println("Unable to fetch a correct node count: ", err)
+	}
+
 	subID := result.SubscriptionID
 	if subID == "" {
 		log.Println("SUBSCRIPTION_ID not found. Initializing in trial mode")
 		return
 	}
-	nodeCount, err := fetchNodeCount(url)
-	if err != nil || nodeCount == -1 {
-		log.Println("unable to fetch node count: ", err)
-	}
+
 	usageBody := ArcUsage{}
 	usageBody.ArcID = arcID
 	usageBody.SubscriptionID = subID
-	usageBody.Quantity = nodeCount
+	usageBody.Quantity = NodeCount
 	response, err1 := reportUsageRequest(usageBody)
 	if err1 != nil {
 		log.Println("Please contact support@appbase.io with your ARC_ID or registered e-mail address. Usage is not getting reported: ", err1)
@@ -194,6 +200,7 @@ func ReportUsage() {
 	}
 }
 
+// fetchNodeCount returns the number of current ElasticSearch nodes
 func fetchNodeCount(url string) (int, error) {
 	ctx := context.Background()
 	// Initialize the client
