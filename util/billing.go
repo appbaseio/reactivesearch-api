@@ -155,7 +155,7 @@ func ReportUsage() {
 
 	result, err := getArcInstance(arcID)
 	if err != nil {
-		log.Println("Unable to fetch the arc instance. Please make sure that you're using a valid ARC_ID.")tart
+		log.Println("Unable to fetch the arc instance. Please make sure that you're using a valid ARC_ID.")
 		return
 	}
 
