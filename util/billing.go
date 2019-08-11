@@ -156,12 +156,12 @@ func reportUsageRequest(arcUsage ArcUsage) (ArcUsageResponse, error) {
 func ReportUsage() {
 	url := os.Getenv("ES_CLUSTER_URL")
 	if url == "" {
-		log.Fatalln("ES_CLUSTER_URL not found")
+		log.Fatalln("ES_CLUSTER_URL env required but not present")
 		return
 	}
 	arcID := os.Getenv("ARC_ID")
 	if arcID == "" {
-		log.Fatalln("ARC_ID not found")
+		log.Fatalln("ARC_ID env required but not present")
 		return
 	}
 
