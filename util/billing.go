@@ -63,9 +63,10 @@ const (
 // Middleware function, which will be called for each request
 func BillingMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		log.Println("current time validity value: ", TimeValidity)
 		if TimeValidity > 0 { // Valid plan
 			next.ServeHTTP(w, r)
-		} else if TimeValidity < 0 && -(TimeValidity) <= 3600*MAX_ALLOWED_TIME { // Negative validity, plan has been expired
+		} else if TimeValidity < 0 && TimeValidity < -3600*MAX_ALLOWED_TIME { // Negative validity, plan has been expired
 			// Print warning message if remaining time is less than max allowed time
 			log.Println("warning: payment required. arc will start sending out error messages in next", MAX_ALLOWED_TIME, "hours")
 			next.ServeHTTP(w, r)
