@@ -54,7 +54,7 @@ type ArcInstanceResponse struct {
 
 // ArcInstanceDetails contains the info about an Arc Instance
 type ArcInstanceDetails struct {
-	NodeCount            int64                  `json:"node_count"`
+	NodeCount            int                    `json:"node_count"`
 	Description          string                 `json:"description"`
 	SubscriptionID       string                 `json:"subscription_id"`
 	SubscriptionCanceled bool                   `json:"subscription_canceled"`
