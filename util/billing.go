@@ -95,6 +95,7 @@ func getArcInstance(arcID string) (ArcInstance, error) {
 		log.Println("error reading res body: ", err)
 		return arcInstance, err
 	}
+	log.Println("response body: ", body)
 	err = json.Unmarshal(body, &response)
 	if len(response.ArcInstances) != 0 {
 		arcInstance.SubscriptionID = response.ArcInstances[0].SubscriptionID
@@ -111,6 +112,7 @@ func ReportUsageRequest(arcUsage ArcUsage) (ArcUsageResponse, error) {
 	response := ArcUsageResponse{}
 	url := ACC_API + "arc/" + arcUsage.ArcID + "/report_usage"
 	marshalledRequest, err := json.Marshal(arcUsage)
+	log.Println("Arc usage for Arc ID: ", arcUsage)
 	if err != nil {
 		log.Println("error while marshalling req body: ", err)
 		return response, err
@@ -153,7 +155,7 @@ func ReportUsage() {
 
 	result, err := getArcInstance(arcID)
 	if err != nil {
-		log.Println("Unable to fetch arc instance, Please make sure if you're using a valid ARC_ID.")
+		log.Println("Unable to fetch the arc instance. Please make sure that you're using a valid ARC_ID.")tart
 		return
 	}
 
