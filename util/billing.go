@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -14,7 +13,7 @@ import (
 )
 
 // ACCAPI URL
-var ACCAPI = "http://localhost:3000/"
+var ACCAPI = "https://accapi.appbase.io/"
 
 // TimeValidity to be obtained from ACCAPI
 var TimeValidity int64
@@ -105,7 +104,6 @@ func getArcInstance(arcID string) (ArcInstance, error) {
 		return arcInstance, err
 	}
 	err = json.Unmarshal(body, &response)
-	fmt.Printf("response body: %+v\n", response)
 	if len(response.ArcInstances) != 0 {
 		arcInstance.SubscriptionID = response.ArcInstances[0].SubscriptionID
 		TimeValidity = response.ArcInstances[0].TimeValidity
@@ -190,7 +188,6 @@ func ReportUsage() {
 		log.Println("Please contact support@appbase.io with your ARC_ID or registered e-mail address. Usage is not getting reported: ", err1)
 	}
 
-	log.Println("response from report usage request: ", response)
 	TimeValidity = response.TimeValidity
 	if response.WarningMsg != "" {
 		log.Println("warning:", response.WarningMsg)
