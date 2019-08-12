@@ -173,7 +173,7 @@ var patchPermissionTest = []struct {
 	{
 		&ServerSetup{
 			Method:   "POST",
-			Path:     "/test1/_doc/user1/_update",
+			Path:     "/test1/_update/user1",
 			Body:     `{"doc":{"acls":["docs"],"categories":["search"],"indices":["*"]}}`,
 			Response: `{"_index":"test","_type":"_doc","_id":"1","_version":11,"result":"updated","_shards":{"total":2,"successful":1,"failed":0},"_seq_no":13,"_primary_term":6,"get":{"found":true,"_source":{"counter":5,"tags":["red","blue","blue","blue","blue","blue"]}}}`,
 		},
@@ -187,7 +187,7 @@ var patchPermissionTest = []struct {
 	{
 		&ServerSetup{
 			Method:   "POST",
-			Path:     "/test1/_doc/user1/_update",
+			Path:     "/test1/_update/user1",
 			Body:     `{"doc":{"acls":["docs"],"categories":["search"],"indices":["*"]}}`,
 			Response: `{_index":"test","_type":"_doc","_id":"1","_version":11,"result":"updated","_shards":{"total":2,"successful":1,"failed":0},"_seq_no":13,"_primary_term":6,"get":{"found":true,"_source":{"counter":5,"tags":["red","blue","blue","blue","blue","blue"]}}}`,
 		},
@@ -200,7 +200,7 @@ var patchPermissionTest = []struct {
 	{
 		&ServerSetup{
 			Method:   "POST",
-			Path:     "/test1/_doc/user1/_update",
+			Path:     "/test1/_update/user1",
 			Body:     `{"doc":{"acls":["docs"],"categories":["search"],"indices":["*"]}}`,
 			Response: `{"_index":"test","_type":"_doc","_id":"1","_version":11,"result":"updated","_shards":{"total":2,"successful":1,"failed":0},"_seq_no":13,"_primary_term":6,"get":{"found":true,"_source":{counter":5,"tags":["red","blue","blue","blue","blue","blue"]}}}`,
 		},
