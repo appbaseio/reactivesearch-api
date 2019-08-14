@@ -16,6 +16,9 @@ import (
 	"github.com/gorilla/mux"
 )
 
+// Global billing variable
+var Billing string
+
 // RandStr returns "node" field of a UUID.
 // See: https://tools.ietf.org/html/rfc4122#section-4.1.6
 func RandStr() string {
