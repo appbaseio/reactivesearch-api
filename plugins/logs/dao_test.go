@@ -18,7 +18,7 @@ var getTotalNodesTest = []struct {
 	{
 		&ServerSetup{
 			Method:   "GET",
-			Path:     "/_nodes/_all/_all%2Cnodes",
+			Path:     "/_nodes/_all/nodes",
 			Body:     "",
 			Response: `{"cluster_name": "elasticsearch","nodes":{"kxyUith0T3yui4gn6PBbJQ":{"name": "kxyUith","transport_address": "127.0.0.1:9300","host": "127.0.0.1","ip": "127.0.0.1","version": "6.2.4","build_hash": "ccec39f","roles":["master","data","ingest"]}}}`,
 		},
@@ -31,7 +31,7 @@ var getTotalNodesTest = []struct {
 	{
 		&ServerSetup{
 			Method:   "GET",
-			Path:     "/_nodes/_all/_all%2Cnodes",
+			Path:     "/_nodes/_all/nodes",
 			Body:     "",
 			Response: `{"cluster_name": "elasticsearch","nodes:{"kxyUith0T3yui4gn6PBbJQ":{"name": "kxyUith","transport_address": "127.0.0.1:9300","host": "127.0.0.1","ip": "127.0.0.1","version": "6.2.4","build_hash": "ccec39f","roles":["master","data","ingest"]}}}`,
 		},
