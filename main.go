@@ -73,6 +73,7 @@ func main() {
 	}
 
 	router := mux.NewRouter().StrictSlash(true)
+	util.Billing = Billing
 
 	if Billing == "true" {
 		log.Println("You're running Arc with billing module enabled.")
