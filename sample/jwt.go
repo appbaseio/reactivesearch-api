@@ -6,31 +6,36 @@ import "os"
 import "time"
 import "strings"
 import "flag"
+import "github.com/appbaseio/arc/util"
 
 import "github.com/dgrijalva/jwt-go"
 
 func encode() {
 	token := jwt.NewWithClaims(jwt.SigningMethodRS256, jwt.MapClaims{
-			*keyFlag: *valueFlag,
-		        "iat": time.Now().Unix(),
-			"exp": time.Now().Unix() + 1000,
-		})
-        // generate rsa private key using ssh-keygen
-	
-        private_key_loc := os.Getenv("JWT_RSA_PRIVATE_KEY_LOC")
+		*keyFlag: *valueFlag,
+		"iat":    time.Now().Unix(),
+		"exp":    time.Now().Unix() + 1000,
+	})
+	// generate rsa private key using ssh-keygen
+
+	private_key_loc := os.Getenv("JWT_RSA_PRIVATE_KEY_LOC")
 	if private_key_loc == "" {
 		private_key_loc = "sample/rsa-private"
-        }
+	}
 	buf, err1 := ioutil.ReadFile(private_key_loc)
 	if err1 != nil {
 		panic(err1)
 	}
-	pvt_key, err3 := jwt.ParseRSAPrivateKeyFromPEM(buf)
-        if err3 != nil {
+	pvtKeyBuf, err2 := util.DecodeBase64Key(string(buf))
+	if err2 != nil {
+		panic(err2)
+	}
+	pvt_key, err3 := jwt.ParseRSAPrivateKeyFromPEM(pvtKeyBuf)
+	if err3 != nil {
 		panic(err3)
-        }
+	}
 	tokenString, err4 := token.SignedString(pvt_key)
-	if err4  != nil {
+	if err4 != nil {
 		panic(err4)
 	}
 	fmt.Println(tokenString)
@@ -42,18 +47,22 @@ func decode() {
 		panic(err1)
 	}
 	// generate the public key from the private key in pkcs8
-        // using the command:
-        // ssh-keygen -e -m pkcs8 -f *privatekeyloc*
+	// using the command:
+	// ssh-keygen -e -m pkcs8 -f *privatekeyloc*
 
 	public_key_loc := os.Getenv("JWT_RSA_PUBLIC_KEY_LOC")
 	if public_key_loc == "" {
 		public_key_loc = "sample/rsa-public"
-        }
+	}
 	buf, err2 := ioutil.ReadFile(public_key_loc)
 	if err2 != nil {
 		panic(err2)
 	}
-	public_key, err4 := jwt.ParseRSAPublicKeyFromPEM(buf)
+	publicKeyBuf, err3 := util.DecodeBase64Key(string(buf))
+	if err3 != nil {
+		panic(err3)
+	}
+	public_key, err4 := jwt.ParseRSAPublicKeyFromPEM(publicKeyBuf)
 	if err4 != nil {
 		panic(err4)
 	}
