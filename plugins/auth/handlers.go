@@ -10,6 +10,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strings"
 
 	"github.com/dgrijalva/jwt-go"
 
@@ -31,7 +32,7 @@ func (a *Auth) savePublicKey(ctx context.Context, indexName string, record publi
 	} else {
 		return false, errors.New("Public key is missing in the request body")
 	}
-	if record.RoleKey == "" {
+	if strings.TrimSpace(record.RoleKey) == "" {
 		record.RoleKey = "role"
 	}
 
