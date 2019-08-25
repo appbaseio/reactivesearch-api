@@ -54,6 +54,10 @@ func (m *mockAuthService) getPermission(ctx context.Context, username string) (*
 	args := m.Called(ctx, username)
 	return args.Get(0).(*permission.Permission), args.Error(1)
 }
+func (m *mockAuthService) getRolePermission(ctx context.Context, role string) (*permission.Permission, error) {
+	args := m.Called(ctx, role)
+	return args.Get(0).(*permission.Permission), args.Error(1)
+}
 func (m *mockAuthService) getRawPermission(ctx context.Context, username string) ([]byte, error) {
 	args := m.Called(ctx, username)
 	return args.Get(0).([]byte), args.Error(1)
