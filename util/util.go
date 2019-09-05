@@ -2,7 +2,9 @@ package util
 
 import (
 	"crypto/tls"
+	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"math"
 	"net"
@@ -209,4 +211,15 @@ func IntervalForRange(from, to string) (string, error) {
 	}
 	intervalInSecs := math.Round(durationInHours * 25)
 	return fmt.Sprintf("%ds", int64(intervalInSecs)), nil
+}
+
+func DecodeBase64Key(encoded string) ([]byte, error) {
+	decoded, err := base64.StdEncoding.DecodeString(encoded)
+	if err != nil {
+		if _, ok := err.(base64.CorruptInputError); ok {
+			return nil, errors.New("base64 input is corrupt, check Key")
+		}
+		return nil, err
+	}
+	return decoded, nil
 }
