@@ -131,7 +131,7 @@ func (a *Auth) basicAuth(h http.HandlerFunc) http.HandlerFunc {
 		case *permission.Permission:
 			{
 				reqPermission := obj.(*permission.Permission)
-				if hasBasicAuth && bcrypt.CompareHashAndPassword([]byte(reqPermission.Password), []byte(password)) != nil {
+				if hasBasicAuth && reqPermission.Password != password {
 					util.WriteBackError(w, "invalid password", http.StatusUnauthorized)
 					return
 				}
