@@ -3,6 +3,7 @@ package auth
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"os"
@@ -110,12 +111,14 @@ func (es *elasticsearch) getPublicKey(ctx context.Context) (publicKey, error) {
 		Index(publicKeyIndex).
 		Id(publicKeyDocID).
 		Do(ctx)
+	if response == nil {
+		return record, errors.New("public key record not found")
+	}
 	err = json.Unmarshal(response.Source, &record)
 	if err != nil {
 		log.Printf("%s: error retrieving publickey record", logTag)
 		return record, err
 	}
-
 	return record, nil
 }
 
