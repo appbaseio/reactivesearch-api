@@ -1,14 +1,11 @@
 package auth
 
 import (
+	"context"
 	"crypto/rsa"
-	"fmt"
 	"io/ioutil"
-	"net/http"
 	"os"
 	"sync"
-
-	"github.com/dgrijalva/jwt-go"
 
 	"github.com/appbaseio/arc/errors"
 	"github.com/appbaseio/arc/middleware"
@@ -23,9 +20,12 @@ const (
 	defaultUsersEsIndex       = ".users"
 	envPermissionsEsIndex     = "PERMISSIONS_ES_INDEX"
 	defaultPermissionsEsIndex = ".permissions"
+	envPublicKeyEsIndex       = "PUBLIC_KEY_ES_INDEX"
+	defaultPublicKeyEsIndex   = ".publickey"
 	envJwtRsaPublicKeyLoc     = "JWT_RSA_PUBLIC_KEY_LOC"
-	envJwtRsaPublicKeyDest    = "JWT_RSA_PUBLIC_KEY_DEST"
 	envJwtRoleKey             = "JWT_ROLE_KEY"
+	settings                  = `{ "settings" : { "number_of_shards" : %d, "number_of_replicas" : %d } }`
+	publicKeyDocID            = "_public_key"
 )
 
 var (
@@ -75,40 +75,11 @@ func (a *Auth) InitFunc() error {
 	if permissionIndex == "" {
 		permissionIndex = defaultPermissionsEsIndex
 	}
-	var err error
-	jwtRsaPublicKeyLoc := os.Getenv(envJwtRsaPublicKeyLoc)
-	if jwtRsaPublicKeyLoc != "" {
-		var publicKeyBuf []byte
-		publicKeyBuf, err = ioutil.ReadFile(jwtRsaPublicKeyLoc)
-		if err != nil {
-			return err
-		}
-		a.jwtRsaPublicKey, err = jwt.ParseRSAPublicKeyFromPEM(publicKeyBuf)
-		if err != nil {
-			return err
-		}
-	} else if jwtRsaPublicKeyDest := os.Getenv(envJwtRsaPublicKeyDest); jwtRsaPublicKeyDest != "" {
-		publicKeyResp, err := http.Get(jwtRsaPublicKeyDest)
-		if err != nil {
-			return err
-		}
-		if publicKeyResp.StatusCode == 200 {
-			publicKeyBuf := make([]byte, 2048)
-			n, err2 := publicKeyResp.Body.Read(publicKeyBuf)
-			err3 := publicKeyResp.Body.Close()
-			if n == 0 && err2 != nil {
-				return fmt.Errorf("Reader Error: %d %s", n, err2.Error())
-			}
-			if err3 != nil {
-				return fmt.Errorf("Closer Error: %s", err3.Error())
-			}
-			a.jwtRsaPublicKey, err = jwt.ParseRSAPublicKeyFromPEM(publicKeyBuf)
-			if err != nil {
-				return fmt.Errorf("Parser Error: %s", err.Error())
-			}
-		}
+	publicKeyIndex := os.Getenv(envPublicKeyEsIndex)
+	if publicKeyIndex == "" {
+		publicKeyIndex = defaultPublicKeyEsIndex
 	}
-	a.jwtRoleKey = os.Getenv(envJwtRoleKey)
+	var err error
 
 	// initialize the dao
 	a.es, err = newClient(esURL, userIndex, permissionIndex)
@@ -116,12 +87,36 @@ func (a *Auth) InitFunc() error {
 		return err
 	}
 
+	// Create public key index
+	_, err = a.es.createIndex(publicKeyIndex, settings)
+	if err != nil {
+		return err
+	}
+
+	jwtRsaPublicKeyLoc := os.Getenv(envJwtRsaPublicKeyLoc)
+	// Populate public key
+	if jwtRsaPublicKeyLoc != "" {
+		// Read file from location
+		var publicKeyBuf []byte
+		publicKeyBuf, err = ioutil.ReadFile(jwtRsaPublicKeyLoc)
+		if err != nil {
+			return err
+		}
+		var record = publicKey{}
+		record.PublicKey = string(publicKeyBuf)
+		record.RoleKey = a.jwtRoleKey
+		_, err = a.savePublicKey(context.Background(), publicKeyIndex, record)
+		if err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
 
 // Routes returns an empty slices since the plugin solely acts as a middleware.
 func (a *Auth) Routes() []plugins.Route {
-	return []plugins.Route{}
+	return a.routes()
 }
 
 // Default empty middleware array function

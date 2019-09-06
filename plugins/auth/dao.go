@@ -4,6 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
+	"os"
 
 	"github.com/appbaseio/arc/model/credential"
 	"github.com/appbaseio/arc/model/permission"
@@ -17,6 +19,11 @@ type elasticsearch struct {
 	userIndex, userType             string
 	permissionIndex, permissionType string
 	client                          *elastic.Client
+}
+
+type publicKey struct {
+	PublicKey string `json:"public_key"`
+	RoleKey   string `json:"role_key"`
 }
 
 func newClient(url, userIndex, permissionIndex string) (*elasticsearch, error) {
@@ -40,6 +47,87 @@ func newClient(url, userIndex, permissionIndex string) (*elasticsearch, error) {
 	}
 
 	return es, nil
+}
+
+func (es *elasticsearch) createIndex(indexName, mapping string) (bool, error) {
+	ctx := context.Background()
+
+	// Check if the index already exists
+	exists, err := es.client.IndexExists(indexName).
+		Do(ctx)
+	if err != nil {
+		return false, fmt.Errorf("%s: error while checking if index already exists: %v",
+			logTag, err)
+	}
+	if exists {
+		log.Printf("%s: index named '%s' already exists, skipping...", logTag, indexName)
+		return true, nil
+	}
+
+	// set the number_of_replicas to (nodes-1)
+	nodes, err := es.getTotalNodes()
+	if err != nil {
+		return false, err
+	}
+	settings := fmt.Sprintf(mapping, nodes, nodes-1)
+	// Meta index does not exists, create a new one
+	_, err = es.client.CreateIndex(indexName).
+		Body(settings).
+		Do(ctx)
+	if err != nil {
+		return false, fmt.Errorf("%s: error while creating index named %s: %v",
+			logTag, indexName, err)
+	}
+
+	log.Printf("%s successfully created index named '%s'", logTag, indexName)
+	return true, nil
+}
+
+// Create or update the public key
+func (es *elasticsearch) savePublicKey(ctx context.Context, indexName string, record publicKey) (interface{}, error) {
+	_, err := es.client.
+		Index().
+		Index(indexName).
+		BodyJson(record).
+		Id(publicKeyDocID).
+		Do(ctx)
+	if err != nil {
+		log.Printf("%s: error indexing public key record", logTag)
+		return false, err
+	}
+
+	return true, nil
+}
+
+// Get the public key
+func (es *elasticsearch) getPublicKey(ctx context.Context) (publicKey, error) {
+	var record = publicKey{}
+	publicKeyIndex := os.Getenv(envPublicKeyEsIndex)
+	if publicKeyIndex == "" {
+		publicKeyIndex = defaultPublicKeyEsIndex
+	}
+	response, err := es.client.Get().
+		Index(publicKeyIndex).
+		Id(publicKeyDocID).
+		Do(ctx)
+	err = json.Unmarshal(response.Source, &record)
+	if err != nil {
+		log.Printf("%s: error retrieving publickey record", logTag)
+		return record, err
+	}
+
+	return record, nil
+}
+
+func (es *elasticsearch) getTotalNodes() (int, error) {
+	response, err := es.client.NodesInfo().
+		Metric("nodes").
+		Do(context.Background())
+	if err != nil {
+		return -1, err
+	}
+
+	return len(response.Nodes), nil
 }
 
 func (es *elasticsearch) getCredential(ctx context.Context, username string) (credential.AuthCredential, error) {
@@ -213,4 +301,3 @@ func (es *elasticsearch) getRawRolePermission(ctx context.Context, role string) 
 	}
 	return nil, nil
 }
-
