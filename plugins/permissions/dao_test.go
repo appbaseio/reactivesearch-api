@@ -221,7 +221,7 @@ func TestPatchPermission(t *testing.T) {
 			_, err := es.patchPermission(context.Background(), "user1", tt.patchMap)
 
 			if !compareErrs(tt.err, err) {
-				t.Fatalf("deletePermission should have failed with error: %v got: %v instead\n", tt.err, err)
+				t.Fatalf("patchPermission should have failed with error: %v got: %v instead\n", tt.err, err)
 			}
 
 			/*if !reflect.DeepEqual(response, tt.response) {
@@ -299,7 +299,7 @@ func TestPostPermission(t *testing.T) {
 			_, err := es.postPermission(context.Background(), tt.payload)
 
 			if !compareErrs(tt.err, err) {
-				t.Fatalf("deletePermission should have failed with error: %v got: %v instead\n", tt.err, err)
+				t.Fatalf("postPermission should have failed with error: %v got: %v instead\n", tt.err, err)
 			}
 
 			/*if !reflect.DeepEqual(response, tt.response) {
@@ -346,7 +346,7 @@ func TestGetRawOwnerPermissions(t *testing.T) {
 			_, err := es.getRawOwnerPermissions(context.Background(), "owner1")
 
 			if !compareErrs(tt.err, err) {
-				t.Fatalf("deletePermission should have failed with error: %v got: %v instead\n", tt.err, err)
+				t.Fatalf("getRawOwnerPermissions should have failed with error: %v got: %v instead\n", tt.err, err)
 			}
 
 			/*if !reflect.DeepEqual(response, tt.response) {
