@@ -198,7 +198,7 @@ func (es *elasticsearch) getRawUsers(ctx context.Context) ([]byte, error) {
 func (es *elasticsearch) getRawUser(ctx context.Context, username string) ([]byte, error) {
 	response, err := es.client.Get().
 		Index(es.indexName).
-		//Type(es.typeName).
+		Type(es.typeName).
 		Id(username).
 		FetchSource(true).
 		Do(ctx)

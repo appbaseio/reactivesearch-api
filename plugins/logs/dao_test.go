@@ -145,7 +145,7 @@ var getRawLogsTest = []struct {
 		&ServerSetup{
 			Method:   "POST",
 			Path:     "/test1/_search",
-			Body:     `{"from":0,"size":10,"sort":[{"timestamp":{"order":"desc"}}]}`,
+			Body:     `{"from":0,"query":{"bool":{"filter":{"match_all":{}}}},"size":10,"sort":[{"timestamp":{"order":"desc"}}]}`,
 			Response: `{"took":90,"timed_out":false,"_shards":{"total":5,"successful":5,"skipped":0,"failed":0},"hits":{"total":2,"max_score":1.0,"hits":[{"_index":"test","_type":"_doc","_id":"1","_score":1.0,"_source":{"counter":5,"tags":["red","blue","blue","blue","blue","blue"]}},{"_index":"test","_type":"_doc","_id":"3","_score":1.0,"_source":{ "field1" : "value3" }}]}}`,
 		},
 		"test1",
@@ -158,7 +158,7 @@ var getRawLogsTest = []struct {
 		&ServerSetup{
 			Method:   "POST",
 			Path:     "/test1/_search",
-			Body:     `{"from":0,"size":10,"sort":[{"timestamp":{"order":"desc"}}]}`,
+			Body:     `{"from":0,"query":{"bool":{"filter":{"match_all":{}}}},"size":10,"sort":[{"timestamp":{"order":"desc"}}]}`,
 			Response: `{"took":90,"timed_out":false,"_shards":{"total":5,"successful":5,"skipped":0,"failed":0},"hits":{"total":2,"max_score":1.0,"hits":[{"_index":"test","_type":"_doc","_id":"1","_score":1.0,"_source":{"counter":5,"tags":["red","blue","blue","blue","blue","blue"]}},{"_index":"test","_type":"_doc","_id":"3","_score":1.0,"_source":{ "field1" : "value3" }}]}}`,
 		},
 		"test1",
@@ -171,7 +171,7 @@ var getRawLogsTest = []struct {
 		&ServerSetup{
 			Method:   "POST",
 			Path:     "/test1/_search",
-			Body:     `{"from":0,"size":10,"sort":[{"timestamp":{"order":"desc"}}]}`,
+			Body:     `{"from":0,"query":{"bool":{"filter":{"match_all":{}}}},"size":10,"sort":[{"timestamp":{"order":"desc"}}]}`,
 			Response: `{"took":90,"timed_out":false,"_shards":{"total":5,"successful":5,"skipped":0,"failed":0},"hits":{"total":2,"max_score":1.0,"hits":[{"_index":"test","_type":"_doc","_id":"1","_score":1.0,"_source":{"counter":5,"tags":["red","blue","blue","blue","blue","blue"]}},{"_index":"test","_type":"_doc","_id":"3","_score":1.0,"_source":{ "field1" : "value3" }}]}}`,
 		},
 		"test1",
@@ -184,7 +184,7 @@ var getRawLogsTest = []struct {
 		&ServerSetup{
 			Method:   "POST",
 			Path:     "/test1/_search",
-			Body:     `{"from":0,"size":10,"sort":[{"timestamp":{"order":"desc"}}]}`,
+			Body:     `{"from":0,"query":{"bool":{"filter":{"match_all":{}}}},"size":10,"sort":[{"timestamp":{"order":"desc"}}]}`,
 			Response: `{took":90,"timed_out":false,"_shards":{"total":5,"successful":5,"skipped":0,"failed":0},"hits":{"total":2,"max_score":1.0,"hits":[{"_index":"test","_type":"_doc","_id":"1","_score":1.0,"_source":{"counter":5,"tags":["red","blue","blue","blue","blue","blue"]}},{"_index":"test","_type":"_doc","_id":"3","_score":1.0,"_source":{ "field1" : "value3" }}]}}`,
 		},
 		"test1",
