@@ -83,7 +83,7 @@ func (a *Auth) basicAuth(h http.HandlerFunc) http.HandlerFunc {
 		// we don't know if the credentials provided here are of a 'user' or a 'permission'
 		var obj credential.AuthCredential
 		if role != "" {
-			obj, err = a.es.getRolePermission(ctx, role)
+			obj, err = a.getRolePermission(ctx, role)
 		} else {
 			obj, err = a.getCredential(ctx, username)
 		}
@@ -175,6 +175,10 @@ func (a *Auth) getCredential(ctx context.Context, username string) (credential.A
 		return c, nil
 	}
 	return a.es.getCredential(ctx, username)
+}
+
+func (a *Auth) getRolePermission(ctx context.Context, role string) (credential.AuthCredential, error) {
+	return a.es.getRolePermission(ctx, role)
 }
 
 func (a *Auth) cachedCredential(username string) (credential.AuthCredential, bool) {

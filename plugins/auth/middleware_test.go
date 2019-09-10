@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"os"
 	"time"
 	"context"
 	"net/http"
@@ -91,7 +92,7 @@ func TestBasicAuthWithUserPasswordBasic(t *testing.T) {
 
 	BasicAuth()(ehf)(recorder, request)
 	assert.Equal(t, http.StatusOK, recorder.Result().StatusCode)
-	
+
 	mas.AssertExpectations(t)
 }
 
@@ -225,15 +226,18 @@ func TestBasicAuthWithJWToken(t *testing.T) {
 	recorder := httptest.NewRecorder()
 
 	token := jwt.NewWithClaims(jwt.SigningMethodRS256, jwt.MapClaims{
-		    "username": "jwtUser",
-		        "iat": time.Now().Unix(),
-			"exp": time.Now().Unix() + 1000,
-		})
+		"username": "jwtUser",
+		os.Getenv(envJwtRoleKey): "admin",
+		"iat": time.Now().Unix(),
+		"exp": time.Now().Unix() + 1000,
+	})
 	pvt, _ := rsa.GenerateKey(rand.Reader, 2048)
 	tokenString, _ := token.SignedString(pvt)
 	tokenString = "Bearer " + tokenString
 	request.Header.Add("Authorization", tokenString)
 
+	//claims := token.Claims.(jwt.MapClaims)
+	//role := claims[os.Getenv(envJwtRoleKey)].(string)
 	mas := new(mockAuthService)
 	mas.On("getCredential", ctx, "jwtUser").Return(u, nil)
 
@@ -263,10 +267,10 @@ func TestBasicAuthWithJWTokenWithoutUser(t *testing.T) {
 	recorder := httptest.NewRecorder()
 
 	token := jwt.NewWithClaims(jwt.SigningMethodRS256, jwt.MapClaims{
-		    "username": "jwtUser2",
-		        "iat": time.Now().Unix(),
-			"exp": time.Now().Unix() + 1000,
-		})
+		"username": "jwtUser2",
+		"iat": time.Now().Unix(),
+		"exp": time.Now().Unix() + 1000,
+	})
 	pvt, _ := rsa.GenerateKey(rand.Reader, 2048)
 	tokenString, _ := token.SignedString(pvt)
 	tokenString = "Bearer " + tokenString
