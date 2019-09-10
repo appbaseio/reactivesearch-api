@@ -161,7 +161,7 @@ var putUserTest = []struct {
 		&ServerSetup{
 			Method:   "PUT",
 			Path:     "/test/_doc/user1",
-			Body:     `{"username":"user1","password":"pass1","password_hash_type":"","is_admin":true,"rest_total_hits_as_int":true,"categories":["docs"],"acls":["update"],"email":"user1@gmail.com","ops":["write"],"indices":["test"],"created_at":"dfds"}`,
+			Body:     `{"username":"user1","password":"pass1","password_hash_type":"","is_admin":true,"categories":["docs"],"acls":["update"],"email":"user1@gmail.com","ops":["write"],"indices":["test"],"created_at":"dfds"}`,
 			Response: `{"_index":"user1","_type":"doc","_id":"user1","_version":1,"found":true,"_source":{"first_name":"John","last_name":"Smith","age":25}}`,
 		},
 		[]byte(`{"_index":"user1","_type":"doc","_id":"user1","_version":1,"found":true,"_source":{"first_name":"John","last_name":"Smith","age":25}}`),
