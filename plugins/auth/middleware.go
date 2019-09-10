@@ -65,7 +65,7 @@ func (a *Auth) basicAuth(h http.HandlerFunc) http.HandlerFunc {
 
 		role := ""
 		if !hasBasicAuth {
-			if claims, ok := jwtToken.Claims.(jwt.MapClaims); ok && jwtToken.Valid && a.jwtRoleKey != "" {
+			if claims, ok := jwtToken.Claims.(jwt.MapClaims); ok && jwtToken.Valid  {
 				if a.jwtRoleKey != "" {
 					role = claims[a.jwtRoleKey].(string)
 				} else if u, ok := claims["username"]; ok {
@@ -83,7 +83,7 @@ func (a *Auth) basicAuth(h http.HandlerFunc) http.HandlerFunc {
 		// we don't know if the credentials provided here are of a 'user' or a 'permission'
 		var obj credential.AuthCredential
 		if role != "" {
-			obj, err = a.getRolePermission(ctx, role)
+			obj, err = a.es.getRolePermission(ctx, role)
 		} else {
 			obj, err = a.getCredential(ctx, username)
 		}
@@ -131,7 +131,7 @@ func (a *Auth) basicAuth(h http.HandlerFunc) http.HandlerFunc {
 		case *permission.Permission:
 			{
 				reqPermission := obj.(*permission.Permission)
-				if hasBasicAuth && bcrypt.CompareHashAndPassword([]byte(reqPermission.Password), []byte(password)) != nil {
+				if hasBasicAuth && reqPermission.Password != password {
 					util.WriteBackError(w, "invalid password", http.StatusUnauthorized)
 					return
 				}
@@ -175,10 +175,6 @@ func (a *Auth) getCredential(ctx context.Context, username string) (credential.A
 		return c, nil
 	}
 	return a.es.getCredential(ctx, username)
-}
-
-func (a *Auth) getRolePermission(ctx context.Context, role string) (credential.AuthCredential, error) {
-	return a.es.getRolePermission(ctx, role)
 }
 
 func (a *Auth) cachedCredential(username string) (credential.AuthCredential, bool) {

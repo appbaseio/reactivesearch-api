@@ -1,23 +1,22 @@
 package auth
 
 import (
-	"os"
-	"time"
 	"context"
-	"net/http"
-	"testing"
-	"net/http/httptest"
-	"github.com/appbaseio/arc/model/credential"
-	"github.com/appbaseio/arc/model/user"
-	"github.com/appbaseio/arc/model/permission"
-	"github.com/appbaseio/arc/model/category"
-	"github.com/appbaseio/arc/model/op"
-	"github.com/stretchr/testify/mock"
-	"github.com/stretchr/testify/assert"
-	"crypto/rsa"
 	"crypto/rand"
+	"crypto/rsa"
+	"github.com/appbaseio/arc/model/category"
+	"github.com/appbaseio/arc/model/credential"
+	"github.com/appbaseio/arc/model/op"
+	"github.com/appbaseio/arc/model/permission"
+	"github.com/appbaseio/arc/model/user"
 	"github.com/dgrijalva/jwt-go"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"golang.org/x/crypto/bcrypt"
+	"net/http"
+	"net/http/httptest"
+	"testing"
+	"time"
 )
 
 type mockAuthService struct {
@@ -227,7 +226,6 @@ func TestBasicAuthWithJWToken(t *testing.T) {
 
 	token := jwt.NewWithClaims(jwt.SigningMethodRS256, jwt.MapClaims{
 		"username": "jwtUser",
-		os.Getenv(envJwtRoleKey): "admin",
 		"iat": time.Now().Unix(),
 		"exp": time.Now().Unix() + 1000,
 	})
@@ -236,8 +234,6 @@ func TestBasicAuthWithJWToken(t *testing.T) {
 	tokenString = "Bearer " + tokenString
 	request.Header.Add("Authorization", tokenString)
 
-	//claims := token.Claims.(jwt.MapClaims)
-	//role := claims[os.Getenv(envJwtRoleKey)].(string)
 	mas := new(mockAuthService)
 	mas.On("getCredential", ctx, "jwtUser").Return(u, nil)
 
