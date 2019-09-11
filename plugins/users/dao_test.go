@@ -162,22 +162,35 @@ func TestGetUser(t *testing.T) {
 	}
 }
 
+var u = user.User{
+	Username:         "user1",
+	Password:         "test",
+	PasswordHashType: "",
+	IsAdmin:          nil,
+	Categories:       nil,
+	ACLs:             nil,
+	Email:            "foo@bar.com",
+	Ops:              nil,
+	Indices:          nil,
+	CreatedAt:        "2019-09-11T19:05:30+05:30",
+}
+
 var postUserTest = []struct {
-	setup    *ServerSetup
-	rawResp  []byte
-	typeName string
-	err      string
+	setup *ServerSetup
+	indexName string
+	payload   user.User
+	err       string
 }{
 	//valid request response
 	{
 		&ServerSetup{
 			Method:   "PUT",
 			Path:     "/test1/_doc/user1",
-			Body:     `{"username":"user1","password":"test","password_hash_type":"","is_admin":null,"categories":null,"acls":null,"email":"foo@bar.com","ops":null,"indices":null,"created_at":""}`,
+			Body:     `{"username":"user1","password":"test","password_hash_type":"","is_admin":null,"categories":null,"acls":null,"email":"foo@bar.com","ops":null,"indices":null,"created_at":"2019-09-11T19:05:30+05:30"}`,
 			Response: `{"_index":"test1","_type":"doc","_id":"user1","_version":1,"found":true,"_source":{"first_name":"John","last_name":"Smith","age":25}}`,
 		},
-		[]byte(`{"_index":"test1","_type":"doc","_id":"user1","_version":1,"found":true,"_source":{"first_name":"John","last_name":"Smith","age":25}}`),
-		"_doc",
+		"test1",
+		u,
 		"",
 	},
 	// bad json response
@@ -185,12 +198,12 @@ var postUserTest = []struct {
 		&ServerSetup{
 			Method:   "PUT",
 			Path:     "/test1/_doc/user1",
-			Body:     `{"username":"user1","password":"test","password_hash_type":"","is_admin":null,"categories":null,"acls":null,"email":"foo@bar.com","ops":null,"indices":null,"created_at":""}`,
-			Response: `{"_index":"test1","_type":"doc","_id":"user1","_version":1,"found":true,"_source":{"first_name":"John","last_name":"Smith","age":25}`,
+			Body:     `{"username":"user1","password":"test","password_hash_type":"","is_admin":null,"categories":null,"acls":null,"email":"foo@bar.com","ops":null,"indices":null,"created_at":"2019-09-11T19:05:30+05:30"}`,
+			Response: `{_index":"test1","_type":"doc","_id":"user1","_version":1,"found":true,"_source":{"first_name":"John","last_name":"Smith","age":25}`,
 		},
-		nil,
-		"_doc",
-		"unexpected end of JSON input",
+		"",
+		u,
+		"invalid character '_' looking for beginning of object key string",
 	},
 }
 
@@ -199,12 +212,8 @@ func TestPostUser(t *testing.T)  {
 		t.Run("postUserTest", func(t *testing.T) {
 			ts := buildTestServer(t, tt.setup)
 			defer ts.Close()
-			es, _ := newStubClient(ts.URL, "test1", tt.typeName)
-			_, err := es.postUser(context.Background(), user.User{
-				Username: "user1",
-				Password: "test",
-				Email:    "foo@bar.com",
-			})
+			es, _ := newStubClient(ts.URL, "test1", "_doc")
+			_, err := es.postUser(context.Background(), tt.payload)
 
 			if !compareErrs(tt.err, err) {
 				t.Fatalf("Posting new user should have failed with error: %v got: %v instead\n", tt.err, err)
