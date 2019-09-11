@@ -1,22 +1,22 @@
 package auth
 
 import (
-	"time"
 	"context"
-	"net/http"
-	"testing"
-	"net/http/httptest"
-	"github.com/appbaseio/arc/model/credential"
-	"github.com/appbaseio/arc/model/user"
-	"github.com/appbaseio/arc/model/permission"
-	"github.com/appbaseio/arc/model/category"
-	"github.com/appbaseio/arc/model/op"
-	"github.com/stretchr/testify/mock"
-	"github.com/stretchr/testify/assert"
-	"crypto/rsa"
 	"crypto/rand"
+	"crypto/rsa"
+	"github.com/appbaseio/arc/model/category"
+	"github.com/appbaseio/arc/model/credential"
+	"github.com/appbaseio/arc/model/op"
+	"github.com/appbaseio/arc/model/permission"
+	"github.com/appbaseio/arc/model/user"
 	"github.com/dgrijalva/jwt-go"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"golang.org/x/crypto/bcrypt"
+	"net/http"
+	"net/http/httptest"
+	"testing"
+	"time"
 )
 
 type mockAuthService struct {
@@ -54,6 +54,10 @@ func (m *mockAuthService) getPermission(ctx context.Context, username string) (*
 	args := m.Called(ctx, username)
 	return args.Get(0).(*permission.Permission), args.Error(1)
 }
+func (m *mockAuthService) getRolePermission(ctx context.Context, role string) (*permission.Permission, error) {
+	args := m.Called(ctx, role)
+	return args.Get(0).(*permission.Permission), args.Error(1)
+}
 func (m *mockAuthService) getRawPermission(ctx context.Context, username string) ([]byte, error) {
 	args := m.Called(ctx, username)
 	return args.Get(0).([]byte), args.Error(1)
@@ -87,7 +91,7 @@ func TestBasicAuthWithUserPasswordBasic(t *testing.T) {
 
 	BasicAuth()(ehf)(recorder, request)
 	assert.Equal(t, http.StatusOK, recorder.Result().StatusCode)
-	
+
 	mas.AssertExpectations(t)
 }
 
@@ -221,10 +225,10 @@ func TestBasicAuthWithJWToken(t *testing.T) {
 	recorder := httptest.NewRecorder()
 
 	token := jwt.NewWithClaims(jwt.SigningMethodRS256, jwt.MapClaims{
-		    "username": "jwtUser",
-		        "iat": time.Now().Unix(),
-			"exp": time.Now().Unix() + 1000,
-		})
+		"username": "jwtUser",
+		"iat": time.Now().Unix(),
+		"exp": time.Now().Unix() + 1000,
+	})
 	pvt, _ := rsa.GenerateKey(rand.Reader, 2048)
 	tokenString, _ := token.SignedString(pvt)
 	tokenString = "Bearer " + tokenString
@@ -259,10 +263,10 @@ func TestBasicAuthWithJWTokenWithoutUser(t *testing.T) {
 	recorder := httptest.NewRecorder()
 
 	token := jwt.NewWithClaims(jwt.SigningMethodRS256, jwt.MapClaims{
-		    "username": "jwtUser2",
-		        "iat": time.Now().Unix(),
-			"exp": time.Now().Unix() + 1000,
-		})
+		"username": "jwtUser2",
+		"iat": time.Now().Unix(),
+		"exp": time.Now().Unix() + 1000,
+	})
 	pvt, _ := rsa.GenerateKey(rand.Reader, 2048)
 	tokenString, _ := token.SignedString(pvt)
 	tokenString = "Bearer " + tokenString

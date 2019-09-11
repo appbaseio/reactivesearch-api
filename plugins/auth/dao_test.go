@@ -76,7 +76,7 @@ var getPermissionTest = []struct {
 		&ServerSetup{
 			Method:   "GET",
 			Path:     "/test/_doc/perm1",
-			Body:     "",
+			Body:    "",
 			Response: `{"_index":"perm1","_type":"doc","_id":"user1","_version":1,"found":true,"_source":{"first_name":"John","last_name":"Smith","age":25}}`,
 		},
 		[]byte(`{"_index":"perm1","_type":"doc","_id":"user1","_version":1,"found":true,"_source":{"first_name":"John","last_name":"Smith","age":25}}`),
@@ -203,6 +203,7 @@ var perm = permission.Permission{
 	Password:    "pass1",
 	Owner:       "owner1",
 	Creator:     "creator1",
+	Role:        "admin",
 	Categories:  []category.Category{category.Docs},
 	ACLs:        []acl.ACL{acl.Update},
 	Ops:         []op.Operation{op.Write},
@@ -224,7 +225,7 @@ var putPermissionTest = []struct {
 		&ServerSetup{
 			Method:   "PUT",
 			Path:     "/perm/_doc/user1",
-			Body:     `{"username":"user1","password":"pass1","owner":"owner1","creator":"creator1","categories":["docs"],"acls":["update"],"ops":["write"],"indices":["test"],"sources":["source"],"referers":["referers"],"created_at":"mon","ttl":1,"limits":{"ip_limit":7200,"docs_limit":30,"search_limit":30,"indices_limit":30,"cat_limit":30,"clusters_limit":30,"misc_limit":30},"description":"permissions payload"}`,
+			Body:     `{"username":"user1","password":"pass1","owner":"owner1","creator":"creator1","role":"admin","categories":["docs"],"acls":["update"],"ops":["write"],"indices":["test"],"sources":["source"],"referers":["referers"],"created_at":"mon","ttl":1,"limits":{"ip_limit":7200,"docs_limit":30,"search_limit":30,"indices_limit":30,"cat_limit":30,"clusters_limit":30,"misc_limit":30},"description":"permissions payload"}`,
 			Response: `{"_index":"user1","_type":"doc","_id":"user1","_version":1,"found":true,"_source":{"first_name":"John","last_name":"Smith","age":25}}`,
 		},
 		[]byte(`{"_index":"user1","_type":"doc","_id":"user1","_version":1,"found":true,"_source":{"first_name":"John","last_name":"Smith","age":25}}`),
@@ -272,7 +273,10 @@ var getCredentialTest = []struct {
 					"failed": 0
 				},
 				"hits": {
-					"total": 1,
+					"total" : {
+            			"value": 1,         
+						"relation": "eq"     
+					},
 					"max_score": 2.5,
 					"hits": [
 						{
