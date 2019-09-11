@@ -222,6 +222,68 @@ func TestPostUser(t *testing.T)  {
 	}
 }
 
+var patchUserTest = []struct {
+	setup     *ServerSetup
+	response  []byte
+	indexName string
+	patchMap  map[string]interface{}
+	err       string
+} {
+	// valid request response
+	{
+		&ServerSetup{
+			Method:   "POST",
+			Path:     "/test1/_update/user1",
+			Body:     `{"doc":{"acls":["docs"],"categories":["search"],"indices":["*"]}}`,
+			Response: `{"_index":"test","_type":"_doc","_id":"1","_version":11,"result":"updated","_shards":{"total":2,"successful":1,"failed":0},"_seq_no":13,"_primary_term":6,"get":{"found":true,"_source":{"counter":5,"tags":["red","blue","blue","blue","blue","blue"]}}}`,
+		},
+		[]byte(`{"_source":{"counter":0,"tags":[]}}`),
+		"test1",
+		map[string]interface{}{"indices": []string{"*"}, "acls": []string{"docs"}, "categories": []string{"search"}},
+		"",
+	},
+	// bad json response
+	{
+		&ServerSetup{
+			Method:   "POST",
+			Path:     "/test1/_update/user1",
+			Body:     `{"doc":{"acls":["docs"],"categories":["search"],"indices":["*"]}}`,
+			Response: `{_index":"test","_type":"_doc","_id":"1","_version":11,"result":"updated","_shards":{"total":2,"successful":1,"failed":0},"_seq_no":13,"_primary_term":6,"get":{"found":true,"_source":{"counter":5,"tags":["red","blue","blue","blue","blue","blue"]}}}`,
+		},
+		[]byte(`{"_source":{"counter":0,"tags":[]}}`),
+		"test1",
+		map[string]interface{}{"indices": []string{"*"}, "acls": []string{"docs"}, "categories": []string{"search"}},
+		"invalid character '_' looking for beginning of object key string",
+	},
+	{
+		&ServerSetup{
+			Method:   "POST",
+			Path:     "/test1/_update/user1",
+			Body:     `{"doc":{"acls":["docs"],"categories":["search"],"indices":["*"]}}`,
+			Response: `{"_index":"test","_type":"_doc","_id":"1","_version":11,"result":"updated","_shards":{"total":2,"successful":1,"failed":0},"_seq_no":13,"_primary_term":6,"get":{"found":true,"_source":{counter":5,"tags":["red","blue","blue","blue","blue","blue"]}}}`,
+		},
+		[]byte(`{"_source":{"counter":0,"tags":[]}}`),
+		"test1",
+		map[string]interface{}{"indices": []string{"*"}, "acls": []string{"docs"}, "categories": []string{"search"}},
+		"invalid character 'c' looking for beginning of object key string",
+	},
+}
+
+func TestPatchUser(t *testing.T) {
+	for _, tt := range patchUserTest {
+		t.Run("patchUserTest", func(t *testing.T) {
+			ts := buildTestServer(t, tt.setup)
+			defer ts.Close()
+			es, _ := newStubClient(ts.URL, "test1", "_doc")
+			_, err := es.patchUser(context.Background(), "user1", tt.patchMap)
+
+			if !compareErrs(tt.err, err) {
+				t.Fatalf("Patching user should have failed with error: %v got: %v instead\n", tt.err, err)
+			}
+		})
+	}
+}
+
 var deleteUserTest = []struct {
 	setup    *ServerSetup
 	response bool
