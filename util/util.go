@@ -18,8 +18,11 @@ import (
 	"github.com/gorilla/mux"
 )
 
-// Global billing variable
+// Billing is a build time variable
 var Billing string
+
+// HostedBilling is a build time variable
+var HostedBilling string
 
 // RandStr returns "node" field of a UUID.
 // See: https://tools.ietf.org/html/rfc4122#section-4.1.6

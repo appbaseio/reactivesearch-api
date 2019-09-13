@@ -34,7 +34,10 @@ var (
 	port        int
 	pluginDir   string
 	https       bool
-	Billing     string
+	// Billing is a build time flag
+	Billing string
+	// HostedBilling is a build time flag
+	HostedBilling string
 )
 
 func init() {
@@ -74,6 +77,7 @@ func main() {
 
 	router := mux.NewRouter().StrictSlash(true)
 	util.Billing = Billing
+	util.HostedBilling = HostedBilling
 
 	if Billing == "true" {
 		log.Println("You're running Arc with billing module enabled.")
@@ -82,6 +86,8 @@ func main() {
 		cronjob.AddFunc("@every 1h", util.ReportUsage)
 		cronjob.Start()
 		router.Use(util.BillingMiddleware)
+	} else if HostedBilling == "true" {
+		fmt.Println("Hosted Billing is true")
 	} else {
 		log.Println("You're running Arc with billing module disabled.")
 	}

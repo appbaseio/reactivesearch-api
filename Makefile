@@ -9,7 +9,7 @@ PLUGIN_MAIN_LOC_FUNC=plugins/$(1)/main/$(1).$(2)
 PLUGIN_LOC_FUNC=$(foreach PLUGIN,$(PLUGINS),$(call PLUGIN_MAIN_LOC_FUNC,$(PLUGIN),$(1)))
 
 cmd: plugins
-	$(GC) -ldflags "-X main.Billing=$(BILLING)" -o $(BUILD_DIR)/arc main.go
+	$(GC) -ldflags "-X main.Billing=$(BILLING) -X main.HostedBilling=$(HOSTED_BILLING)" -o $(BUILD_DIR)/arc main.go
 
 plugins: $(call PLUGIN_LOC_FUNC,so)
 
