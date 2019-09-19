@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -15,6 +16,10 @@ import (
 
 // ACCAPI URL
 var ACCAPI = "https://accapi.appbase.io/"
+
+// var ACCAPI = "http://localhost:3000/"
+
+var ENCRYPTION_KEY = "A6bOMC73lJsjO3ip0iJqr4AmjIvpErNS"
 
 // TimeValidity to be obtained from ACCAPI
 var TimeValidity int64
@@ -30,6 +35,7 @@ type ArcUsage struct {
 	ArcID          string `json:"arc_id"`
 	SubscriptionID string `json:"subscription_id"`
 	Quantity       int    `json:"quantity"`
+	ClusterID      string `json:"cluster_id"`
 }
 
 // ArcUsageResponse stores the response from ACCAPI
@@ -119,6 +125,44 @@ func getArcInstance(arcID string) (ArcInstance, error) {
 	return arcInstance, nil
 }
 
+func getArcClusterInstance(clusterID string) (ArcInstance, error) {
+	arcInstance := ArcInstance{}
+	var response ArcInstanceResponse
+	ciphertext, err := Encrypt([]byte(ENCRYPTION_KEY), []byte(clusterID))
+	if err != nil {
+		log.Println("error while encrypting: ", err)
+		return arcInstance, err
+	}
+	url := ACCAPI + "arc_cluster/" + fmt.Sprintf("%0x", ciphertext)
+	req, _ := http.NewRequest("GET", url, nil)
+	req.Header.Add("Content-Type", "application/json")
+	req.Header.Add("cache-control", "no-cache")
+
+	res, err := http.DefaultClient.Do(req)
+	if err != nil {
+		log.Println("error while sending request: ", err)
+		return arcInstance, err
+	}
+	defer res.Body.Close()
+	body, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		log.Println("error reading res body: ", err)
+		return arcInstance, err
+	}
+	err = json.Unmarshal(body, &response)
+
+	if err != nil {
+		log.Println("error while unmarshalling res body: ", err)
+		return arcInstance, err
+	}
+	if len(response.ArcInstances) != 0 {
+		arcInstance.SubscriptionID = response.ArcInstances[0].SubscriptionID
+	} else {
+		return arcInstance, errors.New("No valid instance found for the provided CLUSTER_ID")
+	}
+	return arcInstance, nil
+}
+
 func reportUsageRequest(arcUsage ArcUsage) (ArcUsageResponse, error) {
 	response := ArcUsageResponse{}
 	url := ACCAPI + "arc/" + arcUsage.ArcID + "/report_usage"
@@ -129,6 +173,45 @@ func reportUsageRequest(arcUsage ArcUsage) (ArcUsageResponse, error) {
 		return response, err
 	}
 	req, _ := http.NewRequest("POST", url, bytes.NewBuffer(marshalledRequest))
+	req.Header.Add("Content-Type", "application/json")
+	req.Header.Add("cache-control", "no-cache")
+
+	res, err := http.DefaultClient.Do(req)
+	if err != nil {
+		log.Println("error while sending request: ", err)
+		return response, err
+	}
+	defer res.Body.Close()
+	body, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		log.Println("error reading res body: ", err)
+		return response, err
+	}
+	err = json.Unmarshal(body, &response)
+
+	if err != nil {
+		log.Println("error while unmarshalling res body: ", err)
+		return response, err
+	}
+	return response, nil
+}
+
+func reportClusterUsageRequest(arcUsage ArcUsage) (ArcUsageResponse, error) {
+	response := ArcUsageResponse{}
+	url := ACCAPI + "arc_cluster/report_usage"
+	ciphertext, err := Encrypt([]byte(ENCRYPTION_KEY), []byte(arcUsage.ClusterID))
+	if err != nil {
+		log.Println("error while encrypting: ", err)
+		return response, err
+	}
+	arcUsage.ClusterID = fmt.Sprintf("%0x", ciphertext)
+	marshalledRequest, err := json.Marshal(arcUsage)
+	log.Println("Arc usage for Cluster ID: ", arcUsage)
+	if err != nil {
+		log.Println("error while marshalling req body: ", err)
+		return response, err
+	}
+	req, _ := http.NewRequest("PUT", url, bytes.NewBuffer(marshalledRequest))
 	req.Header.Add("Content-Type", "application/json")
 	req.Header.Add("cache-control", "no-cache")
 
@@ -192,6 +275,56 @@ func ReportUsage() {
 	}
 
 	TimeValidity = response.TimeValidity
+	if response.WarningMsg != "" {
+		log.Println("warning:", response.WarningMsg)
+	}
+	if response.ErrorMsg != "" {
+		log.Println("error:", response.ErrorMsg)
+	}
+}
+
+// ReportHostedArcUsage reports Arc usage by hosted cluster, intended to be called every hour
+func ReportHostedArcUsage() {
+	log.Printf("=> Reporting hosted arc usage")
+	url := os.Getenv("ES_CLUSTER_URL")
+	if url == "" {
+		log.Fatalln("ES_CLUSTER_URL env required but not present")
+		return
+	}
+	clusterID := os.Getenv("CLUSTER_ID")
+	if clusterID == "" {
+		log.Fatalln("CLUSTER_ID env required but not present")
+		return
+	}
+
+	// getArcClusterInstance(clusterId)
+	result, err := getArcClusterInstance(clusterID)
+	if err != nil {
+		log.Println("Unable to fetch the arc instance. Please make sure that you're using a valid CLUSTER_ID.", err)
+		return
+	}
+
+	NodeCount, err = fetchNodeCount(url)
+	if err != nil || NodeCount <= 0 {
+		log.Println("Unable to fetch a correct node count: ", err)
+	}
+
+	subID := result.SubscriptionID
+	if subID == "" {
+		log.Println("SUBSCRIPTION_ID not found. Initializing in trial mode")
+		return
+	}
+
+	usageBody := ArcUsage{}
+	usageBody.ClusterID = clusterID
+	usageBody.SubscriptionID = subID
+	usageBody.Quantity = NodeCount
+	response, err1 := reportClusterUsageRequest(usageBody)
+	if err1 != nil {
+		log.Println("Please contact support@appbase.io with your ARC_ID or registered e-mail address. Usage is not getting reported: ", err1)
+	}
+
+	// TimeValidity = response.TimeValidity
 	if response.WarningMsg != "" {
 		log.Println("warning:", response.WarningMsg)
 	}

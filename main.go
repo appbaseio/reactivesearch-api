@@ -87,7 +87,11 @@ func main() {
 		cronjob.Start()
 		router.Use(util.BillingMiddleware)
 	} else if HostedBilling == "true" {
-		fmt.Println("Hosted Billing is true")
+		log.Println("You're running Arc with hosted billing module enabled.")
+		util.ReportHostedArcUsage()
+		cronjob := cron.New()
+		cronjob.AddFunc("@every 1h", util.ReportHostedArcUsage)
+		cronjob.Start()
 	} else {
 		log.Println("You're running Arc with billing module disabled.")
 	}
