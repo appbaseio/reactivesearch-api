@@ -38,10 +38,6 @@ func TestSavePublicKey(t *testing.T) {
 			if !compareErrs(tt.err, err) {
 				t.Fatalf("Cat aliases should have failed with error: %v got: %v instead\n", tt.err, err)
 			}
-
-			/*if !reflect.DeepEqual(actualPermission, expectedPermission) {
-				t.Fatalf("Wrong aliases returned expected: %v got: %v\n", expectedPermission, actualPermission)
-			}*/
 		})
 	}
 }
