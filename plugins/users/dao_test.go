@@ -178,17 +178,6 @@ var deleteUserTest = []struct {
 		"_doc",
 		"",
 	},
-	{
-		&ServerSetup{
-			Method:   "DELETE",
-			Path:     "/test1/_doc/user1",
-			Body:     "",
-			Response: `{"_index":"test1","_type":"_doc","_id":"user1","_version":2,"result":"deleted","_shards":{"total":2,"successful":1,"failed":0},"_seq_no":1,"_primary_term":1}`,
-		},
-		false,
-		"",
-		"missing required fields: [Type]",
-	},
 }
 
 func TestDeleteUser(t *testing.T) {
