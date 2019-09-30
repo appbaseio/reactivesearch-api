@@ -6,8 +6,8 @@ import (
 	"net/url"
 	"os"
 
-	"github.com/appbaseio/arc/middleware"
 	"github.com/appbaseio/arc/errors"
+	"github.com/appbaseio/arc/middleware"
 	"github.com/appbaseio/arc/util"
 )
 
@@ -68,6 +68,7 @@ func redirectRequest(r *http.Request) (*http.Request, error) {
 	if err != nil {
 		return nil, err
 	}
+	redirectRequest.Header = r.Header
 
 	// set request content type
 	v := redirectRequest.Header.Get("Content-Type")
