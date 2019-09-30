@@ -5,7 +5,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -18,8 +17,6 @@ import (
 var ACCAPI = "https://accapi.appbase.io/"
 
 // var ACCAPI = "http://localhost:3000/"
-
-var ENCRYPTION_KEY = "A6bOMC73lJsjO3ip0iJqr4AmjIvpErNS"
 
 // TimeValidity to be obtained from ACCAPI
 var TimeValidity int64
@@ -128,12 +125,7 @@ func getArcInstance(arcID string) (ArcInstance, error) {
 func getArcClusterInstance(clusterID string) (ArcInstance, error) {
 	arcInstance := ArcInstance{}
 	var response ArcInstanceResponse
-	ciphertext, err := Encrypt([]byte(ENCRYPTION_KEY), []byte(clusterID))
-	if err != nil {
-		log.Println("error while encrypting: ", err)
-		return arcInstance, err
-	}
-	url := ACCAPI + "arc_cluster/" + fmt.Sprintf("%0x", ciphertext)
+	url := ACCAPI + "arc_cluster/" + clusterID
 	req, _ := http.NewRequest("GET", url, nil)
 	req.Header.Add("Content-Type", "application/json")
 	req.Header.Add("cache-control", "no-cache")
@@ -199,12 +191,6 @@ func reportUsageRequest(arcUsage ArcUsage) (ArcUsageResponse, error) {
 func reportClusterUsageRequest(arcUsage ArcUsage) (ArcUsageResponse, error) {
 	response := ArcUsageResponse{}
 	url := ACCAPI + "arc_cluster/report_usage"
-	ciphertext, err := Encrypt([]byte(ENCRYPTION_KEY), []byte(arcUsage.ClusterID))
-	if err != nil {
-		log.Println("error while encrypting: ", err)
-		return response, err
-	}
-	arcUsage.ClusterID = fmt.Sprintf("%0x", ciphertext)
 	marshalledRequest, err := json.Marshal(arcUsage)
 	log.Println("Arc usage for Cluster ID: ", arcUsage)
 	if err != nil {
