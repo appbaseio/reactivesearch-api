@@ -5,6 +5,10 @@ FROM golang:1.11-alpine as builder
 ARG BILLING=false
 ENV BILLING="${BILLING}"
 
+# Run `--build-arg HOSTED_BILLING=true` to enable hosted billing
+ARG HOSTED_BILLING=false
+ENV HOSTED_BILLING="${HOSTED_BILLING}"
+
 # Install tools required for project
 # Run `docker build --no-cache .` to update dependencies
 RUN apk add --no-cache build-base git
