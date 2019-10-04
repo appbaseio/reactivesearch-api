@@ -33,11 +33,14 @@ func (m *mockAuthService) getCredential(ctx context.Context, username string) (c
 	}
 }
 
+func (m *mockAuthService) createIndex(indexName, mapping string) (bool, error) {
+	args := m.Called(indexName, mapping)
+	return args.Bool(0), args.Error(1)
+}
 func (m *mockAuthService) putUser(ctx context.Context, u user.User) (bool, error) {
 	args := m.Called(ctx, u)
 	return args.Bool(0), args.Error(1)
 }
-
 func (m *mockAuthService) getUser(ctx context.Context, username string) (*user.User, error){
 	args := m.Called(ctx, username)
 	return args.Get(0).(*user.User), args.Error(1)
@@ -50,6 +53,10 @@ func (m *mockAuthService) putPermission(ctx context.Context, p permission.Permis
 	args := m.Called(ctx, p)
 	return args.Bool(0), args.Error(1)
 }
+func (m *mockAuthService) getPublicKey(ctx context.Context) (publicKey, error) {
+	args := m.Called(ctx)
+	return args.Get(0).(publicKey),args.Error(1)
+}
 func (m *mockAuthService) getPermission(ctx context.Context, username string) (*permission.Permission, error) {
 	args := m.Called(ctx, username)
 	return args.Get(0).(*permission.Permission), args.Error(1)
@@ -61,6 +68,10 @@ func (m *mockAuthService) getRolePermission(ctx context.Context, role string) (*
 func (m *mockAuthService) getRawPermission(ctx context.Context, username string) ([]byte, error) {
 	args := m.Called(ctx, username)
 	return args.Get(0).([]byte), args.Error(1)
+}
+func (m *mockAuthService) savePublicKey(ctx context.Context, indexName string, record publicKey) (interface{}, error) {
+	args := m.Called(ctx, indexName,record)
+	return  args.Get(0).(interface{}),args.Error(1)
 }
 
 func TestBasicAuthWithUserPasswordBasic(t *testing.T) {
