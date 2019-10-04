@@ -34,7 +34,7 @@ func sources(h http.HandlerFunc) http.HandlerFunc {
 		if reqCredential == credential.Permission {
 			reqIP := iplookup.FromRequest(req)
 			if reqIP == "" {
-				msg := fmt.Sprintf(`failed to recognise request ip: "%s"`, reqIP)
+				msg := fmt.Sprintf(`failed to recognize request ip: "%s"`, reqIP)
 				util.WriteBackError(w, msg, http.StatusUnauthorized)
 				return
 			}
@@ -50,6 +50,10 @@ func sources(h http.HandlerFunc) http.HandlerFunc {
 
 			var validated bool
 			for _, source := range allowedSources {
+				if source == "0.0.0.0/0" {
+					validated = true
+					break
+				}
 				_, ipNet, err := net.ParseCIDR(source)
 				if err != nil {
 					log.Printf("%s: %v\n", logTag, err)
