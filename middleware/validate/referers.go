@@ -58,7 +58,7 @@ func referers(h http.HandlerFunc) http.HandlerFunc {
 			}
 
 			if !validated {
-				util.WriteBackError(w, "permission doeesn't have required referers", http.StatusInternalServerError)
+				util.WriteBackError(w, "permission doesn't have required referers", http.StatusUnauthorized)
 				return
 			}
 		}
