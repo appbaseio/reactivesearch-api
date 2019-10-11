@@ -76,7 +76,7 @@ var getPermissionTest = []struct {
 		&ServerSetup{
 			Method:   "GET",
 			Path:     "/test/_doc/perm1",
-			Body:    "",
+			Body:     "",
 			Response: `{"_index":"perm1","_type":"doc","_id":"user1","_version":1,"found":true,"_source":{"first_name":"John","last_name":"Smith","age":25}}`,
 		},
 		[]byte(`{"_index":"perm1","_type":"doc","_id":"user1","_version":1,"found":true,"_source":{"first_name":"John","last_name":"Smith","age":25}}`),
@@ -189,13 +189,20 @@ func TestPutUser(t *testing.T) {
 }
 
 var defaultLimits = &permission.Limits{
-	IPLimit:       7200,
-	DocsLimit:     30,
-	SearchLimit:   30,
-	IndicesLimit:  30,
-	CatLimit:      30,
-	ClustersLimit: 30,
-	MiscLimit:     30,
+	IPLimit:          7200,
+	DocsLimit:        30,
+	SearchLimit:      30,
+	IndicesLimit:     30,
+	CatLimit:         30,
+	ClustersLimit:    30,
+	MiscLimit:        30,
+	UserLimit:        30,
+	PermissionLimit:  30,
+	AnalyticsLimit:   30,
+	RulesLimit:       30,
+	TemplatesLimit:   30,
+	SuggestionsLimit: 30,
+	StreamsLimit:     30,
 }
 
 var perm = permission.Permission{
