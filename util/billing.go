@@ -21,6 +21,9 @@ var ACCAPI = "https://accapi.appbase.io/"
 // TimeValidity to be obtained from ACCAPI
 var TimeValidity int64
 
+// Tier is the value of the user's plan
+var Tier *Plan
+
 // MaxErrorTime before showing errors if invalid trial / plan in hours
 var MaxErrorTime int64 = 24 // in hrs
 
@@ -65,7 +68,7 @@ type ArcInstanceDetails struct {
 	TrialValidity        int64                  `json:"trial_validity"`
 	ArcID                string                 `json:"arc_id"`
 	CreatedAt            int64                  `json:"created_at"`
-	Tier                 string                 `json:"tier"`
+	Tier                 *Plan                  `json:"tier"`
 	TierValidity         int64                  `json:"tier_validity"`
 	TimeValidity         int64                  `json:"time_validity"`
 	Metadata             map[string]interface{} `json:"metadata"`
@@ -86,6 +89,18 @@ func BillingMiddleware(next http.Handler) http.Handler {
 			http.Error(w, "payment required", http.StatusPaymentRequired)
 		}
 	})
+}
+
+// Returns the arc instance by ID
+func getArcInstanceByID(arcID string, arcInstances []ArcInstanceDetails) ArcInstanceDetails {
+	var arcInstance ArcInstanceDetails
+	for _, instance := range arcInstances {
+		if instance.ArcID == arcID {
+			arcInstance = instance
+			break
+		}
+	}
+	return arcInstance
 }
 
 func getArcInstance(arcID string) (ArcInstance, error) {
@@ -109,8 +124,10 @@ func getArcInstance(arcID string) (ArcInstance, error) {
 	}
 	err = json.Unmarshal(body, &response)
 	if len(response.ArcInstances) != 0 {
-		arcInstance.SubscriptionID = response.ArcInstances[0].SubscriptionID
-		TimeValidity = response.ArcInstances[0].TimeValidity
+		arcInstanceByID := getArcInstanceByID(arcID, response.ArcInstances)
+		arcInstance.SubscriptionID = arcInstanceByID.SubscriptionID
+		TimeValidity = arcInstanceByID.TimeValidity
+		Tier = arcInstanceByID.Tier
 	} else {
 		return arcInstance, errors.New("No valid instance found for the provided ARC_ID")
 	}
@@ -148,7 +165,10 @@ func getArcClusterInstance(clusterID string) (ArcInstance, error) {
 		return arcInstance, err
 	}
 	if len(response.ArcInstances) != 0 {
-		arcInstance.SubscriptionID = response.ArcInstances[0].SubscriptionID
+		arcInstanceByID := getArcInstanceByID(clusterID, response.ArcInstances)
+		arcInstance.SubscriptionID = arcInstanceByID.SubscriptionID
+		TimeValidity = arcInstanceByID.TimeValidity
+		Tier = arcInstanceByID.Tier
 	} else {
 		return arcInstance, errors.New("No valid instance found for the provided CLUSTER_ID")
 	}
@@ -307,7 +327,7 @@ func ReportHostedArcUsage() {
 	usageBody.Quantity = NodeCount
 	response, err1 := reportClusterUsageRequest(usageBody)
 	if err1 != nil {
-		log.Println("Please contact support@appbase.io with your ARC_ID or registered e-mail address. Usage is not getting reported: ", err1)
+		log.Println("Please contact support@appbase.io with your CLUSTER_ID or registered e-mail address. Usage is not getting reported: ", err1)
 	}
 
 	// TimeValidity = response.TimeValidity

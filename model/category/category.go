@@ -31,6 +31,7 @@ const (
 	Streams
 	Rules
 	Templates
+	Suggestions
 )
 
 // String is an implementation of Stringer interface that returns the string representation of category.Categories.
@@ -48,6 +49,7 @@ func (c Category) String() string {
 		"streams",
 		"rules",
 		"templates",
+		"suggestions",
 	}[c]
 }
 
@@ -83,6 +85,8 @@ func (c *Category) UnmarshalJSON(bytes []byte) error {
 		*c = Rules
 	case Templates.String():
 		*c = Templates
+	case Suggestions.String():
+		*c = Suggestions
 	default:
 		return fmt.Errorf("invalid category encountered: %v", category)
 	}
@@ -117,6 +121,8 @@ func (c Category) MarshalJSON() ([]byte, error) {
 		category = Rules.String()
 	case Templates:
 		category = Templates.String()
+	case Suggestions:
+		category = Suggestions.String()
 	default:
 		return nil, fmt.Errorf("invalid category encountered: %v" + c.String())
 	}
