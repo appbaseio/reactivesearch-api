@@ -80,7 +80,7 @@ func (o Plan) MarshalJSON() ([]byte, error) {
 // A util function to validate the user's plan against the restricted plans
 func ValidatedPlans(restrictedPlans []Plan) bool {
 	for _, restrictedPlan := range restrictedPlans {
-		if Billing == "true" && Tier.String() == restrictedPlan.String() {
+		if Billing == "true" || HostedBilling == "true" && Tier.String() == restrictedPlan.String() {
 			return false
 		}
 	}
