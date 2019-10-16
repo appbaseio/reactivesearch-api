@@ -38,6 +38,8 @@ var (
 	Billing string
 	// HostedBilling is a build time flag
 	HostedBilling string
+	// ClusterBilling is a build time flag
+	ClusterBilling string
 )
 
 func init() {
@@ -78,6 +80,7 @@ func main() {
 	router := mux.NewRouter().StrictSlash(true)
 	util.Billing = Billing
 	util.HostedBilling = HostedBilling
+	util.ClusterBilling = ClusterBilling
 
 	if Billing == "true" {
 		log.Println("You're running Arc with billing module enabled.")
@@ -92,6 +95,8 @@ func main() {
 		cronjob := cron.New()
 		cronjob.AddFunc("@every 1h", util.ReportHostedArcUsage)
 		cronjob.Start()
+	} else if ClusterBilling == "true" {
+		// TODO: handle the clusters billing
 	} else {
 		log.Println("You're running Arc with billing module disabled.")
 	}
