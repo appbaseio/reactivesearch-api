@@ -69,6 +69,7 @@ func redirectRequest(r *http.Request) (*http.Request, error) {
 		return nil, err
 	}
 	redirectRequest.Header = r.Header
+	redirectRequest.Header.Del("Authorization")
 
 	// set request content type
 	v := redirectRequest.Header.Get("Content-Type")
