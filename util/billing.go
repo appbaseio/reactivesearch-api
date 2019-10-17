@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -14,15 +15,21 @@ import (
 )
 
 // ACCAPI URL
-var ACCAPI = "https://accapi.appbase.io/"
+// var ACCAPI = "https://accapi.appbase.io/"
 
-// var ACCAPI = "http://localhost:3000/"
+var ACCAPI = "http://localhost:3000/"
 
 // TimeValidity to be obtained from ACCAPI
 var TimeValidity int64
 
 // Tier is the value of the user's plan
 var Tier *Plan
+
+// Feature custom events
+var FeatureCustomEvents bool
+
+// Feature suggestions
+var FeatureSuggestions bool
 
 // MaxErrorTime before showing errors if invalid trial / plan in hours
 var MaxErrorTime int64 = 24 // in hrs
@@ -36,6 +43,12 @@ type ArcUsage struct {
 	SubscriptionID string `json:"subscription_id"`
 	Quantity       int    `json:"quantity"`
 	ClusterID      string `json:"cluster_id"`
+}
+
+type ClusterPlan struct {
+	Tier                *Plan `json:"pricing_plan"`
+	FeatureCustomEvents bool  `json:"feature_custom_events"`
+	FeatureSuggestions  bool  `json:"feature_suggestions"`
 }
 
 // ArcUsageResponse stores the response from ACCAPI
@@ -58,6 +71,11 @@ type ArcInstanceResponse struct {
 	ArcInstances []ArcInstanceDetails `json:"instances"`
 }
 
+// Cluster plan response type
+type ClusterPlanResponse struct {
+	Plan ClusterPlan `json:"plan"`
+}
+
 // ArcInstanceDetails contains the info about an Arc Instance
 type ArcInstanceDetails struct {
 	NodeCount            int                    `json:"node_count"`
@@ -72,6 +90,8 @@ type ArcInstanceDetails struct {
 	TierValidity         int64                  `json:"tier_validity"`
 	TimeValidity         int64                  `json:"time_validity"`
 	Metadata             map[string]interface{} `json:"metadata"`
+	FeatureCustomEvents  bool                   `json:"feature_custom_events"`
+	FeatureSuggestions   bool                   `json:"feature_suggestions"`
 }
 
 // BillingMiddleware function to be called for each request
@@ -128,6 +148,8 @@ func getArcInstance(arcID string) (ArcInstance, error) {
 		arcInstance.SubscriptionID = arcInstanceByID.SubscriptionID
 		TimeValidity = arcInstanceByID.TimeValidity
 		Tier = arcInstanceByID.Tier
+		FeatureCustomEvents = arcInstanceByID.FeatureCustomEvents
+		FeatureSuggestions = arcInstanceByID.FeatureSuggestions
 	} else {
 		return arcInstance, errors.New("No valid instance found for the provided ARC_ID")
 	}
@@ -169,10 +191,65 @@ func getArcClusterInstance(clusterID string) (ArcInstance, error) {
 		arcInstance.SubscriptionID = arcInstanceByID.SubscriptionID
 		TimeValidity = arcInstanceByID.TimeValidity
 		Tier = arcInstanceByID.Tier
+		FeatureCustomEvents = arcInstanceByID.FeatureCustomEvents
+		FeatureSuggestions = arcInstanceByID.FeatureSuggestions
 	} else {
 		return arcInstance, errors.New("No valid instance found for the provided CLUSTER_ID")
 	}
 	return arcInstance, nil
+}
+
+// Fetches the cluster plan details for the encrypted cluster id
+func getClusterPlan(clusterID string) (ClusterPlan, error) {
+	clusterPlan := ClusterPlan{}
+	var response ClusterPlanResponse
+	url := ACCAPI + "v1/plan/" + clusterID
+	req, _ := http.NewRequest("GET", url, nil)
+	req.Header.Add("Content-Type", "application/json")
+	req.Header.Add("cache-control", "no-cache")
+
+	res, err := http.DefaultClient.Do(req)
+	if err != nil {
+		log.Println("error while sending request: ", err)
+		return clusterPlan, err
+	}
+	defer res.Body.Close()
+	body, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		log.Println("error reading res body: ", err)
+		return clusterPlan, err
+	}
+	err = json.Unmarshal(body, &response)
+
+	if err != nil {
+		log.Println("error while unmarshalling res body: ", err)
+		return clusterPlan, err
+	}
+
+	if response.Plan.Tier == nil {
+		return clusterPlan, fmt.Errorf("error while getting the cluster plan")
+	}
+	// Set the plan for clusters
+	Tier = response.Plan.Tier
+	FeatureCustomEvents = response.Plan.FeatureCustomEvents
+	FeatureSuggestions = response.Plan.FeatureSuggestions
+
+	return clusterPlan, nil
+}
+
+// GetClusterPlan fetches the cluster plan & sets the Tier value
+func SetClusterPlan() {
+	log.Printf("=> Getting cluster plan details")
+	clusterID := os.Getenv("CLUSTER_ID")
+	if clusterID == "" {
+		log.Fatalln("CLUSTER_ID env required but not present")
+		return
+	}
+	_, err := getClusterPlan(clusterID)
+	if err != nil {
+		log.Println("Unable to fetch the cluster plan. Please make sure that you're using a valid CLUSTER_ID.", err)
+		return
+	}
 }
 
 func reportUsageRequest(arcUsage ArcUsage) (ArcUsageResponse, error) {
