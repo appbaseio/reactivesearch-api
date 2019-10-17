@@ -152,7 +152,7 @@ func (o Plan) MarshalJSON() ([]byte, error) {
 // ValidatedPlans validates the user's plan against the valid plans
 func ValidatedPlans(validPlans []Plan) bool {
 	for _, validPlan := range validPlans {
-		if ClusterBilling == "true" || Billing == "true" || HostedBilling == "true" && Tier.String() == validPlan.String() {
+		if (ClusterBilling == "true" || Billing == "true" || HostedBilling == "true") && Tier.String() == validPlan.String() {
 			return true
 		}
 	}
