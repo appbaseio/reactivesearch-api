@@ -9,8 +9,8 @@ import (
 
 // Plan returns a middleware that validates the user's plan.
 // For e.g `validate.Plan([]util.Plan{util.ArcEnterprise}),` restricts the route to only arc-enterprise users.
-func Plan(validPlans []util.Plan) middleware.Middleware {
-	if util.ValidatedPlans(validPlans) {
+func Plan(validPlans []util.Plan, byPassValidation bool) middleware.Middleware {
+	if util.ValidatePlans(validPlans, byPassValidation) {
 		return validPlan
 	}
 	return invalidPlan
