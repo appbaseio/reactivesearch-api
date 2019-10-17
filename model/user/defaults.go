@@ -25,7 +25,7 @@ var (
 		category.Streams,
 		category.Rules,
 		category.Templates,
-		category.Suggestions
+		category.Suggestions,
 	}
 
 	defaultOps = []op.Operation{
