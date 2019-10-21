@@ -5,9 +5,17 @@ FROM golang:1.11-alpine as builder
 ARG BILLING=false
 ENV BILLING="${BILLING}"
 
-# Run `--build-arg HOSTED_BILLING=true` to enable hosted billing
+# Run `--build-arg HOSTED_BILLING=true` to enable billing for hosted arc
 ARG HOSTED_BILLING=false
 ENV HOSTED_BILLING="${HOSTED_BILLING}"
+
+# Run `--build-arg CLUSTER_BILLING=true` to enable billing for clusters
+ARG CLUSTER_BILLING=false
+ENV CLUSTER_BILLING="${CLUSTER_BILLING}"
+
+# Run `--build-arg PLAN_REFRESH_INTERVAL=X` to change the default interval of 1 hour, where 'X' is an integer represent the hours unit
+ARG PLAN_REFRESH_INTERVAL=1
+ENV PLAN_REFRESH_INTERVAL="${PLAN_REFRESH_INTERVAL}"
 
 # Install tools required for project
 # Run `docker build --no-cache .` to update dependencies
