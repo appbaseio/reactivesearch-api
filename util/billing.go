@@ -15,9 +15,9 @@ import (
 )
 
 // ACCAPI URL
-var ACCAPI = "https://accapi.appbase.io/"
+// var ACCAPI = "https://accapi.appbase.io/"
 
-// var ACCAPI = "http://localhost:3000/"
+var ACCAPI = "http://localhost:3000/"
 
 // TimeValidity to be obtained from ACCAPI
 var TimeValidity int64
@@ -46,9 +46,11 @@ type ArcUsage struct {
 }
 
 type ClusterPlan struct {
-	Tier                *Plan `json:"pricing_plan"`
+	Tier                *Plan `json:"tier"`
 	FeatureCustomEvents bool  `json:"feature_custom_events"`
 	FeatureSuggestions  bool  `json:"feature_suggestions"`
+	Trial               bool  `json:"trial"`
+	TrialValidity       int64 `json:"trial_validity"`
 }
 
 // ArcUsageResponse stores the response from ACCAPI
@@ -247,7 +249,7 @@ func SetClusterPlan() {
 	}
 	_, err := getClusterPlan(clusterID)
 	if err != nil {
-		log.Println("Unable to fetch the cluster plan. Please make sure that you're using a valid CLUSTER_ID.", err)
+		log.Fatalln("Unable to fetch the cluster plan. Please make sure that you're using a valid CLUSTER_ID.", err)
 		return
 	}
 }
