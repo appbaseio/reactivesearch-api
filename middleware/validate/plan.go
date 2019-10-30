@@ -19,7 +19,10 @@ func Plan(validPlans []util.Plan, byPassValidation bool) middleware.Middleware {
 // Throws the payment required error
 func invalidPlan(h http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
-		msg := "This feature is not available for the " + util.Tier.String() + " plan users."
+		msg := "This feature is not available for the free plan users, please upgrade to a paid plan."
+		if util.Tier != nil {
+			msg = "This feature is not available for the " + util.Tier.String() + " plan users, please upgrade to a higher plan."
+		}
 		util.WriteBackError(w, msg, http.StatusPaymentRequired)
 	}
 }

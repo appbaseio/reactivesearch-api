@@ -46,11 +46,14 @@ type ArcUsage struct {
 }
 
 type ClusterPlan struct {
-	Tier                *Plan `json:"tier"`
-	FeatureCustomEvents bool  `json:"feature_custom_events"`
-	FeatureSuggestions  bool  `json:"feature_suggestions"`
-	Trial               bool  `json:"trial"`
-	TrialValidity       int64 `json:"trial_validity"`
+	Tier                *Plan  `json:"tier"`
+	FeatureCustomEvents bool   `json:"feature_custom_events"`
+	FeatureSuggestions  bool   `json:"feature_suggestions"`
+	Trial               bool   `json:"trial"`
+	TrialValidity       int64  `json:"trial_validity"`
+	TierValidity        int64  `json:"tier_validity"`
+	TimeValidity        int64  `json:"time_validity"`
+	SubscriptionID      string `json:"subscription_id"`
 }
 
 // ArcUsageResponse stores the response from ACCAPI
@@ -233,6 +236,7 @@ func getClusterPlan(clusterID string) (ClusterPlan, error) {
 	}
 	// Set the plan for clusters
 	Tier = response.Plan.Tier
+	TimeValidity = response.Plan.TimeValidity
 	FeatureCustomEvents = response.Plan.FeatureCustomEvents
 	FeatureSuggestions = response.Plan.FeatureSuggestions
 
