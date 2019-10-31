@@ -46,9 +46,14 @@ type ArcUsage struct {
 }
 
 type ClusterPlan struct {
-	Tier                *Plan `json:"pricing_plan"`
-	FeatureCustomEvents bool  `json:"feature_custom_events"`
-	FeatureSuggestions  bool  `json:"feature_suggestions"`
+	Tier                *Plan  `json:"tier"`
+	FeatureCustomEvents bool   `json:"feature_custom_events"`
+	FeatureSuggestions  bool   `json:"feature_suggestions"`
+	Trial               bool   `json:"trial"`
+	TrialValidity       int64  `json:"trial_validity"`
+	TierValidity        int64  `json:"tier_validity"`
+	TimeValidity        int64  `json:"time_validity"`
+	SubscriptionID      string `json:"subscription_id"`
 }
 
 // ArcUsageResponse stores the response from ACCAPI
@@ -231,13 +236,14 @@ func getClusterPlan(clusterID string) (ClusterPlan, error) {
 	}
 	// Set the plan for clusters
 	Tier = response.Plan.Tier
+	TimeValidity = response.Plan.TimeValidity
 	FeatureCustomEvents = response.Plan.FeatureCustomEvents
 	FeatureSuggestions = response.Plan.FeatureSuggestions
 
 	return clusterPlan, nil
 }
 
-// GetClusterPlan fetches the cluster plan & sets the Tier value
+// SetClusterPlan fetches the cluster plan & sets the Tier value
 func SetClusterPlan() {
 	log.Printf("=> Getting cluster plan details")
 	clusterID := os.Getenv("CLUSTER_ID")
@@ -247,7 +253,7 @@ func SetClusterPlan() {
 	}
 	_, err := getClusterPlan(clusterID)
 	if err != nil {
-		log.Println("Unable to fetch the cluster plan. Please make sure that you're using a valid CLUSTER_ID.", err)
+		log.Fatalln("Unable to fetch the cluster plan. Please make sure that you're using a valid CLUSTER_ID. If the issue persists please contact support@appbase.io with your ARC_ID or registered e-mail address.", err)
 		return
 	}
 }
@@ -333,7 +339,7 @@ func ReportUsage() {
 
 	result, err := getArcInstance(arcID)
 	if err != nil {
-		log.Println("Unable to fetch the arc instance. Please make sure that you're using a valid ARC_ID.")
+		log.Fatalln("Unable to fetch the arc instance. Please make sure that you're using a valid ARC_ID. If the issue persists please contact support@appbase.io with your ARC_ID or registered e-mail address.")
 		return
 	}
 
@@ -383,7 +389,7 @@ func ReportHostedArcUsage() {
 	// getArcClusterInstance(clusterId)
 	result, err := getArcClusterInstance(clusterID)
 	if err != nil {
-		log.Println("Unable to fetch the arc instance. Please make sure that you're using a valid CLUSTER_ID.", err)
+		log.Fatalln("Unable to fetch the arc instance. Please make sure that you're using a valid CLUSTER_ID. If the issue persists please contact support@appbase.io with your ARC_ID or registered e-mail address.", err)
 		return
 	}
 

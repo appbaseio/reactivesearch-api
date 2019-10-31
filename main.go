@@ -110,6 +110,7 @@ func main() {
 		cronjob := cron.New()
 		cronjob.AddFunc(interval, util.ReportHostedArcUsage)
 		cronjob.Start()
+		router.Use(util.BillingMiddleware)
 	} else if ClusterBilling == "true" {
 		log.Println("You're running Arc with cluster billing module enabled.")
 		util.SetClusterPlan()
@@ -117,6 +118,7 @@ func main() {
 		cronjob := cron.New()
 		cronjob.AddFunc(interval, util.SetClusterPlan)
 		cronjob.Start()
+		router.Use(util.BillingMiddleware)
 	} else {
 		log.Println("You're running Arc with billing module disabled.")
 	}
