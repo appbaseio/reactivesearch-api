@@ -15,9 +15,9 @@ import (
 )
 
 // ACCAPI URL
-var ACCAPI = "https://accapi.appbase.io/"
+// var ACCAPI = "https://accapi.appbase.io/"
 
-// var ACCAPI = "http://localhost:3000/"
+var ACCAPI = "http://localhost:3000/"
 
 // TimeValidity to be obtained from ACCAPI
 var TimeValidity int64
@@ -192,12 +192,12 @@ func getArcClusterInstance(clusterID string) (ArcInstance, error) {
 		return arcInstance, err
 	}
 	if len(response.ArcInstances) != 0 {
-		arcInstanceByID := getArcInstanceByID(clusterID, response.ArcInstances)
-		arcInstance.SubscriptionID = arcInstanceByID.SubscriptionID
-		TimeValidity = arcInstanceByID.TimeValidity
-		Tier = arcInstanceByID.Tier
-		FeatureCustomEvents = arcInstanceByID.FeatureCustomEvents
-		FeatureSuggestions = arcInstanceByID.FeatureSuggestions
+		arcInstanceDetails := response.ArcInstances[0]
+		arcInstance.SubscriptionID = arcInstanceDetails.SubscriptionID
+		TimeValidity = arcInstanceDetails.TimeValidity
+		Tier = arcInstanceDetails.Tier
+		FeatureCustomEvents = arcInstanceDetails.FeatureCustomEvents
+		FeatureSuggestions = arcInstanceDetails.FeatureSuggestions
 	} else {
 		return arcInstance, errors.New("No valid instance found for the provided CLUSTER_ID")
 	}
