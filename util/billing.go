@@ -105,7 +105,7 @@ func BillingMiddleware(next http.Handler) http.Handler {
 		log.Println("current time validity value: ", TimeValidity)
 		if TimeValidity > 0 { // Valid plan
 			next.ServeHTTP(w, r)
-		} else if TimeValidity <= 0 && TimeValidity < -3600*MaxErrorTime { // Negative validity, plan has been expired
+		} else if TimeValidity <= 0 && -TimeValidity < 3600*MaxErrorTime { // Negative validity, plan has been expired
 			// Print warning message if remaining time is less than max allowed time
 			log.Println("Warning: Payment is required. Arc will start sending out error messages in next", MaxErrorTime, "hours")
 			next.ServeHTTP(w, r)
