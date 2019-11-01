@@ -26,10 +26,10 @@ var TimeValidity int64
 var Tier *Plan
 
 // Feature custom events
-var FeatureCustomEvents bool
+var FeatureCustomEvents = false
 
 // Feature suggestions
-var FeatureSuggestions bool
+var FeatureSuggestions = false
 
 // MaxErrorTime before showing errors if invalid trial / plan in hours
 var MaxErrorTime int64 = 24 // in hrs
