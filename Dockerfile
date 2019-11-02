@@ -13,6 +13,10 @@ ENV HOSTED_BILLING="${HOSTED_BILLING}"
 ARG CLUSTER_BILLING=false
 ENV CLUSTER_BILLING="${CLUSTER_BILLING}"
 
+# Run `--build-arg IGNORE_BILLING_MIDDLEWARE=true` to disable billing middleware for testing
+ARG IGNORE_BILLING_MIDDLEWARE=false
+ENV IGNORE_BILLING_MIDDLEWARE="${IGNORE_BILLING_MIDDLEWARE}"
+
 # Run `--build-arg PLAN_REFRESH_INTERVAL=X` to change the default interval of 1 hour, where 'X' is an integer represent the hours unit
 ARG PLAN_REFRESH_INTERVAL=1
 ENV PLAN_REFRESH_INTERVAL="${PLAN_REFRESH_INTERVAL}"

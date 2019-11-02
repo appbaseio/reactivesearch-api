@@ -105,7 +105,7 @@ func BillingMiddleware(next http.Handler) http.Handler {
 		log.Println("current time validity value: ", TimeValidity)
 		if TimeValidity > 0 { // Valid plan
 			next.ServeHTTP(w, r)
-		} else if TimeValidity <= 0 && TimeValidity < -3600*MaxErrorTime { // Negative validity, plan has been expired
+		} else if TimeValidity <= 0 && -TimeValidity < 3600*MaxErrorTime { // Negative validity, plan has been expired
 			// Print warning message if remaining time is less than max allowed time
 			log.Println("Warning: Payment is required. Arc will start sending out error messages in next", MaxErrorTime, "hours")
 			next.ServeHTTP(w, r)
@@ -192,12 +192,12 @@ func getArcClusterInstance(clusterID string) (ArcInstance, error) {
 		return arcInstance, err
 	}
 	if len(response.ArcInstances) != 0 {
-		arcInstanceByID := getArcInstanceByID(clusterID, response.ArcInstances)
-		arcInstance.SubscriptionID = arcInstanceByID.SubscriptionID
-		TimeValidity = arcInstanceByID.TimeValidity
-		Tier = arcInstanceByID.Tier
-		FeatureCustomEvents = arcInstanceByID.FeatureCustomEvents
-		FeatureSuggestions = arcInstanceByID.FeatureSuggestions
+		arcInstanceDetails := response.ArcInstances[0]
+		arcInstance.SubscriptionID = arcInstanceDetails.SubscriptionID
+		TimeValidity = arcInstanceDetails.TimeValidity
+		Tier = arcInstanceDetails.Tier
+		FeatureCustomEvents = arcInstanceDetails.FeatureCustomEvents
+		FeatureSuggestions = arcInstanceDetails.FeatureSuggestions
 	} else {
 		return arcInstance, errors.New("No valid instance found for the provided CLUSTER_ID")
 	}
