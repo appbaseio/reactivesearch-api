@@ -53,3 +53,4 @@ WORKDIR /arc
 
 EXPOSE 8000
 ENTRYPOINT ["build/arc", "--log", "stdout", "--plugins"]
+CMD ["--env", "config/docker.env"]
