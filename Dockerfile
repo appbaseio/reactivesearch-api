@@ -36,9 +36,16 @@ RUN make
 # Final stage: Create the running container
 FROM alpine:3.10.1 AS final
 
+# Get ca certs, for making api calls
+RUN apk add --no-cache ca-certificates
+
+
+# Create env folder
+RUN mkdir /arc-data && touch /arc-data/.env && chmod 777 /arc-data/.env
+
 # Import the compiled executable from the first stage.
 COPY --from=builder /arc /arc
 WORKDIR /arc
 
 EXPOSE 8000
-CMD ["build/arc", "--log", "stdout", "--plugins"]
+ENTRYPOINT ["build/arc", "--log", "stdout", "--plugins"]
