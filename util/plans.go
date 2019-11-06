@@ -158,7 +158,7 @@ func ValidatePlans(validPlans []Plan, byPassValidation bool) bool {
 		return false
 	}
 	for _, validPlan := range validPlans {
-		if (ClusterBilling == "true" || Billing == "true" || HostedBilling == "true") && Tier.String() == validPlan.String() {
+		if Tier.String() == validPlan.String() {
 			return true
 		}
 	}
