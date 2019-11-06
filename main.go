@@ -118,6 +118,8 @@ func main() {
 		cronjob.AddFunc(interval, util.SetClusterPlan)
 		cronjob.Start()
 	} else {
+		var plan = util.ArcEnterprise
+		util.Tier = &plan
 		log.Println("You're running Arc with billing module disabled.")
 	}
 
