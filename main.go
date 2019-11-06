@@ -43,6 +43,8 @@ var (
 	HostedBilling string
 	// ClusterBilling is a build time flag
 	ClusterBilling string
+	// IgnoreBillingMiddleware ignores the billing middleware
+	IgnoreBillingMiddleware string
 )
 
 func init() {
@@ -103,13 +105,18 @@ func main() {
 		cronjob := cron.New()
 		cronjob.AddFunc(interval, util.ReportUsage)
 		cronjob.Start()
-		router.Use(util.BillingMiddleware)
+		if IgnoreBillingMiddleware != "true" {
+			router.Use(util.BillingMiddleware)
+		}
 	} else if HostedBilling == "true" {
 		log.Println("You're running Arc with hosted billing module enabled.")
 		util.ReportHostedArcUsage()
 		cronjob := cron.New()
 		cronjob.AddFunc(interval, util.ReportHostedArcUsage)
 		cronjob.Start()
+		if IgnoreBillingMiddleware != "true" {
+			router.Use(util.BillingMiddleware)
+		}
 	} else if ClusterBilling == "true" {
 		log.Println("You're running Arc with cluster billing module enabled.")
 		util.SetClusterPlan()
@@ -117,6 +124,9 @@ func main() {
 		cronjob := cron.New()
 		cronjob.AddFunc(interval, util.SetClusterPlan)
 		cronjob.Start()
+		if IgnoreBillingMiddleware != "true" {
+			router.Use(util.BillingMiddleware)
+		}
 	} else {
 		var plan = util.ArcEnterprise
 		util.Tier = &plan
