@@ -15,7 +15,7 @@ func newStubClient(url, indexName string) (*elasticsearch, error) {
 	if err != nil {
 		return nil, fmt.Errorf("error while initializing elastic client: %v", err)
 	}
-	es := &elasticsearch{url, indexName, client}
+	es := &elasticsearch{url, indexName, client, nil}
 	return es, nil
 }
 
