@@ -267,7 +267,7 @@ func reportUsageRequest(arcUsage ArcUsage) (ArcUsageResponse, error) {
 		log.Println("error while marshalling req body: ", err)
 		return response, err
 	}
-	req, _ := http.NewRequest("POST", url, bytes.NewBuffer(marshalledRequest))
+	req, _ := http.NewRequest(http.MethodPut, url, bytes.NewBuffer(marshalledRequest))
 	req.Header.Add("Content-Type", "application/json")
 	req.Header.Add("cache-control", "no-cache")
 
@@ -300,7 +300,7 @@ func reportClusterUsageRequest(arcUsage ArcUsage) (ArcUsageResponse, error) {
 		log.Println("error while marshalling req body: ", err)
 		return response, err
 	}
-	req, _ := http.NewRequest("PUT", url, bytes.NewBuffer(marshalledRequest))
+	req, _ := http.NewRequest(http.MethodPut, url, bytes.NewBuffer(marshalledRequest))
 	req.Header.Add("Content-Type", "application/json")
 	req.Header.Add("cache-control", "no-cache")
 
