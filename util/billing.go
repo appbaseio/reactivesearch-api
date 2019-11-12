@@ -260,7 +260,7 @@ func SetClusterPlan() {
 
 func reportUsageRequest(arcUsage ArcUsage) (ArcUsageResponse, error) {
 	response := ArcUsageResponse{}
-	url := ACCAPI + "arc/" + arcUsage.ArcID + "/report_usage"
+	url := ACCAPI + "arc/report_usage"
 	marshalledRequest, err := json.Marshal(arcUsage)
 	log.Println("Arc usage for Arc ID: ", arcUsage)
 	if err != nil {
