@@ -15,9 +15,9 @@ import (
 )
 
 // ACCAPI URL
-// var ACCAPI = "https://accapi.appbase.io/"
+var ACCAPI = "https://accapi.appbase.io/"
 
-var ACCAPI = "http://localhost:3000/"
+// var ACCAPI = "http://localhost:3000/"
 
 // TimeValidity to be obtained from ACCAPI
 var TimeValidity int64
@@ -363,7 +363,6 @@ func ReportUsage() {
 		log.Println("Please contact support@appbase.io with your ARC_ID or registered e-mail address. Usage is not getting reported: ", err1)
 	}
 
-	TimeValidity = response.TimeValidity
 	if response.WarningMsg != "" {
 		log.Println("warning:", response.WarningMsg)
 	}
@@ -413,7 +412,6 @@ func ReportHostedArcUsage() {
 		log.Println("Please contact support@appbase.io with your CLUSTER_ID or registered e-mail address. Usage is not getting reported: ", err1)
 	}
 
-	// TimeValidity = response.TimeValidity
 	if response.WarningMsg != "" {
 		log.Println("warning:", response.WarningMsg)
 	}
