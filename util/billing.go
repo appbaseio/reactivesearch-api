@@ -169,7 +169,7 @@ func getArcInstance(arcID string) (ArcInstance, error) {
 func getArcClusterInstance(clusterID string) (ArcInstance, error) {
 	arcInstance := ArcInstance{}
 	var response ArcInstanceResponse
-	url := ACCAPI + "arc_cluster/" + clusterID
+	url := ACCAPI + "byoc/" + clusterID
 	req, _ := http.NewRequest("GET", url, nil)
 	req.Header.Add("Content-Type", "application/json")
 	req.Header.Add("cache-control", "no-cache")
@@ -293,7 +293,7 @@ func reportUsageRequest(arcUsage ArcUsage) (ArcUsageResponse, error) {
 
 func reportClusterUsageRequest(arcUsage ArcUsage) (ArcUsageResponse, error) {
 	response := ArcUsageResponse{}
-	url := ACCAPI + "arc_cluster/report_usage"
+	url := ACCAPI + "byoc/report_usage"
 	marshalledRequest, err := json.Marshal(arcUsage)
 	log.Println("Arc usage for Cluster ID: ", arcUsage)
 	if err != nil {
