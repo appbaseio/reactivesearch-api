@@ -10,6 +10,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strings"
 
 	"github.com/olivere/elastic/v7"
 )
@@ -103,7 +104,10 @@ type ArcInstanceDetails struct {
 func BillingMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		log.Println("current time validity value: ", TimeValidity)
-		if TimeValidity > 0 { // Valid plan
+		// Blacklist subscription routes
+		if strings.HasPrefix(r.RequestURI, "/arc/subscription") {
+			next.ServeHTTP(w, r)
+		} else if TimeValidity > 0 { // Valid plan
 			next.ServeHTTP(w, r)
 		} else if TimeValidity <= 0 && -TimeValidity < 3600*MaxErrorTime { // Negative validity, plan has been expired
 			// Print warning message if remaining time is less than max allowed time
