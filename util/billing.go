@@ -105,7 +105,7 @@ func BillingMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		log.Println("current time validity value: ", TimeValidity)
 		// Blacklist subscription routes
-		if strings.HasPrefix(r.RequestURI, "/arc/subscription") {
+		if strings.HasPrefix(r.RequestURI, "/arc/subscription") || strings.HasPrefix(r.RequestURI, "/arc/plan") {
 			next.ServeHTTP(w, r)
 		} else if TimeValidity > 0 { // Valid plan
 			next.ServeHTTP(w, r)
