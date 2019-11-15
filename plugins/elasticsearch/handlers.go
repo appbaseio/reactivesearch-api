@@ -25,7 +25,7 @@ func (es *elasticsearch) handler() http.HandlerFunc {
 		reqACL, err := acl.FromContext(ctx)
 		if err != nil {
 			log.Printf("%s: %v\n", logTag, err)
-			util.WriteBackError(w, "error classifyig request category", http.StatusInternalServerError)
+			util.WriteBackError(w, "error classifying request category", http.StatusInternalServerError)
 			return
 		}
 
