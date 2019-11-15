@@ -23,7 +23,7 @@ type chain struct {
 	middleware.Fifo
 }
 
-func (c *chain) Wrap(mw [] middleware.Middleware, h http.HandlerFunc) http.HandlerFunc {
+func (c *chain) Wrap(mw []middleware.Middleware, h http.HandlerFunc) http.HandlerFunc {
 	return c.Adapt(h, append(append(list(), mw...), interceptor.Redirect())...)
 }
 
@@ -43,6 +43,7 @@ func list() []middleware.Middleware {
 		validate.ACL(),
 		validate.Operation(),
 		validate.PermissionExpiry(),
+		transformRequest,
 	}
 }
 
@@ -112,6 +113,21 @@ func classifyOp(h http.HandlerFunc) http.HandlerFunc {
 		ctx := op.NewContext(req.Context(), &routeOp)
 		req = req.WithContext(ctx)
 
+		h(w, req)
+	}
+}
+
+func transformRequest(h http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, req *http.Request) {
+		ctx := req.Context()
+		reqACL, err := category.FromContext(ctx)
+		if err != nil {
+			log.Printf("%s: %v", logTag, err)
+		}
+		// transform POST request(search) to GET
+		if *reqACL == category.Search {
+			req.Method = http.MethodGet
+		}
 		h(w, req)
 	}
 }
