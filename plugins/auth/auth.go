@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/rsa"
 	"io/ioutil"
+	"log"
 	"os"
 	"sync"
 
@@ -11,6 +12,8 @@ import (
 	"github.com/appbaseio/arc/middleware"
 	"github.com/appbaseio/arc/model/credential"
 	"github.com/appbaseio/arc/plugins"
+	"github.com/appbaseio/arc/util"
+	"github.com/dgrijalva/jwt-go"
 )
 
 const (
@@ -93,22 +96,35 @@ func (a *Auth) InitFunc() error {
 		return err
 	}
 
-	jwtRsaPublicKeyLoc := os.Getenv(envJwtRsaPublicKeyLoc)
-	// Populate public key
-	if jwtRsaPublicKeyLoc != "" {
-		// Read file from location
-		var publicKeyBuf []byte
-		publicKeyBuf, err = ioutil.ReadFile(jwtRsaPublicKeyLoc)
-		if err != nil {
-			return err
+	// Populate public key from ES
+	record, err := a.es.getPublicKey(context.Background())
+	if err != nil {
+		jwtRsaPublicKeyLoc := os.Getenv(envJwtRsaPublicKeyLoc)
+		if jwtRsaPublicKeyLoc != "" {
+			// Read file from location
+			var publicKeyBuf []byte
+			publicKeyBuf, err = ioutil.ReadFile(jwtRsaPublicKeyLoc)
+			if err != nil {
+				log.Printf("%s: unable to read the public key file from environment, %s", logTag, err)
+			}
+			var record = publicKey{}
+			record.PublicKey = string(publicKeyBuf)
+			record.RoleKey = a.jwtRoleKey
+			_, err = a.savePublicKey(context.Background(), publicKeyIndex, record)
+			if err != nil {
+				log.Printf("%s: unable to save public key record from environment, %s", logTag, err)
+			}
 		}
-		var record = publicKey{}
-		record.PublicKey = string(publicKeyBuf)
-		record.RoleKey = a.jwtRoleKey
-		_, err = a.savePublicKey(context.Background(), publicKeyIndex, record)
+	} else {
+		publicKeyBuf, err := util.DecodeBase64Key(record.PublicKey)
 		if err != nil {
-			return err
+			log.Printf("%s: error parsing public key record, %s", logTag, err)
 		}
+		a.jwtRsaPublicKey, err = jwt.ParseRSAPublicKeyFromPEM(publicKeyBuf)
+		if err != nil {
+			log.Printf("%s: error parsing public key record, %s", logTag, err)
+		}
+		a.jwtRoleKey = record.RoleKey
 	}
 
 	return nil
