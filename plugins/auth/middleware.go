@@ -65,7 +65,6 @@ func (a *Auth) basicAuth(h http.HandlerFunc) http.HandlerFunc {
 
 		role := ""
 		if !hasBasicAuth {
-			fmt.Println("role key: ", a.jwtRoleKey)
 			if claims, ok := jwtToken.Claims.(jwt.MapClaims); ok && jwtToken.Valid {
 				if a.jwtRoleKey != "" && claims[a.jwtRoleKey] != nil {
 					role = claims[a.jwtRoleKey].(string)
