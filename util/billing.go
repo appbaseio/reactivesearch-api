@@ -16,9 +16,9 @@ import (
 )
 
 // ACCAPI URL
-var ACCAPI = "https://accapi.appbase.io/"
+// var ACCAPI = "https://accapi.appbase.io/"
 
-// var ACCAPI = "http://localhost:3000/"
+var ACCAPI = "http://localhost:3000/"
 
 // TimeValidity to be obtained from ACCAPI
 var TimeValidity int64
