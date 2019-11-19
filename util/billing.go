@@ -90,7 +90,6 @@ type ArcInstanceDetails struct {
 	SubscriptionCanceled bool                   `json:"subscription_canceled"`
 	Trial                bool                   `json:"trial"`
 	TrialValidity        int64                  `json:"trial_validity"`
-	ArcID                string                 `json:"arc_id"`
 	CreatedAt            int64                  `json:"created_at"`
 	Tier                 *Plan                  `json:"tier"`
 	TierValidity         int64                  `json:"tier_validity"`
@@ -120,18 +119,6 @@ func BillingMiddleware(next http.Handler) http.Handler {
 	})
 }
 
-// Returns the arc instance by ID
-func getArcInstanceByID(arcID string, arcInstances []ArcInstanceDetails) ArcInstanceDetails {
-	var arcInstance ArcInstanceDetails
-	for _, instance := range arcInstances {
-		if instance.ArcID == arcID {
-			arcInstance = instance
-			break
-		}
-	}
-	return arcInstance
-}
-
 func getArcInstance(arcID string) (ArcInstance, error) {
 	arcInstance := ArcInstance{}
 	response := ArcInstanceResponse{}
@@ -153,7 +140,7 @@ func getArcInstance(arcID string) (ArcInstance, error) {
 	}
 	err = json.Unmarshal(body, &response)
 	if len(response.ArcInstances) != 0 {
-		arcInstanceByID := getArcInstanceByID(arcID, response.ArcInstances)
+		arcInstanceByID := response.ArcInstances[0]
 		arcInstance.SubscriptionID = arcInstanceByID.SubscriptionID
 		TimeValidity = arcInstanceByID.TimeValidity
 		Tier = arcInstanceByID.Tier
