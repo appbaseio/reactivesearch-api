@@ -4,6 +4,7 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"time"
 
 	"github.com/appbaseio/arc/model/acl"
 	"github.com/appbaseio/arc/model/category"
@@ -39,12 +40,19 @@ func (es *elasticsearch) handler() http.HandlerFunc {
 
 		// Forward the request to elasticsearch
 		client := util.HTTPClient()
-		response, err := client.Do(r)
-		if err != nil {
-			log.Printf("%s: error fetching response for %s: %v\n", logTag, r.URL.Path, err)
-			util.WriteBackError(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
+
+		var response *http.Response
+		util.Retry(3, 100*time.Millisecond, func() bool {
+			response, err = client.Do(r)
+			if err != nil {
+				log.Printf("%s: error fetching response for %s: %v\n", logTag, r.URL.Path, err)
+				util.WriteBackError(w, err.Error(), http.StatusInternalServerError)
+				return false
+			}
+			err = nil
+			return true
+		})
+
 		defer response.Body.Close()
 
 		// Copy the headers

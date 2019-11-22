@@ -219,6 +219,7 @@ func IntervalForRange(from, to string) (string, error) {
 	return fmt.Sprintf("%ds", int64(intervalInSecs)), nil
 }
 
+// DecodeBase64Key decodes a base64 input
 func DecodeBase64Key(encoded string) ([]byte, error) {
 	decoded, err := base64.StdEncoding.DecodeString(encoded)
 	if err != nil {
@@ -228,4 +229,17 @@ func DecodeBase64Key(encoded string) ([]byte, error) {
 		return nil, err
 	}
 	return decoded, nil
+}
+
+// Retry is a general purpose retrier for a function call
+func Retry(numberRetries int, sleepInterval time.Duration, testFunc func() bool) {
+	executionPassed := false
+	executionCount := 0
+	for !executionPassed && executionCount < numberRetries {
+		executionPassed = testFunc()
+		if !executionPassed {
+			executionCount++
+			time.Sleep(sleepInterval)
+		}
+	}
 }
