@@ -9,6 +9,7 @@ import (
 	"github.com/appbaseio/arc/model/category"
 	"github.com/appbaseio/arc/model/op"
 	"github.com/appbaseio/arc/util"
+	"github.com/hashicorp/go-retryablehttp"
 )
 
 func (es *elasticsearch) handler() http.HandlerFunc {
@@ -36,15 +37,23 @@ func (es *elasticsearch) handler() http.HandlerFunc {
 			return
 		}
 		log.Printf(`%s: category="%s", acl="%s", op="%s"\n`, logTag, *reqCategory, *reqACL, *reqOp)
-
 		// Forward the request to elasticsearch
-		client := util.HTTPClient()
-		response, err := client.Do(r)
+		client := retryablehttp.NewClient()
+
+		request, err := retryablehttp.FromRequest(r)
+		if err != nil {
+			log.Printf("%s: error while converting to retryable request for %s: %v\n", logTag, r.URL.Path, err)
+			util.WriteBackError(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		response, err := client.Do(request)
+
 		if err != nil {
 			log.Printf("%s: error fetching response for %s: %v\n", logTag, r.URL.Path, err)
 			util.WriteBackError(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
+
 		defer response.Body.Close()
 
 		// Copy the headers
