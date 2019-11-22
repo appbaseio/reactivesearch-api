@@ -230,16 +230,3 @@ func DecodeBase64Key(encoded string) ([]byte, error) {
 	}
 	return decoded, nil
 }
-
-// Retry is a general purpose retrier for a function call
-func Retry(numberRetries int, sleepInterval time.Duration, testFunc func() bool) {
-	executionPassed := false
-	executionCount := 0
-	for !executionPassed && executionCount < numberRetries {
-		executionPassed = testFunc()
-		if !executionPassed {
-			executionCount++
-			time.Sleep(sleepInterval)
-		}
-	}
-}

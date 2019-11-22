@@ -4,12 +4,12 @@ import (
 	"io"
 	"log"
 	"net/http"
-	"time"
 
 	"github.com/appbaseio/arc/model/acl"
 	"github.com/appbaseio/arc/model/category"
 	"github.com/appbaseio/arc/model/op"
 	"github.com/appbaseio/arc/util"
+	"github.com/hashicorp/go-retryablehttp"
 )
 
 func (es *elasticsearch) handler() http.HandlerFunc {
@@ -37,21 +37,22 @@ func (es *elasticsearch) handler() http.HandlerFunc {
 			return
 		}
 		log.Printf(`%s: category="%s", acl="%s", op="%s"\n`, logTag, *reqCategory, *reqACL, *reqOp)
-
 		// Forward the request to elasticsearch
-		client := util.HTTPClient()
+		client := retryablehttp.NewClient()
 
-		var response *http.Response
-		util.Retry(3, 100*time.Millisecond, func() bool {
-			response, err = client.Do(r)
-			if err != nil {
-				log.Printf("%s: error fetching response for %s: %v\n", logTag, r.URL.Path, err)
-				util.WriteBackError(w, err.Error(), http.StatusInternalServerError)
-				return false
-			}
-			err = nil
-			return true
-		})
+		request, err := retryablehttp.FromRequest(r)
+		if err != nil {
+			log.Printf("%s: error while converting to retryable request for %s: %v\n", logTag, r.URL.Path, err)
+			util.WriteBackError(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		response, err := client.Do(request)
+
+		if err != nil {
+			log.Printf("%s: error fetching response for %s: %v\n", logTag, r.URL.Path, err)
+			util.WriteBackError(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
 
 		defer response.Body.Close()
 
