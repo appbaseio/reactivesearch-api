@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"strings"
 
 	"github.com/appbaseio/arc/middleware"
 	"github.com/appbaseio/arc/middleware/classify"
@@ -130,12 +131,12 @@ func transformRequest(h http.HandlerFunc) http.HandlerFunc {
 		}
 		// transform POST request(search) to GET
 		if *reqACL == category.Search {
-			req.Method = http.MethodGet
+			isMsearch := strings.HasSuffix(req.URL.String(), "/_msearch")
 			// Apply source filters
 			reqPermission, err := permission.FromContext(ctx)
 			if err != nil {
 				log.Printf("%s: %v\n", logTag, err)
-				util.WriteBackError(w, err.Error(), http.StatusInternalServerError)
+				h(w, req)
 				return
 			}
 			sources := make(map[string]interface{})
@@ -148,22 +149,55 @@ func transformRequest(h http.HandlerFunc) http.HandlerFunc {
 			if len(Excludes) > 0 {
 				sources["excludes"] = Excludes
 			}
-			body, err := ioutil.ReadAll(req.Body)
-			if err != nil {
-				log.Printf("%s: %v\n", logTag, err)
-				util.WriteBackError(w, err.Error(), http.StatusInternalServerError)
-				return
-			}
-			d := json.NewDecoder(ioutil.NopCloser(bytes.NewReader(body)))
-			reqBody := make(map[string]interface{})
-			d.Decode(&reqBody)
 			_, isExcludesPresent := sources["excludes"]
 			isDefaultInclude := len(Includes) > 0 && Includes[0] == "*"
-			if !isDefaultInclude || isExcludesPresent {
-				reqBody["_source"] = sources
+			shouldApplyFilters := !isDefaultInclude || isExcludesPresent
+			if shouldApplyFilters {
+				if isMsearch {
+					// Handle the _msearch requests
+					body, err := ioutil.ReadAll(req.Body)
+					if err != nil {
+						log.Printf("%s: %v\n", logTag, err)
+						util.WriteBackError(w, err.Error(), http.StatusInternalServerError)
+						return
+					}
+					var reqBodyString = string(body)
+					splitReq := strings.Split(reqBodyString, "\n")
+					var modifiedBodyString string
+					for index, element := range splitReq {
+						if index%2 == 1 { // even lines
+							var reqBody = make(map[string]interface{})
+							err := json.Unmarshal([]byte(element), &reqBody)
+							if err != nil {
+								log.Printf("%s: %v\n", logTag, err)
+								util.WriteBackError(w, err.Error(), http.StatusInternalServerError)
+								return
+							}
+							reqBody["_source"] = sources
+							raw, _ := json.Marshal(reqBody)
+							modifiedBodyString += string(raw)
+						} else {
+							modifiedBodyString += element
+						}
+						modifiedBodyString += "\n"
+					}
+					modifiedBody := []byte(modifiedBodyString)
+					req.Body = ioutil.NopCloser(bytes.NewReader(modifiedBody))
+				} else {
+					body, err := ioutil.ReadAll(req.Body)
+					if err != nil {
+						log.Printf("%s: %v\n", logTag, err)
+						util.WriteBackError(w, err.Error(), http.StatusInternalServerError)
+						return
+					}
+					d := json.NewDecoder(ioutil.NopCloser(bytes.NewReader(body)))
+					reqBody := make(map[string]interface{})
+					d.Decode(&reqBody)
+					reqBody["_source"] = sources
+					modifiedBody, _ := json.Marshal(reqBody)
+					req.Body = ioutil.NopCloser(bytes.NewReader(modifiedBody))
+				}
 			}
-			modifiedBody, _ := json.Marshal(reqBody)
-			req.Body = ioutil.NopCloser(bytes.NewReader(modifiedBody))
 		}
 		h(w, req)
 	}
