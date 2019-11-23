@@ -118,7 +118,7 @@ var getUserTest = []struct {
 
 func TestGetUser(t *testing.T) {
 	for _, tt := range getUserTest {
-		t.Run("getPermissionTest", func(t *testing.T) {
+		t.Run("getUserTest", func(t *testing.T) {
 			ts := buildTestServer(t, []*ServerSetup{tt.setup})
 			defer ts.Close()
 			es, _ := newStubClient(ts.URL, "test", "test")
@@ -171,7 +171,7 @@ var putUserTest = []struct {
 
 func TestPutUser(t *testing.T) {
 	for _, tt := range putUserTest {
-		t.Run("getPermissionTest", func(t *testing.T) {
+		t.Run("putUserTest", func(t *testing.T) {
 			ts := buildTestServer(t, []*ServerSetup{tt.setup})
 			defer ts.Close()
 			es, _ := newStubClient(ts.URL, "test", "perm1")
@@ -234,7 +234,7 @@ var putPermissionTest = []struct {
 
 func TestPutPermission(t *testing.T) {
 	for _, tt := range putPermissionTest {
-		t.Run("getPermissionTest", func(t *testing.T) {
+		t.Run("putPermissionTest", func(t *testing.T) {
 			ts := buildTestServer(t, []*ServerSetup{tt.setup})
 			defer ts.Close()
 			es, _ := newStubClient(ts.URL, "test", "perm")
@@ -291,7 +291,7 @@ var getCredentialTest = []struct {
 
 func TestGetCredential(t *testing.T) {
 	for _, tt := range getCredentialTest {
-		t.Run("getPermissionTest", func(t *testing.T) {
+		t.Run("getCredentialTest", func(t *testing.T) {
 			ts := buildTestServer(t, []*ServerSetup{tt.setup})
 			defer ts.Close()
 			es, _ := newStubClient(ts.URL, "test", "perm")

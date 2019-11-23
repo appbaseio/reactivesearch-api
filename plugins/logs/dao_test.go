@@ -196,7 +196,7 @@ var getRawLogsTest = []struct {
 
 func TestGetRawLogs(t *testing.T) {
 	for _, tt := range getRawLogsTest {
-		t.Run("getTotalNodesTest", func(t *testing.T) {
+		t.Run("getRawLogsTest", func(t *testing.T) {
 			ts := buildTestServer(t, []*ServerSetup{tt.setup})
 			defer ts.Close()
 			es, _ := newStubClient(ts.URL, tt.index)

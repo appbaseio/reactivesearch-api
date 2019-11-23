@@ -182,7 +182,7 @@ var deleteUserTest = []struct {
 
 func TestDeleteUser(t *testing.T) {
 	for _, tt := range deleteUserTest {
-		t.Run("getUserTest", func(t *testing.T) {
+		t.Run("deleteUserTest", func(t *testing.T) {
 			ts := buildTestServer(t, tt.setup)
 			defer ts.Close()
 			es, _ := newStubClient(ts.URL, "test1", tt.typeName)

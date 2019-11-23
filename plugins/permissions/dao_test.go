@@ -97,7 +97,7 @@ var getPermissionTest = []struct {
 
 func TestGetPermission(t *testing.T) {
 	for _, tt := range getPermissionTest {
-		t.Run("getTotalNodesTest", func(t *testing.T) {
+		t.Run("getPermissionTest", func(t *testing.T) {
 			ts := buildTestServer(t, []*ServerSetup{tt.setup})
 			defer ts.Close()
 			es, _ := newStubClient(ts.URL, tt.index, "mapping")
@@ -146,7 +146,7 @@ var deletePermissionTest = []struct {
 
 func TestDeletePermission(t *testing.T) {
 	for _, tt := range deletePermissionTest {
-		t.Run("getUserTest", func(t *testing.T) {
+		t.Run("deletePermissionTest", func(t *testing.T) {
 			ts := buildTestServer(t, []*ServerSetup{tt.setup})
 			defer ts.Close()
 			es, _ := newStubClient(ts.URL, tt.indexName, "mapping")
@@ -292,7 +292,7 @@ var postPermissionTest = []struct {
 
 func TestPostPermission(t *testing.T) {
 	for _, tt := range postPermissionTest {
-		t.Run("patchPermissionTest", func(t *testing.T) {
+		t.Run("postPermissionTest", func(t *testing.T) {
 			ts := buildTestServer(t, []*ServerSetup{tt.setup})
 			defer ts.Close()
 			es, _ := newStubClient(ts.URL, tt.indexName, "mapping")
@@ -339,7 +339,7 @@ var getRawOwnerPermissionsTest = []struct {
 
 func TestGetRawOwnerPermissions(t *testing.T) {
 	for _, tt := range getRawOwnerPermissionsTest {
-		t.Run("patchPermissionTest", func(t *testing.T) {
+		t.Run("getRawOwnerPermissionTest", func(t *testing.T) {
 			ts := buildTestServer(t, []*ServerSetup{tt.setup})
 			defer ts.Close()
 			es, _ := newStubClient(ts.URL, tt.indexName, "mapping")
