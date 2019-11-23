@@ -1,7 +1,10 @@
 package elasticsearch
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"net/http"
 
@@ -13,6 +16,7 @@ import (
 	"github.com/appbaseio/arc/model/acl"
 	"github.com/appbaseio/arc/model/category"
 	"github.com/appbaseio/arc/model/op"
+	"github.com/appbaseio/arc/model/permission"
 	"github.com/appbaseio/arc/plugins/auth"
 	"github.com/appbaseio/arc/plugins/logs"
 	"github.com/appbaseio/arc/util"
@@ -127,6 +131,39 @@ func transformRequest(h http.HandlerFunc) http.HandlerFunc {
 		// transform POST request(search) to GET
 		if *reqACL == category.Search {
 			req.Method = http.MethodGet
+			// Apply source filters
+			reqPermission, err := permission.FromContext(ctx)
+			if err != nil {
+				log.Printf("%s: %v\n", logTag, err)
+				util.WriteBackError(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+			sources := make(map[string]interface{})
+			var Includes, Excludes []string
+			Includes = reqPermission.Includes
+			Excludes = reqPermission.Excludes
+			if len(Includes) > 0 {
+				sources["includes"] = Includes
+			}
+			if len(Excludes) > 0 {
+				sources["excludes"] = Excludes
+			}
+			body, err := ioutil.ReadAll(req.Body)
+			if err != nil {
+				log.Printf("%s: %v\n", logTag, err)
+				util.WriteBackError(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+			d := json.NewDecoder(ioutil.NopCloser(bytes.NewReader(body)))
+			reqBody := make(map[string]interface{})
+			d.Decode(&reqBody)
+			_, isExcludesPresent := sources["excludes"]
+			isDefaultInclude := len(Includes) > 0 && Includes[0] == "*"
+			if !isDefaultInclude || isExcludesPresent {
+				reqBody["_source"] = sources
+			}
+			modifiedBody, _ := json.Marshal(reqBody)
+			req.Body = ioutil.NopCloser(bytes.NewReader(modifiedBody))
 		}
 		h(w, req)
 	}
