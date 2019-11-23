@@ -133,6 +133,11 @@ func main() {
 		log.Println("You're running Arc with billing module disabled.")
 	}
 
+	// ES client instantiation
+	// ES v7 and v6 clients
+	url := os.Getenv("ES_CLUSTER_URL")
+	util.NewClient(url)
+
 	var elasticSearchPath string
 	elasticSearchMiddleware := make([]middleware.Middleware, 0)
 	err := filepath.Walk(pluginDir, func(path string, info os.FileInfo, err error) error {

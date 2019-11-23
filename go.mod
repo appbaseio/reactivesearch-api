@@ -17,4 +17,5 @@ require (
 	github.com/ulule/limiter v2.2.0+incompatible
 	golang.org/x/crypto v0.0.0-20190308221718-c2843e01d9a2
 	gopkg.in/natefinch/lumberjack.v2 v2.0.0
+	gopkg.in/olivere/elastic.v6 v6.2.26
 )
