@@ -78,6 +78,12 @@ func (p *permissions) postPermission(opts ...permission.Options) http.HandlerFun
 		if permissionBody.Referers != nil {
 			opts = append(opts, permission.SetReferers(permissionBody.Referers))
 		}
+		if permissionBody.Includes != nil {
+			opts = append(opts, permission.SetIncludes(permissionBody.Includes))
+		}
+		if permissionBody.Excludes != nil {
+			opts = append(opts, permission.SetExcludes(permissionBody.Excludes))
+		}
 		if permissionBody.Indices != nil {
 			opts = append(opts, permission.SetIndices(permissionBody.Indices))
 		}
@@ -270,7 +276,7 @@ func (p *permissions) getUserPermissions() http.HandlerFunc {
 }
 
 func (p *permissions) role() http.HandlerFunc {
-	return func (w http.ResponseWriter, req *http.Request) {
+	return func(w http.ResponseWriter, req *http.Request) {
 		vars := mux.Vars(req)
 		role := vars["name"]
 
@@ -290,7 +296,7 @@ func (p *permissions) role() http.HandlerFunc {
 				msg := fmt.Sprintf(`an error occurred while fetching permissions for role=%s`, role)
 				log.Printf("%s: %s: %v\n", logTag, msg, err)
 				util.WriteBackError(w, msg, http.StatusInternalServerError)
-				return			
+				return
 			}
 		}
 
@@ -301,10 +307,10 @@ func (p *permissions) role() http.HandlerFunc {
 			p.postPermission(permission.SetRole(role))(w, req)
 			return
 		case http.MethodPatch:
-			http.Redirect(w, req, "/_permission/" + perm.Username, 308)
+			http.Redirect(w, req, "/_permission/"+perm.Username, 308)
 			return
 		case http.MethodDelete:
-			http.Redirect(w, req, "/_permission/" + perm.Username, 308)
+			http.Redirect(w, req, "/_permission/"+perm.Username, 308)
 			return
 		}
 	}
