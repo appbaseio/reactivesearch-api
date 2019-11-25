@@ -10,6 +10,7 @@ import (
 	"github.com/appbaseio/arc/model/user"
 	"github.com/appbaseio/arc/util"
 	"github.com/olivere/elastic/v7"
+	es6 "gopkg.in/olivere/elastic.v6"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -18,30 +19,40 @@ type elasticsearch struct {
 	indexName string
 	typeName  string
 	client    *elastic.Client
+	client6   *es6.Client
 }
+
+const VERSION = 7
 
 func newClient(url, indexName, mapping string) (*elasticsearch, error) {
 	ctx := context.Background()
 
-	// Initialize the client
+	// Initialize the ES v7 client
 	client, err := elastic.NewClient(
 		elastic.SetURL(url),
 		elastic.SetRetrier(util.NewRetrier()),
 		elastic.SetSniff(false),
 		elastic.SetHttpClient(util.HTTPClient()),
 	)
-
 	if err != nil {
-		return nil, fmt.Errorf("%s: error while initializing elastic client: %v", logTag, err)
+		return nil, fmt.Errorf("error while initializing elastic v7 client: %v", err)
 	}
-	es := &elasticsearch{url, indexName, "_doc", client}
-	defer func() {
-		if es != nil {
-			if err := es.postMasterUser(); err != nil {
-				log.Printf("%s: %v", logTag, err)
-			}
-		}
-	}()
+	// Initialize the ES v6 client
+	client6, err := es6.NewClient(
+		es6.SetURL(url),
+		es6.SetRetrier(util.NewRetrier()),
+		es6.SetSniff(false),
+		es6.SetHttpClient(util.HTTPClient()),
+	)
+	if err != nil {
+		return nil, fmt.Errorf("error while initializing elastic v6 client: %v", err)
+	}
+	var es *elasticsearch
+	if VERSION == 7 {
+		es = &elasticsearch{url, indexName, "_doc", client, nil}
+	} else {
+		es = &elasticsearch{url, indexName, "_doc", nil, client6}
+	}
 
 	// Check if the meta index already exists
 	exists, err := client.IndexExists(indexName).
@@ -196,12 +207,37 @@ func (es *elasticsearch) getRawUsers(ctx context.Context) ([]byte, error) {
 }
 
 func (es *elasticsearch) getRawUser(ctx context.Context, username string) ([]byte, error) {
+	if VERSION == 7 {
+		return es.getRawUserES7(ctx, username)
+	}
+	return es.getRawUserES6(ctx, username)
+}
+
+func (es *elasticsearch) getRawUserES6(ctx context.Context, username string) ([]byte, error) {
+	response, err := es.client6.Get().
+	Index(es.indexName).
+	Type(es.typeName).
+	Id(username).
+	FetchSource(true).
+	Do(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	src, err := response.Source.MarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+
+	return src, nil
+}
+
+func (es *elasticsearch) getRawUserES7(ctx context.Context, username string) ([]byte, error) {
 	response, err := es.client.Get().
-		Index(es.indexName).
-		//Type(es.typeName).
-		Id(username).
-		FetchSource(true).
-		Do(ctx)
+	Index(es.indexName).
+	Id(username).
+	FetchSource(true).
+	Do(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -215,10 +251,17 @@ func (es *elasticsearch) getRawUser(ctx context.Context, username string) ([]byt
 }
 
 func (es *elasticsearch) postUser(ctx context.Context, u user.User) (bool, error) {
-	_, err := es.client.Index().
+	if VERSION == 7 {
+		return es.postUserES7(ctx, u)
+	}
+	return es.postUserES6(ctx, u)
+}
+
+func (es *elasticsearch) postUserES6(ctx context.Context, u user.User) (bool, error) {
+	_, err := es.client6.Index().
 		Refresh("wait_for").
 		Index(es.indexName).
-		//Type(es.typeName).
+		Type(es.typeName).
 		Id(u.Username).
 		BodyJson(u).
 		Do(ctx)
@@ -227,13 +270,52 @@ func (es *elasticsearch) postUser(ctx context.Context, u user.User) (bool, error
 	}
 
 	return true, nil
-}
+} 
+
+func (es *elasticsearch) postUserES7(ctx context.Context, u user.User) (bool, error) {
+	_, err := es.client.Index().
+		Refresh("wait_for").
+		Index(es.indexName).
+		Id(u.Username).
+		BodyJson(u).
+		Do(ctx)
+	if err != nil {
+		return false, err
+	}
+
+	return true, nil
+} 
 
 func (es *elasticsearch) patchUser(ctx context.Context, username string, patch map[string]interface{}) ([]byte, error) {
+	if VERSION == 7 {
+		return es.patchUserES7(ctx, username, patch)
+	}
+	return es.patchUserES6(ctx, username, patch)
+}
+
+func (es *elasticsearch) patchUserES6(ctx context.Context, username string, patch map[string]interface{}) ([]byte, error) {
+	response, err := es.client6.Update().
+		Refresh("wait_for").
+		Index(es.indexName).
+		Type(es.typeName).
+		Id(username).
+		Doc(patch).
+		Do(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	src, err := json.Marshal(response)
+	if err != nil {
+		return nil, err
+	}
+	return src, nil
+}
+
+func (es *elasticsearch) patchUserES7(ctx context.Context, username string, patch map[string]interface{}) ([]byte, error) {
 	response, err := es.client.Update().
 		Refresh("wait_for").
 		Index(es.indexName).
-		//Type(es.typeName).
 		Id(username).
 		Doc(patch).
 		Do(ctx)
@@ -249,10 +331,30 @@ func (es *elasticsearch) patchUser(ctx context.Context, username string, patch m
 }
 
 func (es *elasticsearch) deleteUser(ctx context.Context, username string) (bool, error) {
+	if VERSION == 7 {
+		return es.deleteUserES7(ctx, username)
+	}
+	return es.deleteUserES6(ctx, username)
+}
+
+func (es *elasticsearch) deleteUserES6(ctx context.Context, username string) (bool, error) {
+	_, err := es.client6.Delete().
+		Refresh("wait_for").
+		Index(es.indexName).
+		Type(es.typeName).
+		Id(username).
+		Do(ctx)
+	if err != nil {
+		return false, err
+	}
+
+	return true, nil
+}
+
+func (es *elasticsearch) deleteUserES7(ctx context.Context, username string) (bool, error) {
 	_, err := es.client.Delete().
 		Refresh("wait_for").
 		Index(es.indexName).
-		//Type(es.typeName).
 		Id(username).
 		Do(ctx)
 	if err != nil {
