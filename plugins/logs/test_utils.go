@@ -10,12 +10,12 @@ import (
 	"github.com/olivere/elastic/v7"
 )
 
-func newStubClient(url, indexName string) (*elasticsearch, error) {
+func newStubClient(url, indexName string) (*ElasticSearch, error) {
 	client, err := elastic.NewSimpleClient(elastic.SetURL(url))
 	if err != nil {
 		return nil, fmt.Errorf("error while initializing elastic client: %v", err)
 	}
-	es := &elasticsearch{url, indexName, client, nil}
+	es := &ElasticSearch{url, indexName, client, nil}
 	return es, nil
 }
 
