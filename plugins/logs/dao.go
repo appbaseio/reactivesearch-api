@@ -21,11 +21,7 @@ type ElasticSearch struct {
 func newClient(url, indexName, config string) (*ElasticSearch, error) {
 	ctx := context.Background()
 
-	var es *ElasticSearch
-	if util.IsCurrentVersionES6 {
-		es = &ElasticSearch{url, indexName, nil, util.Client6}
-	}
-	es = &ElasticSearch{url, indexName, util.Client7, nil}
+	var es = &ElasticSearch{url, indexName, util.Client7, util.Client6}
 	// Check if meta index already exists
 	exists, err := util.Client7.IndexExists(indexName).
 		Do(ctx)
@@ -61,7 +57,6 @@ func (es *ElasticSearch) getTotalNodes() (int, error) {
 		return util.GetTotalNodesEs6(es.client6)
 	}
 	return util.GetTotalNodesEs7(es.client7)
-
 }
 
 func (es *ElasticSearch) indexRecord(ctx context.Context, rec record) {

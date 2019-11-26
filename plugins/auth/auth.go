@@ -102,7 +102,7 @@ func (a *Auth) InitFunc() error {
 		if err != nil {
 			return err
 		}
-		var record = publicKey{}
+		var record = PublicKey{}
 		record.PublicKey = string(publicKeyBuf)
 		record.RoleKey = a.jwtRoleKey
 		_, err = a.savePublicKey(context.Background(), publicKeyIndex, record)

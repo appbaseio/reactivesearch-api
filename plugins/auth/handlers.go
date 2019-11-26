@@ -17,7 +17,7 @@ import (
 	"github.com/appbaseio/arc/util"
 )
 
-func (a *Auth) savePublicKey(ctx context.Context, indexName string, record publicKey) (interface{}, error) {
+func (a *Auth) savePublicKey(ctx context.Context, indexName string, record PublicKey) (interface{}, error) {
 	var jwtRsaPublicKey *rsa.PublicKey
 	if record.PublicKey != "" {
 		publicKeyBuf, err := util.DecodeBase64Key(record.PublicKey)
@@ -74,7 +74,7 @@ func (a *Auth) setPublicKey() http.HandlerFunc {
 		}
 		defer req.Body.Close()
 
-		var body publicKey
+		var body PublicKey
 		err = json.Unmarshal(reqBody, &body)
 		if err != nil {
 			log.Printf("%s: %v\n", logTag, err)
