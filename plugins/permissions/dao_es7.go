@@ -8,7 +8,7 @@ import (
 	es7 "github.com/olivere/elastic/v7"
 )
 
-func (es *elasticsearch) CheckRoleExistsEs7(ctx context.Context, role string) (bool, error) {
+func (es *elasticsearch) checkRoleExistsEs7(ctx context.Context, role string) (bool, error) {
 	resp, err := util.GetClient7().Search().
 		Index(es.indexName).
 		Query(es7.NewTermQuery("role", role)).
@@ -20,7 +20,7 @@ func (es *elasticsearch) CheckRoleExistsEs7(ctx context.Context, role string) (b
 	return resp.Hits.TotalHits.Value > 0, nil
 }
 
-func (es *elasticsearch) GetRawRolePermissionEs7(ctx context.Context, role string) ([]byte, error) {
+func (es *elasticsearch) getRawRolePermissionEs7(ctx context.Context, role string) ([]byte, error) {
 	resp, err := util.GetClient7().Search().
 		Index(es.indexName).
 		Query(es7.NewTermQuery("role", role)).

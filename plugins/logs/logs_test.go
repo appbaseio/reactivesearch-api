@@ -47,7 +47,7 @@ var InitTests = []struct {
 		Instance(),
 		"",
 		defaultLogsEsIndex,
-		errors.NewEnvVarNotSetError("ES_CLUSTER_URL"),
+		errors.NewEnvVarNotSetError(envEsURL),
 	},
 }
 
@@ -58,7 +58,7 @@ func TestInit(t *testing.T) {
 	}()
 
 	for _, it := range InitTests {
-		os.Setenv("ES_CLUSTER_URL", it.esURL)
+		os.Setenv(envEsURL, it.esURL)
 		os.Setenv(envLogsEsIndex, it.esLogsIndex)
 		actual := it.instance.InitFunc()
 		if !reflect.DeepEqual(actual, it.expected) {
@@ -68,9 +68,9 @@ func TestInit(t *testing.T) {
 }
 
 func (l *Logs) mockInitFunc() error {
-	url := os.Getenv("ES_CLUSTER_URL")
+	url := os.Getenv(envEsURL)
 	if url == "" {
-		return errors.NewEnvVarNotSetError("ES_CLUSTER_URL")
+		return errors.NewEnvVarNotSetError(envEsURL)
 	}
 
 	index := os.Getenv(envLogsEsIndex)

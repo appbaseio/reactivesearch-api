@@ -12,15 +12,14 @@ import (
 )
 
 type elasticsearch struct {
-	url       string
 	indexName string
 	mapping   string
 }
 
-func initPlugin(url, indexName, mapping string) (*elasticsearch, error) {
+func initPlugin(indexName, mapping string) (*elasticsearch, error) {
 	ctx := context.Background()
 
-	es := &elasticsearch{url, indexName, mapping}
+	es := &elasticsearch{indexName, mapping}
 
 	// Check if the meta index already exists
 	exists, err := util.GetClient7().IndexExists(indexName).
@@ -156,17 +155,17 @@ func (es *elasticsearch) getRawOwnerPermissions(ctx context.Context, owner strin
 func (es *elasticsearch) checkRoleExists(ctx context.Context, role string) (bool, error) {
 	switch util.GetVersion() {
 	case 6:
-		return es.CheckRoleExistsEs6(ctx, role)
+		return es.checkRoleExistsEs6(ctx, role)
 	default:
-		return es.CheckRoleExistsEs7(ctx, role)
+		return es.checkRoleExistsEs7(ctx, role)
 	}
 }
 
 func (es *elasticsearch) getRawRolePermission(ctx context.Context, role string) ([]byte, error) {
 	switch util.GetVersion() {
 	case 6:
-		return es.GetRawRolePermissionEs6(ctx, role)
+		return es.getRawRolePermissionEs6(ctx, role)
 	default:
-		return es.GetRawRolePermissionEs7(ctx, role)
+		return es.getRawRolePermissionEs7(ctx, role)
 	}
 }

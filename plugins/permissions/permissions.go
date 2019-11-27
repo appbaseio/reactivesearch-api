@@ -5,7 +5,6 @@ import (
 	"os"
 	"sync"
 
-	"github.com/appbaseio/arc/errors"
 	"github.com/appbaseio/arc/middleware"
 	"github.com/appbaseio/arc/plugins"
 )
@@ -41,11 +40,6 @@ func (p *permissions) Name() string {
 func (p *permissions) InitFunc() error {
 	log.Printf("%s: initializing plugin\n", logTag)
 
-	// fetch vars from env
-	url := os.Getenv(envEsURL)
-	if url == "" {
-		return errors.NewEnvVarNotSetError(envEsURL)
-	}
 	indexName := os.Getenv(envPermissionEsIndex)
 	if indexName == "" {
 		indexName = defaultPermissionsEsIndex
@@ -53,7 +47,7 @@ func (p *permissions) InitFunc() error {
 
 	// initialize the dao
 	var err error
-	p.es, err = initPlugin(url, indexName, settings)
+	p.es, err = initPlugin(indexName, settings)
 	if err != nil {
 		return err
 	}

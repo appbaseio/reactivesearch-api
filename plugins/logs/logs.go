@@ -11,6 +11,7 @@ import (
 const (
 	logTag             = "[logs]"
 	defaultLogsEsIndex = ".logs"
+	envEsURL           = "ES_CLUSTER_URL"
 	envLogsEsIndex     = "LOGS_ES_INDEX"
 	config             = `
 	{

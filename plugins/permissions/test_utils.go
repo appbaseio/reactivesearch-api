@@ -43,7 +43,6 @@ func (p *permissions) mockInitFunc() error {
 
 func newStubClient(url, indexName, mapping string) (*elasticsearch, error) {
 	es := &elasticsearch{
-		url:       url,
 		indexName: indexName,
 		mapping:   mapping,
 	}
