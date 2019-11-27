@@ -2,22 +2,17 @@ package users
 
 import (
 	"context"
-	"fmt"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"reflect"
 	"testing"
 
-	"github.com/olivere/elastic/v7"
+	"github.com/appbaseio/arc/util"
 )
 
-func newStubClient(url, indexName, typeName string) (*elasticsearch, error) {
-	client, err := elastic.NewSimpleClient(elastic.SetURL(url))
-	if err != nil {
-		return nil, fmt.Errorf("error while initializing elastic client: %v", err)
-	}
-	es := &elasticsearch{url, indexName, typeName, client}
+func newStubClient(indexName string) (*elasticsearch, error) {
+	es := &elasticsearch{indexName}
 	return es, nil
 }
 
@@ -84,8 +79,7 @@ func TestGetTotalNodes(t *testing.T) {
 		t.Run("getTotalNodesTest", func(t *testing.T) {
 			ts := buildTestServer(t, tt.setup)
 			defer ts.Close()
-			es, _ := newStubClient(ts.URL, tt.index, tt.typeName)
-			nodes, err := es.getTotalNodes()
+			nodes, err := util.GetTotalNodes()
 
 			if !compareErrs(tt.err, err) {
 				t.Fatalf("Cat aliases should have failed with error: %v got: %v instead\n", tt.err, err)
@@ -147,7 +141,7 @@ func TestGetUser(t *testing.T) {
 		t.Run("getUserTest", func(t *testing.T) {
 			ts := buildTestServer(t, tt.setup)
 			defer ts.Close()
-			es, _ := newStubClient(ts.URL, "test1", tt.typeName)
+			es, _ := newStubClient("test1")
 			_, err := es.getUser(context.Background(), "user1")
 
 			if !compareErrs(tt.err, err) {
@@ -196,7 +190,7 @@ func TestDeleteUser(t *testing.T) {
 		t.Run("getUserTest", func(t *testing.T) {
 			ts := buildTestServer(t, tt.setup)
 			defer ts.Close()
-			es, _ := newStubClient(ts.URL, "test1", tt.typeName)
+			es, _ := newStubClient("test1")
 			response, err := es.deleteUser(context.Background(), "user1")
 
 			if !compareErrs(tt.err, err) {

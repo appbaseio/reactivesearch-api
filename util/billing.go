@@ -2,7 +2,6 @@ package util
 
 import (
 	"bytes"
-	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -10,8 +9,6 @@ import (
 	"log"
 	"net/http"
 	"os"
-
-	"github.com/olivere/elastic/v7"
 )
 
 // ACCAPI URL
@@ -424,22 +421,9 @@ func ReportHostedArcUsage() {
 
 // fetchNodeCount returns the number of current ElasticSearch nodes
 func fetchNodeCount(url string) (int, error) {
-	ctx := context.Background()
-	// Initialize the client
-	client, err := elastic.NewClient(
-		elastic.SetURL(url),
-		elastic.SetRetrier(NewRetrier()),
-		elastic.SetSniff(false),
-		elastic.SetHttpClient(HTTPClient()),
-	)
+	nodes, err := GetTotalNodes()
 	if err != nil {
-		log.Fatalln("unable to initialize elastic client: ", err)
+		return 0, err
 	}
-	nodes, err := client.NodesInfo().
-		Metric("nodes").
-		Do(ctx)
-	if err != nil {
-		return -1, err
-	}
-	return len(nodes.Nodes), nil
+	return nodes, nil
 }
