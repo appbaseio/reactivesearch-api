@@ -12,7 +12,7 @@ import (
 )
 
 func setUp(url, logIndex string) {
-	os.Setenv(envEsURL, url)
+	os.Setenv("ES_CLUSTER_URL", url)
 	os.Setenv(envLogsEsIndex, logIndex)
 }
 

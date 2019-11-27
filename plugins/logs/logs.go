@@ -4,7 +4,6 @@ import (
 	"os"
 	"sync"
 
-	"github.com/appbaseio/arc/errors"
 	"github.com/appbaseio/arc/middleware"
 	"github.com/appbaseio/arc/plugins"
 )
@@ -12,7 +11,6 @@ import (
 const (
 	logTag             = "[logs]"
 	defaultLogsEsIndex = ".logs"
-	envEsURL           = "ES_CLUSTER_URL"
 	envLogsEsIndex     = "LOGS_ES_INDEX"
 	config             = `
 	{
@@ -50,10 +48,6 @@ func (l *Logs) Name() string {
 // the dao, i.e. elasticsearch before the plugin is operational.
 func (l *Logs) InitFunc() error {
 	// fetch the required env vars
-	url := os.Getenv(envEsURL)
-	if url == "" {
-		return errors.NewEnvVarNotSetError(envEsURL)
-	}
 	indexName := os.Getenv(envLogsEsIndex)
 	if indexName == "" {
 		indexName = defaultLogsEsIndex
@@ -61,7 +55,7 @@ func (l *Logs) InitFunc() error {
 
 	// initialize the elasticsearch client
 	var err error
-	l.es, err = initPlugin(url, indexName, config)
+	l.es, err = initPlugin(indexName, config)
 	if err != nil {
 		return err
 	}

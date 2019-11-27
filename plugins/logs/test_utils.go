@@ -8,7 +8,7 @@ import (
 )
 
 func newStubClient(url, indexName string) (*elasticSearch, error) {
-	es := &elasticSearch{url, indexName}
+	es := &elasticSearch{indexName}
 	return es, nil
 }
 

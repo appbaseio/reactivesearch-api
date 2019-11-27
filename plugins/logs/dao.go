@@ -11,14 +11,13 @@ import (
 )
 
 type elasticSearch struct {
-	url       string
 	indexName string
 }
 
-func initPlugin(url, indexName, config string) (*elasticSearch, error) {
+func initPlugin(indexName, config string) (*elasticSearch, error) {
 	ctx := context.Background()
 
-	var es = &elasticSearch{url, indexName}
+	var es = &elasticSearch{indexName}
 	// Check if meta index already exists
 	exists, err := util.GetClient7().IndexExists(indexName).
 		Do(ctx)
