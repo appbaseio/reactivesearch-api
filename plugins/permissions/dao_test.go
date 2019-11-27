@@ -8,6 +8,7 @@ import (
 	"github.com/appbaseio/arc/model/category"
 	"github.com/appbaseio/arc/model/op"
 	"github.com/appbaseio/arc/model/permission"
+	"github.com/appbaseio/arc/util"
 )
 
 // We don't use mocks for this DAO since none of the methods are dependent on each other
@@ -49,8 +50,7 @@ func TestGetTotalNodes(t *testing.T) {
 		t.Run("getTotalNodesTest", func(t *testing.T) {
 			ts := buildTestServer(t, []*ServerSetup{tt.setup})
 			defer ts.Close()
-			es, _ := newStubClient(ts.URL, tt.index, "mapping")
-			nodes, err := es.getTotalNodes()
+			nodes, err := util.GetTotalNodes()
 
 			if !compareErrs(tt.err, err) {
 				t.Fatalf("Cat aliases should have failed with error: %v got: %v instead\n", tt.err, err)

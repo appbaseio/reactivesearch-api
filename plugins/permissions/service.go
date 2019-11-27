@@ -2,6 +2,7 @@ package permissions
 
 import (
 	"context"
+
 	"github.com/appbaseio/arc/model/permission"
 )
 

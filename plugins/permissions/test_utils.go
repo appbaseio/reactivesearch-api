@@ -1,7 +1,6 @@
 package permissions
 
 import (
-	"fmt"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -9,7 +8,6 @@ import (
 	"testing"
 
 	"github.com/appbaseio/arc/errors"
-	"github.com/olivere/elastic/v7"
 )
 
 func compareErrs(expectedErr string, actual error) bool {
@@ -44,16 +42,10 @@ func (p *permissions) mockInitFunc() error {
 }
 
 func newStubClient(url, indexName, mapping string) (*elasticsearch, error) {
-	client, err := elastic.NewSimpleClient(elastic.SetURL(url))
-	if err != nil {
-		return nil, fmt.Errorf("error while initializing elastic client: %v", err)
-	}
 	es := &elasticsearch{
 		url:       url,
 		indexName: indexName,
-		typeName:  "_doc",
 		mapping:   mapping,
-		client:    client,
 	}
 	return es, nil
 }

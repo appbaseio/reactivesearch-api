@@ -3,8 +3,8 @@ package elasticsearch
 import (
 	"sync"
 
-	"github.com/appbaseio/arc/plugins"
 	"github.com/appbaseio/arc/middleware"
+	"github.com/appbaseio/arc/plugins"
 )
 
 const logTag = "[elasticsearch]"
@@ -27,7 +27,7 @@ func (es *elasticsearch) Name() string {
 	return logTag
 }
 
-func (es *elasticsearch) InitFunc(mw [] middleware.Middleware) error {
+func (es *elasticsearch) InitFunc(mw []middleware.Middleware) error {
 	return es.preprocess(mw)
 }
 
@@ -36,6 +36,6 @@ func (es *elasticsearch) Routes() []plugins.Route {
 }
 
 // Default empty middleware array function
-func (es *elasticsearch) ESMiddleware() [] middleware.Middleware {
-	return make([] middleware.Middleware, 0)
+func (es *elasticsearch) ESMiddleware() []middleware.Middleware {
+	return make([]middleware.Middleware, 0)
 }

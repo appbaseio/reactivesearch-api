@@ -53,7 +53,7 @@ func (p *permissions) InitFunc() error {
 
 	// initialize the dao
 	var err error
-	p.es, err = newClient(url, indexName, settings)
+	p.es, err = initPlugin(url, indexName, settings)
 	if err != nil {
 		return err
 	}
