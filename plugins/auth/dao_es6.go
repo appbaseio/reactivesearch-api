@@ -10,12 +10,13 @@ import (
 	"github.com/appbaseio/arc/model/credential"
 	"github.com/appbaseio/arc/model/permission"
 	"github.com/appbaseio/arc/model/user"
+	"github.com/appbaseio/arc/util"
 	es6 "gopkg.in/olivere/elastic.v6"
 )
 
-func (es *ElasticSearch) GetPublicKeyEs6(ctx context.Context, publicKeyIndex, publicKeyDocID string) (PublicKey, error) {
-	var record = PublicKey{}
-	response, err := es.client6.Get().
+func (es *elasticSearch) GetPublicKeyEs6(ctx context.Context, publicKeyIndex, publicKeyDocID string) (publicKey, error) {
+	var record = publicKey{}
+	response, err := util.GetClient6().Get().
 		Index(publicKeyIndex).
 		Id(publicKeyDocID).
 		Do(ctx)
@@ -30,10 +31,10 @@ func (es *ElasticSearch) GetPublicKeyEs6(ctx context.Context, publicKeyIndex, pu
 	return record, nil
 }
 
-func (es *ElasticSearch) GetCredentialEs6(ctx context.Context, username string) (credential.AuthCredential, error) {
+func (es *elasticSearch) GetCredentialEs6(ctx context.Context, username string) (credential.AuthCredential, error) {
 	matchUsername := es6.NewTermQuery("username.keyword", username)
 
-	response, err := es.client6.Search().
+	response, err := util.GetClient6().Search().
 		Index(es.userIndex, es.permissionIndex).
 		Query(matchUsername).
 		FetchSource(true).
@@ -74,8 +75,8 @@ func (es *ElasticSearch) GetCredentialEs6(ctx context.Context, username string) 
 	return obj, nil
 }
 
-func (es *ElasticSearch) GetRawRolePermissionEs6(ctx context.Context, role string) ([]byte, error) {
-	resp, err := es.client6.Search().
+func (es *elasticSearch) GetRawRolePermissionEs6(ctx context.Context, role string) ([]byte, error) {
+	resp, err := util.GetClient6().Search().
 		Index(es.permissionIndex).
 		Type(es.permissionType).
 		Query(es6.NewTermQuery("role", role)).

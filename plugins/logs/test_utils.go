@@ -1,21 +1,14 @@
 package logs
 
 import (
-	"fmt"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"testing"
-
-	"github.com/olivere/elastic/v7"
 )
 
-func newStubClient(url, indexName string) (*ElasticSearch, error) {
-	client, err := elastic.NewSimpleClient(elastic.SetURL(url))
-	if err != nil {
-		return nil, fmt.Errorf("error while initializing elastic client: %v", err)
-	}
-	es := &ElasticSearch{url, indexName, client, nil}
+func newStubClient(url, indexName string) (*elasticSearch, error) {
+	es := &elasticSearch{url, indexName}
 	return es, nil
 }
 

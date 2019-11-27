@@ -9,18 +9,32 @@ import (
 	es6 "gopkg.in/olivere/elastic.v6"
 )
 
-func (es *ElasticSearch) getRawLogsES6(ctx context.Context, from string, size int, filter string, offset int, indices ...string) ([]byte, error) {
+func (es *elasticSearch) getRawLogsES6(ctx context.Context, from string, size int, filter string, offset int, indices ...string) ([]byte, error) {
 	query := es6.NewBoolQuery()
 	// apply category filter
-	GetFilterQueryEs6(query, filter)
+	if filter == "search" {
+		filters := es6.NewTermQuery("category.keyword", "search")
+		query.Filter(filters)
+	} else if filter == "delete" {
+		filters := es6.NewMatchQuery("request.method.keyword", "DELETE")
+		query.Filter(filters)
+	} else if filter == "success" {
+		filters := es6.NewRangeQuery("response.code").Gte(200).Lte(299)
+		query.Filter(filters)
+	} else if filter == "error" {
+		filters := es6.NewRangeQuery("response.code").Gte(400)
+		query.Filter(filters)
+	} else {
+		query.Filter(es6.NewMatchAllQuery())
+	}
 	// apply index filtering logic
 	util.GetIndexFilterQueryEs6(query, indices...)
 
-	response, err := es.client6.Search(es.indexName).
+	response, err := util.GetClient6().Search(es.indexName).
 		Query(query).
 		From(offset).
 		Size(size).
-		Sort("timestamp", false).
+		SortWithInfo(es6.SortInfo{Field: "timestamp", UnmappedType: "date", Ascending: false}).
 		Do(ctx)
 	if err != nil {
 		return nil, err

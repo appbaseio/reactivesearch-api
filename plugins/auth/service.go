@@ -18,6 +18,6 @@ type authService interface {
 	getRawPermission(ctx context.Context, username string) ([]byte, error)
 	getRolePermission(ctx context.Context, role string) (*permission.Permission, error)
 	createIndex(indexName, mapping string) (bool, error)
-	savePublicKey(ctx context.Context, indexName string, record PublicKey) (interface{}, error)
-	getPublicKey(ctx context.Context) (PublicKey, error)
+	savePublicKey(ctx context.Context, indexName string, record publicKey) (interface{}, error)
+	getPublicKey(ctx context.Context) (publicKey, error)
 }

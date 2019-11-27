@@ -3,6 +3,7 @@ package util
 import (
 	"fmt"
 	"log"
+	"os"
 	"strconv"
 	"strings"
 	"sync"
@@ -11,76 +12,106 @@ import (
 	es6 "gopkg.in/olivere/elastic.v6"
 )
 
-// EsVersion is a list of supported es versions
-type EsVersion int
-
-// ES_VERSION represents the current es version to be used
-var VERSION EsVersion
-
-const (
-	ES6 EsVersion = iota
-	ES7
-)
-
-// String is the implementation of Stringer interface that returns the string representation of Plan type.
-func (o EsVersion) String() string {
-	return [...]string{
-		"Es6",
-		"Es7",
-	}[o]
-}
+var version int
 
 var (
-	clientInit          sync.Once
-	Client7             *es7.Client
-	Client6             *es6.Client
-	IsCurrentVersionES6 bool
+	clientInit sync.Once
+	client7    *es7.Client
+	client6    *es6.Client
 )
 
-// NewClient instantiates the ES v6 and v7 clients
-func NewClient(url string) (*es6.Client, *es7.Client) {
-	clientInit.Do(func() {
-		var err error
-		// Initialize the ES v7 client
-		Client7, err = es7.NewClient(
-			es7.SetURL(url),
-			es7.SetRetrier(NewRetrier()),
-			es7.SetSniff(false),
-			es7.SetHttpClient(HTTPClient()),
-		)
-		// Get the ES version
-		version, err := Client7.ElasticsearchVersion(url)
-		var splitStr = strings.Split(version, ".")
+// GetClient7 returns the es7 client
+func GetClient7() *es7.Client {
+	// initialize the client if not present
+	if client7 == nil {
+		clientInit.Do(func() {
+			initClient7()
+		})
+	}
+	return client7
+}
+
+// GetClient6 returns the es6 client
+func GetClient6() *es6.Client {
+	if client6 == nil {
+		clientInit.Do(func() {
+			initClient6()
+		})
+	}
+	return client6
+}
+
+// GetVersion returns the es version
+func GetVersion() int {
+	// Get the version if not present
+	if version == 0 {
+		esVersion, err := client7.ElasticsearchVersion(getURL())
+		if err != nil {
+			log.Fatal("Error encountered: ", fmt.Errorf("error while retrieving the elastic version: %v", err))
+		}
+		var splitStr = strings.Split(esVersion, ".")
 		if len(splitStr) > 0 && splitStr[0] != "" {
-			majorVersion, _ := strconv.Atoi(splitStr[0])
-			// set the version
-			if majorVersion == 6 {
-				VERSION = ES6
-			} else {
-				VERSION = ES7
-			}
+			version, _ = strconv.Atoi(splitStr[0])
 			if err != nil {
 				log.Println("Error encountered: ", fmt.Errorf("error while calculating the elastic version: %v", err))
 			}
 		}
-		if err != nil {
-			log.Fatal("Error encountered: ", fmt.Errorf("error while retrieving the elastic version: %v", err))
-		}
-		IsCurrentVersionES6 = (VERSION == ES6)
-		if err != nil {
-			log.Fatal("Error encountered: ", fmt.Errorf("error while initializing elastic v7 client: %v", err))
-		}
+	}
+	return version
+}
+
+func getURL() string {
+	url := os.Getenv("ES_CLUSTER_URL")
+	if url == "" {
+		log.Fatal("Error encountered: ", fmt.Errorf("ES_CLUSTER_URL must be set in the environment variables"))
+	}
+	return url
+}
+
+func initClient6() {
+	var err error
+	// Initialize the ES v6 client
+	client6, err = es6.NewClient(
+		es6.SetURL(getURL()),
+		es6.SetRetrier(NewRetrier()),
+		es6.SetSniff(false),
+		es6.SetHttpClient(HTTPClient()),
+		// ES LOGS: uncomment to see the elasticsearch query logs
+		// es6.SetInfoLog(log.New(os.Stdout, "", log.LstdFlags)),
+		// es6.SetTraceLog(log.New(os.Stderr, "[[ELASTIC]]", 0)),
+	)
+	if err != nil {
+		log.Fatal("Error encountered: ", fmt.Errorf("error while initializing elastic v6 client: %v", err))
+	}
+}
+
+func initClient7() {
+	var err error
+	// Initialize the ES v7 client
+	client7, err = es7.NewClient(
+		es7.SetURL(getURL()),
+		es7.SetRetrier(NewRetrier()),
+		es7.SetSniff(false),
+		es7.SetHttpClient(HTTPClient()),
+		// ES LOGS: uncomment to see the elasticsearch query logs
+		// es7.SetInfoLog(log.New(os.Stdout, "", log.LstdFlags)),
+		// es7.SetTraceLog(log.New(os.Stderr, "[[ELASTIC]]", 0)),
+	)
+	if err != nil {
+		log.Fatal("Error encountered: ", fmt.Errorf("error while initializing elastic v7 client: %v", err))
+	}
+}
+
+// NewClient instantiates the ES v6 and v7 clients
+func NewClient() {
+	clientInit.Do(func() {
+		// Initialize the ES v7 client
+		initClient7()
 		// Initialize the ES v6 client
-		Client6, err = es6.NewClient(
-			es6.SetURL(url),
-			es6.SetRetrier(NewRetrier()),
-			es6.SetSniff(false),
-			es6.SetHttpClient(HTTPClient()),
-		)
-		if err != nil {
-			log.Fatal("Error encountered: ", fmt.Errorf("error while initializing elastic v6 client: %v", err))
-		}
-		fmt.Println("clients instantiated, elastic search version is", VERSION)
+		initClient6()
+		// Get the ES version
+		GetVersion()
+
+		fmt.Println("clients instantiated, elastic search version is", version)
 	})
-	return Client6, Client7
 }

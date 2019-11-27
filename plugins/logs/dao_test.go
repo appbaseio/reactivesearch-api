@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/appbaseio/arc/model/category"
+	"github.com/appbaseio/arc/util"
 )
 
 var getTotalNodesTest = []struct {
@@ -47,8 +48,7 @@ func TestGetTotalNodes(t *testing.T) {
 		t.Run("getTotalNodesTest", func(t *testing.T) {
 			ts := buildTestServer(t, []*ServerSetup{tt.setup})
 			defer ts.Close()
-			es, _ := newStubClient(ts.URL, tt.index)
-			nodes, err := es.getTotalNodes()
+			nodes, err := util.GetTotalNodes()
 
 			if !compareErrs(tt.err, err) {
 				t.Fatalf("Cat aliases should have failed with error; wanted: %q got: %q\n", tt.err, err)

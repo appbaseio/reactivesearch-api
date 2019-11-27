@@ -11,42 +11,36 @@ import (
 	"github.com/appbaseio/arc/model/permission"
 	"github.com/appbaseio/arc/model/user"
 	"github.com/appbaseio/arc/util"
-	es7 "github.com/olivere/elastic/v7"
-	es6 "gopkg.in/olivere/elastic.v6"
 )
 
-type ElasticSearch struct {
+type elasticSearch struct {
 	url                             string
 	userIndex, userType             string
 	permissionIndex, permissionType string
-	client7                         *es7.Client
-	client6                         *es6.Client
 }
 
-type PublicKey struct {
+type publicKey struct {
 	PublicKey string `json:"public_key"`
 	RoleKey   string `json:"role_key"`
 }
 
-func newClient(url, userIndex, permissionIndex string) (*ElasticSearch, error) {
+func newClient(url, userIndex, permissionIndex string) (*elasticSearch, error) {
 	// auth only has to establish a connection to es, users, permissions
 	// plugin handles the creation of their respective meta indices
-	es := &ElasticSearch{
+	es := &elasticSearch{
 		url,
 		userIndex, "_doc",
 		permissionIndex, "_doc",
-		util.Client7,
-		util.Client6,
 	}
 
 	return es, nil
 }
 
-func (es *ElasticSearch) createIndex(indexName, mapping string) (bool, error) {
+func (es *elasticSearch) createIndex(indexName, mapping string) (bool, error) {
 	ctx := context.Background()
 
 	// Check if the index already exists
-	exists, err := es.client7.IndexExists(indexName).
+	exists, err := util.GetClient7().IndexExists(indexName).
 		Do(ctx)
 	if err != nil {
 		return false, fmt.Errorf("%s: error while checking if index already exists: %v",
@@ -58,13 +52,13 @@ func (es *ElasticSearch) createIndex(indexName, mapping string) (bool, error) {
 	}
 
 	// set the number_of_replicas to (nodes-1)
-	nodes, err := es.getTotalNodes()
+	nodes, err := util.GetTotalNodes()
 	if err != nil {
 		return false, err
 	}
 	settings := fmt.Sprintf(mapping, nodes, nodes-1)
 	// Meta index does not exists, create a new one
-	_, err = es.client7.CreateIndex(indexName).
+	_, err = util.GetClient7().CreateIndex(indexName).
 		Body(settings).
 		Do(ctx)
 	if err != nil {
@@ -77,8 +71,8 @@ func (es *ElasticSearch) createIndex(indexName, mapping string) (bool, error) {
 }
 
 // Create or update the public key
-func (es *ElasticSearch) savePublicKey(ctx context.Context, indexName string, record PublicKey) (interface{}, error) {
-	_, err := es.client7.
+func (es *elasticSearch) savePublicKey(ctx context.Context, indexName string, record publicKey) (interface{}, error) {
+	_, err := util.GetClient7().
 		Index().
 		Index(indexName).
 		BodyJson(record).
@@ -93,33 +87,30 @@ func (es *ElasticSearch) savePublicKey(ctx context.Context, indexName string, re
 }
 
 // Get the public key
-func (es *ElasticSearch) getPublicKey(ctx context.Context) (PublicKey, error) {
+func (es *elasticSearch) getPublicKey(ctx context.Context) (publicKey, error) {
 	publicKeyIndex := os.Getenv(envPublicKeyEsIndex)
 	if publicKeyIndex == "" {
 		publicKeyIndex = defaultPublicKeyEsIndex
 	}
-	if util.IsCurrentVersionES6 {
+	switch util.GetVersion() {
+	case 6:
 		return es.GetPublicKeyEs6(ctx, publicKeyIndex, publicKeyDocID)
+	default:
+		return es.GetPublicKeyEs7(ctx, publicKeyIndex, publicKeyDocID)
 	}
-	return es.GetPublicKeyEs7(ctx, publicKeyIndex, publicKeyDocID)
 }
 
-func (es *ElasticSearch) getTotalNodes() (int, error) {
-	if util.IsCurrentVersionES6 {
-		return util.GetTotalNodesEs6(es.client6)
-	}
-	return util.GetTotalNodesEs7(es.client7)
-}
-
-func (es *ElasticSearch) getCredential(ctx context.Context, username string) (credential.AuthCredential, error) {
-	if util.IsCurrentVersionES6 {
+func (es *elasticSearch) getCredential(ctx context.Context, username string) (credential.AuthCredential, error) {
+	switch util.GetVersion() {
+	case 6:
 		return es.GetCredentialEs6(ctx, username)
+	default:
+		return es.GetCredentialEs7(ctx, username)
 	}
-	return es.GetCredentialEs7(ctx, username)
 }
 
-func (es *ElasticSearch) putUser(ctx context.Context, u user.User) (bool, error) {
-	_, err := es.client7.Index().
+func (es *elasticSearch) putUser(ctx context.Context, u user.User) (bool, error) {
+	_, err := util.GetClient7().Index().
 		Index(es.userIndex).
 		Type(es.userType).
 		Id(u.Username).
@@ -132,7 +123,7 @@ func (es *ElasticSearch) putUser(ctx context.Context, u user.User) (bool, error)
 	return true, nil
 }
 
-func (es *ElasticSearch) getUser(ctx context.Context, username string) (*user.User, error) {
+func (es *elasticSearch) getUser(ctx context.Context, username string) (*user.User, error) {
 	data, err := es.getRawUser(ctx, username)
 	if err != nil {
 		return nil, err
@@ -145,8 +136,8 @@ func (es *ElasticSearch) getUser(ctx context.Context, username string) (*user.Us
 	return &u, nil
 }
 
-func (es *ElasticSearch) getRawUser(ctx context.Context, username string) ([]byte, error) {
-	data, err := es.client7.Get().
+func (es *elasticSearch) getRawUser(ctx context.Context, username string) ([]byte, error) {
+	data, err := util.GetClient7().Get().
 		Index(es.userIndex).
 		Type(es.userType).
 		Id(username).
@@ -163,8 +154,8 @@ func (es *ElasticSearch) getRawUser(ctx context.Context, username string) ([]byt
 	return src, nil
 }
 
-func (es *ElasticSearch) putPermission(ctx context.Context, p permission.Permission) (bool, error) {
-	_, err := es.client7.Index().
+func (es *elasticSearch) putPermission(ctx context.Context, p permission.Permission) (bool, error) {
+	_, err := util.GetClient7().Index().
 		Index(es.permissionIndex).
 		Type(es.permissionType).
 		Id(p.Username).
@@ -177,7 +168,7 @@ func (es *ElasticSearch) putPermission(ctx context.Context, p permission.Permiss
 	return true, nil
 }
 
-func (es *ElasticSearch) getPermission(ctx context.Context, username string) (*permission.Permission, error) {
+func (es *elasticSearch) getPermission(ctx context.Context, username string) (*permission.Permission, error) {
 	data, err := es.getRawPermission(ctx, username)
 	if err != nil {
 		return nil, err
@@ -192,8 +183,8 @@ func (es *ElasticSearch) getPermission(ctx context.Context, username string) (*p
 	return &p, nil
 }
 
-func (es *ElasticSearch) getRawPermission(ctx context.Context, username string) ([]byte, error) {
-	resp, err := es.client7.Get().
+func (es *elasticSearch) getRawPermission(ctx context.Context, username string) ([]byte, error) {
+	resp, err := util.GetClient7().Get().
 		Index(es.permissionIndex).
 		Type(es.permissionType).
 		Id(username).
@@ -211,7 +202,7 @@ func (es *ElasticSearch) getRawPermission(ctx context.Context, username string) 
 	return src, nil
 }
 
-func (es *ElasticSearch) getRolePermission(ctx context.Context, role string) (*permission.Permission, error) {
+func (es *elasticSearch) getRolePermission(ctx context.Context, role string) (*permission.Permission, error) {
 	data, err := es.getRawRolePermission(ctx, role)
 	if err != nil {
 		return nil, err
@@ -226,9 +217,11 @@ func (es *ElasticSearch) getRolePermission(ctx context.Context, role string) (*p
 	return &p, nil
 }
 
-func (es *ElasticSearch) getRawRolePermission(ctx context.Context, role string) ([]byte, error) {
-	if util.IsCurrentVersionES6 {
+func (es *elasticSearch) getRawRolePermission(ctx context.Context, role string) ([]byte, error) {
+	switch util.GetVersion() {
+	case 6:
 		return es.GetRawRolePermissionEs6(ctx, role)
+	default:
+		return es.GetRawRolePermissionEs7(ctx, role)
 	}
-	return es.GetRawRolePermissionEs7(ctx, role)
 }

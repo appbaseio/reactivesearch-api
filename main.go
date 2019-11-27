@@ -135,8 +135,7 @@ func main() {
 
 	// ES client instantiation
 	// ES v7 and v6 clients
-	url := os.Getenv("ES_CLUSTER_URL")
-	util.NewClient(url)
+	util.NewClient()
 
 	var elasticSearchPath string
 	elasticSearchMiddleware := make([]middleware.Middleware, 0)

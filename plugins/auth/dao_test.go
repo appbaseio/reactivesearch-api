@@ -2,7 +2,6 @@ package auth
 
 import (
 	"context"
-	"fmt"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -13,19 +12,13 @@ import (
 	"github.com/appbaseio/arc/model/op"
 	"github.com/appbaseio/arc/model/permission"
 	"github.com/appbaseio/arc/model/user"
-	"github.com/olivere/elastic/v7"
 )
 
-func newStubClient(url, userIndex, permissionIndex string) (*ElasticSearch, error) {
-	client, err := elastic.NewSimpleClient(elastic.SetURL(url))
-	if err != nil {
-		return nil, fmt.Errorf("error while initializing elastic client: %v", err)
-	}
-	es := &ElasticSearch{
+func newStubClient(url, userIndex, permissionIndex string) (*elasticSearch, error) {
+	es := &elasticSearch{
 		url,
 		userIndex, "_doc",
 		permissionIndex, "_doc",
-		client,
 	}
 	return es, nil
 }

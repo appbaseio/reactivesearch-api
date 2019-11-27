@@ -6,6 +6,8 @@ require (
 	github.com/gobuffalo/packr v1.22.0
 	github.com/google/uuid v1.0.0
 	github.com/gorilla/mux v1.7.1
+	github.com/hashicorp/go-cleanhttp v0.5.1 // indirect
+	github.com/hashicorp/go-hclog v0.10.0 // indirect
 	github.com/olivere/elastic v6.2.21+incompatible
 	github.com/olivere/elastic/v7 v7.0.4
 	github.com/robfig/cron v1.1.0

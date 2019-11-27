@@ -33,25 +33,13 @@ func GetIndexFilterQueryEs7(query *es7.BoolQuery, indices ...string) *es7.BoolQu
 	return query
 }
 
-// GetTotalNodesEs6 retrieves the number of es nodes
-func GetTotalNodesEs6(client *es6.Client) (int, error) {
-	response, err := client.NodesInfo().
+// GetTotalNodes retrieves the number of es nodes
+func GetTotalNodes() (int, error) {
+	response, err := GetClient7().NodesInfo().
 		Metric("nodes").
 		Do(context.Background())
 	if err != nil {
 		return -1, err
 	}
-	return len(response.Nodes), nil
-}
-
-// GetTotalNodesEs7 retrieves the number of es nodes
-func GetTotalNodesEs7(client *es7.Client) (int, error) {
-	response, err := client.NodesInfo().
-		Metric("nodes").
-		Do(context.Background())
-	if err != nil {
-		return -1, err
-	}
-
 	return len(response.Nodes), nil
 }
