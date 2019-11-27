@@ -15,7 +15,7 @@ type elasticSearch struct {
 	indexName string
 }
 
-func newClient(url, indexName, config string) (*elasticSearch, error) {
+func initPlugin(url, indexName, config string) (*elasticSearch, error) {
 	ctx := context.Background()
 
 	var es = &elasticSearch{url, indexName}

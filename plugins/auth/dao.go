@@ -24,7 +24,7 @@ type publicKey struct {
 	RoleKey   string `json:"role_key"`
 }
 
-func newClient(url, userIndex, permissionIndex string) (*elasticSearch, error) {
+func initPlugin(url, userIndex, permissionIndex string) (*elasticSearch, error) {
 	// auth only has to establish a connection to es, users, permissions
 	// plugin handles the creation of their respective meta indices
 	es := &elasticSearch{

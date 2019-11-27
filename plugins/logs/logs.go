@@ -61,7 +61,7 @@ func (l *Logs) InitFunc() error {
 
 	// initialize the elasticsearch client
 	var err error
-	l.es, err = newClient(url, indexName, config)
+	l.es, err = initPlugin(url, indexName, config)
 	if err != nil {
 		return err
 	}

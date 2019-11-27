@@ -82,7 +82,7 @@ func (a *Auth) InitFunc() error {
 	var err error
 
 	// initialize the dao
-	a.es, err = newClient(esURL, userIndex, permissionIndex)
+	a.es, err = initPlugin(esURL, userIndex, permissionIndex)
 	if err != nil {
 		return err
 	}
