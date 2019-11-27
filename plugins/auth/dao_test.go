@@ -16,7 +16,6 @@ import (
 
 func newStubClient(url, userIndex, permissionIndex string) (*elasticSearch, error) {
 	es := &elasticSearch{
-		url,
 		userIndex, "_doc",
 		permissionIndex, "_doc",
 	}

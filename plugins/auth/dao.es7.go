@@ -14,7 +14,7 @@ import (
 	es7 "github.com/olivere/elastic/v7"
 )
 
-func (es *elasticSearch) GetPublicKeyEs7(ctx context.Context, publicKeyIndex, publicKeyDocID string) (publicKey, error) {
+func (es *elasticSearch) getPublicKeyEs7(ctx context.Context, publicKeyIndex, publicKeyDocID string) (publicKey, error) {
 	var record = publicKey{}
 	response, err := util.GetClient7().Get().
 		Index(publicKeyIndex).
@@ -31,7 +31,7 @@ func (es *elasticSearch) GetPublicKeyEs7(ctx context.Context, publicKeyIndex, pu
 	return record, nil
 }
 
-func (es *elasticSearch) GetCredentialEs7(ctx context.Context, username string) (credential.AuthCredential, error) {
+func (es *elasticSearch) getCredentialEs7(ctx context.Context, username string) (credential.AuthCredential, error) {
 	matchUsername := es7.NewTermQuery("username.keyword", username)
 
 	response, err := util.GetClient7().Search().
@@ -75,7 +75,7 @@ func (es *elasticSearch) GetCredentialEs7(ctx context.Context, username string) 
 	return obj, nil
 }
 
-func (es *elasticSearch) GetRawRolePermissionEs7(ctx context.Context, role string) ([]byte, error) {
+func (es *elasticSearch) getRawRolePermissionEs7(ctx context.Context, role string) ([]byte, error) {
 	resp, err := util.GetClient7().Search().
 		Index(es.permissionIndex).
 		Type(es.permissionType).

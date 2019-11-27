@@ -14,7 +14,6 @@ import (
 )
 
 type elasticSearch struct {
-	url                             string
 	userIndex, userType             string
 	permissionIndex, permissionType string
 }
@@ -24,11 +23,10 @@ type publicKey struct {
 	RoleKey   string `json:"role_key"`
 }
 
-func initPlugin(url, userIndex, permissionIndex string) (*elasticSearch, error) {
+func initPlugin(userIndex, permissionIndex string) (*elasticSearch, error) {
 	// auth only has to establish a connection to es, users, permissions
 	// plugin handles the creation of their respective meta indices
 	es := &elasticSearch{
-		url,
 		userIndex, "_doc",
 		permissionIndex, "_doc",
 	}
@@ -94,18 +92,18 @@ func (es *elasticSearch) getPublicKey(ctx context.Context) (publicKey, error) {
 	}
 	switch util.GetVersion() {
 	case 6:
-		return es.GetPublicKeyEs6(ctx, publicKeyIndex, publicKeyDocID)
+		return es.getPublicKeyEs6(ctx, publicKeyIndex, publicKeyDocID)
 	default:
-		return es.GetPublicKeyEs7(ctx, publicKeyIndex, publicKeyDocID)
+		return es.getPublicKeyEs7(ctx, publicKeyIndex, publicKeyDocID)
 	}
 }
 
 func (es *elasticSearch) getCredential(ctx context.Context, username string) (credential.AuthCredential, error) {
 	switch util.GetVersion() {
 	case 6:
-		return es.GetCredentialEs6(ctx, username)
+		return es.getCredentialEs6(ctx, username)
 	default:
-		return es.GetCredentialEs7(ctx, username)
+		return es.getCredentialEs7(ctx, username)
 	}
 }
 
@@ -220,8 +218,8 @@ func (es *elasticSearch) getRolePermission(ctx context.Context, role string) (*p
 func (es *elasticSearch) getRawRolePermission(ctx context.Context, role string) ([]byte, error) {
 	switch util.GetVersion() {
 	case 6:
-		return es.GetRawRolePermissionEs6(ctx, role)
+		return es.getRawRolePermissionEs6(ctx, role)
 	default:
-		return es.GetRawRolePermissionEs7(ctx, role)
+		return es.getRawRolePermissionEs7(ctx, role)
 	}
 }

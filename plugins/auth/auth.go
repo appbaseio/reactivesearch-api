@@ -7,7 +7,6 @@ import (
 	"os"
 	"sync"
 
-	"github.com/appbaseio/arc/errors"
 	"github.com/appbaseio/arc/middleware"
 	"github.com/appbaseio/arc/model/credential"
 	"github.com/appbaseio/arc/plugins"
@@ -15,7 +14,6 @@ import (
 
 const (
 	logTag                    = "[auth]"
-	envEsURL                  = "ES_CLUSTER_URL"
 	envUsersEsIndex           = "USERS_ES_INDEX"
 	defaultUsersEsIndex       = ".users"
 	envPermissionsEsIndex     = "PERMISSIONS_ES_INDEX"
@@ -63,10 +61,6 @@ func (a *Auth) Name() string {
 // only once in the lifetime of the plugin.
 func (a *Auth) InitFunc() error {
 	// fetch vars from env
-	esURL := os.Getenv(envEsURL)
-	if esURL == "" {
-		return errors.NewEnvVarNotSetError(envEsURL)
-	}
 	userIndex := os.Getenv(envUsersEsIndex)
 	if userIndex == "" {
 		userIndex = defaultUsersEsIndex
@@ -82,7 +76,7 @@ func (a *Auth) InitFunc() error {
 	var err error
 
 	// initialize the dao
-	a.es, err = initPlugin(esURL, userIndex, permissionIndex)
+	a.es, err = initPlugin(userIndex, permissionIndex)
 	if err != nil {
 		return err
 	}

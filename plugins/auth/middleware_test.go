@@ -4,6 +4,11 @@ import (
 	"context"
 	"crypto/rand"
 	"crypto/rsa"
+	"net/http"
+	"net/http/httptest"
+	"testing"
+	"time"
+
 	"github.com/appbaseio/arc/model/category"
 	"github.com/appbaseio/arc/model/credential"
 	"github.com/appbaseio/arc/model/op"
@@ -13,10 +18,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"golang.org/x/crypto/bcrypt"
-	"net/http"
-	"net/http/httptest"
-	"testing"
-	"time"
 )
 
 type mockAuthService struct {
@@ -41,7 +42,7 @@ func (m *mockAuthService) putUser(ctx context.Context, u user.User) (bool, error
 	args := m.Called(ctx, u)
 	return args.Bool(0), args.Error(1)
 }
-func (m *mockAuthService) getUser(ctx context.Context, username string) (*user.User, error){
+func (m *mockAuthService) getUser(ctx context.Context, username string) (*user.User, error) {
 	args := m.Called(ctx, username)
 	return args.Get(0).(*user.User), args.Error(1)
 }
@@ -55,7 +56,7 @@ func (m *mockAuthService) putPermission(ctx context.Context, p permission.Permis
 }
 func (m *mockAuthService) getPublicKey(ctx context.Context) (publicKey, error) {
 	args := m.Called(ctx)
-	return args.Get(0).(publicKey),args.Error(1)
+	return args.Get(0).(publicKey), args.Error(1)
 }
 func (m *mockAuthService) getPermission(ctx context.Context, username string) (*permission.Permission, error) {
 	args := m.Called(ctx, username)
@@ -70,14 +71,14 @@ func (m *mockAuthService) getRawPermission(ctx context.Context, username string)
 	return args.Get(0).([]byte), args.Error(1)
 }
 func (m *mockAuthService) savePublicKey(ctx context.Context, indexName string, record publicKey) (interface{}, error) {
-	args := m.Called(ctx, indexName,record)
-	return  args.Get(0).(interface{}),args.Error(1)
+	args := m.Called(ctx, indexName, record)
+	return args.Get(0).(interface{}), args.Error(1)
 }
 
 func TestBasicAuthWithUserPasswordBasic(t *testing.T) {
 	hashedPassword, _ := bcrypt.GenerateFromPassword([]byte("bar"), bcrypt.DefaultCost)
 	u, _ := user.New("foo", string(hashedPassword))
-	ehf := func (_ http.ResponseWriter, req *http.Request) {
+	ehf := func(_ http.ResponseWriter, req *http.Request) {
 		aU, _ := user.FromContext(req.Context())
 		assert.Equal(t, u, aU)
 	}
@@ -107,7 +108,7 @@ func TestBasicAuthWithUserPasswordBasic(t *testing.T) {
 }
 
 func TestBasicAuthWithUserPasswordWithoutUser(t *testing.T) {
-	ehf := func (_ http.ResponseWriter, req *http.Request) {
+	ehf := func(_ http.ResponseWriter, req *http.Request) {
 		assert.Fail(t, "Should not be run")
 	}
 
@@ -140,7 +141,7 @@ func TestBasicAuthWithUserPasswordWithoutUser(t *testing.T) {
 func TestBasicAuthWithUserWrongPassword(t *testing.T) {
 	hashedPassword, _ := bcrypt.GenerateFromPassword([]byte("bar"), bcrypt.DefaultCost)
 	u, _ := user.New("user3", string(hashedPassword))
-	ehf := func (_ http.ResponseWriter, request *http.Request) {
+	ehf := func(_ http.ResponseWriter, request *http.Request) {
 		assert.Fail(t, "Should not be run")
 	}
 
@@ -173,7 +174,7 @@ func TestBasicAuthWithUserWrongPassword(t *testing.T) {
 func TestBasicAuthTwoRequests(t *testing.T) {
 	hashedPassword, _ := bcrypt.GenerateFromPassword([]byte("bar"), bcrypt.DefaultCost)
 	u, _ := user.New("user4", string(hashedPassword))
-	ehf := func (_ http.ResponseWriter, req *http.Request) {
+	ehf := func(_ http.ResponseWriter, req *http.Request) {
 		aU, _ := user.FromContext(req.Context())
 		assert.Equal(t, u, aU)
 	}
@@ -195,11 +196,10 @@ func TestBasicAuthTwoRequests(t *testing.T) {
 	request.SetBasicAuth("user4", "bar")
 	recorder := httptest.NewRecorder()
 
-
 	BasicAuth()(ehf)(recorder, request)
 	assert.Equal(t, http.StatusOK, recorder.Result().StatusCode)
 
-	ehf = func (_ http.ResponseWriter, request *http.Request) {
+	ehf = func(_ http.ResponseWriter, request *http.Request) {
 		assert.Fail(t, "Should not be run")
 	}
 	request = httptest.NewRequest("GET", "/", nil)
@@ -214,11 +214,10 @@ func TestBasicAuthTwoRequests(t *testing.T) {
 	mas.AssertExpectations(t)
 }
 
-
 func TestBasicAuthWithJWToken(t *testing.T) {
 	hashedPassword, _ := bcrypt.GenerateFromPassword([]byte("bar"), bcrypt.DefaultCost)
 	u, _ := user.New("jwtUser", string(hashedPassword))
-	ehf := func (_ http.ResponseWriter, req *http.Request) {
+	ehf := func(_ http.ResponseWriter, req *http.Request) {
 		aU, _ := user.FromContext(req.Context())
 		assert.Equal(t, u, aU)
 	}
@@ -237,8 +236,8 @@ func TestBasicAuthWithJWToken(t *testing.T) {
 
 	token := jwt.NewWithClaims(jwt.SigningMethodRS256, jwt.MapClaims{
 		"username": "jwtUser",
-		"iat": time.Now().Unix(),
-		"exp": time.Now().Unix() + 1000,
+		"iat":      time.Now().Unix(),
+		"exp":      time.Now().Unix() + 1000,
 	})
 	pvt, _ := rsa.GenerateKey(rand.Reader, 2048)
 	tokenString, _ := token.SignedString(pvt)
@@ -257,7 +256,7 @@ func TestBasicAuthWithJWToken(t *testing.T) {
 }
 
 func TestBasicAuthWithJWTokenWithoutUser(t *testing.T) {
-	ehf := func (_ http.ResponseWriter, req *http.Request) {
+	ehf := func(_ http.ResponseWriter, req *http.Request) {
 		assert.Fail(t, "Should not be run")
 	}
 
@@ -275,8 +274,8 @@ func TestBasicAuthWithJWTokenWithoutUser(t *testing.T) {
 
 	token := jwt.NewWithClaims(jwt.SigningMethodRS256, jwt.MapClaims{
 		"username": "jwtUser2",
-		"iat": time.Now().Unix(),
-		"exp": time.Now().Unix() + 1000,
+		"iat":      time.Now().Unix(),
+		"exp":      time.Now().Unix() + 1000,
 	})
 	pvt, _ := rsa.GenerateKey(rand.Reader, 2048)
 	tokenString, _ := token.SignedString(pvt)
