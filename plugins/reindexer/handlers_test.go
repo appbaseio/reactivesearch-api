@@ -129,7 +129,6 @@ func TestReindexHandler(t *testing.T) {
 	for _, tt := range handlerTests {
 		rx := Instance()
 		setUp(ts.URL)
-		rx.mockInitFunc()
 
 		rw := httptest.NewRecorder()
 

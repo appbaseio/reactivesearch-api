@@ -61,8 +61,7 @@ func TestAliasesOf(t *testing.T) {
 			ctx := context.Background()
 			ts := buildTestServer(t, []*ServerSetup{tt.setup})
 			defer ts.Close()
-			es, _ := newTestClient(ts.URL)
-			aliases, err := es.aliasesOf(ctx, tt.index)
+			aliases, err := aliasesOf(ctx, tt.index)
 
 			if !compareErrs(tt.err, err) {
 				t.Fatalf("Cat aliases should have failed with error: %v got: %v instead\n", tt.err, err)
@@ -118,8 +117,7 @@ func TestCreateIndex(t *testing.T) {
 			ctx := context.Background()
 			ts := buildTestServer(t, []*ServerSetup{tt.setup})
 			defer ts.Close()
-			es, _ := newTestClient(ts.URL)
-			err := es.createIndex(ctx, tt.index, nil)
+			err := createIndex(ctx, tt.index, nil)
 			if !compareErrs(tt.err, err) {
 				t.Fatalf("Index creation should have failed with error: %v got: %v instead\n", tt.err, err)
 			}
@@ -161,8 +159,7 @@ func TestDeleteIndex(t *testing.T) {
 			ctx := context.Background()
 			ts := buildTestServer(t, []*ServerSetup{tt.setup})
 			defer ts.Close()
-			es, _ := newTestClient(ts.URL)
-			err := es.deleteIndex(ctx, tt.index)
+			err := deleteIndex(ctx, tt.index)
 			if !compareErrs(tt.err, err) {
 				t.Fatalf("Index deletion should have failed with error: %v got: %v instead\n", tt.err, err)
 			}
@@ -217,8 +214,7 @@ func TestSetAlias(t *testing.T) {
 			ctx := context.Background()
 			ts := buildTestServer(t, []*ServerSetup{tt.setup})
 			defer ts.Close()
-			es, _ := newTestClient(ts.URL)
-			err := es.setAlias(ctx, tt.index, tt.aliases[0], tt.aliases[1])
+			err := setAlias(ctx, tt.index, tt.aliases[0], tt.aliases[1])
 			if !compareErrs(tt.err, err) {
 				t.Fatalf("Index creation should have failed with error: %v got: %v instead\n", tt.err, err)
 			}
@@ -251,8 +247,7 @@ func TestGetIndicesByAlias(t *testing.T) {
 			ctx := context.Background()
 			ts := buildTestServer(t, []*ServerSetup{tt.setup})
 			defer ts.Close()
-			es, _ := newTestClient(ts.URL)
-			resp, err := es.getIndicesByAlias(ctx, tt.alias)
+			resp, err := getIndicesByAlias(ctx, tt.alias)
 			if !compareErrs(tt.err, err) {
 				t.Fatalf("Unexpected error wanted: %v got: %v\n", tt.err, err)
 			}
@@ -286,8 +281,7 @@ func TestMappingsOf(t *testing.T) {
 			ctx := context.Background()
 			ts := buildTestServer(t, []*ServerSetup{tt.setup})
 			defer ts.Close()
-			es, _ := newTestClient(ts.URL)
-			_, err := es.mappingsOf(ctx, tt.index)
+			_, err := mappingsOf(ctx, tt.index)
 			if !compareErrs(tt.err, err) {
 				t.Fatalf("Index creation should have failed with error: %v got: %v instead\n", tt.err, err)
 			}
@@ -318,8 +312,7 @@ func TestSettingsOf(t *testing.T) {
 			ctx := context.Background()
 			ts := buildTestServer(t, []*ServerSetup{tt.setup})
 			defer ts.Close()
-			es, _ := newTestClient(ts.URL)
-			_, err := es.settingsOf(ctx, tt.index)
+			_, err := settingsOf(ctx, tt.index)
 			if !compareErrs(tt.err, err) {
 				t.Fatalf("Index creation should have failed with error: %v got: %v instead\n", tt.err, err)
 			}
@@ -378,10 +371,8 @@ func TestReindex(t *testing.T) {
 	for _, tt := range reindexTests {
 		t.Run("Should successfully delete index with a valid setup", func(t *testing.T) {
 			ctx := context.Background()
-			es, _ := newTestClient(ts.URL)
-			mock := &mockES{}
 
-			_, err := es.reindex(ctx, mock, "test", config, tt.wait)
+			_, err := reindex(ctx, "test", config, tt.wait)
 			if !compareErrs(tt.err, err) {
 				t.Fatalf("Index creation should have failed with error, wanted: %v got: %v\n", tt.err, err)
 			}
@@ -390,42 +381,34 @@ func TestReindex(t *testing.T) {
 }
 
 var reindexTestsErr = []struct {
-	mock  reindexService
 	alias string
 	err   string
 }{
 	{
-		&mockESIndicesByAliasErr{},
 		"test",
 		"multiple indices pointing to alias \"test\"",
 	},
 	{
-		&mockESMappingsOfErr{},
 		"test",
 		"error fetching mappings of index \"test\": mappings result for index \"test\" not found",
 	},
 	{
-		&mockESSettingsOfErr{},
 		"test",
 		"error fetching settings of index \"test\": settings for index test not found",
 	},
 	{
-		&mockESCreateIndexErr{},
 		"test",
 		"failed to create index named \"test_reindexed_1\", acknowledged=false",
 	},
 	{
-		&mockESDeleteIndexErr{},
 		"test",
 		"error deleting index \"test\": error deleting index \"test\", acknowledged=false\\n",
 	},
 	{
-		&mockESAliasesOfErr{},
 		"test",
 		"error fetching aliases of index \"test\": elastic: cannot get connection from pool",
 	},
 	{
-		&mockESSetAliasErr{},
 		"test",
 		"error setting alias \"test\" for index \"test_reindexed_1\"",
 	},
@@ -453,9 +436,8 @@ func TestReindexErr(t *testing.T) {
 	for _, tt := range reindexTestsErr {
 		t.Run("Should successfully delete index with a valid setup", func(t *testing.T) {
 			ctx := context.Background()
-			es, _ := newTestClient(ts.URL)
 
-			_, err := es.reindex(ctx, tt.mock, "test", config, true)
+			_, err := reindex(ctx, "test", config, true)
 			if !compareErrs(tt.err, err) {
 				t.Fatalf("Reindexing should have failed with error, wanted: %v got: %v\n", tt.err, err)
 			}

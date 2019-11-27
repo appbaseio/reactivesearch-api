@@ -52,18 +52,3 @@ func TestInit(t *testing.T) {
 		}
 	}
 }
-
-func (r *reindexer) mockInitFunc() error {
-	url := os.Getenv(envEsURL)
-	if url == "" {
-		return errors.NewEnvVarNotSetError(envEsURL)
-	}
-
-	client, err := newTestClient(url)
-	if err != nil {
-		return err
-	}
-
-	r.es = client
-	return nil
-}

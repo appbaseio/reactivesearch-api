@@ -1,13 +1,10 @@
 package reindexer
 
 import (
-	"fmt"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"testing"
-
-	"github.com/olivere/elastic/v7"
 )
 
 // TODO: Move it to the separate package and make it exportable since it is used by all plugin tests
@@ -20,18 +17,6 @@ func compareErrs(expectedErr string, actual error) bool {
 	}
 
 	return expectedErr == actual.Error()
-}
-
-func newTestClient(url string) (*elasticsearch, error) {
-	client, err := elastic.NewSimpleClient(elastic.SetURL(url))
-	if err != nil {
-		return nil, fmt.Errorf("error while initializing elastic client: %v", err)
-	}
-	es := &elasticsearch{
-		url:    url,
-		client: client,
-	}
-	return es, nil
 }
 
 type ServerSetup struct {

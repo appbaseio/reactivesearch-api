@@ -56,7 +56,7 @@ func (rx *reindexer) reindex() http.HandlerFunc {
 			return
 		}
 
-		response, err := rx.es.reindex(req.Context(), rx.es, indexName, &body, waitForCompletion)
+		response, err := reindex(req.Context(), indexName, &body, waitForCompletion)
 		if err != nil {
 			log.Printf("%s: %v\n", logTag, err)
 			util.WriteBackError(w, err.Error(), http.StatusNotFound)
