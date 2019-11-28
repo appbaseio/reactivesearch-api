@@ -121,8 +121,8 @@ func (p *permissions) postPermission(opts ...permission.Options) http.HandlerFun
 				return
 			}
 			if err != nil {
-				msg := fmt.Sprintf(`an error occurred while creating permission for role=%s`, creator, newPermission.Role)
-				log.Printf("%s: unable to check if role=%s exists: %v\n", logTag, newPermission.Role)
+				msg := fmt.Sprintf(`an error occurred while creating permission for role=%s`, newPermission.Role)
+				log.Printf("%s: unable to check if role=%s exists", logTag, newPermission.Role)
 				util.WriteBackError(w, msg, http.StatusInternalServerError)
 				return
 			}
@@ -217,7 +217,7 @@ func (p *permissions) patchPermission() http.HandlerFunc {
 			}
 			if err != nil {
 				msg := fmt.Sprintf(`an error occurred while creating permission for role=%s`, obj.Role)
-				log.Printf("%s: unable to check if role=%s exists: %v\n", logTag, obj.Role)
+				log.Printf("%s: unable to check if role=%s exists", logTag, obj.Role)
 				util.WriteBackError(w, msg, http.StatusInternalServerError)
 				return
 			}
