@@ -4,10 +4,16 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"testing"
+
+	"github.com/appbaseio/arc/util"
 )
 
 func newStubClient(url, indexName string) (*elasticSearch, error) {
+	os.Setenv(envEsURL, url)
+	util.EnableTestMode()
+	util.NewClient()
 	es := &elasticSearch{indexName}
 	return es, nil
 }

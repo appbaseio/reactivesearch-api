@@ -16,6 +16,7 @@ const (
 	logTag                    = "[auth]"
 	envUsersEsIndex           = "USERS_ES_INDEX"
 	defaultUsersEsIndex       = ".users"
+	envEsURL                  = "ES_CLUSTER_URL"
 	envPermissionsEsIndex     = "PERMISSIONS_ES_INDEX"
 	defaultPermissionsEsIndex = ".permissions"
 	envPublicKeyEsIndex       = "PUBLIC_KEY_ES_INDEX"

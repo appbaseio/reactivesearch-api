@@ -13,6 +13,7 @@ import (
 )
 
 var version int
+var isTestingMode bool
 
 var (
 	clientInit sync.Once
@@ -43,6 +44,10 @@ func GetClient6() *es6.Client {
 
 // GetVersion returns the es version
 func GetVersion() int {
+	if isTestingMode {
+		// set the default es version for testing
+		version = 7
+	}
 	// Get the version if not present
 	if version == 0 {
 		esVersion, err := client7.ElasticsearchVersion(getURL())
@@ -68,18 +73,33 @@ func getURL() string {
 	return url
 }
 
+// EnableTestMode enables the testing mode
+func EnableTestMode() {
+	isTestingMode = true
+}
+
 func initClient6() {
 	var err error
 	// Initialize the ES v6 client
-	client6, err = es6.NewClient(
-		es6.SetURL(getURL()),
-		es6.SetRetrier(NewRetrier()),
-		es6.SetSniff(false),
-		es6.SetHttpClient(HTTPClient()),
-		// ES LOGS: uncomment to see the elasticsearch query logs
-		// es6.SetInfoLog(log.New(os.Stdout, "", log.LstdFlags)),
-		// es6.SetTraceLog(log.New(os.Stderr, "[[ELASTIC]]", 0)),
-	)
+	if isTestingMode {
+		client6, err = es6.NewSimpleClient(
+			es6.SetURL(getURL()),
+			// ES LOGS: uncomment to see the elasticsearch query logs
+			// es6.SetInfoLog(log.New(os.Stdout, "", log.LstdFlags)),
+			// es6.SetTraceLog(log.New(os.Stderr, "[[ELASTIC]]", 0)),
+		)
+	} else {
+		client6, err = es6.NewClient(
+			es6.SetURL(getURL()),
+			es6.SetRetrier(NewRetrier()),
+			es6.SetSniff(false),
+			es6.SetHttpClient(HTTPClient()),
+			// ES LOGS: uncomment to see the elasticsearch query logs
+			// es6.SetInfoLog(log.New(os.Stdout, "", log.LstdFlags)),
+			// es6.SetTraceLog(log.New(os.Stderr, "[[ELASTIC]]", 0)),
+		)
+	}
+
 	if err != nil {
 		log.Fatal("Error encountered: ", fmt.Errorf("error while initializing elastic v6 client: %v", err))
 	}
@@ -88,15 +108,24 @@ func initClient6() {
 func initClient7() {
 	var err error
 	// Initialize the ES v7 client
-	client7, err = es7.NewClient(
-		es7.SetURL(getURL()),
-		es7.SetRetrier(NewRetrier()),
-		es7.SetSniff(false),
-		es7.SetHttpClient(HTTPClient()),
-		// ES LOGS: uncomment to see the elasticsearch query logs
-		// es7.SetInfoLog(log.New(os.Stdout, "", log.LstdFlags)),
-		// es7.SetTraceLog(log.New(os.Stderr, "[[ELASTIC]]", 0)),
-	)
+	if isTestingMode {
+		client7, err = es7.NewSimpleClient(
+			es7.SetURL(getURL()),
+			// ES LOGS: uncomment to see the elasticsearch query logs
+			// es7.SetInfoLog(log.New(os.Stdout, "", log.LstdFlags)),
+			// es7.SetTraceLog(log.New(os.Stderr, "[[ELASTIC]]", 0)),
+		)
+	} else {
+		client7, err = es7.NewClient(
+			es7.SetURL(getURL()),
+			es7.SetRetrier(NewRetrier()),
+			es7.SetSniff(false),
+			es7.SetHttpClient(HTTPClient()),
+			// ES LOGS: uncomment to see the elasticsearch query logs
+			// es7.SetInfoLog(log.New(os.Stdout, "", log.LstdFlags)),
+			// es7.SetTraceLog(log.New(os.Stderr, "[[ELASTIC]]", 0)),
+		)
+	}
 	if err != nil {
 		log.Fatal("Error encountered: ", fmt.Errorf("error while initializing elastic v7 client: %v", err))
 	}

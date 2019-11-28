@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/appbaseio/arc/errors"
+	"github.com/appbaseio/arc/util"
 )
 
 func compareErrs(expectedErr string, actual error) bool {
@@ -42,6 +43,9 @@ func (p *permissions) mockInitFunc() error {
 }
 
 func newStubClient(url, indexName, mapping string) (*elasticsearch, error) {
+	os.Setenv(envEsURL, url)
+	util.EnableTestMode()
+	util.NewClient()
 	es := &elasticsearch{
 		indexName: indexName,
 		mapping:   mapping,

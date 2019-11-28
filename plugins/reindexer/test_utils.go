@@ -4,7 +4,10 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"testing"
+
+	"github.com/appbaseio/arc/util"
 )
 
 // TODO: Move it to the separate package and make it exportable since it is used by all plugin tests
@@ -65,4 +68,10 @@ func buildTestServer(t *testing.T, setups []*ServerSetup) *httptest.Server {
 	})
 
 	return httptest.NewServer(handlerFunc)
+}
+
+func newTestClient(url string) {
+	os.Setenv(envEsURL, url)
+	util.EnableTestMode()
+	util.NewClient()
 }

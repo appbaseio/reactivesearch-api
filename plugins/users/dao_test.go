@@ -5,13 +5,17 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"reflect"
 	"testing"
 
 	"github.com/appbaseio/arc/util"
 )
 
-func newStubClient(indexName string) (*elasticsearch, error) {
+func newStubClient(url string, indexName string) (*elasticsearch, error) {
+	os.Setenv(envEsURL, url)
+	util.EnableTestMode()
+	util.NewClient()
 	es := &elasticsearch{indexName}
 	return es, nil
 }
@@ -79,6 +83,7 @@ func TestGetTotalNodes(t *testing.T) {
 		t.Run("getTotalNodesTest", func(t *testing.T) {
 			ts := buildTestServer(t, tt.setup)
 			defer ts.Close()
+			newStubClient(ts.URL, tt.index)
 			nodes, err := util.GetTotalNodes()
 
 			if !compareErrs(tt.err, err) {
@@ -141,7 +146,7 @@ func TestGetUser(t *testing.T) {
 		t.Run("getUserTest", func(t *testing.T) {
 			ts := buildTestServer(t, tt.setup)
 			defer ts.Close()
-			es, _ := newStubClient("test1")
+			es, _ := newStubClient(ts.URL, "test1")
 			_, err := es.getUser(context.Background(), "user1")
 
 			if !compareErrs(tt.err, err) {
@@ -190,7 +195,7 @@ func TestDeleteUser(t *testing.T) {
 		t.Run("getUserTest", func(t *testing.T) {
 			ts := buildTestServer(t, tt.setup)
 			defer ts.Close()
-			es, _ := newStubClient("test1")
+			es, _ := newStubClient(ts.URL, "test1")
 			response, err := es.deleteUser(context.Background(), "user1")
 
 			if !compareErrs(tt.err, err) {

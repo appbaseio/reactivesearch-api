@@ -50,6 +50,7 @@ func TestGetTotalNodes(t *testing.T) {
 		t.Run("getTotalNodesTest", func(t *testing.T) {
 			ts := buildTestServer(t, []*ServerSetup{tt.setup})
 			defer ts.Close()
+			newStubClient(ts.URL, tt.index, "mapping")
 			nodes, err := util.GetTotalNodes()
 
 			if !compareErrs(tt.err, err) {

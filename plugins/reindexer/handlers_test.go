@@ -10,11 +10,14 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/appbaseio/arc/util"
 	"github.com/gorilla/mux"
 )
 
 func setUp(url string) {
 	os.Setenv(envEsURL, url)
+	util.EnableTestMode()
+	util.NewClient()
 }
 
 func tearDown(server *httptest.Server) {

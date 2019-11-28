@@ -61,6 +61,7 @@ func TestAliasesOf(t *testing.T) {
 			ctx := context.Background()
 			ts := buildTestServer(t, []*ServerSetup{tt.setup})
 			defer ts.Close()
+			newTestClient(ts.URL)
 			aliases, err := aliasesOf(ctx, tt.index)
 
 			if !compareErrs(tt.err, err) {
@@ -117,6 +118,7 @@ func TestCreateIndex(t *testing.T) {
 			ctx := context.Background()
 			ts := buildTestServer(t, []*ServerSetup{tt.setup})
 			defer ts.Close()
+			newTestClient(ts.URL)
 			err := createIndex(ctx, tt.index, nil)
 			if !compareErrs(tt.err, err) {
 				t.Fatalf("Index creation should have failed with error: %v got: %v instead\n", tt.err, err)
@@ -159,6 +161,7 @@ func TestDeleteIndex(t *testing.T) {
 			ctx := context.Background()
 			ts := buildTestServer(t, []*ServerSetup{tt.setup})
 			defer ts.Close()
+			newTestClient(ts.URL)
 			err := deleteIndex(ctx, tt.index)
 			if !compareErrs(tt.err, err) {
 				t.Fatalf("Index deletion should have failed with error: %v got: %v instead\n", tt.err, err)
@@ -214,6 +217,7 @@ func TestSetAlias(t *testing.T) {
 			ctx := context.Background()
 			ts := buildTestServer(t, []*ServerSetup{tt.setup})
 			defer ts.Close()
+			newTestClient(ts.URL)
 			err := setAlias(ctx, tt.index, tt.aliases[0], tt.aliases[1])
 			if !compareErrs(tt.err, err) {
 				t.Fatalf("Index creation should have failed with error: %v got: %v instead\n", tt.err, err)
@@ -247,6 +251,7 @@ func TestGetIndicesByAlias(t *testing.T) {
 			ctx := context.Background()
 			ts := buildTestServer(t, []*ServerSetup{tt.setup})
 			defer ts.Close()
+			newTestClient(ts.URL)
 			resp, err := getIndicesByAlias(ctx, tt.alias)
 			if !compareErrs(tt.err, err) {
 				t.Fatalf("Unexpected error wanted: %v got: %v\n", tt.err, err)
@@ -281,6 +286,7 @@ func TestMappingsOf(t *testing.T) {
 			ctx := context.Background()
 			ts := buildTestServer(t, []*ServerSetup{tt.setup})
 			defer ts.Close()
+			newTestClient(ts.URL)
 			_, err := mappingsOf(ctx, tt.index)
 			if !compareErrs(tt.err, err) {
 				t.Fatalf("Index creation should have failed with error: %v got: %v instead\n", tt.err, err)
@@ -312,6 +318,7 @@ func TestSettingsOf(t *testing.T) {
 			ctx := context.Background()
 			ts := buildTestServer(t, []*ServerSetup{tt.setup})
 			defer ts.Close()
+			newTestClient(ts.URL)
 			_, err := settingsOf(ctx, tt.index)
 			if !compareErrs(tt.err, err) {
 				t.Fatalf("Index creation should have failed with error: %v got: %v instead\n", tt.err, err)
@@ -371,7 +378,7 @@ func TestReindex(t *testing.T) {
 	for _, tt := range reindexTests {
 		t.Run("Should successfully delete index with a valid setup", func(t *testing.T) {
 			ctx := context.Background()
-
+			newTestClient(ts.URL)
 			_, err := reindex(ctx, "test", config, tt.wait)
 			if !compareErrs(tt.err, err) {
 				t.Fatalf("Index creation should have failed with error, wanted: %v got: %v\n", tt.err, err)
@@ -436,6 +443,7 @@ func TestReindexErr(t *testing.T) {
 	for _, tt := range reindexTestsErr {
 		t.Run("Should successfully delete index with a valid setup", func(t *testing.T) {
 			ctx := context.Background()
+			newTestClient(ts.URL)
 
 			_, err := reindex(ctx, "test", config, true)
 			if !compareErrs(tt.err, err) {

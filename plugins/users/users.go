@@ -11,6 +11,7 @@ import (
 const (
 	logTag              = "[users]"
 	envUsersEsIndex     = "USERS_ES_INDEX"
+	envEsURL            = "ES_CLUSTER_URL"
 	defaultUsersEsIndex = ".users"
 	settings            = `{ "settings" : { "number_of_shards" : %d, "number_of_replicas" : %d } }`
 )

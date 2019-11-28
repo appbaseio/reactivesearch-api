@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"testing"
 
 	"github.com/appbaseio/arc/model/acl"
@@ -12,9 +13,13 @@ import (
 	"github.com/appbaseio/arc/model/op"
 	"github.com/appbaseio/arc/model/permission"
 	"github.com/appbaseio/arc/model/user"
+	"github.com/appbaseio/arc/util"
 )
 
 func newStubClient(url, userIndex, permissionIndex string) (*elasticSearch, error) {
+	os.Setenv(envEsURL, url)
+	util.EnableTestMode()
+	util.NewClient()
 	es := &elasticSearch{
 		userIndex, "_doc",
 		permissionIndex, "_doc",
