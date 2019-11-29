@@ -106,6 +106,7 @@ func initClient6() {
 }
 
 func initClient7() {
+	fmt.Println("INITIALIZED THE CLIENT WITH ENV VARIABLE", getURL())
 	var err error
 	// Initialize the ES v7 client
 	if isTestingMode {
