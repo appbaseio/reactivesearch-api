@@ -78,6 +78,12 @@ func (p *permissions) postPermission(opts ...permission.Options) http.HandlerFun
 		if permissionBody.Referers != nil {
 			opts = append(opts, permission.SetReferers(permissionBody.Referers))
 		}
+		if permissionBody.Includes != nil {
+			opts = append(opts, permission.SetIncludes(permissionBody.Includes))
+		}
+		if permissionBody.Excludes != nil {
+			opts = append(opts, permission.SetExcludes(permissionBody.Excludes))
+		}
 		if permissionBody.Indices != nil {
 			opts = append(opts, permission.SetIndices(permissionBody.Indices))
 		}

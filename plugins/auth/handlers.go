@@ -22,11 +22,12 @@ func (a *Auth) savePublicKey(ctx context.Context, indexName string, record publi
 	if record.PublicKey != "" {
 		publicKeyBuf, err := util.DecodeBase64Key(record.PublicKey)
 		if err != nil {
-			log.Printf("%s: error indexing public key record", logTag)
+			log.Printf("%s: error indexing public key record, %s", logTag, err)
 			return false, err
 		}
 		jwtRsaPublicKey, err = jwt.ParseRSAPublicKeyFromPEM(publicKeyBuf)
 		if err != nil {
+			log.Printf("%s: error indexing public key record, %s", logTag, err)
 			return false, err
 		}
 	} else {

@@ -46,6 +46,8 @@ type Permission struct {
 	TTL         time.Duration       `json:"ttl"`
 	Limits      *Limits             `json:"limits"`
 	Description string              `json:"description"`
+	Includes    []string            `json:"include_fields"`
+	Excludes    []string            `json:"exclude_fields"`
 }
 
 // Limits defines the rate limits for each category.
@@ -155,6 +157,22 @@ func SetSources(sources []string) Options {
 			return err
 		}
 		p.Sources = sources
+		return nil
+	}
+}
+
+// SetIncludes sets the includes fields
+func SetIncludes(includes []string) Options {
+	return func(p *Permission) error {
+		p.Includes = includes
+		return nil
+	}
+}
+
+// SetExcludes sets the excludes fields
+func SetExcludes(excludes []string) Options {
+	return func(p *Permission) error {
+		p.Excludes = excludes
 		return nil
 	}
 }
@@ -556,6 +574,12 @@ func (p *Permission) GetPatch(rolePatched bool) (map[string]interface{}, error) 
 	}
 	if p.Description != "" {
 		patch["description"] = p.Description
+	}
+	if p.Includes != nil {
+		patch["include_fields"] = p.Includes
+	}
+	if p.Excludes != nil {
+		patch["exclude_fields"] = p.Excludes
 	}
 
 	return patch, nil

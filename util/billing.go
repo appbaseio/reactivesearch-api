@@ -9,6 +9,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strings"
 )
 
 // ACCAPI URL
@@ -86,7 +87,6 @@ type ArcInstanceDetails struct {
 	SubscriptionCanceled bool                   `json:"subscription_canceled"`
 	Trial                bool                   `json:"trial"`
 	TrialValidity        int64                  `json:"trial_validity"`
-	ArcID                string                 `json:"arc_id"`
 	CreatedAt            int64                  `json:"created_at"`
 	Tier                 *Plan                  `json:"tier"`
 	TierValidity         int64                  `json:"tier_validity"`
@@ -100,7 +100,10 @@ type ArcInstanceDetails struct {
 func BillingMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		log.Println("current time validity value: ", TimeValidity)
-		if TimeValidity > 0 { // Valid plan
+		// Blacklist subscription routes
+		if strings.HasPrefix(r.RequestURI, "/arc/subscription") || strings.HasPrefix(r.RequestURI, "/arc/plan") {
+			next.ServeHTTP(w, r)
+		} else if TimeValidity > 0 { // Valid plan
 			next.ServeHTTP(w, r)
 		} else if TimeValidity <= 0 && -TimeValidity < 3600*MaxErrorTime { // Negative validity, plan has been expired
 			// Print warning message if remaining time is less than max allowed time
@@ -111,18 +114,6 @@ func BillingMiddleware(next http.Handler) http.Handler {
 			http.Error(w, "payment required", http.StatusPaymentRequired)
 		}
 	})
-}
-
-// Returns the arc instance by ID
-func getArcInstanceByID(arcID string, arcInstances []ArcInstanceDetails) ArcInstanceDetails {
-	var arcInstance ArcInstanceDetails
-	for _, instance := range arcInstances {
-		if instance.ArcID == arcID {
-			arcInstance = instance
-			break
-		}
-	}
-	return arcInstance
 }
 
 func getArcInstance(arcID string) (ArcInstance, error) {
@@ -146,7 +137,7 @@ func getArcInstance(arcID string) (ArcInstance, error) {
 	}
 	err = json.Unmarshal(body, &response)
 	if len(response.ArcInstances) != 0 {
-		arcInstanceByID := getArcInstanceByID(arcID, response.ArcInstances)
+		arcInstanceByID := response.ArcInstances[0]
 		arcInstance.SubscriptionID = arcInstanceByID.SubscriptionID
 		TimeValidity = arcInstanceByID.TimeValidity
 		Tier = arcInstanceByID.Tier
@@ -166,7 +157,7 @@ func getArcInstance(arcID string) (ArcInstance, error) {
 func getArcClusterInstance(clusterID string) (ArcInstance, error) {
 	arcInstance := ArcInstance{}
 	var response ArcInstanceResponse
-	url := ACCAPI + "arc_cluster/" + clusterID
+	url := ACCAPI + "byoc/" + clusterID
 	req, _ := http.NewRequest("GET", url, nil)
 	req.Header.Add("Content-Type", "application/json")
 	req.Header.Add("cache-control", "no-cache")
@@ -257,14 +248,14 @@ func SetClusterPlan() {
 
 func reportUsageRequest(arcUsage ArcUsage) (ArcUsageResponse, error) {
 	response := ArcUsageResponse{}
-	url := ACCAPI + "arc/" + arcUsage.ArcID + "/report_usage"
+	url := ACCAPI + "arc/report_usage"
 	marshalledRequest, err := json.Marshal(arcUsage)
 	log.Println("Arc usage for Arc ID: ", arcUsage)
 	if err != nil {
 		log.Println("error while marshalling req body: ", err)
 		return response, err
 	}
-	req, _ := http.NewRequest("POST", url, bytes.NewBuffer(marshalledRequest))
+	req, _ := http.NewRequest(http.MethodPut, url, bytes.NewBuffer(marshalledRequest))
 	req.Header.Add("Content-Type", "application/json")
 	req.Header.Add("cache-control", "no-cache")
 
@@ -290,14 +281,14 @@ func reportUsageRequest(arcUsage ArcUsage) (ArcUsageResponse, error) {
 
 func reportClusterUsageRequest(arcUsage ArcUsage) (ArcUsageResponse, error) {
 	response := ArcUsageResponse{}
-	url := ACCAPI + "arc_cluster/report_usage"
+	url := ACCAPI + "byoc/report_usage"
 	marshalledRequest, err := json.Marshal(arcUsage)
 	log.Println("Arc usage for Cluster ID: ", arcUsage)
 	if err != nil {
 		log.Println("error while marshalling req body: ", err)
 		return response, err
 	}
-	req, _ := http.NewRequest("PUT", url, bytes.NewBuffer(marshalledRequest))
+	req, _ := http.NewRequest(http.MethodPut, url, bytes.NewBuffer(marshalledRequest))
 	req.Header.Add("Content-Type", "application/json")
 	req.Header.Add("cache-control", "no-cache")
 
@@ -360,7 +351,6 @@ func ReportUsage() {
 		log.Println("Please contact support@appbase.io with your ARC_ID or registered e-mail address. Usage is not getting reported: ", err1)
 	}
 
-	TimeValidity = response.TimeValidity
 	if response.WarningMsg != "" {
 		log.Println("warning:", response.WarningMsg)
 	}
@@ -410,7 +400,6 @@ func ReportHostedArcUsage() {
 		log.Println("Please contact support@appbase.io with your CLUSTER_ID or registered e-mail address. Usage is not getting reported: ", err1)
 	}
 
-	// TimeValidity = response.TimeValidity
 	if response.WarningMsg != "" {
 		log.Println("warning:", response.WarningMsg)
 	}
