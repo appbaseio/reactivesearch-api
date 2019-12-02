@@ -1,4 +1,4 @@
-FROM golang:1.11-alpine as builder
+FROM golang:1.13-alpine as builder
 
 # Default value
 # Run `--build-arg BILLING=true` to enable billing
@@ -53,4 +53,3 @@ WORKDIR /arc
 
 EXPOSE 8000
 ENTRYPOINT ["build/arc", "--log", "stdout", "--plugins"]
-CMD ["--env", "config/docker.env"]

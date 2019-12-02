@@ -79,7 +79,7 @@ func (es *elasticSearch) getRawRolePermissionEs6(ctx context.Context, role strin
 	resp, err := util.GetClient6().Search().
 		Index(es.permissionIndex).
 		Type(es.permissionType).
-		Query(es6.NewTermQuery("role", role)).
+		Query(es6.NewTermQuery("role.keyword", role)).
 		Size(1).
 		FetchSource(true).
 		Do(ctx)
