@@ -8,7 +8,6 @@ import (
 
 	"github.com/appbaseio/arc/model/permission"
 	"github.com/appbaseio/arc/util"
-	es7 "github.com/olivere/elastic/v7"
 )
 
 type elasticsearch struct {
@@ -131,25 +130,12 @@ func (es *elasticsearch) deletePermission(ctx context.Context, username string) 
 }
 
 func (es *elasticsearch) getRawOwnerPermissions(ctx context.Context, owner string) ([]byte, error) {
-	resp, err := util.GetClient7().Search().
-		Index(es.indexName).
-		Query(es7.NewTermQuery("owner.keyword", owner)).
-		Do(ctx)
-	if err != nil {
-		return nil, err
+	switch util.GetVersion() {
+	case 6:
+		return es.getRawOwnerPermissionsEs6(ctx, owner)
+	default:
+		return es.getRawOwnerPermissionsEs7(ctx, owner)
 	}
-
-	rawPermissions := []json.RawMessage{}
-	for _, hit := range resp.Hits.Hits {
-		rawPermissions = append(rawPermissions, hit.Source)
-	}
-
-	raw, err := json.Marshal(rawPermissions)
-	if err != nil {
-		return nil, fmt.Errorf("unable to marshal slice of raw permissions: %v", err)
-	}
-
-	return raw, nil
 }
 
 func (es *elasticsearch) checkRoleExists(ctx context.Context, role string) (bool, error) {
