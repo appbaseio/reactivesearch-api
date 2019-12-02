@@ -61,3 +61,42 @@ func (es *elasticsearch) getRawOwnerPermissionsEs6(ctx context.Context, owner st
 
 	return raw, nil
 }
+
+func (es *elasticsearch) getRawPermissionEs6(ctx context.Context, username string) ([]byte, error) {
+	response, err := util.GetClient6().Get().
+		Index(es.indexName).
+		Type(typeName).
+		Id(username).
+		FetchSource(true).
+		Do(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	src, err := response.Source.MarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+
+	return src, nil
+}
+
+func (es *elasticsearch) patchPermissionEs6(ctx context.Context, username string, patch map[string]interface{}) ([]byte, error) {
+	response, err := util.GetClient6().Update().
+		Refresh("wait_for").
+		Index(es.indexName).
+		Type(typeName).
+		Id(username).
+		Doc(patch).
+		Do(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	src, err := json.Marshal(response)
+	if err != nil {
+		return nil, err
+	}
+
+	return src, nil
+}

@@ -61,26 +61,16 @@ func (es *elasticsearch) getPermission(ctx context.Context, username string) (*p
 	if err != nil {
 		return nil, err
 	}
-
 	return &p, nil
 }
 
 func (es *elasticsearch) getRawPermission(ctx context.Context, username string) ([]byte, error) {
-	response, err := util.GetClient7().Get().
-		Index(es.indexName).
-		Id(username).
-		FetchSource(true).
-		Do(ctx)
-	if err != nil {
-		return nil, err
+	switch util.GetVersion() {
+	case 6:
+		return es.getRawPermissionEs6(ctx, username)
+	default:
+		return es.getRawPermissionEs7(ctx, username)
 	}
-
-	src, err := response.Source.MarshalJSON()
-	if err != nil {
-		return nil, err
-	}
-
-	return src, nil
 }
 
 func (es *elasticsearch) postPermission(ctx context.Context, p permission.Permission) (bool, error) {
@@ -98,22 +88,12 @@ func (es *elasticsearch) postPermission(ctx context.Context, p permission.Permis
 }
 
 func (es *elasticsearch) patchPermission(ctx context.Context, username string, patch map[string]interface{}) ([]byte, error) {
-	response, err := util.GetClient7().Update().
-		Refresh("wait_for").
-		Index(es.indexName).
-		Id(username).
-		Doc(patch).
-		Do(ctx)
-	if err != nil {
-		return nil, err
+	switch util.GetVersion() {
+	case 6:
+		return es.patchPermissionEs6(ctx, username, patch)
+	default:
+		return es.patchPermissionEs7(ctx, username, patch)
 	}
-
-	src, err := json.Marshal(response)
-	if err != nil {
-		return nil, err
-	}
-
-	return src, nil
 }
 
 func (es *elasticsearch) deletePermission(ctx context.Context, username string) (bool, error) {
