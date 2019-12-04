@@ -1,16 +1,14 @@
 package permissions
 
 import (
-	"bytes"
 	"encoding/json"
-	"io/ioutil"
-	"log"
 	"net/http"
 	"testing"
 
 	"github.com/appbaseio/arc/model/category"
 	"github.com/appbaseio/arc/model/op"
 	"github.com/appbaseio/arc/model/permission"
+	"github.com/appbaseio/arc/util"
 	. "github.com/smartystreets/goconvey/convey"
 )
 
@@ -28,10 +26,6 @@ var adminCategories = []category.Category{
 	category.Rules,
 	category.Templates,
 	category.Suggestions,
-}
-
-var defaultOps = []op.Operation{
-	op.Read,
 }
 
 var adminOps = []op.Operation{
@@ -57,7 +51,7 @@ var defaultAdminLimits = permission.Limits{
 	StreamsLimit:     30,
 }
 
-var p = map[string]interface{}{
+var createPermissionResponse = map[string]interface{}{
 	"owner":          "foo",
 	"creator":        "foo",
 	"role":           "",
@@ -74,64 +68,99 @@ var p = map[string]interface{}{
 	"exclude_fields": nil,
 }
 
-var updatedPermission = map[string]interface{}{
-	"owner":          "foo",
-	"creator":        "foo",
-	"role":           "",
-	"categories":     adminCategories,
-	"acls":           category.ACLsFor(adminCategories...),
-	"ops":            adminOps,
-	"indices":        []string{"*"},
-	"sources":        []string{"0.0.0.0/0"},
-	"referers":       []string{"*"},
-	"ttl":            -1,
-	"limits":         &defaultAdminLimits,
-	"description":    "TEST PERMISSION UPDATED",
-	"include_fields": nil,
-	"exclude_fields": nil,
+var updatePermissionsRequest = map[string]interface{}{
+	"description": "TEST PERMISSION UPDATED",
+	"role":        "role",
+	"categories": []string{
+		"docs",
+		"search",
+		"indices",
+		"clusters",
+		"misc",
+		"user",
+		"permission",
+		"analytics",
+		"streams",
+		"rules",
+	},
+	"acls": []string{
+		"reindex",
+		"termvectors",
+		"update",
+		"create",
+		"mtermvectors",
+		"bulk",
+		"delete",
+		"source",
+		"delete_by_query",
+		"get",
+		"mget",
+		"update_by_query",
+		"index",
+		"exists",
+		"field_caps",
+		"msearch",
+		"validate",
+		"rank_eval",
+		"render",
+		"search_shards",
+		"search",
+		"count",
+		"explain",
+		"upgrade",
+		"settings",
+		"indices",
+		"split",
+		"aliases",
+		"stats",
+		"template",
+		"open",
+		"mapping",
+		"recovery",
+		"analyze",
+		"cache",
+		"forcemerge",
+		"alias",
+		"refresh",
+		"segments",
+		"close",
+		"flush",
+		"shrink",
+		"shard_stores",
+		"rollover",
+		"remote",
+		"cat",
+		"nodes",
+		"tasks",
+		"cluster",
+		"scripts",
+		"ingest",
+		"snapshot",
+	},
+	"ops": []string{
+		"write",
+	},
+	"ttl": 3600,
+	"limits": map[string]interface{}{
+		"ip_limit":          7200,
+		"docs_limit":        5,
+		"search_limit":      2,
+		"indices_limit":     10,
+		"cat_limit":         0,
+		"clusters_limit":    10,
+		"misc_limit":        10,
+		"user_limit":        10,
+		"permission_limit":  10,
+		"analytics_limit":   10,
+		"rules_limit":       10,
+		"templates_limit":   0,
+		"suggestions_limit": 0,
+		"streams_limit":     10,
+	},
 }
 
-var allPermissions = []map[string]interface{}{
-	p,
-}
-
-func structToMap(response interface{}) interface{} {
-	var mockMap map[string]interface{}
-	marshalled, _ := json.Marshal(response)
-	json.Unmarshal(marshalled, &mockMap)
-	return mockMap
-}
-
-func makeHttpRequest(method string, url string, requestBody interface{}) (interface{}, error) {
-	var response interface{}
-	finalURL := TestURL + url
-	marshalledRequest, err := json.Marshal(requestBody)
-	if err != nil {
-		log.Println("error while marshalling req body: ", err)
-		return nil, err
-	}
-	req, _ := http.NewRequest(method, finalURL, bytes.NewBuffer(marshalledRequest))
-	req.Header.Add("Content-Type", "application/json")
-	req.Header.Add("cache-control", "no-cache")
-
-	res, err := http.DefaultClient.Do(req)
-	if err != nil {
-		log.Println("error while sending request: ", err)
-		return nil, err
-	}
-	defer res.Body.Close()
-	body, err := ioutil.ReadAll(res.Body)
-	if err != nil {
-		log.Println("error reading res body: ", err)
-		return nil, err
-	}
-	err = json.Unmarshal(body, &response)
-
-	if err != nil {
-		log.Println("error while unmarshalling res body: ", err)
-		return response, err
-	}
-	return response, nil
+var allPermissionsResponse = []map[string]interface{}{
+	createPermissionResponse,
 }
 
 func TestPermission(t *testing.T) {
@@ -144,7 +173,7 @@ func TestPermission(t *testing.T) {
 			requestBody := permission.Permission{
 				Description: "TEST PERMISSION",
 			}
-			response, err := makeHttpRequest(http.MethodPost, "/_permission", requestBody)
+			response, err := util.MakeHttpRequest(http.MethodPost, "/_permission", requestBody)
 
 			parsedResponse, _ := response.(map[string]interface{})
 
@@ -159,33 +188,33 @@ func TestPermission(t *testing.T) {
 			delete(parsedResponse, "password")
 			delete(parsedResponse, "created_at")
 
-			mockMap := structToMap(p)
+			mockMap := util.StructToMap(createPermissionResponse)
 
 			So(parsedResponse, ShouldResemble, mockMap)
 		})
 
 		Convey("Get permission", func() {
-			response, err := makeHttpRequest(http.MethodGet, "/_permission/"+username, nil)
+			response, err := util.MakeHttpRequest(http.MethodGet, "/_permission/"+username, nil)
 
 			if err != nil {
 				t.Fatalf("getPermissionTest Failed %v instead\n", err)
 			}
-			var getPermissionResponse = p
+			var getPermissionResponse = createPermissionResponse
 			getPermissionResponse["username"] = username
 			getPermissionResponse["password"] = password
 			getPermissionResponse["created_at"] = createdAt
-			mockMap := structToMap(getPermissionResponse)
+			mockMap := util.StructToMap(getPermissionResponse)
 
 			So(response, ShouldResemble, mockMap)
 		})
 
 		Convey("Get permissions", func() {
-			response, err := makeHttpRequest(http.MethodGet, "/_permissions", nil)
+			response, err := util.MakeHttpRequest(http.MethodGet, "/_permissions", nil)
 
 			if err != nil {
-				t.Fatalf("getPermissionTest Failed %v instead\n", err)
+				t.Fatalf("getPermissionsTest Failed %v instead\n", err)
 			}
-			var getPermissionsResponse = allPermissions
+			var getPermissionsResponse = allPermissionsResponse
 			getPermissionsResponse[0]["username"] = username
 			getPermissionsResponse[0]["password"] = password
 			getPermissionsResponse[0]["created_at"] = createdAt
@@ -197,97 +226,7 @@ func TestPermission(t *testing.T) {
 		})
 
 		Convey("Update permission", func() {
-			requestBody := map[string]interface{}{
-				"description": "TEST PERMISSION UPDATED",
-				"role":        "role",
-				"categories": []string{
-					"docs",
-					"search",
-					"indices",
-					"clusters",
-					"misc",
-					"user",
-					"permission",
-					"analytics",
-					"streams",
-					"rules",
-				},
-				"acls": []string{
-					"reindex",
-					"termvectors",
-					"update",
-					"create",
-					"mtermvectors",
-					"bulk",
-					"delete",
-					"source",
-					"delete_by_query",
-					"get",
-					"mget",
-					"update_by_query",
-					"index",
-					"exists",
-					"field_caps",
-					"msearch",
-					"validate",
-					"rank_eval",
-					"render",
-					"search_shards",
-					"search",
-					"count",
-					"explain",
-					"upgrade",
-					"settings",
-					"indices",
-					"split",
-					"aliases",
-					"stats",
-					"template",
-					"open",
-					"mapping",
-					"recovery",
-					"analyze",
-					"cache",
-					"forcemerge",
-					"alias",
-					"refresh",
-					"segments",
-					"close",
-					"flush",
-					"shrink",
-					"shard_stores",
-					"rollover",
-					"remote",
-					"cat",
-					"nodes",
-					"tasks",
-					"cluster",
-					"scripts",
-					"ingest",
-					"snapshot",
-				},
-				"ops": []string{
-					"write",
-				},
-				"ttl": 3600,
-				"limits": map[string]interface{}{
-					"ip_limit":          7200,
-					"docs_limit":        5,
-					"search_limit":      2,
-					"indices_limit":     10,
-					"cat_limit":         0,
-					"clusters_limit":    10,
-					"misc_limit":        10,
-					"user_limit":        10,
-					"permission_limit":  10,
-					"analytics_limit":   10,
-					"rules_limit":       10,
-					"templates_limit":   0,
-					"suggestions_limit": 0,
-					"streams_limit":     10,
-				},
-			}
-			response, err := makeHttpRequest(http.MethodPatch, "/_permission/"+username, requestBody)
+			response, err := util.MakeHttpRequest(http.MethodPatch, "/_permission/"+username, updatePermissionsRequest)
 
 			if err != nil {
 				t.Fatalf("updatePermissionTest Failed %v instead\n", err)
@@ -311,13 +250,13 @@ func TestPermission(t *testing.T) {
 				"_primary_term": 1,
 			}
 
-			mockMap := structToMap(updatePermissionResponse)
+			mockMap := util.StructToMap(updatePermissionResponse)
 
 			So(parsedResponse, ShouldResemble, mockMap)
 		})
 
 		Convey("Delete permission", func() {
-			response, err := makeHttpRequest(http.MethodDelete, "/_permission/"+username, nil)
+			response, err := util.MakeHttpRequest(http.MethodDelete, "/_permission/"+username, nil)
 
 			if err != nil {
 				t.Fatalf("deletePermissionTest Failed %v instead\n", err)
@@ -329,7 +268,7 @@ func TestPermission(t *testing.T) {
 				"status":  "OK",
 			}
 
-			mockMap := structToMap(deletePermissionResponse)
+			mockMap := util.StructToMap(deletePermissionResponse)
 			parsedResponse, _ := response.(map[string]interface{})
 			delete(parsedResponse, "_seq_no")
 
