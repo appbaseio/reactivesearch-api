@@ -8,7 +8,7 @@ import (
 	es7 "github.com/olivere/elastic/v7"
 )
 
-func (es *elasticSearch) getRawLogsES7(ctx context.Context, from string, size int, filter string, offset int, indices ...string) ([]byte, error) {
+func (es *elasticsearch) getRawLogsES7(ctx context.Context, from string, size int, filter string, offset int, indices ...string) ([]byte, error) {
 	query := es7.NewBoolQuery()
 	// apply category filter
 	if filter == "search" {

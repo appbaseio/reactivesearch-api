@@ -18,7 +18,7 @@ type Retrier struct {
 // NewRetrier returns a new retrier with exponential backoff strategy.
 func NewRetrier() *Retrier {
 	return &Retrier{
-		es7.NewExponentialBackoff(10*time.Millisecond, 8*time.Millisecond),
+		es7.NewExponentialBackoff(10*time.Millisecond, 8*time.Second),
 	}
 }
 

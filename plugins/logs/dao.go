@@ -10,14 +10,14 @@ import (
 	es7 "github.com/olivere/elastic/v7"
 )
 
-type elasticSearch struct {
+type elasticsearch struct {
 	indexName string
 }
 
-func initPlugin(indexName, config string) (*elasticSearch, error) {
+func initPlugin(indexName, config string) (*elasticsearch, error) {
 	ctx := context.Background()
 
-	var es = &elasticSearch{indexName}
+	var es = &elasticsearch{indexName}
 	// Check if meta index already exists
 	exists, err := util.GetClient7().IndexExists(indexName).
 		Do(ctx)
@@ -48,7 +48,7 @@ func initPlugin(indexName, config string) (*elasticSearch, error) {
 	return es, nil
 }
 
-func (es *elasticSearch) indexRecord(ctx context.Context, rec record) {
+func (es *elasticsearch) indexRecord(ctx context.Context, rec record) {
 	bulkIndex := es7.NewBulkIndexRequest().
 		Index(es.indexName).
 		Type("_doc").
@@ -62,7 +62,7 @@ func (es *elasticSearch) indexRecord(ctx context.Context, rec record) {
 	}
 }
 
-func (es *elasticSearch) getRawLogs(ctx context.Context, from, size, filter string, indices ...string) ([]byte, error) {
+func (es *elasticsearch) getRawLogs(ctx context.Context, from, size, filter string, indices ...string) ([]byte, error) {
 	fmt.Println("calling get logs: ", from, size, filter, indices)
 	offset, err := strconv.Atoi(from)
 	if err != nil {

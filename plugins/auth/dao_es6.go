@@ -14,7 +14,7 @@ import (
 	es6 "gopkg.in/olivere/elastic.v6"
 )
 
-func (es *elasticSearch) getPublicKeyEs6(ctx context.Context, publicKeyIndex, publicKeyDocID string) (publicKey, error) {
+func (es *elasticsearch) getPublicKeyEs6(ctx context.Context, publicKeyIndex, publicKeyDocID string) (publicKey, error) {
 	var record = publicKey{}
 	response, err := util.GetClient6().Get().
 		Index(publicKeyIndex).
@@ -31,7 +31,7 @@ func (es *elasticSearch) getPublicKeyEs6(ctx context.Context, publicKeyIndex, pu
 	return record, nil
 }
 
-func (es *elasticSearch) getCredentialEs6(ctx context.Context, username string) (credential.AuthCredential, error) {
+func (es *elasticsearch) getCredentialEs6(ctx context.Context, username string) (credential.AuthCredential, error) {
 	matchUsername := es6.NewTermQuery("username.keyword", username)
 
 	response, err := util.GetClient6().Search().
@@ -75,7 +75,7 @@ func (es *elasticSearch) getCredentialEs6(ctx context.Context, username string) 
 	return obj, nil
 }
 
-func (es *elasticSearch) getRawRolePermissionEs6(ctx context.Context, role string) ([]byte, error) {
+func (es *elasticsearch) getRawRolePermissionEs6(ctx context.Context, role string) ([]byte, error) {
 	resp, err := util.GetClient6().Search().
 		Index(es.permissionIndex).
 		Type(es.permissionType).

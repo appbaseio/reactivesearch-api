@@ -9,7 +9,7 @@ import (
 	es6 "gopkg.in/olivere/elastic.v6"
 )
 
-func (es *elasticSearch) getRawLogsES6(ctx context.Context, from string, size int, filter string, offset int, indices ...string) ([]byte, error) {
+func (es *elasticsearch) getRawLogsES6(ctx context.Context, from string, size int, filter string, offset int, indices ...string) ([]byte, error) {
 	query := es6.NewBoolQuery()
 	// apply category filter
 	if filter == "search" {
