@@ -6,12 +6,14 @@ import (
 	"github.com/appbaseio/arc/util"
 )
 
-func newStubClient(url, indexName, mapping string) (*elasticsearch, error) {
-	os.Setenv(envEsURL, "http://127.0.0.1:9200")
+// TestURL for arc
+var TestURL = "http://foo:bar@localhost:8000"
+
+func newStubClient(url, indexName string) (*elasticsearch, error) {
+	os.Setenv(envEsURL, TestURL)
 	util.NewClient()
 	es := &elasticsearch{
 		indexName: indexName,
-		mapping:   mapping,
 	}
 	return es, nil
 }

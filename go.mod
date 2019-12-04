@@ -14,6 +14,7 @@ require (
 	github.com/rogpeppe/go-internal v1.2.2 // indirect
 	github.com/rs/cors v1.6.0
 	github.com/siddharthlatest/mustache v0.0.0-20160118163553-00029677272d
+	github.com/smartystreets/goconvey v1.6.4
 	github.com/stretchr/testify v1.3.0
 	github.com/ulule/limiter v2.2.0+incompatible
 	golang.org/x/crypto v0.0.0-20190308221718-c2843e01d9a2
