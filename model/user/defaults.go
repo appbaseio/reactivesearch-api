@@ -26,6 +26,7 @@ var (
 		category.Rules,
 		category.Templates,
 		category.Suggestions,
+		category.Auth,
 	}
 
 	defaultOps = []op.Operation{
