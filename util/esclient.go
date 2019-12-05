@@ -23,17 +23,18 @@ var (
 // GetClient7 returns the es7 client
 func GetClient7() *es7.Client {
 	// initialize the client if not present
-	clientInit.Do(func() {
+	if client7 == nil {
 		initClient7()
-	})
+	}
 	return client7
 }
 
 // GetClient6 returns the es6 client
 func GetClient6() *es6.Client {
-	clientInit.Do(func() {
+	// initialize the client if not present
+	if client6 == nil {
 		initClient6()
-	})
+	}
 	return client6
 }
 
