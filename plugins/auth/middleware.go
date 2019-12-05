@@ -5,10 +5,14 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 
 	"github.com/appbaseio/arc/middleware"
+	"github.com/appbaseio/arc/middleware/classify"
+	"github.com/appbaseio/arc/middleware/validate"
 	"github.com/appbaseio/arc/model/category"
 	"github.com/appbaseio/arc/model/credential"
+	"github.com/appbaseio/arc/model/index"
 	"github.com/appbaseio/arc/model/op"
 	"github.com/appbaseio/arc/model/permission"
 	"github.com/appbaseio/arc/model/user"
@@ -18,6 +22,48 @@ import (
 	"github.com/gorilla/mux"
 	"golang.org/x/crypto/bcrypt"
 )
+
+type chain struct {
+	middleware.Fifo
+}
+
+func (c *chain) Wrap(h http.HandlerFunc) http.HandlerFunc {
+	return c.Adapt(h, list()...)
+}
+
+func list() []middleware.Middleware {
+	return []middleware.Middleware{
+		classifyCategory,
+		classifyIndices,
+		classify.Op(),
+		BasicAuth(),
+		validate.Operation(),
+		validate.Category(),
+	}
+}
+
+func classifyIndices(h http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, req *http.Request) {
+		publicKeyIndex := os.Getenv(envPublicKeyEsIndex)
+		if publicKeyIndex == "" {
+			publicKeyIndex = defaultPublicKeyEsIndex
+		}
+		ctx := index.NewContext(req.Context(), []string{publicKeyIndex})
+		req = req.WithContext(ctx)
+		h(w, req)
+	}
+}
+
+func classifyCategory(h http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, req *http.Request) {
+		permissionCategory := category.Auth
+
+		ctx := category.NewContext(req.Context(), &permissionCategory)
+		req = req.WithContext(ctx)
+
+		h(w, req)
+	}
+}
 
 // BasicAuth middleware authenticates each requests against the basic auth credentials.
 func BasicAuth() middleware.Middleware {
