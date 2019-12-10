@@ -55,6 +55,7 @@ var defaultUser = map[string]interface{}{
 		"rules",
 		"templates",
 		"suggestions",
+		"auth",
 	},
 	"acls": []string{
 		"reindex",
