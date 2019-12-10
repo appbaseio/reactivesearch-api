@@ -46,17 +46,26 @@ type Permission struct {
 	TTL         time.Duration       `json:"ttl"`
 	Limits      *Limits             `json:"limits"`
 	Description string              `json:"description"`
+	Includes    []string            `json:"include_fields"`
+	Excludes    []string            `json:"exclude_fields"`
 }
 
 // Limits defines the rate limits for each category.
 type Limits struct {
-	IPLimit       int64 `json:"ip_limit"`
-	DocsLimit     int64 `json:"docs_limit"`
-	SearchLimit   int64 `json:"search_limit"`
-	IndicesLimit  int64 `json:"indices_limit"`
-	CatLimit      int64 `json:"cat_limit"`
-	ClustersLimit int64 `json:"clusters_limit"`
-	MiscLimit     int64 `json:"misc_limit"`
+	IPLimit          int64 `json:"ip_limit"`
+	DocsLimit        int64 `json:"docs_limit"`
+	SearchLimit      int64 `json:"search_limit"`
+	IndicesLimit     int64 `json:"indices_limit"`
+	CatLimit         int64 `json:"cat_limit"`
+	ClustersLimit    int64 `json:"clusters_limit"`
+	MiscLimit        int64 `json:"misc_limit"`
+	UserLimit        int64 `json:"user_limit"`
+	PermissionLimit  int64 `json:"permission_limit"`
+	AnalyticsLimit   int64 `json:"analytics_limit"`
+	RulesLimit       int64 `json:"rules_limit"`
+	TemplatesLimit   int64 `json:"templates_limit"`
+	SuggestionsLimit int64 `json:"suggestions_limit"`
+	StreamsLimit     int64 `json:"streams_limit"`
 }
 
 // Options is a function type used to define a permission's properties.
@@ -148,6 +157,22 @@ func SetSources(sources []string) Options {
 			return err
 		}
 		p.Sources = sources
+		return nil
+	}
+}
+
+// SetIncludes sets the includes fields
+func SetIncludes(includes []string) Options {
+	return func(p *Permission) error {
+		p.Includes = includes
+		return nil
+	}
+}
+
+// SetExcludes sets the excludes fields
+func SetExcludes(excludes []string) Options {
+	return func(p *Permission) error {
+		p.Excludes = excludes
 		return nil
 	}
 }
@@ -421,6 +446,20 @@ func (p *Permission) GetLimitFor(c category.Category) (int64, error) {
 		return p.Limits.ClustersLimit, nil
 	case category.Misc:
 		return p.Limits.MiscLimit, nil
+	case category.User:
+		return p.Limits.UserLimit, nil
+	case category.Permission:
+		return p.Limits.PermissionLimit, nil
+	case category.Analytics:
+		return p.Limits.AnalyticsLimit, nil
+	case category.Rules:
+		return p.Limits.RulesLimit, nil
+	case category.Templates:
+		return p.Limits.TemplatesLimit, nil
+	case category.Suggestions:
+		return p.Limits.SuggestionsLimit, nil
+	case category.Streams:
+		return p.Limits.StreamsLimit, nil
 	default:
 		return -1, fmt.Errorf(`we do not rate limit "%s" category`, c)
 	}
@@ -509,10 +548,38 @@ func (p *Permission) GetPatch(rolePatched bool) (map[string]interface{}, error) 
 		if p.Limits.MiscLimit != 0 {
 			limits["misc_limit"] = p.Limits.MiscLimit
 		}
+		if p.Limits.UserLimit != 0 {
+			limits["user_limit"] = p.Limits.UserLimit
+		}
+		if p.Limits.PermissionLimit != 0 {
+			limits["permission_limit"] = p.Limits.PermissionLimit
+		}
+		if p.Limits.AnalyticsLimit != 0 {
+			limits["analytics_limit"] = p.Limits.AnalyticsLimit
+		}
+		if p.Limits.RulesLimit != 0 {
+			limits["rules_limit"] = p.Limits.RulesLimit
+		}
+		if p.Limits.TemplatesLimit != 0 {
+			limits["templates_limit"] = p.Limits.TemplatesLimit
+		}
+		if p.Limits.SuggestionsLimit != 0 {
+			limits["suggestions_limit"] = p.Limits.SuggestionsLimit
+		}
+		if p.Limits.StreamsLimit != 0 {
+			limits["streams_limit"] = p.Limits.StreamsLimit
+		}
+
 		patch["limits"] = limits
 	}
 	if p.Description != "" {
 		patch["description"] = p.Description
+	}
+	if p.Includes != nil {
+		patch["include_fields"] = p.Includes
+	}
+	if p.Excludes != nil {
+		patch["exclude_fields"] = p.Excludes
 	}
 
 	return patch, nil

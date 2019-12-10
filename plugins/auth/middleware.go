@@ -65,11 +65,11 @@ func (a *Auth) basicAuth(h http.HandlerFunc) http.HandlerFunc {
 
 		role := ""
 		if !hasBasicAuth {
-			if claims, ok := jwtToken.Claims.(jwt.MapClaims); ok && jwtToken.Valid && a.jwtRoleKey != "" {
-				if a.jwtRoleKey != "" {
+			if claims, ok := jwtToken.Claims.(jwt.MapClaims); ok && jwtToken.Valid {
+				if a.jwtRoleKey != "" && claims[a.jwtRoleKey] != nil {
 					role = claims[a.jwtRoleKey].(string)
-				} else if u, ok := claims["username"]; ok {
-					username = u.(string)
+				} else if u, ok := claims["role"]; ok {
+					role = u.(string)
 				} else {
 					util.WriteBackError(w, fmt.Sprintf("Invalid JWT"), http.StatusUnauthorized)
 					return
@@ -79,24 +79,24 @@ func (a *Auth) basicAuth(h http.HandlerFunc) http.HandlerFunc {
 				return
 			}
 		}
-
 		// we don't know if the credentials provided here are of a 'user' or a 'permission'
 		var obj credential.AuthCredential
 		if role != "" {
 			obj, err = a.es.getRolePermission(ctx, role)
+			if err != nil || obj == nil {
+				msg := fmt.Sprintf("No API credentials match with provided role: %s", role)
+				log.Printf("%s: %v", logTag, err)
+				util.WriteBackError(w, msg, http.StatusUnauthorized)
+				return
+			}
 		} else {
 			obj, err = a.getCredential(ctx, username)
-		}
-		if err != nil {
-			msg := fmt.Sprintf("unable to fetch credentials with username: %s", username)
-			log.Printf("%s: %v", logTag, err)
-			util.WriteBackError(w, msg, http.StatusInternalServerError)
-			return
-		}
-		if obj == nil {
-			msg := fmt.Sprintf("credential with username=%s not found", username)
-			util.WriteBackError(w, msg, http.StatusUnauthorized)
-			return
+			if err != nil || obj == nil {
+				msg := fmt.Sprintf("No API credentials match with provided username: %s", username)
+				log.Printf("%s: %v", logTag, err)
+				util.WriteBackError(w, msg, http.StatusUnauthorized)
+				return
+			}
 		}
 
 		var authenticated bool
@@ -131,7 +131,7 @@ func (a *Auth) basicAuth(h http.HandlerFunc) http.HandlerFunc {
 		case *permission.Permission:
 			{
 				reqPermission := obj.(*permission.Permission)
-				if hasBasicAuth && bcrypt.CompareHashAndPassword([]byte(reqPermission.Password), []byte(password)) != nil {
+				if hasBasicAuth && reqPermission.Password != password {
 					util.WriteBackError(w, "invalid password", http.StatusUnauthorized)
 					return
 				}

@@ -4,9 +4,8 @@ import (
 	"os"
 	"sync"
 
-	"github.com/appbaseio/arc/plugins"
 	"github.com/appbaseio/arc/middleware"
-	"github.com/appbaseio/arc/errors"
+	"github.com/appbaseio/arc/plugins"
 )
 
 const (
@@ -16,16 +15,6 @@ const (
 	envLogsEsIndex     = "LOGS_ES_INDEX"
 	config             = `
 	{
-	  "mappings": {
-	    "_doc": {
-	      "properties": {
-	        "category": { "type": "keyword" },
-	        "request": { "type": "object" },
-	        "response": { "type": "object" },
-	        "timestamp": { "type": "date" }
-	      }
-	    }
-	  },
 	  "settings": {
 	    "number_of_shards": %d,
 	    "number_of_replicas": %d
@@ -60,10 +49,6 @@ func (l *Logs) Name() string {
 // the dao, i.e. elasticsearch before the plugin is operational.
 func (l *Logs) InitFunc() error {
 	// fetch the required env vars
-	url := os.Getenv(envEsURL)
-	if url == "" {
-		return errors.NewEnvVarNotSetError(envEsURL)
-	}
 	indexName := os.Getenv(envLogsEsIndex)
 	if indexName == "" {
 		indexName = defaultLogsEsIndex
@@ -71,7 +56,7 @@ func (l *Logs) InitFunc() error {
 
 	// initialize the elasticsearch client
 	var err error
-	l.es, err = newClient(url, indexName, config)
+	l.es, err = initPlugin(indexName, config)
 	if err != nil {
 		return err
 	}
@@ -85,6 +70,6 @@ func (l *Logs) Routes() []plugins.Route {
 }
 
 // Default empty middleware array function
-func (l *Logs) ESMiddleware() [] middleware.Middleware {
-	return make([] middleware.Middleware, 0)
+func (l *Logs) ESMiddleware() []middleware.Middleware {
+	return make([]middleware.Middleware, 0)
 }

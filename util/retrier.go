@@ -7,18 +7,18 @@ import (
 	"syscall"
 	"time"
 
-	"gopkg.in/olivere/elastic.v6"
+	es7 "github.com/olivere/elastic/v7"
 )
 
 // Retrier is a custom Retry implementation.
 type Retrier struct {
-	backoff elastic.Backoff
+	backoff es7.Backoff
 }
 
 // NewRetrier returns a new retrier with exponential backoff strategy.
 func NewRetrier() *Retrier {
 	return &Retrier{
-		elastic.NewExponentialBackoff(10*time.Millisecond, 8*time.Millisecond),
+		es7.NewExponentialBackoff(10*time.Millisecond, 8*time.Second),
 	}
 }
 

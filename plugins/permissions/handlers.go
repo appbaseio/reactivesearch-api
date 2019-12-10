@@ -30,7 +30,7 @@ func (p *permissions) getPermission() http.HandlerFunc {
 	}
 }
 
-func (p *permissions) postPermission() http.HandlerFunc {
+func (p *permissions) postPermission(opts ...permission.Options) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
 		creator, _, _ := req.BasicAuth()
 		reqUser, err := user.FromContext(req.Context())
@@ -57,7 +57,6 @@ func (p *permissions) postPermission() http.HandlerFunc {
 			return
 		}
 
-		var opts []permission.Options
 		if permissionBody.Owner != "" {
 			opts = append(opts, permission.SetOwner(permissionBody.Owner))
 		}
@@ -78,6 +77,12 @@ func (p *permissions) postPermission() http.HandlerFunc {
 		}
 		if permissionBody.Referers != nil {
 			opts = append(opts, permission.SetReferers(permissionBody.Referers))
+		}
+		if permissionBody.Includes != nil {
+			opts = append(opts, permission.SetIncludes(permissionBody.Includes))
+		}
+		if permissionBody.Excludes != nil {
+			opts = append(opts, permission.SetExcludes(permissionBody.Excludes))
 		}
 		if permissionBody.Indices != nil {
 			opts = append(opts, permission.SetIndices(permissionBody.Indices))
@@ -122,8 +127,8 @@ func (p *permissions) postPermission() http.HandlerFunc {
 				return
 			}
 			if err != nil {
-				msg := fmt.Sprintf(`an error occurred while creating permission for role=%s`, creator, newPermission.Role)
-				log.Printf("%s: unable to check if role=%s exists: %v\n", logTag, newPermission.Role)
+				msg := fmt.Sprintf(`an error occurred while creating permission for role=%s`, newPermission.Role)
+				log.Printf("%s: unable to check if role=%s exists", logTag, newPermission.Role)
 				util.WriteBackError(w, msg, http.StatusInternalServerError)
 				return
 			}
@@ -218,7 +223,7 @@ func (p *permissions) patchPermission() http.HandlerFunc {
 			}
 			if err != nil {
 				msg := fmt.Sprintf(`an error occurred while creating permission for role=%s`, obj.Role)
-				log.Printf("%s: unable to check if role=%s exists: %v\n", logTag, obj.Role)
+				log.Printf("%s: unable to check if role=%s exists", logTag, obj.Role)
 				util.WriteBackError(w, msg, http.StatusInternalServerError)
 				return
 			}
@@ -270,19 +275,43 @@ func (p *permissions) getUserPermissions() http.HandlerFunc {
 	}
 }
 
-func (p *permissions) getRolePermission() http.HandlerFunc {
+func (p *permissions) role() http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
 		vars := mux.Vars(req)
-		role := vars["role"]
+		role := vars["name"]
 
-		raw, err := p.es.getRawRolePermission(req.Context(), role)
-		if raw == nil || err != nil {
-			msg := fmt.Sprintf(`an error occurred while fetching permissions for role=%s`, role)
-			log.Printf("%s: %s: %v\n", logTag, msg, err)
-			util.WriteBackError(w, msg, http.StatusNotFound)
-			return
+		var raw []byte
+		var perm permission.Permission
+		if req.Method != http.MethodPost {
+			var err error
+			raw, err = p.es.getRawRolePermission(req.Context(), role)
+			if raw == nil || err != nil {
+				msg := fmt.Sprintf(`an error occurred while fetching permissions for role=%s`, role)
+				log.Printf("%s: %s: %v\n", logTag, msg, err)
+				util.WriteBackError(w, msg, http.StatusNotFound)
+				return
+			}
+			err = json.Unmarshal(raw, &perm)
+			if err != nil {
+				msg := fmt.Sprintf(`an error occurred while fetching permissions for role=%s`, role)
+				log.Printf("%s: %s: %v\n", logTag, msg, err)
+				util.WriteBackError(w, msg, http.StatusInternalServerError)
+				return
+			}
 		}
 
-		util.WriteBackRaw(w, raw, http.StatusOK)
+		switch req.Method {
+		case http.MethodGet:
+			util.WriteBackRaw(w, raw, http.StatusOK)
+		case http.MethodPost:
+			p.postPermission(permission.SetRole(role))(w, req)
+			return
+		case http.MethodPatch:
+			http.Redirect(w, req, "/_permission/"+perm.Username, 308)
+			return
+		case http.MethodDelete:
+			http.Redirect(w, req, "/_permission/"+perm.Username, 308)
+			return
+		}
 	}
 }

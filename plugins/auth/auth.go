@@ -1,30 +1,33 @@
 package auth
 
 import (
+	"context"
 	"crypto/rsa"
-	"github.com/dgrijalva/jwt-go"
 	"io/ioutil"
+	"log"
 	"os"
 	"sync"
-	"net/http"
-	"fmt"
 
+	"github.com/appbaseio/arc/middleware"
 	"github.com/appbaseio/arc/model/credential"
 	"github.com/appbaseio/arc/plugins"
-	"github.com/appbaseio/arc/middleware"
-	"github.com/appbaseio/arc/errors"
+	"github.com/appbaseio/arc/util"
+	"github.com/dgrijalva/jwt-go"
 )
 
 const (
 	logTag                    = "[auth]"
-	envEsURL                  = "ES_CLUSTER_URL"
 	envUsersEsIndex           = "USERS_ES_INDEX"
 	defaultUsersEsIndex       = ".users"
+	envEsURL                  = "ES_CLUSTER_URL"
 	envPermissionsEsIndex     = "PERMISSIONS_ES_INDEX"
 	defaultPermissionsEsIndex = ".permissions"
+	envPublicKeyEsIndex       = "PUBLIC_KEY_ES_INDEX"
+	defaultPublicKeyEsIndex   = ".publickey"
 	envJwtRsaPublicKeyLoc     = "JWT_RSA_PUBLIC_KEY_LOC"
-	envJwtRsaPublicKeyDest    = "JWT_RSA_PUBLIC_KEY_DEST"
 	envJwtRoleKey             = "JWT_ROLE_KEY"
+	settings                  = `{ "settings" : { "number_of_shards" : %d, "number_of_replicas" : %d } }`
+	publicKeyDocID            = "_public_key"
 )
 
 var (
@@ -62,10 +65,6 @@ func (a *Auth) Name() string {
 // only once in the lifetime of the plugin.
 func (a *Auth) InitFunc() error {
 	// fetch vars from env
-	esURL := os.Getenv(envEsURL)
-	if esURL == "" {
-		return errors.NewEnvVarNotSetError(envEsURL)
-	}
 	userIndex := os.Getenv(envUsersEsIndex)
 	if userIndex == "" {
 		userIndex = defaultUsersEsIndex
@@ -74,45 +73,53 @@ func (a *Auth) InitFunc() error {
 	if permissionIndex == "" {
 		permissionIndex = defaultPermissionsEsIndex
 	}
+	publicKeyIndex := os.Getenv(envPublicKeyEsIndex)
+	if publicKeyIndex == "" {
+		publicKeyIndex = defaultPublicKeyEsIndex
+	}
 	var err error
-	jwtRsaPublicKeyLoc := os.Getenv(envJwtRsaPublicKeyLoc)
-	if jwtRsaPublicKeyLoc != "" {
-		var publicKeyBuf []byte
-		publicKeyBuf, err = ioutil.ReadFile(jwtRsaPublicKeyLoc)
+
+	// initialize the dao
+	a.es, err = initPlugin(userIndex, permissionIndex)
+	if err != nil {
+		return err
+	}
+
+	// Create public key index
+	_, err = a.es.createIndex(publicKeyIndex, settings)
+	if err != nil {
+		return err
+	}
+
+	// Populate public key from ES
+	record, err := a.es.getPublicKey(context.Background())
+	if err != nil {
+		jwtRsaPublicKeyLoc := os.Getenv(envJwtRsaPublicKeyLoc)
+		if jwtRsaPublicKeyLoc != "" {
+			// Read file from location
+			var publicKeyBuf []byte
+			publicKeyBuf, err = ioutil.ReadFile(jwtRsaPublicKeyLoc)
+			if err != nil {
+				log.Printf("%s: unable to read the public key file from environment, %s", logTag, err)
+			}
+			var record = publicKey{}
+			record.PublicKey = string(publicKeyBuf)
+			record.RoleKey = a.jwtRoleKey
+			_, err = a.savePublicKey(context.Background(), publicKeyIndex, record)
+			if err != nil {
+				log.Printf("%s: unable to save public key record from environment, %s", logTag, err)
+			}
+		}
+	} else {
+		publicKeyBuf, err := util.DecodeBase64Key(record.PublicKey)
 		if err != nil {
-			return err
+			log.Printf("%s: error parsing public key record, %s", logTag, err)
 		}
 		a.jwtRsaPublicKey, err = jwt.ParseRSAPublicKeyFromPEM(publicKeyBuf)
 		if err != nil {
-			return err
+			log.Printf("%s: error parsing public key record, %s", logTag, err)
 		}
-	} else if jwtRsaPublicKeyDest := os.Getenv(envJwtRsaPublicKeyDest); jwtRsaPublicKeyDest != "" {
-		publicKeyResp, err := http.Get(jwtRsaPublicKeyDest)
-		if err != nil {
-			return err
-		}
-		if publicKeyResp.StatusCode == 200 {
-			publicKeyBuf := make([]byte, 2048)
-			n, err2 := publicKeyResp.Body.Read(publicKeyBuf)
-			err3 := publicKeyResp.Body.Close()
-			if n == 0 && err2 != nil {
-				return fmt.Errorf("Reader Error: %d %s", n, err2.Error())
-			}
-			if err3 != nil {
-				return fmt.Errorf("Closer Error: %s", err3.Error())
-			}
-			a.jwtRsaPublicKey, err = jwt.ParseRSAPublicKeyFromPEM(publicKeyBuf)
-			if err != nil {
-				return fmt.Errorf("Parser Error: %s", err.Error())
-			}
-		}
-	}
-	a.jwtRoleKey = os.Getenv(envJwtRoleKey)
-
-	// initialize the dao
-	a.es, err = newClient(esURL, userIndex, permissionIndex)
-	if err != nil {
-		return err
+		a.jwtRoleKey = record.RoleKey
 	}
 
 	return nil
@@ -120,10 +127,10 @@ func (a *Auth) InitFunc() error {
 
 // Routes returns an empty slices since the plugin solely acts as a middleware.
 func (a *Auth) Routes() []plugins.Route {
-	return []plugins.Route{}
+	return a.routes()
 }
 
 // Default empty middleware array function
-func (a *Auth) ESMiddleware() [] middleware.Middleware {
-	return make([] middleware.Middleware, 0)
+func (a *Auth) ESMiddleware() []middleware.Middleware {
+	return make([]middleware.Middleware, 0)
 }

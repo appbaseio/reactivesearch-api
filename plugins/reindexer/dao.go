@@ -7,28 +7,8 @@ import (
 	"log"
 
 	"github.com/appbaseio/arc/util"
-	"gopkg.in/olivere/elastic.v6"
+	es7 "github.com/olivere/elastic/v7"
 )
-
-type elasticsearch struct {
-	url    string
-	client *elastic.Client
-}
-
-func newClient(url string) (*elasticsearch, error) {
-	client, err := elastic.NewClient(
-		elastic.SetURL(url),
-		elastic.SetRetrier(util.NewRetrier()),
-		elastic.SetSniff(false),
-		elastic.SetHttpClient(util.HTTPClient()),
-	)
-	if err != nil {
-		return nil, fmt.Errorf("%s: error while initializing elastic client: %v", logTag, err)
-	}
-	es := &elasticsearch{url, client}
-
-	return es, nil
-}
 
 // Reindex Inplace: https://www.elastic.co/guide/en/elasticsearch/reference/current/reindex-upgrade-inplace.html
 //
@@ -44,7 +24,7 @@ func newClient(url string) (*elasticsearch, error) {
 //
 // We accept a query param `wait_for_completion` which defaults to true, which when false, we don't create any aliases
 // and delete the old index, we instead return the tasks API response.
-func (es *elasticsearch) reindex(ctx context.Context, esService reindexService, indexName string, config *reindexConfig, waitForCompletion bool) ([]byte, error) {
+func reindex(ctx context.Context, indexName string, config *reindexConfig, waitForCompletion bool) ([]byte, error) {
 	var err error
 
 	// We fetch the index name pointing to the given alias first.
@@ -54,7 +34,7 @@ func (es *elasticsearch) reindex(ctx context.Context, esService reindexService, 
 	// from the given alias. If alias name doesn't exist we get an
 	// empty slice of indices, which means the index has never been
 	// reindexed before.
-	indices, err := esService.getIndicesByAlias(ctx, indexName)
+	indices, err := getIndicesByAlias(ctx, indexName)
 	if err != nil {
 		log.Println(err)
 	}
@@ -67,7 +47,7 @@ func (es *elasticsearch) reindex(ctx context.Context, esService reindexService, 
 
 	// If mappings are not passed, we fetch the mappings of the old index.
 	if config.Mappings == nil {
-		config.Mappings, err = esService.mappingsOf(ctx, indexName)
+		config.Mappings, err = mappingsOf(ctx, indexName)
 		if err != nil {
 			return nil, fmt.Errorf(`error fetching mappings of index "%s": %v`, indexName, err)
 		}
@@ -75,7 +55,7 @@ func (es *elasticsearch) reindex(ctx context.Context, esService reindexService, 
 
 	// If settings are not passed, we fetch the settings of the old index.
 	if config.Settings == nil {
-		config.Settings, err = esService.settingsOf(ctx, indexName)
+		config.Settings, err = settingsOf(ctx, indexName)
 		if err != nil {
 			return nil, fmt.Errorf(`error fetching settings of index "%s": %v`, indexName, err)
 		}
@@ -92,23 +72,23 @@ func (es *elasticsearch) reindex(ctx context.Context, esService reindexService, 
 	}
 
 	// Create the new index.
-	err = esService.createIndex(ctx, newIndexName, body)
+	err = createIndex(ctx, newIndexName, body)
 	if err != nil {
 		return nil, err
 	}
 
 	// Configure reindex source
-	src := elastic.NewReindexSource().
+	src := es7.NewReindexSource().
 		Index(indexName).
 		Type(config.Types...).
 		FetchSourceIncludeExclude(config.Include, config.Exclude)
 
 	// Configure reindex dest
-	dest := elastic.NewReindexDestination().
+	dest := es7.NewReindexDestination().
 		Index(newIndexName)
 
 	// Reindex action.
-	reindex := es.client.Reindex().
+	reindex := util.GetClient7().Reindex().
 		Source(src).
 		Destination(dest).
 		WaitForCompletion(waitForCompletion)
@@ -124,20 +104,20 @@ func (es *elasticsearch) reindex(ctx context.Context, esService reindexService, 
 		}
 
 		// Fetch all the aliases of old index
-		aliases, err := esService.aliasesOf(ctx, indexName)
+		aliases, err := aliasesOf(ctx, indexName)
 		if err != nil {
 			return nil, fmt.Errorf(`error fetching aliases of index "%s": %v`, indexName, err)
 		}
 		aliases = append(aliases, indexName)
 
 		// Delete old index
-		err = esService.deleteIndex(ctx, indexName)
+		err = deleteIndex(ctx, indexName)
 		if err != nil {
 			return nil, fmt.Errorf(`error deleting index "%s": %v\n`, indexName, err)
 		}
 
 		// Set aliases of old index to the new index.
-		err = esService.setAlias(ctx, newIndexName, aliases...)
+		err = setAlias(ctx, newIndexName, aliases...)
 		if err != nil {
 			return nil, fmt.Errorf(`error setting alias "%s" for index "%s"`, indexName, newIndexName)
 		}
@@ -153,7 +133,7 @@ func (es *elasticsearch) reindex(ctx context.Context, esService reindexService, 
 	taskID := response.TaskId
 
 	// Get the reindex task by ID
-	task, err := es.client.TasksGetTask().TaskId(taskID).Do(context.Background())
+	task, err := util.GetClient7().TasksGetTask().TaskId(taskID).Do(context.Background())
 	if err != nil {
 		return nil, err
 	}
@@ -161,8 +141,8 @@ func (es *elasticsearch) reindex(ctx context.Context, esService reindexService, 
 	return json.Marshal(task)
 }
 
-func (es *elasticsearch) mappingsOf(ctx context.Context, indexName string) (map[string]interface{}, error) {
-	response, err := es.client.GetMapping().
+func mappingsOf(ctx context.Context, indexName string) (map[string]interface{}, error) {
+	response, err := util.GetClient7().GetMapping().
 		Index(indexName).
 		Do(ctx)
 	if err != nil {
@@ -190,8 +170,8 @@ func (es *elasticsearch) mappingsOf(ctx context.Context, indexName string) (map[
 	return m, nil
 }
 
-func (es *elasticsearch) settingsOf(ctx context.Context, indexName string) (map[string]interface{}, error) {
-	response, err := es.client.IndexGetSettings().
+func settingsOf(ctx context.Context, indexName string) (map[string]interface{}, error) {
+	response, err := util.GetClient7().IndexGetSettings().
 		Index(indexName).
 		Do(ctx)
 	if err != nil {
@@ -220,8 +200,8 @@ func (es *elasticsearch) settingsOf(ctx context.Context, indexName string) (map[
 	return settings, nil
 }
 
-func (es *elasticsearch) aliasesOf(ctx context.Context, indexName string) ([]string, error) {
-	response, err := es.client.CatAliases().
+func aliasesOf(ctx context.Context, indexName string) ([]string, error) {
+	response, err := util.GetClient7().CatAliases().
 		Pretty(true).
 		Do(ctx)
 	if err != nil {
@@ -238,8 +218,8 @@ func (es *elasticsearch) aliasesOf(ctx context.Context, indexName string) ([]str
 	return aliases, nil
 }
 
-func (es *elasticsearch) createIndex(ctx context.Context, indexName string, body map[string]interface{}) error {
-	response, err := es.client.CreateIndex(indexName).
+func createIndex(ctx context.Context, indexName string, body map[string]interface{}) error {
+	response, err := util.GetClient7().CreateIndex(indexName).
 		BodyJson(body).
 		Do(ctx)
 	if err != nil {
@@ -253,8 +233,8 @@ func (es *elasticsearch) createIndex(ctx context.Context, indexName string, body
 	return nil
 }
 
-func (es *elasticsearch) deleteIndex(ctx context.Context, indexName string) error {
-	response, err := es.client.DeleteIndex(indexName).
+func deleteIndex(ctx context.Context, indexName string) error {
+	response, err := util.GetClient7().DeleteIndex(indexName).
 		Do(ctx)
 	if err != nil {
 		return err
@@ -267,15 +247,15 @@ func (es *elasticsearch) deleteIndex(ctx context.Context, indexName string) erro
 	return nil
 }
 
-func (es *elasticsearch) setAlias(ctx context.Context, indexName string, aliases ...string) error {
-	var addAliasActions []elastic.AliasAction
+func setAlias(ctx context.Context, indexName string, aliases ...string) error {
+	var addAliasActions []es7.AliasAction
 	for _, alias := range aliases {
-		addAliasAction := elastic.NewAliasAddAction(alias).
+		addAliasAction := es7.NewAliasAddAction(alias).
 			Index(indexName)
 		addAliasActions = append(addAliasActions, addAliasAction)
 	}
 
-	response, err := es.client.Alias().
+	response, err := util.GetClient7().Alias().
 		Action(addAliasActions...).
 		Do(ctx)
 	if err != nil {
@@ -289,8 +269,8 @@ func (es *elasticsearch) setAlias(ctx context.Context, indexName string, aliases
 	return nil
 }
 
-func (es *elasticsearch) getIndicesByAlias(ctx context.Context, alias string) ([]string, error) {
-	response, err := es.client.Aliases().
+func getIndicesByAlias(ctx context.Context, alias string) ([]string, error) {
+	response, err := util.GetClient7().Aliases().
 		Index(alias).
 		Do(ctx)
 	if err != nil {

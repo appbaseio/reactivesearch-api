@@ -11,12 +11,15 @@ import (
 	"os"
 	"path/filepath"
 	"plugin"
+	"strconv"
 	"strings"
 
 	"github.com/appbaseio/arc/middleware"
 	"github.com/appbaseio/arc/middleware/logger"
 	"github.com/appbaseio/arc/plugins"
+	"github.com/appbaseio/arc/util"
 	"github.com/gorilla/mux"
+	"github.com/robfig/cron"
 	"github.com/rs/cors"
 
 	"gopkg.in/natefinch/lumberjack.v2"
@@ -31,7 +34,17 @@ var (
 	address     string
 	port        int
 	pluginDir   string
-	https bool
+	https       bool
+	// PlanRefreshInterval can be used to define the custom interval to refresh the plan
+	PlanRefreshInterval string
+	// Billing is a build time flag
+	Billing string
+	// HostedBilling is a build time flag
+	HostedBilling string
+	// ClusterBilling is a build time flag
+	ClusterBilling string
+	// IgnoreBillingMiddleware ignores the billing middleware
+	IgnoreBillingMiddleware string
 )
 
 func init() {
@@ -71,8 +84,61 @@ func main() {
 
 	router := mux.NewRouter().StrictSlash(true)
 
+	if PlanRefreshInterval == "" {
+		PlanRefreshInterval = "1"
+	} else {
+		_, err := strconv.Atoi(PlanRefreshInterval)
+		if err != nil {
+			log.Fatal("PLAN_REFRESH_INTERVAL must be an integer")
+		}
+	}
+
+	interval := "@every " + PlanRefreshInterval + "h"
+
+	util.Billing = Billing
+	util.HostedBilling = HostedBilling
+	util.ClusterBilling = ClusterBilling
+
+	if Billing == "true" {
+		log.Println("You're running Arc with billing module enabled.")
+		util.ReportUsage()
+		cronjob := cron.New()
+		cronjob.AddFunc(interval, util.ReportUsage)
+		cronjob.Start()
+		if IgnoreBillingMiddleware != "true" {
+			router.Use(util.BillingMiddleware)
+		}
+	} else if HostedBilling == "true" {
+		log.Println("You're running Arc with hosted billing module enabled.")
+		util.ReportHostedArcUsage()
+		cronjob := cron.New()
+		cronjob.AddFunc(interval, util.ReportHostedArcUsage)
+		cronjob.Start()
+		if IgnoreBillingMiddleware != "true" {
+			router.Use(util.BillingMiddleware)
+		}
+	} else if ClusterBilling == "true" {
+		log.Println("You're running Arc with cluster billing module enabled.")
+		util.SetClusterPlan()
+		// refresh plan
+		cronjob := cron.New()
+		cronjob.AddFunc(interval, util.SetClusterPlan)
+		cronjob.Start()
+		if IgnoreBillingMiddleware != "true" {
+			router.Use(util.BillingMiddleware)
+		}
+	} else {
+		var plan = util.ArcEnterprise
+		util.Tier = &plan
+		log.Println("You're running Arc with billing module disabled.")
+	}
+
+	// ES client instantiation
+	// ES v7 and v6 clients
+	util.NewClient()
+
 	var elasticSearchPath string
-	elasticSearchMiddleware := make([] middleware.Middleware, 0)
+	elasticSearchMiddleware := make([]middleware.Middleware, 0)
 	err := filepath.Walk(pluginDir, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err

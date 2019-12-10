@@ -4,15 +4,15 @@ import (
 	"os"
 	"sync"
 
-	"github.com/appbaseio/arc/plugins"
 	"github.com/appbaseio/arc/middleware"
-	"github.com/appbaseio/arc/errors"
+	"github.com/appbaseio/arc/plugins"
 )
 
 const (
 	logTag              = "[users]"
-	envEsURL            = "ES_CLUSTER_URL"
 	envUsersEsIndex     = "USERS_ES_INDEX"
+	typeName            = "_doc"
+	envEsURL            = "ES_CLUSTER_URL"
 	defaultUsersEsIndex = ".users"
 	settings            = `{ "settings" : { "number_of_shards" : %d, "number_of_replicas" : %d } }`
 )
@@ -43,10 +43,6 @@ func (u *Users) Name() string {
 // InitFunc is the implementation of Plugin interface.
 func (u *Users) InitFunc() error {
 	// fetch vars from env
-	esURL := os.Getenv(envEsURL)
-	if esURL == "" {
-		return errors.NewEnvVarNotSetError(envEsURL)
-	}
 	indexName := os.Getenv(envUsersEsIndex)
 	if indexName == "" {
 		indexName = defaultUsersEsIndex
@@ -54,7 +50,7 @@ func (u *Users) InitFunc() error {
 
 	// initialize the dao
 	var err error
-	u.es, err = newClient(esURL, indexName, settings)
+	u.es, err = initPlugin(indexName, settings)
 	if err != nil {
 		return err
 	}
@@ -68,6 +64,6 @@ func (u *Users) Routes() []plugins.Route {
 }
 
 // Default empty middleware array function
-func (u *Users) ESMiddleware() [] middleware.Middleware {
-	return make([] middleware.Middleware, 0)
+func (u *Users) ESMiddleware() []middleware.Middleware {
+	return make([]middleware.Middleware, 0)
 }

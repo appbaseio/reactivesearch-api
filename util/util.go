@@ -2,7 +2,9 @@ package util
 
 import (
 	"crypto/tls"
+	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"math"
 	"net"
@@ -15,6 +17,15 @@ import (
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 )
+
+// Billing is a build time variable
+var Billing string
+
+// HostedBilling is a build time variable
+var HostedBilling string
+
+// ClusterBilling is a build time variable
+var ClusterBilling string
 
 // RandStr returns "node" field of a UUID.
 // See: https://tools.ietf.org/html/rfc4122#section-4.1.6
@@ -206,4 +217,16 @@ func IntervalForRange(from, to string) (string, error) {
 	}
 	intervalInSecs := math.Round(durationInHours * 25)
 	return fmt.Sprintf("%ds", int64(intervalInSecs)), nil
+}
+
+// DecodeBase64Key decodes a base64 input
+func DecodeBase64Key(encoded string) ([]byte, error) {
+	decoded, err := base64.StdEncoding.DecodeString(encoded)
+	if err != nil {
+		if _, ok := err.(base64.CorruptInputError); ok {
+			return nil, errors.New("base64 input is corrupt, check Key")
+		}
+		return nil, err
+	}
+	return decoded, nil
 }

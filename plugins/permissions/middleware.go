@@ -8,8 +8,8 @@ import (
 	"github.com/appbaseio/arc/middleware/validate"
 	"github.com/appbaseio/arc/model/category"
 	"github.com/appbaseio/arc/model/index"
-	"github.com/appbaseio/arc/plugins/logs"
 	"github.com/appbaseio/arc/plugins/auth"
+	"github.com/appbaseio/arc/plugins/logs"
 )
 
 type chain struct {

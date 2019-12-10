@@ -7,12 +7,12 @@ import (
 
 	"github.com/appbaseio/arc/middleware"
 	"github.com/appbaseio/arc/plugins"
-	"github.com/appbaseio/arc/errors"
 )
 
 const (
 	logTag                    = "[permissions]"
 	defaultPermissionsEsIndex = ".permissions"
+	typeName                  = "_doc"
 	envEsURL                  = "ES_CLUSTER_URL"
 	envPermissionEsIndex      = "PERMISSIONS_ES_INDEX"
 	settings                  = `{ "settings" : { "number_of_shards" : %d, "number_of_replicas" : %d } }`
@@ -41,11 +41,6 @@ func (p *permissions) Name() string {
 func (p *permissions) InitFunc() error {
 	log.Printf("%s: initializing plugin\n", logTag)
 
-	// fetch vars from env
-	url := os.Getenv(envEsURL)
-	if url == "" {
-		return errors.NewEnvVarNotSetError(envEsURL)
-	}
 	indexName := os.Getenv(envPermissionEsIndex)
 	if indexName == "" {
 		indexName = defaultPermissionsEsIndex
@@ -53,7 +48,7 @@ func (p *permissions) InitFunc() error {
 
 	// initialize the dao
 	var err error
-	p.es, err = newClient(url, indexName, settings)
+	p.es, err = initPlugin(indexName, settings)
 	if err != nil {
 		return err
 	}
@@ -66,6 +61,6 @@ func (p *permissions) Routes() []plugins.Route {
 }
 
 // Default empty middleware array function
-func (p *permissions) ESMiddleware() [] middleware.Middleware {
-	return make([] middleware.Middleware, 0)
+func (p *permissions) ESMiddleware() []middleware.Middleware {
+	return make([]middleware.Middleware, 0)
 }

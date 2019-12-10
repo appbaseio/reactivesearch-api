@@ -8,34 +8,20 @@ import (
 
 	"github.com/appbaseio/arc/model/permission"
 	"github.com/appbaseio/arc/util"
-	"gopkg.in/olivere/elastic.v6"
 )
 
 type elasticsearch struct {
-	url       string
 	indexName string
-	typeName  string
 	mapping   string
-	client    *elastic.Client
 }
 
-func newClient(url, indexName, mapping string) (*elasticsearch, error) {
+func initPlugin(indexName, mapping string) (*elasticsearch, error) {
 	ctx := context.Background()
 
-	// Initialize the client
-	client, err := elastic.NewClient(
-		elastic.SetURL(url),
-		elastic.SetRetrier(util.NewRetrier()),
-		elastic.SetSniff(false),
-		elastic.SetHttpClient(util.HTTPClient()),
-	)
-	if err != nil {
-		return nil, fmt.Errorf("%s: error while initializing elastic client: %v", logTag, err)
-	}
-	es := &elasticsearch{url, indexName, "_doc", mapping, client}
+	es := &elasticsearch{indexName, mapping}
 
 	// Check if the meta index already exists
-	exists, err := client.IndexExists(indexName).
+	exists, err := util.GetClient7().IndexExists(indexName).
 		Do(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("%s: error while checking if index already exists: %v", logTag, err)
@@ -46,14 +32,14 @@ func newClient(url, indexName, mapping string) (*elasticsearch, error) {
 	}
 
 	// set number_of_replicas to (nodes-1)
-	nodes, err := es.getTotalNodes()
+	nodes, err := util.GetTotalNodes()
 	if err != nil {
 		return nil, err
 	}
 	settings := fmt.Sprintf(mapping, nodes, nodes-1)
 
 	// Create a new meta index
-	_, err = client.CreateIndex(indexName).
+	_, err = util.GetClient7().CreateIndex(indexName).
 		Body(settings).
 		Do(ctx)
 	if err != nil {
@@ -62,17 +48,6 @@ func newClient(url, indexName, mapping string) (*elasticsearch, error) {
 
 	log.Printf("%s successfully created index named '%s'", logTag, indexName)
 	return es, nil
-}
-
-func (es *elasticsearch) getTotalNodes() (int, error) {
-	response, err := es.client.NodesInfo().
-		Metric("nodes").
-		Do(context.Background())
-	if err != nil {
-		return -1, err
-	}
-
-	return len(response.Nodes), nil
 }
 
 func (es *elasticsearch) getPermission(ctx context.Context, username string) (*permission.Permission, error) {
@@ -86,34 +61,22 @@ func (es *elasticsearch) getPermission(ctx context.Context, username string) (*p
 	if err != nil {
 		return nil, err
 	}
-
 	return &p, nil
 }
 
 func (es *elasticsearch) getRawPermission(ctx context.Context, username string) ([]byte, error) {
-	response, err := es.client.Get().
-		Index(es.indexName).
-		Type(es.typeName).
-		Id(username).
-		FetchSource(true).
-		Do(ctx)
-	if err != nil {
-		return nil, err
+	switch util.GetVersion() {
+	case 6:
+		return es.getRawPermissionEs6(ctx, username)
+	default:
+		return es.getRawPermissionEs7(ctx, username)
 	}
-
-	src, err := response.Source.MarshalJSON()
-	if err != nil {
-		return nil, err
-	}
-
-	return src, nil
 }
 
 func (es *elasticsearch) postPermission(ctx context.Context, p permission.Permission) (bool, error) {
-	_, err := es.client.Index().
+	_, err := util.GetClient7().Index().
 		Refresh("wait_for").
 		Index(es.indexName).
-		Type(es.typeName).
 		Id(p.Username).
 		BodyJson(p).
 		Do(ctx)
@@ -125,31 +88,18 @@ func (es *elasticsearch) postPermission(ctx context.Context, p permission.Permis
 }
 
 func (es *elasticsearch) patchPermission(ctx context.Context, username string, patch map[string]interface{}) ([]byte, error) {
-	response, err := es.client.Update().
-		Refresh("wait_for").
-		Index(es.indexName).
-		Type(es.typeName).
-		Id(username).
-		Doc(patch).
-		Fields("_source").
-		Do(ctx)
-	if err != nil {
-		return nil, err
+	switch util.GetVersion() {
+	case 6:
+		return es.patchPermissionEs6(ctx, username, patch)
+	default:
+		return es.patchPermissionEs7(ctx, username, patch)
 	}
-
-	src, err := response.GetResult.Source.MarshalJSON()
-	if err != nil {
-		return nil, err
-	}
-
-	return src, nil
 }
 
 func (es *elasticsearch) deletePermission(ctx context.Context, username string) (bool, error) {
-	_, err := es.client.Delete().
+	_, err := util.GetClient7().Delete().
 		Refresh("wait_for").
 		Index(es.indexName).
-		Type(es.typeName).
 		Id(username).
 		Do(ctx)
 	if err != nil {
@@ -160,57 +110,28 @@ func (es *elasticsearch) deletePermission(ctx context.Context, username string) 
 }
 
 func (es *elasticsearch) getRawOwnerPermissions(ctx context.Context, owner string) ([]byte, error) {
-	resp, err := es.client.Search().
-		Index(es.indexName).
-		Type(es.typeName).
-		Query(elastic.NewTermQuery("owner.keyword", owner)).
-		Do(ctx)
-	if err != nil {
-		return nil, err
+	switch util.GetVersion() {
+	case 6:
+		return es.getRawOwnerPermissionsEs6(ctx, owner)
+	default:
+		return es.getRawOwnerPermissionsEs7(ctx, owner)
 	}
-
-	rawPermissions := []*json.RawMessage{}
-	for _, hit := range resp.Hits.Hits {
-		rawPermissions = append(rawPermissions, hit.Source)
-	}
-
-	raw, err := json.Marshal(rawPermissions)
-	if err != nil {
-		return nil, fmt.Errorf("unable to marshal slice of raw permissions: %v", err)
-	}
-
-	return raw, nil
 }
 
 func (es *elasticsearch) checkRoleExists(ctx context.Context, role string) (bool, error) {
-	resp, err := es.client.Search().
-		Index(es.indexName).
-		Type(es.typeName).
-		Query(elastic.NewTermQuery("role", role)).
-		Do(ctx)
-	if err != nil {
-		return false, err
+	switch util.GetVersion() {
+	case 6:
+		return es.checkRoleExistsEs6(ctx, role)
+	default:
+		return es.checkRoleExistsEs7(ctx, role)
 	}
-
-	return resp.Hits.TotalHits > 0, nil
 }
 
 func (es *elasticsearch) getRawRolePermission(ctx context.Context, role string) ([]byte, error) {
-	resp, err := es.client.Search().
-		Index(es.indexName).
-		Type(es.typeName).
-		Query(elastic.NewTermQuery("role", role)).
-		Size(1).
-		FetchSource(true).
-		Do(ctx)
-	if err != nil {
-		return nil, err
+	switch util.GetVersion() {
+	case 6:
+		return es.getRawRolePermissionEs6(ctx, role)
+	default:
+		return es.getRawRolePermissionEs7(ctx, role)
 	}
-	for _, hit := range resp.Hits.Hits {
-		src, err := json.Marshal(hit.Source)
-		if err == nil {
-			return src, nil
-		}
-	}
-	return nil, nil
 }

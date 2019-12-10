@@ -119,12 +119,12 @@ func (u *Users) postUser() http.HandlerFunc {
 		}
 
 		var newUser *user.User
-
-		if *userBody.IsAdmin {
+		if userBody.IsAdmin != nil && *userBody.IsAdmin {
 			newUser, err = user.NewAdmin(userBody.Username, string(hashedPassword), opts...)
 		} else {
 			newUser, err = user.New(userBody.Username, string(hashedPassword), opts...)
 		}
+
 		if err != nil {
 			msg := fmt.Sprintf("an error occurred while creating user: %v", err)
 			log.Printf("%s: %s: %v", logTag, msg, err)
@@ -253,7 +253,6 @@ func (u *Users) patchUserWithUsername() http.HandlerFunc {
 			util.WriteBackError(w, err.Error(), http.StatusBadRequest)
 			return
 		}
-
 		// If user is trying to patch acls without providing categories.
 		if patch["categories"] == nil && patch["acls"] != nil {
 			// we need to fetch the user object from elasticsearch before we make
