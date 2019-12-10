@@ -49,6 +49,7 @@ var defaultAdminLimits = permission.Limits{
 	TemplatesLimit:   30,
 	SuggestionsLimit: 30,
 	StreamsLimit:     30,
+	AuthLimit:        30,
 }
 
 var createPermissionResponse = map[string]interface{}{
