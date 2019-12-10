@@ -1,7 +1,6 @@
-package permissions
+package auth
 
 import (
-	"encoding/json"
 	"net/http"
 	"testing"
 
@@ -56,7 +55,7 @@ var defaultAdminLimits = permission.Limits{
 var createPermissionResponse = map[string]interface{}{
 	"owner":          "foo",
 	"creator":        "foo",
-	"role":           "",
+	"role":           "admin",
 	"categories":     adminCategories,
 	"acls":           category.ACLsFor(adminCategories...),
 	"ops":            adminOps,
@@ -65,14 +64,13 @@ var createPermissionResponse = map[string]interface{}{
 	"referers":       []string{"*"},
 	"ttl":            -1,
 	"limits":         &defaultAdminLimits,
-	"description":    "TEST PERMISSION",
+	"description":    "TEST PERMISSION WITH ROLE",
 	"include_fields": nil,
 	"exclude_fields": nil,
 }
 
 var updatePermissionsRequest = map[string]interface{}{
 	"description": "TEST PERMISSION UPDATED",
-	"role":        "role",
 	"categories": []string{
 		"docs",
 		"search",
@@ -161,26 +159,52 @@ var updatePermissionsRequest = map[string]interface{}{
 	},
 }
 
-var allPermissionsResponse = []map[string]interface{}{
-	createPermissionResponse,
+var roleName = "admin"
+
+var savePublicKeyRequest = map[string]interface{}{
+	"public_key": "LS0tLS1CRUdJTiBQVUJMSUMgS0VZLS0tLS0KTUlJQklqQU5CZ2txaGtpRzl3MEJBUUVGQUFPQ0FROEFNSUlCQ2dLQ0FRRUFuenlpczFaamZOQjBiQmdLRk1Tdgp2a1R0d2x2QnNhSnE3UzV3QStremVWT1ZwVld3a1dkVmhhNHMzOFhNL3BhL3lyNDdhdjcrejNWVG12RFJ5QUhjCmFUOTJ3aFJFRnBMdjljajVsVGVKU2lieXIvTXJtL1l0akNaVldnYU9ZSWh3clh3S0xxUHIvMTFpbldzQWtmSXkKdHZIV1R4WllFY1hMZ0FYRnVVdWFTM3VGOWdFaU5Rd3pHVFUxdjBGcWtxVEJyNEI4blczSENONDdYVXUwdDhZMAplK2xmNHM0T3hRYXdXRDc5SjkvNWQzUnkwdmJWM0FtMUZ0R0ppSnZPd1JzSWZWQ2hEcFlTdFRjSFRDTXF0dldiClY2TDExQldrcHpHWFNXNEh2NDNxYStHU1lPRDJRVTY4TWI1OW9TazJPQitCdE9McEpvZm1iR0VHZ3Ztd3lDSTkKTXdJREFRQUIKLS0tLS1FTkQgUFVCTElDIEtFWS0tLS0t",
+	"role_key":   roleName,
 }
 
-func TestPermission(t *testing.T) {
-	// variables to cache permission credentials
+var savePublicKeyResponse = map[string]interface{}{
+	"message": "Public key saved successfully.",
+}
+
+func TestRBAC(t *testing.T) {
 	var username string
 	var password string
 	var createdAt string
-	Convey("Testing permissions", t, func() {
-		Convey("Create permission", func() {
-			requestBody := permission.Permission{
-				Description: "TEST PERMISSION",
+	Convey("Testing RBAC", t, func() {
+		Convey("Save the public key", func() {
+			response, err := util.MakeHttpRequest(http.MethodPut, "/_public_key", savePublicKeyRequest)
+
+			if err != nil {
+				t.Fatalf("savePublicKeyTest Failed %v instead\n", err)
 			}
-			response, err := util.MakeHttpRequest(http.MethodPost, "/_permission", requestBody)
+
+			So(response, ShouldResemble, savePublicKeyResponse)
+		})
+
+		Convey("Get the public key", func() {
+			response, err := util.MakeHttpRequest(http.MethodGet, "/_public_key", nil)
+
+			if err != nil {
+				t.Fatalf("getPublicKeyTest Failed %v instead\n", err)
+			}
+
+			So(response, ShouldResemble, savePublicKeyRequest)
+		})
+
+		Convey("Create permission with role", func() {
+			requestBody := permission.Permission{
+				Description: "TEST PERMISSION WITH ROLE",
+			}
+			response, err := util.MakeHttpRequest(http.MethodPost, "/_role/"+roleName, requestBody)
 
 			parsedResponse, _ := response.(map[string]interface{})
 
 			if err != nil {
-				t.Fatalf("createPermissionTest Failed %v instead\n", err)
+				t.Fatalf("createPermissionWithRoleTest Failed %v instead\n", err)
 			}
 			username, _ = parsedResponse["username"].(string)
 			password, _ = parsedResponse["password"].(string)
@@ -195,11 +219,11 @@ func TestPermission(t *testing.T) {
 			So(parsedResponse, ShouldResemble, mockMap)
 		})
 
-		Convey("Get permission", func() {
-			response, err := util.MakeHttpRequest(http.MethodGet, "/_permission/"+username, nil)
+		Convey("Get permission with role", func() {
+			response, err := util.MakeHttpRequest(http.MethodGet, "/_role/"+roleName, nil)
 
 			if err != nil {
-				t.Fatalf("getPermissionTest Failed %v instead\n", err)
+				t.Fatalf("getPermissionWithRoleTest Failed %v instead\n", err)
 			}
 			var getPermissionResponse = createPermissionResponse
 			getPermissionResponse["username"] = username
@@ -210,28 +234,11 @@ func TestPermission(t *testing.T) {
 			So(response, ShouldResemble, mockMap)
 		})
 
-		Convey("Get permissions", func() {
-			response, err := util.MakeHttpRequest(http.MethodGet, "/_permissions", nil)
+		Convey("Update permission with role", func() {
+			response, err := util.MakeHttpRequest(http.MethodPatch, "/_role/"+roleName, updatePermissionsRequest)
 
 			if err != nil {
-				t.Fatalf("getPermissionsTest Failed %v instead\n", err)
-			}
-			var getPermissionsResponse = allPermissionsResponse
-			getPermissionsResponse[0]["username"] = username
-			getPermissionsResponse[0]["password"] = password
-			getPermissionsResponse[0]["created_at"] = createdAt
-			var mockMap []interface{}
-			parsedResponse, _ := response.([]interface{})
-			marshalled, _ := json.Marshal(getPermissionsResponse)
-			json.Unmarshal(marshalled, &mockMap)
-			So(parsedResponse, ShouldResemble, mockMap)
-		})
-
-		Convey("Update permission", func() {
-			response, err := util.MakeHttpRequest(http.MethodPatch, "/_permission/"+username, updatePermissionsRequest)
-
-			if err != nil {
-				t.Fatalf("updatePermissionTest Failed %v instead\n", err)
+				t.Fatalf("updatePermissionWithRoleTest Failed %v instead\n", err)
 			}
 
 			parsedResponse, _ := response.(map[string]interface{})
@@ -257,11 +264,11 @@ func TestPermission(t *testing.T) {
 			So(parsedResponse, ShouldResemble, mockMap)
 		})
 
-		Convey("Delete permission", func() {
-			response, err := util.MakeHttpRequest(http.MethodDelete, "/_permission/"+username, nil)
+		Convey("Delete permission with role", func() {
+			response, err := util.MakeHttpRequest(http.MethodDelete, "/_role/"+roleName, nil)
 
 			if err != nil {
-				t.Fatalf("deletePermissionTest Failed %v instead\n", err)
+				t.Fatalf("deletePermissionWithRoleTest Failed %v instead\n", err)
 			}
 
 			var deletePermissionResponse = map[string]interface{}{
