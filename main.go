@@ -128,8 +128,7 @@ func main() {
 			router.Use(util.BillingMiddleware)
 		}
 	} else {
-		var plan = util.ArcEnterprise
-		util.Tier = &plan
+		util.SetDefaultTier()
 		log.Println("You're running Arc with billing module disabled.")
 	}
 

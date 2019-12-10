@@ -17,20 +17,60 @@ var ACCAPI = "https://accapi.appbase.io/"
 
 // var ACCAPI = "http://localhost:3000/"
 
-// TimeValidity to be obtained from ACCAPI
-var TimeValidity int64
-
 // Tier is the value of the user's plan
-var Tier *Plan
+var tier *Plan
+
+// SetTier sets the tier value
+func SetTier(plan *Plan) {
+	tier = plan
+}
+
+// GetTier returns the current tier
+func GetTier() *Plan {
+	return tier
+}
+
+// TimeValidity to be obtained from ACCAPI (in secs)
+var timeValidity int64
+
+// GetTimeValidity returns the time validity
+func GetTimeValidity() int64 {
+	return timeValidity
+}
+
+// SetTimeValidity returns the time validity
+func SetTimeValidity(time int64) {
+	timeValidity = time
+}
 
 // Feature custom events
-var FeatureCustomEvents bool
+var featureCustomEvents bool
+
+// GetFeatureCustomEvents returns the featureCustomEvents
+func GetFeatureCustomEvents() bool {
+	return featureCustomEvents
+}
+
+// SetFeatureCustomEvents returns the time validity
+func SetFeatureCustomEvents(val bool) {
+	featureCustomEvents = val
+}
 
 // Feature suggestions
-var FeatureSuggestions bool
+var featureSuggestions bool
 
-// MaxErrorTime before showing errors if invalid trial / plan in hours
-var MaxErrorTime int64 = 24 // in hrs
+// GetFeatureSuggestions returns the featureSuggestions
+func GetFeatureSuggestions() bool {
+	return featureSuggestions
+}
+
+// SetFeatureSuggestions returns the time validity
+func SetFeatureSuggestions(val bool) {
+	featureSuggestions = val
+}
+
+// maxErrorTime before showing errors if invalid trial / plan in hours
+var maxErrorTime int64 = 24 // in hrs
 
 // NodeCount is the current node count, defaults to 1
 var NodeCount = 1
@@ -96,18 +136,31 @@ type ArcInstanceDetails struct {
 	FeatureSuggestions   bool                   `json:"feature_suggestions"`
 }
 
+// SetDefaultTier sets the default tier when billing is disabled
+func SetDefaultTier() {
+	var plan = ArcEnterprise
+	SetTier(&plan)
+}
+
+func validateTimeValidity() bool {
+	if GetTimeValidity() > 0 { // Valid plan
+		return true
+	} else if GetTimeValidity() <= 0 && -GetTimeValidity() < 3600*maxErrorTime { // Negative validity, plan has been expired
+		// Print warning message if remaining time is less than max allowed time
+		log.Println("Warning: Payment is required. Arc will start sending out error messages in next", maxErrorTime, "hours")
+		return true
+	}
+	return false
+}
+
 // BillingMiddleware function to be called for each request
 func BillingMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		log.Println("current time validity value: ", TimeValidity)
+		log.Println("current time validity value: ", GetTimeValidity())
 		// Blacklist subscription routes
 		if strings.HasPrefix(r.RequestURI, "/arc/subscription") || strings.HasPrefix(r.RequestURI, "/arc/plan") {
 			next.ServeHTTP(w, r)
-		} else if TimeValidity > 0 { // Valid plan
-			next.ServeHTTP(w, r)
-		} else if TimeValidity <= 0 && -TimeValidity < 3600*MaxErrorTime { // Negative validity, plan has been expired
-			// Print warning message if remaining time is less than max allowed time
-			log.Println("Warning: Payment is required. Arc will start sending out error messages in next", MaxErrorTime, "hours")
+		} else if validateTimeValidity() {
 			next.ServeHTTP(w, r)
 		} else {
 			// Write an error and stop the handler chain
@@ -139,10 +192,10 @@ func getArcInstance(arcID string) (ArcInstance, error) {
 	if len(response.ArcInstances) != 0 {
 		arcInstanceByID := response.ArcInstances[0]
 		arcInstance.SubscriptionID = arcInstanceByID.SubscriptionID
-		TimeValidity = arcInstanceByID.TimeValidity
-		Tier = arcInstanceByID.Tier
-		FeatureCustomEvents = arcInstanceByID.FeatureCustomEvents
-		FeatureSuggestions = arcInstanceByID.FeatureSuggestions
+		SetTimeValidity(arcInstanceByID.TimeValidity)
+		SetTier(arcInstanceByID.Tier)
+		SetFeatureSuggestions(arcInstanceByID.FeatureSuggestions)
+		SetFeatureCustomEvents(arcInstanceByID.FeatureCustomEvents)
 	} else {
 		return arcInstance, errors.New("No valid instance found for the provided ARC_ID")
 	}
@@ -182,10 +235,10 @@ func getArcClusterInstance(clusterID string) (ArcInstance, error) {
 	if len(response.ArcInstances) != 0 {
 		arcInstanceDetails := response.ArcInstances[0]
 		arcInstance.SubscriptionID = arcInstanceDetails.SubscriptionID
-		TimeValidity = arcInstanceDetails.TimeValidity
-		Tier = arcInstanceDetails.Tier
-		FeatureCustomEvents = arcInstanceDetails.FeatureCustomEvents
-		FeatureSuggestions = arcInstanceDetails.FeatureSuggestions
+		SetTimeValidity(arcInstanceDetails.TimeValidity)
+		SetTier(arcInstanceDetails.Tier)
+		SetFeatureSuggestions(arcInstanceDetails.FeatureSuggestions)
+		SetFeatureCustomEvents(arcInstanceDetails.FeatureCustomEvents)
 	} else {
 		return arcInstance, errors.New("No valid instance found for the provided CLUSTER_ID")
 	}
@@ -223,10 +276,10 @@ func getClusterPlan(clusterID string) (ClusterPlan, error) {
 		return clusterPlan, fmt.Errorf("error while getting the cluster plan")
 	}
 	// Set the plan for clusters
-	Tier = response.Plan.Tier
-	TimeValidity = response.Plan.TimeValidity
-	FeatureCustomEvents = response.Plan.FeatureCustomEvents
-	FeatureSuggestions = response.Plan.FeatureSuggestions
+	SetTier(response.Plan.Tier)
+	SetTimeValidity(response.Plan.TimeValidity)
+	SetFeatureSuggestions(response.Plan.FeatureSuggestions)
+	SetFeatureCustomEvents(response.Plan.FeatureCustomEvents)
 
 	return clusterPlan, nil
 }
