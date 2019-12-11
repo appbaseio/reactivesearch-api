@@ -6,7 +6,7 @@ go:
   - "1.12"
 branches:
   only:
-    - feat/es7
+    - dev
 
 install: true
 
