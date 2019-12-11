@@ -161,6 +161,36 @@ var updatePermissionsRequest = map[string]interface{}{
 	},
 }
 
+var ipSourceTestPermissionsRequest = map[string]interface{}{
+	"role":           "",
+	"categories":     adminCategories,
+	"acls":           category.ACLsFor(adminCategories...),
+	"ops":            adminOps,
+	"indices":        []string{"*"},
+	"sources":        []string{"10.10.10.10/22"},
+	"referers":       []string{"*"},
+	"ttl":            -1,
+	"limits":         &defaultAdminLimits,
+	"description":    "TEST IP SOURCE",
+	"include_fields": nil,
+	"exclude_fields": nil,
+}
+
+var ipSourcesTestPermissionsRequest = map[string]interface{}{
+	"role":           "",
+	"categories":     adminCategories,
+	"acls":           category.ACLsFor(adminCategories...),
+	"ops":            adminOps,
+	"indices":        []string{"*"},
+	"sources":        []string{"10.10.10.10/22","100.100.100.100/24"},
+	"referers":       []string{"*"},
+	"ttl":            -1,
+	"limits":         &defaultAdminLimits,
+	"description":    "TEST IP SOURCE",
+	"include_fields": nil,
+	"exclude_fields": nil,
+}
+
 var allPermissionsResponse = []map[string]interface{}{
 	createPermissionResponse,
 }
@@ -249,12 +279,73 @@ func TestPermission(t *testing.T) {
 					"successful": 1,
 					"failed":     0,
 				},
-				"_primary_term": 1,
+				"_primary_term": 2,
 			}
 
 			mockMap := util.StructToMap(updatePermissionResponse)
 
 			So(parsedResponse, ShouldResemble, mockMap)
+		})
+
+		Convey("Single IP Source", func() {
+			response, err := util.MakeHttpRequest(http.MethodPatch, "/_permission/"+username, ipSourceTestPermissionsRequest)
+			
+			if err != nil {
+				t.Fatalf("updatePermission Failed %v instead\n", err)
+			}
+
+			response, err = util.MakeHttpRequest(http.MethodGet, "http://" + username + ":" + password + "@localhost:8000/.permissions/_search", nil)
+			
+			if err != nil {
+				t.Fatalf("ipSourceTestFailed Failed %v instead\n", err)
+			}
+	
+			var ipSourceErrorResponse = map[string]interface{} {
+				"error": map[string]interface{} {
+					"code": 401,
+					"message": "permission with username " + username + " doesn't have required sources. reqIP = ::1, sources = [" + ipSourceTestPermissionsRequest["sources"].([]string)[0] + "]",
+					"status": "Unauthorized",
+				},
+			}
+			
+			parsedResponse, _ := response.(map[string]interface{})
+
+			mockMap := util.StructToMap(ipSourceErrorResponse)	
+			
+			So(parsedResponse, ShouldResemble, mockMap)	
+		})
+
+		Convey("Multiple IP Sources", func() {
+			response, err := util.MakeHttpRequest(http.MethodPatch, "/_permission/"+username, ipSourcesTestPermissionsRequest)
+			
+			if err != nil {
+				t.Fatalf("updatePermission Failed %v instead\n", err)
+			}
+
+			response, err = util.MakeHttpRequest(http.MethodGet, "http://" + username + ":" + password + "@localhost:8000/.permissions/_search", nil)
+			
+			if err != nil {
+				t.Fatalf("ipSourcesTestFailed Failed %v instead\n", err)
+			}
+			
+			sources := ""
+			for _, src := range ipSourcesTestPermissionsRequest["sources"].([]string) {
+				sources += src + " "
+			}
+
+			var ipSourcesErrorResponse = map[string]interface{} {
+				"error": map[string]interface{} {
+					"code": 401,
+					"message": "permission with username " + username + " doesn't have required sources. reqIP = ::1, sources = [" + sources[:len(sources)-1] + "]",
+					"status": "Unauthorized",
+				},
+			}
+			
+			parsedResponse, _ := response.(map[string]interface{})
+
+			mockMap := util.StructToMap(ipSourcesErrorResponse)	
+			
+			So(parsedResponse, ShouldResemble, mockMap)	
 		})
 
 		Convey("Delete permission", func() {

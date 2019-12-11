@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"strings"
 )
 
 // TestURL for arc
@@ -20,7 +21,12 @@ func StructToMap(response interface{}) interface{} {
 
 func MakeHttpRequest(method string, url string, requestBody interface{}) (interface{}, error) {
 	var response interface{}
-	finalURL := TestURL + url
+	var finalURL string
+	if strings.Contains(url, "http") || strings.Contains(url, "https") {
+		finalURL = url
+	} else {
+		finalURL = TestURL + url
+	}
 	marshalledRequest, err := json.Marshal(requestBody)
 	if err != nil {
 		log.Println("error while marshalling req body: ", err)
