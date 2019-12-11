@@ -186,7 +186,22 @@ var ipSourcesTestPermissionsRequest = map[string]interface{}{
 	"referers":       []string{"*"},
 	"ttl":            -1,
 	"limits":         &defaultAdminLimits,
-	"description":    "TEST IP SOURCE",
+	"description":    "TEST IP SOURCES",
+	"include_fields": nil,
+	"exclude_fields": nil,
+}
+
+var httpRefererFailTestPermissionRequest = map[string]interface{}{
+	"role":           "",
+	"categories":     adminCategories,
+	"acls":           category.ACLsFor(adminCategories...),
+	"ops":            adminOps,
+	"indices":        []string{"*"},
+	"sources":        []string{"0.0.0.0/0"},
+	"referers":       []string{"http://test.com/*"},
+	"ttl":            -1,
+	"limits":         &defaultAdminLimits,
+	"description":    "TEST HTTP REFERER",
 	"include_fields": nil,
 	"exclude_fields": nil,
 }
@@ -344,6 +359,34 @@ func TestPermission(t *testing.T) {
 			parsedResponse, _ := response.(map[string]interface{})
 
 			mockMap := util.StructToMap(ipSourcesErrorResponse)	
+			
+			So(parsedResponse, ShouldResemble, mockMap)	
+		})
+
+		Convey("HTTP Referer Fail Test", func() {
+			response, err := util.MakeHttpRequest(http.MethodPatch, "/_permission/"+username, httpRefererFailTestPermissionRequest)
+			
+			if err != nil {
+				t.Fatalf("updatePermission Failed %v instead\n", err)
+			}
+
+			response, err = util.MakeHttpRequest(http.MethodGet, "http://" + username + ":" + password + "@localhost:8000/.permissions/_search", nil)
+			
+			if err != nil {
+				t.Fatalf("httpRefererTestFailed Failed %v instead\n", err)
+			}
+
+			var httpRefererErrorResponse = map[string]interface{} {
+				"error": map[string]interface{} {
+					"code": 401,
+					"message": "permission doesn't have required referers",
+					"status": "Unauthorized",
+				},
+			}
+
+			parsedResponse, _ := response.(map[string]interface{})
+
+			mockMap := util.StructToMap(httpRefererErrorResponse)	
 			
 			So(parsedResponse, ShouldResemble, mockMap)	
 		})
