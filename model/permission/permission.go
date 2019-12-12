@@ -48,6 +48,7 @@ type Permission struct {
 	Description string              `json:"description"`
 	Includes    []string            `json:"include_fields"`
 	Excludes    []string            `json:"exclude_fields"`
+	Expired     bool                `json:"expired"`
 }
 
 // Limits defines the rate limits for each category.
@@ -334,12 +335,12 @@ func FromContext(ctx context.Context) (*Permission, error) {
 }
 
 // IsExpired checks whether the permission is expired or not.
-func (p *Permission) IsExpired() (bool, error) {
-	createdAt, err := time.Parse(time.RFC3339, p.CreatedAt)
+func IsExpired(created string, ttl time.Duration) (bool, error) {
+	createdAt, err := time.Parse(time.RFC3339, created)
 	if err != nil {
-		return false, fmt.Errorf("invalid time format for field \"created_at\": %s", p.CreatedAt)
+		return false, fmt.Errorf("invalid time format for field \"created_at\": %s", createdAt)
 	}
-	return p.TTL >= 0 && time.Since(createdAt) > p.TTL, nil
+	return ttl >= 0 && time.Since(createdAt) > ttl, nil
 }
 
 // HasCategory checks whether the permission has access to the given category.
