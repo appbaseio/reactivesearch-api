@@ -24,7 +24,7 @@ import (
 //
 // We accept a query param `wait_for_completion` which defaults to true, which when false, we don't create any aliases
 // and delete the old index, we instead return the tasks API response.
-func reindex(ctx context.Context, indexName string, config *reindexConfig, waitForCompletion bool) ([]byte, error) {
+func reindex(ctx context.Context, sourceIndex string, config *reindexConfig, waitForCompletion bool, destinationIndex string) ([]byte, error) {
 	var err error
 
 	// We fetch the index name pointing to the given alias first.
@@ -34,30 +34,30 @@ func reindex(ctx context.Context, indexName string, config *reindexConfig, waitF
 	// from the given alias. If alias name doesn't exist we get an
 	// empty slice of indices, which means the index has never been
 	// reindexed before.
-	indices, err := getIndicesByAlias(ctx, indexName)
+	indices, err := getIndicesByAlias(ctx, sourceIndex)
 	if err != nil {
 		log.Println(err)
 	}
 	if len(indices) > 1 {
-		return nil, fmt.Errorf(`multiple indices pointing to alias "%s"`, indexName)
+		return nil, fmt.Errorf(`multiple indices pointing to alias "%s"`, sourceIndex)
 	}
 	if len(indices) == 1 {
-		indexName = indices[0]
+		sourceIndex = indices[0]
 	}
 
 	// If mappings are not passed, we fetch the mappings of the old index.
 	if config.Mappings == nil {
-		config.Mappings, err = mappingsOf(ctx, indexName)
+		config.Mappings, err = mappingsOf(ctx, sourceIndex)
 		if err != nil {
-			return nil, fmt.Errorf(`error fetching mappings of index "%s": %v`, indexName, err)
+			return nil, fmt.Errorf(`error fetching mappings of index "%s": %v`, sourceIndex, err)
 		}
 	}
 
 	// If settings are not passed, we fetch the settings of the old index.
 	if config.Settings == nil {
-		config.Settings, err = settingsOf(ctx, indexName)
+		config.Settings, err = settingsOf(ctx, sourceIndex)
 		if err != nil {
-			return nil, fmt.Errorf(`error fetching settings of index "%s": %v`, indexName, err)
+			return nil, fmt.Errorf(`error fetching settings of index "%s": %v`, sourceIndex, err)
 		}
 	}
 
@@ -65,10 +65,13 @@ func reindex(ctx context.Context, indexName string, config *reindexConfig, waitF
 	body := make(map[string]interface{})
 	body["mappings"] = config.Mappings
 	body["settings"] = config.Settings
+	newIndexName := destinationIndex
+	if destinationIndex == "" {
+		newIndexName, err = reindexedName(sourceIndex)
+	}
 
-	newIndexName, err := reindexedName(indexName)
 	if err != nil {
-		return nil, fmt.Errorf(`error generating a new index name for index "%s": %v`, indexName, err)
+		return nil, fmt.Errorf(`error generating a new index name for index "%s": %v`, sourceIndex, err)
 	}
 
 	// Create the new index.
@@ -79,7 +82,7 @@ func reindex(ctx context.Context, indexName string, config *reindexConfig, waitF
 
 	// Configure reindex source
 	src := es7.NewReindexSource().
-		Index(indexName).
+		Index(sourceIndex).
 		Type(config.Types...).
 		FetchSourceIncludeExclude(config.Include, config.Exclude)
 
@@ -104,22 +107,23 @@ func reindex(ctx context.Context, indexName string, config *reindexConfig, waitF
 		}
 
 		// Fetch all the aliases of old index
-		aliases, err := aliasesOf(ctx, indexName)
+		aliases, err := aliasesOf(ctx, sourceIndex)
 		if err != nil {
-			return nil, fmt.Errorf(`error fetching aliases of index "%s": %v`, indexName, err)
+			return nil, fmt.Errorf(`error fetching aliases of index "%s": %v`, sourceIndex, err)
 		}
-		aliases = append(aliases, indexName)
+		aliases = append(aliases, sourceIndex)
 
-		// Delete old index
-		err = deleteIndex(ctx, indexName)
-		if err != nil {
-			return nil, fmt.Errorf(`error deleting index "%s": %v\n`, indexName, err)
-		}
-
-		// Set aliases of old index to the new index.
-		err = setAlias(ctx, newIndexName, aliases...)
-		if err != nil {
-			return nil, fmt.Errorf(`error setting alias "%s" for index "%s"`, indexName, newIndexName)
+		if destinationIndex == "" {
+			// Delete old index
+			err = deleteIndex(ctx, sourceIndex)
+			if err != nil {
+				return nil, fmt.Errorf(`error deleting index "%s": %v\n`, sourceIndex, err)
+			}
+			// Set aliases of old index to the new index.
+			err = setAlias(ctx, newIndexName, aliases...)
+			if err != nil {
+				return nil, fmt.Errorf(`error setting alias "%s" for index "%s"`, sourceIndex, newIndexName)
+			}
 		}
 
 		return json.Marshal(response)

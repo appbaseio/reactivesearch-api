@@ -28,35 +28,12 @@ func (rx *reindexer) reindex() http.HandlerFunc {
 			return
 		}
 
-		reqBody, err := ioutil.ReadAll(req.Body)
-		if err != nil {
-			log.Printf("%s: %v\n", logTag, err)
-			util.WriteBackError(w, "Can't read request body", http.StatusBadRequest)
-			return
-		}
-		defer req.Body.Close()
-
-		var body reindexConfig
-		err = json.Unmarshal(reqBody, &body)
-		if err != nil {
-			log.Printf("%s: %v\n", logTag, err)
-			util.WriteBackError(w, "Can't parse request body", http.StatusBadRequest)
+		err, body, waitForCompletion, done := reindexConfigResponse(req, w)
+		if done {
 			return
 		}
 
-		// By default, wait_for_completion = true
-		param := req.URL.Query().Get("wait_for_completion")
-		if param == "" {
-			param = "true"
-		}
-		waitForCompletion, err := strconv.ParseBool(param)
-		if err != nil {
-			log.Printf("%s: %v", logTag, err)
-			util.WriteBackError(w, err.Error(), http.StatusBadRequest)
-			return
-		}
-
-		response, err := reindex(req.Context(), indexName, &body, waitForCompletion)
+		response, err := reindex(req.Context(), indexName, &body, waitForCompletion, "")
 		if err != nil {
 			log.Printf("%s: %v\n", logTag, err)
 			util.WriteBackError(w, err.Error(), http.StatusNotFound)
@@ -65,4 +42,65 @@ func (rx *reindexer) reindex() http.HandlerFunc {
 
 		util.WriteBackRaw(w, response, http.StatusOK)
 	}
+}
+
+func (rx *reindexer) reindexSrcToDest() http.HandlerFunc {
+	return func(w http.ResponseWriter, req *http.Request) {
+		vars := mux.Vars(req)
+		sourceIndex, okS := vars["source_index"]
+		destinationIndex, okD := vars["destination_index"]
+		if !okS {
+			util.WriteBackError(w, "Route inconsistency, expecting var {source_index}", http.StatusInternalServerError)
+			return
+		}
+		if !okD {
+			util.WriteBackError(w, "Route inconsistency, expecting var {destination_index}", http.StatusInternalServerError)
+			return
+		}
+
+		err, body, waitForCompletion, done := reindexConfigResponse(req, w)
+		if done {
+			return
+		}
+
+		response, err := reindex(req.Context(), sourceIndex, &body, waitForCompletion, destinationIndex)
+		if err != nil {
+			log.Printf("%s: %v\n", logTag, err)
+			util.WriteBackError(w, err.Error(), http.StatusNotFound)
+			return
+		}
+
+		util.WriteBackRaw(w, response, http.StatusOK)
+	}
+}
+
+func reindexConfigResponse(req *http.Request, w http.ResponseWriter) (error, reindexConfig, bool, bool) {
+	reqBody, err := ioutil.ReadAll(req.Body)
+	if err != nil {
+		log.Printf("%s: %v\n", logTag, err)
+		util.WriteBackError(w, "Can't read request body", http.StatusBadRequest)
+		return nil, reindexConfig{}, false, true
+	}
+	defer req.Body.Close()
+
+	var body reindexConfig
+	err = json.Unmarshal(reqBody, &body)
+	if err != nil {
+		log.Printf("%s: %v\n", logTag, err)
+		util.WriteBackError(w, "Can't parse request body", http.StatusBadRequest)
+		return nil, reindexConfig{}, false, true
+	}
+
+	// By default, wait_for_completion = true
+	param := req.URL.Query().Get("wait_for_completion")
+	if param == "" {
+		param = "true"
+	}
+	waitForCompletion, err := strconv.ParseBool(param)
+	if err != nil {
+		log.Printf("%s: %v", logTag, err)
+		util.WriteBackError(w, err.Error(), http.StatusBadRequest)
+		return nil, reindexConfig{}, false, true
+	}
+	return err, body, waitForCompletion, false
 }
