@@ -35,7 +35,7 @@ func validateExpiry(h http.HandlerFunc) http.HandlerFunc {
 				return
 			}
 
-			expired, err := permission.IsExpired(reqPermission.CreatedAt, reqPermission.TTL)
+			expired, err := reqPermission.IsExpired()
 			if err != nil {
 				log.Printf("%s: %v", logTag, err)
 				util.WriteBackError(w, err.Error(), http.StatusInternalServerError)

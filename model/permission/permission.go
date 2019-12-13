@@ -335,12 +335,12 @@ func FromContext(ctx context.Context) (*Permission, error) {
 }
 
 // IsExpired checks whether the permission is expired or not.
-func IsExpired(created string, ttl time.Duration) (bool, error) {
-	createdAt, err := time.Parse(time.RFC3339, created)
+func (p *Permission) IsExpired() (bool, error) {
+	createdAt, err := time.Parse(time.RFC3339, p.CreatedAt)
 	if err != nil {
 		return false, fmt.Errorf("invalid time format for field \"created_at\": %s", createdAt)
 	}
-	return ttl >= 0 && time.Since(createdAt) > ttl, nil
+	return p.TTL >= 0 && time.Since(createdAt) > p.TTL, nil
 }
 
 // HasCategory checks whether the permission has access to the given category.

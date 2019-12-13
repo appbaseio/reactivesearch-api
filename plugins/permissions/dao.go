@@ -56,7 +56,7 @@ func applyExpiredField(data []byte) ([]byte, error) {
 	if err != nil {
 		return nil, fmt.Errorf("unable to un-marshal slice of raw permissions: %v", err)
 	}
-	rawPermission.Expired, err = permission.IsExpired(rawPermission.CreatedAt, rawPermission.TTL)
+	rawPermission.Expired, err = rawPermission.IsExpired()
 	if err != nil {
 		return nil, err
 	}
