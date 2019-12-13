@@ -338,7 +338,7 @@ func FromContext(ctx context.Context) (*Permission, error) {
 func (p *Permission) IsExpired() (bool, error) {
 	createdAt, err := time.Parse(time.RFC3339, p.CreatedAt)
 	if err != nil {
-		return false, fmt.Errorf("invalid time format for field \"created_at\": %s", createdAt)
+		return false, fmt.Errorf("invalid time format for field \"created_at\": %s", p.CreatedAt)
 	}
 	return p.TTL >= 0 && time.Since(createdAt) > p.TTL, nil
 }
