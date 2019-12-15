@@ -48,6 +48,7 @@ type Permission struct {
 	Description string              `json:"description"`
 	Includes    []string            `json:"include_fields"`
 	Excludes    []string            `json:"exclude_fields"`
+	Expired     bool                `json:"expired"`
 }
 
 // Limits defines the rate limits for each category.
