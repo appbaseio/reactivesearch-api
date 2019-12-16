@@ -24,7 +24,7 @@ func (rx *reindexer) reindex() http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
 		vars := mux.Vars(req)
 		indexName, ok := vars["index"]
-		if checkVar(ok, w) {
+		if checkVar(ok, w, "index") {
 			return
 		}
 
@@ -43,10 +43,10 @@ func (rx *reindexer) reindexSrcToDest() http.HandlerFunc {
 		vars := mux.Vars(req)
 		sourceIndex, okS := vars["source_index"]
 		destinationIndex, okD := vars["destination_index"]
-		if checkVar(okS, w) {
+		if checkVar(okS, w, "source_index") {
 			return
 		}
-		if checkVar(okD, w) {
+		if checkVar(okD, w, "destination_index") {
 			return
 		}
 		err, body, waitForCompletion, done := reindexConfigResponse(req, w)
@@ -69,9 +69,9 @@ func errorHandler(err error, w http.ResponseWriter, response []byte) {
 	util.WriteBackRaw(w, response, http.StatusOK)
 }
 
-func checkVar(okS bool, w http.ResponseWriter) bool {
+func checkVar(okS bool, w http.ResponseWriter, variable string) bool {
 	if !okS {
-		util.WriteBackError(w, "Route inconsistency, expecting var {source_index}", http.StatusInternalServerError)
+		util.WriteBackError(w, "Route inconsistency, expecting var "+variable, http.StatusInternalServerError)
 		return true
 	}
 	return false
