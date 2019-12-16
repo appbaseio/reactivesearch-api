@@ -17,14 +17,14 @@ type reindexConfig struct {
 	Include  []string               `json:"include_fields"`
 	Exclude  []string               `json:"exclude_fields"`
 	Types    []string               `json:"types"`
+	Action   string                 `json:"action"`
 }
 
 func (rx *reindexer) reindex() http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
 		vars := mux.Vars(req)
 		indexName, ok := vars["index"]
-		if !ok {
-			util.WriteBackError(w, "Route inconsistency, expecting var {index}", http.StatusInternalServerError)
+		if checkVar(ok, w) {
 			return
 		}
 
@@ -34,13 +34,7 @@ func (rx *reindexer) reindex() http.HandlerFunc {
 		}
 
 		response, err := reindex(req.Context(), indexName, &body, waitForCompletion, "")
-		if err != nil {
-			log.Printf("%s: %v\n", logTag, err)
-			util.WriteBackError(w, err.Error(), http.StatusNotFound)
-			return
-		}
-
-		util.WriteBackRaw(w, response, http.StatusOK)
+		errorHandler(err, w, response)
 	}
 }
 
@@ -49,29 +43,38 @@ func (rx *reindexer) reindexSrcToDest() http.HandlerFunc {
 		vars := mux.Vars(req)
 		sourceIndex, okS := vars["source_index"]
 		destinationIndex, okD := vars["destination_index"]
-		if !okS {
-			util.WriteBackError(w, "Route inconsistency, expecting var {source_index}", http.StatusInternalServerError)
+		if checkVar(okS, w) {
 			return
 		}
-		if !okD {
-			util.WriteBackError(w, "Route inconsistency, expecting var {destination_index}", http.StatusInternalServerError)
+		if checkVar(okD, w) {
 			return
 		}
-
 		err, body, waitForCompletion, done := reindexConfigResponse(req, w)
 		if done {
 			return
 		}
 
 		response, err := reindex(req.Context(), sourceIndex, &body, waitForCompletion, destinationIndex)
-		if err != nil {
-			log.Printf("%s: %v\n", logTag, err)
-			util.WriteBackError(w, err.Error(), http.StatusNotFound)
-			return
-		}
-
-		util.WriteBackRaw(w, response, http.StatusOK)
+		errorHandler(err, w, response)
 	}
+}
+
+func errorHandler(err error, w http.ResponseWriter, response []byte) {
+	if err != nil {
+		log.Printf("%s: %v\n", logTag, err)
+		util.WriteBackError(w, err.Error(), http.StatusNotFound)
+		return
+	}
+
+	util.WriteBackRaw(w, response, http.StatusOK)
+}
+
+func checkVar(okS bool, w http.ResponseWriter) bool {
+	if !okS {
+		util.WriteBackError(w, "Route inconsistency, expecting var {source_index}", http.StatusInternalServerError)
+		return true
+	}
+	return false
 }
 
 func reindexConfigResponse(req *http.Request, w http.ResponseWriter) (error, reindexConfig, bool, bool) {

@@ -80,6 +80,11 @@ func reindex(ctx context.Context, sourceIndex string, config *reindexConfig, wai
 		return nil, err
 	}
 
+	// abruptly return if action is mappings
+	if config.Action == "mappings" {
+		return nil, nil
+	}
+
 	// Configure reindex source
 	src := es7.NewReindexSource().
 		Index(sourceIndex).
