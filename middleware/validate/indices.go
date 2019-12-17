@@ -3,8 +3,9 @@ package validate
 import (
 	"context"
 	"fmt"
-	log "github.com/sirupsen/logrus"
 	"net/http"
+
+	log "github.com/sirupsen/logrus"
 
 	"github.com/appbaseio/arc/middleware"
 	"github.com/appbaseio/arc/model/credential"
@@ -26,14 +27,14 @@ func indices(h http.HandlerFunc) http.HandlerFunc {
 		errMsg := "an error occurred while validating indices"
 		reqIndices, err := index.FromContext(ctx)
 		if err != nil {
-			log.Printf("%s: unable to fetch indices from request context", logTag)
+			log.Error(logTag, ": unable to fetch indices from request context:", err)
 			util.WriteBackError(w, errMsg, http.StatusInternalServerError)
 			return
 		}
 
 		reqCredential, err := credential.FromContext(ctx)
 		if err != nil {
-			log.Printf("%s: %v", logTag, err)
+			log.Error(logTag, ": ", err)
 			util.WriteBackError(w, errMsg, http.StatusInternalServerError)
 			return
 		}
@@ -42,7 +43,7 @@ func indices(h http.HandlerFunc) http.HandlerFunc {
 			// validate cluster level access
 			ok, err := allowedClusterAccess(ctx, reqCredential)
 			if err != nil {
-				log.Printf("%s: %v", logTag, err)
+				log.Error(logTag, ": ", err)
 				util.WriteBackError(w, errMsg, http.StatusInternalServerError)
 				return
 			}
@@ -54,7 +55,7 @@ func indices(h http.HandlerFunc) http.HandlerFunc {
 			// validate index level access
 			ok, err := allowedIndexAccess(ctx, reqCredential, reqIndices)
 			if err != nil {
-				log.Printf("%s: %v", logTag, err)
+				log.Error(logTag, ": ", err)
 				util.WriteBackError(w, errMsg, http.StatusInternalServerError)
 				return
 			}

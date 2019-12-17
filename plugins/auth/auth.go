@@ -4,9 +4,10 @@ import (
 	"context"
 	"crypto/rsa"
 	"io/ioutil"
-	log "github.com/sirupsen/logrus"
 	"os"
 	"sync"
+
+	log "github.com/sirupsen/logrus"
 
 	"github.com/appbaseio/arc/middleware"
 	"github.com/appbaseio/arc/model/credential"
@@ -100,24 +101,24 @@ func (a *Auth) InitFunc() error {
 			var publicKeyBuf []byte
 			publicKeyBuf, err = ioutil.ReadFile(jwtRsaPublicKeyLoc)
 			if err != nil {
-				log.Printf("%s: unable to read the public key file from environment, %s", logTag, err)
+				log.Error(logTag, ": unable to read the public key file from environment, ", err)
 			}
 			var record = publicKey{}
 			record.PublicKey = string(publicKeyBuf)
 			record.RoleKey = a.jwtRoleKey
 			_, err = a.savePublicKey(context.Background(), publicKeyIndex, record)
 			if err != nil {
-				log.Printf("%s: unable to save public key record from environment, %s", logTag, err)
+				log.Error(logTag, ": unable to save public key record from environment, ", err)
 			}
 		}
 	} else {
 		publicKeyBuf, err := util.DecodeBase64Key(record.PublicKey)
 		if err != nil {
-			log.Printf("%s: error parsing public key record, %s", logTag, err)
+			log.Error(logTag, ": error parsing public key record, ", err)
 		}
 		a.jwtRsaPublicKey, err = jwt.ParseRSAPublicKeyFromPEM(publicKeyBuf)
 		if err != nil {
-			log.Printf("%s: error parsing public key record, %s", logTag, err)
+			log.Error(logTag, ": error parsing public key record, ", err)
 		}
 		a.jwtRoleKey = record.RoleKey
 	}

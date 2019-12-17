@@ -59,7 +59,7 @@ func (es *elasticsearch) indexRecord(ctx context.Context, rec record) {
 		Add(bulkIndex).
 		Do(ctx)
 	if err != nil {
-		log.Printf("%s: error indexing log record: %v", logTag, err)
+		log.Error(logTag, ": error indexing log record :", err)
 	}
 }
 

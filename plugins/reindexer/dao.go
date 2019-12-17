@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+
 	log "github.com/sirupsen/logrus"
 
 	"github.com/appbaseio/arc/util"
@@ -36,7 +37,7 @@ func reindex(ctx context.Context, indexName string, config *reindexConfig, waitF
 	// reindexed before.
 	indices, err := getIndicesByAlias(ctx, indexName)
 	if err != nil {
-		log.Println(err)
+		log.Error(err)
 	}
 	if len(indices) > 1 {
 		return nil, fmt.Errorf(`multiple indices pointing to alias "%s"`, indexName)

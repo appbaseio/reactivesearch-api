@@ -3,6 +3,7 @@ package logs
 import (
 	"context"
 	"encoding/json"
+
 	log "github.com/sirupsen/logrus"
 
 	"github.com/appbaseio/arc/util"
@@ -53,7 +54,7 @@ func (es *elasticsearch) getRawLogsES6(ctx context.Context, from string, size in
 		}
 		logIndices, err := util.ToStringSlice(rawIndices)
 		if err != nil {
-			log.Printf("%s: %v\n", logTag, err)
+			log.Error(logTag, ": ", err)
 			continue
 		}
 

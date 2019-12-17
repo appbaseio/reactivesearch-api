@@ -4,8 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	log "github.com/sirupsen/logrus"
 	"os"
+
+	log "github.com/sirupsen/logrus"
 
 	"github.com/appbaseio/arc/model/user"
 	"github.com/appbaseio/arc/util"
@@ -23,7 +24,7 @@ func initPlugin(indexName, mapping string) (*elasticsearch, error) {
 	defer func() {
 		if es != nil {
 			if err := es.postMasterUser(); err != nil {
-				log.Printf("%s: %v", logTag, err)
+				log.Error(logTag, ": ", err)
 			}
 		}
 	}()
@@ -90,7 +91,7 @@ func (es *elasticsearch) hashPasswords() error {
 		hashedPassword, err := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
 		if err != nil {
 			msg := fmt.Sprintf("an error occurred while hashing password: %v", user.Password)
-			log.Printf("%s: %s: %v", logTag, msg, err)
+			log.Error(logTag, ": ", msg, ": ", err)
 		}
 
 		// patch the user
@@ -121,7 +122,7 @@ func (es *elasticsearch) postMasterUser() error {
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
 		msg := fmt.Sprintf("an error occurred while hashing password: %v", password)
-		log.Printf("%s: %s: %v", logTag, msg, err)
+		log.Error(logTag, ": ", msg, ": ", err)
 	}
 
 	admin, err := user.NewAdmin(username, string(hashedPassword))

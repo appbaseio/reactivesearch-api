@@ -50,7 +50,7 @@ func GetVersion() int {
 		if len(splitStr) > 0 && splitStr[0] != "" {
 			version, _ = strconv.Atoi(splitStr[0])
 			if err != nil {
-				log.Println("Error encountered: ", fmt.Errorf("error while calculating the elastic version: %v", err))
+				log.Error("Error encountered: ", fmt.Errorf("error while calculating the elastic version: %v", err))
 			}
 		}
 	}

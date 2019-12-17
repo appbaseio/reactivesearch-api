@@ -74,7 +74,7 @@ func main() {
 
 	// Load all env vars from envFile
 	if err := LoadEnvFromFile(envFile); err != nil {
-		log.Printf("%s: reading env file %q: %v", logTag, envFile, err)
+		log.Error(logTag, ": reading env file", envFile, ": ", err)
 	}
 
 	router := mux.NewRouter().StrictSlash(true)

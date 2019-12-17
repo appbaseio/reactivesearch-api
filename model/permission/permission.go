@@ -3,11 +3,12 @@ package permission
 import (
 	"context"
 	"fmt"
-	log "github.com/sirupsen/logrus"
 	"net"
 	"regexp"
 	"strings"
 	"time"
+
+	log "github.com/sirupsen/logrus"
 
 	"github.com/appbaseio/arc/errors"
 	"github.com/appbaseio/arc/model/acl"
@@ -413,7 +414,7 @@ func (p *Permission) CanAccessIndex(name string) (bool, error) {
 		pattern = strings.Replace(pattern, "*", ".*", -1)
 		matched, err := regexp.MatchString(pattern, name)
 		if err != nil {
-			log.Printf("invalid index regexp %s encontered: %v", pattern, err)
+			log.Error("invalid index regexp", pattern, "encontered: ", err)
 			return false, err
 		}
 		if matched {

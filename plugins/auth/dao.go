@@ -4,8 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	log "github.com/sirupsen/logrus"
 	"os"
+
+	log "github.com/sirupsen/logrus"
 
 	"github.com/appbaseio/arc/model/credential"
 	"github.com/appbaseio/arc/model/permission"
@@ -77,7 +78,7 @@ func (es *elasticsearch) savePublicKey(ctx context.Context, indexName string, re
 		Id(publicKeyDocID).
 		Do(ctx)
 	if err != nil {
-		log.Printf("%s: error indexing public key record", logTag)
+		log.Error(logTag, ": error indexing public key record", err)
 		return false, err
 	}
 

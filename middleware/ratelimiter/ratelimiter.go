@@ -3,10 +3,11 @@ package ratelimiter
 import (
 	"context"
 	"fmt"
-	log "github.com/sirupsen/logrus"
 	"net/http"
 	"sync"
 	"time"
+
+	log "github.com/sirupsen/logrus"
 
 	"github.com/appbaseio/arc/middleware"
 	"github.com/appbaseio/arc/model/category"
@@ -60,7 +61,7 @@ func (rl *Ratelimiter) rateLimit(h http.HandlerFunc) http.HandlerFunc {
 
 		reqCredential, err := credential.FromContext(ctx)
 		if err != nil {
-			log.Printf("%s: %v\n", logTag, err)
+			log.Error(logTag, ": ", err)
 			util.WriteBackError(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
@@ -70,14 +71,14 @@ func (rl *Ratelimiter) rateLimit(h http.HandlerFunc) http.HandlerFunc {
 			errMsg := "An error occurred while validating rate limit"
 			reqPermission, err := permission.FromContext(ctx)
 			if err != nil {
-				log.Printf("%s: %v", logTag, err)
+				log.Error(logTag, ": ", err)
 				util.WriteBackError(w, errMsg, http.StatusInternalServerError)
 				return
 			}
 
 			reqCategory, err := category.FromContext(ctx)
 			if err != nil {
-				log.Printf("%s: %v", logTag, err)
+				log.Error(logTag, ": ", err)
 				util.WriteBackError(w, errMsg, http.StatusInternalServerError)
 				return
 			}
