@@ -2,13 +2,13 @@ package util
 
 import (
 	"fmt"
-	"log"
 	"os"
 	"strconv"
 	"strings"
 	"sync"
 
 	es7 "github.com/olivere/elastic/v7"
+	log "github.com/sirupsen/logrus"
 	es6 "gopkg.in/olivere/elastic.v6"
 )
 
@@ -67,15 +67,20 @@ func getURL() string {
 
 func initClient6() {
 	var err error
+
+	loggerT := log.New()
+	wrappedLoggerDebug := &wrapKitLoggerDebug{*loggerT}
+	wrappedLoggerError := &wrapKitLoggerError{*loggerT}
+
 	// Initialize the ES v6 client
 	client6, err = es6.NewClient(
 		es6.SetURL(getURL()),
 		es6.SetRetrier(NewRetrier()),
 		es6.SetSniff(false),
 		es6.SetHttpClient(HTTPClient()),
-		// ES LOGS: uncomment to see the elasticsearch query logs
-		// es6.SetInfoLog(log.New(os.Stdout, "", log.LstdFlags)),
-		// es6.SetTraceLog(log.New(os.Stderr, "[[ELASTIC]]", 0)),
+		es6.SetErrorLog(wrappedLoggerError),
+		es6.SetInfoLog(wrappedLoggerDebug),
+		es6.SetTraceLog(wrappedLoggerDebug),
 	)
 
 	if err != nil {
@@ -87,14 +92,18 @@ func initClient7() {
 	var err error
 	// Initialize the ES v7 client
 
+	loggerT := log.New()
+	wrappedLoggerDebug := &wrapKitLoggerDebug{*loggerT}
+	wrappedLoggerError := &wrapKitLoggerError{*loggerT}
+
 	client7, err = es7.NewClient(
 		es7.SetURL(getURL()),
 		es7.SetRetrier(NewRetrier()),
 		es7.SetSniff(false),
 		es7.SetHttpClient(HTTPClient()),
-		// ES LOGS: uncomment to see the elasticsearch query logs
-		// es7.SetInfoLog(log.New(os.Stdout, "", log.LstdFlags)),
-		// es7.SetTraceLog(log.New(os.Stderr, "[[ELASTIC]]", 0)),
+		es7.SetErrorLog(wrappedLoggerError),
+		es7.SetInfoLog(wrappedLoggerDebug),
+		es7.SetTraceLog(wrappedLoggerDebug),
 	)
 	if err != nil {
 		log.Fatal("Error encountered: ", fmt.Errorf("error while initializing elastic v7 client: %v", err))
@@ -111,6 +120,6 @@ func NewClient() {
 		// Get the ES version
 		GetVersion()
 
-		fmt.Println("clients instantiated, elastic search version is", version)
+		log.Println("clients instantiated, elastic search version is", version)
 	})
 }

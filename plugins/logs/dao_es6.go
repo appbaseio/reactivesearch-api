@@ -3,7 +3,7 @@ package logs
 import (
 	"context"
 	"encoding/json"
-	"log"
+	log "github.com/sirupsen/logrus"
 
 	"github.com/appbaseio/arc/util"
 	es6 "gopkg.in/olivere/elastic.v6"

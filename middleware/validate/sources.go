@@ -2,7 +2,7 @@ package validate
 
 import (
 	"fmt"
-	"log"
+	log "github.com/sirupsen/logrus"
 	"net"
 	"net/http"
 

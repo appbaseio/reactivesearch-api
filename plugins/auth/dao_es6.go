@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"log"
+	log "github.com/sirupsen/logrus"
 
 	"github.com/appbaseio/arc/model/credential"
 	"github.com/appbaseio/arc/model/permission"

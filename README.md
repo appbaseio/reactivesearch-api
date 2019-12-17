@@ -80,14 +80,25 @@ You can build the binary locally by executing the following command from the pro
 
 This produces an executable & plugin libraries in the root project directory. To start the Arc server, run:
 
-    ./build/arc --log=stdout --env=config/manual.env
+    ./build/arc --env=config/manual.env
 
 Alternatively, you could execute the following commands to start the server without producing an executable, (but still produce the plugin libraries):
 
     make plugins
-    go run main.go --log=stdout --env=config/manual.env
+    go run main.go --env=config/manual.env
+
 
 **Note**: Running the executable assumes an active Elasticsearch connection whose url is to be provided in the `.env` file. manual.env configures it to be the localhost.
+
+### Logging
+Define the run time flag (`log`) to change the default log mode, the possible options are:
+
+#### debug
+Most verbose, use this to get logs for elasticsearch interactions.
+#### info (default)
+Prints the basic information
+#### error
+Only log the errors
 
 #### TLS Support
 

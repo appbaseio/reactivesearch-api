@@ -3,8 +3,9 @@ package logs
 import (
 	"context"
 	"fmt"
-	"log"
 	"strconv"
+
+	log "github.com/sirupsen/logrus"
 
 	"github.com/appbaseio/arc/util"
 	es7 "github.com/olivere/elastic/v7"
@@ -63,7 +64,6 @@ func (es *elasticsearch) indexRecord(ctx context.Context, rec record) {
 }
 
 func (es *elasticsearch) getRawLogs(ctx context.Context, from, size, filter string, indices ...string) ([]byte, error) {
-	fmt.Println("calling get logs: ", from, size, filter, indices)
 	offset, err := strconv.Atoi(from)
 	if err != nil {
 		return nil, fmt.Errorf(`invalid value "%v" for query param "from"`, from)

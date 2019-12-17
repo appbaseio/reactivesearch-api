@@ -3,7 +3,7 @@ package validate
 import (
 	"context"
 	"fmt"
-	"log"
+	log "github.com/sirupsen/logrus"
 	"net/http"
 
 	"github.com/appbaseio/arc/middleware"

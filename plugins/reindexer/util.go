@@ -2,7 +2,7 @@ package reindexer
 
 import (
 	"fmt"
-	"log"
+	log "github.com/sirupsen/logrus"
 	"regexp"
 	"strconv"
 	"strings"

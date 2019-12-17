@@ -1,7 +1,7 @@
 package interceptor
 
 import (
-	"log"
+	log "github.com/sirupsen/logrus"
 	"net/http"
 	"net/url"
 	"os"

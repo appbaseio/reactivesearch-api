@@ -1,7 +1,7 @@
 package validate
 
 import (
-	"log"
+	log "github.com/sirupsen/logrus"
 	"net/http"
 	"regexp"
 	"strings"

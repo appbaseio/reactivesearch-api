@@ -4,7 +4,7 @@ import (
 	"context"
 	"crypto/rsa"
 	"io/ioutil"
-	"log"
+	log "github.com/sirupsen/logrus"
 	"os"
 	"sync"
 

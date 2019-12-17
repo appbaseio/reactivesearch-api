@@ -3,7 +3,7 @@ package permission
 import (
 	"context"
 	"fmt"
-	"log"
+	log "github.com/sirupsen/logrus"
 	"net"
 	"regexp"
 	"strings"
