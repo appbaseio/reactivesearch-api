@@ -111,14 +111,14 @@ func reindex(ctx context.Context, sourceIndex string, config *reindexConfig, wai
 			return nil, err
 		}
 
-		// Fetch all the aliases of old index
-		aliases, err := aliasesOf(ctx, sourceIndex)
-		if err != nil {
-			return nil, fmt.Errorf(`error fetching aliases of index "%s": %v`, sourceIndex, err)
-		}
-		aliases = append(aliases, sourceIndex)
-
 		if destinationIndex == "" {
+			// Fetch all the aliases of old index
+			aliases, err := aliasesOf(ctx, sourceIndex)
+			if err != nil {
+				return nil, fmt.Errorf(`error fetching aliases of index "%s": %v`, sourceIndex, err)
+			}
+			aliases = append(aliases, sourceIndex)
+
 			// Delete old index
 			err = deleteIndex(ctx, sourceIndex)
 			if err != nil {
