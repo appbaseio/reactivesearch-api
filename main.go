@@ -66,10 +66,10 @@ func main() {
 	switch logMode {
 	case "debug":
 		log.SetLevel(log.DebugLevel)
-	case "error":
-		log.SetLevel(log.ErrorLevel)
-	default:
+	case "info":
 		log.SetLevel(log.InfoLevel)
+	default:
+		log.SetLevel(log.ErrorLevel)
 	}
 
 	// Load all env vars from envFile
