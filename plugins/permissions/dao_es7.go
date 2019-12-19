@@ -51,7 +51,11 @@ func (es *elasticsearch) getRawOwnerPermissionsEs7(ctx context.Context, owner st
 
 	rawPermissions := []json.RawMessage{}
 	for _, hit := range resp.Hits.Hits {
-		rawPermissions = append(rawPermissions, hit.Source)
+		rawPermission, err := applyExpiredField(hit.Source)
+		if err != nil {
+			return nil, err
+		}
+		rawPermissions = append(rawPermissions, rawPermission)
 	}
 
 	raw, err := json.Marshal(rawPermissions)
@@ -72,11 +76,10 @@ func (es *elasticsearch) getRawPermissionEs7(ctx context.Context, username strin
 		return nil, err
 	}
 
-	src, err := response.Source.MarshalJSON()
+	src, err := applyExpiredField(response.Source)
 	if err != nil {
 		return nil, err
 	}
-
 	return src, nil
 }
 

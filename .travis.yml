@@ -6,7 +6,7 @@ go:
   - "1.12"
 branches:
   only:
-    - feat/es7
+    - dev
 
 install: true
 
@@ -36,7 +36,7 @@ jobs:
 
       deploy:
         provider: releases
-        api_key: $PAT
+        api_key: $GITHUB_TOKEN
         skip_cleanup: true
         file: arc-linux.zip
         draft: true

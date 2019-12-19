@@ -11,10 +11,10 @@ import (
 	"sync"
 
 	"github.com/appbaseio/arc/middleware"
-	"github.com/appbaseio/arc/plugins"
 	"github.com/appbaseio/arc/model/acl"
 	"github.com/appbaseio/arc/model/category"
 	"github.com/appbaseio/arc/model/op"
+	"github.com/appbaseio/arc/plugins"
 	"github.com/appbaseio/arc/util"
 	"github.com/gobuffalo/packr"
 )
@@ -49,7 +49,7 @@ type spec struct {
 	} `json:"body,omitempty"`
 }
 
-func (es *elasticsearch) preprocess(mw [] middleware.Middleware) error {
+func (es *elasticsearch) preprocess(mw []middleware.Middleware) error {
 	files := make(chan string)
 	apis := make(chan api)
 

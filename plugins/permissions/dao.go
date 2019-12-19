@@ -50,6 +50,23 @@ func initPlugin(indexName, mapping string) (*elasticsearch, error) {
 	return es, nil
 }
 
+func applyExpiredField(data []byte) ([]byte, error) {
+	var rawPermission *permission.Permission
+	err := json.Unmarshal(data, &rawPermission)
+	if err != nil {
+		return nil, fmt.Errorf("unable to un-marshal slice of raw permissions: %v", err)
+	}
+	rawPermission.Expired, err = rawPermission.IsExpired()
+	if err != nil {
+		return nil, err
+	}
+	marshalled, err := json.Marshal(rawPermission)
+	if err != nil {
+		return nil, fmt.Errorf("unable to marshal slice of raw permissions: %v", err)
+	}
+	return marshalled, nil
+}
+
 func (es *elasticsearch) getPermission(ctx context.Context, username string) (*permission.Permission, error) {
 	raw, err := es.getRawPermission(ctx, username)
 	if err != nil {
