@@ -39,12 +39,12 @@ func StartArc(b *BuildArc) BuildArc {
 	return *b
 }
 
-func (b *BuildArc) start() {
+func (b *BuildArc) Start() {
 	b.cmd.Start()
 	time.Sleep(time.Duration(20) * time.Second)
 }
 
-func (b *BuildArc) close() {
+func (b *BuildArc) Close() {
 	err := syscall.Kill(-b.cmd.Process.Pid, syscall.SIGKILL)
 	if err != nil {
 		log.Fatal("Unable to kill process", err)
