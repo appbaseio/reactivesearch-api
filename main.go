@@ -141,32 +141,32 @@ func main() {
 	}
 
 	// Testing Env: Set variables based on the build blags
-	if flag.Lookup("test.v") != nil {
-		if Tier != "" {
-			var temp1 = map[string]interface{}{
-				"tier": Tier,
-			}
-			type Temp struct {
-				Tier *util.Plan `json:"tier"`
-			}
-			temp2 := Temp{}
-			mashalled, err := json.Marshal(temp1)
-			if err != nil {
-				log.Fatal(err)
-			}
-			err = json.Unmarshal(mashalled, &temp2)
-			if err != nil {
-				log.Fatal(err)
-			}
-			util.SetTier(temp2.Tier)
+	// if flag.Lookup("test.v") != nil {
+	if Tier != "" {
+		var temp1 = map[string]interface{}{
+			"tier": Tier,
 		}
-		if FeatureCustomEvents != "" && FeatureCustomEvents == "true" {
-			util.SetFeatureCustomEvents(true)
+		type Temp struct {
+			Tier *util.Plan `json:"tier"`
 		}
-		if FeatureSuggestions != "" && FeatureSuggestions == "true" {
-			util.SetFeatureSuggestions(true)
+		temp2 := Temp{}
+		mashalled, err := json.Marshal(temp1)
+		if err != nil {
+			log.Fatal(err)
 		}
+		err = json.Unmarshal(mashalled, &temp2)
+		if err != nil {
+			log.Fatal(err)
+		}
+		util.SetTier(temp2.Tier)
 	}
+	if FeatureCustomEvents != "" && FeatureCustomEvents == "true" {
+		util.SetFeatureCustomEvents(true)
+	}
+	if FeatureSuggestions != "" && FeatureSuggestions == "true" {
+		util.SetFeatureSuggestions(true)
+	}
+	// }
 
 	// ES client instantiation
 	// ES v7 and v6 clients
