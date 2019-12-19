@@ -16,9 +16,10 @@ require (
 	github.com/siddharthlatest/mustache v0.0.0-20160118163553-00029677272d
 	github.com/sirupsen/logrus v1.4.2
 	github.com/smartystreets/goconvey v1.6.4
-	github.com/stretchr/testify v1.3.0
 	github.com/ulule/limiter v2.2.0+incompatible
 	golang.org/x/crypto v0.0.0-20190308221718-c2843e01d9a2
 	gopkg.in/natefinch/lumberjack.v2 v2.0.0
 	gopkg.in/olivere/elastic.v6 v6.2.26
 )
+
+go 1.13

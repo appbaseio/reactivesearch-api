@@ -38,14 +38,14 @@ type Plugin interface {
 	InitFunc() error
 
 	// The plugin's elastic search middleware, if any.
-	ESMiddleware() [] middleware.Middleware
+	ESMiddleware() []middleware.Middleware
 }
 
 // ElasticSearchPlugin holds the plugin for ES
 type ESPlugin interface {
 	nameRoutes
-	
-        // mw takes a array of middleware to be intialized by ES Plugin
+
+	// mw takes a array of middleware to be intialized by ES Plugin
 	InitFunc(mw []middleware.Middleware) error
 }
 
