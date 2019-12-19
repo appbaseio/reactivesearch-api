@@ -56,7 +56,7 @@ func TestBilling(t *testing.T) {
 		})
 		Convey("NodeCount", func() {
 			// Set TimeValidity to a positive value
-			response, err := MakeHttpRequest(http.MethodGet, "/_nodes", nil)
+			response, err, _ := MakeHttpRequest(http.MethodGet, "/_nodes", nil)
 			if err != nil {
 				t.Fatalf("Unable to fetch node count: %v", err)
 			}

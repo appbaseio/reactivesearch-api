@@ -18,13 +18,13 @@ func StructToMap(response interface{}) interface{} {
 	return mockMap
 }
 
-func MakeHttpRequest(method string, url string, requestBody interface{}) (interface{}, error) {
+func MakeHttpRequest(method string, url string, requestBody interface{}) (interface{}, error, *http.Response) {
 	var response interface{}
 	finalURL := TestURL + url
 	marshalledRequest, err := json.Marshal(requestBody)
 	if err != nil {
 		log.Println("error while marshalling req body: ", err)
-		return nil, err
+		return nil, err, nil
 	}
 	req, _ := http.NewRequest(method, finalURL, bytes.NewBuffer(marshalledRequest))
 	req.Header.Add("Content-Type", "application/json")
@@ -33,19 +33,19 @@ func MakeHttpRequest(method string, url string, requestBody interface{}) (interf
 	res, err := http.DefaultClient.Do(req)
 	if err != nil {
 		log.Println("error while sending request: ", err)
-		return nil, err
+		return nil, err, nil
 	}
 	defer res.Body.Close()
 	body, err := ioutil.ReadAll(res.Body)
 	if err != nil {
 		log.Println("error reading res body: ", err)
-		return nil, err
+		return nil, err, nil
 	}
 	err = json.Unmarshal(body, &response)
 
 	if err != nil {
 		log.Println("error while unmarshalling res body: ", err)
-		return response, err
+		return response, err, nil
 	}
-	return response, nil
+	return response, nil, res
 }
