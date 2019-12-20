@@ -1,9 +1,10 @@
 package plugins
 
 import (
-	"log"
 	"sort"
 	"strconv"
+
+	log "github.com/sirupsen/logrus"
 
 	"github.com/appbaseio/arc/middleware"
 

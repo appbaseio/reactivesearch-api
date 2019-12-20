@@ -6,10 +6,11 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"os"
 	"strings"
+
+	log "github.com/sirupsen/logrus"
 )
 
 // ACCAPI URL
@@ -126,13 +127,13 @@ func getArcInstance(arcID string) (ArcInstance, error) {
 
 	res, err := http.DefaultClient.Do(req)
 	if err != nil {
-		log.Println("error while sending request: ", err)
+		log.Error("error while sending request: ", err)
 		return arcInstance, err
 	}
 	defer res.Body.Close()
 	body, err := ioutil.ReadAll(res.Body)
 	if err != nil {
-		log.Println("error reading res body: ", err)
+		log.Error("error reading res body: ", err)
 		return arcInstance, err
 	}
 	err = json.Unmarshal(body, &response)
@@ -148,7 +149,7 @@ func getArcInstance(arcID string) (ArcInstance, error) {
 	}
 
 	if err != nil {
-		log.Println("error while unmarshalling res body: ", err)
+		log.Error("error while unmarshalling res body: ", err)
 		return arcInstance, err
 	}
 	return arcInstance, nil
@@ -164,19 +165,19 @@ func getArcClusterInstance(clusterID string) (ArcInstance, error) {
 
 	res, err := http.DefaultClient.Do(req)
 	if err != nil {
-		log.Println("error while sending request: ", err)
+		log.Error("error while sending request: ", err)
 		return arcInstance, err
 	}
 	defer res.Body.Close()
 	body, err := ioutil.ReadAll(res.Body)
 	if err != nil {
-		log.Println("error reading res body: ", err)
+		log.Error("error reading res body: ", err)
 		return arcInstance, err
 	}
 	err = json.Unmarshal(body, &response)
 
 	if err != nil {
-		log.Println("error while unmarshalling res body: ", err)
+		log.Error("error while unmarshalling res body: ", err)
 		return arcInstance, err
 	}
 	if len(response.ArcInstances) != 0 {
@@ -203,19 +204,19 @@ func getClusterPlan(clusterID string) (ClusterPlan, error) {
 
 	res, err := http.DefaultClient.Do(req)
 	if err != nil {
-		log.Println("error while sending request: ", err)
+		log.Error("error while sending request: ", err)
 		return clusterPlan, err
 	}
 	defer res.Body.Close()
 	body, err := ioutil.ReadAll(res.Body)
 	if err != nil {
-		log.Println("error reading res body: ", err)
+		log.Error("error reading res body: ", err)
 		return clusterPlan, err
 	}
 	err = json.Unmarshal(body, &response)
 
 	if err != nil {
-		log.Println("error while unmarshalling res body: ", err)
+		log.Error("error while unmarshalling res body: ", err)
 		return clusterPlan, err
 	}
 
@@ -252,7 +253,7 @@ func reportUsageRequest(arcUsage ArcUsage) (ArcUsageResponse, error) {
 	marshalledRequest, err := json.Marshal(arcUsage)
 	log.Println("Arc usage for Arc ID: ", arcUsage)
 	if err != nil {
-		log.Println("error while marshalling req body: ", err)
+		log.Error("error while marshalling req body: ", err)
 		return response, err
 	}
 	req, _ := http.NewRequest(http.MethodPut, url, bytes.NewBuffer(marshalledRequest))
@@ -261,19 +262,19 @@ func reportUsageRequest(arcUsage ArcUsage) (ArcUsageResponse, error) {
 
 	res, err := http.DefaultClient.Do(req)
 	if err != nil {
-		log.Println("error while sending request: ", err)
+		log.Error("error while sending request: ", err)
 		return response, err
 	}
 	defer res.Body.Close()
 	body, err := ioutil.ReadAll(res.Body)
 	if err != nil {
-		log.Println("error reading res body: ", err)
+		log.Error("error reading res body: ", err)
 		return response, err
 	}
 	err = json.Unmarshal(body, &response)
 
 	if err != nil {
-		log.Println("error while unmarshalling res body: ", err)
+		log.Error("error while unmarshalling res body: ", err)
 		return response, err
 	}
 	return response, nil
@@ -285,7 +286,7 @@ func reportClusterUsageRequest(arcUsage ArcUsage) (ArcUsageResponse, error) {
 	marshalledRequest, err := json.Marshal(arcUsage)
 	log.Println("Arc usage for Cluster ID: ", arcUsage)
 	if err != nil {
-		log.Println("error while marshalling req body: ", err)
+		log.Error("error while marshalling req body: ", err)
 		return response, err
 	}
 	req, _ := http.NewRequest(http.MethodPut, url, bytes.NewBuffer(marshalledRequest))
@@ -294,19 +295,19 @@ func reportClusterUsageRequest(arcUsage ArcUsage) (ArcUsageResponse, error) {
 
 	res, err := http.DefaultClient.Do(req)
 	if err != nil {
-		log.Println("error while sending request: ", err)
+		log.Error("error while sending request: ", err)
 		return response, err
 	}
 	defer res.Body.Close()
 	body, err := ioutil.ReadAll(res.Body)
 	if err != nil {
-		log.Println("error reading res body: ", err)
+		log.Error("error reading res body: ", err)
 		return response, err
 	}
 	err = json.Unmarshal(body, &response)
 
 	if err != nil {
-		log.Println("error while unmarshalling res body: ", err)
+		log.Error("error while unmarshalling res body: ", err)
 		return response, err
 	}
 	return response, nil
@@ -333,7 +334,7 @@ func ReportUsage() {
 
 	NodeCount, err = fetchNodeCount(url)
 	if err != nil || NodeCount <= 0 {
-		log.Println("Unable to fetch a correct node count: ", err)
+		log.Error("Unable to fetch a correct node count: ", err)
 	}
 
 	subID := result.SubscriptionID
@@ -348,14 +349,14 @@ func ReportUsage() {
 	usageBody.Quantity = NodeCount
 	response, err1 := reportUsageRequest(usageBody)
 	if err1 != nil {
-		log.Println("Please contact support@appbase.io with your ARC_ID or registered e-mail address. Usage is not getting reported: ", err1)
+		log.Error("Please contact support@appbase.io with your ARC_ID or registered e-mail address. Usage is not getting reported: ", err1)
 	}
 
 	if response.WarningMsg != "" {
-		log.Println("warning:", response.WarningMsg)
+		log.Warn("warning:", response.WarningMsg)
 	}
 	if response.ErrorMsg != "" {
-		log.Println("error:", response.ErrorMsg)
+		log.Error("error:", response.ErrorMsg)
 	}
 }
 
@@ -382,7 +383,7 @@ func ReportHostedArcUsage() {
 
 	NodeCount, err = fetchNodeCount(url)
 	if err != nil || NodeCount <= 0 {
-		log.Println("Unable to fetch a correct node count: ", err)
+		log.Error("Unable to fetch a correct node count: ", err)
 	}
 
 	subID := result.SubscriptionID
@@ -397,14 +398,14 @@ func ReportHostedArcUsage() {
 	usageBody.Quantity = NodeCount
 	response, err1 := reportClusterUsageRequest(usageBody)
 	if err1 != nil {
-		log.Println("Please contact support@appbase.io with your CLUSTER_ID or registered e-mail address. Usage is not getting reported: ", err1)
+		log.Error("Please contact support@appbase.io with your CLUSTER_ID or registered e-mail address. Usage is not getting reported: ", err1)
 	}
 
 	if response.WarningMsg != "" {
-		log.Println("warning:", response.WarningMsg)
+		log.Warn("warning:", response.WarningMsg)
 	}
 	if response.ErrorMsg != "" {
-		log.Println("error:", response.ErrorMsg)
+		log.Error("error:", response.ErrorMsg)
 	}
 }
 

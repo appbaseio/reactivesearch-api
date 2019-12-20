@@ -4,11 +4,12 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"log"
 	"net/http"
 	"path/filepath"
 	"strings"
 	"sync"
+
+	log "github.com/sirupsen/logrus"
 
 	"github.com/appbaseio/arc/middleware"
 	"github.com/appbaseio/arc/model/acl"
@@ -144,7 +145,7 @@ func decodeSpecFile(box *packr.Box, file string, wg *sync.WaitGroup, apis chan<-
 
 	content, err := box.Find(file)
 	if err != nil {
-		log.Printf("can't read file: %v", err)
+		log.Error("can't read file:", err)
 		return
 	}
 
@@ -172,7 +173,7 @@ func decodeSpecFile(box *packr.Box, file string, wg *sync.WaitGroup, apis chan<-
 	specOp := decodeOp(&s)
 	specACL, err := decodeACL(specName, &s)
 	if err != nil {
-		log.Printf(`%s: unable to categorize spec "%s": %v\n`, logTag, specName, err)
+		log.Error(logTag, `: unable to categorize spec `, specName, err)
 	}
 
 	apis <- api{

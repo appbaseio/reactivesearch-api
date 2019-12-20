@@ -1,8 +1,9 @@
 package logs
 
 import (
-	"log"
 	"net/http"
+
+	log "github.com/sirupsen/logrus"
 
 	"github.com/appbaseio/arc/util"
 )
@@ -24,7 +25,7 @@ func (l *Logs) getLogs() http.HandlerFunc {
 
 		raw, err := l.es.getRawLogs(req.Context(), from, size, filter, indices...)
 		if err != nil {
-			log.Printf("%s: error fetching logs: %v\n", logTag, err)
+			log.Error(logTag, ": error fetching logs :", err)
 			util.WriteBackError(w, err.Error(), http.StatusInternalServerError)
 			return
 		}

@@ -1,10 +1,11 @@
 package validate
 
 import (
-	"log"
 	"net/http"
 	"regexp"
 	"strings"
+
+	log "github.com/sirupsen/logrus"
 
 	"github.com/appbaseio/arc/middleware"
 	"github.com/appbaseio/arc/model/credential"
@@ -23,7 +24,7 @@ func referers(h http.HandlerFunc) http.HandlerFunc {
 
 		reqCredential, err := credential.FromContext(ctx)
 		if err != nil {
-			log.Printf("%s: %v\n", logTag, err)
+			log.Error(logTag, ": ", err)
 			util.WriteBackError(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
@@ -33,7 +34,7 @@ func referers(h http.HandlerFunc) http.HandlerFunc {
 
 			reqPermission, err := permission.FromContext(ctx)
 			if err != nil {
-				log.Printf("%s: %v\n", logTag, err)
+				log.Error(logTag, ": ", err)
 				util.WriteBackError(w, err.Error(), http.StatusInternalServerError)
 				return
 			}
@@ -47,7 +48,7 @@ func referers(h http.HandlerFunc) http.HandlerFunc {
 				referer = strings.Replace(referer, "*", ".*", -1)
 				matched, err := regexp.MatchString(referer, reqDomain)
 				if err != nil {
-					log.Printf("%s: %v\n", logTag, err)
+					log.Error(logTag, ": ", err)
 					util.WriteBackError(w, err.Error(), http.StatusInternalServerError)
 					return
 				}

@@ -5,8 +5,6 @@ import (
 	"flag"
 	"fmt"
 	"io"
-	"io/ioutil"
-	"log"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -22,14 +20,14 @@ import (
 	"github.com/robfig/cron"
 	"github.com/rs/cors"
 
-	"gopkg.in/natefinch/lumberjack.v2"
+	log "github.com/sirupsen/logrus"
 )
 
 const logTag = "[cmd]"
 
 var (
 	envFile     string
-	logFile     string
+	logMode     string
 	listPlugins bool
 	address     string
 	port        int
@@ -49,7 +47,7 @@ var (
 
 func init() {
 	flag.StringVar(&envFile, "env", ".env", "Path to file with environment variables to load in KEY=VALUE format")
-	flag.StringVar(&logFile, "log", "", "Process log file")
+	flag.StringVar(&logMode, "log", "", "Process log file")
 	flag.BoolVar(&listPlugins, "plugins", false, "List currently registered plugins")
 	flag.StringVar(&address, "addr", "", "Address to serve on")
 	flag.IntVar(&port, "port", 8000, "Port number")
@@ -60,26 +58,23 @@ func init() {
 func main() {
 	flag.Parse()
 
-	log.SetFlags(log.LstdFlags | log.Lshortfile)
-	switch logFile {
-	case "stdout":
-		log.SetOutput(os.Stdout)
-	case "stderr":
-		log.SetOutput(os.Stderr)
-	case "":
-		log.SetOutput(ioutil.Discard)
+	log.SetFormatter(&log.TextFormatter{
+		FullTimestamp:   true,
+		TimestampFormat: "2006/01/02 15:04:05",
+	})
+
+	switch logMode {
+	case "debug":
+		log.SetLevel(log.DebugLevel)
+	case "info":
+		log.SetLevel(log.InfoLevel)
 	default:
-		log.SetOutput(&lumberjack.Logger{
-			Filename:   logFile,
-			MaxSize:    100,
-			MaxAge:     14,
-			MaxBackups: 10,
-		})
+		log.SetLevel(log.ErrorLevel)
 	}
 
 	// Load all env vars from envFile
 	if err := LoadEnvFromFile(envFile); err != nil {
-		log.Printf("%s: reading env file %q: %v", logTag, envFile, err)
+		log.Error(logTag, ": reading env file", envFile, ": ", err)
 	}
 
 	router := mux.NewRouter().StrictSlash(true)
@@ -89,7 +84,7 @@ func main() {
 	} else {
 		_, err := strconv.Atoi(PlanRefreshInterval)
 		if err != nil {
-			log.Fatal("PLAN_REFRESH_INTERVAL must be an integer")
+			log.Fatal("PLAN_REFRESH_INTERVAL must be an integer: ", err)
 		}
 	}
 

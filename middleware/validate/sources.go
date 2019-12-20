@@ -2,9 +2,10 @@ package validate
 
 import (
 	"fmt"
-	"log"
 	"net"
 	"net/http"
+
+	log "github.com/sirupsen/logrus"
 
 	"github.com/appbaseio/arc/middleware"
 	"github.com/appbaseio/arc/model/credential"
@@ -26,7 +27,7 @@ func sources(h http.HandlerFunc) http.HandlerFunc {
 
 		reqCredential, err := credential.FromContext(ctx)
 		if err != nil {
-			log.Printf("%s: %v\n", logTag, err)
+			log.Error(logTag, ": ", err)
 			util.WriteBackError(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
@@ -42,7 +43,7 @@ func sources(h http.HandlerFunc) http.HandlerFunc {
 
 			reqPermission, err := permission.FromContext(ctx)
 			if err != nil {
-				log.Printf("%s: %v\n", logTag, err)
+				log.Error(logTag, ": ", err)
 				util.WriteBackError(w, err.Error(), http.StatusInternalServerError)
 				return
 			}
@@ -56,7 +57,7 @@ func sources(h http.HandlerFunc) http.HandlerFunc {
 				}
 				_, ipNet, err := net.ParseCIDR(source)
 				if err != nil {
-					log.Printf("%s: %v\n", logTag, err)
+					log.Error(logTag, ": ", err)
 					util.WriteBackError(w, err.Error(), http.StatusInternalServerError)
 					return
 				}
