@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"testing"
+	"time"
 
 	"github.com/appbaseio/arc/model/category"
 	"github.com/appbaseio/arc/model/op"
@@ -206,6 +207,79 @@ var httpRefererFailTestPermissionRequest = map[string]interface{}{
 	"exclude_fields": nil,
 }
 
+var sourceFilteringTestPermissionRequest = map[string]interface{}{
+	"role":           "",
+	"categories":     adminCategories,
+	"acls":           category.ACLsFor(adminCategories...),
+	"ops":            adminOps,
+	"indices":        []string{"*"},
+	"sources":        []string{"0.0.0.0/0"},
+	"referers":       []string{"*"},
+	"ttl":            -1,
+	"limits":         &defaultAdminLimits,
+	"description":    "TEST SOURCE FILTERING",
+	"include_fields": []string{"description","ttl","username"},
+	"exclude_fields": nil,
+}
+
+var ttlTestPermissionRequest = map[string]interface{}{
+	"role":           "",
+	"categories":     adminCategories,
+	"acls":           category.ACLsFor(adminCategories...),
+	"ops":            adminOps,
+	"indices":        []string{"*"},
+	"sources":        []string{"0.0.0.0/0"},
+	"referers":       []string{"*"},
+	"ttl":            3,
+	"limits":         &defaultAdminLimits,
+	"description":    "TEST TTL LIMIT",
+	"include_fields": nil,
+	"exclude_fields": nil,
+}
+
+var createTTLPermissionResponse = map[string]interface{}{
+	"role":           "",
+	"categories":     adminCategories,
+	"acls":           category.ACLsFor(adminCategories...),
+	"ops":            adminOps,
+	"indices":        []string{"*"},
+	"sources":        []string{"0.0.0.0/0"},
+	"referers":       []string{"*"},
+	"ttl":            3,
+	"limits":         &defaultAdminLimits,
+	"description":    "TEST TTL LIMIT",
+	"include_fields": nil,
+	"exclude_fields": nil,
+}
+
+var categoryTestPermissionRequest = map[string]interface{}{
+	"role":           "",
+	"categories":     []string{
+		"docs",
+		"indices",
+		"clusters",
+		"misc",
+		"user",
+		"permission",
+		"analytics",
+		"streams",
+		"rules",
+		"templates",
+		"suggestions",
+		"auth",
+	},
+	"acls":           category.ACLsFor(adminCategories...),
+	"ops":            adminOps,
+	"indices":        []string{"*"},
+	"sources":        []string{"0.0.0.0/0"},
+	"referers":       []string{"*"},
+	"ttl":            -1,
+	"limits":         &defaultAdminLimits,
+	"description":    "TEST CATEGORIES",
+	"include_fields": nil,
+	"exclude_fields": nil,
+}
+
 var allPermissionsResponse = []map[string]interface{}{
 	createPermissionResponse,
 }
@@ -294,12 +368,40 @@ func TestPermission(t *testing.T) {
 					"successful": 1,
 					"failed":     0,
 				},
-				"_primary_term": 2,
+				"_primary_term": 1,
 			}
 
 			mockMap := util.StructToMap(updatePermissionResponse)
 
 			So(parsedResponse, ShouldResemble, mockMap)
+		})
+
+		Convey("Categories Test", func() {
+			response, err := util.MakeHttpRequest(http.MethodPatch, "/_permission/"+username, categoryTestPermissionRequest)
+			
+			if err != nil {
+				t.Fatalf("updatePermission Failed %v instead\n", err)
+			}
+
+			response, err = util.MakeHttpRequest(http.MethodGet, "http://" + username + ":" + password + "@localhost:8000/.permissions/_search", nil)
+
+			if err != nil {
+				t.Fatalf("categoriesTestFailed Failed %v instead\n", err)
+			}
+
+			var categoriesErrorResponse = map[string]interface{} {
+				"error": map[string]interface{} {
+					"code": 401,
+					"message": "credential cannot perform \"read\" operation",
+					"status": "Unauthorized",
+				},
+			}
+
+			parsedResponse, _ := response.(map[string]interface{})
+
+			mockMap := util.StructToMap(categoriesErrorResponse)	
+			
+			So(parsedResponse, ShouldResemble, mockMap)	
 		})
 
 		Convey("Single IP Source", func() {
@@ -387,6 +489,65 @@ func TestPermission(t *testing.T) {
 			parsedResponse, _ := response.(map[string]interface{})
 
 			mockMap := util.StructToMap(httpRefererErrorResponse)	
+			
+			So(parsedResponse, ShouldResemble, mockMap)	
+		})
+
+		Convey("TTL Fail Test", func() {
+			response, err := util.MakeHttpRequest(http.MethodPatch, "/_permission/"+username, ttlTestPermissionRequest)
+			
+			if err != nil {
+				t.Fatalf("updatePermission Failed %v instead\n", err)
+			}
+
+			time.Sleep(3 * time.Second)
+
+			response, err = util.MakeHttpRequest(http.MethodGet, "http://" + username + ":" + password + "@localhost:8000/.permissions/_search", nil)
+			
+			if err != nil {
+				t.Fatalf("ttlTestFailed Failed %v instead\n", err)
+			}
+			
+			var ttlErrorResponse = map[string]interface{} {
+				"error": map[string]interface{} {
+					"code": 401,
+					"message": "permission with username=" + username + " is expired",
+					"status": "Unauthorized",
+				},
+			}
+
+			parsedResponse, _ := response.(map[string]interface{})
+
+			mockMap := util.StructToMap(ttlErrorResponse)	
+			
+			So(parsedResponse, ShouldResemble, mockMap)	
+		})
+
+		Convey("Source Filtering Test", func() {
+			response, err := util.MakeHttpRequest(http.MethodPatch, "/_permission/"+username, sourceFilteringTestPermissionRequest)
+			
+			if err != nil {
+				t.Fatalf("updatePermission Failed %v instead\n", err)
+			}
+
+			response, err = util.MakeHttpRequest(http.MethodGet, "http://" + username + ":" + password + "@localhost:8000/.permissions/_search", nil)
+			
+			if err != nil {
+				t.Fatalf("sourceFilteringTestFailed Failed %v instead\n", err)
+			}
+
+			var sourceFilteringResponse = map[string]interface{} {
+				"description": "TEST SOURCE FILTERING",
+				"ttl": -1,
+				"username": username,
+			}
+
+			parsedResponse, _ := response.(map[string]interface{})
+			parsedResponse = parsedResponse["hits"].(map[string]interface{})
+			parsedResponse = parsedResponse["hits"].(map[string]interface{})
+			parsedResponse = parsedResponse["_source"].(map[string]interface{})
+
+			mockMap := util.StructToMap(sourceFilteringResponse)	
 			
 			So(parsedResponse, ShouldResemble, mockMap)	
 		})
