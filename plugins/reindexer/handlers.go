@@ -3,10 +3,9 @@ package reindexer
 import (
 	"encoding/json"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"strconv"
-
-	log "github.com/sirupsen/logrus"
 
 	"github.com/appbaseio/arc/util"
 	"github.com/gorilla/mux"

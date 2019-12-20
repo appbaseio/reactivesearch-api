@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	log "github.com/sirupsen/logrus"
+	"log"
 
 	"github.com/appbaseio/arc/model/permission"
 	"github.com/appbaseio/arc/util"

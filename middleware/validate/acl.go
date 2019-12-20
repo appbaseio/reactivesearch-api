@@ -3,9 +3,8 @@ package validate
 import (
 	"context"
 	"fmt"
+	"log"
 	"net/http"
-
-	log "github.com/sirupsen/logrus"
 
 	"github.com/appbaseio/arc/middleware"
 	"github.com/appbaseio/arc/model/acl"
@@ -27,21 +26,21 @@ func validateACL(h http.HandlerFunc) http.HandlerFunc {
 		errMsg := "an error occurred while validating request acl"
 		reqACL, err := acl.FromContext(ctx)
 		if err != nil {
-			log.Error(logTag, ": ", err)
+			log.Printf("%s: %v", logTag, err)
 			util.WriteBackError(w, errMsg, http.StatusInternalServerError)
 			return
 		}
 
 		reqCredential, err := credential.FromContext(ctx)
 		if err != nil {
-			log.Error(logTag, ": ", err)
+			log.Printf("%s: %v", logTag, err)
 			util.WriteBackError(w, errMsg, http.StatusInternalServerError)
 			return
 		}
 
 		ok, err := hasACL(ctx, reqCredential, reqACL)
 		if err != nil {
-			log.Error(logTag, ": ", err)
+			log.Printf("%s: %v", logTag, err)
 			util.WriteBackError(w, errMsg, http.StatusInternalServerError)
 			return
 		}

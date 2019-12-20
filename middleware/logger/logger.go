@@ -2,7 +2,7 @@ package logger
 
 import (
 	"fmt"
-	log "github.com/sirupsen/logrus"
+	"log"
 	"net/http"
 	"strings"
 	"time"
