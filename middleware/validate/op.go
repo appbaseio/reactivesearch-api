@@ -3,9 +3,8 @@ package validate
 import (
 	"context"
 	"fmt"
+	"log"
 	"net/http"
-
-	log "github.com/sirupsen/logrus"
 
 	"github.com/appbaseio/arc/middleware"
 	"github.com/appbaseio/arc/model/credential"
@@ -27,21 +26,21 @@ func operation(h http.HandlerFunc) http.HandlerFunc {
 		errMsg := "an error occurred while validating request op"
 		reqOp, err := op.FromContext(ctx)
 		if err != nil {
-			log.Error(logTag, ": ", err)
+			log.Printf("%s: %v", logTag, err)
 			util.WriteBackError(w, errMsg, http.StatusInternalServerError)
 			return
 		}
 
 		reqCredential, err := credential.FromContext(ctx)
 		if err != nil {
-			log.Error(logTag, ": ", err)
+			log.Printf("%s: %v", logTag, err)
 			util.WriteBackError(w, errMsg, http.StatusInternalServerError)
 			return
 		}
 
 		ok, err := canPerform(ctx, reqCredential, reqOp)
 		if err != nil {
-			log.Error(logTag, ": ", err)
+			log.Printf("%s: %v", logTag, err)
 			util.WriteBackError(w, errMsg, http.StatusInternalServerError)
 			return
 		}

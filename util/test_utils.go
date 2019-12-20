@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"io/ioutil"
-	log "github.com/sirupsen/logrus"
+	"log"
 	"net/http"
 )
 

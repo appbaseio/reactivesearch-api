@@ -7,11 +7,10 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"os"
 	"strings"
-
-	log "github.com/sirupsen/logrus"
 
 	"github.com/dgrijalva/jwt-go"
 
@@ -23,12 +22,12 @@ func (a *Auth) savePublicKey(ctx context.Context, indexName string, record publi
 	if record.PublicKey != "" {
 		publicKeyBuf, err := util.DecodeBase64Key(record.PublicKey)
 		if err != nil {
-			log.Error(logTag, ": error indexing public key record", err)
+			log.Printf("%s: error indexing public key record, %s", logTag, err)
 			return false, err
 		}
 		jwtRsaPublicKey, err = jwt.ParseRSAPublicKeyFromPEM(publicKeyBuf)
 		if err != nil {
-			log.Error(logTag, ": error indexing public key record", err)
+			log.Printf("%s: error indexing public key record, %s", logTag, err)
 			return false, err
 		}
 	} else {
@@ -41,7 +40,7 @@ func (a *Auth) savePublicKey(ctx context.Context, indexName string, record publi
 	// Update es index
 	_, err := a.es.savePublicKey(ctx, indexName, record)
 	if err != nil {
-		log.Error(logTag, ": error indexing public key record", logTag)
+		log.Printf("%s: error indexing public key record", logTag)
 		return false, err
 	}
 
@@ -70,7 +69,7 @@ func (a *Auth) setPublicKey() http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
 		reqBody, err := ioutil.ReadAll(req.Body)
 		if err != nil {
-			log.Error(logTag, ": ", err)
+			log.Printf("%s: %v\n", logTag, err)
 			util.WriteBackError(w, "Can't read request body", http.StatusBadRequest)
 			return
 		}
@@ -79,7 +78,7 @@ func (a *Auth) setPublicKey() http.HandlerFunc {
 		var body publicKey
 		err = json.Unmarshal(reqBody, &body)
 		if err != nil {
-			log.Error(logTag, ": ", err)
+			log.Printf("%s: %v\n", logTag, err)
 			util.WriteBackError(w, "Can't parse request body", http.StatusBadRequest)
 			return
 		}
@@ -91,7 +90,7 @@ func (a *Auth) setPublicKey() http.HandlerFunc {
 
 		_, err = a.savePublicKey(req.Context(), publicKeyIndex, body)
 		if err != nil {
-			log.Error(logTag, ": ", err)
+			log.Printf("%s: %v\n", logTag, err)
 			util.WriteBackError(w, err.Error(), http.StatusBadRequest)
 			return
 		}
@@ -99,7 +98,7 @@ func (a *Auth) setPublicKey() http.HandlerFunc {
 			"message": "Public key saved successfully.",
 		})
 		if err2 != nil {
-			log.Error(logTag, ": %v\n", logTag, err2)
+			log.Printf("%s: %v\n", logTag, err2)
 			util.WriteBackError(w, err2.Error(), http.StatusInternalServerError)
 			return
 		}

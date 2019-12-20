@@ -2,11 +2,10 @@ package reindexer
 
 import (
 	"fmt"
+	"log"
 	"regexp"
 	"strconv"
 	"strings"
-
-	log "github.com/sirupsen/logrus"
 )
 
 // reindexedName calculates from the name the number of times an index has been
@@ -19,7 +18,7 @@ func reindexedName(indexName string) (string, error) {
 	const pattern = `.*reindexed_[0-9]+`
 	matched, err := regexp.MatchString(pattern, indexName)
 	if err != nil {
-		log.Error(logTag, ": ", err)
+		log.Printf("%s: %v\n", logTag, err)
 		return "", err
 	}
 

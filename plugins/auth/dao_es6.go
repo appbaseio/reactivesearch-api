@@ -5,8 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-
-	log "github.com/sirupsen/logrus"
+	"log"
 
 	"github.com/appbaseio/arc/model/credential"
 	"github.com/appbaseio/arc/model/permission"
@@ -26,7 +25,7 @@ func (es *elasticsearch) getPublicKeyEs6(ctx context.Context, publicKeyIndex, pu
 	}
 	err = json.Unmarshal(*response.Source, &record)
 	if err != nil {
-		log.Error(logTag, ": error retrieving publickey record", err)
+		log.Printf("%s: error retrieving publickey record", logTag)
 		return record, err
 	}
 	return record, nil

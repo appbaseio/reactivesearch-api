@@ -1,11 +1,10 @@
 package interceptor
 
 import (
+	"log"
 	"net/http"
 	"net/url"
 	"os"
-
-	log "github.com/sirupsen/logrus"
 
 	"github.com/appbaseio/arc/errors"
 	"github.com/appbaseio/arc/middleware"
@@ -27,12 +26,12 @@ func redirect(h http.HandlerFunc) http.HandlerFunc {
 		rawURL := os.Getenv("ES_CLUSTER_URL")
 		if rawURL == "" {
 			err := errors.NewEnvVarNotSetError(envEsClusterURL)
-			log.Error(logTag, ": ", err)
+			log.Printf("%s: %v", logTag, err)
 			return
 		}
 		esURL, err := url.Parse(rawURL)
 		if err != nil {
-			log.Error(logTag, ": error parsing ", rawURL, "=", envEsClusterURL, ": ", err)
+			log.Printf("%s: error parsing %s=%s: %v", logTag, rawURL, envEsClusterURL, err)
 			return
 		}
 
@@ -42,7 +41,7 @@ func redirect(h http.HandlerFunc) http.HandlerFunc {
 
 		req, err := redirectRequest(r)
 		if err != nil {
-			log.Error(logTag, ": ", err)
+			log.Printf("%s: %v\n", logTag, err)
 			util.WriteBackError(w, err.Error(), http.StatusInternalServerError)
 			return
 		}

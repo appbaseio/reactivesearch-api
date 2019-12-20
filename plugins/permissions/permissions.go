@@ -1,7 +1,7 @@
 package permissions
 
 import (
-	log "github.com/sirupsen/logrus"
+	"log"
 	"os"
 	"sync"
 

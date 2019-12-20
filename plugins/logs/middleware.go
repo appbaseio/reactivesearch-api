@@ -4,11 +4,10 @@ import (
 	"bytes"
 	"context"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"net/http/httptest"
 	"time"
-
-	log "github.com/sirupsen/logrus"
 
 	"github.com/appbaseio/arc/middleware"
 	"github.com/appbaseio/arc/middleware/classify"
@@ -84,7 +83,7 @@ func (l *Logs) recorder(h http.HandlerFunc) http.HandlerFunc {
 		// Read the request body
 		reqBody, err := ioutil.ReadAll(r.Body)
 		if err != nil {
-			log.Error(logTag, ": unable to read request body: ", err)
+			log.Printf("%s: unable to read request body: %v\n", logTag, err)
 			util.WriteBackError(w, "Can't read request body", http.StatusInternalServerError)
 			return
 		}
@@ -111,13 +110,13 @@ func (l *Logs) recordResponse(reqBody []byte, w *httptest.ResponseRecorder, req 
 
 	reqCategory, err := category.FromContext(ctx)
 	if err != nil {
-		log.Error(logTag, ": ", err)
+		log.Printf("%s: %v", logTag, err)
 		return
 	}
 
 	reqIndices, err := index.FromContext(ctx)
 	if err != nil {
-		log.Error(logTag, ": ", err)
+		log.Printf("%s: %v", logTag, err)
 		return
 	}
 
@@ -140,7 +139,7 @@ func (l *Logs) recordResponse(reqBody []byte, w *httptest.ResponseRecorder, req 
 
 	responseBody, err := ioutil.ReadAll(response.Body)
 	if err != nil {
-		log.Error(logTag, "can't read response body: ", err)
+		log.Printf("%s: can't read response body: %v", logTag, err)
 		return
 	}
 	rec.Response.Body = string(responseBody)
