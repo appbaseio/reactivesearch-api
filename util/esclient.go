@@ -50,7 +50,7 @@ func GetVersion() int {
 		if len(splitStr) > 0 && splitStr[0] != "" {
 			version, _ = strconv.Atoi(splitStr[0])
 			if err != nil {
-				log.Error("Error encountered: ", fmt.Errorf("error while calculating the elastic version: %v", err))
+				log.Errorln("Error encountered: error while calculating the elastic version", err)
 			}
 		}
 	}
@@ -69,8 +69,8 @@ func initClient6() {
 	var err error
 
 	loggerT := log.New()
-	wrappedLoggerDebug := &wrapKitLoggerDebug{*loggerT}
-	wrappedLoggerError := &wrapKitLoggerError{*loggerT}
+	wrappedLoggerDebug := &WrapKitLoggerDebug{*loggerT}
+	wrappedLoggerError := &WrapKitLoggerError{*loggerT}
 
 	// Initialize the ES v6 client
 	client6, err = es6.NewClient(
@@ -93,8 +93,8 @@ func initClient7() {
 	// Initialize the ES v7 client
 
 	loggerT := log.New()
-	wrappedLoggerDebug := &wrapKitLoggerDebug{*loggerT}
-	wrappedLoggerError := &wrapKitLoggerError{*loggerT}
+	wrappedLoggerDebug := &WrapKitLoggerDebug{*loggerT}
+	wrappedLoggerError := &WrapKitLoggerError{*loggerT}
 
 	client7, err = es7.NewClient(
 		es7.SetURL(getURL()),

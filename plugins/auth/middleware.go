@@ -77,14 +77,14 @@ func (a *Auth) basicAuth(h http.HandlerFunc) http.HandlerFunc {
 
 		reqCategory, err := category.FromContext(ctx)
 		if err != nil {
-			log.Error(logTag, ": *category.Category not found in request context:", err)
+			log.Errorln(logTag, ": *category.Category not found in request context:", err)
 			util.WriteBackError(w, "error occurred while authenticating the request", http.StatusInternalServerError)
 			return
 		}
 
 		reqOp, err := op.FromContext(ctx)
 		if err != nil {
-			log.Error(logTag, ": *op.Op not found the request context:", err)
+			log.Errorln(logTag, ": *op.Op not found the request context:", err)
 			util.WriteBackError(w, "error occurred while authenticating the request", http.StatusInternalServerError)
 			return
 		}
@@ -132,7 +132,7 @@ func (a *Auth) basicAuth(h http.HandlerFunc) http.HandlerFunc {
 			obj, err = a.es.getRolePermission(ctx, role)
 			if err != nil || obj == nil {
 				msg := fmt.Sprintf("No API credentials match with provided role: %s", role)
-				log.Error(logTag, ": ", err)
+				log.Errorln(logTag, ":", err)
 				util.WriteBackError(w, msg, http.StatusUnauthorized)
 				return
 			}
@@ -140,7 +140,7 @@ func (a *Auth) basicAuth(h http.HandlerFunc) http.HandlerFunc {
 			obj, err = a.getCredential(ctx, username)
 			if err != nil || obj == nil {
 				msg := fmt.Sprintf("No API credentials match with provided username: %s", username)
-				log.Error(logTag, ": ", err)
+				log.Errorln(logTag, ":", err)
 				util.WriteBackError(w, msg, http.StatusUnauthorized)
 				return
 			}
@@ -198,7 +198,7 @@ func (a *Auth) basicAuth(h http.HandlerFunc) http.HandlerFunc {
 				req = req.WithContext(ctx)
 			}
 		default:
-			log.Printf("%s: unreachable state ...", logTag)
+			log.Println(logTag, ": unreachable state ...")
 		}
 
 		if !authenticated {
@@ -241,7 +241,7 @@ func (a *Auth) removeCredentialFromCache(username string) {
 
 func (a *Auth) cacheCredential(username string, c credential.AuthCredential) {
 	if c == nil {
-		log.Printf("%s: cannot cache 'nil' credential, skipping...", logTag)
+		log.Println(logTag, ": cannot cache 'nil' credential, skipping...")
 		return
 	}
 	a.mu.Lock()

@@ -24,7 +24,7 @@ func initPlugin(indexName, mapping string) (*elasticsearch, error) {
 	defer func() {
 		if es != nil {
 			if err := es.postMasterUser(); err != nil {
-				log.Error(logTag, ": ", err)
+				log.Errorln(logTag, ":", err)
 			}
 		}
 	}()
@@ -37,8 +37,7 @@ func initPlugin(indexName, mapping string) (*elasticsearch, error) {
 			logTag, err)
 	}
 	if exists {
-		log.Printf("%s: index named '%s' already exists, skipping...", logTag, indexName)
-
+		log.Println(logTag, ": index named", indexName, "already exists, skipping...")
 		// hash the passwords if not hashed already
 		err := es.hashPasswords()
 		if err != nil {
@@ -63,7 +62,7 @@ func initPlugin(indexName, mapping string) (*elasticsearch, error) {
 			logTag, indexName, err)
 	}
 
-	log.Printf("%s successfully created index named '%s'", logTag, indexName)
+	log.Println(logTag, ": successfully created index named", indexName)
 	return es, nil
 }
 
@@ -91,7 +90,7 @@ func (es *elasticsearch) hashPasswords() error {
 		hashedPassword, err := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
 		if err != nil {
 			msg := fmt.Sprintf("an error occurred while hashing password: %v", user.Password)
-			log.Error(logTag, ": ", msg, ": ", err)
+			log.Errorln(logTag, ":", msg, ":", err)
 		}
 
 		// patch the user
@@ -122,7 +121,7 @@ func (es *elasticsearch) postMasterUser() error {
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
 		msg := fmt.Sprintf("an error occurred while hashing password: %v", password)
-		log.Error(logTag, ": ", msg, ": ", err)
+		log.Errorln(logTag, ":", msg, ":", err)
 	}
 
 	admin, err := user.NewAdmin(username, string(hashedPassword))

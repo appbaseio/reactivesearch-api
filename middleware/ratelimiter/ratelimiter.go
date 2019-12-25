@@ -61,7 +61,7 @@ func (rl *Ratelimiter) rateLimit(h http.HandlerFunc) http.HandlerFunc {
 
 		reqCredential, err := credential.FromContext(ctx)
 		if err != nil {
-			log.Error(logTag, ": ", err)
+			log.Errorln(logTag, ":", err)
 			util.WriteBackError(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
@@ -71,14 +71,14 @@ func (rl *Ratelimiter) rateLimit(h http.HandlerFunc) http.HandlerFunc {
 			errMsg := "An error occurred while validating rate limit"
 			reqPermission, err := permission.FromContext(ctx)
 			if err != nil {
-				log.Error(logTag, ": ", err)
+				log.Errorln(logTag, ":", err)
 				util.WriteBackError(w, errMsg, http.StatusInternalServerError)
 				return
 			}
 
 			reqCategory, err := category.FromContext(ctx)
 			if err != nil {
-				log.Error(logTag, ": ", err)
+				log.Errorln(logTag, ":", err)
 				util.WriteBackError(w, errMsg, http.StatusInternalServerError)
 				return
 			}

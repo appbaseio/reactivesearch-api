@@ -26,7 +26,7 @@ func (es *elasticsearch) getPublicKeyEs6(ctx context.Context, publicKeyIndex, pu
 	}
 	err = json.Unmarshal(*response.Source, &record)
 	if err != nil {
-		log.Error(logTag, ": error retrieving publickey record", err)
+		log.Errorln(logTag, ": error retrieving publickey record", err)
 		return record, err
 	}
 	return record, nil

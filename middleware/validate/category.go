@@ -27,21 +27,21 @@ func validateCategory(h http.HandlerFunc) http.HandlerFunc {
 		errMsg := "an error occurred while validating request category"
 		reqCategory, err := category.FromContext(ctx)
 		if err != nil {
-			log.Error(logTag, ": ", err)
+			log.Errorln(logTag, ":", err)
 			util.WriteBackError(w, errMsg, http.StatusInternalServerError)
 			return
 		}
 
 		reqCredential, err := credential.FromContext(ctx)
 		if err != nil {
-			log.Error(logTag, ": ", err)
+			log.Errorln(logTag, ":", err)
 			util.WriteBackError(w, errMsg, http.StatusInternalServerError)
 			return
 		}
 
 		ok, err := hasCategory(ctx, reqCredential, reqCategory)
 		if err != nil {
-			log.Error(logTag, ": ", err)
+			log.Errorln(logTag, ":", err)
 			util.WriteBackError(w, errMsg, http.StatusInternalServerError)
 			return
 		}

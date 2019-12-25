@@ -46,7 +46,7 @@ func (es *elasticsearch) createIndex(indexName, mapping string) (bool, error) {
 			logTag, err)
 	}
 	if exists {
-		log.Printf("%s: index named '%s' already exists, skipping...", logTag, indexName)
+		log.Println(logTag, ": index named", indexName, "already exists, skipping...")
 		return true, nil
 	}
 
@@ -65,7 +65,7 @@ func (es *elasticsearch) createIndex(indexName, mapping string) (bool, error) {
 			logTag, indexName, err)
 	}
 
-	log.Printf("%s successfully created index named '%s'", logTag, indexName)
+	log.Println(logTag, ": successfully created index named", indexName)
 	return true, nil
 }
 
@@ -78,7 +78,7 @@ func (es *elasticsearch) savePublicKey(ctx context.Context, indexName string, re
 		Id(publicKeyDocID).
 		Do(ctx)
 	if err != nil {
-		log.Error(logTag, ": error indexing public key record", err)
+		log.Errorln(logTag, ": error indexing public key record", err)
 		return false, err
 	}
 

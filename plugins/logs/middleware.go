@@ -84,7 +84,7 @@ func (l *Logs) recorder(h http.HandlerFunc) http.HandlerFunc {
 		// Read the request body
 		reqBody, err := ioutil.ReadAll(r.Body)
 		if err != nil {
-			log.Error(logTag, ": unable to read request body: ", err)
+			log.Errorln(logTag, ": unable to read request body: ", err)
 			util.WriteBackError(w, "Can't read request body", http.StatusInternalServerError)
 			return
 		}
@@ -111,13 +111,13 @@ func (l *Logs) recordResponse(reqBody []byte, w *httptest.ResponseRecorder, req 
 
 	reqCategory, err := category.FromContext(ctx)
 	if err != nil {
-		log.Error(logTag, ": ", err)
+		log.Errorln(logTag, ":", err)
 		return
 	}
 
 	reqIndices, err := index.FromContext(ctx)
 	if err != nil {
-		log.Error(logTag, ": ", err)
+		log.Errorln(logTag, ":", err)
 		return
 	}
 
@@ -140,7 +140,7 @@ func (l *Logs) recordResponse(reqBody []byte, w *httptest.ResponseRecorder, req 
 
 	responseBody, err := ioutil.ReadAll(response.Body)
 	if err != nil {
-		log.Error(logTag, "can't read response body: ", err)
+		log.Errorln(logTag, "can't read response body: ", err)
 		return
 	}
 	rec.Response.Body = string(responseBody)

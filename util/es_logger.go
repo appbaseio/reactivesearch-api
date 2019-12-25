@@ -6,18 +6,18 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-type wrapKitLoggerDebug struct {
+type WrapKitLoggerDebug struct {
 	log.Logger
 }
 
-func (logger wrapKitLoggerDebug) Printf(format string, vars ...interface{}) {
-	log.Debug("[ElasticSearch: Trace] => ", fmt.Sprintf(format, vars...))
+func (logger WrapKitLoggerDebug) Printf(format string, vars ...interface{}) {
+	log.Debugln("[ElasticSearch: Trace] => ", fmt.Sprintf(format, vars...))
 }
 
-type wrapKitLoggerError struct {
+type WrapKitLoggerError struct {
 	log.Logger
 }
 
-func (logger wrapKitLoggerError) Printf(format string, vars ...interface{}) {
-	log.Error("[ElasticSearch: Error] => ", fmt.Sprintf(format, vars...))
+func (logger WrapKitLoggerError) Printf(format string, vars ...interface{}) {
+	log.Errorln("[ElasticSearch: Error] => ", fmt.Sprintf(format, vars...))
 }

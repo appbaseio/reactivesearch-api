@@ -19,38 +19,40 @@ func (es *elasticsearch) handler() http.HandlerFunc {
 
 		reqCategory, err := category.FromContext(ctx)
 		if err != nil {
-			log.Error(logTag, ": ", err)
+			log.Errorln(logTag, ":", err)
 			util.WriteBackError(w, "error classifying request acl", http.StatusInternalServerError)
 			return
 		}
 
 		reqACL, err := acl.FromContext(ctx)
 		if err != nil {
-			log.Error(logTag, ": ", err)
+			log.Errorln(logTag, ":", err)
 			util.WriteBackError(w, "error classifying request category", http.StatusInternalServerError)
 			return
 		}
 
 		reqOp, err := op.FromContext(ctx)
 		if err != nil {
-			log.Error(logTag, ": ", err)
+			log.Errorln(logTag, ":", err)
 			util.WriteBackError(w, "error classifying request op", http.StatusInternalServerError)
 			return
 		}
-		log.Printf(`%s: category="%s", acl="%s", op="%s"\n`, logTag, *reqCategory, *reqACL, *reqOp)
+		log.Println(logTag, ": category=", *reqCategory, ", acl=", *reqACL, ", op=", *reqOp)
 		// Forward the request to elasticsearch
 		client := retryablehttp.NewClient()
-
+		loggerT := log.New()
+		wrappedLoggerDebug := &util.WrapKitLoggerDebug{*loggerT}
+		client.Logger = wrappedLoggerDebug
 		request, err := retryablehttp.FromRequest(r)
 		if err != nil {
-			log.Error(logTag, ": error while converting to retryable request for", r.URL.Path, err)
+			log.Errorln(logTag, ": error while converting to retryable request for", r.URL.Path, err)
 			util.WriteBackError(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 		response, err := client.Do(request)
 
 		if err != nil {
-			log.Error(logTag, ": error fetching response for", r.URL.Path, err)
+			log.Errorln(logTag, ": error fetching response for", r.URL.Path, err)
 			util.WriteBackError(w, err.Error(), http.StatusInternalServerError)
 			return
 		}

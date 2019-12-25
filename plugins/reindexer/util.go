@@ -19,7 +19,7 @@ func reindexedName(indexName string) (string, error) {
 	const pattern = `.*reindexed_[0-9]+`
 	matched, err := regexp.MatchString(pattern, indexName)
 	if err != nil {
-		log.Error(logTag, ": ", err)
+		log.Errorln(logTag, ":", err)
 		return "", err
 	}
 

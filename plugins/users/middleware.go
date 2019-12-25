@@ -61,7 +61,7 @@ func isAdmin(h http.HandlerFunc) http.HandlerFunc {
 
 		reqUser, err := user.FromContext(ctx)
 		if err != nil {
-			log.Error(logTag, ": ", err)
+			log.Errorln(logTag, ":", err)
 			util.WriteBackError(w, "an error occurred while validating user admin", http.StatusInternalServerError)
 			return
 		}

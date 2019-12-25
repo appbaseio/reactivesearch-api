@@ -414,7 +414,7 @@ func (p *Permission) CanAccessIndex(name string) (bool, error) {
 		pattern = strings.Replace(pattern, "*", ".*", -1)
 		matched, err := regexp.MatchString(pattern, name)
 		if err != nil {
-			log.Error("invalid index regexp", pattern, "encontered: ", err)
+			log.Errorln("invalid index regexp", pattern, "encontered: ", err)
 			return false, err
 		}
 		if matched {

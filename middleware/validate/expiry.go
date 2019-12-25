@@ -23,7 +23,7 @@ func validateExpiry(h http.HandlerFunc) http.HandlerFunc {
 
 		reqCredential, err := credential.FromContext(ctx)
 		if err != nil {
-			log.Error(logTag, ": ", err)
+			log.Errorln(logTag, ":", err)
 			util.WriteBackError(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
@@ -31,14 +31,14 @@ func validateExpiry(h http.HandlerFunc) http.HandlerFunc {
 		if reqCredential == credential.Permission {
 			reqPermission, err := permission.FromContext(ctx)
 			if err != nil {
-				log.Error(logTag, ": ", err)
+				log.Errorln(logTag, ":", err)
 				util.WriteBackError(w, err.Error(), http.StatusInternalServerError)
 				return
 			}
 
 			expired, err := reqPermission.IsExpired()
 			if err != nil {
-				log.Error(logTag, ": ", err)
+				log.Errorln(logTag, ":", err)
 				util.WriteBackError(w, err.Error(), http.StatusInternalServerError)
 				return
 			}

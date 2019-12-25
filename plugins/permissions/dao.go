@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+
 	log "github.com/sirupsen/logrus"
 
 	"github.com/appbaseio/arc/model/permission"
@@ -27,7 +28,7 @@ func initPlugin(indexName, mapping string) (*elasticsearch, error) {
 		return nil, fmt.Errorf("%s: error while checking if index already exists: %v", logTag, err)
 	}
 	if exists {
-		log.Printf("%s index named '%s' already exists, skipping...", logTag, indexName)
+		log.Println(logTag, ": index named", indexName, "already exists, skipping...")
 		return es, nil
 	}
 
@@ -46,7 +47,7 @@ func initPlugin(indexName, mapping string) (*elasticsearch, error) {
 		return nil, fmt.Errorf("%s: error while creating index named %s: %v", logTag, indexName, err)
 	}
 
-	log.Printf("%s successfully created index named '%s'", logTag, indexName)
+	log.Println(logTag, ": successfully created index named", indexName)
 	return es, nil
 }
 

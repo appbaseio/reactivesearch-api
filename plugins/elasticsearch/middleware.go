@@ -59,7 +59,7 @@ func classifyCategory(h http.HandlerFunc) http.HandlerFunc {
 
 		template, err := route.GetPathTemplate()
 		if err != nil {
-			log.Error(logTag, ": ", err)
+			log.Errorln(logTag, ":", err)
 			util.WriteBackError(w, "page not found", http.StatusNotFound)
 			return
 		}
@@ -87,7 +87,7 @@ func classifyACL(h http.HandlerFunc) http.HandlerFunc {
 
 		template, err := currentRoute.GetPathTemplate()
 		if err != nil {
-			log.Error(logTag, ": ", err)
+			log.Errorln(logTag, ":", err)
 			util.WriteBackError(w, "page not found", http.StatusNotFound)
 			return
 		}
@@ -108,7 +108,7 @@ func classifyOp(h http.HandlerFunc) http.HandlerFunc {
 
 		template, err := route.GetPathTemplate()
 		if err != nil {
-			log.Error(logTag, ": ", err)
+			log.Errorln(logTag, ":", err)
 			util.WriteBackError(w, "page not found", http.StatusNotFound)
 			return
 		}
@@ -128,7 +128,7 @@ func transformRequest(h http.HandlerFunc) http.HandlerFunc {
 		ctx := req.Context()
 		reqACL, err := category.FromContext(ctx)
 		if err != nil {
-			log.Error(logTag, ": ", err)
+			log.Errorln(logTag, ":", err)
 		}
 		// transform POST request(search) to GET
 		if *reqACL == category.Search {
@@ -136,7 +136,7 @@ func transformRequest(h http.HandlerFunc) http.HandlerFunc {
 			// Apply source filters
 			reqPermission, err := permission.FromContext(ctx)
 			if err != nil {
-				log.Error(logTag, ": ", err)
+				log.Errorln(logTag, ":", err)
 				h(w, req)
 				return
 			}
@@ -158,7 +158,7 @@ func transformRequest(h http.HandlerFunc) http.HandlerFunc {
 					// Handle the _msearch requests
 					body, err := ioutil.ReadAll(req.Body)
 					if err != nil {
-						log.Error(logTag, ": ", err)
+						log.Errorln(logTag, ":", err)
 						util.WriteBackError(w, err.Error(), http.StatusInternalServerError)
 						return
 					}
@@ -170,7 +170,7 @@ func transformRequest(h http.HandlerFunc) http.HandlerFunc {
 							var reqBody = make(map[string]interface{})
 							err := json.Unmarshal([]byte(element), &reqBody)
 							if err != nil {
-								log.Error(logTag, ": ", err)
+								log.Errorln(logTag, ":", err)
 								util.WriteBackError(w, err.Error(), http.StatusInternalServerError)
 								return
 							}
@@ -187,7 +187,7 @@ func transformRequest(h http.HandlerFunc) http.HandlerFunc {
 				} else {
 					body, err := ioutil.ReadAll(req.Body)
 					if err != nil {
-						log.Error(logTag, ": ", err)
+						log.Errorln(logTag, ":", err)
 						util.WriteBackError(w, err.Error(), http.StatusInternalServerError)
 						return
 					}

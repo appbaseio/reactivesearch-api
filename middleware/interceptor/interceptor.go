@@ -27,12 +27,12 @@ func redirect(h http.HandlerFunc) http.HandlerFunc {
 		rawURL := os.Getenv("ES_CLUSTER_URL")
 		if rawURL == "" {
 			err := errors.NewEnvVarNotSetError(envEsClusterURL)
-			log.Error(logTag, ": ", err)
+			log.Errorln(logTag, ":", err)
 			return
 		}
 		esURL, err := url.Parse(rawURL)
 		if err != nil {
-			log.Error(logTag, ": error parsing ", rawURL, "=", envEsClusterURL, ": ", err)
+			log.Errorln(logTag, ":error parsing", rawURL, "=", envEsClusterURL, ":", err)
 			return
 		}
 
@@ -42,7 +42,7 @@ func redirect(h http.HandlerFunc) http.HandlerFunc {
 
 		req, err := redirectRequest(r)
 		if err != nil {
-			log.Error(logTag, ": ", err)
+			log.Errorln(logTag, ":", err)
 			util.WriteBackError(w, err.Error(), http.StatusInternalServerError)
 			return
 		}

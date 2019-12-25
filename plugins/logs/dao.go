@@ -26,7 +26,7 @@ func initPlugin(indexName, config string) (*elasticsearch, error) {
 		return nil, fmt.Errorf("error while checking if index already exists: %v", err)
 	}
 	if exists {
-		log.Printf("%s: index named \"%s\" already exists, skipping ...\n", logTag, indexName)
+		log.Println(logTag, ": index named", indexName, "already exists, skipping ...")
 		return es, nil
 	}
 
@@ -45,7 +45,7 @@ func initPlugin(indexName, config string) (*elasticsearch, error) {
 		return nil, fmt.Errorf("error while creating index named \"%s\"", indexName)
 	}
 
-	log.Printf("%s: successfully created index name \"%s\"", logTag, indexName)
+	log.Println(logTag, ": successfully created index name", indexName)
 	return es, nil
 }
 
@@ -59,7 +59,7 @@ func (es *elasticsearch) indexRecord(ctx context.Context, rec record) {
 		Add(bulkIndex).
 		Do(ctx)
 	if err != nil {
-		log.Error(logTag, ": error indexing log record :", err)
+		log.Errorln(logTag, ": error indexing log record :", err)
 	}
 }
 

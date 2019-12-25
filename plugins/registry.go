@@ -69,7 +69,7 @@ func RegisterPlugin(p Plugin) {
 // initializations before the plugin is functional and second,
 // calling loadRoutes
 func LoadPlugin(router *mux.Router, p Plugin) error {
-	log.Printf("%s: Initializing plugin: %s", logTag, p.Name())
+	log.Println(logTag, ": Initializing plugin:", p.Name())
 	err := p.InitFunc()
 	if err != nil {
 		return err
@@ -78,7 +78,7 @@ func LoadPlugin(router *mux.Router, p Plugin) error {
 }
 
 func LoadESPlugin(router *mux.Router, p ESPlugin, mw []middleware.Middleware) error {
-	log.Printf("%s: Initializing plugin: %s", logTag, p.Name())
+	log.Println(logTag, ": Initializing plugin:", p.Name())
 	err := p.InitFunc(mw)
 	if err != nil {
 		return err

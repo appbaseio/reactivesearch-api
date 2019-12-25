@@ -27,21 +27,21 @@ func validateACL(h http.HandlerFunc) http.HandlerFunc {
 		errMsg := "an error occurred while validating request acl"
 		reqACL, err := acl.FromContext(ctx)
 		if err != nil {
-			log.Error(logTag, ": ", err)
+			log.Errorln(logTag, ":", err)
 			util.WriteBackError(w, errMsg, http.StatusInternalServerError)
 			return
 		}
 
 		reqCredential, err := credential.FromContext(ctx)
 		if err != nil {
-			log.Error(logTag, ": ", err)
+			log.Errorln(logTag, ":", err)
 			util.WriteBackError(w, errMsg, http.StatusInternalServerError)
 			return
 		}
 
 		ok, err := hasACL(ctx, reqCredential, reqACL)
 		if err != nil {
-			log.Error(logTag, ": ", err)
+			log.Errorln(logTag, ":", err)
 			util.WriteBackError(w, errMsg, http.StatusInternalServerError)
 			return
 		}

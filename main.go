@@ -7,8 +7,10 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"path"
 	"path/filepath"
 	"plugin"
+	"runtime"
 	"strconv"
 	"strings"
 
@@ -47,7 +49,7 @@ var (
 
 func init() {
 	flag.StringVar(&envFile, "env", ".env", "Path to file with environment variables to load in KEY=VALUE format")
-	flag.StringVar(&logMode, "log", "", "Process log file")
+	flag.StringVar(&logMode, "log", "", "Define to change the default log mode(error), other options are: debug(most verbose) and info")
 	flag.BoolVar(&listPlugins, "plugins", false, "List currently registered plugins")
 	flag.StringVar(&address, "addr", "", "Address to serve on")
 	flag.IntVar(&port, "port", 8000, "Port number")
@@ -57,10 +59,15 @@ func init() {
 
 func main() {
 	flag.Parse()
-
+	log.SetReportCaller(true)
 	log.SetFormatter(&log.TextFormatter{
-		FullTimestamp:   true,
-		TimestampFormat: "2006/01/02 15:04:05",
+		FullTimestamp:          true,
+		TimestampFormat:        "2006/01/02 15:04:05",
+		DisableLevelTruncation: true,
+		CallerPrettyfier: func(f *runtime.Frame) (string, string) {
+			filename := path.Base(f.File)
+			return "", fmt.Sprintf(" %s:%d", filename, f.Line)
+		},
 	})
 
 	switch logMode {
@@ -74,7 +81,7 @@ func main() {
 
 	// Load all env vars from envFile
 	if err := LoadEnvFromFile(envFile); err != nil {
-		log.Error(logTag, ": reading env file", envFile, ": ", err)
+		log.Errorln(logTag, ": reading env file", envFile, ": ", err)
 	}
 
 	router := mux.NewRouter().StrictSlash(true)
@@ -165,7 +172,7 @@ func main() {
 
 	// Listen and serve ...
 	addr := fmt.Sprintf("%s:%d", address, port)
-	log.Printf("%s: listening on %s", logTag, addr)
+	log.Println(logTag, ":listening on", addr)
 	if https {
 		httpsCert := os.Getenv("HTTPS_CERT")
 		httpsKey := os.Getenv("HTTPS_KEY")

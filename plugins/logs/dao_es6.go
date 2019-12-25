@@ -50,11 +50,11 @@ func (es *elasticsearch) getRawLogsES6(ctx context.Context, from string, size in
 		}
 		rawIndices, ok := source["indices"]
 		if !ok {
-			log.Printf(`%s: unable to find "indices" in log record\n`, logTag)
+			log.Println(logTag, ": unable to find ", indices, " in log record")
 		}
 		logIndices, err := util.ToStringSlice(rawIndices)
 		if err != nil {
-			log.Error(logTag, ": ", err)
+			log.Errorln(logTag, ":", err)
 			continue
 		}
 

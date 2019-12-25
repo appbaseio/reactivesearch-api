@@ -25,7 +25,7 @@ func (l *Logs) getLogs() http.HandlerFunc {
 
 		raw, err := l.es.getRawLogs(req.Context(), from, size, filter, indices...)
 		if err != nil {
-			log.Error(logTag, ": error fetching logs :", err)
+			log.Errorln(logTag, ": error fetching logs :", err)
 			util.WriteBackError(w, err.Error(), http.StatusInternalServerError)
 			return
 		}

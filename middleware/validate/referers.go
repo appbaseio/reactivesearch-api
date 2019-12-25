@@ -24,7 +24,7 @@ func referers(h http.HandlerFunc) http.HandlerFunc {
 
 		reqCredential, err := credential.FromContext(ctx)
 		if err != nil {
-			log.Error(logTag, ": ", err)
+			log.Errorln(logTag, ":", err)
 			util.WriteBackError(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
@@ -34,7 +34,7 @@ func referers(h http.HandlerFunc) http.HandlerFunc {
 
 			reqPermission, err := permission.FromContext(ctx)
 			if err != nil {
-				log.Error(logTag, ": ", err)
+				log.Errorln(logTag, ":", err)
 				util.WriteBackError(w, err.Error(), http.StatusInternalServerError)
 				return
 			}
@@ -48,7 +48,7 @@ func referers(h http.HandlerFunc) http.HandlerFunc {
 				referer = strings.Replace(referer, "*", ".*", -1)
 				matched, err := regexp.MatchString(referer, reqDomain)
 				if err != nil {
-					log.Error(logTag, ": ", err)
+					log.Errorln(logTag, ":", err)
 					util.WriteBackError(w, err.Error(), http.StatusInternalServerError)
 					return
 				}

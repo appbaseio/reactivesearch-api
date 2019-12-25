@@ -27,14 +27,14 @@ func indices(h http.HandlerFunc) http.HandlerFunc {
 		errMsg := "an error occurred while validating indices"
 		reqIndices, err := index.FromContext(ctx)
 		if err != nil {
-			log.Error(logTag, ": unable to fetch indices from request context:", err)
+			log.Errorln(logTag, ": unable to fetch indices from request context:", err)
 			util.WriteBackError(w, errMsg, http.StatusInternalServerError)
 			return
 		}
 
 		reqCredential, err := credential.FromContext(ctx)
 		if err != nil {
-			log.Error(logTag, ": ", err)
+			log.Errorln(logTag, ":", err)
 			util.WriteBackError(w, errMsg, http.StatusInternalServerError)
 			return
 		}
@@ -43,7 +43,7 @@ func indices(h http.HandlerFunc) http.HandlerFunc {
 			// validate cluster level access
 			ok, err := allowedClusterAccess(ctx, reqCredential)
 			if err != nil {
-				log.Error(logTag, ": ", err)
+				log.Errorln(logTag, ":", err)
 				util.WriteBackError(w, errMsg, http.StatusInternalServerError)
 				return
 			}
@@ -55,7 +55,7 @@ func indices(h http.HandlerFunc) http.HandlerFunc {
 			// validate index level access
 			ok, err := allowedIndexAccess(ctx, reqCredential, reqIndices)
 			if err != nil {
-				log.Error(logTag, ": ", err)
+				log.Errorln(logTag, ":", err)
 				util.WriteBackError(w, errMsg, http.StatusInternalServerError)
 				return
 			}
