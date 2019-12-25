@@ -26,6 +26,7 @@ var (
 		category.Rules,
 		category.Templates,
 		category.Suggestions,
+		category.Functions,
 		category.Auth,
 	}
 
