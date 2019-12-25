@@ -106,7 +106,7 @@ You can optionally start arc to serve https requests instead of http requests us
 You also need to provide the server key & certificate file location through the environment file.
 manual.env is configured to use demo server key & certificates, which work for localhost.
 ```bash
-    go run main.go --log=stdout --env=config/manual.env --https
+    go run main.go --log=info --env=config/manual.env --https
 ```
 If you wish to manually test TLS support at localhost,
 curl needs to be also passed an extra parameter providing the cacert, in this case.
@@ -124,7 +124,7 @@ server serving the key
 ```
 Then start arc using the command:
 ```bash
-    go run main.go --log=stdout --env=config/manual-http-jwt.env
+    go run main.go --log=info --env=config/manual-http-jwt.env
 ```
 
 #### Run Tests
