@@ -67,6 +67,7 @@ var createPermissionResponse = map[string]interface{}{
 	"description":    "TEST PERMISSION WITH ROLE",
 	"include_fields": nil,
 	"exclude_fields": nil,
+	"expired":        false,
 }
 
 var updatePermissionsRequest = map[string]interface{}{
