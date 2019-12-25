@@ -6,10 +6,11 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"os"
 	"strings"
+
+	log "github.com/sirupsen/logrus"
 )
 
 // ACCAPI URL
@@ -99,7 +100,7 @@ type ArcInstanceDetails struct {
 // BillingMiddleware function to be called for each request
 func BillingMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		log.Println("current time validity value: ", TimeValidity)
+		log.Println("current time validity value:", TimeValidity)
 		// Blacklist subscription routes
 		if strings.HasPrefix(r.RequestURI, "/arc/subscription") || strings.HasPrefix(r.RequestURI, "/arc/plan") {
 			next.ServeHTTP(w, r)
@@ -107,7 +108,7 @@ func BillingMiddleware(next http.Handler) http.Handler {
 			next.ServeHTTP(w, r)
 		} else if TimeValidity <= 0 && -TimeValidity < 3600*MaxErrorTime { // Negative validity, plan has been expired
 			// Print warning message if remaining time is less than max allowed time
-			log.Println("Warning: Payment is required. Arc will start sending out error messages in next", MaxErrorTime, "hours")
+			log.Warn("Warning: Payment is required. Arc will start sending out error messages in next", MaxErrorTime, "hours")
 			next.ServeHTTP(w, r)
 		} else {
 			// Write an error and stop the handler chain
@@ -126,13 +127,13 @@ func getArcInstance(arcID string) (ArcInstance, error) {
 
 	res, err := http.DefaultClient.Do(req)
 	if err != nil {
-		log.Println("error while sending request: ", err)
+		log.Errorln("error while sending request:", err)
 		return arcInstance, err
 	}
 	defer res.Body.Close()
 	body, err := ioutil.ReadAll(res.Body)
 	if err != nil {
-		log.Println("error reading res body: ", err)
+		log.Errorln("error reading res body:", err)
 		return arcInstance, err
 	}
 	err = json.Unmarshal(body, &response)
@@ -148,7 +149,7 @@ func getArcInstance(arcID string) (ArcInstance, error) {
 	}
 
 	if err != nil {
-		log.Println("error while unmarshalling res body: ", err)
+		log.Errorln("error while unmarshalling res body:", err)
 		return arcInstance, err
 	}
 	return arcInstance, nil
@@ -164,19 +165,19 @@ func getArcClusterInstance(clusterID string) (ArcInstance, error) {
 
 	res, err := http.DefaultClient.Do(req)
 	if err != nil {
-		log.Println("error while sending request: ", err)
+		log.Errorln("error while sending request:", err)
 		return arcInstance, err
 	}
 	defer res.Body.Close()
 	body, err := ioutil.ReadAll(res.Body)
 	if err != nil {
-		log.Println("error reading res body: ", err)
+		log.Errorln("error reading res body:", err)
 		return arcInstance, err
 	}
 	err = json.Unmarshal(body, &response)
 
 	if err != nil {
-		log.Println("error while unmarshalling res body: ", err)
+		log.Errorln("error while unmarshalling res body:", err)
 		return arcInstance, err
 	}
 	if len(response.ArcInstances) != 0 {
@@ -203,19 +204,19 @@ func getClusterPlan(clusterID string) (ClusterPlan, error) {
 
 	res, err := http.DefaultClient.Do(req)
 	if err != nil {
-		log.Println("error while sending request: ", err)
+		log.Errorln("error while sending request:", err)
 		return clusterPlan, err
 	}
 	defer res.Body.Close()
 	body, err := ioutil.ReadAll(res.Body)
 	if err != nil {
-		log.Println("error reading res body: ", err)
+		log.Errorln("error reading res body:", err)
 		return clusterPlan, err
 	}
 	err = json.Unmarshal(body, &response)
 
 	if err != nil {
-		log.Println("error while unmarshalling res body: ", err)
+		log.Errorln("error while unmarshalling res body:", err)
 		return clusterPlan, err
 	}
 
@@ -233,7 +234,7 @@ func getClusterPlan(clusterID string) (ClusterPlan, error) {
 
 // SetClusterPlan fetches the cluster plan & sets the Tier value
 func SetClusterPlan() {
-	log.Printf("=> Getting cluster plan details")
+	log.Println("=> Getting cluster plan details")
 	clusterID := os.Getenv("CLUSTER_ID")
 	if clusterID == "" {
 		log.Fatalln("CLUSTER_ID env required but not present")
@@ -250,9 +251,9 @@ func reportUsageRequest(arcUsage ArcUsage) (ArcUsageResponse, error) {
 	response := ArcUsageResponse{}
 	url := ACCAPI + "arc/report_usage"
 	marshalledRequest, err := json.Marshal(arcUsage)
-	log.Println("Arc usage for Arc ID: ", arcUsage)
+	log.Println("Arc usage for Arc ID:", arcUsage)
 	if err != nil {
-		log.Println("error while marshalling req body: ", err)
+		log.Errorln("error while marshalling req body:", err)
 		return response, err
 	}
 	req, _ := http.NewRequest(http.MethodPut, url, bytes.NewBuffer(marshalledRequest))
@@ -261,19 +262,19 @@ func reportUsageRequest(arcUsage ArcUsage) (ArcUsageResponse, error) {
 
 	res, err := http.DefaultClient.Do(req)
 	if err != nil {
-		log.Println("error while sending request: ", err)
+		log.Errorln("error while sending request:", err)
 		return response, err
 	}
 	defer res.Body.Close()
 	body, err := ioutil.ReadAll(res.Body)
 	if err != nil {
-		log.Println("error reading res body: ", err)
+		log.Errorln("error reading res body:", err)
 		return response, err
 	}
 	err = json.Unmarshal(body, &response)
 
 	if err != nil {
-		log.Println("error while unmarshalling res body: ", err)
+		log.Errorln("error while unmarshalling res body:", err)
 		return response, err
 	}
 	return response, nil
@@ -283,9 +284,9 @@ func reportClusterUsageRequest(arcUsage ArcUsage) (ArcUsageResponse, error) {
 	response := ArcUsageResponse{}
 	url := ACCAPI + "byoc/report_usage"
 	marshalledRequest, err := json.Marshal(arcUsage)
-	log.Println("Arc usage for Cluster ID: ", arcUsage)
+	log.Println("Arc usage for Cluster ID:", arcUsage)
 	if err != nil {
-		log.Println("error while marshalling req body: ", err)
+		log.Errorln("error while marshalling req body:", err)
 		return response, err
 	}
 	req, _ := http.NewRequest(http.MethodPut, url, bytes.NewBuffer(marshalledRequest))
@@ -294,19 +295,19 @@ func reportClusterUsageRequest(arcUsage ArcUsage) (ArcUsageResponse, error) {
 
 	res, err := http.DefaultClient.Do(req)
 	if err != nil {
-		log.Println("error while sending request: ", err)
+		log.Errorln("error while sending request:", err)
 		return response, err
 	}
 	defer res.Body.Close()
 	body, err := ioutil.ReadAll(res.Body)
 	if err != nil {
-		log.Println("error reading res body: ", err)
+		log.Errorln("error reading res body:", err)
 		return response, err
 	}
 	err = json.Unmarshal(body, &response)
 
 	if err != nil {
-		log.Println("error while unmarshalling res body: ", err)
+		log.Errorln("error while unmarshalling res body:", err)
 		return response, err
 	}
 	return response, nil
@@ -333,7 +334,7 @@ func ReportUsage() {
 
 	NodeCount, err = fetchNodeCount(url)
 	if err != nil || NodeCount <= 0 {
-		log.Println("Unable to fetch a correct node count: ", err)
+		log.Errorln("Unable to fetch a correct node count:", err)
 	}
 
 	subID := result.SubscriptionID
@@ -348,20 +349,20 @@ func ReportUsage() {
 	usageBody.Quantity = NodeCount
 	response, err1 := reportUsageRequest(usageBody)
 	if err1 != nil {
-		log.Println("Please contact support@appbase.io with your ARC_ID or registered e-mail address. Usage is not getting reported: ", err1)
+		log.Errorln("Please contact support@appbase.io with your ARC_ID or registered e-mail address. Usage is not getting reported:", err1)
 	}
 
 	if response.WarningMsg != "" {
-		log.Println("warning:", response.WarningMsg)
+		log.Warn("warning:", response.WarningMsg)
 	}
 	if response.ErrorMsg != "" {
-		log.Println("error:", response.ErrorMsg)
+		log.Errorln("error:", response.ErrorMsg)
 	}
 }
 
 // ReportHostedArcUsage reports Arc usage by hosted cluster, intended to be called every hour
 func ReportHostedArcUsage() {
-	log.Printf("=> Reporting hosted arc usage")
+	log.Println("=> Reporting hosted arc usage")
 	url := os.Getenv("ES_CLUSTER_URL")
 	if url == "" {
 		log.Fatalln("ES_CLUSTER_URL env required but not present")
@@ -382,7 +383,7 @@ func ReportHostedArcUsage() {
 
 	NodeCount, err = fetchNodeCount(url)
 	if err != nil || NodeCount <= 0 {
-		log.Println("Unable to fetch a correct node count: ", err)
+		log.Errorln("Unable to fetch a correct node count:", err)
 	}
 
 	subID := result.SubscriptionID
@@ -397,14 +398,14 @@ func ReportHostedArcUsage() {
 	usageBody.Quantity = NodeCount
 	response, err1 := reportClusterUsageRequest(usageBody)
 	if err1 != nil {
-		log.Println("Please contact support@appbase.io with your CLUSTER_ID or registered e-mail address. Usage is not getting reported: ", err1)
+		log.Errorln("Please contact support@appbase.io with your CLUSTER_ID or registered e-mail address. Usage is not getting reported:", err1)
 	}
 
 	if response.WarningMsg != "" {
-		log.Println("warning:", response.WarningMsg)
+		log.Warn("warning:", response.WarningMsg)
 	}
 	if response.ErrorMsg != "" {
-		log.Println("error:", response.ErrorMsg)
+		log.Errorln("error:", response.ErrorMsg)
 	}
 }
 

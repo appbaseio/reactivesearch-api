@@ -1,9 +1,10 @@
 package permissions
 
 import (
-	"log"
 	"os"
 	"sync"
+
+	log "github.com/sirupsen/logrus"
 
 	"github.com/appbaseio/arc/middleware"
 	"github.com/appbaseio/arc/plugins"
@@ -39,7 +40,7 @@ func (p *permissions) Name() string {
 }
 
 func (p *permissions) InitFunc() error {
-	log.Printf("%s: initializing plugin\n", logTag)
+	log.Println(logTag, ": initializing plugin")
 
 	indexName := os.Getenv(envPermissionEsIndex)
 	if indexName == "" {

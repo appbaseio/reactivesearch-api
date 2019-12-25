@@ -4,8 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
 	"os"
+
+	log "github.com/sirupsen/logrus"
 
 	"github.com/appbaseio/arc/model/credential"
 	"github.com/appbaseio/arc/model/permission"
@@ -45,7 +46,7 @@ func (es *elasticsearch) createIndex(indexName, mapping string) (bool, error) {
 			logTag, err)
 	}
 	if exists {
-		log.Printf("%s: index named '%s' already exists, skipping...", logTag, indexName)
+		log.Println(logTag, ": index named", indexName, "already exists, skipping...")
 		return true, nil
 	}
 
@@ -64,7 +65,7 @@ func (es *elasticsearch) createIndex(indexName, mapping string) (bool, error) {
 			logTag, indexName, err)
 	}
 
-	log.Printf("%s successfully created index named '%s'", logTag, indexName)
+	log.Println(logTag, ": successfully created index named", indexName)
 	return true, nil
 }
 
@@ -77,7 +78,7 @@ func (es *elasticsearch) savePublicKey(ctx context.Context, indexName string, re
 		Id(publicKeyDocID).
 		Do(ctx)
 	if err != nil {
-		log.Printf("%s: error indexing public key record", logTag)
+		log.Errorln(logTag, ": error indexing public key record", err)
 		return false, err
 	}
 

@@ -3,9 +3,10 @@ package reindexer
 import (
 	"encoding/json"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"strconv"
+
+	log "github.com/sirupsen/logrus"
 
 	"github.com/appbaseio/arc/util"
 	"github.com/gorilla/mux"
@@ -61,7 +62,7 @@ func (rx *reindexer) reindexSrcToDest() http.HandlerFunc {
 
 func errorHandler(err error, w http.ResponseWriter, response []byte) {
 	if err != nil {
-		log.Printf("%s: %v\n", logTag, err)
+		log.Errorln(logTag, ":", err)
 		util.WriteBackError(w, err.Error(), http.StatusNotFound)
 		return
 	}
@@ -80,7 +81,7 @@ func checkVar(okS bool, w http.ResponseWriter, variable string) bool {
 func reindexConfigResponse(req *http.Request, w http.ResponseWriter) (error, reindexConfig, bool, bool) {
 	reqBody, err := ioutil.ReadAll(req.Body)
 	if err != nil {
-		log.Printf("%s: %v\n", logTag, err)
+		log.Errorln(logTag, ":", err)
 		util.WriteBackError(w, "Can't read request body", http.StatusBadRequest)
 		return nil, reindexConfig{}, false, true
 	}
@@ -89,7 +90,7 @@ func reindexConfigResponse(req *http.Request, w http.ResponseWriter) (error, rei
 	var body reindexConfig
 	err = json.Unmarshal(reqBody, &body)
 	if err != nil {
-		log.Printf("%s: %v\n", logTag, err)
+		log.Errorln(logTag, ":", err)
 		util.WriteBackError(w, "Can't parse request body", http.StatusBadRequest)
 		return nil, reindexConfig{}, false, true
 	}
@@ -101,7 +102,7 @@ func reindexConfigResponse(req *http.Request, w http.ResponseWriter) (error, rei
 	}
 	waitForCompletion, err := strconv.ParseBool(param)
 	if err != nil {
-		log.Printf("%s: %v", logTag, err)
+		log.Errorln(logTag, ":", err)
 		util.WriteBackError(w, err.Error(), http.StatusBadRequest)
 		return nil, reindexConfig{}, false, true
 	}
