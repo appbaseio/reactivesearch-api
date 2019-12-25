@@ -80,7 +80,9 @@ You can build the binary locally by executing the following command from the pro
 
 This produces an executable & plugin libraries in the root project directory. To start the Arc server, run:
 
-    ./build/arc --env=config/manual.env
+```bash
+./build/arc --env=config/manual.env --log=info
+```
 
 Alternatively, you could execute the following commands to start the server without producing an executable, (but still produce the plugin libraries):
 
