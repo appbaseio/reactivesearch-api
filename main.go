@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"encoding/json"
 	"flag"
 	"fmt"
 	"io"
@@ -45,6 +46,13 @@ var (
 	ClusterBilling string
 	// IgnoreBillingMiddleware ignores the billing middleware
 	IgnoreBillingMiddleware string
+
+	// Tier for testing
+	Tier string
+	// FeatureCustomEvents for testing
+	FeatureCustomEvents string
+	// FeatureSuggestions for testing
+	FeatureSuggestions string
 )
 
 func init() {
@@ -128,9 +136,34 @@ func main() {
 			router.Use(util.BillingMiddleware)
 		}
 	} else {
-		var plan = util.ArcEnterprise
-		util.Tier = &plan
+		util.SetDefaultTier()
 		log.Println("You're running Arc with billing module disabled.")
+	}
+
+	// Testing Env: Set variables based on the build blags
+	if Tier != "" {
+		var temp1 = map[string]interface{}{
+			"tier": Tier,
+		}
+		type Temp struct {
+			Tier *util.Plan `json:"tier"`
+		}
+		temp2 := Temp{}
+		mashalled, err := json.Marshal(temp1)
+		if err != nil {
+			log.Fatal(err)
+		}
+		err = json.Unmarshal(mashalled, &temp2)
+		if err != nil {
+			log.Fatal(err)
+		}
+		util.SetTier(temp2.Tier)
+	}
+	if FeatureCustomEvents != "" && FeatureCustomEvents == "true" {
+		util.SetFeatureCustomEvents(true)
+	}
+	if FeatureSuggestions != "" && FeatureSuggestions == "true" {
+		util.SetFeatureSuggestions(true)
 	}
 
 	// ES client instantiation
