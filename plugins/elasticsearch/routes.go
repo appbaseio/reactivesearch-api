@@ -172,7 +172,7 @@ func decodeSpecFile(box *packr.Box, file string, wg *sync.WaitGroup, apis chan<-
 	specOp := decodeOp(&s)
 	specACL, err := decodeACL(specName, &s)
 	if err != nil {
-		log.Errorln(logTag, ": unable to categorize spec ", specName, ", ", err)
+		log.Errorln(logTag, ": unable to categorize spec", specName, ":", err)
 	}
 
 	apis <- api{
