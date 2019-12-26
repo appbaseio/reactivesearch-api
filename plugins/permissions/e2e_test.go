@@ -178,7 +178,7 @@ func TestPermission(t *testing.T) {
 			requestBody := permission.Permission{
 				Description: "TEST PERMISSION",
 			}
-			response, err := util.MakeHttpRequest(http.MethodPost, "/_permission", requestBody)
+			response, err, _ := util.MakeHttpRequest(http.MethodPost, "/_permission", requestBody)
 
 			parsedResponse, _ := response.(map[string]interface{})
 
@@ -199,7 +199,7 @@ func TestPermission(t *testing.T) {
 		})
 
 		Convey("Get permission", func() {
-			response, err := util.MakeHttpRequest(http.MethodGet, "/_permission/"+username, nil)
+			response, err, _ := util.MakeHttpRequest(http.MethodGet, "/_permission/"+username, nil)
 
 			if err != nil {
 				t.Fatalf("getPermissionTest Failed %v instead\n", err)
@@ -214,7 +214,7 @@ func TestPermission(t *testing.T) {
 		})
 
 		Convey("Get permissions", func() {
-			response, err := util.MakeHttpRequest(http.MethodGet, "/_permissions", nil)
+			response, err, _ := util.MakeHttpRequest(http.MethodGet, "/_permissions", nil)
 
 			if err != nil {
 				t.Fatalf("getPermissionsTest Failed %v instead\n", err)
@@ -231,7 +231,7 @@ func TestPermission(t *testing.T) {
 		})
 
 		Convey("Update permission", func() {
-			response, err := util.MakeHttpRequest(http.MethodPatch, "/_permission/"+username, updatePermissionsRequest)
+			response, err, _ := util.MakeHttpRequest(http.MethodPatch, "/_permission/"+username, updatePermissionsRequest)
 
 			if err != nil {
 				t.Fatalf("updatePermissionTest Failed %v instead\n", err)
@@ -261,7 +261,7 @@ func TestPermission(t *testing.T) {
 		})
 
 		Convey("Delete permission", func() {
-			response, err := util.MakeHttpRequest(http.MethodDelete, "/_permission/"+username, nil)
+			response, err, _ := util.MakeHttpRequest(http.MethodDelete, "/_permission/"+username, nil)
 
 			if err != nil {
 				t.Fatalf("deletePermissionTest Failed %v instead\n", err)

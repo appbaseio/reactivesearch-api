@@ -126,7 +126,7 @@ func TestUser(t *testing.T) {
 	username, _ := createUserRequest["username"].(string)
 	Convey("Testing users", t, func() {
 		Convey("Create an user", func() {
-			response, err := util.MakeHttpRequest(http.MethodPost, "/_user", createUserRequest)
+			response, err, _ := util.MakeHttpRequest(http.MethodPost, "/_user", createUserRequest)
 
 			parsedResponse, _ := response.(map[string]interface{})
 
@@ -143,7 +143,7 @@ func TestUser(t *testing.T) {
 		})
 
 		Convey("Get user", func() {
-			response, err := util.MakeHttpRequest(http.MethodGet, "/_user/"+username, nil)
+			response, err, _ := util.MakeHttpRequest(http.MethodGet, "/_user/"+username, nil)
 
 			if err != nil {
 				t.Fatalf("getUserTest Failed %v instead\n", err)
@@ -164,7 +164,7 @@ func TestUser(t *testing.T) {
 		})
 
 		Convey("Get users", func() {
-			response, err := util.MakeHttpRequest(http.MethodGet, "/_users", nil)
+			response, err, _ := util.MakeHttpRequest(http.MethodGet, "/_users", nil)
 
 			if err != nil {
 				t.Fatalf("getUsersTest Failed %v instead\n", err)
@@ -188,7 +188,7 @@ func TestUser(t *testing.T) {
 		})
 
 		Convey("Update user", func() {
-			response, err := util.MakeHttpRequest(http.MethodPatch, "/_user/"+username, updateUserRequest)
+			response, err, _ := util.MakeHttpRequest(http.MethodPatch, "/_user/"+username, updateUserRequest)
 
 			if err != nil {
 				t.Fatalf("updateUserTest Failed %v instead\n", err)
@@ -218,7 +218,7 @@ func TestUser(t *testing.T) {
 		})
 
 		Convey("Delete user", func() {
-			response, err := util.MakeHttpRequest(http.MethodDelete, "/_user/"+username, nil)
+			response, err, _ := util.MakeHttpRequest(http.MethodDelete, "/_user/"+username, nil)
 
 			if err != nil {
 				t.Fatalf("deleteUserTest Failed %v instead\n", err)
