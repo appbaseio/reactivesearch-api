@@ -179,7 +179,7 @@ func TestRBAC(t *testing.T) {
 	var createdAt string
 	Convey("Testing RBAC", t, func() {
 		Convey("Save the public key", func() {
-			response, err := util.MakeHttpRequest(http.MethodPut, "/_public_key", savePublicKeyRequest)
+			response, err, _ := util.MakeHttpRequest(http.MethodPut, "/_public_key", savePublicKeyRequest)
 
 			if err != nil {
 				t.Fatalf("savePublicKeyTest Failed %v instead\n", err)
@@ -189,7 +189,7 @@ func TestRBAC(t *testing.T) {
 		})
 
 		Convey("Get the public key", func() {
-			response, err := util.MakeHttpRequest(http.MethodGet, "/_public_key", nil)
+			response, err, _ := util.MakeHttpRequest(http.MethodGet, "/_public_key", nil)
 
 			if err != nil {
 				t.Fatalf("getPublicKeyTest Failed %v instead\n", err)
@@ -202,7 +202,7 @@ func TestRBAC(t *testing.T) {
 			requestBody := permission.Permission{
 				Description: "TEST PERMISSION WITH ROLE",
 			}
-			response, err := util.MakeHttpRequest(http.MethodPost, "/_role/"+roleName, requestBody)
+			response, err, _ := util.MakeHttpRequest(http.MethodPost, "/_role/"+roleName, requestBody)
 
 			parsedResponse, _ := response.(map[string]interface{})
 
@@ -223,7 +223,7 @@ func TestRBAC(t *testing.T) {
 		})
 
 		Convey("Get permission with role", func() {
-			response, err := util.MakeHttpRequest(http.MethodGet, "/_role/"+roleName, nil)
+			response, err, _ := util.MakeHttpRequest(http.MethodGet, "/_role/"+roleName, nil)
 
 			if err != nil {
 				t.Fatalf("getPermissionWithRoleTest Failed %v instead\n", err)
@@ -238,7 +238,7 @@ func TestRBAC(t *testing.T) {
 		})
 
 		Convey("Update permission with role", func() {
-			response, err := util.MakeHttpRequest(http.MethodPatch, "/_role/"+roleName, updatePermissionsRequest)
+			response, err, _ := util.MakeHttpRequest(http.MethodPatch, "/_role/"+roleName, updatePermissionsRequest)
 
 			if err != nil {
 				t.Fatalf("updatePermissionWithRoleTest Failed %v instead\n", err)
@@ -268,7 +268,7 @@ func TestRBAC(t *testing.T) {
 		})
 
 		Convey("Delete permission with role", func() {
-			response, err := util.MakeHttpRequest(http.MethodDelete, "/_role/"+roleName, nil)
+			response, err, _ := util.MakeHttpRequest(http.MethodDelete, "/_role/"+roleName, nil)
 
 			if err != nil {
 				t.Fatalf("deletePermissionWithRoleTest Failed %v instead\n", err)

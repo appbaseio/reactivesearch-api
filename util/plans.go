@@ -154,11 +154,11 @@ func ValidatePlans(validPlans []Plan, byPassValidation bool) bool {
 	if byPassValidation {
 		return true
 	}
-	if Tier == nil {
+	if GetTier() == nil {
 		return false
 	}
 	for _, validPlan := range validPlans {
-		if Tier.String() == validPlan.String() {
+		if GetTier().String() == validPlan.String() {
 			return true
 		}
 	}
