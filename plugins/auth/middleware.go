@@ -3,9 +3,10 @@ package auth
 import (
 	"context"
 	"fmt"
-	"log"
 	"net/http"
 	"os"
+
+	log "github.com/sirupsen/logrus"
 
 	"github.com/appbaseio/arc/middleware"
 	"github.com/appbaseio/arc/middleware/classify"
@@ -76,14 +77,14 @@ func (a *Auth) basicAuth(h http.HandlerFunc) http.HandlerFunc {
 
 		reqCategory, err := category.FromContext(ctx)
 		if err != nil {
-			log.Printf("%s: *category.Category not found in request context: %v", logTag, err)
+			log.Errorln(logTag, ": *category.Category not found in request context:", err)
 			util.WriteBackError(w, "error occurred while authenticating the request", http.StatusInternalServerError)
 			return
 		}
 
 		reqOp, err := op.FromContext(ctx)
 		if err != nil {
-			log.Printf("%s: *op.Op not found the request context: %v", logTag, err)
+			log.Errorln(logTag, ": *op.Op not found the request context:", err)
 			util.WriteBackError(w, "error occurred while authenticating the request", http.StatusInternalServerError)
 			return
 		}
@@ -131,7 +132,7 @@ func (a *Auth) basicAuth(h http.HandlerFunc) http.HandlerFunc {
 			obj, err = a.es.getRolePermission(ctx, role)
 			if err != nil || obj == nil {
 				msg := fmt.Sprintf("No API credentials match with provided role: %s", role)
-				log.Printf("%s: %v", logTag, err)
+				log.Errorln(logTag, ":", err)
 				util.WriteBackError(w, msg, http.StatusUnauthorized)
 				return
 			}
@@ -139,7 +140,7 @@ func (a *Auth) basicAuth(h http.HandlerFunc) http.HandlerFunc {
 			obj, err = a.getCredential(ctx, username)
 			if err != nil || obj == nil {
 				msg := fmt.Sprintf("No API credentials match with provided username: %s", username)
-				log.Printf("%s: %v", logTag, err)
+				log.Errorln(logTag, ":", err)
 				util.WriteBackError(w, msg, http.StatusUnauthorized)
 				return
 			}
@@ -197,7 +198,7 @@ func (a *Auth) basicAuth(h http.HandlerFunc) http.HandlerFunc {
 				req = req.WithContext(ctx)
 			}
 		default:
-			log.Printf("%s: unreachable state ...", logTag)
+			log.Println(logTag, ": unreachable state ...")
 		}
 
 		if !authenticated {
@@ -240,7 +241,7 @@ func (a *Auth) removeCredentialFromCache(username string) {
 
 func (a *Auth) cacheCredential(username string, c credential.AuthCredential) {
 	if c == nil {
-		log.Printf("%s: cannot cache 'nil' credential, skipping...", logTag)
+		log.Println(logTag, ": cannot cache 'nil' credential, skipping...")
 		return
 	}
 	a.mu.Lock()

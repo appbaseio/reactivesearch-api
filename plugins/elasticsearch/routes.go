@@ -4,11 +4,12 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"log"
 	"net/http"
 	"path/filepath"
 	"strings"
 	"sync"
+
+	log "github.com/sirupsen/logrus"
 
 	"github.com/appbaseio/arc/middleware"
 	"github.com/appbaseio/arc/model/acl"
@@ -109,7 +110,6 @@ func (es *elasticsearch) preprocess(mw []middleware.Middleware) error {
 		Description: "You know, for search",
 	}
 	routes = append(routes, indexRoute)
-
 	return nil
 }
 
@@ -144,7 +144,7 @@ func decodeSpecFile(box *packr.Box, file string, wg *sync.WaitGroup, apis chan<-
 
 	content, err := box.Find(file)
 	if err != nil {
-		log.Printf("can't read file: %v", err)
+		log.Errorln("can't read file:", err)
 		return
 	}
 
@@ -172,7 +172,7 @@ func decodeSpecFile(box *packr.Box, file string, wg *sync.WaitGroup, apis chan<-
 	specOp := decodeOp(&s)
 	specACL, err := decodeACL(specName, &s)
 	if err != nil {
-		log.Printf(`%s: unable to categorize spec "%s": %v\n`, logTag, specName, err)
+		log.Errorln(logTag, ": unable to categorize spec", specName, ":", err)
 	}
 
 	apis <- api{
@@ -249,15 +249,14 @@ out:
 }
 
 func printCategoryACLMDTable() {
-	fmt.Printf("| **Category** | **ACLs** |\n")
-	fmt.Printf("|----------|------|\n")
+	log.Println("| **Category** | **ACLs** |")
+	log.Println("|----------|------|")
 	for c, a := range acls {
-		fmt.Printf("| `%s` | ", c)
-		fmt.Printf("<ul>")
+		log.Println("| ", c, " | ")
+		log.Println("<ul>")
 		for k := range a {
-			fmt.Printf("<li>`%s`</li>", k)
+			log.Println("<li>", k, "</li>")
 		}
-		fmt.Printf("</ul> |")
-		fmt.Printf("\n")
+		log.Println("</ul> |")
 	}
 }

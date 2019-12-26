@@ -1,14 +1,18 @@
 package main
 
-import "fmt"
-import "io/ioutil"
-import "os"
-import "time"
-import "strings"
-import "flag"
-import "github.com/appbaseio/arc/util"
+import (
+	"flag"
+	"fmt"
+	"io/ioutil"
+	"os"
+	"strings"
+	"time"
 
-import "github.com/dgrijalva/jwt-go"
+	"github.com/appbaseio/arc/util"
+
+	"github.com/dgrijalva/jwt-go"
+	log "github.com/sirupsen/logrus"
+)
 
 func encode() {
 	token := jwt.NewWithClaims(jwt.SigningMethodRS256, jwt.MapClaims{
@@ -38,7 +42,7 @@ func encode() {
 	if err4 != nil {
 		panic(err4)
 	}
-	fmt.Println(tokenString)
+	log.Println(tokenString)
 }
 
 func decode() {
@@ -75,15 +79,15 @@ func decode() {
 
 	})
 	if err1 != nil || err2 != nil || err4 != nil || err5 != nil {
-		fmt.Println(err1, err2, err4)
+		log.Println(err1, err2, err4)
 		if err6, ok := err5.(*jwt.ValidationError); ok {
-			fmt.Println(err6.Inner, err6.Errors, err6.Error())
-			fmt.Println(token.Signature)
+			log.Println(err6.Inner, err6.Errors, err6.Error())
+			log.Println(token.Signature)
 			_, err7 := jwt.DecodeSegment(strings.TrimSpace(token.Signature))
-			fmt.Println(err7)
+			log.Println(err7)
 		}
 	}
-	fmt.Println(token.Claims)
+	log.Println(token.Claims)
 }
 
 var decodeFlag = flag.Bool("decode", false, "decode the provided jwt")

@@ -2,7 +2,7 @@ package users
 
 import (
 	"fmt"
-	"log"
+	log "github.com/sirupsen/logrus"
 	"net/http"
 
 	"github.com/appbaseio/arc/middleware"
@@ -61,7 +61,7 @@ func isAdmin(h http.HandlerFunc) http.HandlerFunc {
 
 		reqUser, err := user.FromContext(ctx)
 		if err != nil {
-			log.Printf("%s: %v", logTag, err)
+			log.Errorln(logTag, ":", err)
 			util.WriteBackError(w, "an error occurred while validating user admin", http.StatusInternalServerError)
 			return
 		}

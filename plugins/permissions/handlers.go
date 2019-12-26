@@ -4,8 +4,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"net/http"
+
+	log "github.com/sirupsen/logrus"
 
 	"github.com/appbaseio/arc/model/acl"
 	"github.com/appbaseio/arc/model/permission"
@@ -22,7 +23,7 @@ func (p *permissions) getPermission() http.HandlerFunc {
 		rawPermission, err := p.es.getRawPermission(req.Context(), username)
 		if err != nil {
 			msg := fmt.Sprintf(`permission with "username"="%s" not found`, username)
-			log.Printf("%s: %s: %v\n", logTag, msg, err)
+			log.Errorln(logTag, ":", msg, ":", err)
 			util.WriteBackError(w, msg, http.StatusNotFound)
 			return
 		}
@@ -35,7 +36,7 @@ func (p *permissions) postPermission(opts ...permission.Options) http.HandlerFun
 		creator, _, _ := req.BasicAuth()
 		reqUser, err := user.FromContext(req.Context())
 		if err != nil {
-			log.Printf("%s: %v\n", logTag, err)
+			log.Errorln(logTag, ":", err)
 			util.WriteBackError(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
@@ -43,7 +44,7 @@ func (p *permissions) postPermission(opts ...permission.Options) http.HandlerFun
 		body, err := ioutil.ReadAll(req.Body)
 		if err != nil {
 			msg := "can't read request body"
-			log.Printf("%s: %s: %v\n", logTag, msg, err)
+			log.Errorln(logTag, ":", msg, ":", err)
 			util.WriteBackError(w, msg, http.StatusBadRequest)
 			return
 		}
@@ -52,7 +53,7 @@ func (p *permissions) postPermission(opts ...permission.Options) http.HandlerFun
 		err = json.Unmarshal(body, &permissionBody)
 		if err != nil {
 			msg := "can't parse request body"
-			log.Printf("%s: %s: %v\n", logTag, msg, err)
+			log.Errorln(logTag, ":", msg, ":", err)
 			util.WriteBackError(w, msg, http.StatusBadRequest)
 			return
 		}
@@ -104,7 +105,7 @@ func (p *permissions) postPermission(opts ...permission.Options) http.HandlerFun
 			newPermission, err = permission.New(creator, opts...)
 		}
 		if err != nil {
-			log.Printf("%s: %v\n", logTag, err)
+			log.Errorln(logTag, ":", err)
 			util.WriteBackError(w, err.Error(), http.StatusBadRequest)
 			return
 		}
@@ -112,7 +113,7 @@ func (p *permissions) postPermission(opts ...permission.Options) http.HandlerFun
 		rawPermission, err := json.Marshal(*newPermission)
 		if err != nil {
 			msg := fmt.Sprintf(`an error occurred while creating permission for "creator"="%s"`, creator)
-			log.Printf("%s: unable to marshal newPermission object: %v\n", logTag, err)
+			log.Errorln(logTag, ": unable to marshal newPermission object", err)
 			util.WriteBackError(w, msg, http.StatusInternalServerError)
 			return
 		}
@@ -122,13 +123,13 @@ func (p *permissions) postPermission(opts ...permission.Options) http.HandlerFun
 			roleExists, err = p.es.checkRoleExists(req.Context(), newPermission.Role)
 			if roleExists {
 				msg := fmt.Sprintf(`permission with role=%s already exists`, newPermission.Role)
-				log.Printf("%s: %s\n", logTag, msg)
+				log.Errorln(logTag, ":", err)
 				util.WriteBackError(w, msg, http.StatusBadRequest)
 				return
 			}
 			if err != nil {
 				msg := fmt.Sprintf(`an error occurred while creating permission for role=%s`, newPermission.Role)
-				log.Printf("%s: unable to check if role=%s exists", logTag, newPermission.Role)
+				log.Errorln(logTag, ": unable to check if role=", newPermission.Role, "exists:", err)
 				util.WriteBackError(w, msg, http.StatusInternalServerError)
 				return
 			}
@@ -141,7 +142,7 @@ func (p *permissions) postPermission(opts ...permission.Options) http.HandlerFun
 		}
 
 		msg := fmt.Sprintf(`an error occurred while creating permission for "creator"="%s"`, creator)
-		log.Printf("%s: %s: %v\n", logTag, msg, err)
+		log.Errorln(logTag, ":", msg, ":", err)
 		util.WriteBackError(w, msg, http.StatusInternalServerError)
 		return
 	}
@@ -155,7 +156,7 @@ func (p *permissions) patchPermission() http.HandlerFunc {
 		body, err := ioutil.ReadAll(req.Body)
 		if err != nil {
 			msg := "can't read request body"
-			log.Printf("%s: %s: %v\n", logTag, msg, err)
+			log.Errorln(logTag, ":", msg, ":", err)
 			util.WriteBackError(w, msg, http.StatusBadRequest)
 			return
 		}
@@ -164,7 +165,7 @@ func (p *permissions) patchPermission() http.HandlerFunc {
 		err = json.Unmarshal(body, &obj)
 		if err != nil {
 			msg := "can't parse request body"
-			log.Printf("%s: %s: %v\n", logTag, msg, err)
+			log.Errorln(logTag, ":", msg, ":", err)
 			util.WriteBackError(w, msg, http.StatusBadRequest)
 			return
 		}
@@ -173,7 +174,7 @@ func (p *permissions) patchPermission() http.HandlerFunc {
 		err = json.Unmarshal(body, &perMap)
 		if err != nil {
 			msg := "can't parse request body"
-			log.Printf("%s: %s: %v\n", logTag, msg, err)
+			log.Errorln(logTag, ": ", msg, ":", err)
 			util.WriteBackError(w, msg, http.StatusBadRequest)
 			return
 		}
@@ -181,7 +182,7 @@ func (p *permissions) patchPermission() http.HandlerFunc {
 
 		patch, err := obj.GetPatch(roleExistsInPatch)
 		if err != nil {
-			log.Printf("%s: %v\n", logTag, err)
+			log.Errorln(logTag, ":", err)
 			util.WriteBackError(w, err.Error(), http.StatusBadRequest)
 			return
 		}
@@ -193,7 +194,7 @@ func (p *permissions) patchPermission() http.HandlerFunc {
 			// to patch against the categories it already has.
 			reqPermission, err := p.es.getPermission(req.Context(), username)
 			if err != nil {
-				log.Printf("%s: %v\n", logTag, err)
+				log.Errorln(logTag, ":", err)
 				util.WriteBackError(w, err.Error(), http.StatusInternalServerError)
 				return
 			}
@@ -201,7 +202,7 @@ func (p *permissions) patchPermission() http.HandlerFunc {
 			acls, ok := patch["acls"].([]acl.ACL)
 			if !ok {
 				msg := fmt.Sprintf(`an error occurred while validating categories patch for user "%s"`, username)
-				log.Printf("%s: unable to cast categories patch to []acl.ACL\n", logTag)
+				log.Println(logTag, ": unable to cast categories patch to []acl.ACL")
 				util.WriteBackError(w, msg, http.StatusInternalServerError)
 				return
 			}
@@ -217,13 +218,13 @@ func (p *permissions) patchPermission() http.HandlerFunc {
 			roleExistsInES, err = p.es.checkRoleExists(req.Context(), obj.Role)
 			if roleExistsInES {
 				msg := fmt.Sprintf(`permission with role=%s already exists`, obj.Role)
-				log.Printf("%s: %s\n", logTag, msg)
+				log.Errorln(logTag, ":", err)
 				util.WriteBackError(w, msg, http.StatusBadRequest)
 				return
 			}
 			if err != nil {
 				msg := fmt.Sprintf(`an error occurred while creating permission for role=%s`, obj.Role)
-				log.Printf("%s: unable to check if role=%s exists", logTag, obj.Role)
+				log.Errorln(logTag, ": unable to check if role=", obj.Role, "exists")
 				util.WriteBackError(w, msg, http.StatusInternalServerError)
 				return
 			}
@@ -236,7 +237,7 @@ func (p *permissions) patchPermission() http.HandlerFunc {
 		}
 
 		msg := fmt.Sprintf(`permission with "username"="%s" not found`, username)
-		log.Printf("%s: %s: %v\n", logTag, msg, err)
+		log.Errorln(logTag, ":", msg, ":", err)
 		util.WriteBackError(w, msg, http.StatusNotFound)
 	}
 }
@@ -254,7 +255,7 @@ func (p *permissions) deletePermission() http.HandlerFunc {
 		}
 
 		msg := fmt.Sprintf(`permission with "username"="%s" not found`, username)
-		log.Printf("%s: %s: %v\n", logTag, msg, err)
+		log.Errorln(logTag, ":", msg, ":", err)
 		util.WriteBackError(w, msg, http.StatusNotFound)
 	}
 }
@@ -266,7 +267,7 @@ func (p *permissions) getUserPermissions() http.HandlerFunc {
 		raw, err := p.es.getRawOwnerPermissions(req.Context(), owner)
 		if err != nil {
 			msg := fmt.Sprintf(`an error occurred while fetching permissions for "owner"="%s"`, owner)
-			log.Printf("%s: %s: %v\n", logTag, msg, err)
+			log.Errorln(logTag, ":", msg, ":", err)
 			util.WriteBackError(w, msg, http.StatusNotFound)
 			return
 		}
@@ -287,14 +288,14 @@ func (p *permissions) role() http.HandlerFunc {
 			raw, err = p.es.getRawRolePermission(req.Context(), role)
 			if raw == nil || err != nil {
 				msg := fmt.Sprintf(`an error occurred while fetching permissions for role=%s`, role)
-				log.Printf("%s: %s: %v\n", logTag, msg, err)
+				log.Errorln(logTag, ":", msg, ":", err)
 				util.WriteBackError(w, msg, http.StatusNotFound)
 				return
 			}
 			err = json.Unmarshal(raw, &perm)
 			if err != nil {
 				msg := fmt.Sprintf(`an error occurred while fetching permissions for role=%s`, role)
-				log.Printf("%s: %s: %v\n", logTag, msg, err)
+				log.Errorln(logTag, ":", msg, ":", err)
 				util.WriteBackError(w, msg, http.StatusInternalServerError)
 				return
 			}
