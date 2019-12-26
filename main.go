@@ -141,7 +141,6 @@ func main() {
 	}
 
 	// Testing Env: Set variables based on the build blags
-	// if flag.Lookup("test.v") != nil {
 	if Tier != "" {
 		var temp1 = map[string]interface{}{
 			"tier": Tier,
@@ -166,7 +165,6 @@ func main() {
 	if FeatureSuggestions != "" && FeatureSuggestions == "true" {
 		util.SetFeatureSuggestions(true)
 	}
-	// }
 
 	// ES client instantiation
 	// ES v7 and v6 clients
