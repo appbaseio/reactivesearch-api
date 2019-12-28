@@ -1,4 +1,5 @@
 GC=go build
+GT=go test
 
 BUILD_DIR=build
 PLUGIN_FLAGS=--buildmode=plugin
@@ -16,5 +17,7 @@ plugins: $(call PLUGIN_LOC_FUNC,so)
 $(call PLUGIN_LOC_FUNC,so): %.so: %.go
 	$(GC) $(PLUGIN_FLAGS) -o $(PLUGIN_BUILD_DIR)/$(@F) $<
 
+test: 
+	$(GT) -p 1 ./...
 clean:
 	rm -rf $(BUILD_DIR)

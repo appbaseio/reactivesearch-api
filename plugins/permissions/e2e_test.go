@@ -171,6 +171,10 @@ func TestPermission(t *testing.T) {
 	var username string
 	var password string
 	var createdAt string
+	build := util.BuildArc{}
+	util.StartArc(&build)
+	build.Start()
+	defer build.Close()
 	Convey("Testing permissions", t, func() {
 		Convey("Create permission", func() {
 			requestBody := permission.Permission{

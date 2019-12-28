@@ -131,7 +131,15 @@ Arc also exposes an API endpoint to set the key at runtime, so this need not be 
 
 Currently, tests are implemented for auth, permissions, users and billing modules. You can run tests using:
 
-    go test ./...
+```bash
+make test
+```
+or
+
+```bash
+go test -p 1 ./...
+```
+
 
 ### Implementation
 

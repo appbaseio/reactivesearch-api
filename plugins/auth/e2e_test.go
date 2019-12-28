@@ -175,6 +175,10 @@ func TestRBAC(t *testing.T) {
 	var username string
 	var password string
 	var createdAt string
+	build := util.BuildArc{}
+	util.StartArc(&build)
+	build.Start()
+	defer build.Close()
 	Convey("Testing RBAC", t, func() {
 		Convey("Save the public key", func() {
 			response, err, _ := util.MakeHttpRequest(http.MethodPut, "/_public_key", savePublicKeyRequest)
