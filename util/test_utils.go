@@ -19,13 +19,16 @@ var TestURL = "http://foo:bar@localhost:8000"
 
 type BuildArc struct {
 	cmd                 *exec.Cmd
-	Tier                Plan
+	Tier                *Plan
 	FeatureCustomEvents bool
 	FeatureSuggestions  bool
 }
 
 func StartArc(b *BuildArc) BuildArc {
-	ldFlags := "export TEST_TIER=" + b.Tier.String() + " TEST_FEATURE_CUSTOM_EVENTS=" + strconv.FormatBool(b.FeatureCustomEvents) + " TEST_FEATURE_SUGGESTIONS=" + strconv.FormatBool(b.FeatureSuggestions) + ";"
+	ldFlags := "export TEST_FEATURE_CUSTOM_EVENTS=" + strconv.FormatBool(b.FeatureCustomEvents) + " TEST_FEATURE_SUGGESTIONS=" + strconv.FormatBool(b.FeatureSuggestions) + ";"
+	if b.Tier != nil {
+		ldFlags = "export TEST_TIER=" + b.Tier.String() + " TEST_FEATURE_CUSTOM_EVENTS=" + strconv.FormatBool(b.FeatureCustomEvents) + " TEST_FEATURE_SUGGESTIONS=" + strconv.FormatBool(b.FeatureSuggestions) + ";"
+	}
 	makeCmd := exec.Command("/bin/sh", "-c", "cd ..; cd ..;"+ldFlags+"make clean; make;")
 	err := makeCmd.Run()
 	if err != nil {
