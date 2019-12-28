@@ -5,9 +5,6 @@ import (
 	"encoding/json"
 	"io/ioutil"
 	"net/http"
-	"path"
-	"path/filepath"
-	"runtime"
 
 	"os/exec"
 	"strconv"
@@ -27,20 +24,14 @@ type BuildArc struct {
 	FeatureSuggestions  bool
 }
 
-func RootDir() string {
-	_, b, _, _ := runtime.Caller(0)
-	d := path.Join(path.Dir(b))
-	return filepath.Dir(d)
-}
-
 func StartArc(b *BuildArc) BuildArc {
 	ldFlags := "export TEST_TIER=" + b.Tier.String() + " TEST_FEATURE_CUSTOM_EVENTS=" + strconv.FormatBool(b.FeatureCustomEvents) + " TEST_FEATURE_SUGGESTIONS=" + strconv.FormatBool(b.FeatureSuggestions) + ";"
-	makeCmd := exec.Command("/bin/sh", "-c", "cd "+RootDir()+";"+ldFlags+"make clean; make;")
+	makeCmd := exec.Command("/bin/sh", "-c", "cd ..; cd ..;"+ldFlags+"make clean; make;")
 	err := makeCmd.Run()
 	if err != nil {
 		log.Fatal("Error while running clean command", err)
 	}
-	buildCmd := exec.Command("/bin/sh", "-c", "cd "+RootDir()+"; ./build/arc --env=config/manual.env;")
+	buildCmd := exec.Command("/bin/sh", "-c", "cd ..; cd ..; ./build/arc --env=config/manual.env;")
 	buildCmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
 	err2 := buildCmd.Start()
 	if err2 != nil {
