@@ -2,15 +2,16 @@ package main
 
 import (
 	"bufio"
+	"encoding/json"
 	"flag"
 	"fmt"
 	"io"
-	"io/ioutil"
-	"log"
 	"net/http"
 	"os"
+	"path"
 	"path/filepath"
 	"plugin"
+	"runtime"
 	"strconv"
 	"strings"
 
@@ -22,14 +23,14 @@ import (
 	"github.com/robfig/cron"
 	"github.com/rs/cors"
 
-	"gopkg.in/natefinch/lumberjack.v2"
+	log "github.com/sirupsen/logrus"
 )
 
 const logTag = "[cmd]"
 
 var (
 	envFile     string
-	logFile     string
+	logMode     string
 	listPlugins bool
 	address     string
 	port        int
@@ -45,11 +46,18 @@ var (
 	ClusterBilling string
 	// IgnoreBillingMiddleware ignores the billing middleware
 	IgnoreBillingMiddleware string
+
+	// Tier for testing
+	Tier string
+	// FeatureCustomEvents for testing
+	FeatureCustomEvents string
+	// FeatureSuggestions for testing
+	FeatureSuggestions string
 )
 
 func init() {
 	flag.StringVar(&envFile, "env", ".env", "Path to file with environment variables to load in KEY=VALUE format")
-	flag.StringVar(&logFile, "log", "", "Process log file")
+	flag.StringVar(&logMode, "log", "", "Define to change the default log mode(error), other options are: debug(most verbose) and info")
 	flag.BoolVar(&listPlugins, "plugins", false, "List currently registered plugins")
 	flag.StringVar(&address, "addr", "", "Address to serve on")
 	flag.IntVar(&port, "port", 8000, "Port number")
@@ -59,27 +67,29 @@ func init() {
 
 func main() {
 	flag.Parse()
+	log.SetReportCaller(true)
+	log.SetFormatter(&log.TextFormatter{
+		FullTimestamp:          true,
+		TimestampFormat:        "2006/01/02 15:04:05",
+		DisableLevelTruncation: true,
+		CallerPrettyfier: func(f *runtime.Frame) (string, string) {
+			filename := path.Base(f.File)
+			return "", fmt.Sprintf(" %s:%d", filename, f.Line)
+		},
+	})
 
-	log.SetFlags(log.LstdFlags | log.Lshortfile)
-	switch logFile {
-	case "stdout":
-		log.SetOutput(os.Stdout)
-	case "stderr":
-		log.SetOutput(os.Stderr)
-	case "":
-		log.SetOutput(ioutil.Discard)
+	switch logMode {
+	case "debug":
+		log.SetLevel(log.DebugLevel)
+	case "info":
+		log.SetLevel(log.InfoLevel)
 	default:
-		log.SetOutput(&lumberjack.Logger{
-			Filename:   logFile,
-			MaxSize:    100,
-			MaxAge:     14,
-			MaxBackups: 10,
-		})
+		log.SetLevel(log.ErrorLevel)
 	}
 
 	// Load all env vars from envFile
 	if err := LoadEnvFromFile(envFile); err != nil {
-		log.Printf("%s: reading env file %q: %v", logTag, envFile, err)
+		log.Errorln(logTag, ": reading env file", envFile, ": ", err)
 	}
 
 	router := mux.NewRouter().StrictSlash(true)
@@ -89,7 +99,7 @@ func main() {
 	} else {
 		_, err := strconv.Atoi(PlanRefreshInterval)
 		if err != nil {
-			log.Fatal("PLAN_REFRESH_INTERVAL must be an integer")
+			log.Fatal("PLAN_REFRESH_INTERVAL must be an integer: ", err)
 		}
 	}
 
@@ -128,9 +138,34 @@ func main() {
 			router.Use(util.BillingMiddleware)
 		}
 	} else {
-		var plan = util.ArcEnterprise
-		util.Tier = &plan
+		util.SetDefaultTier()
 		log.Println("You're running Arc with billing module disabled.")
+	}
+
+	// Testing Env: Set variables based on the build blags
+	if Tier != "" {
+		var temp1 = map[string]interface{}{
+			"tier": Tier,
+		}
+		type Temp struct {
+			Tier *util.Plan `json:"tier"`
+		}
+		temp2 := Temp{}
+		mashalled, err := json.Marshal(temp1)
+		if err != nil {
+			log.Fatal(err)
+		}
+		err = json.Unmarshal(mashalled, &temp2)
+		if err != nil {
+			log.Fatal(err)
+		}
+		util.SetTier(temp2.Tier)
+	}
+	if FeatureCustomEvents != "" && FeatureCustomEvents == "true" {
+		util.SetFeatureCustomEvents(true)
+	}
+	if FeatureSuggestions != "" && FeatureSuggestions == "true" {
+		util.SetFeatureSuggestions(true)
 	}
 
 	// ES client instantiation
@@ -170,7 +205,7 @@ func main() {
 
 	// Listen and serve ...
 	addr := fmt.Sprintf("%s:%d", address, port)
-	log.Printf("%s: listening on %s", logTag, addr)
+	log.Println(logTag, ":listening on", addr)
 	if https {
 		httpsCert := os.Getenv("HTTPS_CERT")
 		httpsKey := os.Getenv("HTTPS_KEY")

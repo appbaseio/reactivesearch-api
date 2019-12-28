@@ -6,10 +6,11 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"os"
 	"strings"
+
+	log "github.com/sirupsen/logrus"
 )
 
 // ACCAPI URL
@@ -17,20 +18,60 @@ var ACCAPI = "https://accapi.appbase.io/"
 
 // var ACCAPI = "http://localhost:3000/"
 
-// TimeValidity to be obtained from ACCAPI
-var TimeValidity int64
-
 // Tier is the value of the user's plan
-var Tier *Plan
+var tier *Plan
+
+// SetTier sets the tier value
+func SetTier(plan *Plan) {
+	tier = plan
+}
+
+// GetTier returns the current tier
+func GetTier() *Plan {
+	return tier
+}
+
+// TimeValidity to be obtained from ACCAPI (in secs)
+var timeValidity int64
+
+// GetTimeValidity returns the time validity
+func GetTimeValidity() int64 {
+	return timeValidity
+}
+
+// SetTimeValidity returns the time validity
+func SetTimeValidity(time int64) {
+	timeValidity = time
+}
 
 // Feature custom events
-var FeatureCustomEvents bool
+var featureCustomEvents bool
+
+// GetFeatureCustomEvents returns the featureCustomEvents
+func GetFeatureCustomEvents() bool {
+	return featureCustomEvents
+}
+
+// SetFeatureCustomEvents returns the time validity
+func SetFeatureCustomEvents(val bool) {
+	featureCustomEvents = val
+}
 
 // Feature suggestions
-var FeatureSuggestions bool
+var featureSuggestions bool
 
-// MaxErrorTime before showing errors if invalid trial / plan in hours
-var MaxErrorTime int64 = 24 // in hrs
+// GetFeatureSuggestions returns the featureSuggestions
+func GetFeatureSuggestions() bool {
+	return featureSuggestions
+}
+
+// SetFeatureSuggestions returns the time validity
+func SetFeatureSuggestions(val bool) {
+	featureSuggestions = val
+}
+
+// maxErrorTime before showing errors if invalid trial / plan in hours
+var maxErrorTime int64 = 24 // in hrs
 
 // NodeCount is the current node count, defaults to 1
 var NodeCount = 1
@@ -96,18 +137,31 @@ type ArcInstanceDetails struct {
 	FeatureSuggestions   bool                   `json:"feature_suggestions"`
 }
 
+// SetDefaultTier sets the default tier when billing is disabled
+func SetDefaultTier() {
+	var plan = ArcEnterprise
+	SetTier(&plan)
+}
+
+func validateTimeValidity() bool {
+	if GetTimeValidity() > 0 { // Valid plan
+		return true
+	} else if GetTimeValidity() <= 0 && -GetTimeValidity() < 3600*maxErrorTime { // Negative validity, plan has been expired
+		// Print warning message if remaining time is less than max allowed time
+		log.Println("Warning: Payment is required. Arc will start sending out error messages in next", maxErrorTime, "hours")
+		return true
+	}
+	return false
+}
+
 // BillingMiddleware function to be called for each request
 func BillingMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		log.Println("current time validity value: ", TimeValidity)
+		log.Println("current time validity value: ", GetTimeValidity())
 		// Blacklist subscription routes
 		if strings.HasPrefix(r.RequestURI, "/arc/subscription") || strings.HasPrefix(r.RequestURI, "/arc/plan") {
 			next.ServeHTTP(w, r)
-		} else if TimeValidity > 0 { // Valid plan
-			next.ServeHTTP(w, r)
-		} else if TimeValidity <= 0 && -TimeValidity < 3600*MaxErrorTime { // Negative validity, plan has been expired
-			// Print warning message if remaining time is less than max allowed time
-			log.Println("Warning: Payment is required. Arc will start sending out error messages in next", MaxErrorTime, "hours")
+		} else if validateTimeValidity() {
 			next.ServeHTTP(w, r)
 		} else {
 			// Write an error and stop the handler chain
@@ -126,29 +180,29 @@ func getArcInstance(arcID string) (ArcInstance, error) {
 
 	res, err := http.DefaultClient.Do(req)
 	if err != nil {
-		log.Println("error while sending request: ", err)
+		log.Errorln("error while sending request:", err)
 		return arcInstance, err
 	}
 	defer res.Body.Close()
 	body, err := ioutil.ReadAll(res.Body)
 	if err != nil {
-		log.Println("error reading res body: ", err)
+		log.Errorln("error reading res body:", err)
 		return arcInstance, err
 	}
 	err = json.Unmarshal(body, &response)
 	if len(response.ArcInstances) != 0 {
 		arcInstanceByID := response.ArcInstances[0]
 		arcInstance.SubscriptionID = arcInstanceByID.SubscriptionID
-		TimeValidity = arcInstanceByID.TimeValidity
-		Tier = arcInstanceByID.Tier
-		FeatureCustomEvents = arcInstanceByID.FeatureCustomEvents
-		FeatureSuggestions = arcInstanceByID.FeatureSuggestions
+		SetTimeValidity(arcInstanceByID.TimeValidity)
+		SetTier(arcInstanceByID.Tier)
+		SetFeatureSuggestions(arcInstanceByID.FeatureSuggestions)
+		SetFeatureCustomEvents(arcInstanceByID.FeatureCustomEvents)
 	} else {
 		return arcInstance, errors.New("No valid instance found for the provided ARC_ID")
 	}
 
 	if err != nil {
-		log.Println("error while unmarshalling res body: ", err)
+		log.Errorln("error while unmarshalling res body:", err)
 		return arcInstance, err
 	}
 	return arcInstance, nil
@@ -164,28 +218,28 @@ func getArcClusterInstance(clusterID string) (ArcInstance, error) {
 
 	res, err := http.DefaultClient.Do(req)
 	if err != nil {
-		log.Println("error while sending request: ", err)
+		log.Errorln("error while sending request:", err)
 		return arcInstance, err
 	}
 	defer res.Body.Close()
 	body, err := ioutil.ReadAll(res.Body)
 	if err != nil {
-		log.Println("error reading res body: ", err)
+		log.Errorln("error reading res body:", err)
 		return arcInstance, err
 	}
 	err = json.Unmarshal(body, &response)
 
 	if err != nil {
-		log.Println("error while unmarshalling res body: ", err)
+		log.Errorln("error while unmarshalling res body:", err)
 		return arcInstance, err
 	}
 	if len(response.ArcInstances) != 0 {
 		arcInstanceDetails := response.ArcInstances[0]
 		arcInstance.SubscriptionID = arcInstanceDetails.SubscriptionID
-		TimeValidity = arcInstanceDetails.TimeValidity
-		Tier = arcInstanceDetails.Tier
-		FeatureCustomEvents = arcInstanceDetails.FeatureCustomEvents
-		FeatureSuggestions = arcInstanceDetails.FeatureSuggestions
+		SetTimeValidity(arcInstanceDetails.TimeValidity)
+		SetTier(arcInstanceDetails.Tier)
+		SetFeatureSuggestions(arcInstanceDetails.FeatureSuggestions)
+		SetFeatureCustomEvents(arcInstanceDetails.FeatureCustomEvents)
 	} else {
 		return arcInstance, errors.New("No valid instance found for the provided CLUSTER_ID")
 	}
@@ -203,19 +257,19 @@ func getClusterPlan(clusterID string) (ClusterPlan, error) {
 
 	res, err := http.DefaultClient.Do(req)
 	if err != nil {
-		log.Println("error while sending request: ", err)
+		log.Errorln("error while sending request:", err)
 		return clusterPlan, err
 	}
 	defer res.Body.Close()
 	body, err := ioutil.ReadAll(res.Body)
 	if err != nil {
-		log.Println("error reading res body: ", err)
+		log.Errorln("error reading res body:", err)
 		return clusterPlan, err
 	}
 	err = json.Unmarshal(body, &response)
 
 	if err != nil {
-		log.Println("error while unmarshalling res body: ", err)
+		log.Errorln("error while unmarshalling res body:", err)
 		return clusterPlan, err
 	}
 
@@ -223,17 +277,17 @@ func getClusterPlan(clusterID string) (ClusterPlan, error) {
 		return clusterPlan, fmt.Errorf("error while getting the cluster plan")
 	}
 	// Set the plan for clusters
-	Tier = response.Plan.Tier
-	TimeValidity = response.Plan.TimeValidity
-	FeatureCustomEvents = response.Plan.FeatureCustomEvents
-	FeatureSuggestions = response.Plan.FeatureSuggestions
+	SetTier(response.Plan.Tier)
+	SetTimeValidity(response.Plan.TimeValidity)
+	SetFeatureSuggestions(response.Plan.FeatureSuggestions)
+	SetFeatureCustomEvents(response.Plan.FeatureCustomEvents)
 
 	return clusterPlan, nil
 }
 
 // SetClusterPlan fetches the cluster plan & sets the Tier value
 func SetClusterPlan() {
-	log.Printf("=> Getting cluster plan details")
+	log.Println("=> Getting cluster plan details")
 	clusterID := os.Getenv("CLUSTER_ID")
 	if clusterID == "" {
 		log.Fatalln("CLUSTER_ID env required but not present")
@@ -250,9 +304,9 @@ func reportUsageRequest(arcUsage ArcUsage) (ArcUsageResponse, error) {
 	response := ArcUsageResponse{}
 	url := ACCAPI + "arc/report_usage"
 	marshalledRequest, err := json.Marshal(arcUsage)
-	log.Println("Arc usage for Arc ID: ", arcUsage)
+	log.Println("Arc usage for Arc ID:", arcUsage)
 	if err != nil {
-		log.Println("error while marshalling req body: ", err)
+		log.Errorln("error while marshalling req body:", err)
 		return response, err
 	}
 	req, _ := http.NewRequest(http.MethodPut, url, bytes.NewBuffer(marshalledRequest))
@@ -261,19 +315,19 @@ func reportUsageRequest(arcUsage ArcUsage) (ArcUsageResponse, error) {
 
 	res, err := http.DefaultClient.Do(req)
 	if err != nil {
-		log.Println("error while sending request: ", err)
+		log.Errorln("error while sending request:", err)
 		return response, err
 	}
 	defer res.Body.Close()
 	body, err := ioutil.ReadAll(res.Body)
 	if err != nil {
-		log.Println("error reading res body: ", err)
+		log.Errorln("error reading res body:", err)
 		return response, err
 	}
 	err = json.Unmarshal(body, &response)
 
 	if err != nil {
-		log.Println("error while unmarshalling res body: ", err)
+		log.Errorln("error while unmarshalling res body:", err)
 		return response, err
 	}
 	return response, nil
@@ -283,9 +337,9 @@ func reportClusterUsageRequest(arcUsage ArcUsage) (ArcUsageResponse, error) {
 	response := ArcUsageResponse{}
 	url := ACCAPI + "byoc/report_usage"
 	marshalledRequest, err := json.Marshal(arcUsage)
-	log.Println("Arc usage for Cluster ID: ", arcUsage)
+	log.Println("Arc usage for Cluster ID:", arcUsage)
 	if err != nil {
-		log.Println("error while marshalling req body: ", err)
+		log.Errorln("error while marshalling req body:", err)
 		return response, err
 	}
 	req, _ := http.NewRequest(http.MethodPut, url, bytes.NewBuffer(marshalledRequest))
@@ -294,19 +348,19 @@ func reportClusterUsageRequest(arcUsage ArcUsage) (ArcUsageResponse, error) {
 
 	res, err := http.DefaultClient.Do(req)
 	if err != nil {
-		log.Println("error while sending request: ", err)
+		log.Errorln("error while sending request:", err)
 		return response, err
 	}
 	defer res.Body.Close()
 	body, err := ioutil.ReadAll(res.Body)
 	if err != nil {
-		log.Println("error reading res body: ", err)
+		log.Errorln("error reading res body:", err)
 		return response, err
 	}
 	err = json.Unmarshal(body, &response)
 
 	if err != nil {
-		log.Println("error while unmarshalling res body: ", err)
+		log.Errorln("error while unmarshalling res body:", err)
 		return response, err
 	}
 	return response, nil
@@ -333,7 +387,7 @@ func ReportUsage() {
 
 	NodeCount, err = fetchNodeCount(url)
 	if err != nil || NodeCount <= 0 {
-		log.Println("Unable to fetch a correct node count: ", err)
+		log.Errorln("Unable to fetch a correct node count:", err)
 	}
 
 	subID := result.SubscriptionID
@@ -348,20 +402,20 @@ func ReportUsage() {
 	usageBody.Quantity = NodeCount
 	response, err1 := reportUsageRequest(usageBody)
 	if err1 != nil {
-		log.Println("Please contact support@appbase.io with your ARC_ID or registered e-mail address. Usage is not getting reported: ", err1)
+		log.Errorln("Please contact support@appbase.io with your ARC_ID or registered e-mail address. Usage is not getting reported:", err1)
 	}
 
 	if response.WarningMsg != "" {
-		log.Println("warning:", response.WarningMsg)
+		log.Warn("warning:", response.WarningMsg)
 	}
 	if response.ErrorMsg != "" {
-		log.Println("error:", response.ErrorMsg)
+		log.Errorln("error:", response.ErrorMsg)
 	}
 }
 
 // ReportHostedArcUsage reports Arc usage by hosted cluster, intended to be called every hour
 func ReportHostedArcUsage() {
-	log.Printf("=> Reporting hosted arc usage")
+	log.Println("=> Reporting hosted arc usage")
 	url := os.Getenv("ES_CLUSTER_URL")
 	if url == "" {
 		log.Fatalln("ES_CLUSTER_URL env required but not present")
@@ -382,7 +436,7 @@ func ReportHostedArcUsage() {
 
 	NodeCount, err = fetchNodeCount(url)
 	if err != nil || NodeCount <= 0 {
-		log.Println("Unable to fetch a correct node count: ", err)
+		log.Errorln("Unable to fetch a correct node count:", err)
 	}
 
 	subID := result.SubscriptionID
@@ -397,14 +451,14 @@ func ReportHostedArcUsage() {
 	usageBody.Quantity = NodeCount
 	response, err1 := reportClusterUsageRequest(usageBody)
 	if err1 != nil {
-		log.Println("Please contact support@appbase.io with your CLUSTER_ID or registered e-mail address. Usage is not getting reported: ", err1)
+		log.Errorln("Please contact support@appbase.io with your CLUSTER_ID or registered e-mail address. Usage is not getting reported:", err1)
 	}
 
 	if response.WarningMsg != "" {
-		log.Println("warning:", response.WarningMsg)
+		log.Warn("warning:", response.WarningMsg)
 	}
 	if response.ErrorMsg != "" {
-		log.Println("error:", response.ErrorMsg)
+		log.Errorln("error:", response.ErrorMsg)
 	}
 }
 

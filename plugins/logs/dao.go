@@ -3,8 +3,9 @@ package logs
 import (
 	"context"
 	"fmt"
-	"log"
 	"strconv"
+
+	log "github.com/sirupsen/logrus"
 
 	"github.com/appbaseio/arc/util"
 	es7 "github.com/olivere/elastic/v7"
@@ -25,7 +26,7 @@ func initPlugin(indexName, config string) (*elasticsearch, error) {
 		return nil, fmt.Errorf("error while checking if index already exists: %v", err)
 	}
 	if exists {
-		log.Printf("%s: index named \"%s\" already exists, skipping ...\n", logTag, indexName)
+		log.Println(logTag, ": index named", indexName, "already exists, skipping ...")
 		return es, nil
 	}
 
@@ -44,7 +45,7 @@ func initPlugin(indexName, config string) (*elasticsearch, error) {
 		return nil, fmt.Errorf("error while creating index named \"%s\"", indexName)
 	}
 
-	log.Printf("%s: successfully created index name \"%s\"", logTag, indexName)
+	log.Println(logTag, ": successfully created index name", indexName)
 	return es, nil
 }
 
@@ -58,12 +59,11 @@ func (es *elasticsearch) indexRecord(ctx context.Context, rec record) {
 		Add(bulkIndex).
 		Do(ctx)
 	if err != nil {
-		log.Printf("%s: error indexing log record: %v", logTag, err)
+		log.Errorln(logTag, ": error indexing log record :", err)
 	}
 }
 
 func (es *elasticsearch) getRawLogs(ctx context.Context, from, size, filter string, indices ...string) ([]byte, error) {
-	fmt.Println("calling get logs: ", from, size, filter, indices)
 	offset, err := strconv.Atoi(from)
 	if err != nil {
 		return nil, fmt.Errorf(`invalid value "%v" for query param "from"`, from)
