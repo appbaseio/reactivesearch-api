@@ -111,28 +111,6 @@ func UpdateFunctionToCache(function ESFunctionDoc) bool {
 	return false
 }
 
-// MarkAsEnabledToCache marks a function as enabled
-func MarkAsEnabledToCache(functionID string) bool {
-	function, loc := IsFunctionExistsInCache(functionID)
-	if loc != nil {
-		function.Enabled = true
-		cachedFunctions[*loc] = *function
-		return true
-	}
-	return false
-}
-
-// MarkAsDisabledToCache marks a function as disabled
-func MarkAsDisabledToCache(functionID string) bool {
-	function, loc := IsFunctionExistsInCache(functionID)
-	if loc != nil {
-		function.Enabled = false
-		cachedFunctions[*loc] = *function
-		return true
-	}
-	return false
-}
-
 // DeleteFunctionToCache deletes a function
 func DeleteFunctionToCache(functionID string) bool {
 	_, loc := IsFunctionExistsInCache(functionID)
