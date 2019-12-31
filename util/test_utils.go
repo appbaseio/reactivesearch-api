@@ -24,7 +24,19 @@ type BuildArc struct {
 	FeatureSuggestions  bool
 }
 
+func cleanES() bool {
+	err := exec.Command("/bin/sh", "-c", "curl -XDELETE localhost:9200/.*").Run()
+	if err != nil {
+		log.Fatal("Error while running elasticsearch clean command", err)
+		return false
+	}
+	return true
+}
+
 func StartArc(b *BuildArc) BuildArc {
+	// Clean ES index
+	go cleanES()
+
 	ldFlags := "export TEST_FEATURE_CUSTOM_EVENTS=" + strconv.FormatBool(b.FeatureCustomEvents) + " TEST_FEATURE_SUGGESTIONS=" + strconv.FormatBool(b.FeatureSuggestions) + ";"
 	if b.Tier != nil {
 		ldFlags = "export TEST_TIER=" + b.Tier.String() + " TEST_FEATURE_CUSTOM_EVENTS=" + strconv.FormatBool(b.FeatureCustomEvents) + " TEST_FEATURE_SUGGESTIONS=" + strconv.FormatBool(b.FeatureSuggestions) + ";"
