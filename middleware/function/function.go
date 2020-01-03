@@ -44,9 +44,9 @@ func invokeFunction(functionDetails ESFunctionDoc, body InvokeFunctionBody) ([]b
 	bodyRes, httpRes, err2 := MakeOpenFaasRequest("/function/"+functionDetails.Function.Service, http.MethodPost, marshalledbody)
 	if err2 != nil {
 		log.Errorln(LogTag, ":", err)
-		return bodyRes, httpRes, err2
+		return nil, nil, err2
 	}
-	return nil, nil, nil
+	return bodyRes, httpRes, err2
 }
 
 func getEnvironments(req *http.Request) (*TriggerEnvironments, error) {
