@@ -95,7 +95,7 @@ func getResponseHeaders(res *http.Response) *map[string]string {
 
 func getParsedBody(req *http.Request) (*map[string]interface{}, error) {
 	fmt.Println("THIS IS REQUEST BODY", req.Body)
-	if req.Body == nil {
+	if &req.Body == nil {
 		return nil, nil
 	}
 	reqBody, err := ioutil.ReadAll(req.Body)
