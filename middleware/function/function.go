@@ -3,6 +3,7 @@ package function
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -93,6 +94,7 @@ func getResponseHeaders(res *http.Response) *map[string]string {
 }
 
 func getParsedBody(req *http.Request) (*map[string]interface{}, error) {
+	fmt.Println("THIS IS REQUEST BODY", req.Body)
 	if req.Body == nil {
 		return nil, nil
 	}
@@ -102,6 +104,7 @@ func getParsedBody(req *http.Request) (*map[string]interface{}, error) {
 	}
 	var parsedBody map[string]interface{}
 	err2 := json.Unmarshal(reqBody, &parsedBody)
+	fmt.Println("UNABLE TO UNMARSHAL IT", err2)
 	if err2 != nil {
 		return nil, err2
 	}
@@ -171,7 +174,7 @@ func before(h http.HandlerFunc) http.HandlerFunc {
 					return
 				}
 				returnedBody, httpRes, err := invokeFunction(functionDetails, InvokeFunctionBody{
-					ExtraRequestPayload: *functionDetails.ExtraRequestPayload,
+					ExtraRequestPayload: functionDetails.ExtraRequestPayload,
 					Environments:        *environments,
 					Request:             requestBody,
 				})
@@ -265,7 +268,7 @@ func after(h http.HandlerFunc) http.HandlerFunc {
 						return
 					}
 					returnedBody, httpRes, err := invokeFunction(functionDetails, InvokeFunctionBody{
-						ExtraRequestPayload: *functionDetails.ExtraRequestPayload,
+						ExtraRequestPayload: functionDetails.ExtraRequestPayload,
 						Environments:        *environments,
 						Response:            invokeResponse,
 					})

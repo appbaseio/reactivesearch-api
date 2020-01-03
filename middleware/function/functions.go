@@ -119,10 +119,10 @@ type TriggerEnvironments struct {
 }
 
 type InvokeFunctionBody struct {
-	ExtraRequestPayload map[string]interface{} `json:"extraRequestPayload"`
-	Request             *InvokeRequest         `json:"request,omitempty"`
-	Response            *InvokeResponse        `json:"response,omitempty"`
-	Environments        TriggerEnvironments    `json:"env"`
+	ExtraRequestPayload *map[string]interface{} `json:"extraRequestPayload"`
+	Request             *InvokeRequest          `json:"request,omitempty"`
+	Response            *InvokeResponse         `json:"response,omitempty"`
+	Environments        TriggerEnvironments     `json:"env"`
 }
 
 // cachedFunctions represents the struct of a list of saved functions in the .functions index
