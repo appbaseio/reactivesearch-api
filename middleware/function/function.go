@@ -183,7 +183,7 @@ func before(h http.HandlerFunc) http.HandlerFunc {
 				}
 				if httpRes.StatusCode != http.StatusOK {
 					// Handle failure, return response
-					util.WriteBackRaw(w, returnedBody, httpRes.StatusCode)
+					util.WriteBackError(w, string(returnedBody), httpRes.StatusCode)
 					return
 				}
 				// Handle success
@@ -277,7 +277,7 @@ func after(h http.HandlerFunc) http.HandlerFunc {
 					}
 					// Handle failure, return response
 					if httpRes.StatusCode != http.StatusOK {
-						util.WriteBackRaw(w, returnedBody, httpRes.StatusCode)
+						util.WriteBackError(w, string(returnedBody), httpRes.StatusCode)
 						return
 					}
 					// Handle success
