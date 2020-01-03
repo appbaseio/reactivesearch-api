@@ -8,7 +8,7 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/prometheus/common/log"
+	log "github.com/sirupsen/logrus"
 )
 
 const (

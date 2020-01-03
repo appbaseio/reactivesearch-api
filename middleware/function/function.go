@@ -15,7 +15,7 @@ import (
 	"github.com/appbaseio/arc/model/category"
 	"github.com/appbaseio/arc/model/index"
 	"github.com/appbaseio/arc/util"
-	"github.com/prometheus/common/log"
+	log "github.com/sirupsen/logrus"
 )
 
 // parse splits the comma separated key-value pairs (k1=v1, k2=v3) present in the header.
@@ -35,6 +35,7 @@ func parse(header string) []map[string]string {
 }
 
 func invokeFunction(functionDetails ESFunctionDoc, body InvokeFunctionBody) ([]byte, *http.Response, error) {
+	log.Println("Invoking function")
 	marshalledbody, err := json.Marshal(body)
 	if err != nil {
 		log.Errorln(LogTag, ":", err)
