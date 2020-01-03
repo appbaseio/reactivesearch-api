@@ -3,7 +3,6 @@ package function
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -94,17 +93,15 @@ func getResponseHeaders(res *http.Response) *map[string]string {
 }
 
 func getParsedBody(req *http.Request) (*map[string]interface{}, error) {
-	fmt.Println("THIS IS REQUEST BODY", req.Body)
-	if &req.Body == nil {
-		return nil, nil
-	}
 	reqBody, err := ioutil.ReadAll(req.Body)
 	if err != nil {
 		return nil, err
 	}
+	if len(reqBody) == 0 {
+		return nil, nil
+	}
 	var parsedBody map[string]interface{}
 	err2 := json.Unmarshal(reqBody, &parsedBody)
-	fmt.Println("UNABLE TO UNMARSHAL IT", err2)
 	if err2 != nil {
 		return nil, err2
 	}
