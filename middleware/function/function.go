@@ -147,7 +147,11 @@ func validateFilter(req *http.Request, functionDetails ESFunctionDoc) (bool, err
 func before(h http.HandlerFunc) http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		for _, functionDetails := range GetFunctionsFromCache() {
-			if !functionDetails.Enabled && functionDetails.Trigger != nil && !functionDetails.Trigger.ExecuteBefore {
+			if !functionDetails.Enabled {
+				continue
+			}
+			if functionDetails.Trigger != nil && !functionDetails.Trigger.ExecuteBefore {
+				fmt.Println("WHY CALLED HERE")
 				// Ignore if execute before is set to false
 				continue
 			}
@@ -172,7 +176,7 @@ func before(h http.HandlerFunc) http.HandlerFunc {
 					util.WriteBackError(w, err.Error(), http.StatusInternalServerError)
 					return
 				}
-				fmt.Println("Invoking Before", functionDetails.Trigger)
+				fmt.Println("Invoking Before", functionDetails.Trigger, functionDetails.Trigger != nil && !functionDetails.Trigger.ExecuteBefore)
 				returnedBody, httpRes, err := invokeFunction(functionDetails, InvokeFunctionBody{
 					ExtraRequestPayload: functionDetails.ExtraRequestPayload,
 					Environments:        *environments,
@@ -252,7 +256,10 @@ func after(h http.HandlerFunc) http.HandlerFunc {
 
 		for _, functionDetails := range GetFunctionsFromCache() {
 			fmt.Println("AFTER MIDDLEWARE GOT CALLED", functionDetails)
-			if functionDetails.Enabled && functionDetails.Trigger != nil && !functionDetails.Trigger.ExecuteBefore {
+			if !functionDetails.Enabled {
+				continue
+			}
+			if functionDetails.Trigger != nil && !functionDetails.Trigger.ExecuteBefore {
 				fmt.Println("FUNCTION IS")
 				// invoke when execute before is false
 				ok, err := validateFilter(req, functionDetails)
