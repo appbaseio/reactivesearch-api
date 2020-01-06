@@ -12,7 +12,6 @@ import (
 
 	"github.com/appbaseio/arc/middleware"
 	"github.com/appbaseio/arc/middleware/classify"
-	"github.com/appbaseio/arc/middleware/function"
 	"github.com/appbaseio/arc/middleware/interceptor"
 	"github.com/appbaseio/arc/middleware/ratelimiter"
 	"github.com/appbaseio/arc/middleware/validate"
@@ -50,7 +49,6 @@ func list() []middleware.Middleware {
 		validate.ACL(),
 		validate.Operation(),
 		validate.PermissionExpiry(),
-		function.Before(),
 		// Call logs after that, update the existing log record
 		transformRequest,
 	}
