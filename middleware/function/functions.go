@@ -190,6 +190,7 @@ func MakeOpenFaasRequest(url, method string, reqBody []byte) ([]byte, *http.Resp
 		log.Errorln(LogTag, ":", err)
 		return nil, nil, err
 	}
+	request.Header.Set("Content-Type", "application/json")
 	response, err := http.DefaultClient.Do(request)
 	if err != nil {
 		log.Errorln(LogTag, ":", err)
