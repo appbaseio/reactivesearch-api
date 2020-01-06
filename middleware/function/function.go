@@ -3,6 +3,7 @@ package function
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -146,7 +147,7 @@ func validateFilter(req *http.Request, functionDetails ESFunctionDoc) (bool, err
 func before(h http.HandlerFunc) http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		for _, functionDetails := range GetFunctionsFromCache() {
-			if functionDetails.Trigger != nil && !functionDetails.Trigger.ExecuteBefore {
+			if !functionDetails.Enabled && functionDetails.Trigger != nil && !functionDetails.Trigger.ExecuteBefore {
 				// Ignore if execute before is set to false
 				continue
 			}
@@ -222,6 +223,7 @@ func before(h http.HandlerFunc) http.HandlerFunc {
 
 func after(h http.HandlerFunc) http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		fmt.Println("AFTER MIDDLEWARE")
 		resp := httptest.NewRecorder()
 		h(resp, req)
 
@@ -248,7 +250,9 @@ func after(h http.HandlerFunc) http.HandlerFunc {
 		}
 
 		for _, functionDetails := range GetFunctionsFromCache() {
-			if functionDetails.Trigger != nil && !functionDetails.Trigger.ExecuteBefore {
+			fmt.Println("AFTER MIDDLEWARE GOT CALLED", functionDetails)
+			if functionDetails.Enabled && functionDetails.Trigger != nil && !functionDetails.Trigger.ExecuteBefore {
+				fmt.Println("FUNCTION IS")
 				// invoke when execute before is false
 				ok, err := validateFilter(req, functionDetails)
 				if err != nil {
