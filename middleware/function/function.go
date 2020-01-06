@@ -172,7 +172,7 @@ func before(h http.HandlerFunc) http.HandlerFunc {
 					util.WriteBackError(w, err.Error(), http.StatusInternalServerError)
 					return
 				}
-				fmt.Println("Invoking Before", functionDetails)
+				fmt.Println("Invoking Before", functionDetails.Trigger)
 				returnedBody, httpRes, err := invokeFunction(functionDetails, InvokeFunctionBody{
 					ExtraRequestPayload: functionDetails.ExtraRequestPayload,
 					Environments:        *environments,
