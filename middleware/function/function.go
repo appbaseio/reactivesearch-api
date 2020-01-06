@@ -172,6 +172,7 @@ func before(h http.HandlerFunc) http.HandlerFunc {
 					util.WriteBackError(w, err.Error(), http.StatusInternalServerError)
 					return
 				}
+				fmt.Println("Invoking Before", functionDetails)
 				returnedBody, httpRes, err := invokeFunction(functionDetails, InvokeFunctionBody{
 					ExtraRequestPayload: functionDetails.ExtraRequestPayload,
 					Environments:        *environments,
@@ -269,6 +270,7 @@ func after(h http.HandlerFunc) http.HandlerFunc {
 						util.WriteBackError(w, msg, http.StatusInternalServerError)
 						return
 					}
+					fmt.Println("INVOKING AFTER")
 					returnedBody, httpRes, err := invokeFunction(functionDetails, InvokeFunctionBody{
 						ExtraRequestPayload: functionDetails.ExtraRequestPayload,
 						Environments:        *environments,
