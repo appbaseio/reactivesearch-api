@@ -102,6 +102,8 @@ func (l *Logs) recorder(h http.HandlerFunc) http.HandlerFunc {
 			Body:    string(reqBody),
 			Method:  r.Method,
 		}
+		log.Println("LOG: REQUEST HEADERS", request.Headers)
+		log.Println("LOG: REQUEST BODY", request.Body)
 
 		// Serve using response recorder
 		respRecorder := httptest.NewRecorder()
