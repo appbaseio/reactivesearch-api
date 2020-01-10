@@ -56,6 +56,7 @@ func list() []middleware.Middleware {
 
 func classifyCategory(h http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
+		log.Println("======================================MIDDLEWARE: CLASSIFY CATEGORY==================================")
 		route := mux.CurrentRoute(req)
 
 		template, err := route.GetPathTemplate()
@@ -84,6 +85,7 @@ func classifyCategory(h http.HandlerFunc) http.HandlerFunc {
 
 func classifyACL(h http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
+		log.Println("======================================MIDDLEWARE: CLASSIFY ACL==================================")
 		currentRoute := mux.CurrentRoute(req)
 
 		template, err := currentRoute.GetPathTemplate()
@@ -105,6 +107,7 @@ func classifyACL(h http.HandlerFunc) http.HandlerFunc {
 
 func classifyOp(h http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
+		log.Println("======================================MIDDLEWARE: CLASSIFY OP==================================")
 		route := mux.CurrentRoute(req)
 
 		template, err := route.GetPathTemplate()
@@ -126,6 +129,7 @@ func classifyOp(h http.HandlerFunc) http.HandlerFunc {
 
 func transformRequest(h http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
+		log.Println("======================================MIDDLEWARE: TRANSFORM REQUEST(SOURCE FILTERING)==================================")
 		ctx := req.Context()
 		reqACL, err := category.FromContext(ctx)
 		if err != nil {

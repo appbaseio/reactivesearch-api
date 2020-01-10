@@ -19,6 +19,7 @@ func PermissionExpiry() middleware.Middleware {
 
 func validateExpiry(h http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
+		log.Println("======================================MIDDLEWARE: PERMISSION EXPIRY==================================")
 		ctx := req.Context()
 
 		reqCredential, err := credential.FromContext(ctx)

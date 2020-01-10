@@ -57,6 +57,7 @@ func Limit() middleware.Middleware {
 
 func (rl *Ratelimiter) rateLimit(h http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
+		log.Println("======================================MIDDLEWARE: LIMIT==================================")
 		ctx := req.Context()
 
 		reqCredential, err := credential.FromContext(ctx)

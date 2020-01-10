@@ -73,6 +73,7 @@ func BasicAuth() middleware.Middleware {
 
 func (a *Auth) basicAuth(h http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
+		log.Println("======================================MIDDLEWARE: AUTH==================================")
 		ctx := req.Context()
 
 		reqCategory, err := category.FromContext(ctx)

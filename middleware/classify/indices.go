@@ -1,6 +1,7 @@
 package classify
 
 import (
+	"log"
 	"net/http"
 
 	"github.com/appbaseio/arc/middleware"
@@ -15,6 +16,7 @@ func Indices() middleware.Middleware {
 
 func indices(h http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
+		log.Println("======================================MIDDLEWARE: CLASSIFY INDICES==================================")
 		indices := util.IndicesFromRequest(req)
 
 		ctx := index.NewContext(req.Context(), indices)
