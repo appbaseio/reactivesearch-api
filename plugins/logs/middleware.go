@@ -50,22 +50,26 @@ func classifyCategory(h http.HandlerFunc) http.HandlerFunc {
 	}
 }
 
+type Request struct {
+	URI     string              `json:"uri"`
+	Method  string              `json:"method"`
+	Headers map[string][]string `json:"header"`
+	Body    string              `json:"body"`
+}
+
+type Response struct {
+	Code    int    `json:"code"`
+	Status  string `json:"status"`
+	Headers map[string][]string
+	Body    string `json:"body"`
+}
+
 type record struct {
-	Indices  []string          `json:"indices"`
-	Category category.Category `json:"category"`
-	Request  struct {
-		URI     string              `json:"uri"`
-		Method  string              `json:"method"`
-		Headers map[string][]string `json:"header"`
-		Body    string              `json:"body"`
-	} `json:"request"`
-	Response struct {
-		Code    int    `json:"code"`
-		Status  string `json:"status"`
-		Headers map[string][]string
-		Body    string `json:"body"`
-	} `json:"response"`
-	Timestamp time.Time `json:"timestamp"`
+	Indices   []string          `json:"indices"`
+	Category  category.Category `json:"category"`
+	Request   Request           `json:"request"`
+	Response  Response          `json:"response"`
+	Timestamp time.Time         `json:"timestamp"`
 }
 
 // Recorder records a log "record" for every request.
@@ -89,7 +93,15 @@ func (l *Logs) recorder(h http.HandlerFunc) http.HandlerFunc {
 			util.WriteBackError(w, "Can't read request body", http.StatusInternalServerError)
 			return
 		}
+
 		r.Body = ioutil.NopCloser(bytes.NewBuffer(reqBody))
+
+		request := Request{
+			URI:     r.URL.Path,
+			Headers: r.Header,
+			Body:    string(reqBody),
+			Method:  r.Method,
+		}
 
 		// Serve using response recorder
 		respRecorder := httptest.NewRecorder()
@@ -103,11 +115,11 @@ func (l *Logs) recorder(h http.HandlerFunc) http.HandlerFunc {
 		w.Write(respRecorder.Body.Bytes())
 
 		// Record the document
-		go l.recordResponse(reqBody, respRecorder, r)
+		go l.recordResponse(request, respRecorder, r)
 	}
 }
 
-func (l *Logs) recordResponse(reqBody []byte, w *httptest.ResponseRecorder, req *http.Request) {
+func (l *Logs) recordResponse(request Request, w *httptest.ResponseRecorder, req *http.Request) {
 	ctx := req.Context()
 
 	reqCategory, err := category.FromContext(ctx)
@@ -128,10 +140,7 @@ func (l *Logs) recordResponse(reqBody []byte, w *httptest.ResponseRecorder, req 
 	rec.Timestamp = time.Now()
 
 	// record request
-	rec.Request.URI = req.URL.Path
-	rec.Request.Headers = req.Header
-	rec.Request.Method = req.Method
-	rec.Request.Body = string(reqBody)
+	rec.Request = request
 
 	// record response
 	response := w.Result()
