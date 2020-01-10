@@ -117,11 +117,11 @@ func (l *Logs) recorder(h http.HandlerFunc) http.HandlerFunc {
 		w.Write(respRecorder.Body.Bytes())
 
 		// Record the document
-		go l.recordResponse(request, respRecorder, r)
+		go l.recordResponse(&request, respRecorder, r)
 	}
 }
 
-func (l *Logs) recordResponse(request Request, w *httptest.ResponseRecorder, req *http.Request) {
+func (l *Logs) recordResponse(request *Request, w *httptest.ResponseRecorder, req *http.Request) {
 	ctx := req.Context()
 
 	reqCategory, err := category.FromContext(ctx)
@@ -142,7 +142,11 @@ func (l *Logs) recordResponse(request Request, w *httptest.ResponseRecorder, req
 	rec.Timestamp = time.Now()
 
 	// record request
-	rec.Request = request
+	rec.Request = *request
+
+	log.Println("=================== LOG REQUEST: HEADERS ==================", request.Headers)
+	log.Println("=================== LOG RESPONSE: HEADERS ==================", rec.Request.Headers)
+	log.Println("=================== LOG RESPONSE: ACTUAL HEADERS ==================", req.Header)
 
 	// record response
 	response := w.Result()
