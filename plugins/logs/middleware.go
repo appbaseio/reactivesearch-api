@@ -96,9 +96,15 @@ func (l *Logs) recorder(h http.HandlerFunc) http.HandlerFunc {
 
 		r.Body = ioutil.NopCloser(bytes.NewBuffer(reqBody))
 
+		var headers = make(map[string][]string)
+
+		for key, values := range r.Header {
+			headers[key] = values
+		}
+
 		request := Request{
 			URI:     r.URL.Path,
-			Headers: r.Header,
+			Headers: headers,
 			Body:    string(reqBody),
 			Method:  r.Method,
 		}
@@ -147,6 +153,7 @@ func (l *Logs) recordResponse(request *Request, w *httptest.ResponseRecorder, re
 	log.Println("=================== LOG REQUEST: HEADERS ==================", request.Headers)
 	log.Println("=================== LOG RESPONSE: HEADERS ==================", rec.Request.Headers)
 	log.Println("=================== LOG RESPONSE: ACTUAL HEADERS ==================", req.Header)
+	log.Println("=================== LOG REQUEST BODY: ACTUAL HEADERS ==================", req.Body)
 
 	// record response
 	response := w.Result()
