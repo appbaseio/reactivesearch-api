@@ -108,9 +108,6 @@ func (l *Logs) recorder(h http.HandlerFunc) http.HandlerFunc {
 			Body:    string(reqBody),
 			Method:  r.Method,
 		}
-		log.Println("LOG: REQUEST HEADERS", request.Headers)
-		log.Println("LOG: REQUEST BODY", request.Body)
-
 		// Serve using response recorder
 		respRecorder := httptest.NewRecorder()
 		h(respRecorder, r)
@@ -149,11 +146,6 @@ func (l *Logs) recordResponse(request *Request, w *httptest.ResponseRecorder, re
 
 	// record request
 	rec.Request = *request
-
-	log.Println("=================== LOG REQUEST: HEADERS ==================", request.Headers)
-	log.Println("=================== LOG RESPONSE: HEADERS ==================", rec.Request.Headers)
-	log.Println("=================== LOG RESPONSE: ACTUAL HEADERS ==================", req.Header)
-	log.Println("=================== LOG REQUEST BODY: ACTUAL HEADERS ==================", req.Body)
 
 	// record response
 	response := w.Result()
