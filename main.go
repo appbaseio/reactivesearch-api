@@ -171,13 +171,10 @@ func main() {
 	// ES client instantiation
 	// ES v7 and v6 clients
 	util.NewClient()
-	// map of specific plugins in a sequence
-	sequencedPlugins := map[string]string{
-		"rules.so":          "", // path
-		"function.so":       "", // path
-		"querytranslate.so": "", // path
-		"analytics.so":      "", // path
-	}
+	// map of specific plugins
+	sequencedPlugins := []string{"rules.so", "functions.so", "querytranslate.so", "analytics.so"}
+	sequencedPluginsByPath := make(map[string]string)
+
 	var elasticSearchPath string
 	elasticSearchMiddleware := make([]middleware.Middleware, 0)
 	err := filepath.Walk(pluginDir, func(path string, info os.FileInfo, err error) error {
@@ -185,9 +182,8 @@ func main() {
 			return err
 		}
 		if !info.IsDir() && filepath.Ext(info.Name()) == ".so" && info.Name() != "elasticsearch.so" {
-			_, isExist := sequencedPlugins[info.Name()]
-			if isExist {
-				sequencedPlugins[info.Name()] = path
+			if util.IsExists(info.Name(), sequencedPlugins) {
+				sequencedPluginsByPath[info.Name()] = path
 			} else {
 				mw, err1 := LoadPluginFromFile(router, path)
 				if err1 != nil {
@@ -202,13 +198,14 @@ func main() {
 		return nil
 	})
 	// load plugins in a sequence
-	for key, path := range sequencedPlugins {
+	for _, pluginName := range sequencedPlugins {
+		path, _ := sequencedPluginsByPath[pluginName]
 		if path != "" {
 			mw, err := LoadPluginFromFile(router, path)
 			if err != nil {
 				log.Fatal("error loading plugins: ", err)
 			}
-			log.Println("==================PLUGIN REGISTERED================", key)
+			log.Println("==================PLUGIN REGISTERED================", pluginName)
 			elasticSearchMiddleware = append(elasticSearchMiddleware, mw...)
 		}
 	}

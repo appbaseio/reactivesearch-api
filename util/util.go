@@ -158,6 +158,16 @@ func IndicesFromRequest(r *http.Request) []string {
 	return indices
 }
 
+// IsExists searches for an element in an array
+func IsExists(a string, list []string) bool {
+	for _, b := range list {
+		if b == a {
+			return true
+		}
+	}
+	return false
+}
+
 // CountComponents returns the numbers of "/" and "vars" present in the route.
 func CountComponents(route string) (int, int) {
 	pattern := `^{.*}$`
