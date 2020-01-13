@@ -171,7 +171,13 @@ func main() {
 	// ES client instantiation
 	// ES v7 and v6 clients
 	util.NewClient()
-
+	// map of specific plugins in a sequence
+	sequencedPlugins := map[string]string{
+		"rules.so":          "", // path
+		"function.so":       "", // path
+		"querytranslate.so": "", // path
+		"analytics.so":      "", // path
+	}
 	var elasticSearchPath string
 	elasticSearchMiddleware := make([]middleware.Middleware, 0)
 	err := filepath.Walk(pluginDir, func(path string, info os.FileInfo, err error) error {
@@ -179,16 +185,31 @@ func main() {
 			return err
 		}
 		if !info.IsDir() && filepath.Ext(info.Name()) == ".so" && info.Name() != "elasticsearch.so" {
-			mw, err1 := LoadPluginFromFile(router, path)
-			if err1 != nil {
-				return err1
+			_, isExist := sequencedPlugins[info.Name()]
+			if isExist {
+				sequencedPlugins[info.Name()] = path
+			} else {
+				mw, err1 := LoadPluginFromFile(router, path)
+				if err1 != nil {
+					return err1
+				}
+				elasticSearchMiddleware = append(elasticSearchMiddleware, mw...)
 			}
-			elasticSearchMiddleware = append(elasticSearchMiddleware, mw...)
 		} else if info.Name() == "elasticsearch.so" {
 			elasticSearchPath = path
 		}
 		return nil
 	})
+	// load plugins in a sequence
+	for _, path := range sequencedPlugins {
+		if path != "" {
+			mw, err := LoadPluginFromFile(router, path)
+			if err != nil {
+				log.Fatal("error loading plugins: ", err)
+			}
+			elasticSearchMiddleware = append(elasticSearchMiddleware, mw...)
+		}
+	}
 	LoadESPluginFromFile(router, elasticSearchPath, elasticSearchMiddleware)
 	if err != nil {
 		log.Fatal("error loading plugins: ", err)
