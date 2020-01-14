@@ -22,7 +22,6 @@ func Category() middleware.Middleware {
 
 func validateCategory(h http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
-		log.Println("======================================MIDDLEWARE: VALIDATE CATEGORY==================================")
 		ctx := req.Context()
 
 		errMsg := "an error occurred while validating request category"

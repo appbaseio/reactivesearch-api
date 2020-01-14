@@ -20,7 +20,6 @@ func Referers() middleware.Middleware {
 
 func referers(h http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
-		log.Println("======================================MIDDLEWARE: VALIDATE REFERERS==================================")
 		ctx := req.Context()
 
 		reqCredential, err := credential.FromContext(ctx)

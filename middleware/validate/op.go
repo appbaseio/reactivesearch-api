@@ -22,7 +22,6 @@ func Operation() middleware.Middleware {
 
 func operation(h http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
-		log.Println("======================================MIDDLEWARE: VALIDATE OPERATION==================================")
 		ctx := req.Context()
 
 		errMsg := "an error occurred while validating request op"

@@ -23,7 +23,6 @@ func Sources() middleware.Middleware {
 
 func sources(h http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
-		log.Println("======================================MIDDLEWARE: VALIDATE SOURCES==================================")
 		ctx := req.Context()
 
 		reqCredential, err := credential.FromContext(ctx)

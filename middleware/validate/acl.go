@@ -22,7 +22,6 @@ func ACL() middleware.Middleware {
 
 func validateACL(h http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
-		log.Println("======================================MIDDLEWARE: VALIDATE ACL==================================")
 		ctx := req.Context()
 
 		errMsg := "an error occurred while validating request acl"

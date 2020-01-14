@@ -189,7 +189,6 @@ func main() {
 				if err1 != nil {
 					return err1
 				}
-				log.Println("==================PLUGIN REGISTERED================", info.Name())
 				elasticSearchMiddleware = append(elasticSearchMiddleware, mw...)
 			}
 		} else if info.Name() == "elasticsearch.so" {
@@ -205,11 +204,9 @@ func main() {
 			if err != nil {
 				log.Fatal("error loading plugins: ", err)
 			}
-			log.Println("==================PLUGIN REGISTERED================", pluginName)
 			elasticSearchMiddleware = append(elasticSearchMiddleware, mw...)
 		}
 	}
-	log.Println("==================ES MIDDLEWARE================", elasticSearchMiddleware)
 	LoadESPluginFromFile(router, elasticSearchPath, elasticSearchMiddleware)
 	if err != nil {
 		log.Fatal("error loading plugins: ", err)
