@@ -49,7 +49,7 @@ func list() []middleware.Middleware {
 		validate.ACL(),
 		validate.Operation(),
 		validate.PermissionExpiry(),
-		// Call logs after that, update the existing log record
+		// TODO: move transform request logic to querytranslate plugin
 		transformRequest,
 	}
 }
