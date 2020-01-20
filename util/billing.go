@@ -105,7 +105,7 @@ type ArcUsageResponse struct {
 	TimeValidity  int64  `json:"time_validity"`
 }
 
-// ArcInstance TBD: remove struct
+// ArcInstance TBD: remove struc
 type ArcInstance struct {
 	SubscriptionID string `json:"subscription_id"`
 }
