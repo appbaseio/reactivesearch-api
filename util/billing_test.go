@@ -6,14 +6,6 @@ import (
 	. "github.com/smartystreets/goconvey/convey"
 )
 
-type Nodes struct {
-	Total int `json:"total"`
-}
-type NodeResponse struct {
-	Nodes       Nodes  `json:"_nodes"`
-	ClusterName string `json:"cluster_name"`
-}
-
 func TestBilling(t *testing.T) {
 	Convey("Billing", t, func() {
 		Convey("Set Tier", func() {
