@@ -18,7 +18,7 @@ type NodeResponse struct {
 	ClusterName string `json:"cluster_name"`
 }
 
-func TestUtil(t *testing.T) {
+func TestElasticsearch(t *testing.T) {
 	build := util.BuildArc{}
 	util.StartArc(&build)
 	build.Start()
