@@ -202,7 +202,7 @@ func settingsOf(ctx context.Context, indexName string) (map[string]interface{}, 
 	settings["index"] = make(map[string]interface{})
 	settings["number_of_shards"] = indexSettings["number_of_shards"]
 	settings["number_of_replicas"] = indexSettings["number_of_replicas"]
-	analysis, found := info.Settings["analysis"]
+	analysis, found := indexSettings["analysis"]
 	if found {
 		settings["analysis"] = analysis
 	}

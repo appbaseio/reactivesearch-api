@@ -126,13 +126,14 @@ func classifyOp(h http.HandlerFunc) http.HandlerFunc {
 func transformRequest(h http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
 		ctx := req.Context()
-		reqACL, err := category.FromContext(ctx)
+		reqACL, err := acl.FromContext(ctx)
 		if err != nil {
 			log.Errorln(logTag, ":", err)
 		}
+		isMsearch := *reqACL == acl.Msearch
+		isSearch := *reqACL == acl.Search
 		// transform POST request(search) to GET
-		if *reqACL == category.Search {
-			isMsearch := strings.HasSuffix(req.URL.String(), "/_msearch")
+		if isSearch || isMsearch {
 			// Apply source filters
 			reqPermission, err := permission.FromContext(ctx)
 			if err != nil {
@@ -151,8 +152,9 @@ func transformRequest(h http.HandlerFunc) http.HandlerFunc {
 				sources["excludes"] = Excludes
 			}
 			_, isExcludesPresent := sources["excludes"]
+			isEmpty := len(Includes) == 0 && len(Excludes) == 0
 			isDefaultInclude := len(Includes) > 0 && Includes[0] == "*"
-			shouldApplyFilters := !isDefaultInclude || isExcludesPresent
+			shouldApplyFilters := !isEmpty && (!isDefaultInclude || isExcludesPresent)
 			if shouldApplyFilters {
 				if isMsearch {
 					// Handle the _msearch requests
@@ -175,7 +177,12 @@ func transformRequest(h http.HandlerFunc) http.HandlerFunc {
 								return
 							}
 							reqBody["_source"] = sources
-							raw, _ := json.Marshal(reqBody)
+							raw, err := json.Marshal(reqBody)
+							if err != nil {
+								log.Errorln(logTag, ":", err)
+								util.WriteBackError(w, err.Error(), http.StatusInternalServerError)
+								return
+							}
 							modifiedBodyString += string(raw)
 						} else {
 							modifiedBodyString += element
