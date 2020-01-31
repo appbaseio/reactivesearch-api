@@ -26,6 +26,7 @@ var adminCategories = []category.Category{
 	category.Rules,
 	category.Templates,
 	category.Suggestions,
+	category.Functions,
 	category.Auth,
 }
 
@@ -51,6 +52,7 @@ var defaultAdminLimits = permission.Limits{
 	SuggestionsLimit: 30,
 	StreamsLimit:     30,
 	AuthLimit:        30,
+	FunctionsLimit:   30,
 }
 
 var createPermissionResponse = map[string]interface{}{

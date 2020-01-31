@@ -27,6 +27,7 @@ var (
 		category.Templates,
 		category.Suggestions,
 		category.Auth,
+		category.Functions,
 	}
 
 	defaultOps = []op.Operation{
@@ -55,6 +56,7 @@ var (
 		SuggestionsLimit: 10,
 		StreamsLimit:     10,
 		AuthLimit:        10,
+		FunctionsLimit:   10,
 	}
 
 	defaultAdminLimits = Limits{
@@ -73,5 +75,6 @@ var (
 		SuggestionsLimit: 30,
 		StreamsLimit:     30,
 		AuthLimit:        30,
+		FunctionsLimit:   30,
 	}
 )

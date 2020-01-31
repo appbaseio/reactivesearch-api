@@ -69,6 +69,7 @@ type Limits struct {
 	SuggestionsLimit int64 `json:"suggestions_limit"`
 	StreamsLimit     int64 `json:"streams_limit"`
 	AuthLimit        int64 `json:"auth_limit"`
+	FunctionsLimit   int64 `json:"functions_limit"`
 }
 
 // Options is a function type used to define a permission's properties.
@@ -465,6 +466,8 @@ func (p *Permission) GetLimitFor(c category.Category) (int64, error) {
 		return p.Limits.AuthLimit, nil
 	case category.Streams:
 		return p.Limits.StreamsLimit, nil
+	case category.Functions:
+		return p.Limits.FunctionsLimit, nil
 	default:
 		return -1, fmt.Errorf(`we do not rate limit "%s" category`, c)
 	}
@@ -575,7 +578,10 @@ func (p *Permission) GetPatch(rolePatched bool) (map[string]interface{}, error) 
 			limits["streams_limit"] = p.Limits.StreamsLimit
 		}
 		if p.Limits.AuthLimit != 0 {
-			limits["streams_limit"] = p.Limits.AuthLimit
+			limits["auth_limit"] = p.Limits.AuthLimit
+		}
+		if p.Limits.FunctionsLimit != 0 {
+			limits["functions_limit"] = p.Limits.FunctionsLimit
 		}
 
 		patch["limits"] = limits

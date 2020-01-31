@@ -33,6 +33,7 @@ const (
 	Templates
 	Suggestions
 	Auth
+	Functions
 )
 
 // String is an implementation of Stringer interface that returns the string representation of category.Categories.
@@ -52,6 +53,7 @@ func (c Category) String() string {
 		"templates",
 		"suggestions",
 		"auth",
+		"functions",
 	}[c]
 }
 
@@ -91,6 +93,8 @@ func (c *Category) UnmarshalJSON(bytes []byte) error {
 		*c = Suggestions
 	case Auth.String():
 		*c = Auth
+	case Functions.String():
+		*c = Functions
 	default:
 		return fmt.Errorf("invalid category encountered: %v", category)
 	}
@@ -129,6 +133,8 @@ func (c Category) MarshalJSON() ([]byte, error) {
 		category = Suggestions.String()
 	case Auth:
 		category = Auth.String()
+	case Functions:
+		category = Functions.String()
 	default:
 		return nil, fmt.Errorf("invalid category encountered: %v" + c.String())
 	}

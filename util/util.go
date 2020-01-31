@@ -1,11 +1,13 @@
 package util
 
 import (
+	"bytes"
 	"crypto/tls"
 	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"math"
 	"net"
 	"net/http"
@@ -16,6 +18,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
+	log "github.com/sirupsen/logrus"
 )
 
 // Billing is a build time variable
@@ -155,6 +158,16 @@ func IndicesFromRequest(r *http.Request) []string {
 	return indices
 }
 
+// IsExists searches for an element in an array
+func IsExists(a string, list []string) bool {
+	for _, b := range list {
+		if b == a {
+			return true
+		}
+	}
+	return false
+}
+
 // CountComponents returns the numbers of "/" and "vars" present in the route.
 func CountComponents(route string) (int, int) {
 	pattern := `^{.*}$`
@@ -229,4 +242,25 @@ func DecodeBase64Key(encoded string) ([]byte, error) {
 		return nil, err
 	}
 	return decoded, nil
+}
+
+// MakeRequest helps in proxing http requests
+func MakeRequest(url, method string, reqBody []byte) ([]byte, *http.Response, error) {
+	request, err := http.NewRequest(method, url, bytes.NewReader(reqBody))
+	if err != nil {
+		log.Errorln("Error while creating request object: ", err)
+		return nil, nil, err
+	}
+	response, err := http.DefaultClient.Do(request)
+	if err != nil {
+		log.Errorln("Error while making request: ", err)
+		return nil, nil, err
+	}
+
+	body, err := ioutil.ReadAll(response.Body)
+	if err != nil {
+		log.Errorln("Error while writing response:", err)
+		return nil, nil, err
+	}
+	return body, response, nil
 }
