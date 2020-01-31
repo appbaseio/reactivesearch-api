@@ -49,6 +49,7 @@ func list() []middleware.Middleware {
 		validate.ACL(),
 		validate.Operation(),
 		validate.PermissionExpiry(),
+		// TODO: move transform request logic to querytranslate plugin
 		transformRequest,
 	}
 }
