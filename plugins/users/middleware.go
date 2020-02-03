@@ -2,8 +2,9 @@ package users
 
 import (
 	"fmt"
-	log "github.com/sirupsen/logrus"
 	"net/http"
+
+	log "github.com/sirupsen/logrus"
 
 	"github.com/appbaseio/arc/middleware"
 	"github.com/appbaseio/arc/middleware/classify"
@@ -68,6 +69,7 @@ func isAdmin(h http.HandlerFunc) http.HandlerFunc {
 
 		if !*reqUser.IsAdmin {
 			msg := fmt.Sprintf(`user with "username"="%s" is not an admin`, reqUser.Username)
+			w.Header().Set("www-authenticate", "Basic realm=\"Authentication Required\"")
 			util.WriteBackError(w, msg, http.StatusUnauthorized)
 			return
 		}

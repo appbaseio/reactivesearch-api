@@ -48,6 +48,7 @@ func validateCategory(h http.HandlerFunc) http.HandlerFunc {
 
 		if !ok {
 			msg := fmt.Sprintf(`credential can't access "%s" category`, reqCategory.String())
+			w.Header().Set("www-authenticate", "Basic realm=\"Authentication Required\"")
 			util.WriteBackError(w, msg, http.StatusUnauthorized)
 			return
 		}

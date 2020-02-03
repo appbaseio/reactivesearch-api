@@ -48,6 +48,7 @@ func indices(h http.HandlerFunc) http.HandlerFunc {
 				return
 			}
 			if !ok {
+				w.Header().Set("www-authenticate", "Basic realm=\"Authentication Required\"")
 				util.WriteBackError(w, "credentials cannot access cluster level routes", http.StatusUnauthorized)
 				return
 			}
@@ -61,6 +62,7 @@ func indices(h http.HandlerFunc) http.HandlerFunc {
 			}
 			if !ok {
 				msg := fmt.Sprintf("credentials cannot access %v index/indices", reqIndices)
+				w.Header().Set("www-authenticate", "Basic realm=\"Authentication Required\"")
 				util.WriteBackError(w, msg, http.StatusUnauthorized)
 				return
 			}
