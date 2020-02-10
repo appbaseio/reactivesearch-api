@@ -59,6 +59,7 @@ func referers(h http.HandlerFunc) http.HandlerFunc {
 			}
 
 			if !validated {
+				w.Header().Set("www-authenticate", "Basic realm=\"Authentication Required\"")
 				util.WriteBackError(w, "permission doesn't have required referers", http.StatusUnauthorized)
 				return
 			}

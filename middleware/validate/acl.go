@@ -48,6 +48,7 @@ func validateACL(h http.HandlerFunc) http.HandlerFunc {
 
 		if !ok {
 			msg := fmt.Sprintf(`credentials cannot access "%s" acl`, reqACL.String())
+			w.Header().Set("www-authenticate", "Basic realm=\"Authentication Required\"")
 			util.WriteBackError(w, msg, http.StatusUnauthorized)
 			return
 		}
