@@ -214,11 +214,11 @@ func main() {
 			reactiveSearchMiddleware = append(reactiveSearchMiddleware, plugin.RSMiddleware()...)
 		}
 	}
-	LoadESPluginFromFile(router, elasticSearchPath, elasticSearchMiddleware)
 	// Load ReactiveSearch plugin
 	if reactiveSearchPath != "" {
 		LoadRSPluginFromFile(router, reactiveSearchPath, reactiveSearchMiddleware)
 	}
+	LoadESPluginFromFile(router, elasticSearchPath, elasticSearchMiddleware)
 	if err != nil {
 		log.Fatal("error loading plugins: ", err)
 	}
