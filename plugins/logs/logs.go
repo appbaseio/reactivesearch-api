@@ -73,3 +73,8 @@ func (l *Logs) Routes() []plugins.Route {
 func (l *Logs) ESMiddleware() []middleware.Middleware {
 	return make([]middleware.Middleware, 0)
 }
+
+// Default empty middleware array function
+func (a *Logs) RSMiddleware() []middleware.Middleware {
+	return make([]middleware.Middleware, 0)
+}

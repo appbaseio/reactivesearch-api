@@ -67,3 +67,8 @@ func (u *Users) Routes() []plugins.Route {
 func (u *Users) ESMiddleware() []middleware.Middleware {
 	return make([]middleware.Middleware, 0)
 }
+
+// Default empty middleware array function
+func (u *Users) RSMiddleware() []middleware.Middleware {
+	return make([]middleware.Middleware, 0)
+}
