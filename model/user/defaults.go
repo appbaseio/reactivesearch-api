@@ -28,6 +28,7 @@ var (
 		category.Suggestions,
 		category.Functions,
 		category.ReactiveSearch,
+		category.SearchSettings,
 		category.Auth,
 	}
 
