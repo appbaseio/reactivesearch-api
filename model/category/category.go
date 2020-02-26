@@ -238,6 +238,10 @@ func (c Category) ACLs() []acl.ACL {
 			acl.Ingest,
 			acl.Snapshot,
 		}
+	case ReactiveSearch:
+		return []acl.ACL{
+			acl.ReactiveSearch,
+		}
 	default:
 		return []acl.ACL{}
 	}
