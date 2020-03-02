@@ -166,10 +166,14 @@ func (a *Auth) basicAuth(h http.HandlerFunc) http.HandlerFunc {
 					util.WriteBackError(w, "invalid password", http.StatusUnauthorized)
 					return
 				}
+
+				log.Println("THIS IS THE THING HERE", *reqCategory, *reqCategory == category.ReactiveSearch, reqUser.HasCategory(category.ReactiveSearch))
 				if reqCategory.IsFromES() {
-					authenticated = *reqUser.IsAdmin
-				} else {
 					authenticated = true
+				} else if *reqCategory == category.ReactiveSearch && reqUser.HasCategory(category.ReactiveSearch) {
+					authenticated = true
+				} else {
+					errorMsg = "credential is only allowed to access elasticsearch"
 				}
 
 				if !authenticated {
@@ -195,7 +199,10 @@ func (a *Auth) basicAuth(h http.HandlerFunc) http.HandlerFunc {
 					return
 				}
 
+				log.Println("THIS IS THE THING HERE", *reqCategory, *reqCategory == category.ReactiveSearch, reqPermission.HasCategory(category.ReactiveSearch))
 				if reqCategory.IsFromES() {
+					authenticated = true
+				} else if *reqCategory == category.ReactiveSearch && reqPermission.HasCategory(category.ReactiveSearch) {
 					authenticated = true
 				} else {
 					errorMsg = "credential is only allowed to access elasticsearch"
