@@ -167,13 +167,10 @@ func (a *Auth) basicAuth(h http.HandlerFunc) http.HandlerFunc {
 					return
 				}
 
-				log.Println("THIS IS THE THING HERE", *reqCategory, *reqCategory == category.ReactiveSearch, reqUser.HasCategory(category.ReactiveSearch))
-				if reqCategory.IsFromES() {
-					authenticated = true
-				} else if *reqCategory == category.ReactiveSearch && reqUser.HasCategory(category.ReactiveSearch) {
-					authenticated = true
+				if reqCategory.IsFromES() || reqCategory.IsFromRS() {
+					authenticated = *reqUser.IsAdmin
 				} else {
-					errorMsg = "credential is only allowed to access elasticsearch"
+					authenticated = true
 				}
 
 				if !authenticated {
@@ -200,12 +197,10 @@ func (a *Auth) basicAuth(h http.HandlerFunc) http.HandlerFunc {
 				}
 
 				log.Println("THIS IS THE THING HERE", *reqCategory, *reqCategory == category.ReactiveSearch, reqPermission.HasCategory(category.ReactiveSearch))
-				if reqCategory.IsFromES() {
-					authenticated = true
-				} else if *reqCategory == category.ReactiveSearch && reqPermission.HasCategory(category.ReactiveSearch) {
+				if reqPermission.HasCategory(*reqCategory) {
 					authenticated = true
 				} else {
-					errorMsg = "credential is only allowed to access elasticsearch"
+					errorMsg = "credential is not allowed to access" + *reqCategory.String()
 				}
 
 				// cache the permission
