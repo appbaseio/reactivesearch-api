@@ -174,7 +174,12 @@ func (a *Auth) basicAuth(h http.HandlerFunc) http.HandlerFunc {
 				}
 
 				if !authenticated {
-					errorMsg = "only admin users are allowed to access elasticsearch"
+					if reqCategory.IsFromRS() {
+						errorMsg = "only admin users are allowed to access reactivesearch"
+					} else {
+						errorMsg = "only admin users are allowed to access elasticsearch"
+					}
+
 				}
 
 				// cache the user
@@ -196,12 +201,11 @@ func (a *Auth) basicAuth(h http.HandlerFunc) http.HandlerFunc {
 					return
 				}
 
-				log.Println("THIS IS THE THING HERE", *reqCategory, *reqCategory == category.ReactiveSearch, reqPermission.HasCategory(category.ReactiveSearch))
 				if reqPermission.HasCategory(*reqCategory) {
 					authenticated = true
 				} else {
 					str := (*reqCategory).String()
-					errorMsg = "credential is not allowed to access" + str
+					errorMsg = "credential is not allowed to access" + " " + str
 				}
 
 				// cache the permission
