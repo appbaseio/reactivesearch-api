@@ -200,7 +200,8 @@ func (a *Auth) basicAuth(h http.HandlerFunc) http.HandlerFunc {
 				if reqPermission.HasCategory(*reqCategory) {
 					authenticated = true
 				} else {
-					errorMsg = "credential is not allowed to access" + *reqCategory.String()
+					str := (*reqCategory).String()
+					errorMsg = "credential is not allowed to access" + str
 				}
 
 				// cache the permission
