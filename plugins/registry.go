@@ -39,10 +39,21 @@ type Plugin interface {
 
 	// The plugin's elastic search middleware, if any.
 	ESMiddleware() []middleware.Middleware
+
+	// The plugin's reactive search middleware, if any.
+	RSMiddleware() []middleware.Middleware
 }
 
 // ElasticSearchPlugin holds the plugin for ES
 type ESPlugin interface {
+	nameRoutes
+
+	// mw takes a array of middleware to be intialized by ES Plugin
+	InitFunc(mw []middleware.Middleware) error
+}
+
+// ReactiveSearchPlugin holds the plugin for ReactiveSearch API
+type RSPlugin interface {
 	nameRoutes
 
 	// mw takes a array of middleware to be intialized by ES Plugin
@@ -78,6 +89,15 @@ func LoadPlugin(router *mux.Router, p Plugin) error {
 }
 
 func LoadESPlugin(router *mux.Router, p ESPlugin, mw []middleware.Middleware) error {
+	log.Println(logTag, ": Initializing plugin:", p.Name())
+	err := p.InitFunc(mw)
+	if err != nil {
+		return err
+	}
+	return loadRoutes(router, p)
+}
+
+func LoadRSPlugin(router *mux.Router, p RSPlugin, mw []middleware.Middleware) error {
 	log.Println(logTag, ": Initializing plugin:", p.Name())
 	err := p.InitFunc(mw)
 	if err != nil {

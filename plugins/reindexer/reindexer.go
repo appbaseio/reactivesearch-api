@@ -43,3 +43,8 @@ func (rx *reindexer) Routes() []plugins.Route {
 func (rx *reindexer) ESMiddleware() []middleware.Middleware {
 	return make([]middleware.Middleware, 0)
 }
+
+// Default empty middleware array function
+func (rx *reindexer) RSMiddleware() []middleware.Middleware {
+	return make([]middleware.Middleware, 0)
+}

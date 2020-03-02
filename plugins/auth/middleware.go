@@ -166,14 +166,20 @@ func (a *Auth) basicAuth(h http.HandlerFunc) http.HandlerFunc {
 					util.WriteBackError(w, "invalid password", http.StatusUnauthorized)
 					return
 				}
-				if reqCategory.IsFromES() {
+
+				if reqCategory.IsFromES() || reqCategory.IsFromRS() {
 					authenticated = *reqUser.IsAdmin
 				} else {
 					authenticated = true
 				}
 
 				if !authenticated {
-					errorMsg = "only admin users are allowed to access elasticsearch"
+					if reqCategory.IsFromRS() {
+						errorMsg = "only admin users are allowed to access reactivesearch"
+					} else {
+						errorMsg = "only admin users are allowed to access elasticsearch"
+					}
+
 				}
 
 				// cache the user
@@ -195,10 +201,11 @@ func (a *Auth) basicAuth(h http.HandlerFunc) http.HandlerFunc {
 					return
 				}
 
-				if reqCategory.IsFromES() {
+				if reqPermission.HasCategory(*reqCategory) {
 					authenticated = true
 				} else {
-					errorMsg = "credential is only allowed to access elasticsearch"
+					str := (*reqCategory).String()
+					errorMsg = "credential is not allowed to access" + " " + str
 				}
 
 				// cache the permission

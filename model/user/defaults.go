@@ -27,6 +27,7 @@ var (
 		category.Templates,
 		category.Suggestions,
 		category.Functions,
+		category.ReactiveSearch,
 		category.Auth,
 	}
 

@@ -65,3 +65,8 @@ func (p *permissions) Routes() []plugins.Route {
 func (p *permissions) ESMiddleware() []middleware.Middleware {
 	return make([]middleware.Middleware, 0)
 }
+
+// Default empty middleware array function
+func (p *permissions) RSMiddleware() []middleware.Middleware {
+	return make([]middleware.Middleware, 0)
+}
