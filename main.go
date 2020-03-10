@@ -53,6 +53,14 @@ var (
 	FeatureCustomEvents string
 	// FeatureSuggestions for testing
 	FeatureSuggestions string
+	// FeatureRules for testing
+	FeatureRules string
+	// FeatureTemplates for testing
+	FeatureTemplates string
+	// FeatureFunctions for testing
+	FeatureFunctions string
+	// FeatureSearchSettings for testing
+	FeatureSearchSettings string
 )
 
 func init() {
@@ -166,6 +174,18 @@ func main() {
 	}
 	if FeatureSuggestions != "" && FeatureSuggestions == "true" {
 		util.SetFeatureSuggestions(true)
+	}
+	if FeatureRules != "" && FeatureRules == "true" {
+		util.SetFeatureRules(true)
+	}
+	if FeatureFunctions != "" && FeatureFunctions == "true" {
+		util.SetFeatureFunctions(true)
+	}
+	if FeatureTemplates != "" && FeatureTemplates == "true" {
+		util.SetFeatureTemplates(true)
+	}
+	if FeatureSearchSettings != "" && FeatureSearchSettings == "true" {
+		util.SetFeatureSearchSettings(true)
 	}
 
 	// ES client instantiation

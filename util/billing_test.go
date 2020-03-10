@@ -36,6 +36,22 @@ func TestBilling(t *testing.T) {
 			SetFeatureSuggestions(true)
 			So(GetFeatureSuggestions(), ShouldEqual, true)
 		})
+		Convey("Set FeatureRules", func() {
+			SetFeatureRules(true)
+			So(GetFeatureRules(), ShouldEqual, true)
+		})
+		Convey("Set FeatureFunctions", func() {
+			SetFeatureFunctions(true)
+			So(GetFeatureFunctions(), ShouldEqual, true)
+		})
+		Convey("Set FeatureTemplates", func() {
+			SetFeatureTemplates(true)
+			So(GetFeatureTemplates(), ShouldEqual, true)
+		})
+		Convey("Set FeatureSearchSettings", func() {
+			SetFeatureSearchSettings(true)
+			So(GetFeatureSearchSettings(), ShouldEqual, true)
+		})
 		Convey("Validate TimeValidity: Positive Value", func() {
 			// Set TimeValidity to a positive value
 			var timeValidityMock = 1200000

@@ -44,32 +44,6 @@ func SetTimeValidity(time int64) {
 	timeValidity = time
 }
 
-// Feature custom events
-var featureCustomEvents bool
-
-// GetFeatureCustomEvents returns the featureCustomEvents
-func GetFeatureCustomEvents() bool {
-	return featureCustomEvents
-}
-
-// SetFeatureCustomEvents returns the time validity
-func SetFeatureCustomEvents(val bool) {
-	featureCustomEvents = val
-}
-
-// Feature suggestions
-var featureSuggestions bool
-
-// GetFeatureSuggestions returns the featureSuggestions
-func GetFeatureSuggestions() bool {
-	return featureSuggestions
-}
-
-// SetFeatureSuggestions returns the time validity
-func SetFeatureSuggestions(val bool) {
-	featureSuggestions = val
-}
-
 // maxErrorTime before showing errors if invalid trial / plan in hours
 var maxErrorTime int64 = 24 // in hrs
 
@@ -122,19 +96,23 @@ type ClusterPlanResponse struct {
 
 // ArcInstanceDetails contains the info about an Arc Instance
 type ArcInstanceDetails struct {
-	NodeCount            int                    `json:"node_count"`
-	Description          string                 `json:"description"`
-	SubscriptionID       string                 `json:"subscription_id"`
-	SubscriptionCanceled bool                   `json:"subscription_canceled"`
-	Trial                bool                   `json:"trial"`
-	TrialValidity        int64                  `json:"trial_validity"`
-	CreatedAt            int64                  `json:"created_at"`
-	Tier                 *Plan                  `json:"tier"`
-	TierValidity         int64                  `json:"tier_validity"`
-	TimeValidity         int64                  `json:"time_validity"`
-	Metadata             map[string]interface{} `json:"metadata"`
-	FeatureCustomEvents  bool                   `json:"feature_custom_events"`
-	FeatureSuggestions   bool                   `json:"feature_suggestions"`
+	NodeCount             int                    `json:"node_count"`
+	Description           string                 `json:"description"`
+	SubscriptionID        string                 `json:"subscription_id"`
+	SubscriptionCanceled  bool                   `json:"subscription_canceled"`
+	Trial                 bool                   `json:"trial"`
+	TrialValidity         int64                  `json:"trial_validity"`
+	CreatedAt             int64                  `json:"created_at"`
+	Tier                  *Plan                  `json:"tier"`
+	TierValidity          int64                  `json:"tier_validity"`
+	TimeValidity          int64                  `json:"time_validity"`
+	Metadata              map[string]interface{} `json:"metadata"`
+	FeatureCustomEvents   bool                   `json:"feature_custom_events"`
+	FeatureSuggestions    bool                   `json:"feature_suggestions"`
+	FeatureRules          bool                   `json:"feature_rules"`
+	FeatureTemplates      bool                   `json:"feature_templates"`
+	FeatureFunctions      bool                   `json:"feature_functions"`
+	FeatureSearchSettings bool                   `json:"feature_search_settings"`
 }
 
 // SetDefaultTier sets the default tier when billing is disabled
@@ -197,6 +175,10 @@ func getArcInstance(arcID string) (ArcInstance, error) {
 		SetTier(arcInstanceByID.Tier)
 		SetFeatureSuggestions(arcInstanceByID.FeatureSuggestions)
 		SetFeatureCustomEvents(arcInstanceByID.FeatureCustomEvents)
+		SetFeatureRules(arcInstanceByID.FeatureRules)
+		SetFeatureFunctions(arcInstanceByID.FeatureFunctions)
+		SetFeatureSearchSettings(arcInstanceByID.FeatureSearchSettings)
+		SetFeatureTemplates(arcInstanceByID.FeatureTemplates)
 	} else {
 		return arcInstance, errors.New("No valid instance found for the provided ARC_ID")
 	}
