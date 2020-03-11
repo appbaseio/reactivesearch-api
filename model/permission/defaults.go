@@ -29,6 +29,7 @@ var (
 		category.Auth,
 		category.Functions,
 		category.ReactiveSearch,
+		category.SearchSettings,
 	}
 
 	defaultOps = []op.Operation{
@@ -59,6 +60,7 @@ var (
 		AuthLimit:           10,
 		FunctionsLimit:      10,
 		ReactiveSearchLimit: 10,
+		SearchSettingsLimit: 10,
 	}
 
 	defaultAdminLimits = Limits{
@@ -79,5 +81,6 @@ var (
 		AuthLimit:           30,
 		FunctionsLimit:      30,
 		ReactiveSearchLimit: 30,
+		SearchSettingsLimit: 30,
 	}
 )

@@ -172,7 +172,7 @@ func main() {
 	// ES v7 and v6 clients
 	util.NewClient()
 	// map of specific plugins
-	sequencedPlugins := []string{"rules.so", "functions.so", "analytics.so"}
+	sequencedPlugins := []string{"searchsettings.so", "rules.so", "functions.so", "analytics.so"}
 	sequencedPluginsByPath := make(map[string]string)
 
 	var elasticSearchPath, reactiveSearchPath string
