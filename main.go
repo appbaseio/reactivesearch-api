@@ -92,7 +92,7 @@ func main() {
 		log.Errorln(logTag, ": reading env file", envFile, ": ", err)
 	}
 
-	router := mux.NewRouter()
+	router := mux.NewRouter().StrictSlash(true)
 
 	if PlanRefreshInterval == "" {
 		PlanRefreshInterval = "1"
@@ -108,7 +108,7 @@ func main() {
 	util.Billing = Billing
 	util.HostedBilling = HostedBilling
 	util.ClusterBilling = ClusterBilling
-
+	fmt.Println("===> billing value", Billing, util.Billing)
 	if Billing == "true" {
 		log.Println("You're running Arc with billing module enabled.")
 		util.ReportUsage()
@@ -178,7 +178,9 @@ func main() {
 	var elasticSearchPath, reactiveSearchPath string
 	elasticSearchMiddleware := make([]middleware.Middleware, 0)
 	reactiveSearchMiddleware := make([]middleware.Middleware, 0)
+	fmt.Println("====> outside filepath walk", info.Name())
 	err := filepath.Walk(pluginDir, func(path string, info os.FileInfo, err error) error {
+		fmt.Println("====> inside filepath walk", info.Name())
 		if err != nil {
 			return err
 		}
@@ -269,6 +271,7 @@ func LoadPluginFromFile(router *mux.Router, path string) (plugins.Plugin, error)
 }
 
 func LoadESPluginFromFile(router *mux.Router, path string, mw []middleware.Middleware) error {
+	fmt.Println("=> esplugin file path", path, router.)
 	pi, err2 := LoadPIFromFile(path)
 	if err2 != nil {
 		return err2
