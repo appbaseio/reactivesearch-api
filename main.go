@@ -178,7 +178,7 @@ func main() {
 	var elasticSearchPath, reactiveSearchPath string
 	elasticSearchMiddleware := make([]middleware.Middleware, 0)
 	reactiveSearchMiddleware := make([]middleware.Middleware, 0)
-	fmt.Println("====> outside filepath walk", info.Name())
+	fmt.Println("====> outside filepath walk")
 	err := filepath.Walk(pluginDir, func(path string, info os.FileInfo, err error) error {
 		fmt.Println("====> inside filepath walk", info.Name())
 		if err != nil {
