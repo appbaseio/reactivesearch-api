@@ -1,6 +1,7 @@
 package elasticsearch
 
 import (
+	"fmt"
 	"sync"
 
 	"github.com/appbaseio/arc/middleware"
@@ -19,6 +20,7 @@ type elasticsearch struct {
 }
 
 func Instance() *elasticsearch {
+	fmt.Println("Initializing elasticsearch")
 	once.Do(func() { singleton = &elasticsearch{} })
 	return singleton
 }

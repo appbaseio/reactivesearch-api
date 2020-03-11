@@ -198,6 +198,7 @@ func main() {
 				reactiveSearchPath = path
 			}
 		} else if info.Name() == "elasticsearch.so" {
+			fmt.Println("===== in elasticsearch else if")
 			elasticSearchPath = path
 		}
 		return nil
