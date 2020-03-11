@@ -92,7 +92,7 @@ func main() {
 		log.Errorln(logTag, ": reading env file", envFile, ": ", err)
 	}
 
-	router := mux.NewRouter().StrictSlash(true)
+	router := mux.NewRouter()
 
 	if PlanRefreshInterval == "" {
 		PlanRefreshInterval = "1"
