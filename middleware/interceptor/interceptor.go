@@ -1,6 +1,7 @@
 package interceptor
 
 import (
+	"fmt"
 	"net/http"
 	"net/url"
 	"os"
@@ -23,6 +24,7 @@ func Redirect() middleware.Middleware {
 }
 
 func redirect(h http.HandlerFunc) http.HandlerFunc {
+	fmt.Println("====> redirecting....")
 	return func(w http.ResponseWriter, r *http.Request) {
 		rawURL := os.Getenv("ES_CLUSTER_URL")
 		if rawURL == "" {
@@ -71,7 +73,7 @@ func redirectRequest(r *http.Request) (*http.Request, error) {
 	}
 	redirectRequest.Header = r.Header
 	redirectRequest.Header.Del("Authorization")
-
+	fmt.Println("====> redirecting request")
 	// set request content type
 	v := redirectRequest.Header.Get("Content-Type")
 	if v == "" {
