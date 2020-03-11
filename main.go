@@ -271,7 +271,7 @@ func LoadPluginFromFile(router *mux.Router, path string) (plugins.Plugin, error)
 }
 
 func LoadESPluginFromFile(router *mux.Router, path string, mw []middleware.Middleware) error {
-	fmt.Println("=> esplugin file path", path, router.)
+	fmt.Println("=> esplugin file path", path, router)
 	pi, err2 := LoadPIFromFile(path)
 	if err2 != nil {
 		return err2
