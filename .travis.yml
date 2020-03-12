@@ -7,6 +7,7 @@ go:
 branches:
   only:
     - dev
+    - fix/travis-ci
 
 install: true
 
@@ -17,7 +18,7 @@ jobs:
   include:
     - name: linux
       os: linux
-      dist: xenial
+      dist: trusty
       sudo: required
 
       before_install:
