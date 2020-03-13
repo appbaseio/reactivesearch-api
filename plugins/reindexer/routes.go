@@ -23,6 +23,13 @@ func (rx *reindexer) routes() []plugins.Route {
 			HandlerFunc: middleware(rx.reindex()),
 			Description: "Reindexes a single index with the given mappings, settings and types.",
 		},
+		{
+			Name:        "AliasedIndexes",
+			Methods:     []string{http.MethodGet},
+			Path:        "/_aliasedindices",
+			HandlerFunc: middleware(rx.aliasedIndices()),
+			Description: "Get map of indices and aliases",
+		},
 	}
 	return routes
 }

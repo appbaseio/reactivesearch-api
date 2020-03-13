@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"regexp"
 
 	log "github.com/sirupsen/logrus"
 
@@ -114,11 +115,18 @@ func reindex(ctx context.Context, sourceIndex string, config *reindexConfig, wai
 
 		if destinationIndex == "" {
 			// Fetch all the aliases of old index
-			aliases, err := aliasesOf(ctx, sourceIndex)
+			alias, err := aliasesOf(ctx, sourceIndex)
+
+			var aliases = []string{}
 			if err != nil {
 				return nil, fmt.Errorf(`error fetching aliases of index "%s": %v`, sourceIndex, err)
 			}
-			aliases = append(aliases, sourceIndex)
+
+			if alias == "" {
+				aliases = append(aliases, sourceIndex)
+			} else {
+				aliases = append(aliases, alias)
+			}
 
 			// Delete old index
 			err = deleteIndex(ctx, sourceIndex)
@@ -210,22 +218,27 @@ func settingsOf(ctx context.Context, indexName string) (map[string]interface{}, 
 	return settings, nil
 }
 
-func aliasesOf(ctx context.Context, indexName string) ([]string, error) {
+func aliasesOf(ctx context.Context, indexName string) (string, error) {
 	response, err := util.GetClient7().CatAliases().
 		Pretty(true).
 		Do(ctx)
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 
-	var aliases []string
+	var alias = ""
+
+	// set alias for original index name only.
+	regex := "_reindex_\\d"
+	r, _ := regexp.Compile(regex)
+
 	for _, row := range response {
-		if row.Index == indexName {
-			aliases = append(aliases, row.Alias)
+		if row.Index == indexName && !r.MatchString(indexName) {
+			alias = row.Alias
 		}
 	}
 
-	return aliases, nil
+	return alias, nil
 }
 
 func createIndex(ctx context.Context, indexName string, body map[string]interface{}) error {
@@ -287,4 +300,28 @@ func getIndicesByAlias(ctx context.Context, alias string) ([]string, error) {
 		return nil, err
 	}
 	return response.IndicesByAlias(alias), nil
+}
+
+func getAliasedIndices(ctx context.Context) ([]map[string]interface{}, error) {
+	var res []map[string]interface{}
+	indices, err := util.GetClient7().CatIndices().
+		Do(ctx)
+	if err != nil {
+		return res, err
+	}
+
+	for _, index := range indices {
+		indexJSON, err := json.Marshal(index)
+		indexMap := make(map[string]interface{})
+		json.Unmarshal(indexJSON, &indexMap)
+		alias, err := aliasesOf(ctx, index.Index)
+		if err == nil && alias != "" {
+			indexMap["alias"] = alias
+		}
+
+		res = append(res, indexMap)
+
+	}
+
+	return res, nil
 }
