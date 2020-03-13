@@ -9,6 +9,21 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+// AliasedIndices struct
+type AliasedIndices struct {
+	Alias        string `json:"alias"`
+	Health       string `json:"health"`
+	Status       string `json:"status"`
+	Index        string `json:"index"`
+	UUID         string `json:"uuid"`
+	Pri          int    `json:"pri"`
+	Rep          int    `json:"rep"`
+	DocsCount    int    `json:"docs.count"`
+	DocsDeleted  int    `json:"docs.deleted"`
+	StoreSize    string `json:"store.size"`
+	PriStoreSize string `json:"pri.store.size"`
+}
+
 // reindexedName calculates from the name the number of times an index has been
 // reindexed to generate the successive name for the index. For example: for an
 // index named "twitter", the funtion returns "twitter_reindexed_1", and for an

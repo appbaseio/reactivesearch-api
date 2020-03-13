@@ -302,26 +302,35 @@ func getIndicesByAlias(ctx context.Context, alias string) ([]string, error) {
 	return response.IndicesByAlias(alias), nil
 }
 
-func getAliasedIndices(ctx context.Context) ([]map[string]interface{}, error) {
-	var res []map[string]interface{}
+func getAliasedIndices(ctx context.Context) ([]AliasedIndices, error) {
+	var indicesList []AliasedIndices
 	indices, err := util.GetClient7().CatIndices().
 		Do(ctx)
 	if err != nil {
-		return res, err
+		return indicesList, err
 	}
 
 	for _, index := range indices {
-		indexJSON, err := json.Marshal(index)
-		indexMap := make(map[string]interface{})
-		json.Unmarshal(indexJSON, &indexMap)
+		var indexStruct = AliasedIndices{
+			Health:       index.Health,
+			Status:       index.Status,
+			Index:        index.Index,
+			UUID:         index.UUID,
+			Pri:          index.Pri,
+			Rep:          index.Rep,
+			DocsCount:    index.DocsCount,
+			DocsDeleted:  index.DocsDeleted,
+			StoreSize:    index.StoreSize,
+			PriStoreSize: index.PriStoreSize,
+		}
 		alias, err := aliasesOf(ctx, index.Index)
 		if err == nil && alias != "" {
-			indexMap["alias"] = alias
+			indexStruct.Alias = alias
 		}
 
-		res = append(res, indexMap)
+		indicesList = append(indicesList, indexStruct)
 
 	}
 
-	return res, nil
+	return indicesList, nil
 }
