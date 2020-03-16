@@ -1,7 +1,7 @@
 package classify
 
 // IndexAliasCache cache to stor index alias map
-var IndexAliasCache map[string]string
+var IndexAliasCache = map[string]string{}
 
 // GetIndexAliasCache get whole cache
 func GetIndexAliasCache() map[string]string {
