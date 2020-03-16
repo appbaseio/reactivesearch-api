@@ -67,5 +67,4 @@ func InitIndexAliasCache() {
 		}
 	}
 	log.Println(logTag, "=> Alias Index Cache", classify.GetIndexAliasCache())
-
 }
