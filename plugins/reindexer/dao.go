@@ -234,7 +234,8 @@ func aliasesOf(ctx context.Context, indexName string) (string, error) {
 	r, _ := regexp.Compile(regex)
 
 	for _, row := range response {
-		if row.Index == indexName && !r.MatchString(indexName) {
+		// r.MatchString(indexName) this condition is added to handle existing alias which are created incorrectly
+		if row.Index == indexName && r.MatchString(indexName) {
 			alias = row.Alias
 		}
 	}
