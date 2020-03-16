@@ -8,6 +8,7 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
+	"github.com/appbaseio/arc/middleware/classify"
 	"github.com/appbaseio/arc/util"
 	es7 "github.com/olivere/elastic/v7"
 )
@@ -229,7 +230,7 @@ func aliasesOf(ctx context.Context, indexName string) (string, error) {
 	var alias = ""
 
 	// set alias for original index name only.
-	regex := "_reindex_\\d"
+	regex := ".*reindexed_[0-9]+"
 	r, _ := regexp.Compile(regex)
 
 	for _, row := range response {
@@ -289,6 +290,8 @@ func setAlias(ctx context.Context, indexName string, aliases ...string) error {
 		return fmt.Errorf(`unable to set aliases "%v" for index "%s"`, aliases, indexName)
 	}
 
+	// We only have one alias per index.
+	classify.SetIndexAlias(indexName, aliases[0])
 	return nil
 }
 
@@ -310,6 +313,13 @@ func getAliasedIndices(ctx context.Context) ([]AliasedIndices, error) {
 		return indicesList, err
 	}
 
+	aliases, err := util.GetClient7().CatAliases().
+		Pretty(true).
+		Do(ctx)
+	if err != nil {
+		return indicesList, err
+	}
+
 	for _, index := range indices {
 		var indexStruct = AliasedIndices{
 			Health:       index.Health,
@@ -323,7 +333,16 @@ func getAliasedIndices(ctx context.Context) ([]AliasedIndices, error) {
 			StoreSize:    index.StoreSize,
 			PriStoreSize: index.PriStoreSize,
 		}
-		alias, err := aliasesOf(ctx, index.Index)
+		var alias string
+		regex := ".*reindexed_[0-9]+"
+		r, _ := regexp.Compile(regex)
+
+		for _, row := range aliases {
+			if row.Index == index.Index && r.MatchString(index.Index) {
+				alias = row.Alias
+				break
+			}
+		}
 		if err == nil && alias != "" {
 			indexStruct.Alias = alias
 		}

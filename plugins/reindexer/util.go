@@ -1,11 +1,13 @@
 package reindexer
 
 import (
+	"context"
 	"fmt"
 	"regexp"
 	"strconv"
 	"strings"
 
+	"github.com/appbaseio/arc/middleware/classify"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -52,4 +54,18 @@ func reindexedName(indexName string) (string, error) {
 	}
 
 	return indexName, nil
+}
+
+// InitIndexAliasCache to set cache on arc initialization
+func InitIndexAliasCache() {
+	ctx := context.Background()
+	aliasedIndexes, _ := getAliasedIndices(ctx)
+
+	for _, aliasIndex := range aliasedIndexes {
+		if aliasIndex.Alias != "" {
+			classify.SetIndexAlias(aliasIndex.Index, aliasIndex.Alias)
+		}
+	}
+	log.Println(logTag, "=> Alias Index Cache", classify.GetIndexAliasCache())
+
 }
