@@ -71,6 +71,7 @@ type Limits struct {
 	AuthLimit           int64 `json:"auth_limit"`
 	FunctionsLimit      int64 `json:"functions_limit"`
 	ReactiveSearchLimit int64 `json:"reactivesearch_limit"`
+	SearchSettingsLimit int64 `json:"searchsettings_limit"`
 }
 
 // Options is a function type used to define a permission's properties.
@@ -471,6 +472,8 @@ func (p *Permission) GetLimitFor(c category.Category) (int64, error) {
 		return p.Limits.FunctionsLimit, nil
 	case category.ReactiveSearch:
 		return p.Limits.ReactiveSearchLimit, nil
+	case category.SearchSettings:
+		return p.Limits.SearchSettingsLimit, nil
 	default:
 		return -1, fmt.Errorf(`we do not rate limit "%s" category`, c)
 	}
@@ -589,6 +592,10 @@ func (p *Permission) GetPatch(rolePatched bool) (map[string]interface{}, error) 
 
 		if p.Limits.ReactiveSearchLimit != 0 {
 			limits["reactivesearch_limit"] = p.Limits.ReactiveSearchLimit
+		}
+
+		if p.Limits.SearchSettingsLimit != 0 {
+			limits["searchsettings_limit"] = p.Limits.SearchSettingsLimit
 		}
 
 		patch["limits"] = limits

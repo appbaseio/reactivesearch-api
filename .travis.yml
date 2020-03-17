@@ -29,9 +29,9 @@ jobs:
         - make clean && make
 
       before_deploy:
-        - mkdir -p pkg/mod/github.com/appbaseio/
-        - sudo mv $GOPATH/pkg/mod/github.com/appbaseio/* pkg/mod/github.com/appbaseio/
-        - zip -r arc-linux.zip build pkg sample
+        - mkdir -p go/pkg/mod/github.com/appbaseio/
+        - sudo mv $GOPATH/pkg/mod/github.com/appbaseio/* go/pkg/mod/github.com/appbaseio/
+        - zip -r arc-linux.zip build go sample
         - export TRAVIS_TAG="preview"
 
       deploy:
@@ -40,5 +40,6 @@ jobs:
         skip_cleanup: true
         file: arc-linux.zip
         draft: true
+        overwrite: true
         on:
           all_branches: true

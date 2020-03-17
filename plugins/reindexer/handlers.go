@@ -60,6 +60,19 @@ func (rx *reindexer) reindexSrcToDest() http.HandlerFunc {
 	}
 }
 
+func (rx *reindexer) aliasedIndices() http.HandlerFunc {
+	return func(w http.ResponseWriter, req *http.Request) {
+		res, err := getAliasedIndices(req.Context())
+		if err != nil {
+			util.WriteBackError(w, "Unable to get aliased indices.\n"+err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		response, err := json.Marshal(res)
+		errorHandler(nil, w, response)
+	}
+}
+
 func errorHandler(err error, w http.ResponseWriter, response []byte) {
 	if err != nil {
 		log.Errorln(logTag, ":", err)
