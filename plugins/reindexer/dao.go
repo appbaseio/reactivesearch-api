@@ -4,9 +4,11 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"regexp"
 
 	log "github.com/sirupsen/logrus"
 
+	"github.com/appbaseio/arc/middleware/classify"
 	"github.com/appbaseio/arc/util"
 	es7 "github.com/olivere/elastic/v7"
 )
@@ -114,11 +116,18 @@ func reindex(ctx context.Context, sourceIndex string, config *reindexConfig, wai
 
 		if destinationIndex == "" {
 			// Fetch all the aliases of old index
-			aliases, err := aliasesOf(ctx, sourceIndex)
+			alias, err := aliasesOf(ctx, sourceIndex)
+
+			var aliases = []string{}
 			if err != nil {
 				return nil, fmt.Errorf(`error fetching aliases of index "%s": %v`, sourceIndex, err)
 			}
-			aliases = append(aliases, sourceIndex)
+
+			if alias == "" {
+				aliases = append(aliases, sourceIndex)
+			} else {
+				aliases = append(aliases, alias)
+			}
 
 			// Delete old index
 			err = deleteIndex(ctx, sourceIndex)
@@ -210,22 +219,28 @@ func settingsOf(ctx context.Context, indexName string) (map[string]interface{}, 
 	return settings, nil
 }
 
-func aliasesOf(ctx context.Context, indexName string) ([]string, error) {
+func aliasesOf(ctx context.Context, indexName string) (string, error) {
 	response, err := util.GetClient7().CatAliases().
 		Pretty(true).
 		Do(ctx)
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 
-	var aliases []string
+	var alias = ""
+
+	// set alias for original index name only.
+	regex := ".*reindexed_[0-9]+"
+	r, _ := regexp.Compile(regex)
+
 	for _, row := range response {
-		if row.Index == indexName {
-			aliases = append(aliases, row.Alias)
+		// r.MatchString(indexName) this condition is added to handle existing alias which are created incorrectly
+		if row.Index == indexName && r.MatchString(indexName) {
+			alias = row.Alias
 		}
 	}
 
-	return aliases, nil
+	return alias, nil
 }
 
 func createIndex(ctx context.Context, indexName string, body map[string]interface{}) error {
@@ -276,6 +291,8 @@ func setAlias(ctx context.Context, indexName string, aliases ...string) error {
 		return fmt.Errorf(`unable to set aliases "%v" for index "%s"`, aliases, indexName)
 	}
 
+	// We only have one alias per index.
+	classify.SetIndexAlias(indexName, aliases[0])
 	return nil
 }
 
@@ -287,4 +304,53 @@ func getIndicesByAlias(ctx context.Context, alias string) ([]string, error) {
 		return nil, err
 	}
 	return response.IndicesByAlias(alias), nil
+}
+
+func getAliasedIndices(ctx context.Context) ([]AliasedIndices, error) {
+	var indicesList []AliasedIndices
+	indices, err := util.GetClient7().CatIndices().
+		Do(ctx)
+	if err != nil {
+		return indicesList, err
+	}
+
+	aliases, err := util.GetClient7().CatAliases().
+		Pretty(true).
+		Do(ctx)
+	if err != nil {
+		return indicesList, err
+	}
+
+	for _, index := range indices {
+		var indexStruct = AliasedIndices{
+			Health:       index.Health,
+			Status:       index.Status,
+			Index:        index.Index,
+			UUID:         index.UUID,
+			Pri:          index.Pri,
+			Rep:          index.Rep,
+			DocsCount:    index.DocsCount,
+			DocsDeleted:  index.DocsDeleted,
+			StoreSize:    index.StoreSize,
+			PriStoreSize: index.PriStoreSize,
+		}
+		var alias string
+		regex := ".*reindexed_[0-9]+"
+		r, _ := regexp.Compile(regex)
+
+		for _, row := range aliases {
+			if row.Index == index.Index && r.MatchString(index.Index) {
+				alias = row.Alias
+				break
+			}
+		}
+		if err == nil && alias != "" {
+			indexStruct.Alias = alias
+		}
+
+		indicesList = append(indicesList, indexStruct)
+
+	}
+
+	return indicesList, nil
 }

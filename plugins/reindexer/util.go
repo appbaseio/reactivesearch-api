@@ -1,13 +1,30 @@
 package reindexer
 
 import (
+	"context"
 	"fmt"
 	"regexp"
 	"strconv"
 	"strings"
 
+	"github.com/appbaseio/arc/middleware/classify"
 	log "github.com/sirupsen/logrus"
 )
+
+// AliasedIndices struct
+type AliasedIndices struct {
+	Alias        string `json:"alias"`
+	Health       string `json:"health"`
+	Status       string `json:"status"`
+	Index        string `json:"index"`
+	UUID         string `json:"uuid"`
+	Pri          int    `json:"pri"`
+	Rep          int    `json:"rep"`
+	DocsCount    int    `json:"docs.count"`
+	DocsDeleted  int    `json:"docs.deleted"`
+	StoreSize    string `json:"store.size"`
+	PriStoreSize string `json:"pri.store.size"`
+}
 
 // reindexedName calculates from the name the number of times an index has been
 // reindexed to generate the successive name for the index. For example: for an
@@ -37,4 +54,17 @@ func reindexedName(indexName string) (string, error) {
 	}
 
 	return indexName, nil
+}
+
+// InitIndexAliasCache to set cache on arc initialization
+func InitIndexAliasCache() {
+	ctx := context.Background()
+	aliasedIndexes, _ := getAliasedIndices(ctx)
+
+	for _, aliasIndex := range aliasedIndexes {
+		if aliasIndex.Alias != "" {
+			classify.SetIndexAlias(aliasIndex.Index, aliasIndex.Alias)
+		}
+	}
+	log.Println(logTag, "=> Alias Index Cache", classify.GetIndexAliasCache())
 }
