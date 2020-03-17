@@ -210,9 +210,9 @@ func (u *Users) patchUser() http.HandlerFunc {
 			}
 		}
 
-		raw, err := u.es.patchUser(req.Context(), username, patch)
-		if err == nil {
-			util.WriteBackRaw(w, raw, http.StatusOK)
+		_, err2 := u.es.patchUser(req.Context(), username, patch)
+		if err2 == nil {
+			util.WriteBackMessage(w, "User is updated successfully", http.StatusOK)
 			return
 		}
 
@@ -281,9 +281,9 @@ func (u *Users) patchUserWithUsername() http.HandlerFunc {
 			}
 		}
 
-		raw, err := u.es.patchUser(req.Context(), username, patch)
-		if err == nil {
-			util.WriteBackRaw(w, raw, http.StatusOK)
+		_, err2 := u.es.patchUser(req.Context(), username, patch)
+		if err2 == nil {
+			util.WriteBackMessage(w, "User is updated successfully", http.StatusOK)
 			return
 		}
 
