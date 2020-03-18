@@ -191,6 +191,7 @@ func main() {
 	// ES client instantiation
 	// ES v7 and v6 clients
 	util.NewClient()
+	util.SetDefaultIndexTemplate()
 	// map of specific plugins
 	sequencedPlugins := []string{"searchsettings.so", "rules.so", "functions.so", "analytics.so"}
 	sequencedPluginsByPath := make(map[string]string)
