@@ -264,3 +264,12 @@ func MakeRequest(url, method string, reqBody []byte) ([]byte, *http.Response, er
 	}
 	return body, response, nil
 }
+
+func Find(slice []string, val string) (int, bool) {
+	for i, item := range slice {
+		if item == val {
+			return i, true
+		}
+	}
+	return -1, false
+}

@@ -50,17 +50,23 @@ func reindex(ctx context.Context, sourceIndex string, config *reindexConfig, wai
 
 	// If mappings are not passed, we fetch the mappings of the old index.
 	if config.Mappings == nil {
-		config.Mappings, err = mappingsOf(ctx, sourceIndex)
-		if err != nil {
-			return nil, fmt.Errorf(`error fetching mappings of index "%s": %v`, sourceIndex, err)
+		_, found := util.Find(config.Action, "mappings")
+		if config.Action == nil || found {
+			config.Mappings, err = mappingsOf(ctx, sourceIndex)
+			if err != nil {
+				return nil, fmt.Errorf(`error fetching mappings of index "%s": %v`, sourceIndex, err)
+			}
 		}
 	}
 
 	// If settings are not passed, we fetch the settings of the old index.
 	if config.Settings == nil {
-		config.Settings, err = settingsOf(ctx, sourceIndex)
-		if err != nil {
-			return nil, fmt.Errorf(`error fetching settings of index "%s": %v`, sourceIndex, err)
+		_, found := util.Find(config.Action, "settings")
+		if config.Action == nil || found {
+			config.Settings, err = settingsOf(ctx, sourceIndex)
+			if err != nil {
+				return nil, fmt.Errorf(`error fetching settings of index "%s": %v`, sourceIndex, err)
+			}
 		}
 	}
 
@@ -83,8 +89,10 @@ func reindex(ctx context.Context, sourceIndex string, config *reindexConfig, wai
 		return nil, err
 	}
 
-	// abruptly return if action is mappings
-	if config.Action == "mappings" {
+	_, found := util.Find(config.Action, "data")
+
+	// do not copy data
+	if !(config.Action == nil || found) {
 		return nil, nil
 	}
 
