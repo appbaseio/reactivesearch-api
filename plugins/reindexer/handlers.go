@@ -18,7 +18,7 @@ type reindexConfig struct {
 	Include  []string               `json:"include_fields"`
 	Exclude  []string               `json:"exclude_fields"`
 	Types    []string               `json:"types"`
-	Action   string                 `json:"action"`
+	Action   []string               `json:"action,omitempty"`
 }
 
 func (rx *reindexer) reindex() http.HandlerFunc {
