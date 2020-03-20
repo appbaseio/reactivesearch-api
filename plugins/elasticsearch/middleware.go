@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"net/http/httptest"
 	"strings"
 
 	log "github.com/sirupsen/logrus"
@@ -17,6 +18,7 @@ import (
 	"github.com/appbaseio/arc/middleware/validate"
 	"github.com/appbaseio/arc/model/acl"
 	"github.com/appbaseio/arc/model/category"
+	"github.com/appbaseio/arc/model/index"
 	"github.com/appbaseio/arc/model/op"
 	"github.com/appbaseio/arc/model/permission"
 	"github.com/appbaseio/arc/plugins/auth"
@@ -49,7 +51,7 @@ func list() []middleware.Middleware {
 		validate.ACL(),
 		validate.Operation(),
 		validate.PermissionExpiry(),
-		transformRequest,
+		intercept,
 	}
 }
 
@@ -123,7 +125,7 @@ func classifyOp(h http.HandlerFunc) http.HandlerFunc {
 	}
 }
 
-func transformRequest(h http.HandlerFunc) http.HandlerFunc {
+func intercept(h http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
 		ctx := req.Context()
 		reqACL, err := acl.FromContext(ctx)
@@ -138,75 +140,104 @@ func transformRequest(h http.HandlerFunc) http.HandlerFunc {
 			reqPermission, err := permission.FromContext(ctx)
 			if err != nil {
 				log.Errorln(logTag, ":", err)
-				h(w, req)
-				return
-			}
-			sources := make(map[string]interface{})
-			var Includes, Excludes []string
-			Includes = reqPermission.Includes
-			Excludes = reqPermission.Excludes
-			if len(Includes) > 0 {
-				sources["includes"] = Includes
-			}
-			if len(Excludes) > 0 {
-				sources["excludes"] = Excludes
-			}
-			_, isExcludesPresent := sources["excludes"]
-			isEmpty := len(Includes) == 0 && len(Excludes) == 0
-			isDefaultInclude := len(Includes) > 0 && Includes[0] == "*"
-			shouldApplyFilters := !isEmpty && (!isDefaultInclude || isExcludesPresent)
-			if shouldApplyFilters {
-				if isMsearch {
-					// Handle the _msearch requests
-					body, err := ioutil.ReadAll(req.Body)
-					if err != nil {
-						log.Errorln(logTag, ":", err)
-						util.WriteBackError(w, err.Error(), http.StatusInternalServerError)
-						return
-					}
-					var reqBodyString = string(body)
-					splitReq := strings.Split(reqBodyString, "\n")
-					var modifiedBodyString string
-					for index, element := range splitReq {
-						if index%2 == 1 { // even lines
-							var reqBody = make(map[string]interface{})
-							err := json.Unmarshal([]byte(element), &reqBody)
-							if err != nil {
-								log.Errorln(logTag, ":", err)
-								util.WriteBackError(w, err.Error(), http.StatusInternalServerError)
-								return
-							}
-							reqBody["_source"] = sources
-							raw, err := json.Marshal(reqBody)
-							if err != nil {
-								log.Errorln(logTag, ":", err)
-								util.WriteBackError(w, err.Error(), http.StatusInternalServerError)
-								return
-							}
-							modifiedBodyString += string(raw)
-						} else {
-							modifiedBodyString += element
+			} else {
+				sources := make(map[string]interface{})
+				var Includes, Excludes []string
+				Includes = reqPermission.Includes
+				Excludes = reqPermission.Excludes
+				if len(Includes) > 0 {
+					sources["includes"] = Includes
+				}
+				if len(Excludes) > 0 {
+					sources["excludes"] = Excludes
+				}
+				_, isExcludesPresent := sources["excludes"]
+				isEmpty := len(Includes) == 0 && len(Excludes) == 0
+				isDefaultInclude := len(Includes) > 0 && Includes[0] == "*"
+				shouldApplyFilters := !isEmpty && (!isDefaultInclude || isExcludesPresent)
+				if shouldApplyFilters {
+					if isMsearch {
+						// Handle the _msearch requests
+						body, err := ioutil.ReadAll(req.Body)
+						if err != nil {
+							log.Errorln(logTag, ":", err)
+							util.WriteBackError(w, err.Error(), http.StatusInternalServerError)
+							return
 						}
-						modifiedBodyString += "\n"
+						var reqBodyString = string(body)
+						splitReq := strings.Split(reqBodyString, "\n")
+						var modifiedBodyString string
+						for index, element := range splitReq {
+							if index%2 == 1 { // even lines
+								var reqBody = make(map[string]interface{})
+								err := json.Unmarshal([]byte(element), &reqBody)
+								if err != nil {
+									log.Errorln(logTag, ":", err)
+									util.WriteBackError(w, err.Error(), http.StatusInternalServerError)
+									return
+								}
+								reqBody["_source"] = sources
+								raw, err := json.Marshal(reqBody)
+								if err != nil {
+									log.Errorln(logTag, ":", err)
+									util.WriteBackError(w, err.Error(), http.StatusInternalServerError)
+									return
+								}
+								modifiedBodyString += string(raw)
+							} else {
+								modifiedBodyString += element
+							}
+							modifiedBodyString += "\n"
+						}
+						modifiedBody := []byte(modifiedBodyString)
+						req.Body = ioutil.NopCloser(bytes.NewReader(modifiedBody))
+					} else {
+						body, err := ioutil.ReadAll(req.Body)
+						if err != nil {
+							log.Errorln(logTag, ":", err)
+							util.WriteBackError(w, err.Error(), http.StatusInternalServerError)
+							return
+						}
+						d := json.NewDecoder(ioutil.NopCloser(bytes.NewReader(body)))
+						reqBody := make(map[string]interface{})
+						d.Decode(&reqBody)
+						reqBody["_source"] = sources
+						modifiedBody, _ := json.Marshal(reqBody)
+						req.Body = ioutil.NopCloser(bytes.NewReader(modifiedBody))
 					}
-					modifiedBody := []byte(modifiedBodyString)
-					req.Body = ioutil.NopCloser(bytes.NewReader(modifiedBody))
-				} else {
-					body, err := ioutil.ReadAll(req.Body)
-					if err != nil {
-						log.Errorln(logTag, ":", err)
-						util.WriteBackError(w, err.Error(), http.StatusInternalServerError)
-						return
-					}
-					d := json.NewDecoder(ioutil.NopCloser(bytes.NewReader(body)))
-					reqBody := make(map[string]interface{})
-					d.Decode(&reqBody)
-					reqBody["_source"] = sources
-					modifiedBody, _ := json.Marshal(reqBody)
-					req.Body = ioutil.NopCloser(bytes.NewReader(modifiedBody))
 				}
 			}
+
 		}
-		h(w, req)
+
+		resp := httptest.NewRecorder()
+		indices, err := index.FromContext(req.Context())
+		h(resp, req)
+
+		// Copy the response to writer
+		for k, v := range resp.Header() {
+			w.Header()[k] = v
+		}
+
+		result := resp.Result()
+		body, err2 := ioutil.ReadAll(result.Body)
+		if err2 != nil {
+			log.Errorln(logTag, ":", err2)
+			util.WriteBackError(w, "error reading response body", http.StatusInternalServerError)
+			return
+		}
+		for _, index := range indices {
+			alias := classify.GetIndexAlias(index)
+			if alias != "" {
+				body = bytes.Replace(body, []byte(index), []byte(alias), -1)
+				continue
+			}
+			// if alias is present in url get index name from cache
+			indexName := classify.GetAliasIndex(index)
+			if indexName != "" {
+				body = bytes.Replace(body, []byte(indexName), []byte(index), -1)
+			}
+		}
+		util.WriteBackRaw(w, body, http.StatusOK)
 	}
 }

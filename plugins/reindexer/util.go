@@ -59,12 +59,20 @@ func reindexedName(indexName string) (string, error) {
 // InitIndexAliasCache to set cache on arc initialization
 func InitIndexAliasCache() {
 	ctx := context.Background()
-	aliasedIndexes, _ := getAliasedIndices(ctx)
+	indexAlias, _ := getAliasedIndices(ctx)
 
-	for _, aliasIndex := range aliasedIndexes {
+	for _, aliasIndex := range indexAlias {
 		if aliasIndex.Alias != "" {
 			classify.SetIndexAlias(aliasIndex.Index, aliasIndex.Alias)
 		}
 	}
-	log.Println(logTag, "=> Alias Index Cache", classify.GetIndexAliasCache())
+	log.Println(logTag, "=> Index Alias Cache", classify.GetIndexAliasCache())
+}
+
+// InitAliasIndexCache to set alias -> index cache on initialization
+func InitAliasIndexCache() {
+	ctx := context.Background()
+	aliasIndexMap, _ := getAliasIndexMap(ctx)
+	classify.SetAliasIndexCache(aliasIndexMap)
+	log.Println(logTag, "=> Alias Index Cache", classify.GetAliasIndexCache())
 }
