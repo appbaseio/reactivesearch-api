@@ -33,6 +33,7 @@ func (rx *reindexer) Name() string {
 
 func (rx *reindexer) InitFunc() error {
 	InitIndexAliasCache()
+	InitAliasIndexCache()
 	return nil
 }
 

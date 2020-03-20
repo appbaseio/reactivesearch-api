@@ -293,6 +293,7 @@ func setAlias(ctx context.Context, indexName string, aliases ...string) error {
 
 	// We only have one alias per index.
 	classify.SetIndexAlias(indexName, aliases[0])
+	classify.SetAliasIndex(aliases[0], indexName)
 	return nil
 }
 
@@ -353,4 +354,20 @@ func getAliasedIndices(ctx context.Context) ([]AliasedIndices, error) {
 	}
 
 	return indicesList, nil
+}
+
+func getAliasIndexMap(ctx context.Context) (map[string]string, error) {
+	var res = make(map[string]string)
+	aliases, err := util.GetClient7().CatAliases().
+		Pretty(true).
+		Do(ctx)
+	if err != nil {
+		return res, err
+	}
+
+	for _, alias := range aliases {
+		res[alias.Alias] = alias.Index
+	}
+
+	return res, nil
 }
