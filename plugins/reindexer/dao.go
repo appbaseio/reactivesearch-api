@@ -50,7 +50,7 @@ func reindex(ctx context.Context, sourceIndex string, config *reindexConfig, wai
 
 	// If mappings are not passed, we fetch the mappings of the old index.
 	if config.Mappings == nil {
-		_, found := util.Find(config.Action, "mappings")
+		found := util.IsExists(Mappings.String(), config.Action)
 		if config.Action == nil || found {
 			config.Mappings, err = mappingsOf(ctx, sourceIndex)
 			if err != nil {
@@ -61,7 +61,7 @@ func reindex(ctx context.Context, sourceIndex string, config *reindexConfig, wai
 
 	// If settings are not passed, we fetch the settings of the old index.
 	if config.Settings == nil {
-		_, found := util.Find(config.Action, "settings")
+		found := util.IsExists(Settings.String(), config.Action)
 		if config.Action == nil || found {
 			config.Settings, err = settingsOf(ctx, sourceIndex)
 			if err != nil {
@@ -72,8 +72,12 @@ func reindex(ctx context.Context, sourceIndex string, config *reindexConfig, wai
 
 	// Setup the destination index prior to running the _reindex action.
 	body := make(map[string]interface{})
-	body["mappings"] = config.Mappings
-	body["settings"] = config.Settings
+	if config.Mappings != nil {
+		body["mappings"] = config.Mappings
+	}
+	if config.Settings != nil {
+		body["settings"] = config.Settings
+	}
 	newIndexName := destinationIndex
 	if destinationIndex == "" {
 		newIndexName, err = reindexedName(sourceIndex)
@@ -89,7 +93,7 @@ func reindex(ctx context.Context, sourceIndex string, config *reindexConfig, wai
 		return nil, err
 	}
 
-	_, found := util.Find(config.Action, "data")
+	found := util.IsExists(Data.String(), config.Action)
 
 	// do not copy data
 	if !(config.Action == nil || found) {
