@@ -48,6 +48,8 @@ func reindex(ctx context.Context, sourceIndex string, config *reindexConfig, wai
 		sourceIndex = indices[0]
 	}
 
+	log.Println("indices", indices, sourceIndex)
+
 	// If mappings are not passed, we fetch the mappings of the old index.
 	if config.Mappings == nil {
 		found := util.IsExists(Mappings.String(), config.Action)
@@ -83,6 +85,8 @@ func reindex(ctx context.Context, sourceIndex string, config *reindexConfig, wai
 		newIndexName, err = reindexedName(sourceIndex)
 	}
 
+	log.Println("new index name", newIndexName)
+
 	if err != nil {
 		return nil, fmt.Errorf(`error generating a new index name for index "%s": %v`, sourceIndex, err)
 	}
@@ -100,15 +104,23 @@ func reindex(ctx context.Context, sourceIndex string, config *reindexConfig, wai
 		return nil, nil
 	}
 
+	log.Println("new index body", body)
+
 	// Configure reindex source
 	src := es7.NewReindexSource().
 		Index(sourceIndex).
 		Type(config.Types...).
 		FetchSourceIncludeExclude(config.Include, config.Exclude)
 
+	log.Println("------- after configure -----------")
+
+	log.Println("new reindex source", src)
+
 	// Configure reindex dest
 	dest := es7.NewReindexDestination().
 		Index(newIndexName)
+
+	log.Println("new reindex destination", dest)
 
 	// Reindex action.
 	reindex := util.GetClient7().Reindex().
