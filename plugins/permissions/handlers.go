@@ -230,9 +230,9 @@ func (p *permissions) patchPermission() http.HandlerFunc {
 			}
 		}
 
-		raw, err := p.es.patchPermission(req.Context(), username, patch)
-		if err == nil {
-			util.WriteBackRaw(w, raw, http.StatusOK)
+		_, err2 := p.es.patchPermission(req.Context(), username, patch)
+		if err2 == nil {
+			util.WriteBackMessage(w, "Permission is updated successfully", http.StatusOK)
 			return
 		}
 
