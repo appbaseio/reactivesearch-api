@@ -102,7 +102,7 @@ func SetDefaultIndexTemplate() error {
 						},
 						"synonyms": {
 							"type": "text",
-							"analyzer": "synonym"
+							"analyzer": "synonyms"
 						},
 						"lang": {
 							"type": "text",
