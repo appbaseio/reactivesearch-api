@@ -193,7 +193,7 @@ func main() {
 	util.NewClient()
 	util.SetDefaultIndexTemplate()
 	// map of specific plugins
-	sequencedPlugins := []string{"searchrelevancy.so", "rules.so", "functions.so", "analytics.so"}
+	sequencedPlugins := []string{"searchrelevancy.so", "rules.so", "functions.so", "analytics.so", "suggestions.so"}
 	sequencedPluginsByPath := make(map[string]string)
 
 	var elasticSearchPath, reactiveSearchPath string
