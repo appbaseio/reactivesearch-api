@@ -77,3 +77,16 @@ func GetFeatureSearchSettings() bool {
 func SetFeatureSearchSettings(val bool) {
 	featureSearchSettings = val
 }
+
+// Feature synonyms
+var featureSynonyms bool
+
+// GetFeatureSynonyms returns the featureSearchSettings
+func GetFeatureSynonyms() bool {
+	return featureSynonyms
+}
+
+// SetFeatureSynonyms sets the featureSearchSettings
+func SetFeatureSynonyms(val bool) {
+	featureSynonyms = val
+}

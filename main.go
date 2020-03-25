@@ -61,6 +61,8 @@ var (
 	FeatureFunctions string
 	// FeatureSearchSettings for testing
 	FeatureSearchSettings string
+	// FeatureSynonyms for testing
+	FeatureSynonyms string
 )
 
 func init() {
@@ -186,6 +188,9 @@ func main() {
 	}
 	if FeatureSearchSettings != "" && FeatureSearchSettings == "true" {
 		util.SetFeatureSearchSettings(true)
+	}
+	if FeatureSynonyms == "true" {
+		util.SetFeatureSynonyms(true)
 	}
 
 	// ES client instantiation
