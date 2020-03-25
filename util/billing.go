@@ -69,7 +69,7 @@ type ClusterPlan struct {
 	FeatureRules          bool   `json:"feature_rules"`
 	FeatureTemplates      bool   `json:"feature_templates"`
 	FeatureFunctions      bool   `json:"feature_functions"`
-	FeatureSearchSettings bool   `json:"feature_search_settings"`
+	FeatureSearchRelevancy bool   `json:"feature_search_relevancy"`
 	Trial                 bool   `json:"trial"`
 	TrialValidity         int64  `json:"trial_validity"`
 	TierValidity          int64  `json:"tier_validity"`
@@ -120,7 +120,7 @@ type ArcInstanceDetails struct {
 	FeatureRules          bool                   `json:"feature_rules"`
 	FeatureTemplates      bool                   `json:"feature_templates"`
 	FeatureFunctions      bool                   `json:"feature_functions"`
-	FeatureSearchSettings bool                   `json:"feature_search_settings"`
+	FeatureSearchRelevancy bool                   `json:"feature_search_relevancy"`
 }
 
 // SetDefaultTier sets the default tier when billing is disabled
@@ -205,7 +205,7 @@ func getArcInstance(arcID string) (ArcInstance, error) {
 		SetFeatureCustomEvents(arcInstanceByID.FeatureCustomEvents)
 		SetFeatureRules(arcInstanceByID.FeatureRules)
 		SetFeatureFunctions(arcInstanceByID.FeatureFunctions)
-		SetFeatureSearchSettings(arcInstanceByID.FeatureSearchSettings)
+		SetFeatureSearchRelevancy(arcInstanceByID.FeatureSearchRelevancy)
 		SetFeatureTemplates(arcInstanceByID.FeatureTemplates)
 	} else {
 		return arcInstance, errors.New("No valid instance found for the provided ARC_ID")
@@ -255,7 +255,7 @@ func getArcClusterInstance(clusterID string) (ArcInstance, error) {
 		SetFeatureCustomEvents(arcInstanceDetails.FeatureCustomEvents)
 		SetFeatureRules(arcInstanceDetails.FeatureRules)
 		SetFeatureFunctions(arcInstanceDetails.FeatureFunctions)
-		SetFeatureSearchSettings(arcInstanceDetails.FeatureSearchSettings)
+		SetFeatureSearchRelevancy(arcInstanceDetails.FeatureSearchRelevancy)
 		SetFeatureTemplates(arcInstanceDetails.FeatureTemplates)
 	} else {
 		return arcInstance, errors.New("No valid instance found for the provided CLUSTER_ID")
@@ -303,7 +303,7 @@ func getClusterPlan(clusterID string) (ClusterPlan, error) {
 	SetFeatureCustomEvents(response.Plan.FeatureCustomEvents)
 	SetFeatureRules(response.Plan.FeatureRules)
 	SetFeatureFunctions(response.Plan.FeatureFunctions)
-	SetFeatureSearchSettings(response.Plan.FeatureSearchSettings)
+	SetFeatureSearchRelevancy(response.Plan.FeatureSearchRelevancy)
 	SetFeatureTemplates(response.Plan.FeatureTemplates)
 
 	return clusterPlan, nil
