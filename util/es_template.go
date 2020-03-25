@@ -10,72 +10,77 @@ import (
 // SetDefaultIndexTemplate to set default template for indexes
 func SetDefaultIndexTemplate() error {
 
-	analyzers := `{
-		"analyzer": {
-			"universal": {
-				"tokenizer": "standard",
-				"filter": [
-					"universal_stop"
-				]
+	settings := `{
+		"number_of_shards": 1,
+		"max_ngram_diff": 8,
+		"max_shingle_diff": 8,
+		"analysis": {
+			"analyzer": {
+				"universal": {
+					"tokenizer": "standard",
+					"filter": [
+						"universal_stop"
+					]
+				},
+				"autosuggest_analyzer": {
+					"filter": [
+						"lowercase",
+						"asciifolding",
+						"autosuggest_filter"
+					],
+					"tokenizer": "standard",
+					"type": "custom"
+				},
+				"ngram_analyzer": {
+					"filter": [
+						"lowercase",
+						"asciifolding",
+						"ngram_filter"
+					],
+					"tokenizer": "standard",
+					"type": "custom"
+				},
+				"synonyms": {
+					"tokenizer": "standard",
+					"filter": [
+						"synonym_graph",
+						"lowercase"
+					]
+				}
 			},
-			"autosuggest_analyzer": {
-				"filter": [
-					"lowercase",
-					"asciifolding",
-					"autosuggest_filter"
-				],
-				"tokenizer": "standard",
-				"type": "custom"
-			},
-			"ngram_analyzer": {
-				"filter": [
-					"lowercase",
-					"asciifolding",
-					"ngram_filter"
-				],
-				"tokenizer": "standard",
-				"type": "custom"
-			},
-			"synonyms": {
-				"tokenizer": "standard",
-				"filter": [
-					"synonym_graph",
-					"lowercase"
-				]
+			"filter": {
+				"synonym_graph": {
+					"type": "synonym_graph",
+					"synonyms": []
+				},
+				"universal_stop": {
+					"type": "stop",
+					"stopwords": "_english_"
+				},
+				"autosuggest_filter": {
+					"max_gram": "20",
+					"min_gram": "1",
+					"token_chars": [
+						"letter",
+						"digit",
+						"punctuation",
+						"symbol"
+					],
+					"type": "edge_ngram"
+				},
+				"ngram_filter": {
+					"max_gram": "9",
+					"min_gram": "2",
+					"token_chars": [
+						"letter",
+						"digit",
+						"punctuation",
+						"symbol"
+					],
+					"type": "ngram"
+				}
 			}
-		},
-		"filter": {
-			"synonym_graph": {
-				"type": "synonym_graph",
-				"synonyms": []
-			},
-			"universal_stop": {
-				"type": "stop",
-				"stopwords": "_english_"
-			},
-			"autosuggest_filter": {
-				"max_gram": "20",
-				"min_gram": "1",
-				"token_chars": [
-					"letter",
-					"digit",
-					"punctuation",
-					"symbol"
-				],
-				"type": "edge_ngram"
-			},
-			"ngram_filter": {
-				"max_gram": "9",
-				"min_gram": "2",
-				"token_chars": [
-					"letter",
-					"digit",
-					"punctuation",
-					"symbol"
-				],
-				"type": "ngram"
-			}
-		}
+		} 
 	}`
 
 	mappings := `{
@@ -118,15 +123,10 @@ func SetDefaultIndexTemplate() error {
 	version := GetVersion()
 	if version == 7 {
 		defaultSetting := fmt.Sprintf(`{
-			"template": "*",
-			"settings": {
-				"number_of_shards": 1,
-				"max_ngram_diff": 8,
-				"max_shingle_diff": 8,
-				"analysis": %s 
-			},
+			"index_patterns": ["*"],
+			"settings": %s,
 			"mappings": %s
-		}`, analyzers, mappings)
+		}`, settings, mappings)
 		_, err := GetClient7().IndexPutTemplate("default_temp").BodyString(defaultSetting).Do(context.Background())
 		if err != nil {
 			log.Errorln("[SET TEMPLATE ERROR V7]", ": ", err)
@@ -136,15 +136,12 @@ func SetDefaultIndexTemplate() error {
 
 	if version == 6 {
 		defaultSetting := fmt.Sprintf(`{
-			"template": "*",
-			"settings": {
-				"number_of_shards": 1,
-				"analysis": %s 
-			},
+			"index_patterns": ["*"],
+			"settings": %s,
 			"mappings": {
 				"_doc": %s
 			}
-		}`, analyzers, mappings)
+		}`, settings, mappings)
 		_, err := GetClient6().IndexPutTemplate("default_temp").BodyString(defaultSetting).Do(context.Background())
 		if err != nil {
 			log.Errorln("[SET TEMPLATE ERROR V6]", ": ", err)
