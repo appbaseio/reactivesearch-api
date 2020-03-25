@@ -36,6 +36,7 @@ const (
 	Functions
 	ReactiveSearch
 	SearchSettings
+	Synonyms
 )
 
 // String is an implementation of Stringer interface that returns the string representation of category.Categories.
@@ -58,6 +59,7 @@ func (c Category) String() string {
 		"functions",
 		"reactivesearch",
 		"searchsettings",
+		"synonyms",
 	}[c]
 }
 
@@ -103,6 +105,8 @@ func (c *Category) UnmarshalJSON(bytes []byte) error {
 		*c = ReactiveSearch
 	case SearchSettings.String():
 		*c = SearchSettings
+	case Synonyms.String():
+		*c = Synonyms
 	default:
 		return fmt.Errorf("invalid category encountered: %v", category)
 	}
@@ -147,6 +151,8 @@ func (c Category) MarshalJSON() ([]byte, error) {
 		category = ReactiveSearch.String()
 	case SearchSettings:
 		category = SearchSettings.String()
+	case Synonyms:
+		category = Synonyms.String()
 	default:
 		return nil, fmt.Errorf("invalid category encountered: %v" + c.String())
 	}

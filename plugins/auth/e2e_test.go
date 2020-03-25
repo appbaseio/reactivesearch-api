@@ -29,6 +29,7 @@ var adminCategories = []category.Category{
 	category.Functions,
 	category.ReactiveSearch,
 	category.SearchSettings,
+	category.Synonyms,
 }
 
 var adminOps = []op.Operation{

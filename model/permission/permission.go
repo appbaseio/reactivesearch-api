@@ -72,6 +72,7 @@ type Limits struct {
 	FunctionsLimit      int64 `json:"functions_limit"`
 	ReactiveSearchLimit int64 `json:"reactivesearch_limit"`
 	SearchSettingsLimit int64 `json:"searchsettings_limit"`
+	SynonymsLimit       int64 `json:"synonyms_limit"`
 }
 
 // Options is a function type used to define a permission's properties.
@@ -474,6 +475,8 @@ func (p *Permission) GetLimitFor(c category.Category) (int64, error) {
 		return p.Limits.ReactiveSearchLimit, nil
 	case category.SearchSettings:
 		return p.Limits.SearchSettingsLimit, nil
+	case category.Synonyms:
+		return p.Limits.SynonymsLimit, nil
 	default:
 		return -1, fmt.Errorf(`we do not rate limit "%s" category`, c)
 	}

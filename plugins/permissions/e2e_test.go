@@ -30,6 +30,7 @@ var adminCategories = []category.Category{
 	category.ReactiveSearch,
 	category.SearchSettings,
 	category.Auth,
+	category.Synonyms,
 }
 
 var adminOps = []op.Operation{

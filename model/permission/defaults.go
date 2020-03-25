@@ -30,6 +30,7 @@ var (
 		category.Functions,
 		category.ReactiveSearch,
 		category.SearchSettings,
+		category.Synonyms,
 	}
 
 	defaultOps = []op.Operation{
