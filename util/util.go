@@ -2,6 +2,7 @@ package util
 
 import (
 	"bytes"
+	"context"
 	"crypto/tls"
 	"encoding/base64"
 	"encoding/json"
@@ -20,6 +21,10 @@ import (
 	"github.com/gorilla/mux"
 	log "github.com/sirupsen/logrus"
 )
+
+type elasticsearch struct {
+	indexName string
+}
 
 // Billing is a build time variable
 var Billing string
@@ -263,4 +268,23 @@ func MakeRequest(url, method string, reqBody []byte) ([]byte, *http.Response, er
 		return nil, nil, err
 	}
 	return body, response, nil
+}
+
+func (es *elasticsearch) checkIfIndexExists(ctx context.Context, indexName string) bool {
+	exists, err := GetClient7().IndexExists(indexName).Do(ctx)
+
+	if err != nil {
+		aliases, err := GetClient7().CatAliases().Pretty(true).Do(ctx)
+
+		if err != nil {
+			return false
+		}
+		for _, alias := range aliases {
+			if alias.Alias == indexName {
+				return true
+			}
+		}
+		return false
+	}
+	return exists
 }
