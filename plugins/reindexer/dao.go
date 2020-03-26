@@ -144,13 +144,11 @@ func reindex(ctx context.Context, sourceIndex string, config *reindexConfig, wai
 	// Reindex action.
 	reindex := util.GetClient7().Reindex().
 		Source(src).
-		Destination(dest)
+		Destination(dest).
+		WaitForCompletion(waitForCompletion)
 
-	// Get the size of currentIndex, if that is > 5MB (5000000 Bytes) then do async re-indexing.
-	size, err := getIndexSize(ctx, sourceIndex)
-	if size <= 5000000 {
-		response, err := reindex.
-			WaitForCompletion(waitForCompletion).Do(ctx)
+	if waitForCompletion {
+		response, err := reindex.Do(ctx)
 		if err != nil {
 			return nil, err
 		}
@@ -164,11 +162,9 @@ func reindex(ctx context.Context, sourceIndex string, config *reindexConfig, wai
 
 		return json.Marshal(response)
 	}
-	// If wait_for_completion = false, we carry out the reindexing asynchronously and return the task ID.
-	waitForCompletion = false
-	log.Println(logTag, " Data is > 5mb so using async reindex")
-	response, err := reindex.
-		WaitForCompletion(waitForCompletion).DoAsync(context.Background())
+	// If wait_for_completion = false, we carry out the re-indexing asynchronously and return the task ID.
+	log.Println(logTag, fmt.Sprintf(" Data is > %d so using async reindex", IndexStoreSize))
+	response, err := reindex.DoAsync(context.Background())
 	if err != nil {
 		return nil, err
 	}
@@ -399,11 +395,15 @@ func getAliasIndexMap(ctx context.Context) (map[string]string, error) {
 
 func getIndexSize(ctx context.Context, indexName string) (int64, error) {
 	var res int64
+	index := classify.GetAliasIndex(indexName)
+	if index == "" {
+		index = indexName
+	}
 	stats, err := util.GetClient7().IndexStats(indexName).Do(ctx)
 	if err != nil {
 		return res, err
 	}
-	res = stats.Indices[indexName].Primaries.Store.SizeInBytes
+	res = stats.Indices[index].Primaries.Store.SizeInBytes
 	return res, nil
 }
 

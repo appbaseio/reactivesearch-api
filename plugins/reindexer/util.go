@@ -33,6 +33,9 @@ var CurrentlyReIndexingProcess = make(map[string][]string)
 // CurrentlyReIndexingProcessMutex to stop concurrent writes on map
 var CurrentlyReIndexingProcessMutex = sync.RWMutex{}
 
+// IndexStoreSize to decide whether to use async or sync re-indexing
+const IndexStoreSize = int64(5000000)
+
 // reindexedName calculates from the name the number of times an index has been
 // reindexed to generate the successive name for the index. For example: for an
 // index named "twitter", the funtion returns "twitter_reindexed_1", and for an
