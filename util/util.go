@@ -266,7 +266,7 @@ func MakeRequest(url, method string, reqBody []byte) ([]byte, *http.Response, er
 	return body, response, nil
 }
 
-func checkIfIndexExists(ctx context.Context, indexName string) bool {
+func CheckIfIndexExists(ctx context.Context, indexName string) bool {
 	exists, err := GetClient7().IndexExists(indexName).Do(ctx)
 
 	if err != nil {
