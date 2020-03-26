@@ -36,7 +36,6 @@ const (
 	Functions
 	ReactiveSearch
 	SearchRelevancy
-	SearchSettings
 	Synonyms
 )
 
@@ -106,8 +105,6 @@ func (c *Category) UnmarshalJSON(bytes []byte) error {
 		*c = ReactiveSearch
 	case SearchRelevancy.String():
 		*c = SearchRelevancy
-	case SearchSettings.String():
-		*c = SearchSettings
 	case Synonyms.String():
 		*c = Synonyms
 	default:
