@@ -69,7 +69,7 @@ type ClusterPlan struct {
 	FeatureRules          bool   `json:"feature_rules"`
 	FeatureTemplates      bool   `json:"feature_templates"`
 	FeatureFunctions      bool   `json:"feature_functions"`
-	FeatureSearchSettings bool   `json:"feature_search_settings"`
+	FeatureSearchRelevancy bool   `json:"feature_search_relevancy"`
 	FeatureSynonyms       bool   `json:"feature_synonyms"`
 	Trial                 bool   `json:"trial"`
 	TrialValidity         int64  `json:"trial_validity"`
@@ -121,7 +121,7 @@ type ArcInstanceDetails struct {
 	FeatureRules          bool                   `json:"feature_rules"`
 	FeatureTemplates      bool                   `json:"feature_templates"`
 	FeatureFunctions      bool                   `json:"feature_functions"`
-	FeatureSearchSettings bool                   `json:"feature_search_settings"`
+	FeatureSearchRelevancy bool                   `json:"feature_search_relevancy"`
 	FeatureSynonyms       bool                   `json:"feature_synonyms"`
 }
 
@@ -207,7 +207,7 @@ func getArcInstance(arcID string) (ArcInstance, error) {
 		SetFeatureCustomEvents(arcInstanceByID.FeatureCustomEvents)
 		SetFeatureRules(arcInstanceByID.FeatureRules)
 		SetFeatureFunctions(arcInstanceByID.FeatureFunctions)
-		SetFeatureSearchSettings(arcInstanceByID.FeatureSearchSettings)
+		SetFeatureSearchRelevancy(arcInstanceByID.FeatureSearchRelevancy)
 		SetFeatureSynonyms(arcInstanceByID.FeatureSynonyms)
 		SetFeatureTemplates(arcInstanceByID.FeatureTemplates)
 	} else {
@@ -258,7 +258,7 @@ func getArcClusterInstance(clusterID string) (ArcInstance, error) {
 		SetFeatureCustomEvents(arcInstanceDetails.FeatureCustomEvents)
 		SetFeatureRules(arcInstanceDetails.FeatureRules)
 		SetFeatureFunctions(arcInstanceDetails.FeatureFunctions)
-		SetFeatureSearchSettings(arcInstanceDetails.FeatureSearchSettings)
+		SetFeatureSearchRelevancy(arcInstanceDetails.FeatureSearchRelevancy)
 		SetFeatureSynonyms(arcInstanceDetails.FeatureSynonyms)
 		SetFeatureTemplates(arcInstanceDetails.FeatureTemplates)
 	} else {
@@ -307,7 +307,7 @@ func getClusterPlan(clusterID string) (ClusterPlan, error) {
 	SetFeatureCustomEvents(response.Plan.FeatureCustomEvents)
 	SetFeatureRules(response.Plan.FeatureRules)
 	SetFeatureFunctions(response.Plan.FeatureFunctions)
-	SetFeatureSearchSettings(response.Plan.FeatureSearchSettings)
+	SetFeatureSearchRelevancy(response.Plan.FeatureSearchRelevancy)
 	SetFeatureSynonyms(response.Plan.FeatureSynonyms)
 	SetFeatureTemplates(response.Plan.FeatureTemplates)
 

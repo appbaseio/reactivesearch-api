@@ -48,9 +48,9 @@ func TestBilling(t *testing.T) {
 			SetFeatureTemplates(true)
 			So(GetFeatureTemplates(), ShouldEqual, true)
 		})
-		Convey("Set FeatureSearchSettings", func() {
-			SetFeatureSearchSettings(true)
-			So(GetFeatureSearchSettings(), ShouldEqual, true)
+		Convey("Set FeatureSearchRelevancy", func() {
+			SetFeatureSearchRelevancy(true)
+			So(GetFeatureSearchRelevancy(), ShouldEqual, true)
 		})
 		Convey("Set FeatureSynonyms", func() {
 			SetFeatureSynonyms(true)

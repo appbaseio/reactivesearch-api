@@ -35,6 +35,7 @@ const (
 	Auth
 	Functions
 	ReactiveSearch
+	SearchRelevancy
 	SearchSettings
 	Synonyms
 )
@@ -58,7 +59,7 @@ func (c Category) String() string {
 		"auth",
 		"functions",
 		"reactivesearch",
-		"searchsettings",
+		"searchrelevancy",
 		"synonyms",
 	}[c]
 }
@@ -103,6 +104,8 @@ func (c *Category) UnmarshalJSON(bytes []byte) error {
 		*c = Functions
 	case ReactiveSearch.String():
 		*c = ReactiveSearch
+	case SearchRelevancy.String():
+		*c = SearchRelevancy
 	case SearchSettings.String():
 		*c = SearchSettings
 	case Synonyms.String():
@@ -149,8 +152,8 @@ func (c Category) MarshalJSON() ([]byte, error) {
 		category = Functions.String()
 	case ReactiveSearch:
 		category = ReactiveSearch.String()
-	case SearchSettings:
-		category = SearchSettings.String()
+	case SearchRelevancy:
+		category = SearchRelevancy.String()
 	case Synonyms:
 		category = Synonyms.String()
 	default:

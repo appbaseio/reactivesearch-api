@@ -59,8 +59,8 @@ var (
 	FeatureTemplates string
 	// FeatureFunctions for testing
 	FeatureFunctions string
-	// FeatureSearchSettings for testing
-	FeatureSearchSettings string
+	// FeatureSearchRelevancy for testing
+	FeatureSearchRelevancy string
 	// FeatureSynonyms for testing
 	FeatureSynonyms string
 )
@@ -186,8 +186,8 @@ func main() {
 	if FeatureTemplates != "" && FeatureTemplates == "true" {
 		util.SetFeatureTemplates(true)
 	}
-	if FeatureSearchSettings != "" && FeatureSearchSettings == "true" {
-		util.SetFeatureSearchSettings(true)
+	if FeatureSearchRelevancy != "" && FeatureSearchRelevancy == "true" {
+		util.SetFeatureSearchRelevancy(true)
 	}
 	if FeatureSynonyms == "true" {
 		util.SetFeatureSynonyms(true)
@@ -198,7 +198,7 @@ func main() {
 	util.NewClient()
 	util.SetDefaultIndexTemplate()
 	// map of specific plugins
-	sequencedPlugins := []string{"searchsettings.so", "rules.so", "functions.so", "analytics.so"}
+	sequencedPlugins := []string{"searchrelevancy.so", "rules.so", "functions.so", "analytics.so", "suggestions.so"}
 	sequencedPluginsByPath := make(map[string]string)
 
 	var elasticSearchPath, reactiveSearchPath string

@@ -66,16 +66,16 @@ func SetFeatureFunctions(val bool) {
 }
 
 // Feature search settings
-var featureSearchSettings bool
+var featureSearchRelevancy bool
 
-// GetFeatureSearchSettings returns the featureSearchSettings
-func GetFeatureSearchSettings() bool {
-	return featureSearchSettings
+// GetFeatureSearchRelevancy returns the featureSearchRelevancy
+func GetFeatureSearchRelevancy() bool {
+	return featureSearchRelevancy
 }
 
-// SetFeatureSearchSettings sets the featureSearchSettings
-func SetFeatureSearchSettings(val bool) {
-	featureSearchSettings = val
+// SetFeatureSearchRelevancy sets the featureSearchRelevancy
+func SetFeatureSearchRelevancy(val bool) {
+	featureSearchRelevancy = val
 }
 
 // Feature synonyms

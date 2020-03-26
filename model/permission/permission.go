@@ -71,7 +71,7 @@ type Limits struct {
 	AuthLimit           int64 `json:"auth_limit"`
 	FunctionsLimit      int64 `json:"functions_limit"`
 	ReactiveSearchLimit int64 `json:"reactivesearch_limit"`
-	SearchSettingsLimit int64 `json:"searchsettings_limit"`
+	SearchRelevancyLimit int64 `json:"searchrelevancy_limit"`
 	SynonymsLimit       int64 `json:"synonyms_limit"`
 }
 
@@ -473,8 +473,8 @@ func (p *Permission) GetLimitFor(c category.Category) (int64, error) {
 		return p.Limits.FunctionsLimit, nil
 	case category.ReactiveSearch:
 		return p.Limits.ReactiveSearchLimit, nil
-	case category.SearchSettings:
-		return p.Limits.SearchSettingsLimit, nil
+	case category.SearchRelevancy:
+		return p.Limits.SearchRelevancyLimit, nil
 	case category.Synonyms:
 		return p.Limits.SynonymsLimit, nil
 	default:
@@ -597,8 +597,8 @@ func (p *Permission) GetPatch(rolePatched bool) (map[string]interface{}, error) 
 			limits["reactivesearch_limit"] = p.Limits.ReactiveSearchLimit
 		}
 
-		if p.Limits.SearchSettingsLimit != 0 {
-			limits["searchsettings_limit"] = p.Limits.SearchSettingsLimit
+		if p.Limits.SearchRelevancyLimit != 0 {
+			limits["searchrelevancy_limit"] = p.Limits.SearchRelevancyLimit
 		}
 
 		patch["limits"] = limits
