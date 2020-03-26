@@ -55,6 +55,9 @@ var defaultUser = map[string]interface{}{
 		"rules",
 		"templates",
 		"suggestions",
+		"functions",
+		"reactivesearch",
+		"searchrelevancy",
 		"auth",
 	},
 	"acls": []string{
@@ -199,17 +202,9 @@ func TestUser(t *testing.T) {
 			delete(parsedResponse, "_seq_no")
 
 			var updateUserResponse = map[string]interface{}{
-				"_index":   ".users",
-				"_type":    "_doc",
-				"_id":      username,
-				"_version": 2,
-				"result":   "updated",
-				"_shards": map[string]interface{}{
-					"total":      1,
-					"successful": 1,
-					"failed":     0,
-				},
-				"_primary_term": 1,
+				"code":    200,
+				"message": "User is updated successfully",
+				"status":  "OK",
 			}
 
 			mockMap := util.StructToMap(updateUserResponse)
