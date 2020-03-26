@@ -72,6 +72,7 @@ type Limits struct {
 	FunctionsLimit      int64 `json:"functions_limit"`
 	ReactiveSearchLimit int64 `json:"reactivesearch_limit"`
 	SearchRelevancyLimit int64 `json:"searchrelevancy_limit"`
+	FuzzinessAnalysisLimit int64 `json:"fuzzinessanalysis_limit"`
 }
 
 // Options is a function type used to define a permission's properties.
@@ -474,6 +475,8 @@ func (p *Permission) GetLimitFor(c category.Category) (int64, error) {
 		return p.Limits.ReactiveSearchLimit, nil
 	case category.SearchRelevancy:
 		return p.Limits.SearchRelevancyLimit, nil
+	case category.FuzzinessAnalysis:	
+		return p.Limits.FuzzinessAnalysisLimit, nil
 	default:
 		return -1, fmt.Errorf(`we do not rate limit "%s" category`, c)
 	}
@@ -596,6 +599,10 @@ func (p *Permission) GetPatch(rolePatched bool) (map[string]interface{}, error) 
 
 		if p.Limits.SearchRelevancyLimit != 0 {
 			limits["searchrelevancy_limit"] = p.Limits.SearchRelevancyLimit
+		}
+		
+		if p.Limits.FuzzinessAnalysisLimit != 0 {
+			limits["fuzzinessanalysis_limit"] = p.Limits.FuzzinessAnalysisLimit
 		}
 
 		patch["limits"] = limits
