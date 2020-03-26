@@ -22,10 +22,6 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-type elasticsearch struct {
-	indexName string
-}
-
 // Billing is a build time variable
 var Billing string
 
@@ -270,7 +266,7 @@ func MakeRequest(url, method string, reqBody []byte) ([]byte, *http.Response, er
 	return body, response, nil
 }
 
-func (es *elasticsearch) checkIfIndexExists(ctx context.Context, indexName string) bool {
+func checkIfIndexExists(ctx context.Context, indexName string) bool {
 	exists, err := GetClient7().IndexExists(indexName).Do(ctx)
 
 	if err != nil {
