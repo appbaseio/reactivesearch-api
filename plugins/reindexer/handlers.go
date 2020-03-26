@@ -2,6 +2,7 @@ package reindexer
 
 import (
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"strconv"
@@ -28,7 +29,10 @@ func (rx *reindexer) reindex() http.HandlerFunc {
 		if checkVar(ok, w, "index") {
 			return
 		}
-
+		if IsReIndexInProcess(indexName, "") {
+			util.WriteBackError(w, fmt.Sprintf(`Re-indexing is already in progress for %s index`, indexName), http.StatusInternalServerError)
+			return
+		}
 		err, body, waitForCompletion, done := reindexConfigResponse(req, w)
 		if done {
 			return
