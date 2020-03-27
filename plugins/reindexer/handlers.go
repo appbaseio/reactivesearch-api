@@ -115,7 +115,7 @@ func reindexConfigResponse(req *http.Request, w http.ResponseWriter, sourceIndex
 	// By default, wait_for_completion depends on size of index
 	param := req.URL.Query().Get("wait_for_completion")
 	if param == "" {
-		// Get the size of currentIndex, if that is > IndexStoreSize (5MB - 5000000 Bytes)  then do async re-indexing.
+		// Get the size of currentIndex, if that is > IndexStoreSize (100MB - 100000000 Bytes)  then do async re-indexing.
 		size, err := getIndexSize(req.Context(), sourceIndex)
 		if err != nil {
 			log.Errorln(logTag, ":", err)
