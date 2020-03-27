@@ -3,8 +3,10 @@ package reindexer
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"regexp"
+	"time"
 
 	log "github.com/sirupsen/logrus"
 
@@ -12,6 +14,35 @@ import (
 	"github.com/appbaseio/arc/util"
 	es7 "github.com/olivere/elastic/v7"
 )
+
+func postReIndex(ctx context.Context, sourceIndex, newIndexName string) error {
+	// Fetch all the aliases of old index
+	alias, err := aliasesOf(ctx, sourceIndex)
+
+	var aliases = []string{}
+	if err != nil {
+		return errors.New(`error fetching aliases of index ` + sourceIndex + "\n" + err.Error())
+	}
+
+	if alias == "" {
+		aliases = append(aliases, sourceIndex)
+	} else {
+		aliases = append(aliases, alias)
+	}
+
+	// Delete old index
+	err = deleteIndex(ctx, sourceIndex)
+	if err != nil {
+		return errors.New(`error deleting source index ` + sourceIndex + "\n" + err.Error())
+	}
+	// Set aliases of old index to the new index.
+	err = setAlias(ctx, newIndexName, aliases...)
+	if err != nil {
+		return errors.New(`error setting alias for ` + newIndexName + "\n" + err.Error())
+	}
+
+	return nil
+}
 
 // Reindex Inplace: https://www.elastic.co/guide/en/elasticsearch/reference/current/reindex-upgrade-inplace.html
 //
@@ -116,10 +147,6 @@ func reindex(ctx context.Context, sourceIndex string, config *reindexConfig, wai
 		Destination(dest).
 		WaitForCompletion(waitForCompletion)
 
-	// If wait_for_completion = true, then we carry out the task synchronously along with three more steps:
-	// 	- fetch any aliases of the old index
-	//  - delete the old index
-	//  - set the aliases of the old index to the new index
 	if waitForCompletion {
 		response, err := reindex.Do(ctx)
 		if err != nil {
@@ -127,41 +154,23 @@ func reindex(ctx context.Context, sourceIndex string, config *reindexConfig, wai
 		}
 
 		if destinationIndex == "" {
-			// Fetch all the aliases of old index
-			alias, err := aliasesOf(ctx, sourceIndex)
-
-			var aliases = []string{}
+			err = postReIndex(ctx, sourceIndex, newIndexName)
 			if err != nil {
-				return nil, fmt.Errorf(`error fetching aliases of index "%s": %v`, sourceIndex, err)
-			}
-
-			if alias == "" {
-				aliases = append(aliases, sourceIndex)
-			} else {
-				aliases = append(aliases, alias)
-			}
-
-			// Delete old index
-			err = deleteIndex(ctx, sourceIndex)
-			if err != nil {
-				return nil, fmt.Errorf(`error deleting index "%s": %v\n`, sourceIndex, err)
-			}
-			// Set aliases of old index to the new index.
-			err = setAlias(ctx, newIndexName, aliases...)
-			if err != nil {
-				return nil, fmt.Errorf(`error setting alias "%s" for index "%s"`, sourceIndex, newIndexName)
+				return nil, err
 			}
 		}
 
 		return json.Marshal(response)
 	}
-
-	// If wait_for_completion = false, we carry out the reindexing asynchronously and return the task ID.
+	// If wait_for_completion = false, we carry out the re-indexing asynchronously and return the task ID.
+	log.Println(logTag, fmt.Sprintf(" Data is > %d so using async reindex", IndexStoreSize))
 	response, err := reindex.DoAsync(context.Background())
 	if err != nil {
 		return nil, err
 	}
 	taskID := response.TaskId
+
+	go asyncReIndex(taskID, sourceIndex, newIndexName)
 
 	// Get the reindex task by ID
 	task, err := util.GetClient7().TasksGetTask().TaskId(taskID).Do(context.Background())
@@ -382,4 +391,60 @@ func getAliasIndexMap(ctx context.Context) (map[string]string, error) {
 	}
 
 	return res, nil
+}
+
+func getIndexSize(ctx context.Context, indexName string) (int64, error) {
+	var res int64
+	index := classify.GetAliasIndex(indexName)
+	if index == "" {
+		index = indexName
+	}
+	stats, err := util.GetClient7().IndexStats(indexName).Do(ctx)
+	if err != nil {
+		return res, err
+	}
+	res = stats.Indices[index].Primaries.Store.SizeInBytes
+	return res, nil
+}
+
+func isTaskCompleted(ctx context.Context, taskID string) (bool, error) {
+	res := false
+
+	status, err := util.GetClient7().TasksGetTask().TaskId(taskID).Do(ctx)
+	if err != nil {
+		log.Errorln(logTag, " Get task status error", err)
+		return res, err
+	}
+
+	res = status.Completed
+	return res, nil
+}
+
+// go routine to track async re-indexing process for a given source and destination index.
+// it checks every 30s if task is completed or not.
+func asyncReIndex(taskID, source, destination string) {
+	SetCurrentProcess(taskID, source, destination)
+	isCompleted := make(chan bool, 1)
+	ticker := time.Tick(30 * time.Second)
+	ctx := context.Background()
+
+	for {
+		select {
+		case <-ticker:
+			ok, _ := isTaskCompleted(ctx, taskID)
+			log.Println(logTag, " "+taskID+" task is still re-indexing data...")
+			if ok {
+				isCompleted <- true
+			}
+		case <-isCompleted:
+			log.Println(logTag, taskID+" task completed successfully")
+			// remove process from current cache
+			RemoveCurrentProcess(taskID)
+			err := postReIndex(ctx, source, destination)
+			if err != nil {
+				log.Errorln(logTag, " post re-indexing error: ", err)
+			}
+			return
+		}
+	}
 }
