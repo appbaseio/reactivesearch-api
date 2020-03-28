@@ -6,6 +6,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"sync"
 
 	"github.com/appbaseio/arc/middleware/classify"
 	log "github.com/sirupsen/logrus"
@@ -25,6 +26,15 @@ type AliasedIndices struct {
 	StoreSize    string `json:"store.size"`
 	PriStoreSize string `json:"pri.store.size"`
 }
+
+// CurrentlyReIndexingProcess map of  taskID [source, destinations] indexes for which indexing process is going on
+var CurrentlyReIndexingProcess = make(map[string][]string)
+
+// CurrentlyReIndexingProcessMutex to stop concurrent writes on map
+var CurrentlyReIndexingProcessMutex = sync.RWMutex{}
+
+// IndexStoreSize to decide whether to use async or sync re-indexing
+const IndexStoreSize = int64(100000000)
 
 // reindexedName calculates from the name the number of times an index has been
 // reindexed to generate the successive name for the index. For example: for an
@@ -75,4 +85,32 @@ func InitAliasIndexCache() {
 	aliasIndexMap, _ := getAliasIndexMap(ctx)
 	classify.SetAliasIndexCache(aliasIndexMap)
 	log.Println(logTag, "=> Alias Index Cache", classify.GetAliasIndexCache())
+}
+
+// SetCurrentProcess set indexes for current reindexing process
+func SetCurrentProcess(taskID, source, destination string) {
+	CurrentlyReIndexingProcessMutex.Lock()
+	CurrentlyReIndexingProcess[taskID] = []string{source, destination}
+	CurrentlyReIndexingProcessMutex.Unlock()
+}
+
+// RemoveCurrentProcess remove indexes for current reindexing process
+func RemoveCurrentProcess(taskID string) {
+	CurrentlyReIndexingProcessMutex.Lock()
+	delete(CurrentlyReIndexingProcess, taskID)
+	CurrentlyReIndexingProcessMutex.Unlock()
+}
+
+// IsReIndexInProcess check if index is Processing currently
+func IsReIndexInProcess(source, destination string) bool {
+	for _, processingIndexes := range CurrentlyReIndexingProcess {
+		if processingIndexes[0] == source || processingIndexes[0] == destination {
+			return true
+		}
+		if processingIndexes[1] == source || processingIndexes[1] == destination {
+			return true
+		}
+	}
+
+	return false
 }
