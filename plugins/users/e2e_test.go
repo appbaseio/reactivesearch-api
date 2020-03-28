@@ -58,6 +58,7 @@ var defaultUser = map[string]interface{}{
 		"functions",
 		"reactivesearch",
 		"searchrelevancy",
+		"fuzzinessanalysis",
 		"auth",
 	},
 	"acls": []string{

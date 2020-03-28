@@ -29,6 +29,7 @@ var (
 		category.Functions,
 		category.ReactiveSearch,
 		category.SearchRelevancy,
+		category.FuzzinessAnalysis,
 		category.Auth,
 	}
 

@@ -36,6 +36,7 @@ const (
 	Functions
 	ReactiveSearch
 	SearchRelevancy
+	FuzzinessAnalysis
 )
 
 // String is an implementation of Stringer interface that returns the string representation of category.Categories.
@@ -58,6 +59,7 @@ func (c Category) String() string {
 		"functions",
 		"reactivesearch",
 		"searchrelevancy",
+		"fuzzinessanalysis",
 	}[c]
 }
 
@@ -103,6 +105,8 @@ func (c *Category) UnmarshalJSON(bytes []byte) error {
 		*c = ReactiveSearch
 	case SearchRelevancy.String():
 		*c = SearchRelevancy
+	case FuzzinessAnalysis.String():
+		*c = FuzzinessAnalysis
 	default:
 		return fmt.Errorf("invalid category encountered: %v", category)
 	}
@@ -147,6 +151,8 @@ func (c Category) MarshalJSON() ([]byte, error) {
 		category = ReactiveSearch.String()
 	case SearchRelevancy:
 		category = SearchRelevancy.String()
+	case FuzzinessAnalysis:
+		category = FuzzinessAnalysis.String()
 	default:
 		return nil, fmt.Errorf("invalid category encountered: %v" + c.String())
 	}

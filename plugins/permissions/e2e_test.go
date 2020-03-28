@@ -30,6 +30,7 @@ var adminCategories = []category.Category{
 	category.Functions,
 	category.ReactiveSearch,
 	category.SearchRelevancy,
+	category.FuzzinessAnalysis,
 }
 
 var adminOps = []op.Operation{
@@ -40,23 +41,24 @@ var adminOps = []op.Operation{
 
 var defaultAdminLimits = permission.Limits{
 	IPLimit:              7200,
-	DocsLimit:            30,
-	SearchLimit:          30,
-	IndicesLimit:         30,
-	CatLimit:             30,
-	ClustersLimit:        30,
-	MiscLimit:            30,
-	UserLimit:            30,
-	PermissionLimit:      30,
-	AnalyticsLimit:       30,
-	RulesLimit:           30,
-	TemplatesLimit:       30,
-	SuggestionsLimit:     30,
-	StreamsLimit:         30,
-	AuthLimit:            30,
-	FunctionsLimit:       30,
-	ReactiveSearchLimit:  30,
-	SearchRelevancyLimit: 30,
+	DocsLimit:              30,
+	SearchLimit:            30,
+	IndicesLimit:           30,
+	CatLimit:               30,
+	ClustersLimit:          30,
+	MiscLimit:              30,
+	UserLimit:              30,
+	PermissionLimit:        30,
+	AnalyticsLimit:         30,
+	RulesLimit:             30,
+	TemplatesLimit:         30,
+	SuggestionsLimit:       30,
+	StreamsLimit:           30,
+	AuthLimit:              30,
+	FunctionsLimit:         30,
+	ReactiveSearchLimit:    30,
+	SearchRelevancyLimit:   30,
+	FuzzinessAnalysisLimit: 30,
 }
 
 var createPermissionResponse = map[string]interface{}{
