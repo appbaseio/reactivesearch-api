@@ -172,8 +172,7 @@ func (c Category) IsFromES() bool {
 
 // IsFromRS checks whether the category is of the reactivesearch category.
 func (c Category) IsFromRS() bool {
-	return c == ReactiveSearch ||
-	       c == FuzzinessAnalysis
+	return c == ReactiveSearch
 }
 
 // HasACL checks whether the given acl is a value in the category categories.
