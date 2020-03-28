@@ -30,6 +30,7 @@ var (
 		category.ReactiveSearch,
 		category.SearchRelevancy,
 		category.Auth,
+		category.Synonyms,
 	}
 
 	defaultOps = []op.Operation{

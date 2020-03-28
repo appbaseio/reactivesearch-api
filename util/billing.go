@@ -70,6 +70,7 @@ type ClusterPlan struct {
 	FeatureTemplates      bool   `json:"feature_templates"`
 	FeatureFunctions      bool   `json:"feature_functions"`
 	FeatureSearchRelevancy bool   `json:"feature_search_relevancy"`
+	FeatureSynonyms       bool   `json:"feature_synonyms"`
 	Trial                 bool   `json:"trial"`
 	TrialValidity         int64  `json:"trial_validity"`
 	TierValidity          int64  `json:"tier_validity"`
@@ -121,6 +122,7 @@ type ArcInstanceDetails struct {
 	FeatureTemplates      bool                   `json:"feature_templates"`
 	FeatureFunctions      bool                   `json:"feature_functions"`
 	FeatureSearchRelevancy bool                   `json:"feature_search_relevancy"`
+	FeatureSynonyms       bool                   `json:"feature_synonyms"`
 }
 
 // SetDefaultTier sets the default tier when billing is disabled
@@ -206,6 +208,7 @@ func getArcInstance(arcID string) (ArcInstance, error) {
 		SetFeatureRules(arcInstanceByID.FeatureRules)
 		SetFeatureFunctions(arcInstanceByID.FeatureFunctions)
 		SetFeatureSearchRelevancy(arcInstanceByID.FeatureSearchRelevancy)
+		SetFeatureSynonyms(arcInstanceByID.FeatureSynonyms)
 		SetFeatureTemplates(arcInstanceByID.FeatureTemplates)
 	} else {
 		return arcInstance, errors.New("No valid instance found for the provided ARC_ID")
@@ -256,6 +259,7 @@ func getArcClusterInstance(clusterID string) (ArcInstance, error) {
 		SetFeatureRules(arcInstanceDetails.FeatureRules)
 		SetFeatureFunctions(arcInstanceDetails.FeatureFunctions)
 		SetFeatureSearchRelevancy(arcInstanceDetails.FeatureSearchRelevancy)
+		SetFeatureSynonyms(arcInstanceDetails.FeatureSynonyms)
 		SetFeatureTemplates(arcInstanceDetails.FeatureTemplates)
 	} else {
 		return arcInstance, errors.New("No valid instance found for the provided CLUSTER_ID")
@@ -304,6 +308,7 @@ func getClusterPlan(clusterID string) (ClusterPlan, error) {
 	SetFeatureRules(response.Plan.FeatureRules)
 	SetFeatureFunctions(response.Plan.FeatureFunctions)
 	SetFeatureSearchRelevancy(response.Plan.FeatureSearchRelevancy)
+	SetFeatureSynonyms(response.Plan.FeatureSynonyms)
 	SetFeatureTemplates(response.Plan.FeatureTemplates)
 
 	return clusterPlan, nil

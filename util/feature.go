@@ -77,3 +77,16 @@ func GetFeatureSearchRelevancy() bool {
 func SetFeatureSearchRelevancy(val bool) {
 	featureSearchRelevancy = val
 }
+
+// Feature synonyms
+var featureSynonyms bool
+
+// GetFeatureSynonyms returns the featureSynonyms
+func GetFeatureSynonyms() bool {
+	return featureSynonyms
+}
+
+// SetFeatureSynonyms sets the featureSynonyms
+func SetFeatureSynonyms(val bool) {
+	featureSynonyms = val
+}
