@@ -229,13 +229,13 @@ func intercept(h http.HandlerFunc) http.HandlerFunc {
 		for _, index := range indices {
 			alias := classify.GetIndexAlias(index)
 			if alias != "" {
-				body = bytes.Replace(body, []byte(index), []byte(alias), -1)
+				body = bytes.Replace(body, []byte(`"`+index+`"`), []byte(`"`+alias+`"`), -1)
 				continue
 			}
 			// if alias is present in url get index name from cache
 			indexName := classify.GetAliasIndex(index)
 			if indexName != "" {
-				body = bytes.Replace(body, []byte(indexName), []byte(index), -1)
+				body = bytes.Replace(body, []byte(`"`+indexName+`"`), []byte(`"`+index+`"`), -1)
 			}
 		}
 		util.WriteBackRaw(w, body, http.StatusOK)
