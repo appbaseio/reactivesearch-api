@@ -254,6 +254,7 @@ func main() {
 		AllowedOrigins: []string{"*"},
 		AllowedMethods: []string{"HEAD", "GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
 		AllowedHeaders: []string{"*"},
+		ExposedHeaders: []string{"*"},
 	})
 	handler := c.Handler(router)
 	handler = logger.Log(handler)
