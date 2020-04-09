@@ -52,10 +52,6 @@ func TestBilling(t *testing.T) {
 			SetFeatureSearchRelevancy(true)
 			So(GetFeatureSearchRelevancy(), ShouldEqual, true)
 		})
-		Convey("Set FeatureSynonyms", func() {
-			SetFeatureSynonyms(true)
-			So(GetFeatureSynonyms(), ShouldEqual, true)
-		})
 		Convey("Validate TimeValidity: Positive Value", func() {
 			// Set TimeValidity to a positive value
 			var timeValidityMock = 1200000

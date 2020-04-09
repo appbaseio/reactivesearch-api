@@ -63,19 +63,18 @@ type ArcUsage struct {
 }
 
 type ClusterPlan struct {
-	Tier                  *Plan  `json:"tier"`
-	FeatureCustomEvents   bool   `json:"feature_custom_events"`
-	FeatureSuggestions    bool   `json:"feature_suggestions"`
-	FeatureRules          bool   `json:"feature_rules"`
-	FeatureTemplates      bool   `json:"feature_templates"`
-	FeatureFunctions      bool   `json:"feature_functions"`
+	Tier                   *Plan  `json:"tier"`
+	FeatureCustomEvents    bool   `json:"feature_custom_events"`
+	FeatureSuggestions     bool   `json:"feature_suggestions"`
+	FeatureRules           bool   `json:"feature_rules"`
+	FeatureTemplates       bool   `json:"feature_templates"`
+	FeatureFunctions       bool   `json:"feature_functions"`
 	FeatureSearchRelevancy bool   `json:"feature_search_relevancy"`
-	FeatureSynonyms       bool   `json:"feature_synonyms"`
-	Trial                 bool   `json:"trial"`
-	TrialValidity         int64  `json:"trial_validity"`
-	TierValidity          int64  `json:"tier_validity"`
-	TimeValidity          int64  `json:"time_validity"`
-	SubscriptionID        string `json:"subscription_id"`
+	Trial                  bool   `json:"trial"`
+	TrialValidity          int64  `json:"trial_validity"`
+	TierValidity           int64  `json:"tier_validity"`
+	TimeValidity           int64  `json:"time_validity"`
+	SubscriptionID         string `json:"subscription_id"`
 }
 
 // ArcUsageResponse stores the response from ACCAPI
@@ -105,24 +104,23 @@ type ClusterPlanResponse struct {
 
 // ArcInstanceDetails contains the info about an Arc Instance
 type ArcInstanceDetails struct {
-	NodeCount             int                    `json:"node_count"`
-	Description           string                 `json:"description"`
-	SubscriptionID        string                 `json:"subscription_id"`
-	SubscriptionCanceled  bool                   `json:"subscription_canceled"`
-	Trial                 bool                   `json:"trial"`
-	TrialValidity         int64                  `json:"trial_validity"`
-	CreatedAt             int64                  `json:"created_at"`
-	Tier                  *Plan                  `json:"tier"`
-	TierValidity          int64                  `json:"tier_validity"`
-	TimeValidity          int64                  `json:"time_validity"`
-	Metadata              map[string]interface{} `json:"metadata"`
-	FeatureCustomEvents   bool                   `json:"feature_custom_events"`
-	FeatureSuggestions    bool                   `json:"feature_suggestions"`
-	FeatureRules          bool                   `json:"feature_rules"`
-	FeatureTemplates      bool                   `json:"feature_templates"`
-	FeatureFunctions      bool                   `json:"feature_functions"`
+	NodeCount              int                    `json:"node_count"`
+	Description            string                 `json:"description"`
+	SubscriptionID         string                 `json:"subscription_id"`
+	SubscriptionCanceled   bool                   `json:"subscription_canceled"`
+	Trial                  bool                   `json:"trial"`
+	TrialValidity          int64                  `json:"trial_validity"`
+	CreatedAt              int64                  `json:"created_at"`
+	Tier                   *Plan                  `json:"tier"`
+	TierValidity           int64                  `json:"tier_validity"`
+	TimeValidity           int64                  `json:"time_validity"`
+	Metadata               map[string]interface{} `json:"metadata"`
+	FeatureCustomEvents    bool                   `json:"feature_custom_events"`
+	FeatureSuggestions     bool                   `json:"feature_suggestions"`
+	FeatureRules           bool                   `json:"feature_rules"`
+	FeatureTemplates       bool                   `json:"feature_templates"`
+	FeatureFunctions       bool                   `json:"feature_functions"`
 	FeatureSearchRelevancy bool                   `json:"feature_search_relevancy"`
-	FeatureSynonyms       bool                   `json:"feature_synonyms"`
 }
 
 // SetDefaultTier sets the default tier when billing is disabled
@@ -208,7 +206,6 @@ func getArcInstance(arcID string) (ArcInstance, error) {
 		SetFeatureRules(arcInstanceByID.FeatureRules)
 		SetFeatureFunctions(arcInstanceByID.FeatureFunctions)
 		SetFeatureSearchRelevancy(arcInstanceByID.FeatureSearchRelevancy)
-		SetFeatureSynonyms(arcInstanceByID.FeatureSynonyms)
 		SetFeatureTemplates(arcInstanceByID.FeatureTemplates)
 	} else {
 		return arcInstance, errors.New("No valid instance found for the provided ARC_ID")
@@ -259,7 +256,6 @@ func getArcClusterInstance(clusterID string) (ArcInstance, error) {
 		SetFeatureRules(arcInstanceDetails.FeatureRules)
 		SetFeatureFunctions(arcInstanceDetails.FeatureFunctions)
 		SetFeatureSearchRelevancy(arcInstanceDetails.FeatureSearchRelevancy)
-		SetFeatureSynonyms(arcInstanceDetails.FeatureSynonyms)
 		SetFeatureTemplates(arcInstanceDetails.FeatureTemplates)
 	} else {
 		return arcInstance, errors.New("No valid instance found for the provided CLUSTER_ID")
@@ -308,7 +304,6 @@ func getClusterPlan(clusterID string) (ClusterPlan, error) {
 	SetFeatureRules(response.Plan.FeatureRules)
 	SetFeatureFunctions(response.Plan.FeatureFunctions)
 	SetFeatureSearchRelevancy(response.Plan.FeatureSearchRelevancy)
-	SetFeatureSynonyms(response.Plan.FeatureSynonyms)
 	SetFeatureTemplates(response.Plan.FeatureTemplates)
 
 	return clusterPlan, nil
