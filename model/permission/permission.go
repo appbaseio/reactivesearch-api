@@ -54,25 +54,24 @@ type Permission struct {
 
 // Limits defines the rate limits for each category.
 type Limits struct {
-	IPLimit             int64 `json:"ip_limit"`
-	DocsLimit           int64 `json:"docs_limit"`
-	SearchLimit         int64 `json:"search_limit"`
-	IndicesLimit        int64 `json:"indices_limit"`
-	CatLimit            int64 `json:"cat_limit"`
-	ClustersLimit       int64 `json:"clusters_limit"`
-	MiscLimit           int64 `json:"misc_limit"`
-	UserLimit           int64 `json:"user_limit"`
-	PermissionLimit     int64 `json:"permission_limit"`
-	AnalyticsLimit      int64 `json:"analytics_limit"`
-	RulesLimit          int64 `json:"rules_limit"`
-	TemplatesLimit      int64 `json:"templates_limit"`
-	SuggestionsLimit    int64 `json:"suggestions_limit"`
-	StreamsLimit        int64 `json:"streams_limit"`
-	AuthLimit           int64 `json:"auth_limit"`
-	FunctionsLimit      int64 `json:"functions_limit"`
-	ReactiveSearchLimit int64 `json:"reactivesearch_limit"`
+	IPLimit              int64 `json:"ip_limit"`
+	DocsLimit            int64 `json:"docs_limit"`
+	SearchLimit          int64 `json:"search_limit"`
+	IndicesLimit         int64 `json:"indices_limit"`
+	CatLimit             int64 `json:"cat_limit"`
+	ClustersLimit        int64 `json:"clusters_limit"`
+	MiscLimit            int64 `json:"misc_limit"`
+	UserLimit            int64 `json:"user_limit"`
+	PermissionLimit      int64 `json:"permission_limit"`
+	AnalyticsLimit       int64 `json:"analytics_limit"`
+	RulesLimit           int64 `json:"rules_limit"`
+	TemplatesLimit       int64 `json:"templates_limit"`
+	SuggestionsLimit     int64 `json:"suggestions_limit"`
+	StreamsLimit         int64 `json:"streams_limit"`
+	AuthLimit            int64 `json:"auth_limit"`
+	FunctionsLimit       int64 `json:"functions_limit"`
+	ReactiveSearchLimit  int64 `json:"reactivesearch_limit"`
 	SearchRelevancyLimit int64 `json:"searchrelevancy_limit"`
-	SynonymsLimit       int64 `json:"synonyms_limit"`
 }
 
 // Options is a function type used to define a permission's properties.
@@ -475,8 +474,6 @@ func (p *Permission) GetLimitFor(c category.Category) (int64, error) {
 		return p.Limits.ReactiveSearchLimit, nil
 	case category.SearchRelevancy:
 		return p.Limits.SearchRelevancyLimit, nil
-	case category.Synonyms:
-		return p.Limits.SynonymsLimit, nil
 	default:
 		return -1, fmt.Errorf(`we do not rate limit "%s" category`, c)
 	}

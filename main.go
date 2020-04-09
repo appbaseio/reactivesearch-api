@@ -61,8 +61,6 @@ var (
 	FeatureFunctions string
 	// FeatureSearchRelevancy for testing
 	FeatureSearchRelevancy string
-	// FeatureSynonyms for testing
-	FeatureSynonyms string
 )
 
 func init() {
@@ -188,9 +186,6 @@ func main() {
 	}
 	if FeatureSearchRelevancy != "" && FeatureSearchRelevancy == "true" {
 		util.SetFeatureSearchRelevancy(true)
-	}
-	if FeatureSynonyms == "true" {
-		util.SetFeatureSynonyms(true)
 	}
 
 	// ES client instantiation
