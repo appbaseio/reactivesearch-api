@@ -3,7 +3,7 @@ if: tag IS blank
 language: go
 
 go:
-  - "1.12"
+  - "1.14"
 branches:
   only:
     - dev
