@@ -12,7 +12,7 @@ func GetIndexFilterQueryEs6(query *es6.BoolQuery, indices ...string) *es6.BoolQu
 	if indices != nil && len(indices) > 0 {
 		var indexQueries []es6.Query
 		for _, index := range indices {
-			query := es6.NewMatchQuery("indices.keyword", index)
+			query := es6.NewTermQuery("indices.keyword", index)
 			indexQueries = append(indexQueries, query)
 		}
 		query = query.Must(es6.NewBoolQuery().Should(indexQueries...))
@@ -25,7 +25,7 @@ func GetIndexFilterQueryEs7(query *es7.BoolQuery, indices ...string) *es7.BoolQu
 	if indices != nil && len(indices) > 0 {
 		var indexQueries []es7.Query
 		for _, index := range indices {
-			query := es7.NewMatchQuery("indices.keyword", index)
+			query := es7.NewTermQuery("indices.keyword", index)
 			indexQueries = append(indexQueries, query)
 		}
 		query = query.Must(es7.NewBoolQuery().Should(indexQueries...))
