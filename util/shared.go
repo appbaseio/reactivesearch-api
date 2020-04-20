@@ -15,7 +15,7 @@ func GetIndexFilterQueryEs6(query *es6.BoolQuery, indices ...string) *es6.BoolQu
 			query := es6.NewTermQuery("indices.keyword", index)
 			indexQueries = append(indexQueries, query)
 		}
-		query = query.Should(indexQueries...)
+		query = query.Must(es6.NewBoolQuery().Should(indexQueries...))
 	}
 	return query
 }
@@ -28,7 +28,7 @@ func GetIndexFilterQueryEs7(query *es7.BoolQuery, indices ...string) *es7.BoolQu
 			query := es7.NewTermQuery("indices.keyword", index)
 			indexQueries = append(indexQueries, query)
 		}
-		query = query.Should(indexQueries...)
+		query = query.Must(es7.NewBoolQuery().Should(indexQueries...))
 	}
 	return query
 }
