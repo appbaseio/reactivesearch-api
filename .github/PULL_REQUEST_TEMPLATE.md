@@ -8,12 +8,13 @@ FEATURES, IMPROVEMENTS & BUG FIXES) along with the PR number.
 -->
 
 ### What does this do / why do we need it?
+<!-- Try adding brief description of what PR does and link to any issue if you are solving. Example notion card. -->
 
-### What should your reviewer look out for in this PR?
+### How have you tested this PR??
+<!-- Try adding loom video if possible so that reviewer can get better insights. -->
 
-### Do you need help or clarification on anything?
+### What Plugins it affects?
 
-### Which issue(s) does this PR fix?
 
 <!--
 
