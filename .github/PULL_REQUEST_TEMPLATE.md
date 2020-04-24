@@ -7,13 +7,21 @@ Please edit CHANGELOG.md and add the change under the appropriate category (NEW
 FEATURES, IMPROVEMENTS & BUG FIXES) along with the PR number.
 -->
 
-### What does this do / why do we need it?
+#### What does this do / why do we need it?
 
-### What should your reviewer look out for in this PR?
+#### What should your reviewer look out for in this PR?
 
-### Do you need help or clarification on anything?
+#### Which issue(s) does this PR fix?
 
-### Which issue(s) does this PR fix?
+#### If this PR affects any API reference documentation, please share the updated endpoint references
+
+<!--
+
+- [ ] I've updated the doc.
+
+Doc link shared here - <Updated API Reference Doc link>
+
+-->
 
 <!--
 
