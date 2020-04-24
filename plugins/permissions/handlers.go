@@ -238,7 +238,7 @@ func (p *permissions) patchPermission() http.HandlerFunc {
 
 		_, err2 := p.es.patchPermission(req.Context(), username, patch)
 		if err2 == nil {
-			util.WriteBackMessage(w, "Permission is updated successfully", http.StatusOK)
+			util.WriteBackMessage(w, "permission is updated successfully", http.StatusOK)
 			return
 		}
 
@@ -271,7 +271,7 @@ func (p *permissions) getPermissions() http.HandlerFunc {
 		ctx := req.Context()
 		indices, err := index.FromContext(ctx)
 		if err != nil {
-			msg := "error occurred while fetching permissions"
+			msg := "an error occurred while fetching permissions"
 			log.Errorln(logTag, ":", err)
 			util.WriteBackError(w, msg, http.StatusInternalServerError)
 			return
@@ -285,7 +285,7 @@ func (p *permissions) getPermissions() http.HandlerFunc {
 		}
 		// if user is not an admin then throw unauthorized error
 		if !*reqUser.IsAdmin {
-			msg := fmt.Sprintf(`You are not authorized to access the permissions, please contact your admin.`)
+			msg := fmt.Sprintf(`You are not authorized to access the permissions. Please contact your admin.`)
 			log.Errorln(logTag, ":", msg, ":", err)
 			util.WriteBackError(w, msg, http.StatusUnauthorized)
 			return

@@ -45,14 +45,14 @@ func (p *permissions) routes() []plugins.Route {
 			Description: "Returns all the permissions of the user",
 		},
 		{
-			Name:        "Get permissions",
+			Name:        "Get cluster permissions",
 			Methods:     []string{http.MethodGet},
 			Path:        "/_permissions",
 			HandlerFunc: middleware(p.getPermissions()),
 			Description: "Returns all the permissions of the cluster",
 		},
 		{
-			Name:        "Get permissions",
+			Name:        "Get index permissions",
 			Methods:     []string{http.MethodGet},
 			Path:        "/{index}/_permissions",
 			HandlerFunc: middleware(p.getPermissions()),
