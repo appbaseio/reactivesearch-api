@@ -36,6 +36,10 @@ func (p *permissions) postPermission(opts ...permission.Options) http.HandlerFun
 	return func(w http.ResponseWriter, req *http.Request) {
 		creator, _, _ := req.BasicAuth()
 		permissionOptions := []permission.Options{}
+		// Copy the opts
+		for _, v := range opts {
+			permissionOptions = append(permissionOptions, v)
+		}
 		reqUser, err := user.FromContext(req.Context())
 		if err != nil {
 			log.Errorln(logTag, ":", err)
