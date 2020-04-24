@@ -136,6 +136,15 @@ func (es *elasticsearch) getRawOwnerPermissions(ctx context.Context, owner strin
 	}
 }
 
+func (es *elasticsearch) getPermissions(ctx context.Context, indices []string) ([]byte, error) {
+	switch util.GetVersion() {
+	case 6:
+		return es.getPermissionsEs6(ctx, indices)
+	default:
+		return es.getPermissionsEs7(ctx, indices)
+	}
+}
+
 func (es *elasticsearch) checkRoleExists(ctx context.Context, role string) (bool, error) {
 	switch util.GetVersion() {
 	case 6:

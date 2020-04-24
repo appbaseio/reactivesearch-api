@@ -7,7 +7,6 @@ import (
 	"github.com/appbaseio/arc/middleware/classify"
 	"github.com/appbaseio/arc/middleware/validate"
 	"github.com/appbaseio/arc/model/category"
-	"github.com/appbaseio/arc/model/index"
 	"github.com/appbaseio/arc/plugins/auth"
 	"github.com/appbaseio/arc/plugins/logs"
 )
@@ -23,9 +22,9 @@ func (c *chain) Wrap(h http.HandlerFunc) http.HandlerFunc {
 func list() []middleware.Middleware {
 	return []middleware.Middleware{
 		classifyCategory,
-		classifyIndices,
 		logs.Recorder(),
 		classify.Op(),
+		classify.Indices(),
 		auth.BasicAuth(),
 		validate.Operation(),
 		validate.Category(),
@@ -39,14 +38,6 @@ func classifyCategory(h http.HandlerFunc) http.HandlerFunc {
 		ctx := category.NewContext(req.Context(), &permissionCategory)
 		req = req.WithContext(ctx)
 
-		h(w, req)
-	}
-}
-
-func classifyIndices(h http.HandlerFunc) http.HandlerFunc {
-	return func(w http.ResponseWriter, req *http.Request) {
-		ctx := index.NewContext(req.Context(), []string{defaultPermissionsEsIndex})
-		req = req.WithContext(ctx)
 		h(w, req)
 	}
 }
