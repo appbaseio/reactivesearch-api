@@ -9,6 +9,7 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"github.com/appbaseio/arc/model/acl"
+	"github.com/appbaseio/arc/model/index"
 	"github.com/appbaseio/arc/model/permission"
 	"github.com/appbaseio/arc/model/user"
 	"github.com/appbaseio/arc/util"
@@ -34,6 +35,11 @@ func (p *permissions) getPermission() http.HandlerFunc {
 func (p *permissions) postPermission(opts ...permission.Options) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
 		creator, _, _ := req.BasicAuth()
+		permissionOptions := []permission.Options{}
+		// Copy the opts
+		for _, v := range opts {
+			permissionOptions = append(permissionOptions, v)
+		}
 		reqUser, err := user.FromContext(req.Context())
 		if err != nil {
 			log.Errorln(logTag, ":", err)
@@ -59,50 +65,50 @@ func (p *permissions) postPermission(opts ...permission.Options) http.HandlerFun
 		}
 
 		if permissionBody.Owner != "" {
-			opts = append(opts, permission.SetOwner(permissionBody.Owner))
+			permissionOptions = append(permissionOptions, permission.SetOwner(permissionBody.Owner))
 		}
 		if permissionBody.Ops != nil {
-			opts = append(opts, permission.SetOps(permissionBody.Ops))
+			permissionOptions = append(permissionOptions, permission.SetOps(permissionBody.Ops))
 		}
 		if permissionBody.Role != "" {
-			opts = append(opts, permission.SetRole(permissionBody.Role))
+			permissionOptions = append(permissionOptions, permission.SetRole(permissionBody.Role))
 		}
 		if permissionBody.Categories != nil {
-			opts = append(opts, permission.SetCategories(permissionBody.Categories))
+			permissionOptions = append(permissionOptions, permission.SetCategories(permissionBody.Categories))
 		}
 		if permissionBody.ACLs != nil {
-			opts = append(opts, permission.SetACLs(permissionBody.ACLs))
+			permissionOptions = append(permissionOptions, permission.SetACLs(permissionBody.ACLs))
 		}
 		if permissionBody.Sources != nil {
-			opts = append(opts, permission.SetSources(permissionBody.Sources))
+			permissionOptions = append(permissionOptions, permission.SetSources(permissionBody.Sources))
 		}
 		if permissionBody.Referers != nil {
-			opts = append(opts, permission.SetReferers(permissionBody.Referers))
+			permissionOptions = append(permissionOptions, permission.SetReferers(permissionBody.Referers))
 		}
 		if permissionBody.Includes != nil {
-			opts = append(opts, permission.SetIncludes(permissionBody.Includes))
+			permissionOptions = append(permissionOptions, permission.SetIncludes(permissionBody.Includes))
 		}
 		if permissionBody.Excludes != nil {
-			opts = append(opts, permission.SetExcludes(permissionBody.Excludes))
+			permissionOptions = append(permissionOptions, permission.SetExcludes(permissionBody.Excludes))
 		}
 		if permissionBody.Indices != nil {
-			opts = append(opts, permission.SetIndices(permissionBody.Indices))
+			permissionOptions = append(permissionOptions, permission.SetIndices(permissionBody.Indices))
 		}
 		if permissionBody.Limits != nil {
-			opts = append(opts, permission.SetLimits(permissionBody.Limits))
+			permissionOptions = append(permissionOptions, permission.SetLimits(permissionBody.Limits))
 		}
 		if permissionBody.Description != "" {
-			opts = append(opts, permission.SetDescription(permissionBody.Description))
+			permissionOptions = append(permissionOptions, permission.SetDescription(permissionBody.Description))
 		}
 		if permissionBody.TTL != 0 {
-			opts = append(opts, permission.SetTTL(permissionBody.TTL))
+			permissionOptions = append(permissionOptions, permission.SetTTL(permissionBody.TTL))
 		}
 
 		var newPermission *permission.Permission
 		if *reqUser.IsAdmin {
-			newPermission, err = permission.NewAdmin(creator, opts...)
+			newPermission, err = permission.NewAdmin(creator, permissionOptions...)
 		} else {
-			newPermission, err = permission.New(creator, opts...)
+			newPermission, err = permission.New(creator, permissionOptions...)
 		}
 		if err != nil {
 			log.Errorln(logTag, ":", err)
@@ -232,7 +238,7 @@ func (p *permissions) patchPermission() http.HandlerFunc {
 
 		_, err2 := p.es.patchPermission(req.Context(), username, patch)
 		if err2 == nil {
-			util.WriteBackMessage(w, "Permission is updated successfully", http.StatusOK)
+			util.WriteBackMessage(w, "permission is updated successfully", http.StatusOK)
 			return
 		}
 
@@ -257,6 +263,42 @@ func (p *permissions) deletePermission() http.HandlerFunc {
 		msg := fmt.Sprintf(`permission with "username"="%s" not found`, username)
 		log.Errorln(logTag, ":", msg, ":", err)
 		util.WriteBackError(w, msg, http.StatusNotFound)
+	}
+}
+
+func (p *permissions) getPermissions() http.HandlerFunc {
+	return func(w http.ResponseWriter, req *http.Request) {
+		ctx := req.Context()
+		indices, err := index.FromContext(ctx)
+		if err != nil {
+			msg := "an error occurred while fetching permissions"
+			log.Errorln(logTag, ":", err)
+			util.WriteBackError(w, msg, http.StatusInternalServerError)
+			return
+		}
+		reqUser, err := user.FromContext(req.Context())
+		if reqUser == nil || err != nil {
+			msg := fmt.Sprintf(`an error occurred while fetching the user details`)
+			log.Errorln(logTag, ":", msg, ":", err)
+			util.WriteBackError(w, msg, http.StatusNotFound)
+			return
+		}
+		// if user is not an admin then throw unauthorized error
+		if !*reqUser.IsAdmin {
+			msg := fmt.Sprintf(`You are not authorized to access the permissions. Please contact your admin.`)
+			log.Errorln(logTag, ":", msg, ":", err)
+			util.WriteBackError(w, msg, http.StatusUnauthorized)
+			return
+		}
+		raw, err := p.es.getPermissions(ctx, indices)
+		if err != nil {
+			msg := fmt.Sprintf(`an error occurred while fetching permissions`)
+			log.Errorln(logTag, ":", msg, ":", err)
+			util.WriteBackError(w, msg, http.StatusNotFound)
+			return
+		}
+
+		util.WriteBackRaw(w, raw, http.StatusOK)
 	}
 }
 

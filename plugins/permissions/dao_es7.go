@@ -67,6 +67,38 @@ func (es *elasticsearch) getRawOwnerPermissionsEs7(ctx context.Context, owner st
 	return raw, nil
 }
 
+func (es *elasticsearch) getPermissionsEs7(ctx context.Context, indices []string) ([]byte, error) {
+	query := es7.NewBoolQuery()
+	util.GetIndexFilterQueryEs7(query, indices...)
+	resp, err := util.GetClient7().Search().
+		Index(es.indexName).
+		Query(query).
+		Size(1000).
+		Do(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	rawPermissions := []json.RawMessage{}
+	if resp.Hits.TotalHits.Value == 0 {
+		return nil, fmt.Errorf("No permissions were found for index(es): %v", indices)
+	}
+	for _, hit := range resp.Hits.Hits {
+		rawPermission, err := applyExpiredField(hit.Source)
+		if err != nil {
+			return nil, err
+		}
+		rawPermissions = append(rawPermissions, rawPermission)
+	}
+
+	raw, err := json.Marshal(rawPermissions)
+	if err != nil {
+		return nil, fmt.Errorf("unable to marshal slice of raw permissions: %v", err)
+	}
+
+	return raw, nil
+}
+
 func (es *elasticsearch) getRawPermissionEs7(ctx context.Context, username string) ([]byte, error) {
 	response, err := util.GetClient7().Get().
 		Index(es.indexName).
