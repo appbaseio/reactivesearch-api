@@ -80,9 +80,6 @@ func (es *elasticsearch) getPermissionsEs7(ctx context.Context, indices []string
 	}
 
 	rawPermissions := []json.RawMessage{}
-	if resp.Hits.TotalHits.Value == 0 {
-		return nil, fmt.Errorf("No permissions were found for index(es): %v", indices)
-	}
 	for _, hit := range resp.Hits.Hits {
 		rawPermission, err := applyExpiredField(hit.Source)
 		if err != nil {
