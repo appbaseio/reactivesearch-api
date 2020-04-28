@@ -23,7 +23,7 @@ const (
 	}`
 	rolloverConfig = `{
 		"max_age":  "7d",
-		"max_docs": 10,
+		"max_docs": 10000,
 		"max_size": "1gb"
 	}`
 )
@@ -69,7 +69,7 @@ func (l *Logs) InitFunc() error {
 
 	// init cron job
 	cronjob := cron.New()
-	cronjob.AddFunc("@every 10s", func() { l.es.rolloverIndex(indexName) })
+	cronjob.AddFunc("@midnight", func() { l.es.rolloverIndex(indexName) })
 	cronjob.Start()
 
 	return nil
