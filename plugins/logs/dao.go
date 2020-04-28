@@ -80,7 +80,7 @@ func initPlugin(alias, config string) (*elasticsearch, error) {
 	if err != nil {
 		return nil, fmt.Errorf("error while creating a rollover service \"%s\" %v", alias, err)
 	}
-	log.Println(logTag, ": rollover res", &rolloverService.Acknowledged)
+	log.Println(logTag, ": rollover svc created ", rolloverService.Acknowledged)
 	return es, nil
 }
 
