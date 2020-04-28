@@ -2,6 +2,7 @@ package logs
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"strconv"
 
@@ -70,13 +71,11 @@ func initPlugin(alias, config string) (*elasticsearch, error) {
 	classify.SetIndexAlias(indexName, alias)
 	classify.SetAliasIndex(alias, indexName)
 
+	rolloverConditions := make(map[string]interface{})
+	json.Unmarshal([]byte(rolloverConfig), &rolloverConditions)
 	rolloverService, err := es7.NewIndicesRolloverService(util.GetClient7()).
 		Alias(alias).
-		Conditions(map[string]interface{}{
-			"max_age":  "7d",
-			"max_docs": 10000,
-			"max_size": "1gb",
-		}).
+		Conditions(rolloverConditions).
 		Do(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("error while creating a rollover service \"%s\" %v", alias, err)
@@ -116,18 +115,14 @@ func (es *elasticsearch) getRawLogs(ctx context.Context, from, size, filter stri
 	}
 }
 
-func (es *elasticsearch) rolloverIndex() {
+func (es *elasticsearch) rolloverIndex(alias string) {
 	ctx := context.Background()
 	log.Println(logTag, "=> checking if cron has exceeded")
-	// TODO use global
-	alias := ".logs"
+	rolloverConditions := make(map[string]interface{})
+	json.Unmarshal([]byte(rolloverConfig), &rolloverConditions)
 	rolloverService, err := es7.NewIndicesRolloverService(util.GetClient7()).
 		Alias(alias).
-		Conditions(map[string]interface{}{
-			"max_age":  "7d",
-			"max_docs": 10000,
-			"max_size": "1gb",
-		}).
+		Conditions(rolloverConditions).
 		Do(ctx)
 	if err != nil {
 		log.Printf(logTag, "error while creating a rollover service %s %v", alias, err)
