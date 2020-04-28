@@ -134,7 +134,5 @@ func (es *elasticsearch) rolloverIndex(alias string) {
 		classify.RemoveFromIndexAliasCache(rolloverService.OldIndex)
 		classify.SetIndexAlias(rolloverService.NewIndex, alias)
 		classify.SetAliasIndex(alias, rolloverService.NewIndex)
-
-		log.Println("=> new cache", classify.GetIndexAliasCache(), classify.GetAliasIndexCache())
 	}
 }
