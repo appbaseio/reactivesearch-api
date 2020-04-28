@@ -358,13 +358,20 @@ func getAliasedIndices(ctx context.Context) ([]AliasedIndices, error) {
 		}
 		var alias string
 		regex := ".*reindexed_[0-9]+"
-		r, _ := regexp.Compile(regex)
+		rolloverPatter := ".*-[0-9]+"
+		rolloverRegex, _ := regexp.Compile(rolloverPatter)
+		indexRegex, _ := regexp.Compile(regex)
 
 		for _, row := range aliases {
-			if row.Index == index.Index && r.MatchString(index.Index) {
+			// match the alias for rollover index
+			if row.Index[:1] == "." && row.Index == index.Index && rolloverRegex.MatchString(index.Index) {
+				alias = row.Alias
+				break
+			} else if row.Index == index.Index && indexRegex.MatchString(index.Index) {
 				alias = row.Alias
 				break
 			}
+
 		}
 		if err == nil && alias != "" {
 			indexStruct.Alias = alias

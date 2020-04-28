@@ -7,6 +7,7 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
+	"github.com/appbaseio/arc/middleware/classify"
 	"github.com/appbaseio/arc/util"
 	es7 "github.com/olivere/elastic/v7"
 )
@@ -15,18 +16,24 @@ type elasticsearch struct {
 	indexName string
 }
 
-func initPlugin(indexName, config string) (*elasticsearch, error) {
+func initPlugin(alias, config string) (*elasticsearch, error) {
 	ctx := context.Background()
 
-	var es = &elasticsearch{indexName}
-	// Check if meta index already exists
-	exists, err := util.GetClient7().IndexExists(indexName).
-		Do(ctx)
+	var es = &elasticsearch{alias}
+
+	// Check if alias exists instead of index and create first index if not exists with `${alias}-000001`
+	res, err := util.GetClient7().Aliases().Index("_all").Do(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("error while checking if index already exists: %v", err)
 	}
+	indices := res.IndicesByAlias(alias)
+	exists := false
+	if len(indices) > 0 {
+		exists = true
+	}
+
 	if exists {
-		log.Println(logTag, ": index named", indexName, "already exists, skipping ...")
+		log.Println(logTag, ": index named", alias, "already exists, skipping ...")
 		return es, nil
 	}
 
@@ -38,14 +45,43 @@ func initPlugin(indexName, config string) (*elasticsearch, error) {
 	settings := fmt.Sprintf(config, nodes, nodes-1)
 
 	// Meta index doesn't exist, create one
+	indexName := alias + `-000001`
 	_, err = util.GetClient7().CreateIndex(indexName).
 		Body(settings).
 		Do(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("error while creating index named \"%s\"", indexName)
+		return nil, fmt.Errorf("error while creating index named \"%s\" %v", indexName, err)
 	}
 
 	log.Println(logTag, ": successfully created index name", indexName)
+
+	// create alias for above created index
+	addAliasActions := []es7.AliasAction{
+		es7.NewAliasAddAction(alias).
+			Index(indexName),
+	}
+	_, err = util.GetClient7().Alias().
+		Action(addAliasActions...).
+		Do(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("error while creating alias \"%s\" %v", alias, err)
+	}
+
+	classify.SetIndexAlias(indexName, alias)
+	classify.SetAliasIndex(alias, indexName)
+
+	rolloverService, err := es7.NewIndicesRolloverService(util.GetClient7()).
+		Alias(alias).
+		Conditions(map[string]interface{}{
+			"max_age":  "7d",
+			"max_docs": 10000,
+			"max_size": "1gb",
+		}).
+		Do(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("error while creating a rollover service \"%s\" %v", alias, err)
+	}
+	log.Println(logTag, ": rollover res", &rolloverService.Acknowledged)
 	return es, nil
 }
 
@@ -77,5 +113,33 @@ func (es *elasticsearch) getRawLogs(ctx context.Context, from, size, filter stri
 		return es.getRawLogsES6(ctx, from, s, filter, offset, indices...)
 	default:
 		return es.getRawLogsES7(ctx, from, s, filter, offset, indices...)
+	}
+}
+
+func (es *elasticsearch) rolloverIndex() {
+	ctx := context.Background()
+	log.Println(logTag, "=> checking if cron has exceeded")
+	// TODO use global
+	alias := ".logs"
+	rolloverService, err := es7.NewIndicesRolloverService(util.GetClient7()).
+		Alias(alias).
+		Conditions(map[string]interface{}{
+			"max_age":  "7d",
+			"max_docs": 10000,
+			"max_size": "1gb",
+		}).
+		Do(ctx)
+	if err != nil {
+		log.Printf(logTag, "error while creating a rollover service %s %v", alias, err)
+	}
+	log.Println(logTag, ": rollover res", rolloverService.OldIndex, rolloverService.RolledOver)
+
+	if rolloverService.RolledOver {
+		util.GetClient7().DeleteIndex(rolloverService.OldIndex).Do(ctx)
+		classify.RemoveFromIndexAliasCache(rolloverService.OldIndex)
+		classify.SetIndexAlias(rolloverService.NewIndex, alias)
+		classify.SetAliasIndex(alias, rolloverService.NewIndex)
+
+		log.Println("=> new cache", classify.GetIndexAliasCache(), classify.GetAliasIndexCache())
 	}
 }

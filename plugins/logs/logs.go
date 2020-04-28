@@ -6,6 +6,7 @@ import (
 
 	"github.com/appbaseio/arc/middleware"
 	"github.com/appbaseio/arc/plugins"
+	"github.com/robfig/cron"
 )
 
 const (
@@ -60,6 +61,11 @@ func (l *Logs) InitFunc() error {
 	if err != nil {
 		return err
 	}
+
+	// init cron job
+	cronjob := cron.New()
+	cronjob.AddFunc("@midnight", l.es.rolloverIndex)
+	cronjob.Start()
 
 	return nil
 }
