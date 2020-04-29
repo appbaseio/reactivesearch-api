@@ -48,6 +48,7 @@ func initPlugin(alias, config string) (*elasticsearch, error) {
 	settings := fmt.Sprintf(config, alias, nodes, nodes-1)
 	// Meta index doesn't exist, create one
 	indexName := alias + `-000001`
+	// this works for ES6 client as well
 	_, err = util.GetClient7().CreateIndex(indexName).
 		Body(settings).
 		Do(ctx)
