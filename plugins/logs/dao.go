@@ -4,7 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"sort"
 	"strconv"
+	"strings"
 
 	log "github.com/sirupsen/logrus"
 
@@ -43,8 +45,7 @@ func initPlugin(alias, config string) (*elasticsearch, error) {
 	if err != nil {
 		return nil, err
 	}
-	settings := fmt.Sprintf(config, nodes, nodes-1)
-
+	settings := fmt.Sprintf(config, alias, nodes, nodes-1)
 	// Meta index doesn't exist, create one
 	indexName := alias + `-000001`
 	_, err = util.GetClient7().CreateIndex(indexName).
@@ -55,18 +56,6 @@ func initPlugin(alias, config string) (*elasticsearch, error) {
 	}
 
 	log.Println(logTag, ": successfully created index name", indexName)
-
-	// create alias for above created index
-	addAliasActions := []es7.AliasAction{
-		es7.NewAliasAddAction(alias).
-			Index(indexName),
-	}
-	_, err = util.GetClient7().Alias().
-		Action(addAliasActions...).
-		Do(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("error while creating alias \"%s\" %v", alias, err)
-	}
 
 	classify.SetIndexAlias(indexName, alias)
 	classify.SetAliasIndex(alias, indexName)
@@ -115,9 +104,8 @@ func (es *elasticsearch) getRawLogs(ctx context.Context, from, size, filter stri
 	}
 }
 
-func (es *elasticsearch) rolloverIndex(alias string) {
+func (es *elasticsearch) rolloverIndexJob(alias string) {
 	ctx := context.Background()
-	log.Println(logTag, "=> checking if cron has exceeded")
 	rolloverConditions := make(map[string]interface{})
 	json.Unmarshal([]byte(rolloverConfig), &rolloverConditions)
 	rolloverService, err := es7.NewIndicesRolloverService(util.GetClient7()).
@@ -127,12 +115,47 @@ func (es *elasticsearch) rolloverIndex(alias string) {
 	if err != nil {
 		log.Printf(logTag, "error while creating a rollover service %s %v", alias, err)
 	}
-	log.Println(logTag, ": rollover res", rolloverService.OldIndex, rolloverService.RolledOver)
+	log.Println(logTag, ": rollover res oldIndex", rolloverService.OldIndex)
+	log.Println(logTag, ": rollover res newIndex", rolloverService.NewIndex)
+	log.Println(logTag, ": rollover res isRolledover", rolloverService.RolledOver)
 
 	if rolloverService.RolledOver {
-		util.GetClient7().DeleteIndex(rolloverService.OldIndex).Do(ctx)
-		classify.RemoveFromIndexAliasCache(rolloverService.OldIndex)
 		classify.SetIndexAlias(rolloverService.NewIndex, alias)
 		classify.SetAliasIndex(alias, rolloverService.NewIndex)
+	}
+
+	// We cannot rely on rollover service response here,
+	// Because it returns rollover as false when we restart arc.
+	// To preserve the last 2 index and delete others:
+	// -> cat all the indices with .logs-*
+	// -> if count is > 2
+	//   -> sort them based on -[Number]
+	//   -> preserve last 2 and delete all
+	// -> else do not delete any index
+
+	// cat all the indices starting with `${alias}-Number` pattern
+	indices, err := util.GetClient7().CatIndices().Index(alias + "-*").
+		Do(ctx)
+	if err != nil {
+		log.Errorln(logTag, ": rollover cronjob error getting indices", err)
+	}
+
+	if len(indices) > 2 {
+
+		rolloverIndices := []string{}
+		for _, catResRow := range indices {
+			rolloverIndices = append(rolloverIndices, catResRow.Index)
+		}
+
+		sort.Strings(rolloverIndices)
+
+		// ignore last 2 indices
+		rolloverIndices = rolloverIndices[:len(rolloverIndices)-2]
+
+		log.Println(logTag, ": rollover cronjob, indices to delete", rolloverIndices)
+		_, err = util.GetClient7().DeleteIndex(strings.Join(rolloverIndices, ",")).Do(ctx)
+		if err != nil {
+			log.Errorln(logTag, ": rollover cronjob, error while deleting indices", err)
+		}
 	}
 }

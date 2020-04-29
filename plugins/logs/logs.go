@@ -16,6 +16,11 @@ const (
 	envLogsEsIndex     = "LOGS_ES_INDEX"
 	config             = `
 	{
+	  "aliases": {
+		"%s": {
+		  "is_write_index": true
+	    }
+	  },
 	  "settings": {
 	    "number_of_shards": %d,
 	    "number_of_replicas": %d
@@ -69,7 +74,7 @@ func (l *Logs) InitFunc() error {
 
 	// init cron job
 	cronjob := cron.New()
-	cronjob.AddFunc("@midnight", func() { l.es.rolloverIndex(indexName) })
+	cronjob.AddFunc("@midnight", func() { l.es.rolloverIndexJob(indexName) })
 	cronjob.Start()
 
 	return nil
