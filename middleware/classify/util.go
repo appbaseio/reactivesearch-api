@@ -49,3 +49,8 @@ func SetAliasIndexCache(data map[string]string) {
 func GetAliasIndexCache() map[string]string {
 	return AliasIndexCache
 }
+
+// RemoveFromIndexAliasCache get the whole cache
+func RemoveFromIndexAliasCache(indexName string) {
+	delete(IndexAliasCache, indexName)
+}

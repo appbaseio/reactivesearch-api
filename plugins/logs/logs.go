@@ -6,6 +6,7 @@ import (
 
 	"github.com/appbaseio/arc/middleware"
 	"github.com/appbaseio/arc/plugins"
+	"github.com/robfig/cron"
 )
 
 const (
@@ -15,10 +16,20 @@ const (
 	envLogsEsIndex     = "LOGS_ES_INDEX"
 	config             = `
 	{
+	  "aliases": {
+		"%s": {
+		  "is_write_index": true
+	    }
+	  },
 	  "settings": {
 	    "number_of_shards": %d,
 	    "number_of_replicas": %d
 	  }
+	}`
+	rolloverConfig = `{
+		"max_age":  "7d",
+		"max_docs": 10000,
+		"max_size": "1gb"
 	}`
 )
 
@@ -60,6 +71,11 @@ func (l *Logs) InitFunc() error {
 	if err != nil {
 		return err
 	}
+
+	// init cron job
+	cronjob := cron.New()
+	cronjob.AddFunc("@midnight", func() { l.es.rolloverIndexJob(indexName) })
+	cronjob.Start()
 
 	return nil
 }
