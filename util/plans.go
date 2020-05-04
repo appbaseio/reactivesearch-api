@@ -170,3 +170,17 @@ func ValidatePlans(validPlans []Plan, byPassValidation bool) bool {
 	}
 	return false
 }
+
+// IsProductionPlan validates if the user's plan is a production plan
+func IsProductionPlan() bool {
+	switch GetTier().String() {
+	case ArcEnterprise.String(),
+		ProductionFirst2019.String(),
+		ProductionSecond2019.String(),
+		ProductionThird2019.String(),
+		ProductionFourth2019.String():
+		return true
+	default:
+		return false
+	}
+}

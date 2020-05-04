@@ -27,9 +27,9 @@ const (
 	  }
 	}`
 	rolloverConfig = `{
-		"max_age":  "7d",
-		"max_docs": 10000,
-		"max_size": "1gb"
+		"max_age":  "%s",
+		"max_docs": %d,
+		"max_size": "%s"
 	}`
 )
 

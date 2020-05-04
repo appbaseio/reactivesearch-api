@@ -20,6 +20,7 @@ type elasticsearch struct {
 }
 
 func initPlugin(alias, config string) (*elasticsearch, error) {
+
 	ctx := context.Background()
 
 	var es = &elasticsearch{alias}
@@ -62,7 +63,12 @@ func initPlugin(alias, config string) (*elasticsearch, error) {
 	classify.SetAliasIndex(alias, indexName)
 
 	rolloverConditions := make(map[string]interface{})
-	json.Unmarshal([]byte(rolloverConfig), &rolloverConditions)
+
+	rolloverConfiguration := fmt.Sprintf(rolloverConfig, "7d", 10000, "1gb")
+	if util.IsProductionPlan() {
+		rolloverConfiguration = fmt.Sprintf(rolloverConfig, "30d", 1000000, "5gb")
+	}
+	json.Unmarshal([]byte(rolloverConfiguration), &rolloverConditions)
 	rolloverService, err := es7.NewIndicesRolloverService(util.GetClient7()).
 		Alias(alias).
 		Conditions(rolloverConditions).
@@ -108,7 +114,11 @@ func (es *elasticsearch) getRawLogs(ctx context.Context, from, size, filter stri
 func (es *elasticsearch) rolloverIndexJob(alias string) {
 	ctx := context.Background()
 	rolloverConditions := make(map[string]interface{})
-	json.Unmarshal([]byte(rolloverConfig), &rolloverConditions)
+	rolloverConfiguration := fmt.Sprintf(rolloverConfig, "7d", 10000, "1gb")
+	if util.IsProductionPlan() {
+		rolloverConfiguration = fmt.Sprintf(rolloverConfig, "30d", 1000000, "5gb")
+	}
+	json.Unmarshal([]byte(rolloverConfiguration), &rolloverConditions)
 	rolloverService, err := es7.NewIndicesRolloverService(util.GetClient7()).
 		Alias(alias).
 		Conditions(rolloverConditions).
