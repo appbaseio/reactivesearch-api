@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"regexp"
 	"sort"
 	"strconv"
 	"strings"
@@ -66,7 +67,7 @@ func initPlugin(alias, config string) (*elasticsearch, error) {
 
 	rolloverConfiguration := fmt.Sprintf(rolloverConfig, "7d", 10000, "1gb")
 	if util.IsProductionPlan() {
-		rolloverConfiguration = fmt.Sprintf(rolloverConfig, "30d", 1000000, "5gb")
+		rolloverConfiguration = fmt.Sprintf(rolloverConfig, "30d", 1000000, "10gb")
 	}
 	json.Unmarshal([]byte(rolloverConfiguration), &rolloverConditions)
 	rolloverService, err := es7.NewIndicesRolloverService(util.GetClient7()).
@@ -116,7 +117,7 @@ func (es *elasticsearch) rolloverIndexJob(alias string) {
 	rolloverConditions := make(map[string]interface{})
 	rolloverConfiguration := fmt.Sprintf(rolloverConfig, "7d", 10000, "1gb")
 	if util.IsProductionPlan() {
-		rolloverConfiguration = fmt.Sprintf(rolloverConfig, "30d", 1000000, "5gb")
+		rolloverConfiguration = fmt.Sprintf(rolloverConfig, "30d", 1000000, "10gb")
 	}
 	json.Unmarshal([]byte(rolloverConfiguration), &rolloverConditions)
 	rolloverService, err := es7.NewIndicesRolloverService(util.GetClient7()).
@@ -152,10 +153,12 @@ func (es *elasticsearch) rolloverIndexJob(alias string) {
 	}
 
 	if len(indices) > 2 {
-
 		rolloverIndices := []string{}
+		r, _ := regexp.Compile(fmt.Sprintf("%s-[0-9]+", alias))
 		for _, catResRow := range indices {
-			rolloverIndices = append(rolloverIndices, catResRow.Index)
+			if r.MatchString(catResRow.Index) {
+				rolloverIndices = append(rolloverIndices, catResRow.Index)
+			}
 		}
 
 		sort.Strings(rolloverIndices)
