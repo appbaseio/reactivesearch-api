@@ -3,6 +3,7 @@ package logs
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -13,6 +14,7 @@ import (
 	"github.com/appbaseio/arc/middleware"
 	"github.com/appbaseio/arc/middleware/classify"
 	"github.com/appbaseio/arc/middleware/validate"
+	"github.com/appbaseio/arc/model/acl"
 	"github.com/appbaseio/arc/model/category"
 	"github.com/appbaseio/arc/model/index"
 	"github.com/appbaseio/arc/plugins/auth"
@@ -21,6 +23,27 @@ import (
 
 type chain struct {
 	middleware.Fifo
+}
+
+// ResponseBodySearch represents the response body returned by search
+type ResponseBodySearch struct {
+	Took float64 `json:"took"`
+}
+
+// ResponseBodyMsearch represents the response body for msearch
+type ResponseBodyMsearch struct {
+	Took      float64              `json:"took"`
+	Responses []ResponseBodySearch `json:"responses"`
+}
+
+// RSSettings represents the settings object in RS API response
+type RSSettings struct {
+	Took float64 `json:"took"`
+}
+
+// ResponseBodyRS represents the response body returned by reactivesearch route
+type ResponseBodyRS struct {
+	Settings RSSettings `json:"settings"`
 }
 
 func (c *chain) Wrap(h http.HandlerFunc) http.HandlerFunc {
@@ -61,7 +84,8 @@ type Response struct {
 	Code    int    `json:"code"`
 	Status  string `json:"status"`
 	Headers map[string][]string
-	Body    string `json:"body"`
+	Took    *float64 `json:"took,omitempty"`
+	Body    string   `json:"body"`
 }
 
 type record struct {
@@ -132,6 +156,11 @@ func (l *Logs) recordResponse(request *Request, w *httptest.ResponseRecorder, re
 		return
 	}
 
+	reqACL, err := acl.FromContext(ctx)
+	if err != nil {
+		log.Errorln(logTag, ":", err)
+	}
+
 	reqIndices, err := index.FromContext(ctx)
 	if err != nil {
 		log.Errorln(logTag, ":", err)
@@ -158,5 +187,44 @@ func (l *Logs) recordResponse(request *Request, w *httptest.ResponseRecorder, re
 		return
 	}
 	rec.Response.Body = string(responseBody)
+	if *reqCategory == category.Search {
+		if *reqACL == acl.Search {
+			var resBody ResponseBodySearch
+			err := json.Unmarshal(responseBody, &resBody)
+			if err != nil {
+				log.Errorln(logTag, "error encountered while parsing the response: ", err)
+			}
+			// ignore error to record error logs
+			if err == nil {
+				rec.Response.Took = &resBody.Took
+			}
+		} else if *reqACL == acl.Msearch {
+			var resBody ResponseBodyMsearch
+			err := json.Unmarshal(responseBody, &resBody)
+			if err != nil {
+				log.Errorln(logTag, "error encountered while parsing the response: ", err)
+			}
+			// ignore error to record error logs
+			if err == nil {
+				if len(resBody.Responses) > 1 {
+					rec.Response.Took = &resBody.Took
+				} else if len(resBody.Responses) == 1 {
+					rec.Response.Took = &resBody.Responses[0].Took
+				}
+			}
+		}
+	}
+	if *reqCategory == category.ReactiveSearch {
+		var resBody ResponseBodyRS
+		err := json.Unmarshal(responseBody, &resBody)
+		if err != nil {
+			log.Errorln(logTag, "error encountered while parsing the response: ", err)
+			return
+		}
+		// ignore error to record error logs
+		if err == nil {
+			rec.Response.Took = &resBody.Settings.Took
+		}
+	}
 	l.es.indexRecord(context.Background(), rec)
 }
