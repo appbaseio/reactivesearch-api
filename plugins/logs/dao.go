@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"regexp"
 	"sort"
 	"strconv"
 	"strings"
@@ -20,6 +21,7 @@ type elasticsearch struct {
 }
 
 func initPlugin(alias, config string) (*elasticsearch, error) {
+
 	ctx := context.Background()
 
 	var es = &elasticsearch{alias}
@@ -62,7 +64,12 @@ func initPlugin(alias, config string) (*elasticsearch, error) {
 	classify.SetAliasIndex(alias, indexName)
 
 	rolloverConditions := make(map[string]interface{})
-	json.Unmarshal([]byte(rolloverConfig), &rolloverConditions)
+
+	rolloverConfiguration := fmt.Sprintf(rolloverConfig, "7d", 10000, "1gb")
+	if util.IsProductionPlan() {
+		rolloverConfiguration = fmt.Sprintf(rolloverConfig, "30d", 1000000, "10gb")
+	}
+	json.Unmarshal([]byte(rolloverConfiguration), &rolloverConditions)
 	rolloverService, err := es7.NewIndicesRolloverService(util.GetClient7()).
 		Alias(alias).
 		Conditions(rolloverConditions).
@@ -108,7 +115,11 @@ func (es *elasticsearch) getRawLogs(ctx context.Context, from, size, filter stri
 func (es *elasticsearch) rolloverIndexJob(alias string) {
 	ctx := context.Background()
 	rolloverConditions := make(map[string]interface{})
-	json.Unmarshal([]byte(rolloverConfig), &rolloverConditions)
+	rolloverConfiguration := fmt.Sprintf(rolloverConfig, "7d", 10000, "1gb")
+	if util.IsProductionPlan() {
+		rolloverConfiguration = fmt.Sprintf(rolloverConfig, "30d", 1000000, "10gb")
+	}
+	json.Unmarshal([]byte(rolloverConfiguration), &rolloverConditions)
 	rolloverService, err := es7.NewIndicesRolloverService(util.GetClient7()).
 		Alias(alias).
 		Conditions(rolloverConditions).
@@ -142,10 +153,12 @@ func (es *elasticsearch) rolloverIndexJob(alias string) {
 	}
 
 	if len(indices) > 2 {
-
 		rolloverIndices := []string{}
+		r, _ := regexp.Compile(fmt.Sprintf("%s-[0-9]+", alias))
 		for _, catResRow := range indices {
-			rolloverIndices = append(rolloverIndices, catResRow.Index)
+			if r.MatchString(catResRow.Index) {
+				rolloverIndices = append(rolloverIndices, catResRow.Index)
+			}
 		}
 
 		sort.Strings(rolloverIndices)
