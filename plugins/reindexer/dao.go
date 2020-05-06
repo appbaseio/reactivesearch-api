@@ -410,8 +410,13 @@ func getIndexSize(ctx context.Context, indexName string) (int64, error) {
 	if err != nil {
 		return res, err
 	}
-	res = stats.Indices[index].Primaries.Store.SizeInBytes
-	return res, nil
+
+	if val, ok := stats.Indices[index]; ok {
+		res = val.Primaries.Store.SizeInBytes
+		return res, nil
+	}
+
+	return res, errors.New(`Invalid index name`)
 }
 
 func isTaskCompleted(ctx context.Context, taskID string) (bool, error) {
