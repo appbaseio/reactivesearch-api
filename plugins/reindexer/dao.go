@@ -15,7 +15,7 @@ import (
 	es7 "github.com/olivere/elastic/v7"
 )
 
-func postReIndex(ctx context.Context, sourceIndex, newIndexName string) error {
+func postReIndex(ctx context.Context, sourceIndex, newIndexName string, operation ReIndexOperation) error {
 	// Fetch all the aliases of old index
 	alias, err := aliasesOf(ctx, sourceIndex)
 
@@ -31,16 +31,17 @@ func postReIndex(ctx context.Context, sourceIndex, newIndexName string) error {
 	}
 
 	// Delete old index
-	err = deleteIndex(ctx, sourceIndex)
-	if err != nil {
-		return errors.New(`error deleting source index ` + sourceIndex + "\n" + err.Error())
+	if operation == ReIndexWithDelete {
+		err = deleteIndex(ctx, sourceIndex)
+		if err != nil {
+			return errors.New(`error deleting source index ` + sourceIndex + "\n" + err.Error())
+		}
+		// Set aliases of old index to the new index.
+		err = setAlias(ctx, newIndexName, aliases...)
+		if err != nil {
+			return errors.New(`error setting alias for ` + newIndexName + "\n" + err.Error())
+		}
 	}
-	// Set aliases of old index to the new index.
-	err = setAlias(ctx, newIndexName, aliases...)
-	if err != nil {
-		return errors.New(`error setting alias for ` + newIndexName + "\n" + err.Error())
-	}
-
 	return nil
 }
 
@@ -110,7 +111,11 @@ func reindex(ctx context.Context, sourceIndex string, config *reindexConfig, wai
 		body["settings"] = config.Settings
 	}
 	newIndexName := destinationIndex
-	if destinationIndex == "" {
+	operation := ReIndexWithDelete
+	if destinationIndex != "" {
+		operation = ReindexWithClone
+	}
+	if operation == ReIndexWithDelete {
 		newIndexName, err = reindexedName(sourceIndex)
 	}
 
@@ -153,8 +158,8 @@ func reindex(ctx context.Context, sourceIndex string, config *reindexConfig, wai
 			return nil, err
 		}
 
-		if destinationIndex == "" {
-			err = postReIndex(ctx, sourceIndex, newIndexName)
+		if operation == ReIndexWithDelete {
+			err = postReIndex(ctx, sourceIndex, newIndexName, ReIndexWithDelete)
 			if err != nil {
 				return nil, err
 			}
@@ -170,7 +175,7 @@ func reindex(ctx context.Context, sourceIndex string, config *reindexConfig, wai
 	}
 	taskID := response.TaskId
 
-	go asyncReIndex(taskID, sourceIndex, newIndexName)
+	go asyncReIndex(taskID, sourceIndex, newIndexName, operation)
 
 	// Get the reindex task by ID
 	task, err := util.GetClient7().TasksGetTask().TaskId(taskID).Do(context.Background())
@@ -410,8 +415,13 @@ func getIndexSize(ctx context.Context, indexName string) (int64, error) {
 	if err != nil {
 		return res, err
 	}
-	res = stats.Indices[index].Primaries.Store.SizeInBytes
-	return res, nil
+
+	if val, ok := stats.Indices[index]; ok {
+		res = val.Primaries.Store.SizeInBytes
+		return res, nil
+	}
+
+	return res, errors.New(`Invalid index name`)
 }
 
 func isTaskCompleted(ctx context.Context, taskID string) (bool, error) {
@@ -429,7 +439,7 @@ func isTaskCompleted(ctx context.Context, taskID string) (bool, error) {
 
 // go routine to track async re-indexing process for a given source and destination index.
 // it checks every 30s if task is completed or not.
-func asyncReIndex(taskID, source, destination string) {
+func asyncReIndex(taskID, source, destination string, operation ReIndexOperation) {
 	SetCurrentProcess(taskID, source, destination)
 	isCompleted := make(chan bool, 1)
 	ticker := time.Tick(30 * time.Second)
@@ -447,7 +457,7 @@ func asyncReIndex(taskID, source, destination string) {
 			log.Println(logTag, taskID+" task completed successfully")
 			// remove process from current cache
 			RemoveCurrentProcess(taskID)
-			err := postReIndex(ctx, source, destination)
+			err := postReIndex(ctx, source, destination, operation)
 			if err != nil {
 				log.Errorln(logTag, " post re-indexing error: ", err)
 			}
