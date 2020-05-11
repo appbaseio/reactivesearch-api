@@ -191,7 +191,6 @@ func (l *Logs) recordResponse(request *Request, w *httptest.ResponseRecorder, re
 		err := json.Unmarshal(responseBody, &resBody)
 		if err != nil {
 			log.Errorln(logTag, "error encountered while parsing the response: ", err)
-			return
 		}
 		// ignore error to record error logs
 		if err == nil {
