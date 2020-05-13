@@ -3,6 +3,7 @@ package logs
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -21,6 +22,21 @@ import (
 
 type chain struct {
 	middleware.Fifo
+}
+
+// SearchResponseBody represents the response body returned by search
+type SearchResponseBody struct {
+	Took float64 `json:"took"`
+}
+
+// RSSettings represents the settings object in RS API response
+type RSSettings struct {
+	Took float64 `json:"took"`
+}
+
+// ResponseBodyRS represents the response body returned by reactivesearch route
+type ResponseBodyRS struct {
+	Settings RSSettings `json:"settings"`
 }
 
 func (c *chain) Wrap(h http.HandlerFunc) http.HandlerFunc {
@@ -61,7 +77,8 @@ type Response struct {
 	Code    int    `json:"code"`
 	Status  string `json:"status"`
 	Headers map[string][]string
-	Body    string `json:"body"`
+	Took    *float64 `json:"took,omitempty"`
+	Body    string   `json:"body"`
 }
 
 type record struct {
@@ -158,5 +175,27 @@ func (l *Logs) recordResponse(request *Request, w *httptest.ResponseRecorder, re
 		return
 	}
 	rec.Response.Body = string(responseBody)
+	if *reqCategory == category.Search {
+		var resBody SearchResponseBody
+		err := json.Unmarshal(responseBody, &resBody)
+		if err != nil {
+			log.Errorln(logTag, "error encountered while parsing the response: ", err)
+		}
+		// ignore error to record error logs
+		if err == nil {
+			rec.Response.Took = &resBody.Took
+		}
+	}
+	if *reqCategory == category.ReactiveSearch {
+		var resBody ResponseBodyRS
+		err := json.Unmarshal(responseBody, &resBody)
+		if err != nil {
+			log.Errorln(logTag, "error encountered while parsing the response: ", err)
+		}
+		// ignore error to record error logs
+		if err == nil {
+			rec.Response.Took = &resBody.Settings.Took
+		}
+	}
 	l.es.indexRecord(context.Background(), rec)
 }
