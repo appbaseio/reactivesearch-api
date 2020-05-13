@@ -259,7 +259,7 @@ func TestRBAC(t *testing.T) {
 
 			var updatePermissionResponse = map[string]interface{}{
 				"code":    200,
-				"message": "Permission is updated successfully",
+				"message": "permission is updated successfully",
 				"status":  "OK",
 			}
 

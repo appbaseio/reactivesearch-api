@@ -59,6 +59,7 @@ var defaultUser = map[string]interface{}{
 		"reactivesearch",
 		"searchrelevancy",
 		"auth",
+		"synonyms",
 	},
 	"acls": []string{
 		"reindex",
