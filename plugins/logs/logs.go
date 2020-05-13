@@ -6,6 +6,7 @@ import (
 
 	"github.com/appbaseio/arc/middleware"
 	"github.com/appbaseio/arc/plugins"
+	"github.com/robfig/cron"
 )
 
 const (
@@ -15,10 +16,20 @@ const (
 	envLogsEsIndex     = "LOGS_ES_INDEX"
 	config             = `
 	{
+	  "aliases": {
+		"%s": {
+		  "is_write_index": true
+	    }
+	  },
 	  "settings": {
 	    "number_of_shards": %d,
 	    "number_of_replicas": %d
 	  }
+	}`
+	rolloverConfig = `{
+		"max_age":  "%s",
+		"max_docs": %d,
+		"max_size": "%s"
 	}`
 )
 
@@ -61,6 +72,11 @@ func (l *Logs) InitFunc() error {
 		return err
 	}
 
+	// init cron job
+	cronjob := cron.New()
+	cronjob.AddFunc("@midnight", func() { l.es.rolloverIndexJob(indexName) })
+	cronjob.Start()
+
 	return nil
 }
 
@@ -71,5 +87,10 @@ func (l *Logs) Routes() []plugins.Route {
 
 // Default empty middleware array function
 func (l *Logs) ESMiddleware() []middleware.Middleware {
+	return make([]middleware.Middleware, 0)
+}
+
+// Default empty middleware array function
+func (a *Logs) RSMiddleware() []middleware.Middleware {
 	return make([]middleware.Middleware, 0)
 }

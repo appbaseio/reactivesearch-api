@@ -26,6 +26,10 @@ var adminCategories = []category.Category{
 	category.Templates,
 	category.Suggestions,
 	category.Auth,
+	category.Functions,
+	category.ReactiveSearch,
+	category.SearchRelevancy,
+	category.Synonyms,
 }
 
 var adminOps = []op.Operation{
@@ -35,21 +39,24 @@ var adminOps = []op.Operation{
 }
 
 var defaultAdminLimits = permission.Limits{
-	IPLimit:          7200,
-	DocsLimit:        30,
-	SearchLimit:      30,
-	IndicesLimit:     30,
-	CatLimit:         30,
-	ClustersLimit:    30,
-	MiscLimit:        30,
-	UserLimit:        30,
-	PermissionLimit:  30,
-	AnalyticsLimit:   30,
-	RulesLimit:       30,
-	TemplatesLimit:   30,
-	SuggestionsLimit: 30,
-	StreamsLimit:     30,
-	AuthLimit:        30,
+	IPLimit:              7200,
+	DocsLimit:            30,
+	SearchLimit:          30,
+	IndicesLimit:         30,
+	CatLimit:             30,
+	ClustersLimit:        30,
+	MiscLimit:            30,
+	UserLimit:            30,
+	PermissionLimit:      30,
+	AnalyticsLimit:       30,
+	RulesLimit:           30,
+	TemplatesLimit:       30,
+	SuggestionsLimit:     30,
+	StreamsLimit:         30,
+	AuthLimit:            30,
+	FunctionsLimit:       30,
+	ReactiveSearchLimit:  30,
+	SearchRelevancyLimit: 30,
 }
 
 var createPermissionResponse = map[string]interface{}{
@@ -251,17 +258,9 @@ func TestRBAC(t *testing.T) {
 			delete(parsedResponse, "_seq_no")
 
 			var updatePermissionResponse = map[string]interface{}{
-				"_index":   ".permissions",
-				"_type":    "_doc",
-				"_id":      username,
-				"_version": 2,
-				"result":   "updated",
-				"_shards": map[string]interface{}{
-					"total":      1,
-					"successful": 1,
-					"failed":     0,
-				},
-				"_primary_term": 1,
+				"code":    200,
+				"message": "Permission is updated successfully",
+				"status":  "OK",
 			}
 
 			mockMap := util.StructToMap(updatePermissionResponse)

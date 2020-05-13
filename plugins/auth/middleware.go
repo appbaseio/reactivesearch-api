@@ -106,6 +106,7 @@ func (a *Auth) basicAuth(h http.HandlerFunc) http.HandlerFunc {
 			} else {
 				msg = fmt.Sprintf("Unable to parse JWT: %v", err)
 			}
+			w.Header().Set("www-authenticate", "Basic realm=\"Authentication Required\"")
 			util.WriteBackError(w, msg, http.StatusUnauthorized)
 			return
 		}
@@ -118,10 +119,12 @@ func (a *Auth) basicAuth(h http.HandlerFunc) http.HandlerFunc {
 				} else if u, ok := claims["role"]; ok {
 					role = u.(string)
 				} else {
+					w.Header().Set("www-authenticate", "Basic realm=\"Authentication Required\"")
 					util.WriteBackError(w, fmt.Sprintf("Invalid JWT"), http.StatusUnauthorized)
 					return
 				}
 			} else {
+				w.Header().Set("www-authenticate", "Basic realm=\"Authentication Required\"")
 				util.WriteBackError(w, fmt.Sprintf("Invalid JWT"), http.StatusUnauthorized)
 				return
 			}
@@ -133,6 +136,7 @@ func (a *Auth) basicAuth(h http.HandlerFunc) http.HandlerFunc {
 			if err != nil || obj == nil {
 				msg := fmt.Sprintf("No API credentials match with provided role: %s", role)
 				log.Errorln(logTag, ":", err)
+				w.Header().Set("www-authenticate", "Basic realm=\"Authentication Required\"")
 				util.WriteBackError(w, msg, http.StatusUnauthorized)
 				return
 			}
@@ -141,12 +145,14 @@ func (a *Auth) basicAuth(h http.HandlerFunc) http.HandlerFunc {
 			if err != nil || obj == nil {
 				msg := fmt.Sprintf("No API credentials match with provided username: %s", username)
 				log.Errorln(logTag, ":", err)
+				w.Header().Set("www-authenticate", "Basic realm=\"Authentication Required\"")
 				util.WriteBackError(w, msg, http.StatusUnauthorized)
 				return
 			}
 		}
 
 		var authenticated bool
+		var errorMsg = "invalid credentials provided"
 
 		// since we are able to fetch a result with the given credentials, we
 		// do not need to validate the username and password.
@@ -156,13 +162,24 @@ func (a *Auth) basicAuth(h http.HandlerFunc) http.HandlerFunc {
 				// if the request is made to elasticsearch using user credentials, then the user has to be an admin
 				reqUser := obj.(*user.User)
 				if hasBasicAuth && bcrypt.CompareHashAndPassword([]byte(reqUser.Password), []byte(password)) != nil {
+					w.Header().Set("www-authenticate", "Basic realm=\"Authentication Required\"")
 					util.WriteBackError(w, "invalid password", http.StatusUnauthorized)
 					return
 				}
-				if reqCategory.IsFromES() {
+
+				if reqCategory.IsFromES() || reqCategory.IsFromRS() {
 					authenticated = *reqUser.IsAdmin
 				} else {
 					authenticated = true
+				}
+
+				if !authenticated {
+					if reqCategory.IsFromRS() {
+						errorMsg = "only admin users are allowed to access reactivesearch"
+					} else {
+						errorMsg = "only admin users are allowed to access elasticsearch"
+					}
+
 				}
 
 				// cache the user
@@ -179,12 +196,16 @@ func (a *Auth) basicAuth(h http.HandlerFunc) http.HandlerFunc {
 			{
 				reqPermission := obj.(*permission.Permission)
 				if hasBasicAuth && reqPermission.Password != password {
+					w.Header().Set("www-authenticate", "Basic realm=\"Authentication Required\"")
 					util.WriteBackError(w, "invalid password", http.StatusUnauthorized)
 					return
 				}
 
-				if reqCategory.IsFromES() {
+				if reqPermission.HasCategory(*reqCategory) {
 					authenticated = true
+				} else {
+					str := (*reqCategory).String()
+					errorMsg = "credential is not allowed to access" + " " + str
 				}
 
 				// cache the permission
@@ -202,7 +223,8 @@ func (a *Auth) basicAuth(h http.HandlerFunc) http.HandlerFunc {
 		}
 
 		if !authenticated {
-			util.WriteBackError(w, "invalid credentials provided", http.StatusUnauthorized)
+			w.Header().Set("www-authenticate", "Basic realm=\"Authentication Required\"")
+			util.WriteBackError(w, errorMsg, http.StatusUnauthorized)
 			return
 		}
 

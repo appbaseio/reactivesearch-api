@@ -86,6 +86,7 @@ func (rl *Ratelimiter) rateLimit(h http.HandlerFunc) http.HandlerFunc {
 			// limit on Categories per second
 			categoryLimit, err := reqPermission.GetLimitFor(*reqCategory)
 			if err != nil {
+				w.Header().Set("www-authenticate", "Basic realm=\"Authentication Required\"")
 				util.WriteBackError(w, err.Error(), http.StatusUnauthorized)
 				return
 			}

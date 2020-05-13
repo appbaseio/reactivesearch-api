@@ -26,7 +26,11 @@ var (
 		category.Rules,
 		category.Templates,
 		category.Suggestions,
+		category.Functions,
+		category.ReactiveSearch,
+		category.SearchRelevancy,
 		category.Auth,
+		category.Synonyms,
 	}
 
 	defaultOps = []op.Operation{

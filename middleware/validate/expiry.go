@@ -45,6 +45,7 @@ func validateExpiry(h http.HandlerFunc) http.HandlerFunc {
 
 			if expired {
 				msg := fmt.Sprintf("permission with username=%s is expired", reqPermission.Username)
+				w.Header().Set("www-authenticate", "Basic realm=\"Authentication Required\"")
 				util.WriteBackError(w, msg, http.StatusUnauthorized)
 				return
 			}

@@ -27,6 +27,7 @@ const (
 	ProductionFirst2019
 	ProductionSecond2019
 	ProductionThird2019
+	ProductionFourth2019
 )
 
 // String is the implementation of Stringer interface that returns the string representation of Plan type.
@@ -50,6 +51,7 @@ func (o Plan) String() string {
 		"2019-production-1",
 		"2019-production-2",
 		"2019-production-3",
+		"2019-production-4",
 	}[o]
 }
 
@@ -97,6 +99,8 @@ func (o *Plan) UnmarshalJSON(bytes []byte) error {
 		*o = ProductionSecond2019
 	case ProductionThird2019.String():
 		*o = ProductionThird2019
+	case ProductionFourth2019.String():
+		*o = ProductionFourth2019
 	default:
 		return fmt.Errorf("invalid plan encountered: %v", plan)
 	}
@@ -143,6 +147,8 @@ func (o Plan) MarshalJSON() ([]byte, error) {
 		plan = ProductionSecond2019.String()
 	case ProductionThird2019:
 		plan = ProductionThird2019.String()
+	case ProductionFourth2019:
+		plan = ProductionFourth2019.String()
 	default:
 		return nil, fmt.Errorf("invalid plan encountered: %v", o)
 	}
@@ -163,4 +169,14 @@ func ValidatePlans(validPlans []Plan, byPassValidation bool) bool {
 		}
 	}
 	return false
+}
+
+// IsProductionPlan validates if the user's plan is a production plan
+func IsProductionPlan() bool {
+	switch GetTier().String() {
+	case ArcEnterprise.String(), ProductionFirst2019.String(), ProductionSecond2019.String(), ProductionThird2019.String(), ProductionFourth2019.String():
+		return true
+	default:
+		return false
+	}
 }

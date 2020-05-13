@@ -53,6 +53,14 @@ var (
 	FeatureCustomEvents string
 	// FeatureSuggestions for testing
 	FeatureSuggestions string
+	// FeatureRules for testing
+	FeatureRules string
+	// FeatureTemplates for testing
+	FeatureTemplates string
+	// FeatureFunctions for testing
+	FeatureFunctions string
+	// FeatureSearchRelevancy for testing
+	FeatureSearchRelevancy string
 )
 
 func init() {
@@ -167,28 +175,70 @@ func main() {
 	if FeatureSuggestions != "" && FeatureSuggestions == "true" {
 		util.SetFeatureSuggestions(true)
 	}
+	if FeatureRules != "" && FeatureRules == "true" {
+		util.SetFeatureRules(true)
+	}
+	if FeatureFunctions != "" && FeatureFunctions == "true" {
+		util.SetFeatureFunctions(true)
+	}
+	if FeatureTemplates != "" && FeatureTemplates == "true" {
+		util.SetFeatureTemplates(true)
+	}
+	if FeatureSearchRelevancy != "" && FeatureSearchRelevancy == "true" {
+		util.SetFeatureSearchRelevancy(true)
+	}
 
 	// ES client instantiation
 	// ES v7 and v6 clients
 	util.NewClient()
+	util.SetDefaultIndexTemplate()
+	// map of specific plugins
+	sequencedPlugins := []string{"searchrelevancy.so", "rules.so", "functions.so", "analytics.so", "suggestions.so"}
+	sequencedPluginsByPath := make(map[string]string)
 
-	var elasticSearchPath string
+	var elasticSearchPath, reactiveSearchPath string
 	elasticSearchMiddleware := make([]middleware.Middleware, 0)
+	reactiveSearchMiddleware := make([]middleware.Middleware, 0)
 	err := filepath.Walk(pluginDir, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
 		if !info.IsDir() && filepath.Ext(info.Name()) == ".so" && info.Name() != "elasticsearch.so" {
-			mw, err1 := LoadPluginFromFile(router, path)
-			if err1 != nil {
-				return err1
+			if info.Name() != "querytranslate.so" {
+				if util.IsExists(info.Name(), sequencedPlugins) {
+					sequencedPluginsByPath[info.Name()] = path
+				} else {
+					plugin, err1 := LoadPluginFromFile(router, path)
+					if err1 != nil {
+						return err1
+					}
+					reactiveSearchMiddleware = append(reactiveSearchMiddleware, plugin.RSMiddleware()...)
+					elasticSearchMiddleware = append(elasticSearchMiddleware, plugin.ESMiddleware()...)
+				}
+			} else {
+				reactiveSearchPath = path
 			}
-			elasticSearchMiddleware = append(elasticSearchMiddleware, mw...)
 		} else if info.Name() == "elasticsearch.so" {
 			elasticSearchPath = path
 		}
 		return nil
 	})
+	// load plugins in a sequence
+	for _, pluginName := range sequencedPlugins {
+		path, _ := sequencedPluginsByPath[pluginName]
+		if path != "" {
+			plugin, err := LoadPluginFromFile(router, path)
+			if err != nil {
+				log.Fatal("error loading plugins: ", err)
+			}
+			elasticSearchMiddleware = append(elasticSearchMiddleware, plugin.ESMiddleware()...)
+			reactiveSearchMiddleware = append(reactiveSearchMiddleware, plugin.RSMiddleware()...)
+		}
+	}
+	// Load ReactiveSearch plugin
+	if reactiveSearchPath != "" {
+		LoadRSPluginFromFile(router, reactiveSearchPath, reactiveSearchMiddleware)
+	}
 	LoadESPluginFromFile(router, elasticSearchPath, elasticSearchMiddleware)
 	if err != nil {
 		log.Fatal("error loading plugins: ", err)
@@ -199,6 +249,7 @@ func main() {
 		AllowedOrigins: []string{"*"},
 		AllowedMethods: []string{"HEAD", "GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
 		AllowedHeaders: []string{"*"},
+		ExposedHeaders: []string{"*"},
 	})
 	handler := c.Handler(router)
 	handler = logger.Log(handler)
@@ -224,7 +275,7 @@ func LoadPIFromFile(path string) (plugin.Symbol, error) {
 }
 
 // LoadPluginFromFile loads a plugin at the given location
-func LoadPluginFromFile(router *mux.Router, path string) ([]middleware.Middleware, error) {
+func LoadPluginFromFile(router *mux.Router, path string) (plugins.Plugin, error) {
 	pi, err2 := LoadPIFromFile(path)
 	if err2 != nil {
 		return nil, err2
@@ -235,7 +286,7 @@ func LoadPluginFromFile(router *mux.Router, path string) ([]middleware.Middlewar
 	if err3 != nil {
 		return nil, err3
 	}
-	return p.ESMiddleware(), nil
+	return p, nil
 }
 
 func LoadESPluginFromFile(router *mux.Router, path string, mw []middleware.Middleware) error {
@@ -246,6 +297,16 @@ func LoadESPluginFromFile(router *mux.Router, path string, mw []middleware.Middl
 	var p plugins.ESPlugin
 	p = *pi.(*plugins.ESPlugin)
 	return plugins.LoadESPlugin(router, p, mw)
+}
+
+func LoadRSPluginFromFile(router *mux.Router, path string, mw []middleware.Middleware) error {
+	pi, err2 := LoadPIFromFile(path)
+	if err2 != nil {
+		return err2
+	}
+	var p plugins.RSPlugin
+	p = *pi.(*plugins.RSPlugin)
+	return plugins.LoadRSPlugin(router, p, mw)
 }
 
 // LoadEnvFromFile loads env vars from envFile. Envs in the file

@@ -33,6 +33,10 @@ const (
 	Templates
 	Suggestions
 	Auth
+	Functions
+	ReactiveSearch
+	SearchRelevancy
+	Synonyms
 )
 
 // String is an implementation of Stringer interface that returns the string representation of category.Categories.
@@ -52,6 +56,10 @@ func (c Category) String() string {
 		"templates",
 		"suggestions",
 		"auth",
+		"functions",
+		"reactivesearch",
+		"searchrelevancy",
+		"synonyms",
 	}[c]
 }
 
@@ -91,6 +99,14 @@ func (c *Category) UnmarshalJSON(bytes []byte) error {
 		*c = Suggestions
 	case Auth.String():
 		*c = Auth
+	case Functions.String():
+		*c = Functions
+	case ReactiveSearch.String():
+		*c = ReactiveSearch
+	case SearchRelevancy.String():
+		*c = SearchRelevancy
+	case Synonyms.String():
+		*c = Synonyms
 	default:
 		return fmt.Errorf("invalid category encountered: %v", category)
 	}
@@ -129,6 +145,14 @@ func (c Category) MarshalJSON() ([]byte, error) {
 		category = Suggestions.String()
 	case Auth:
 		category = Auth.String()
+	case Functions:
+		category = Functions.String()
+	case ReactiveSearch:
+		category = ReactiveSearch.String()
+	case SearchRelevancy:
+		category = SearchRelevancy.String()
+	case Synonyms:
+		category = Synonyms.String()
 	default:
 		return nil, fmt.Errorf("invalid category encountered: %v" + c.String())
 	}
@@ -144,6 +168,11 @@ func (c Category) IsFromES() bool {
 		c == Cat ||
 		c == Clusters ||
 		c == Misc
+}
+
+// IsFromRS checks whether the category is of the reactivesearch category.
+func (c Category) IsFromRS() bool {
+	return c == ReactiveSearch
 }
 
 // HasACL checks whether the given acl is a value in the category categories.

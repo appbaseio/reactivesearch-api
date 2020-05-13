@@ -2,6 +2,7 @@ package reindexer
 
 import (
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"strconv"
@@ -18,7 +19,7 @@ type reindexConfig struct {
 	Include  []string               `json:"include_fields"`
 	Exclude  []string               `json:"exclude_fields"`
 	Types    []string               `json:"types"`
-	Action   string                 `json:"action"`
+	Action   []string               `json:"action,omitempty"`
 }
 
 func (rx *reindexer) reindex() http.HandlerFunc {
@@ -28,8 +29,11 @@ func (rx *reindexer) reindex() http.HandlerFunc {
 		if checkVar(ok, w, "index") {
 			return
 		}
-
-		err, body, waitForCompletion, done := reindexConfigResponse(req, w)
+		if IsReIndexInProcess(indexName, "") {
+			util.WriteBackError(w, fmt.Sprintf(`Re-indexing is already in progress for %s index`, indexName), http.StatusInternalServerError)
+			return
+		}
+		err, body, waitForCompletion, done := reindexConfigResponse(req, w, indexName)
 		if done {
 			return
 		}
@@ -50,13 +54,26 @@ func (rx *reindexer) reindexSrcToDest() http.HandlerFunc {
 		if checkVar(okD, w, "destination_index") {
 			return
 		}
-		err, body, waitForCompletion, done := reindexConfigResponse(req, w)
+		err, body, waitForCompletion, done := reindexConfigResponse(req, w, sourceIndex)
 		if done {
 			return
 		}
 
 		response, err := reindex(req.Context(), sourceIndex, &body, waitForCompletion, destinationIndex)
 		errorHandler(err, w, response)
+	}
+}
+
+func (rx *reindexer) aliasedIndices() http.HandlerFunc {
+	return func(w http.ResponseWriter, req *http.Request) {
+		res, err := getAliasedIndices(req.Context())
+		if err != nil {
+			util.WriteBackError(w, "Unable to get aliased indices.\n"+err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		response, err := json.Marshal(res)
+		errorHandler(nil, w, response)
 	}
 }
 
@@ -78,7 +95,7 @@ func checkVar(okS bool, w http.ResponseWriter, variable string) bool {
 	return false
 }
 
-func reindexConfigResponse(req *http.Request, w http.ResponseWriter) (error, reindexConfig, bool, bool) {
+func reindexConfigResponse(req *http.Request, w http.ResponseWriter, sourceIndex string) (error, reindexConfig, bool, bool) {
 	reqBody, err := ioutil.ReadAll(req.Body)
 	if err != nil {
 		log.Errorln(logTag, ":", err)
@@ -95,10 +112,21 @@ func reindexConfigResponse(req *http.Request, w http.ResponseWriter) (error, rei
 		return nil, reindexConfig{}, false, true
 	}
 
-	// By default, wait_for_completion = true
+	// By default, wait_for_completion depends on size of index
 	param := req.URL.Query().Get("wait_for_completion")
 	if param == "" {
-		param = "true"
+		// Get the size of currentIndex, if that is > IndexStoreSize (100MB - 100000000 Bytes)  then do async re-indexing.
+		size, err := getIndexSize(req.Context(), sourceIndex)
+		if err != nil {
+			log.Errorln(logTag, ":", err)
+			util.WriteBackError(w, "Unable to get the size of "+sourceIndex, http.StatusBadRequest)
+			return nil, reindexConfig{}, false, true
+		}
+		if size > IndexStoreSize {
+			param = "false"
+		} else {
+			param = "true"
+		}
 	}
 	waitForCompletion, err := strconv.ParseBool(param)
 	if err != nil {

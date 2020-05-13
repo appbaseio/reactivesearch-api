@@ -36,6 +36,7 @@ func sources(h http.HandlerFunc) http.HandlerFunc {
 			reqIP := iplookup.FromRequest(req)
 			if reqIP == "" {
 				msg := fmt.Sprintf(`failed to recognize request ip: "%s"`, reqIP)
+				w.Header().Set("www-authenticate", "Basic realm=\"Authentication Required\"")
 				util.WriteBackError(w, msg, http.StatusUnauthorized)
 				return
 			}
@@ -70,6 +71,7 @@ func sources(h http.HandlerFunc) http.HandlerFunc {
 			if !validated {
 				msg := fmt.Sprintf(`permission with username %s doesn't have required sources. reqIP = %s, sources = %s`,
 					reqPermission.Username, reqIP, allowedSources)
+				w.Header().Set("www-authenticate", "Basic realm=\"Authentication Required\"")
 				util.WriteBackError(w, msg, http.StatusUnauthorized)
 				return
 			}

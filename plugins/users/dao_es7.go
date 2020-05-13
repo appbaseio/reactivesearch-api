@@ -10,6 +10,7 @@ import (
 func (es *elasticsearch) getRawUsersEs7(ctx context.Context) ([]byte, error) {
 	response, err := util.GetClient7().Search().
 		Index(es.indexName).
+		Size(1000).
 		Do(ctx)
 
 	if err != nil {

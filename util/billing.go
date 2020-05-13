@@ -44,37 +44,15 @@ func SetTimeValidity(time int64) {
 	timeValidity = time
 }
 
-// Feature custom events
-var featureCustomEvents bool
-
-// GetFeatureCustomEvents returns the featureCustomEvents
-func GetFeatureCustomEvents() bool {
-	return featureCustomEvents
-}
-
-// SetFeatureCustomEvents returns the time validity
-func SetFeatureCustomEvents(val bool) {
-	featureCustomEvents = val
-}
-
-// Feature suggestions
-var featureSuggestions bool
-
-// GetFeatureSuggestions returns the featureSuggestions
-func GetFeatureSuggestions() bool {
-	return featureSuggestions
-}
-
-// SetFeatureSuggestions returns the time validity
-func SetFeatureSuggestions(val bool) {
-	featureSuggestions = val
-}
-
 // maxErrorTime before showing errors if invalid trial / plan in hours
 var maxErrorTime int64 = 24 // in hrs
 
 // NodeCount is the current node count, defaults to 1
 var NodeCount = 1
+
+// isInvalidArcIDUsed flag is being used to determine that if the arc id is invalid.
+// If it is `true` then `Arc` will start throwing errors immediately with a status code of `400` instead of `402`
+var isInvalidArcIDUsed = false
 
 // ArcUsage struct is used to report time usage
 type ArcUsage struct {
@@ -85,14 +63,18 @@ type ArcUsage struct {
 }
 
 type ClusterPlan struct {
-	Tier                *Plan  `json:"tier"`
-	FeatureCustomEvents bool   `json:"feature_custom_events"`
-	FeatureSuggestions  bool   `json:"feature_suggestions"`
-	Trial               bool   `json:"trial"`
-	TrialValidity       int64  `json:"trial_validity"`
-	TierValidity        int64  `json:"tier_validity"`
-	TimeValidity        int64  `json:"time_validity"`
-	SubscriptionID      string `json:"subscription_id"`
+	Tier                   *Plan  `json:"tier"`
+	FeatureCustomEvents    bool   `json:"feature_custom_events"`
+	FeatureSuggestions     bool   `json:"feature_suggestions"`
+	FeatureRules           bool   `json:"feature_rules"`
+	FeatureTemplates       bool   `json:"feature_templates"`
+	FeatureFunctions       bool   `json:"feature_functions"`
+	FeatureSearchRelevancy bool   `json:"feature_search_relevancy"`
+	Trial                  bool   `json:"trial"`
+	TrialValidity          int64  `json:"trial_validity"`
+	TierValidity           int64  `json:"tier_validity"`
+	TimeValidity           int64  `json:"time_validity"`
+	SubscriptionID         string `json:"subscription_id"`
 }
 
 // ArcUsageResponse stores the response from ACCAPI
@@ -122,25 +104,39 @@ type ClusterPlanResponse struct {
 
 // ArcInstanceDetails contains the info about an Arc Instance
 type ArcInstanceDetails struct {
-	NodeCount            int                    `json:"node_count"`
-	Description          string                 `json:"description"`
-	SubscriptionID       string                 `json:"subscription_id"`
-	SubscriptionCanceled bool                   `json:"subscription_canceled"`
-	Trial                bool                   `json:"trial"`
-	TrialValidity        int64                  `json:"trial_validity"`
-	CreatedAt            int64                  `json:"created_at"`
-	Tier                 *Plan                  `json:"tier"`
-	TierValidity         int64                  `json:"tier_validity"`
-	TimeValidity         int64                  `json:"time_validity"`
-	Metadata             map[string]interface{} `json:"metadata"`
-	FeatureCustomEvents  bool                   `json:"feature_custom_events"`
-	FeatureSuggestions   bool                   `json:"feature_suggestions"`
+	NodeCount              int                    `json:"node_count"`
+	Description            string                 `json:"description"`
+	SubscriptionID         string                 `json:"subscription_id"`
+	SubscriptionCanceled   bool                   `json:"subscription_canceled"`
+	Trial                  bool                   `json:"trial"`
+	TrialValidity          int64                  `json:"trial_validity"`
+	CreatedAt              int64                  `json:"created_at"`
+	Tier                   *Plan                  `json:"tier"`
+	TierValidity           int64                  `json:"tier_validity"`
+	TimeValidity           int64                  `json:"time_validity"`
+	Metadata               map[string]interface{} `json:"metadata"`
+	FeatureCustomEvents    bool                   `json:"feature_custom_events"`
+	FeatureSuggestions     bool                   `json:"feature_suggestions"`
+	FeatureRules           bool                   `json:"feature_rules"`
+	FeatureTemplates       bool                   `json:"feature_templates"`
+	FeatureFunctions       bool                   `json:"feature_functions"`
+	FeatureSearchRelevancy bool                   `json:"feature_search_relevancy"`
 }
 
 // SetDefaultTier sets the default tier when billing is disabled
 func SetDefaultTier() {
 	var plan = ArcEnterprise
 	SetTier(&plan)
+}
+
+// ValidateArcID validates the ARC_ID by checking the response returned from the ACCAPI
+func ValidateArcID(statusCode int) {
+	if statusCode == http.StatusBadRequest {
+		// Set the flag to `true` so `Arc` can start throwing errors immediately
+		isInvalidArcIDUsed = true
+	} else {
+		isInvalidArcIDUsed = false
+	}
 }
 
 func validateTimeValidity() bool {
@@ -158,6 +154,12 @@ func validateTimeValidity() bool {
 func BillingMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		log.Println("current time validity value: ", GetTimeValidity())
+
+		if isInvalidArcIDUsed {
+			// throw invalid ARC_ID usage error
+			WriteBackError(w, "Please make sure that you're using a valid ARC_ID. If the issue persists please contact support@appbase.io with your ARC_ID or registered e-mail address.", http.StatusBadRequest)
+			return
+		}
 		// Blacklist subscription routes
 		if strings.HasPrefix(r.RequestURI, "/arc/subscription") || strings.HasPrefix(r.RequestURI, "/arc/plan") {
 			next.ServeHTTP(w, r)
@@ -165,7 +167,8 @@ func BillingMiddleware(next http.Handler) http.Handler {
 			next.ServeHTTP(w, r)
 		} else {
 			// Write an error and stop the handler chain
-			http.Error(w, "payment required", http.StatusPaymentRequired)
+			WriteBackError(w, "Payment required", http.StatusPaymentRequired)
+			return
 		}
 	})
 }
@@ -189,6 +192,9 @@ func getArcInstance(arcID string) (ArcInstance, error) {
 		log.Errorln("error reading res body:", err)
 		return arcInstance, err
 	}
+	// Validate the ACCAPI response
+	ValidateArcID(res.StatusCode)
+
 	err = json.Unmarshal(body, &response)
 	if len(response.ArcInstances) != 0 {
 		arcInstanceByID := response.ArcInstances[0]
@@ -197,6 +203,10 @@ func getArcInstance(arcID string) (ArcInstance, error) {
 		SetTier(arcInstanceByID.Tier)
 		SetFeatureSuggestions(arcInstanceByID.FeatureSuggestions)
 		SetFeatureCustomEvents(arcInstanceByID.FeatureCustomEvents)
+		SetFeatureRules(arcInstanceByID.FeatureRules)
+		SetFeatureFunctions(arcInstanceByID.FeatureFunctions)
+		SetFeatureSearchRelevancy(arcInstanceByID.FeatureSearchRelevancy)
+		SetFeatureTemplates(arcInstanceByID.FeatureTemplates)
 	} else {
 		return arcInstance, errors.New("No valid instance found for the provided ARC_ID")
 	}
@@ -222,6 +232,9 @@ func getArcClusterInstance(clusterID string) (ArcInstance, error) {
 		return arcInstance, err
 	}
 	defer res.Body.Close()
+	// Validate the ACCAPI response
+	ValidateArcID(res.StatusCode)
+
 	body, err := ioutil.ReadAll(res.Body)
 	if err != nil {
 		log.Errorln("error reading res body:", err)
@@ -240,6 +253,10 @@ func getArcClusterInstance(clusterID string) (ArcInstance, error) {
 		SetTier(arcInstanceDetails.Tier)
 		SetFeatureSuggestions(arcInstanceDetails.FeatureSuggestions)
 		SetFeatureCustomEvents(arcInstanceDetails.FeatureCustomEvents)
+		SetFeatureRules(arcInstanceDetails.FeatureRules)
+		SetFeatureFunctions(arcInstanceDetails.FeatureFunctions)
+		SetFeatureSearchRelevancy(arcInstanceDetails.FeatureSearchRelevancy)
+		SetFeatureTemplates(arcInstanceDetails.FeatureTemplates)
 	} else {
 		return arcInstance, errors.New("No valid instance found for the provided CLUSTER_ID")
 	}
@@ -266,6 +283,9 @@ func getClusterPlan(clusterID string) (ClusterPlan, error) {
 		log.Errorln("error reading res body:", err)
 		return clusterPlan, err
 	}
+	// Validate the ACCAPI response
+	ValidateArcID(res.StatusCode)
+
 	err = json.Unmarshal(body, &response)
 
 	if err != nil {
@@ -281,6 +301,10 @@ func getClusterPlan(clusterID string) (ClusterPlan, error) {
 	SetTimeValidity(response.Plan.TimeValidity)
 	SetFeatureSuggestions(response.Plan.FeatureSuggestions)
 	SetFeatureCustomEvents(response.Plan.FeatureCustomEvents)
+	SetFeatureRules(response.Plan.FeatureRules)
+	SetFeatureFunctions(response.Plan.FeatureFunctions)
+	SetFeatureSearchRelevancy(response.Plan.FeatureSearchRelevancy)
+	SetFeatureTemplates(response.Plan.FeatureTemplates)
 
 	return clusterPlan, nil
 }
@@ -295,7 +319,7 @@ func SetClusterPlan() {
 	}
 	_, err := getClusterPlan(clusterID)
 	if err != nil {
-		log.Fatalln("Unable to fetch the cluster plan. Please make sure that you're using a valid CLUSTER_ID. If the issue persists please contact support@appbase.io with your ARC_ID or registered e-mail address.", err)
+		log.Errorln("Unable to fetch the cluster plan. Please make sure that you're using a valid CLUSTER_ID. If the issue persists please contact support@appbase.io with your ARC_ID or registered e-mail address.", err)
 		return
 	}
 }
@@ -381,7 +405,7 @@ func ReportUsage() {
 
 	result, err := getArcInstance(arcID)
 	if err != nil {
-		log.Fatalln("Unable to fetch the arc instance. Please make sure that you're using a valid ARC_ID. If the issue persists please contact support@appbase.io with your ARC_ID or registered e-mail address.")
+		log.Errorln("Unable to fetch the arc instance. Please make sure that you're using a valid ARC_ID. If the issue persists please contact support@appbase.io with your ARC_ID or registered e-mail address.")
 		return
 	}
 
@@ -430,7 +454,7 @@ func ReportHostedArcUsage() {
 	// getArcClusterInstance(clusterId)
 	result, err := getArcClusterInstance(clusterID)
 	if err != nil {
-		log.Fatalln("Unable to fetch the arc instance. Please make sure that you're using a valid CLUSTER_ID. If the issue persists please contact support@appbase.io with your ARC_ID or registered e-mail address.", err)
+		log.Errorln("Unable to fetch the arc instance. Please make sure that you're using a valid CLUSTER_ID. If the issue persists please contact support@appbase.io with your ARC_ID or registered e-mail address.", err)
 		return
 	}
 
