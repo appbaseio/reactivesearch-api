@@ -19,23 +19,38 @@ var TestURL = "http://foo:bar@localhost:8000"
 
 type BuildArc struct {
 	cmd                 *exec.Cmd
-	Tier                Plan
+	Tier                *Plan
 	FeatureCustomEvents bool
 	FeatureSuggestions  bool
 }
 
+func cleanES() bool {
+	err := exec.Command("/bin/sh", "-c", "curl -XDELETE localhost:9200/.*").Run()
+	if err != nil {
+		log.Fatal("Error while running elasticsearch clean command", err)
+		return false
+	}
+	return true
+}
+
 func StartArc(b *BuildArc) BuildArc {
-	ldFlags := "export TEST_TIER=" + b.Tier.String() + " TEST_FEATURE_CUSTOM_EVENTS=" + strconv.FormatBool(b.FeatureCustomEvents) + " TEST_FEATURE_SUGGESTIONS=" + strconv.FormatBool(b.FeatureSuggestions) + ";"
+	// Clean ES index
+	go cleanES()
+
+	ldFlags := "export TEST_FEATURE_CUSTOM_EVENTS=" + strconv.FormatBool(b.FeatureCustomEvents) + " TEST_FEATURE_SUGGESTIONS=" + strconv.FormatBool(b.FeatureSuggestions) + ";"
+	if b.Tier != nil {
+		ldFlags = "export TEST_TIER=" + b.Tier.String() + " TEST_FEATURE_CUSTOM_EVENTS=" + strconv.FormatBool(b.FeatureCustomEvents) + " TEST_FEATURE_SUGGESTIONS=" + strconv.FormatBool(b.FeatureSuggestions) + ";"
+	}
 	makeCmd := exec.Command("/bin/sh", "-c", "cd ..; cd ..;"+ldFlags+"make clean; make;")
 	err := makeCmd.Run()
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal("Error while running clean command", err)
 	}
 	buildCmd := exec.Command("/bin/sh", "-c", "cd ..; cd ..; ./build/arc --env=config/manual.env;")
 	buildCmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
 	err2 := buildCmd.Start()
 	if err2 != nil {
-		log.Fatal(err2)
+		log.Fatal("Error while starting build command", err2)
 	}
 	b.cmd = buildCmd
 	return *b

@@ -59,6 +59,7 @@ var defaultUser = map[string]interface{}{
 		"reactivesearch",
 		"searchrelevancy",
 		"auth",
+		"synonyms",
 	},
 	"acls": []string{
 		"reindex",
@@ -126,6 +127,10 @@ var defaultUser = map[string]interface{}{
 }
 
 func TestUser(t *testing.T) {
+	build := util.BuildArc{}
+	util.StartArc(&build)
+	build.Start()
+	defer build.Close()
 	username, _ := createUserRequest["username"].(string)
 	Convey("Testing users", t, func() {
 		Convey("Create an user", func() {
