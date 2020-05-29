@@ -94,7 +94,7 @@ func SetDefaultIndexTemplate() error {
 						"autosuggest": {
 							"type": "text",
 							"analyzer": "autosuggest_analyzer",
-							"search_analyzer": "simple"
+							"search_analyzer": "standard"
 						},
 						"keyword": {
 							"type": "keyword",
@@ -103,7 +103,7 @@ func SetDefaultIndexTemplate() error {
 						"search": {
 							"type": "text",
 							"analyzer": "ngram_analyzer",
-							"search_analyzer": "simple"
+							"search_analyzer": "standard"
 						},
 						"synonyms": {
 							"type": "text",
