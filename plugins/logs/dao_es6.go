@@ -10,8 +10,12 @@ import (
 	es6 "gopkg.in/olivere/elastic.v6"
 )
 
-func (es *elasticsearch) getRawLogsES6(ctx context.Context, from string, size int, filter string, offset int, indices ...string) ([]byte, error) {
-	query := es6.NewBoolQuery()
+func (es *elasticsearch) getRawLogsES6(ctx context.Context, offset int, startDate, endDate string, size int, filter string, indices ...string) ([]byte, error) {
+	duration := es6.NewRangeQuery("timestamp").
+		From(startDate).
+		To(endDate)
+
+	query := es6.NewBoolQuery().Filter(duration)
 	// apply category filter
 	if filter == "search" {
 		filters := es6.NewTermQuery("category.keyword", "search")

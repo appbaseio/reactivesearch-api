@@ -8,8 +8,12 @@ import (
 	es7 "github.com/olivere/elastic/v7"
 )
 
-func (es *elasticsearch) getRawLogsES7(ctx context.Context, from string, size int, filter string, offset int, indices ...string) ([]byte, error) {
-	query := es7.NewBoolQuery()
+func (es *elasticsearch) getRawLogsES7(ctx context.Context, offset int, startDate, endDate string, size int, filter string, indices ...string) ([]byte, error) {
+	duration := es7.NewRangeQuery("timestamp").
+		From(startDate).
+		To(endDate)
+
+	query := es7.NewBoolQuery().Filter(duration)
 	// apply category filter
 	if filter == "search" {
 		filters := es7.NewTermQuery("category.keyword", "search")

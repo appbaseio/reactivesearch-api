@@ -95,20 +95,16 @@ func (es *elasticsearch) indexRecord(ctx context.Context, rec record) {
 	}
 }
 
-func (es *elasticsearch) getRawLogs(ctx context.Context, from, size, filter string, indices ...string) ([]byte, error) {
-	offset, err := strconv.Atoi(from)
+func (es *elasticsearch) getRawLogs(ctx context.Context, offset, startDate, endDate string, size int, filter string, indices ...string) ([]byte, error) {
+	parsedOffset, err := strconv.Atoi(offset)
 	if err != nil {
-		return nil, fmt.Errorf(`invalid value "%v" for query param "from"`, from)
-	}
-	s, err := strconv.Atoi(size)
-	if err != nil {
-		return nil, fmt.Errorf(`invalid value "%v" for query param "size"`, size)
+		return nil, fmt.Errorf(`invalid value "%v" for query param "from"`, offset)
 	}
 	switch util.GetVersion() {
 	case 6:
-		return es.getRawLogsES6(ctx, from, s, filter, offset, indices...)
+		return es.getRawLogsES6(ctx, parsedOffset, startDate, endDate, size, filter, indices...)
 	default:
-		return es.getRawLogsES7(ctx, from, s, filter, offset, indices...)
+		return es.getRawLogsES7(ctx, parsedOffset, startDate, endDate, size, filter, indices...)
 	}
 }
 
