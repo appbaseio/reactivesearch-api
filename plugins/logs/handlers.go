@@ -1,6 +1,7 @@
 package logs
 
 import (
+	"fmt"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -91,11 +92,26 @@ func (l *Logs) getLogs() http.HandlerFunc {
 			offset = "0"
 		}
 
+		parsedOffset, err := strconv.Atoi(offset)
+		if err != nil {
+			errMsg := fmt.Errorf(`invalid value "%v" for query param "from"`, offset)
+			log.Errorln(logTag, ": ", errMsg)
+			util.WriteBackError(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
 		rangeParams := rangeQueryParams(req.URL.Query())
 
 		filter := req.URL.Query().Get("filter")
 
-		raw, err := l.es.getRawLogs(req.Context(), offset, rangeParams.StartDate, rangeParams.EndDate, rangeParams.Size, filter, indices...)
+		raw, err := l.es.getRawLogs(req.Context(), logsConfig{
+			Offset:    parsedOffset,
+			StartDate: rangeParams.StartDate,
+			EndDate:   rangeParams.EndDate,
+			Size:      rangeParams.Size,
+			Filter:    filter,
+			Indices:   indices,
+		})
 		if err != nil {
 			log.Errorln(logTag, ": error fetching logs :", err)
 			util.WriteBackError(w, err.Error(), http.StatusInternalServerError)
