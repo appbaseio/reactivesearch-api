@@ -94,7 +94,7 @@ func (es *elasticsearch) indexRecord(ctx context.Context, rec record) {
 	}
 }
 
-type logsConfig struct {
+type logsFilter struct {
 	Offset    int
 	StartDate string
 	EndDate   string
@@ -103,12 +103,12 @@ type logsConfig struct {
 	Indices   []string
 }
 
-func (es *elasticsearch) getRawLogs(ctx context.Context, logsConfig logsConfig) ([]byte, error) {
+func (es *elasticsearch) getRawLogs(ctx context.Context, logsFilter logsFilter) ([]byte, error) {
 	switch util.GetVersion() {
 	case 6:
-		return es.getRawLogsES6(ctx, logsConfig)
+		return es.getRawLogsES6(ctx, logsFilter)
 	default:
-		return es.getRawLogsES7(ctx, logsConfig)
+		return es.getRawLogsES7(ctx, logsFilter)
 	}
 }
 

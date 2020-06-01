@@ -104,7 +104,7 @@ func (l *Logs) getLogs() http.HandlerFunc {
 
 		filter := req.URL.Query().Get("filter")
 
-		raw, err := l.es.getRawLogs(req.Context(), logsConfig{
+		raw, err := l.es.getRawLogs(req.Context(), logsFilter{
 			Offset:    parsedOffset,
 			StartDate: rangeParams.StartDate,
 			EndDate:   rangeParams.EndDate,
