@@ -8,19 +8,23 @@ import (
 	es7 "github.com/olivere/elastic/v7"
 )
 
-func (es *elasticsearch) getRawLogsES7(ctx context.Context, from string, size int, filter string, offset int, indices ...string) ([]byte, error) {
-	query := es7.NewBoolQuery()
+func (es *elasticsearch) getRawLogsES7(ctx context.Context, logsFilter logsFilter) ([]byte, error) {
+	duration := es7.NewRangeQuery("timestamp").
+		From(logsFilter.StartDate).
+		To(logsFilter.EndDate)
+
+	query := es7.NewBoolQuery().Filter(duration)
 	// apply category filter
-	if filter == "search" {
+	if logsFilter.Filter == "search" {
 		filters := es7.NewTermQuery("category.keyword", "search")
 		query.Filter(filters)
-	} else if filter == "delete" {
+	} else if logsFilter.Filter == "delete" {
 		filters := es7.NewMatchQuery("request.method.keyword", "DELETE")
 		query.Filter(filters)
-	} else if filter == "success" {
+	} else if logsFilter.Filter == "success" {
 		filters := es7.NewRangeQuery("response.code").Gte(200).Lte(299)
 		query.Filter(filters)
-	} else if filter == "error" {
+	} else if logsFilter.Filter == "error" {
 		filters := es7.NewRangeQuery("response.code").Gte(400)
 		query.Filter(filters)
 	} else {
@@ -28,12 +32,12 @@ func (es *elasticsearch) getRawLogsES7(ctx context.Context, from string, size in
 	}
 
 	// apply index filtering logic
-	util.GetIndexFilterQueryEs7(query, indices...)
+	util.GetIndexFilterQueryEs7(query, logsFilter.Indices...)
 
 	response, err := util.GetClient7().Search(es.indexName).
 		Query(query).
-		From(offset).
-		Size(size).
+		From(logsFilter.Offset).
+		Size(logsFilter.Size).
 		SortWithInfo(es7.SortInfo{Field: "timestamp", UnmappedType: "date", Ascending: false}).
 		Do(ctx)
 	if err != nil {

@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"regexp"
 	"sort"
-	"strconv"
 	"strings"
 
 	log "github.com/sirupsen/logrus"
@@ -95,20 +94,21 @@ func (es *elasticsearch) indexRecord(ctx context.Context, rec record) {
 	}
 }
 
-func (es *elasticsearch) getRawLogs(ctx context.Context, from, size, filter string, indices ...string) ([]byte, error) {
-	offset, err := strconv.Atoi(from)
-	if err != nil {
-		return nil, fmt.Errorf(`invalid value "%v" for query param "from"`, from)
-	}
-	s, err := strconv.Atoi(size)
-	if err != nil {
-		return nil, fmt.Errorf(`invalid value "%v" for query param "size"`, size)
-	}
+type logsFilter struct {
+	Offset    int
+	StartDate string
+	EndDate   string
+	Size      int
+	Filter    string
+	Indices   []string
+}
+
+func (es *elasticsearch) getRawLogs(ctx context.Context, logsFilter logsFilter) ([]byte, error) {
 	switch util.GetVersion() {
 	case 6:
-		return es.getRawLogsES6(ctx, from, s, filter, offset, indices...)
+		return es.getRawLogsES6(ctx, logsFilter)
 	default:
-		return es.getRawLogsES7(ctx, from, s, filter, offset, indices...)
+		return es.getRawLogsES7(ctx, logsFilter)
 	}
 }
 
