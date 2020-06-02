@@ -33,9 +33,6 @@ func initPlugin(indexName, mapping string) (*elasticsearch, error) {
 	}
 
 	replicas := util.GetReplicas()
-	if err != nil {
-		return nil, err
-	}
 	settings := fmt.Sprintf(mapping, replicas)
 
 	// Create a new meta index
