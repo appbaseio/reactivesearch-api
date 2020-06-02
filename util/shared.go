@@ -2,6 +2,7 @@ package util
 
 import (
 	"context"
+	"math"
 
 	es7 "github.com/olivere/elastic/v7"
 	es6 "gopkg.in/olivere/elastic.v6"
@@ -42,4 +43,15 @@ func GetTotalNodes() (int, error) {
 		return -1, err
 	}
 	return len(response.Nodes), nil
+}
+
+// GetReplicas calculates the number of replicas to set
+func GetReplicas() int {
+	nodes, err := GetTotalNodes()
+
+	if err != nil {
+		return int(0)
+	}
+
+	return int(math.Min(float64(1), float64(nodes-1)))
 }

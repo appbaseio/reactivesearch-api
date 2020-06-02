@@ -9,11 +9,12 @@ import (
 
 // SetDefaultIndexTemplate to set default template for indexes
 func SetDefaultIndexTemplate() error {
-
-	settings := `{
-		"number_of_shards": 1,
+	replicas := GetReplicas()
+	settings := fmt.Sprintf(`{
+		"index.number_of_shards": 1,
 		"max_ngram_diff": 8,
 		"max_shingle_diff": 8,
+		"index.number_of_replicas": %d,
 		"analysis": {
 			"analyzer": {
 				"universal": {
@@ -81,7 +82,7 @@ func SetDefaultIndexTemplate() error {
 				}
 			}
 		} 
-	}`
+	}`, replicas)
 
 	mappings := `{
 		"dynamic_templates": [{

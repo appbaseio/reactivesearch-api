@@ -29,7 +29,7 @@ func (m *mockES) mappingsOf(ctx context.Context, indexName string) (map[string]i
 }
 
 func (m *mockES) settingsOf(ctx context.Context, indexName string) (map[string]interface{}, error) {
-	data := []byte(`{"test":{"settings":{"index":{"creation_date":"1552665579942","number_of_shards":"5","number_of_replicas":"1","uuid":"hqhO4oiCReawwtOqFHaVLA","version":{"created":"6020499"},"provided_name":"test"}}}}`)
+	data := []byte(`{"test":{"settings":{"index":{"creation_date":"1552665579942","index.number_of_shards":"5","index.number_of_replicas":"1","uuid":"hqhO4oiCReawwtOqFHaVLA","version":{"created":"6020499"},"provided_name":"test"}}}}`)
 	var dec map[string]*elastic.IndicesGetSettingsResponse
 	_ = json.Unmarshal(data, &dec)
 
@@ -39,8 +39,8 @@ func (m *mockES) settingsOf(ctx context.Context, indexName string) (map[string]i
 	settings := make(map[string]interface{})
 
 	settings["index"] = make(map[string]interface{})
-	settings["number_of_shards"] = indexSettings["number_of_shards"]
-	settings["number_of_replicas"] = indexSettings["number_of_replicas"]
+	settings["index.number_of_shards"] = indexSettings["index.number_of_shards"]
+	settings["index.number_of_replicas"] = indexSettings["index.number_of_replicas"]
 	analysis, found := result.Settings["analysis"]
 	if found {
 		settings["analysis"] = analysis
