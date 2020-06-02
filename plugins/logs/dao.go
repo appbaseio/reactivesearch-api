@@ -41,12 +41,8 @@ func initPlugin(alias, config string) (*elasticsearch, error) {
 		return es, nil
 	}
 
-	// set number_of_replicas to (nodes-1)
-	nodes, err := util.GetTotalNodes()
-	if err != nil {
-		return nil, err
-	}
-	settings := fmt.Sprintf(config, alias, nodes, nodes-1)
+	replicas := util.GetReplicas()
+	settings := fmt.Sprintf(config, alias, replicas)
 	// Meta index doesn't exist, create one
 	indexName := alias + `-000001`
 	// this works for ES6 client as well

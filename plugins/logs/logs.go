@@ -22,8 +22,8 @@ const (
 	    }
 	  },
 	  "settings": {
-	    "number_of_shards": %d,
-	    "number_of_replicas": %d
+	    "index.number_of_shards": 1,
+	    "index.number_of_replicas": %d
 	  }
 	}`
 	rolloverConfig = `{

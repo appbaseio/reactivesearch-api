@@ -32,12 +32,8 @@ func initPlugin(indexName, mapping string) (*elasticsearch, error) {
 		return es, nil
 	}
 
-	// set number_of_replicas to (nodes-1)
-	nodes, err := util.GetTotalNodes()
-	if err != nil {
-		return nil, err
-	}
-	settings := fmt.Sprintf(mapping, nodes, nodes-1)
+	replicas := util.GetReplicas()
+	settings := fmt.Sprintf(mapping, replicas)
 
 	// Create a new meta index
 	_, err = util.GetClient7().CreateIndex(indexName).
