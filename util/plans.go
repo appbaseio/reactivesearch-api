@@ -24,6 +24,9 @@ const (
 	Sandbox2019
 	Hobby2019
 	Starter2019
+	Sandbox2020
+	Hobby2020
+	Starter2020
 	ProductionFirst2019
 	ProductionSecond2019
 	ProductionThird2019
@@ -48,6 +51,9 @@ func (o Plan) String() string {
 		"2019-sandbox",
 		"2019-hobby",
 		"2019-starter",
+		"2020-sandbox",
+		"2020-hobby",
+		"2020-starter",
 		"2019-production-1",
 		"2019-production-2",
 		"2019-production-3",
@@ -93,6 +99,12 @@ func (o *Plan) UnmarshalJSON(bytes []byte) error {
 		*o = Hobby2019
 	case Starter2019.String():
 		*o = Starter2019
+	case Sandbox2020.String():
+		*o = Sandbox2020
+	case Hobby2020.String():
+		*o = Hobby2020
+	case Starter2020.String():
+		*o = Starter2020
 	case ProductionFirst2019.String():
 		*o = ProductionFirst2019
 	case ProductionSecond2019.String():
@@ -141,6 +153,12 @@ func (o Plan) MarshalJSON() ([]byte, error) {
 		plan = Hobby2019.String()
 	case Starter2019:
 		plan = Starter2019.String()
+	case Sandbox2020:
+		plan = Sandbox2020.String()
+	case Hobby2020:
+		plan = Hobby2020.String()
+	case Starter2020:
+		plan = Starter2020.String()
 	case ProductionFirst2019:
 		plan = ProductionFirst2019.String()
 	case ProductionSecond2019:
