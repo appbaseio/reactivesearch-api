@@ -1,6 +1,7 @@
 package elasticsearch
 
 import (
+	"bytes"
 	"io"
 	"net/http"
 
@@ -46,20 +47,14 @@ func (es *elasticsearch) handler() http.HandlerFunc {
 			Path:    r.URL.Path,
 			Body:    r.Body,
 			Headers: r.Header,
+			Params:  r.URL.Query(),
 		})
-		if err != nil {
-			log.Errorln(logTag, ": error while converting to retryable request for", r.URL.Path, err)
-			util.WriteBackError(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
 
 		if err != nil {
 			log.Errorln(logTag, ": error fetching response for", r.URL.Path, err)
 			util.WriteBackError(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-
-		defer response.Body.Close()
 
 		// Copy the headers
 		for k, v := range response.Header {
@@ -73,6 +68,6 @@ func (es *elasticsearch) handler() http.HandlerFunc {
 		w.WriteHeader(response.StatusCode)
 
 		// Copy the body
-		io.Copy(w, response.Body)
+		io.Copy(w, bytes.NewReader(response.Body))
 	}
 }
