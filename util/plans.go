@@ -5,7 +5,7 @@ import (
 	"fmt"
 )
 
-// Plan an enum having a list of valid plans
+// An enum having a list of valid plans
 type Plan int
 
 const (
