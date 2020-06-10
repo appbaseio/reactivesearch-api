@@ -2,8 +2,8 @@ package elasticsearch
 
 import (
 	"bytes"
-	"fmt"
 	"io"
+	"io/ioutil"
 	"net/http"
 
 	log "github.com/sirupsen/logrus"
@@ -42,23 +42,32 @@ func (es *elasticsearch) handler() http.HandlerFunc {
 		log.Println(logTag, ": category=", *reqCategory, ", acl=", *reqACL, ", op=", *reqOp)
 		// Forward the request to elasticsearch
 		esClient := util.GetClient7()
-		fmt.Println("options => ", es7.PerformRequestOptions{
+
+		// remove content-type header from r.Headers as that is internally managed my oliver
+		// and can give following error if passed `{"error":{"code":500,"message":"elastic: Error 400 (Bad Request): java.lang.IllegalArgumentException: only one Content-Type header should be provided [type=content_type_header_exception]","status":"Internal Server Error"}}`
+		headers := http.Header{}
+		for k, v := range r.Header {
+			if k != "Content-Type" {
+				headers.Set(k, v[0])
+			}
+		}
+
+		requestOptions := es7.PerformRequestOptions{
 			Method:  r.Method,
 			Path:    r.URL.Path,
-			Body:    r.Body,
-			Headers: r.Header,
 			Params:  r.URL.Query(),
-		})
-		response, err := esClient.PerformRequest(ctx, es7.PerformRequestOptions{
-			Method:  r.Method,
-			Path:    r.URL.Path,
-			Params:  r.URL.Query(),
-			Body:    r.Body,
-			Headers: r.Header,
-		})
+			Headers: headers,
+		}
+
+		// convert body to string string as oliver Perform request can accept io.Reader, String, interface
+		body, err := ioutil.ReadAll(r.Body)
+		if len(body) > 0 {
+			requestOptions.Body = string(body)
+		}
+
+		response, err := esClient.PerformRequest(ctx, requestOptions)
 
 		if err != nil {
-			fmt.Println("=>", string(response.Body))
 			log.Errorln(logTag, ": error fetching response for", r.URL.Path, err)
 			util.WriteBackError(w, err.Error(), http.StatusInternalServerError)
 			return
@@ -76,7 +85,6 @@ func (es *elasticsearch) handler() http.HandlerFunc {
 		w.WriteHeader(response.StatusCode)
 
 		// Copy the body
-		fmt.Println("res", string(response.Body))
 		io.Copy(w, bytes.NewReader(response.Body))
 	}
 }
