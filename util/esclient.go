@@ -76,7 +76,7 @@ func initClient6() {
 	client6, err = es6.NewClient(
 		es6.SetURL(getURL()),
 		es6.SetRetrier(NewRetrier()),
-		es6.SetSniff(false),
+		es6.SetSniff(true),
 		es6.SetHttpClient(HTTPClient()),
 		es6.SetErrorLog(wrappedLoggerError),
 		es6.SetInfoLog(wrappedLoggerDebug),
@@ -99,7 +99,7 @@ func initClient7() {
 	client7, err = es7.NewClient(
 		es7.SetURL(getURL()),
 		es7.SetRetrier(NewRetrier()),
-		es7.SetSniff(false),
+		es7.SetSniff(true),
 		es7.SetHttpClient(HTTPClient()),
 		es7.SetErrorLog(wrappedLoggerError),
 		es7.SetInfoLog(wrappedLoggerDebug),

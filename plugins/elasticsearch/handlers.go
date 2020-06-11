@@ -1,7 +1,9 @@
 package elasticsearch
 
 import (
+	"bytes"
 	"io"
+	"io/ioutil"
 	"net/http"
 
 	log "github.com/sirupsen/logrus"
@@ -10,7 +12,7 @@ import (
 	"github.com/appbaseio/arc/model/category"
 	"github.com/appbaseio/arc/model/op"
 	"github.com/appbaseio/arc/util"
-	"github.com/hashicorp/go-retryablehttp"
+	es7 "github.com/olivere/elastic/v7"
 )
 
 func (es *elasticsearch) handler() http.HandlerFunc {
@@ -39,25 +41,37 @@ func (es *elasticsearch) handler() http.HandlerFunc {
 		}
 		log.Println(logTag, ": category=", *reqCategory, ", acl=", *reqACL, ", op=", *reqOp)
 		// Forward the request to elasticsearch
-		client := retryablehttp.NewClient()
-		loggerT := log.New()
-		wrappedLoggerDebug := &util.WrapKitLoggerDebug{*loggerT}
-		client.Logger = wrappedLoggerDebug
-		request, err := retryablehttp.FromRequest(r)
-		if err != nil {
-			log.Errorln(logTag, ": error while converting to retryable request for", r.URL.Path, err)
-			util.WriteBackError(w, err.Error(), http.StatusInternalServerError)
-			return
+		esClient := util.GetClient7()
+
+		// remove content-type header from r.Headers as that is internally managed my oliver
+		// and can give following error if passed `{"error":{"code":500,"message":"elastic: Error 400 (Bad Request): java.lang.IllegalArgumentException: only one Content-Type header should be provided [type=content_type_header_exception]","status":"Internal Server Error"}}`
+		headers := http.Header{}
+		for k, v := range r.Header {
+			if k != "Content-Type" {
+				headers.Set(k, v[0])
+			}
 		}
-		response, err := client.Do(request)
+
+		requestOptions := es7.PerformRequestOptions{
+			Method:  r.Method,
+			Path:    r.URL.Path,
+			Params:  r.URL.Query(),
+			Headers: headers,
+		}
+
+		// convert body to string string as oliver Perform request can accept io.Reader, String, interface
+		body, err := ioutil.ReadAll(r.Body)
+		if len(body) > 0 {
+			requestOptions.Body = string(body)
+		}
+
+		response, err := esClient.PerformRequest(ctx, requestOptions)
 
 		if err != nil {
 			log.Errorln(logTag, ": error fetching response for", r.URL.Path, err)
 			util.WriteBackError(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-
-		defer response.Body.Close()
 
 		// Copy the headers
 		for k, v := range response.Header {
@@ -71,6 +85,6 @@ func (es *elasticsearch) handler() http.HandlerFunc {
 		w.WriteHeader(response.StatusCode)
 
 		// Copy the body
-		io.Copy(w, response.Body)
+		io.Copy(w, bytes.NewReader(response.Body))
 	}
 }
