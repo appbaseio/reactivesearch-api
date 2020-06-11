@@ -124,7 +124,7 @@ func SetDefaultIndexTemplate() error {
 	version := GetVersion()
 	if version == 7 {
 		defaultSetting := fmt.Sprintf(`{
-			"index_patterns": ["-.*"],
+			"index_patterns": ["*"],
 			"settings": %s,
 			"mappings": %s
 		}`, settings, mappings)
@@ -137,7 +137,7 @@ func SetDefaultIndexTemplate() error {
 
 	if version == 6 {
 		defaultSetting := fmt.Sprintf(`{
-			"index_patterns": ["-.*"],
+			"index_patterns": ["*"],
 			"settings": %s,
 			"mappings": {
 				"_doc": %s
