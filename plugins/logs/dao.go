@@ -65,14 +65,6 @@ func initPlugin(alias, config string) (*elasticsearch, error) {
 		rolloverConfiguration = fmt.Sprintf(rolloverConfig, "30d", 1000000, "10gb")
 	}
 	json.Unmarshal([]byte(rolloverConfiguration), &rolloverConditions)
-	rolloverService, err := es7.NewIndicesRolloverService(util.GetClient7()).
-		Alias(alias).
-		Conditions(rolloverConditions).
-		Do(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("error while creating a rollover service \"%s\" %v", alias, err)
-	}
-	log.Println(logTag, ": rollover svc created ", rolloverService.Acknowledged)
 	return es, nil
 }
 
@@ -116,9 +108,13 @@ func (es *elasticsearch) rolloverIndexJob(alias string) {
 		rolloverConfiguration = fmt.Sprintf(rolloverConfig, "30d", 1000000, "10gb")
 	}
 	json.Unmarshal([]byte(rolloverConfiguration), &rolloverConditions)
+	settingsString := fmt.Sprintf(`{"index.number_of_shards": 1, "index.number_of_replicas": %d}`, util.GetReplicas())
+	settings := make(map[string]interface{})
+	json.Unmarshal([]byte(settingsString), &settings)
 	rolloverService, err := es7.NewIndicesRolloverService(util.GetClient7()).
 		Alias(alias).
 		Conditions(rolloverConditions).
+		Settings(settings).
 		Do(ctx)
 	if err != nil {
 		log.Printf(logTag, "error while creating a rollover service %s %v", alias, err)
