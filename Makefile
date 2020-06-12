@@ -5,7 +5,7 @@ BUILD_DIR=build
 PLUGIN_FLAGS=--buildmode=plugin
 PLUGIN_BUILD_DIR=$(BUILD_DIR)/plugins
 
-PLUGINS=elasticsearch
+PLUGINS=elasticsearch auth users
 PLUGIN_MAIN_LOC_FUNC=plugins/$(1)/main/$(1).$(2)
 PLUGIN_LOC_FUNC=$(foreach PLUGIN,$(PLUGINS),$(call PLUGIN_MAIN_LOC_FUNC,$(PLUGIN),$(1)))
 
