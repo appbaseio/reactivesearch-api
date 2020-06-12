@@ -217,10 +217,44 @@ func validateReferers(referers []string) error {
 	return nil
 }
 
+func getNormalizedLimit(limit int64, defaultLimit int64) int64 {
+	if limit == 0 {
+		return defaultLimit
+	}
+	return limit
+}
+
 // SetLimits sets the rate limits for each category in a permission.
-func SetLimits(limits *Limits) Options {
+func SetLimits(limits *Limits, isAdmin bool) Options {
 	return func(p *Permission) error {
-		p.Limits = limits
+		var defaults *Limits
+		// Set the default limits for each property if not defined
+		if isAdmin {
+			defaults = &defaultAdminLimits
+		} else {
+			defaults = &defaultLimits
+		}
+		// Todo change
+		p.Limits = &Limits{
+			IPLimit:              getNormalizedLimit(limits.IPLimit, defaults.IPLimit),
+			DocsLimit:            getNormalizedLimit(limits.DocsLimit, defaults.DocsLimit),
+			SearchLimit:          getNormalizedLimit(limits.SearchLimit, defaults.SearchLimit),
+			IndicesLimit:         getNormalizedLimit(limits.IndicesLimit, defaults.IndicesLimit),
+			CatLimit:             getNormalizedLimit(limits.CatLimit, defaults.CatLimit),
+			ClustersLimit:        getNormalizedLimit(limits.ClustersLimit, defaults.ClustersLimit),
+			MiscLimit:            getNormalizedLimit(limits.MiscLimit, defaults.MiscLimit),
+			UserLimit:            getNormalizedLimit(limits.UserLimit, defaults.UserLimit),
+			PermissionLimit:      getNormalizedLimit(limits.PermissionLimit, defaults.PermissionLimit),
+			AnalyticsLimit:       getNormalizedLimit(limits.AnalyticsLimit, defaults.AnalyticsLimit),
+			RulesLimit:           getNormalizedLimit(limits.RulesLimit, defaults.RulesLimit),
+			TemplatesLimit:       getNormalizedLimit(limits.TemplatesLimit, defaults.TemplatesLimit),
+			SuggestionsLimit:     getNormalizedLimit(limits.SuggestionsLimit, defaults.SuggestionsLimit),
+			StreamsLimit:         getNormalizedLimit(limits.StreamsLimit, defaults.StreamsLimit),
+			AuthLimit:            getNormalizedLimit(limits.AuthLimit, defaults.AuthLimit),
+			FunctionsLimit:       getNormalizedLimit(limits.FunctionsLimit, defaults.FunctionsLimit),
+			ReactiveSearchLimit:  getNormalizedLimit(limits.ReactiveSearchLimit, defaults.ReactiveSearchLimit),
+			SearchRelevancyLimit: getNormalizedLimit(limits.SearchRelevancyLimit, defaults.SearchRelevancyLimit),
+		}
 		return nil
 	}
 }

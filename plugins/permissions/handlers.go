@@ -95,7 +95,7 @@ func (p *permissions) postPermission(opts ...permission.Options) http.HandlerFun
 			permissionOptions = append(permissionOptions, permission.SetIndices(permissionBody.Indices))
 		}
 		if permissionBody.Limits != nil {
-			permissionOptions = append(permissionOptions, permission.SetLimits(permissionBody.Limits))
+			permissionOptions = append(permissionOptions, permission.SetLimits(permissionBody.Limits, *reqUser.IsAdmin))
 		}
 		if permissionBody.Description != "" {
 			permissionOptions = append(permissionOptions, permission.SetDescription(permissionBody.Description))
