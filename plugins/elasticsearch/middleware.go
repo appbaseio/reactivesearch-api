@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -210,7 +211,8 @@ func intercept(h http.HandlerFunc) http.HandlerFunc {
 		}
 
 		result := resp.Result()
-		body, err2 := ioutil.ReadAll(result.Body)
+		var body bytes.Buffer
+		io.Copy(&body, result.Body)
 		if err2 != nil {
 			log.Errorln(logTag, ":", err2)
 			util.WriteBackError(w, "error reading response body", http.StatusInternalServerError)
@@ -219,15 +221,15 @@ func intercept(h http.HandlerFunc) http.HandlerFunc {
 		for _, index := range indices {
 			alias := classify.GetIndexAlias(index)
 			if alias != "" {
-				body = bytes.Replace(body, []byte(`"`+index+`"`), []byte(`"`+alias+`"`), -1)
+				bytesBody = bytes.Replace(body.Bytes(), []byte(`"`+index+`"`), []byte(`"`+alias+`"`), -1)
 				continue
 			}
 			// if alias is present in url get index name from cache
 			indexName := classify.GetAliasIndex(index)
 			if indexName != "" {
-				body = bytes.Replace(body, []byte(`"`+indexName+`"`), []byte(`"`+index+`"`), -1)
+				bytesBody = bytes.Replace(body.Bytes(), []byte(`"`+indexName+`"`), []byte(`"`+index+`"`), -1)
 			}
 		}
-		util.WriteBackRaw(w, body, http.StatusOK)
+		util.WriteBackRaw(w, bytesBody, http.StatusOK)
 	}
 }

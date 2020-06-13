@@ -5,7 +5,6 @@ import (
 	"context"
 	"encoding/json"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"time"
@@ -163,12 +162,11 @@ func (l *Logs) recordResponse(request *Request, w *httptest.ResponseRecorder, re
 	rec.Response.Status = http.StatusText(response.StatusCode)
 	rec.Response.Headers = response.Header
 
-	responseBody, err := ioutil.ReadAll(response.Body)
-	if err != nil {
-		log.Errorln(logTag, "can't read response body: ", err)
-		return
-	}
-	rec.Response.Body = string(responseBody)
+	var bytesBody bytes.Buffer
+	io.Copy(&bytesBody, response.Body)
+	responseBody = bytesBody.Bytes()
+
+	rec.Response.Body = bytesBody.String()
 	if *reqCategory == category.Search {
 		var resBody SearchResponseBody
 		err := json.Unmarshal(responseBody, &resBody)
