@@ -8,6 +8,9 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
+	"github.com/appbaseio/arc/model/acl"
+	"github.com/appbaseio/arc/model/category"
+	"github.com/appbaseio/arc/model/op"
 	"github.com/appbaseio/arc/util"
 	es7 "github.com/olivere/elastic/v7"
 )
@@ -16,27 +19,27 @@ func (es *elasticsearch) handler() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
 
-		// reqCategory, err := category.FromContext(ctx)
-		// if err != nil {
-		// 	log.Errorln(logTag, ":", err)
-		// 	util.WriteBackError(w, "error classifying request acl", http.StatusInternalServerError)
-		// 	return
-		// }
+		reqCategory, err := category.FromContext(ctx)
+		if err != nil {
+			log.Errorln(logTag, ":", err)
+			util.WriteBackError(w, "error classifying request acl", http.StatusInternalServerError)
+			return
+		}
 
-		// reqACL, err := acl.FromContext(ctx)
-		// if err != nil {
-		// 	log.Errorln(logTag, ":", err)
-		// 	util.WriteBackError(w, "error classifying request category", http.StatusInternalServerError)
-		// 	return
-		// }
+		reqACL, err := acl.FromContext(ctx)
+		if err != nil {
+			log.Errorln(logTag, ":", err)
+			util.WriteBackError(w, "error classifying request category", http.StatusInternalServerError)
+			return
+		}
 
-		// reqOp, err := op.FromContext(ctx)
-		// if err != nil {
-		// 	log.Errorln(logTag, ":", err)
-		// 	util.WriteBackError(w, "error classifying request op", http.StatusInternalServerError)
-		// 	return
-		// }
-		// log.Println(logTag, ": category=", *reqCategory, ", acl=", *reqACL, ", op=", *reqOp)
+		reqOp, err := op.FromContext(ctx)
+		if err != nil {
+			log.Errorln(logTag, ":", err)
+			util.WriteBackError(w, "error classifying request op", http.StatusInternalServerError)
+			return
+		}
+		log.Println(logTag, ": category=", *reqCategory, ", acl=", *reqACL, ", op=", *reqOp)
 		// Forward the request to elasticsearch
 		esClient := util.GetClient7()
 
