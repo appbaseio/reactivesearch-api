@@ -15,6 +15,7 @@ import (
 	"github.com/appbaseio/arc/middleware"
 	"github.com/appbaseio/arc/middleware/classify"
 	"github.com/appbaseio/arc/middleware/validate"
+	"github.com/appbaseio/arc/model/body"
 	"github.com/appbaseio/arc/model/category"
 	"github.com/appbaseio/arc/model/index"
 	"github.com/appbaseio/arc/plugins/auth"
@@ -97,15 +98,13 @@ func Recorder() middleware.Middleware {
 func (l *Logs) recorder(h http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		// skip logs from streams
+		var bytesBody bytes.Buffer
+		io.Copy(&bytesBody, r.Body)
+		ctx := body.NewContext(r.Context(), bytesBody.Bytes())
 		if r.Header.Get("X-Request-Category") == "streams" {
-			h(w, r)
+			h(w, r.WithContext(ctx))
 			return
 		}
-
-		// Read the request body using io.Copy instead of ioutil.ReadAll
-		// io.Copy uses a 32KB buffer v/s an unbounded buffer of ReadAll
-		var body bytes.Buffer
-		io.Copy(&body, r.Body)
 
 		var headers = make(map[string][]string)
 
@@ -116,12 +115,12 @@ func (l *Logs) recorder(h http.HandlerFunc) http.HandlerFunc {
 		request := Request{
 			URI:     r.URL.Path,
 			Headers: headers,
-			Body:    body.String(),
+			Body:    bytesBody.String(),
 			Method:  r.Method,
 		}
 		// Serve using response recorder
 		respRecorder := httptest.NewRecorder()
-		h(respRecorder, r)
+		h(respRecorder, r.WithContext(ctx))
 
 		// Copy the response to writer
 		for k, v := range respRecorder.Header() {

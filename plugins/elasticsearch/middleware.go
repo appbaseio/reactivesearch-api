@@ -2,10 +2,12 @@ package elasticsearch
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 
 	log "github.com/sirupsen/logrus"
 
@@ -15,9 +17,11 @@ import (
 	"github.com/appbaseio/arc/middleware/ratelimiter"
 	"github.com/appbaseio/arc/middleware/validate"
 	"github.com/appbaseio/arc/model/acl"
+	"github.com/appbaseio/arc/model/body"
 	"github.com/appbaseio/arc/model/category"
 	"github.com/appbaseio/arc/model/index"
 	"github.com/appbaseio/arc/model/op"
+	"github.com/appbaseio/arc/model/permission"
 	"github.com/appbaseio/arc/plugins/auth"
 	"github.com/appbaseio/arc/plugins/logs"
 	"github.com/appbaseio/arc/util"
@@ -72,11 +76,8 @@ func classifyCategory(h http.HandlerFunc) http.HandlerFunc {
 			routeCategory = category.Streams
 		}
 
-		ctx := req.Context()
-		ctx = category.NewContext(req.Context(), &routeCategory)
-		req = req.WithContext(ctx)
-
-		h(w, req)
+		ctx := category.NewContext(req.Context(), &routeCategory)
+		h(w, req.WithContext(ctx))
 	}
 }
 
@@ -95,9 +96,7 @@ func classifyACL(h http.HandlerFunc) http.HandlerFunc {
 		routeACL := routeSpec.acl
 
 		ctx := acl.NewContext(req.Context(), &routeACL)
-		req = req.WithContext(ctx)
-
-		h(w, req)
+		h(w, req.WithContext(ctx))
 	}
 }
 
@@ -124,15 +123,17 @@ func classifyOp(h http.HandlerFunc) http.HandlerFunc {
 
 func intercept(h http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
-		/* ctx := req.Context()
+		ctx := req.Context()
 		reqACL, err := acl.FromContext(ctx)
 		if err != nil {
 			log.Errorln(logTag, ":", err)
 		}
+		esBody, _ := body.FromContext(ctx)
 		isMsearch := *reqACL == acl.Msearch
 		isSearch := *reqACL == acl.Search
 		// transform POST request(search) to GET
 		if isSearch || isMsearch {
+			fmt.Println("inside msearch condition")
 			// Apply source filters
 			reqPermission, err := permission.FromContext(ctx)
 			if err != nil {
@@ -152,16 +153,10 @@ func intercept(h http.HandlerFunc) http.HandlerFunc {
 				isEmpty := len(Includes) == 0 && len(Excludes) == 0
 				isDefaultInclude := len(Includes) > 0 && Includes[0] == "*"
 				shouldApplyFilters := !isEmpty && (!isDefaultInclude || isExcludesPresent)
+				fmt.Println("should apply filters: ", shouldApplyFilters)
 				if shouldApplyFilters {
 					if isMsearch {
-						// Handle the _msearch requests
-						body, err := ioutil.ReadAll(req.Body)
-						if err != nil {
-							log.Errorln(logTag, ":", err)
-							util.WriteBackError(w, err.Error(), http.StatusInternalServerError)
-							return
-						}
-						var reqBodyString = string(body)
+						var reqBodyString = string(esBody)
 						splitReq := strings.Split(reqBodyString, "\n")
 						var modifiedBodyString string
 						for index, element := range splitReq {
@@ -189,13 +184,7 @@ func intercept(h http.HandlerFunc) http.HandlerFunc {
 						modifiedBody := []byte(modifiedBodyString)
 						req.Body = ioutil.NopCloser(bytes.NewReader(modifiedBody))
 					} else {
-						body, err := ioutil.ReadAll(req.Body)
-						if err != nil {
-							log.Errorln(logTag, ":", err)
-							util.WriteBackError(w, err.Error(), http.StatusInternalServerError)
-							return
-						}
-						d := json.NewDecoder(ioutil.NopCloser(bytes.NewReader(body)))
+						d := json.NewDecoder(ioutil.NopCloser(bytes.NewReader(esBody)))
 						reqBody := make(map[string]interface{})
 						d.Decode(&reqBody)
 						reqBody["_source"] = sources
@@ -204,8 +193,7 @@ func intercept(h http.HandlerFunc) http.HandlerFunc {
 					}
 				}
 			}
-
-		} */
+		}
 
 		resp := httptest.NewRecorder()
 		indices, err := index.FromContext(req.Context())
