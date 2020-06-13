@@ -164,7 +164,7 @@ func (l *Logs) recordResponse(request *Request, w *httptest.ResponseRecorder, re
 
 	var bytesBody bytes.Buffer
 	io.Copy(&bytesBody, response.Body)
-	responseBody = bytesBody.Bytes()
+	responseBody := bytesBody.Bytes()
 
 	rec.Response.Body = bytesBody.String()
 	if *reqCategory == category.Search {

@@ -213,21 +213,18 @@ func intercept(h http.HandlerFunc) http.HandlerFunc {
 		result := resp.Result()
 		var body bytes.Buffer
 		io.Copy(&body, result.Body)
-		if err2 != nil {
-			log.Errorln(logTag, ":", err2)
-			util.WriteBackError(w, "error reading response body", http.StatusInternalServerError)
-			return
-		}
+		var bytesBody = body.Bytes()
+
 		for _, index := range indices {
 			alias := classify.GetIndexAlias(index)
 			if alias != "" {
-				bytesBody = bytes.Replace(body.Bytes(), []byte(`"`+index+`"`), []byte(`"`+alias+`"`), -1)
+				bytesBody = bytes.Replace(bytesBody, []byte(`"`+index+`"`), []byte(`"`+alias+`"`), -1)
 				continue
 			}
 			// if alias is present in url get index name from cache
 			indexName := classify.GetAliasIndex(index)
 			if indexName != "" {
-				bytesBody = bytes.Replace(body.Bytes(), []byte(`"`+indexName+`"`), []byte(`"`+index+`"`), -1)
+				bytesBody = bytes.Replace(bytesBody, []byte(`"`+indexName+`"`), []byte(`"`+index+`"`), -1)
 			}
 		}
 		util.WriteBackRaw(w, bytesBody, http.StatusOK)
