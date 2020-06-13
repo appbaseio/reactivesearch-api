@@ -53,7 +53,7 @@ func list() []middleware.Middleware {
 		validate.ACL(),
 		validate.Operation(),
 		validate.PermissionExpiry(),
-		intercept,
+		// intercept,
 	}
 }
 
