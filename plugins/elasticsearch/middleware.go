@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"net/http/httptest"
 	"strings"
 
 	log "github.com/sirupsen/logrus"
@@ -13,13 +14,11 @@ import (
 	"github.com/appbaseio/arc/middleware"
 	"github.com/appbaseio/arc/middleware/classify"
 	"github.com/appbaseio/arc/middleware/interceptor"
-	"github.com/appbaseio/arc/middleware/ratelimiter"
-	"github.com/appbaseio/arc/middleware/validate"
 	"github.com/appbaseio/arc/model/acl"
 	"github.com/appbaseio/arc/model/category"
+	"github.com/appbaseio/arc/model/index"
 	"github.com/appbaseio/arc/model/op"
 	"github.com/appbaseio/arc/model/permission"
-	"github.com/appbaseio/arc/plugins/auth"
 	"github.com/appbaseio/arc/util"
 	"github.com/gorilla/mux"
 )
@@ -34,21 +33,21 @@ func (c *chain) Wrap(mw []middleware.Middleware, h http.HandlerFunc) http.Handle
 
 func list() []middleware.Middleware {
 	return []middleware.Middleware{
-		classifyCategory,
-		classifyACL,
-		classifyOp,
-		classify.Indices(),
+		// classifyCategory,
+		// classifyACL,
+		// classifyOp,
+		// classify.Indices(),
 		// logs.Recorder(),
-		auth.BasicAuth(),
-		ratelimiter.Limit(),
-		validate.Sources(),
-		validate.Referers(),
-		validate.Indices(),
-		validate.Category(),
-		validate.ACL(),
-		validate.Operation(),
-		validate.PermissionExpiry(),
-		intercept,
+		// auth.BasicAuth(),
+		// ratelimiter.Limit(),
+		// validate.Sources(),
+		// validate.Referers(),
+		// validate.Indices(),
+		// validate.Category(),
+		// validate.ACL(),
+		// validate.Operation(),
+		// validate.PermissionExpiry(),
+		// intercept,
 	}
 }
 
@@ -207,35 +206,34 @@ func intercept(h http.HandlerFunc) http.HandlerFunc {
 
 		}
 
-		h(w, req)
-		// resp := httptest.NewRecorder()
-		// indices, err := index.FromContext(req.Context())
-		// h(resp, req)
+		resp := httptest.NewRecorder()
+		indices, err := index.FromContext(req.Context())
+		h(resp, req)
 
-		// // Copy the response to writer
-		// for k, v := range resp.Header() {
-		// 	w.Header()[k] = v
-		// }
+		// Copy the response to writer
+		for k, v := range resp.Header() {
+			w.Header()[k] = v
+		}
 
-		// result := resp.Result()
-		// body, err2 := ioutil.ReadAll(result.Body)
-		// if err2 != nil {
-		// 	log.Errorln(logTag, ":", err2)
-		// 	util.WriteBackError(w, "error reading response body", http.StatusInternalServerError)
-		// 	return
-		// }
-		// for _, index := range indices {
-		// 	alias := classify.GetIndexAlias(index)
-		// 	if alias != "" {
-		// 		body = bytes.Replace(body, []byte(`"`+index+`"`), []byte(`"`+alias+`"`), -1)
-		// 		continue
-		// 	}
-		// 	// if alias is present in url get index name from cache
-		// 	indexName := classify.GetAliasIndex(index)
-		// 	if indexName != "" {
-		// 		body = bytes.Replace(body, []byte(`"`+indexName+`"`), []byte(`"`+index+`"`), -1)
-		// 	}
-		// }
-		// util.WriteBackRaw(w, body, http.StatusOK)
+		result := resp.Result()
+		body, err2 := ioutil.ReadAll(result.Body)
+		if err2 != nil {
+			log.Errorln(logTag, ":", err2)
+			util.WriteBackError(w, "error reading response body", http.StatusInternalServerError)
+			return
+		}
+		for _, index := range indices {
+			alias := classify.GetIndexAlias(index)
+			if alias != "" {
+				body = bytes.Replace(body, []byte(`"`+index+`"`), []byte(`"`+alias+`"`), -1)
+				continue
+			}
+			// if alias is present in url get index name from cache
+			indexName := classify.GetAliasIndex(index)
+			if indexName != "" {
+				body = bytes.Replace(body, []byte(`"`+indexName+`"`), []byte(`"`+index+`"`), -1)
+			}
+		}
+		util.WriteBackRaw(w, body, http.StatusOK)
 	}
 }
