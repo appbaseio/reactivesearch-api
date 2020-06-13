@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -17,7 +18,6 @@ import (
 	"github.com/appbaseio/arc/model/category"
 	"github.com/appbaseio/arc/model/index"
 	"github.com/appbaseio/arc/plugins/auth"
-	"github.com/appbaseio/arc/util"
 )
 
 type chain struct {
@@ -102,15 +102,10 @@ func (l *Logs) recorder(h http.HandlerFunc) http.HandlerFunc {
 			return
 		}
 
-		// Read the request body
-		reqBody, err := ioutil.ReadAll(r.Body)
-		if err != nil {
-			log.Errorln(logTag, ": unable to read request body: ", err)
-			util.WriteBackError(w, "Can't read request body", http.StatusInternalServerError)
-			return
-		}
-
-		r.Body = ioutil.NopCloser(bytes.NewBuffer(reqBody))
+		// Read the request body using io.Copy instead of ioutil.ReadAll
+		// io.Copy uses a 32KB buffer v/s an unbounded buffer of ReadAll
+		var body bytes.Buffer
+		io.Copy(&body, r.Body)
 
 		var headers = make(map[string][]string)
 
@@ -121,7 +116,7 @@ func (l *Logs) recorder(h http.HandlerFunc) http.HandlerFunc {
 		request := Request{
 			URI:     r.URL.Path,
 			Headers: headers,
-			Body:    string(reqBody),
+			Body:    body.String(),
 			Method:  r.Method,
 		}
 		// Serve using response recorder

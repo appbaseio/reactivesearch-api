@@ -2,12 +2,10 @@ package elasticsearch
 
 import (
 	"bytes"
-	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
-	"strings"
 
 	log "github.com/sirupsen/logrus"
 
@@ -20,7 +18,6 @@ import (
 	"github.com/appbaseio/arc/model/category"
 	"github.com/appbaseio/arc/model/index"
 	"github.com/appbaseio/arc/model/op"
-	"github.com/appbaseio/arc/model/permission"
 	"github.com/appbaseio/arc/plugins/auth"
 	"github.com/appbaseio/arc/plugins/logs"
 	"github.com/appbaseio/arc/util"
@@ -127,7 +124,7 @@ func classifyOp(h http.HandlerFunc) http.HandlerFunc {
 
 func intercept(h http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
-		ctx := req.Context()
+		/* ctx := req.Context()
 		reqACL, err := acl.FromContext(ctx)
 		if err != nil {
 			log.Errorln(logTag, ":", err)
@@ -208,10 +205,15 @@ func intercept(h http.HandlerFunc) http.HandlerFunc {
 				}
 			}
 
-		}
+		} */
 
 		resp := httptest.NewRecorder()
 		indices, err := index.FromContext(req.Context())
+		if err != nil {
+			log.Errorln(logTag, ":", err)
+			util.WriteBackError(w, "error getting indices from context", http.StatusInternalServerError)
+			return
+		}
 		h(resp, req)
 
 		// Copy the response to writer
