@@ -3,11 +3,11 @@ package elasticsearch
 import (
 	"bytes"
 	"io"
-	"io/ioutil"
 	"net/http"
 
 	log "github.com/sirupsen/logrus"
 
+	"github.com/appbaseio/arc/model/body"
 	"github.com/appbaseio/arc/util"
 	es7 "github.com/olivere/elastic/v7"
 )
@@ -50,7 +50,7 @@ func (es *elasticsearch) handler() http.HandlerFunc {
 			}
 		}
 
-		esBody, err := ioutil.ReadAll(r.Body)
+		esBody, err := body.FromContext(ctx)
 		if err != nil {
 			log.Errorln(logTag, ":", err)
 		}
