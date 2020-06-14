@@ -3,12 +3,12 @@ package elasticsearch
 import (
 	"bytes"
 	"io"
+	"io/ioutil"
 	"net/http"
 
 	log "github.com/sirupsen/logrus"
 
 	"github.com/appbaseio/arc/model/acl"
-	"github.com/appbaseio/arc/model/body"
 	"github.com/appbaseio/arc/model/category"
 	"github.com/appbaseio/arc/model/op"
 	"github.com/appbaseio/arc/util"
@@ -53,7 +53,7 @@ func (es *elasticsearch) handler() http.HandlerFunc {
 			}
 		}
 
-		esBody, err := body.FromContext(ctx)
+		esBody, err := ioutil.ReadAll(r.Body)
 		if err != nil {
 			log.Errorln(logTag, ":", err)
 		}
