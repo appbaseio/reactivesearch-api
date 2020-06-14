@@ -8,9 +8,6 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
-	"github.com/appbaseio/arc/model/acl"
-	"github.com/appbaseio/arc/model/category"
-	"github.com/appbaseio/arc/model/op"
 	"github.com/appbaseio/arc/util"
 	es7 "github.com/olivere/elastic/v7"
 )
@@ -19,7 +16,7 @@ func (es *elasticsearch) handler() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
 
-		reqCategory, err := category.FromContext(ctx)
+		/*reqCategory, err := category.FromContext(ctx)
 		if err != nil {
 			log.Errorln(logTag, ":", err)
 			util.WriteBackError(w, "error classifying request acl", http.StatusInternalServerError)
@@ -40,7 +37,7 @@ func (es *elasticsearch) handler() http.HandlerFunc {
 			return
 		}
 		log.Println(logTag, ": category=", *reqCategory, ", acl=", *reqACL, ", op=", *reqOp)
-
+		*/
 		// Forward the request to elasticsearch
 		esClient := util.GetClient7()
 
