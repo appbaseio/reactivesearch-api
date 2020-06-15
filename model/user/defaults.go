@@ -31,6 +31,7 @@ var (
 		category.SearchRelevancy,
 		category.Auth,
 		category.Synonyms,
+		category.SearchGrader,
 	}
 
 	defaultOps = []op.Operation{
