@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"io"
+	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"time"
@@ -14,10 +15,10 @@ import (
 	"github.com/appbaseio/arc/middleware"
 	"github.com/appbaseio/arc/middleware/classify"
 	"github.com/appbaseio/arc/middleware/validate"
-	"github.com/appbaseio/arc/model/body"
 	"github.com/appbaseio/arc/model/category"
 	"github.com/appbaseio/arc/model/index"
 	"github.com/appbaseio/arc/plugins/auth"
+	"github.com/appbaseio/arc/util"
 )
 
 type chain struct {
@@ -96,12 +97,18 @@ func Recorder() middleware.Middleware {
 
 func (l *Logs) recorder(h http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		// skip logs from streams
-		var bytesBody bytes.Buffer
-		io.Copy(&bytesBody, r.Body)
-		ctx := body.NewContext(r.Context(), bytesBody.Bytes())
+
+		// Read the request body
+		reqBody, err := ioutil.ReadAll(r.Body)
+		if err != nil {
+			log.Errorln(logTag, ": unable to read request body: ", err)
+			util.WriteBackError(w, "Can't read request body", http.StatusInternalServerError)
+			return
+		}
+		r.Body = ioutil.NopCloser(bytes.NewBuffer(reqBody))
+
 		if r.Header.Get("X-Request-Category") == "streams" {
-			h(w, r.WithContext(ctx))
+			h(w, r)
 			return
 		}
 
@@ -114,12 +121,12 @@ func (l *Logs) recorder(h http.HandlerFunc) http.HandlerFunc {
 		request := Request{
 			URI:     r.URL.Path,
 			Headers: headers,
-			Body:    bytesBody.String(),
+			Body:    string(reqBody),
 			Method:  r.Method,
 		}
 		// Serve using response recorder
 		respRecorder := httptest.NewRecorder()
-		h(respRecorder, r.WithContext(ctx))
+		h(respRecorder, r)
 
 		// Copy the response to writer
 		for k, v := range respRecorder.Header() {

@@ -15,12 +15,15 @@ import (
 	"github.com/appbaseio/arc/middleware"
 	"github.com/appbaseio/arc/middleware/classify"
 	"github.com/appbaseio/arc/middleware/interceptor"
+	"github.com/appbaseio/arc/middleware/ratelimiter"
+	"github.com/appbaseio/arc/middleware/validate"
 	"github.com/appbaseio/arc/model/acl"
 	"github.com/appbaseio/arc/model/body"
 	"github.com/appbaseio/arc/model/category"
 	"github.com/appbaseio/arc/model/index"
 	"github.com/appbaseio/arc/model/op"
 	"github.com/appbaseio/arc/model/permission"
+	"github.com/appbaseio/arc/plugins/auth"
 	"github.com/appbaseio/arc/plugins/logs"
 	"github.com/appbaseio/arc/util"
 	"github.com/gorilla/mux"
@@ -41,15 +44,15 @@ func list() []middleware.Middleware {
 		classifyOp,
 		classify.Indices(),
 		logs.Recorder(),
-		// auth.BasicAuth(),
-		// ratelimiter.Limit(),
-		// validate.Sources(),
-		// validate.Referers(),
+		auth.BasicAuth(),
+		ratelimiter.Limit(),
+		validate.Sources(),
+		validate.Referers(),
 		// validate.Indices(),
-		// validate.Category(),
-		// validate.ACL(),
-		// validate.Operation(),
-		// validate.PermissionExpiry(),
+		validate.Category(),
+		validate.ACL(),
+		validate.Operation(),
+		validate.PermissionExpiry(),
 		intercept,
 	}
 }
