@@ -89,30 +89,33 @@ func (a *Auth) basicAuth(h http.HandlerFunc) http.HandlerFunc {
 			return
 		}
 
+		// we don't know if the credentials provided here are of a 'user' or a 'permission'
+		var obj credential.AuthCredential
 		username, password, hasBasicAuth := req.BasicAuth()
-		jwtToken, err := request.ParseFromRequest(req, request.AuthorizationHeaderExtractor, func(token *jwt.Token) (interface{}, error) {
-			if _, ok := token.Method.(*jwt.SigningMethodRSA); !ok {
-				return nil, fmt.Errorf("Unexpected signing method: %v", token.Header["alg"])
-			}
-			if a.jwtRsaPublicKey == nil {
-				return nil, fmt.Errorf("No Public Key Registered")
-			}
-			return a.jwtRsaPublicKey, nil
-		})
-		if !hasBasicAuth && err != nil {
-			var msg string
-			if err == request.ErrNoTokenInRequest {
-				msg = "Basic Auth or JWT is required"
-			} else {
-				msg = fmt.Sprintf("Unable to parse JWT: %v", err)
-			}
-			w.Header().Set("www-authenticate", "Basic realm=\"Authentication Required\"")
-			util.WriteBackError(w, msg, http.StatusUnauthorized)
-			return
-		}
-
-		role := ""
 		if !hasBasicAuth {
+			// It's a JWT token in this case
+			jwtToken, err := request.ParseFromRequest(req, request.AuthorizationHeaderExtractor, func(token *jwt.Token) (interface{}, error) {
+				if _, ok := token.Method.(*jwt.SigningMethodRSA); !ok {
+					return nil, fmt.Errorf("Unexpected signing method: %v", token.Header["alg"])
+				}
+				if a.jwtRsaPublicKey == nil {
+					return nil, fmt.Errorf("No Public Key Registered")
+				}
+				return a.jwtRsaPublicKey, nil
+			})
+			if err != nil {
+				var msg string
+				if err == request.ErrNoTokenInRequest {
+					msg = "Basic Auth or JWT is required"
+				} else {
+					msg = fmt.Sprintf("Unable to parse JWT: %v", err)
+				}
+				w.Header().Set("www-authenticate", "Basic realm=\"Authentication Required\"")
+				util.WriteBackError(w, msg, http.StatusUnauthorized)
+				return
+			}
+
+			role := ""
 			if claims, ok := jwtToken.Claims.(jwt.MapClaims); ok && jwtToken.Valid {
 				if a.jwtRoleKey != "" && claims[a.jwtRoleKey] != nil {
 					role = claims[a.jwtRoleKey].(string)
@@ -128,17 +131,16 @@ func (a *Auth) basicAuth(h http.HandlerFunc) http.HandlerFunc {
 				util.WriteBackError(w, fmt.Sprintf("Invalid JWT"), http.StatusUnauthorized)
 				return
 			}
-		}
-		// we don't know if the credentials provided here are of a 'user' or a 'permission'
-		var obj credential.AuthCredential
-		if role != "" {
-			obj, err = a.es.getRolePermission(ctx, role)
-			if err != nil || obj == nil {
-				msg := fmt.Sprintf("No API credentials match with provided role: %s", role)
-				log.Errorln(logTag, ":", err)
-				w.Header().Set("www-authenticate", "Basic realm=\"Authentication Required\"")
-				util.WriteBackError(w, msg, http.StatusUnauthorized)
-				return
+
+			if role != "" {
+				obj, err = a.es.getRolePermission(ctx, role)
+				if err != nil || obj == nil {
+					msg := fmt.Sprintf("No API credentials match with provided role: %s", role)
+					log.Errorln(logTag, ":", err)
+					w.Header().Set("www-authenticate", "Basic realm=\"Authentication Required\"")
+					util.WriteBackError(w, msg, http.StatusUnauthorized)
+					return
+				}
 			}
 		} else {
 			obj, err = a.getCredential(ctx, username)
@@ -248,17 +250,18 @@ func (a *Auth) getCredential(ctx context.Context, username string) (credential.A
 
 func (a *Auth) cachedCredential(username string) (credential.AuthCredential, bool) {
 	a.mu.Lock()
-	defer a.mu.Unlock()
 	if c, ok := a.credentialCache[username]; ok {
+		a.mu.Unlock()
 		return c, ok
 	}
+	a.mu.Unlock()
 	return nil, false
 }
 
 func (a *Auth) removeCredentialFromCache(username string) {
 	a.mu.Lock()
-	defer a.mu.Unlock()
 	delete(a.credentialCache, username)
+	a.mu.Unlock()
 }
 
 func (a *Auth) cacheCredential(username string, c credential.AuthCredential) {
@@ -267,6 +270,6 @@ func (a *Auth) cacheCredential(username string, c credential.AuthCredential) {
 		return
 	}
 	a.mu.Lock()
-	defer a.mu.Unlock()
 	a.credentialCache[username] = c
+	a.mu.Unlock()
 }
