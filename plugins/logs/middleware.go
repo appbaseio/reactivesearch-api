@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"io"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -121,7 +120,7 @@ func (l *Logs) recorder(h http.HandlerFunc) http.HandlerFunc {
 		request := Request{
 			URI:     r.URL.Path,
 			Headers: headers,
-			Body:    string(reqBody),
+			Body:    string(reqBody[:util.Min(len(reqBody), 1000000)]),
 			Method:  r.Method,
 		}
 		// Serve using response recorder
@@ -169,11 +168,14 @@ func (l *Logs) recordResponse(request *Request, w *httptest.ResponseRecorder, re
 	rec.Response.Status = http.StatusText(response.StatusCode)
 	rec.Response.Headers = response.Header
 
-	var bytesBody bytes.Buffer
-	io.Copy(&bytesBody, response.Body)
-	responseBody := bytesBody.Bytes()
+	responseBody, err := ioutil.ReadAll(response.Body)
+	if err != nil {
+		log.Errorln(logTag, ": unable to read response body: ", err)
+		util.WriteBackError(w, "Can't read response body", http.StatusInternalServerError)
+		return
+	}
 
-	rec.Response.Body = bytesBody.String()
+	rec.Response.Body = string(responseBody[:util.Min(len(responseBody), 1000000)])
 	if *reqCategory == category.Search {
 		var resBody SearchResponseBody
 		err := json.Unmarshal(responseBody, &resBody)
