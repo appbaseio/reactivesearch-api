@@ -41,7 +41,7 @@ func list() []middleware.Middleware {
 		classifyCategory,
 		classifyACL,
 		classifyOp,
-		classify.Indices(),
+		// classify.Indices(),
 		// logs.Recorder(),
 		auth.BasicAuth(),
 		ratelimiter.Limit(),
@@ -52,7 +52,7 @@ func list() []middleware.Middleware {
 		validate.ACL(),
 		validate.Operation(),
 		validate.PermissionExpiry(),
-		// intercept,
+		intercept,
 	}
 }
 
@@ -196,12 +196,6 @@ func intercept(h http.HandlerFunc) http.HandlerFunc {
 		}
 
 		resp := httptest.NewRecorder()
-		indices, err := index.FromContext(req.Context())
-		if err != nil {
-			log.Errorln(logTag, ":", err)
-			util.WriteBackError(w, "error getting indices from context", http.StatusInternalServerError)
-			return
-		}
 		h(resp, req)
 
 		// Copy the response to writer
@@ -213,6 +207,14 @@ func intercept(h http.HandlerFunc) http.HandlerFunc {
 		var body bytes.Buffer
 		io.Copy(&body, result.Body)
 		var bytesBody = body.Bytes()
+
+		indices, err := index.FromContext(req.Context())
+		if err != nil {
+			log.Errorln(logTag, ":", err)
+			util.WriteBackRaw(w, bytesBody, http.StatusOK)
+			//util.WriteBackError(w, "error getting indices from context", http.StatusInternalServerError)
+			return
+		}
 
 		for _, index := range indices {
 			alias := classify.GetIndexAlias(index)
