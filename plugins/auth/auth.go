@@ -86,18 +86,6 @@ func (a *Auth) InitFunc() error {
 		return err
 	}
 
-	// Create permissions index
-	_, err = a.es.createIndex(permissionIndex, settings)
-	if err != nil {
-		return err
-	}
-
-	// Create users index
-	_, err = a.es.createIndex(userIndex, settings)
-	if err != nil {
-		return err
-	}
-
 	// Create public key index
 	_, err = a.es.createIndex(publicKeyIndex, settings)
 	if err != nil {
