@@ -86,6 +86,8 @@ func main() {
 		},
 	})
 
+	// defer profile.Start(profile.MemProfile).Stop()
+
 	switch logMode {
 	case "debug":
 		log.SetLevel(log.DebugLevel)
