@@ -27,7 +27,7 @@ const (
 	defaultPublicKeyEsIndex   = ".publickey"
 	envJwtRsaPublicKeyLoc     = "JWT_RSA_PUBLIC_KEY_LOC"
 	envJwtRoleKey             = "JWT_ROLE_KEY"
-	settings                  = `{ "settings" : { "index.number_of_shards" : 1, "index.number_of_replicas" : %d } }`
+	settings                  = `{ "settings" : { %s "index.number_of_shards" : 1, "index.number_of_replicas" : %d } }`
 	publicKeyDocID            = "_public_key"
 )
 
@@ -82,6 +82,18 @@ func (a *Auth) InitFunc() error {
 
 	// initialize the dao
 	a.es, err = initPlugin(userIndex, permissionIndex)
+	if err != nil {
+		return err
+	}
+
+	// Create permissions index
+	_, err = a.es.createIndex(permissionIndex, settings)
+	if err != nil {
+		return err
+	}
+
+	// Create users index
+	_, err = a.es.createIndex(userIndex, settings)
 	if err != nil {
 		return err
 	}

@@ -14,7 +14,7 @@ const (
 	typeName            = "_doc"
 	envEsURL            = "ES_CLUSTER_URL"
 	defaultUsersEsIndex = ".users"
-	settings            = `{ "settings" : { "index.number_of_shards" : 1, "index.number_of_replicas" : %d } }`
+	settings            = `{ "settings" : { %s "index.number_of_shards" : 1, "index.number_of_replicas" : %d } }`
 )
 
 var (
