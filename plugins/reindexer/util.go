@@ -14,17 +14,17 @@ import (
 
 // AliasedIndices struct
 type AliasedIndices struct {
-	Alias        string `json:"alias"`
-	Health       string `json:"health"`
-	Status       string `json:"status"`
-	Index        string `json:"index"`
-	UUID         string `json:"uuid"`
-	Pri          int    `json:"pri"`
-	Rep          int    `json:"rep"`
-	DocsCount    int    `json:"docs.count"`
-	DocsDeleted  int    `json:"docs.deleted"`
-	StoreSize    string `json:"store.size"`
-	PriStoreSize string `json:"pri.store.size"`
+	Alias        string      `json:"alias"`
+	Health       string      `json:"health"`
+	Status       string      `json:"status"`
+	Index        string      `json:"index"`
+	UUID         string      `json:"uuid"`
+	Pri          interface{} `json:"pri"`
+	Rep          interface{} `json:"rep"`
+	DocsCount    interface{} `json:"docs.count"`
+	DocsDeleted  interface{} `json:"docs.deleted"`
+	StoreSize    string      `json:"store.size"`
+	PriStoreSize string      `json:"pri.store.size"`
 }
 
 // CurrentlyReIndexingProcess map of  taskID [source, destinations] indexes for which indexing process is going on

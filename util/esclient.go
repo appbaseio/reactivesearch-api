@@ -13,6 +13,7 @@ import (
 )
 
 var version int
+var semanticVersion string
 
 var (
 	clientInit sync.Once
@@ -55,6 +56,30 @@ func GetVersion() int {
 		}
 	}
 	return version
+}
+
+// GetSemanticVersion returns the es version
+func GetSemanticVersion() string {
+	// Get the version if not present
+	if semanticVersion == "" {
+		esVersion, err := client7.ElasticsearchVersion(getURL())
+		if err != nil {
+			log.Fatal("Error encountered: ", fmt.Errorf("error while retrieving the elastic version: %v", err))
+		} else {
+			semanticVersion = esVersion
+		}
+	}
+	return semanticVersion
+}
+
+// HiddenIndexSettings to set plugin indices as hidden index
+func HiddenIndexSettings() string {
+	esVersion := GetSemanticVersion()
+	if strings.Contains(esVersion, "7.7") {
+		return `"index.hidden": true,`
+	}
+
+	return ""
 }
 
 func getURL() string {
