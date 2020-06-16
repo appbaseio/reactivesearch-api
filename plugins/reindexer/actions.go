@@ -6,10 +6,12 @@ const (
 	Mappings Action = iota
 	Settings
 	Data
+	SearchRelevancy
+	Synonyms
 )
 
 func (o Action) String() string {
-	return [...]string{"mappings", "settings", "data"}[o]
+	return [...]string{"mappings", "settings", "data", "search_relevancy", "synonyms"}[o]
 }
 
 type ReIndexOperation int
