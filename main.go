@@ -20,6 +20,7 @@ import (
 	"github.com/appbaseio/arc/plugins"
 	"github.com/appbaseio/arc/util"
 	"github.com/gorilla/mux"
+	"github.com/pkg/profile"
 	"github.com/robfig/cron"
 	"github.com/rs/cors"
 
@@ -86,7 +87,7 @@ func main() {
 		},
 	})
 
-	// defer profile.Start(profile.MemProfile).Stop()
+	defer profile.Start(profile.MemProfile).Stop()
 
 	switch logMode {
 	case "debug":
