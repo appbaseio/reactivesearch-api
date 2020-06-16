@@ -24,6 +24,7 @@ import (
 	"github.com/appbaseio/arc/model/op"
 	"github.com/appbaseio/arc/model/permission"
 	"github.com/appbaseio/arc/plugins/auth"
+	"github.com/appbaseio/arc/plugins/logs"
 	"github.com/appbaseio/arc/util"
 	"github.com/gorilla/mux"
 )
@@ -42,7 +43,7 @@ func list() []middleware.Middleware {
 		classifyACL,
 		classifyOp,
 		classify.Indices(),
-		// logs.Recorder(),
+		logs.Recorder(),
 		auth.BasicAuth(),
 		ratelimiter.Limit(),
 		validate.Sources(),
