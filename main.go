@@ -20,7 +20,7 @@ import (
 	"github.com/appbaseio/arc/plugins"
 	"github.com/appbaseio/arc/util"
 	"github.com/gorilla/mux"
-	"github.com/pkg/profile"
+	// "github.com/pkg/profile"
 	"github.com/robfig/cron"
 	"github.com/rs/cors"
 
