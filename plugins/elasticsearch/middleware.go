@@ -43,7 +43,7 @@ func list() []middleware.Middleware {
 		classifyACL,
 		classifyOp,
 		classify.Indices(),
-		logs.Recorder(),
+		// logs.Recorder(),
 		auth.BasicAuth(),
 		ratelimiter.Limit(),
 		validate.Sources(),
