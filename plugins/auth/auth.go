@@ -27,7 +27,7 @@ const (
 	defaultPublicKeyEsIndex   = ".publickey"
 	envJwtRsaPublicKeyLoc     = "JWT_RSA_PUBLIC_KEY_LOC"
 	envJwtRoleKey             = "JWT_ROLE_KEY"
-	settings                  = `{ "settings" : { "index.number_of_shards" : 1, "index.number_of_replicas" : %d } }`
+	settings                  = `{ "settings" : { %s "index.number_of_shards" : 1, "index.number_of_replicas" : %d } }`
 	publicKeyDocID            = "_public_key"
 )
 

@@ -22,6 +22,7 @@ const (
 	    }
 	  },
 	  "settings": {
+		%s
 	    "index.number_of_shards": 1,
 	    "index.number_of_replicas": %d
 	  }

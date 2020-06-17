@@ -51,7 +51,8 @@ func (es *elasticsearch) createIndex(indexName, mapping string) (bool, error) {
 	}
 
 	replicas := util.GetReplicas()
-	settings := fmt.Sprintf(mapping, replicas)
+
+	settings := fmt.Sprintf(mapping, util.HiddenIndexSettings(), replicas)
 	// Meta index does not exists, create a new one
 	_, err = util.GetClient7().CreateIndex(indexName).
 		Body(settings).

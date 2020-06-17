@@ -5,7 +5,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net/url"
 	"regexp"
+	"strconv"
+	"strings"
 	"time"
 
 	log "github.com/sirupsen/logrus"
@@ -335,8 +338,28 @@ func getIndicesByAlias(ctx context.Context, alias string) ([]string, error) {
 
 func getAliasedIndices(ctx context.Context) ([]AliasedIndices, error) {
 	var indicesList []AliasedIndices
-	indices, err := util.GetClient7().CatIndices().
-		Do(ctx)
+	v := url.Values{}
+	v.Set("format", "json")
+
+	if strings.Contains(util.GetSemanticVersion(), "7.7") {
+		v.Add("expand_wildcards", "all")
+	}
+
+	requestOptions := es7.PerformRequestOptions{
+		Method: "GET",
+		Path:   "/_cat/indices",
+		Params: v,
+	}
+	response, err := util.GetClient7().PerformRequest(ctx, requestOptions)
+	if err != nil {
+		return indicesList, err
+	}
+
+	if response.StatusCode > 300 {
+		return indicesList, errors.New(string(response.Body))
+	}
+
+	err = json.Unmarshal(response.Body, &indicesList)
 	if err != nil {
 		return indicesList, err
 	}
@@ -348,19 +371,12 @@ func getAliasedIndices(ctx context.Context) ([]AliasedIndices, error) {
 		return indicesList, err
 	}
 
-	for _, index := range indices {
-		var indexStruct = AliasedIndices{
-			Health:       index.Health,
-			Status:       index.Status,
-			Index:        index.Index,
-			UUID:         index.UUID,
-			Pri:          index.Pri,
-			Rep:          index.Rep,
-			DocsCount:    index.DocsCount,
-			DocsDeleted:  index.DocsDeleted,
-			StoreSize:    index.StoreSize,
-			PriStoreSize: index.PriStoreSize,
-		}
+	for i, index := range indicesList {
+		// oliver PerformRequest gives this values as string, but Frontend will need them as integers
+		indicesList[i].Pri, _ = strconv.Atoi(fmt.Sprintf("%v", index.Pri))
+		indicesList[i].Rep, _ = strconv.Atoi(fmt.Sprintf("%v", index.Rep))
+		indicesList[i].DocsCount, _ = strconv.Atoi(fmt.Sprintf("%v", index.DocsCount))
+		indicesList[i].DocsDeleted, _ = strconv.Atoi(fmt.Sprintf("%v", index.DocsDeleted))
 		var alias string
 		regex := ".*reindexed_[0-9]+"
 		rolloverPatter := ".*-[0-9]+"
@@ -379,10 +395,8 @@ func getAliasedIndices(ctx context.Context) ([]AliasedIndices, error) {
 
 		}
 		if err == nil && alias != "" {
-			indexStruct.Alias = alias
+			indicesList[i].Alias = alias
 		}
-
-		indicesList = append(indicesList, indexStruct)
 
 	}
 
