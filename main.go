@@ -36,6 +36,8 @@ var (
 	port        int
 	pluginDir   string
 	https       bool
+	// Version arc version set during build
+	Version string
 	// PlanRefreshInterval can be used to define the custom interval to refresh the plan
 	PlanRefreshInterval string
 	// Billing is a build time flag
@@ -116,6 +118,7 @@ func main() {
 	util.Billing = Billing
 	util.HostedBilling = HostedBilling
 	util.ClusterBilling = ClusterBilling
+	util.Version = Version
 
 	if Billing == "true" {
 		log.Println("You're running Arc with billing module enabled.")

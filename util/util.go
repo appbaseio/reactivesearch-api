@@ -31,6 +31,9 @@ var HostedBilling string
 // ClusterBilling is a build time variable
 var ClusterBilling string
 
+// Version arc version
+var Version string
+
 // RandStr returns "node" field of a UUID.
 // See: https://tools.ietf.org/html/rfc4122#section-4.1.6
 func RandStr() string {
