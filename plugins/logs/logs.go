@@ -16,7 +16,8 @@ const (
 	defaultLogsEsIndex = ".logs"
 	envEsURL           = "ES_CLUSTER_URL"
 	envLogsEsIndex     = "LOGS_ES_INDEX"
-	defaultLogFilePath = "log/es.log"
+	defaultLogFilePath = "/var/log/arc/es.json"
+	envLogFilePath     = "LOG_FILE_PATH"
 	config             = `
 	{
 	  "aliases": {
@@ -76,9 +77,9 @@ func (l *Logs) InitFunc() error {
 	if err != nil {
 		return err
 	}
-	filePath := os.Getenv("LOG_FILE_PATH")
+	filePath := os.Getenv(envLogFilePath)
 	if filePath == "" {
-		log.Warnln(logTag, "LOG_FILE_PATH is not defined log will get stored at ", defaultLogFilePath)
+		log.Warnln(logTag, envLogFilePath+" is not defined log will get stored at ", defaultLogFilePath)
 		filePath = defaultLogFilePath
 	}
 	// configure lumberjack
