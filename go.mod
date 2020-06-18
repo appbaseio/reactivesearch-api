@@ -9,6 +9,7 @@ require (
 	github.com/google/uuid v1.0.0
 	github.com/gorilla/mux v1.7.1
 	github.com/hashicorp/golang-lru v0.5.0 // indirect
+	github.com/natefinch/lumberjack v2.0.1-0.20190411184413-94d9e492cc53+incompatible
 	github.com/olivere/elastic v6.2.21+incompatible
 	github.com/olivere/elastic/v7 v7.0.17
 	github.com/openzipkin/zipkin-go v0.1.6 // indirect

@@ -2,7 +2,6 @@ package logs
 
 import (
 	"bytes"
-	"context"
 	"encoding/json"
 	"io/ioutil"
 	"net/http"
@@ -121,7 +120,7 @@ func (l *Logs) recorder(h http.HandlerFunc) http.HandlerFunc {
 		request := Request{
 			URI:     r.URL.Path,
 			Headers: headers,
-			Body:    string(reqBody),
+			Body:    string(reqBody[:util.Min(len(reqBody), 1000000)]),
 			Method:  r.Method,
 		}
 		// Serve using response recorder
@@ -174,7 +173,7 @@ func (l *Logs) recordResponse(request *Request, w *httptest.ResponseRecorder, re
 		log.Errorln(logTag, "can't read response body: ", err)
 		return
 	}
-	rec.Response.Body = string(responseBody)
+	rec.Response.Body = string(responseBody[:util.Min(len(responseBody), 1000000)])
 	if *reqCategory == category.Search {
 		var resBody SearchResponseBody
 		err := json.Unmarshal(responseBody, &resBody)
@@ -197,5 +196,17 @@ func (l *Logs) recordResponse(request *Request, w *httptest.ResponseRecorder, re
 			rec.Response.Took = &resBody.Settings.Took
 		}
 	}
-	l.es.indexRecord(context.Background(), rec)
+	marshalledLog, err := json.Marshal(rec)
+	if err != nil {
+		log.Errorln(logTag, "error encountered while marshalling record :", err)
+		return
+	}
+	n, err := l.lumberjack.Write(marshalledLog)
+	if err != nil {
+		log.Errorln(logTag, "error encountered while writing logs :", err)
+		return
+	}
+	// Add new line character so filebeat can sync it with ES
+	l.lumberjack.Write([]byte("\n"))
+	log.Println(logTag, "logged request successfully", n)
 }

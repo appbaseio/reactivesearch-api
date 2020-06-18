@@ -6,7 +6,9 @@ import (
 
 	"github.com/appbaseio/arc/middleware"
 	"github.com/appbaseio/arc/plugins"
+	"github.com/natefinch/lumberjack"
 	"github.com/robfig/cron"
+	log "github.com/sirupsen/logrus"
 )
 
 const (
@@ -14,6 +16,7 @@ const (
 	defaultLogsEsIndex = ".logs"
 	envEsURL           = "ES_CLUSTER_URL"
 	envLogsEsIndex     = "LOGS_ES_INDEX"
+	defaultLogFilePath = "log/es.log"
 	config             = `
 	{
 	  "aliases": {
@@ -41,7 +44,8 @@ var (
 
 // Logs plugin records an elasticsearch request and its response.
 type Logs struct {
-	es logsService
+	es         logsService
+	lumberjack lumberjack.Logger
 }
 
 // Instance returns the singleton instance of Logs plugin.
@@ -71,6 +75,18 @@ func (l *Logs) InitFunc() error {
 	l.es, err = initPlugin(indexName, config)
 	if err != nil {
 		return err
+	}
+	filePath := os.Getenv("LOG_FILE_PATH")
+	if filePath == "" {
+		log.Warnln(logTag, "LOG_FILE_PATH is not defined log will get stored at ", defaultLogFilePath)
+		filePath = defaultLogFilePath
+	}
+	// configure lumberjack
+	l.lumberjack = lumberjack.Logger{
+		Filename:   filePath,
+		MaxSize:    500,
+		MaxBackups: 3,
+		MaxAge:     30, //days
 	}
 
 	// init cron job
