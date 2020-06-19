@@ -196,17 +196,17 @@ func (l *Logs) recordResponse(request *Request, w *httptest.ResponseRecorder, re
 			rec.Response.Took = &resBody.Settings.Took
 		}
 	}
-	marshalledLog, err := json.Marshal(rec)
-	if err != nil {
-		log.Errorln(logTag, "error encountered while marshalling record :", err)
-		return
-	}
-	n, err := l.lumberjack.Write(marshalledLog)
-	if err != nil {
-		log.Errorln(logTag, "error encountered while writing logs :", err)
-		return
-	}
-	// Add new line character so filebeat can sync it with ES
-	l.lumberjack.Write([]byte("\n"))
-	log.Println(logTag, "logged request successfully", n)
+	// marshalledLog, err := json.Marshal(rec)
+	// if err != nil {
+	// 	log.Errorln(logTag, "error encountered while marshalling record :", err)
+	// 	return
+	// }
+	// n, err := l.lumberjack.Write(marshalledLog)
+	// if err != nil {
+	// 	log.Errorln(logTag, "error encountered while writing logs :", err)
+	// 	return
+	// }
+	// // Add new line character so filebeat can sync it with ES
+	// l.lumberjack.Write([]byte("\n"))
+	// log.Println(logTag, "logged request successfully", n)
 }
