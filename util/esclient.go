@@ -90,6 +90,15 @@ func getURL() string {
 	return url
 }
 
+func isSniffingEnabled() bool {
+	setSniffing := os.Getenv("SET_SNIFFING")
+	sniffing := true
+	if setSniffing == "false" {
+		sniffing = false
+	}
+	return sniffing
+}
+
 func initClient6() {
 	var err error
 
@@ -101,7 +110,7 @@ func initClient6() {
 	client6, err = es6.NewClient(
 		es6.SetURL(getURL()),
 		es6.SetRetrier(NewRetrier()),
-		es6.SetSniff(true),
+		es6.SetSniff(isSniffingEnabled()),
 		es6.SetHttpClient(HTTPClient()),
 		es6.SetErrorLog(wrappedLoggerError),
 		es6.SetInfoLog(wrappedLoggerDebug),
@@ -120,11 +129,11 @@ func initClient7() {
 	loggerT := log.New()
 	wrappedLoggerDebug := &WrapKitLoggerDebug{*loggerT}
 	wrappedLoggerError := &WrapKitLoggerError{*loggerT}
-
+	fmt.Println("=> isSniffing enabled", isSniffingEnabled())
 	client7, err = es7.NewClient(
 		es7.SetURL(getURL()),
 		es7.SetRetrier(NewRetrier()),
-		es7.SetSniff(true),
+		es7.SetSniff(isSniffingEnabled()),
 		es7.SetHttpClient(HTTPClient()),
 		es7.SetErrorLog(wrappedLoggerError),
 		es7.SetInfoLog(wrappedLoggerDebug),
