@@ -92,9 +92,9 @@ func getURL() string {
 
 func isSniffingEnabled() bool {
 	setSniffing := os.Getenv("SET_SNIFFING")
-	sniffing := true
-	if setSniffing == "false" {
-		sniffing = false
+	sniffing := false
+	if setSniffing == "true" {
+		sniffing = true
 	}
 	return sniffing
 }
