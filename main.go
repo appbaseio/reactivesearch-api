@@ -89,8 +89,8 @@ func main() {
 		},
 	})
 
-	// Memory profiling by default
-	defer profile.Start(profile.MemProfile).Stop()
+	// CPU profiling by default
+	defer profile.Start().Stop()
 
 	switch logMode {
 	case "debug":

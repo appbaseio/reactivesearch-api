@@ -21,7 +21,6 @@ import (
 	"github.com/dgrijalva/jwt-go"
 	"github.com/dgrijalva/jwt-go/request"
 	"github.com/gorilla/mux"
-	"golang.org/x/crypto/bcrypt"
 )
 
 type chain struct {
@@ -161,11 +160,11 @@ func (a *Auth) basicAuth(h http.HandlerFunc) http.HandlerFunc {
 			{
 				// if the request is made to elasticsearch using user credentials, then the user has to be an admin
 				reqUser := obj.(*user.User)
-				if hasBasicAuth && bcrypt.CompareHashAndPassword([]byte(reqUser.Password), []byte(password)) != nil {
-					w.Header().Set("www-authenticate", "Basic realm=\"Authentication Required\"")
-					util.WriteBackError(w, "invalid password", http.StatusUnauthorized)
-					return
-				}
+				// if hasBasicAuth && bcrypt.CompareHashAndPassword([]byte(reqUser.Password), []byte(password)) != nil {
+				// 	w.Header().Set("www-authenticate", "Basic realm=\"Authentication Required\"")
+				// 	util.WriteBackError(w, "invalid password", http.StatusUnauthorized)
+				// 	return
+				// }
 
 				if reqCategory.IsFromES() || reqCategory.IsFromRS() {
 					authenticated = *reqUser.IsAdmin
