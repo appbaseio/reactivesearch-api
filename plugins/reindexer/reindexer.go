@@ -10,6 +10,7 @@ import (
 const (
 	logTag   = "[reindexer]"
 	envEsURL = "ES_CLUSTER_URL"
+	typeName = "_doc"
 )
 
 var (
