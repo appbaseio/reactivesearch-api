@@ -129,7 +129,7 @@ func initClient7() {
 	loggerT := log.New()
 	wrappedLoggerDebug := &WrapKitLoggerDebug{*loggerT}
 	wrappedLoggerError := &WrapKitLoggerError{*loggerT}
-	fmt.Println("=> isSniffing enabled", isSniffingEnabled())
+
 	client7, err = es7.NewClient(
 		es7.SetURL(getURL()),
 		es7.SetRetrier(NewRetrier()),
