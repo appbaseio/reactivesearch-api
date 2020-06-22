@@ -1,30 +1,24 @@
 package response
 
-import (
-	"context"
+// Response represents the cached API response for a request
+// Key is the unique ID for each request
+var Response = make(map[string]map[string]interface{})
 
-	"github.com/appbaseio/arc/errors"
-)
-
-type contextKey string
-
-// ctxKey is a key against which api response will get stored in the context.
-const ctxKey = contextKey("response")
-
-// NewContext returns a new context with the given api response body.
-func NewContext(ctx context.Context, response map[string]interface{}) context.Context {
-	return context.WithValue(ctx, ctxKey, response)
+// GetResponse returns the response by request ID
+func GetResponse(requestID string) *map[string]interface{} {
+	response, ok := Response[requestID]
+	if !ok {
+		return nil
+	}
+	return &response
 }
 
-// FromContext retrieves the api response stored against the response.ctxKey from the context.
-func FromContext(ctx context.Context) (*map[string]interface{}, error) {
-	ctxRequest := ctx.Value(ctxKey)
-	if ctxRequest == nil {
-		return nil, errors.NewNotFoundInContextError("map[string]interface{}")
-	}
-	reqQuery, ok := ctxRequest.(map[string]interface{})
-	if !ok {
-		return nil, errors.NewInvalidCastError("ctxResponse", "map[string]interface{}")
-	}
-	return &reqQuery, nil
+// SaveResponse returns the response by request ID
+func SaveResponse(requestID string, response map[string]interface{}) {
+	Response[requestID] = response
+}
+
+// ClearResponse clears the cache for a particular request ID
+func ClearResponse(requestID string) {
+	delete(Response, requestID)
 }
