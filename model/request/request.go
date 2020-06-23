@@ -14,7 +14,7 @@ func NewContext(ctx context.Context, request interface{}) context.Context {
 	return context.WithValue(ctx, CtxKey, request)
 }
 
-// FromContext retrieves the api request body stored against the querytranslate.ctxKey from the context.
+// FromContext retrieves the api request body stored against the request.ctxKey from the context.
 func FromContext(ctx context.Context) (*interface{}, error) {
 	ctxRequest := ctx.Value(CtxKey)
 	return &ctxRequest, nil

@@ -15,6 +15,8 @@ import (
 	"github.com/appbaseio/arc/middleware/validate"
 	"github.com/appbaseio/arc/model/category"
 	"github.com/appbaseio/arc/model/index"
+	"github.com/appbaseio/arc/model/request"
+	responseCtx "github.com/appbaseio/arc/model/response"
 	"github.com/appbaseio/arc/plugins/auth"
 	"github.com/appbaseio/arc/util"
 )
@@ -100,29 +102,6 @@ func (l *Logs) recorder(h http.HandlerFunc) http.HandlerFunc {
 			h(w, r)
 			return
 		}
-
-		// Read the request body
-		reqBody, err := ioutil.ReadAll(r.Body)
-		if err != nil {
-			log.Errorln(logTag, ": unable to read request body: ", err)
-			util.WriteBackError(w, "Can't read request body", http.StatusInternalServerError)
-			return
-		}
-
-		r.Body = ioutil.NopCloser(bytes.NewBuffer(reqBody))
-
-		var headers = make(map[string][]string)
-
-		for key, values := range r.Header {
-			headers[key] = values
-		}
-
-		request := Request{
-			URI:     r.URL.Path,
-			Headers: headers,
-			Body:    string(reqBody[:util.Min(len(reqBody), 1000000)]),
-			Method:  r.Method,
-		}
 		// Serve using response recorder
 		respRecorder := httptest.NewRecorder()
 		h(respRecorder, r)
@@ -135,12 +114,28 @@ func (l *Logs) recorder(h http.HandlerFunc) http.HandlerFunc {
 		w.Write(respRecorder.Body.Bytes())
 
 		// Record the document
-		go l.recordResponse(&request, respRecorder, r)
+		go l.recordResponse(respRecorder, r)
 	}
 }
 
-func (l *Logs) recordResponse(request *Request, w *httptest.ResponseRecorder, req *http.Request) {
-	ctx := req.Context()
+func (l *Logs) recordResponse(w *httptest.ResponseRecorder, r *http.Request) {
+	// Read the request body
+	reqBody, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		log.Errorln(logTag, ": unable to read request body: ", err)
+		util.WriteBackError(w, "Can't read request body", http.StatusInternalServerError)
+		return
+	}
+
+	r.Body = ioutil.NopCloser(bytes.NewBuffer(reqBody))
+
+	var headers = make(map[string][]string)
+
+	for key, values := range r.Header {
+		headers[key] = values
+	}
+
+	ctx := r.Context()
 
 	reqCategory, err := category.FromContext(ctx)
 	if err != nil {
@@ -159,9 +154,6 @@ func (l *Logs) recordResponse(request *Request, w *httptest.ResponseRecorder, re
 	rec.Category = *reqCategory
 	rec.Timestamp = time.Now()
 
-	// record request
-	rec.Request = *request
-
 	// record response
 	response := w.Result()
 	rec.Response.Code = response.StatusCode
@@ -173,7 +165,6 @@ func (l *Logs) recordResponse(request *Request, w *httptest.ResponseRecorder, re
 		log.Errorln(logTag, "can't read response body: ", err)
 		return
 	}
-	rec.Response.Body = string(responseBody[:util.Min(len(responseBody), 1000000)])
 	if *reqCategory == category.Search {
 		var resBody SearchResponseBody
 		err := json.Unmarshal(responseBody, &resBody)
@@ -186,15 +177,53 @@ func (l *Logs) recordResponse(request *Request, w *httptest.ResponseRecorder, re
 		}
 	}
 	if *reqCategory == category.ReactiveSearch {
-		var resBody ResponseBodyRS
-		err := json.Unmarshal(responseBody, &resBody)
+		// Read request body from context
+		rsRequestBody, err := request.FromContext(ctx)
 		if err != nil {
-			log.Errorln(logTag, "error encountered while parsing the response: ", err)
+			log.Errorln(logTag, "error encountered while reading request body:", err)
+			return
+		}
+		marshalled, err := json.Marshal(rsRequestBody)
+		if err != nil {
+			log.Errorln(logTag, "error encountered while marshalling request body:", err)
+			return
+		}
+		rec.Request = Request{
+			URI:     r.URL.Path,
+			Headers: headers,
+			Body:    string(marshalled[:util.Min(len(marshalled), 1000000)]),
+			Method:  r.Method,
+		}
+		// Read response body from context
+		rsResponseBody, err := responseCtx.FromContext(ctx)
+		if err != nil {
+			log.Errorln(logTag, "error encountered while reading response body:", err)
+			return
 		}
 		// ignore error to record error logs
 		if err == nil {
-			rec.Response.Took = &resBody.Settings.Took
+			took, ok := (*rsResponseBody)["settings"].(map[string]interface{})["took"].(float64)
+			if !ok {
+				log.Errorln(logTag, "error encountered while parsing response body:", err)
+				return
+			}
+			rec.Response.Took = &took
 		}
+		marshalledRes, err := json.Marshal(rsResponseBody)
+		if err != nil {
+			log.Errorln(logTag, "error encountered while marshalling response body:", err)
+			return
+		}
+		rec.Response.Body = string(marshalledRes[:util.Min(len(marshalledRes), 1000000)])
+	} else {
+		// record request
+		rec.Request = Request{
+			URI:     r.URL.Path,
+			Headers: headers,
+			Body:    string(reqBody[:util.Min(len(reqBody), 1000000)]),
+			Method:  r.Method,
+		}
+		rec.Response.Body = string(responseBody[:util.Min(len(responseBody), 1000000)])
 	}
 	marshalledLog, err := json.Marshal(rec)
 	if err != nil {
