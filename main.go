@@ -20,6 +20,7 @@ import (
 	"github.com/appbaseio/arc/plugins"
 	"github.com/appbaseio/arc/util"
 	"github.com/gorilla/mux"
+	"github.com/pkg/profile"
 	"github.com/robfig/cron"
 	"github.com/rs/cors"
 
@@ -76,6 +77,8 @@ func init() {
 }
 
 func main() {
+	defer profile.Start().Stop()
+
 	flag.Parse()
 	log.SetReportCaller(true)
 	log.SetFormatter(&log.TextFormatter{
