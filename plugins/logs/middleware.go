@@ -1,11 +1,12 @@
 package logs
 
 import (
-	"bytes"
 	"encoding/json"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
+	"net/http/httputil"
+	"strings"
 	"time"
 
 	log "github.com/sirupsen/logrus"
@@ -110,10 +111,14 @@ func (l *Logs) recorder(h http.HandlerFunc) http.HandlerFunc {
 			log.Errorln(logTag, ":", err)
 			return
 		}
-		requestID, err := requestid.FromContext(r.Context())
-		if err != nil {
-			log.Errorln(logTag, "request id not found in context :", err)
-			return
+
+		var dumpRequest []byte
+		if *reqCategory != category.ReactiveSearch {
+			dumpRequest, err = httputil.DumpRequest(r, true)
+			if err != nil {
+				log.Errorln(logTag, ":", err.Error())
+				return
+			}
 		}
 		// Serve using response recorder
 		respRecorder := httptest.NewRecorder()
@@ -128,6 +133,11 @@ func (l *Logs) recorder(h http.HandlerFunc) http.HandlerFunc {
 
 		var rsResponseBody *map[string]interface{}
 		if *reqCategory == category.ReactiveSearch {
+			requestID, err := requestid.FromContext(ctx)
+			if err != nil {
+				log.Errorln(logTag, "request id not found in context :", err)
+				return
+			}
 			rsResponseBody = response.GetResponse(*requestID)
 			if rsResponseBody == nil {
 				log.Errorln(logTag, ":", "error reading response body")
@@ -135,21 +145,11 @@ func (l *Logs) recorder(h http.HandlerFunc) http.HandlerFunc {
 			}
 		}
 		// Record the document
-		go l.recordResponse(respRecorder, r, *rsResponseBody)
+		go l.recordResponse(respRecorder, r, dumpRequest, rsResponseBody)
 	}
 }
 
-func (l *Logs) recordResponse(w *httptest.ResponseRecorder, r *http.Request, rsResponseBody map[string]interface{}) {
-	// Read the request body
-	reqBody, err := ioutil.ReadAll(r.Body)
-	if err != nil {
-		log.Errorln(logTag, ": unable to read request body: ", err)
-		util.WriteBackError(w, "Can't read request body", http.StatusInternalServerError)
-		return
-	}
-
-	r.Body = ioutil.NopCloser(bytes.NewBuffer(reqBody))
-
+func (l *Logs) recordResponse(w *httptest.ResponseRecorder, r *http.Request, reqBody []byte, rsResponseBody *map[string]interface{}) {
 	var headers = make(map[string][]string)
 
 	for key, values := range r.Header {
@@ -215,13 +215,11 @@ func (l *Logs) recordResponse(w *httptest.ResponseRecorder, r *http.Request, rsR
 			Body:    string(marshalled[:util.Min(len(marshalled), 1000000)]),
 			Method:  r.Method,
 		}
-		// ignore error to record error logs
-		if err == nil {
-			took, ok := rsResponseBody["settings"].(map[string]interface{})["took"].(float64)
-			if !ok {
-				log.Errorln(logTag, "error encountered while parsing response body:", err)
-				return
-			}
+		took, ok := (*rsResponseBody)["settings"].(map[string]interface{})["took"].(float64)
+		if !ok {
+			// ignore error to record error logs
+			log.Errorln(logTag, "error encountered while parsing response body:", err)
+		} else {
 			rec.Response.Took = &took
 		}
 		marshalledRes, err := json.Marshal(rsResponseBody)
@@ -231,11 +229,16 @@ func (l *Logs) recordResponse(w *httptest.ResponseRecorder, r *http.Request, rsR
 		}
 		rec.Response.Body = string(marshalledRes[:util.Min(len(marshalledRes), 1000000)])
 	} else {
+		requestBody := strings.Split(string(reqBody), "\r\n\r\n")
+		var parsedBody []byte
+		if len(requestBody) > 1 {
+			parsedBody = []byte(requestBody[1])
+		}
 		// record request
 		rec.Request = Request{
 			URI:     r.URL.Path,
 			Headers: headers,
-			Body:    string(reqBody[:util.Min(len(reqBody), 1000000)]),
+			Body:    string(parsedBody[:util.Min(len(parsedBody), 1000000)]),
 			Method:  r.Method,
 		}
 		rec.Response.Body = string(responseBody[:util.Min(len(responseBody), 1000000)])
