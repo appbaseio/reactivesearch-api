@@ -199,9 +199,9 @@ func (l *Logs) recordResponse(w *httptest.ResponseRecorder, r *http.Request, req
 	if *reqCategory == category.ReactiveSearch {
 		// Read request body from context
 		rsRequestBody, err := request.FromContext(ctx)
+		// ignore error to record > 500 status code logs
 		if err != nil {
 			log.Errorln(logTag, "error encountered while reading request body:", err)
-			return
 		}
 		marshalled, err := json.Marshal(rsRequestBody)
 		if err != nil {
