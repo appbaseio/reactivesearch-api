@@ -13,19 +13,21 @@ var CurrentProcessMutex = sync.RWMutex{}
 // SavePassword saved the password in the cache
 func SavePassword(username string, password string) {
 	CurrentProcessMutex.Lock()
+	defer CurrentProcessMutex.Unlock()
 	UserToPasswordCache[username] = password
-	CurrentProcessMutex.Unlock()
 }
 
 // ClearPassword clears the password in the cache
 func ClearPassword(username string) {
 	CurrentProcessMutex.Lock()
+	defer CurrentProcessMutex.Unlock()
 	delete(UserToPasswordCache, username)
-	CurrentProcessMutex.Unlock()
 }
 
 // IsPasswordExist checks whether the password in the cache or not
 func IsPasswordExist(username string, password string) bool {
+	CurrentProcessMutex.Lock()
+	defer CurrentProcessMutex.Unlock()
 	cachedPassword, ok := UserToPasswordCache[username]
 	if !ok {
 		return false
