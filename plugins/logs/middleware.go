@@ -124,7 +124,7 @@ func (l *Logs) recorder(h http.HandlerFunc) http.HandlerFunc {
 		respRecorder := httptest.NewRecorder()
 		h(respRecorder, r)
 
-		var rsResponseBody *map[string]interface{}
+		var rsResponseBody map[string]interface{}
 		if *reqCategory == category.ReactiveSearch {
 			requestID, err := requestid.FromContext(ctx)
 			if err != nil {
@@ -144,7 +144,7 @@ func (l *Logs) recorder(h http.HandlerFunc) http.HandlerFunc {
 		w.WriteHeader(respRecorder.Code)
 		w.Write(respRecorder.Body.Bytes())
 		// Record the document
-		go l.recordResponse(respRecorder, r, dumpRequest, rsResponseBody)
+		go l.recordResponse(respRecorder, r, dumpRequest, &rsResponseBody)
 	}
 }
 
