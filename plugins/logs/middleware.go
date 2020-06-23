@@ -103,6 +103,18 @@ func (l *Logs) recorder(h http.HandlerFunc) http.HandlerFunc {
 			h(w, r)
 			return
 		}
+		ctx := r.Context()
+
+		reqCategory, err := category.FromContext(ctx)
+		if err != nil {
+			log.Errorln(logTag, ":", err)
+			return
+		}
+		requestID, err := requestid.FromContext(r.Context())
+		if err != nil {
+			log.Errorln(logTag, "request id not found in context :", err)
+			return
+		}
 		// Serve using response recorder
 		respRecorder := httptest.NewRecorder()
 		h(respRecorder, r)
@@ -114,18 +126,14 @@ func (l *Logs) recorder(h http.HandlerFunc) http.HandlerFunc {
 		w.WriteHeader(respRecorder.Code)
 		w.Write(respRecorder.Body.Bytes())
 
-		requestID, err := requestid.FromContext(r.Context())
-		if err != nil {
-			log.Errorln(logTag, "request id not found in context :", err)
-			return
+		var rsResponseBody *map[string]interface{}
+		if *reqCategory == category.ReactiveSearch {
+			rsResponseBody = response.GetResponse(*requestID)
+			if rsResponseBody == nil {
+				log.Errorln(logTag, ":", "error reading response body")
+				return
+			}
 		}
-
-		rsResponseBody := response.GetResponse(*requestID)
-		if rsResponseBody == nil {
-			log.Errorln(logTag, ":", "error reading response body")
-			return
-		}
-
 		// Record the document
 		go l.recordResponse(respRecorder, r, *rsResponseBody)
 	}
