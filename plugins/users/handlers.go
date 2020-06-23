@@ -10,6 +10,7 @@ import (
 
 	"github.com/appbaseio/arc/model/acl"
 	"github.com/appbaseio/arc/model/user"
+	"github.com/appbaseio/arc/plugins/auth"
 	"github.com/appbaseio/arc/util"
 	"github.com/gorilla/mux"
 	"golang.org/x/crypto/bcrypt"
@@ -212,6 +213,8 @@ func (u *Users) patchUser() http.HandlerFunc {
 
 		_, err2 := u.es.patchUser(req.Context(), username, patch)
 		if err2 == nil {
+			// Clear username record from the cache
+			auth.ClearPassword(username)
 			util.WriteBackMessage(w, "User is updated successfully", http.StatusOK)
 			return
 		}
@@ -283,6 +286,8 @@ func (u *Users) patchUserWithUsername() http.HandlerFunc {
 
 		_, err2 := u.es.patchUser(req.Context(), username, patch)
 		if err2 == nil {
+			// Clear username record from the cache
+			auth.ClearPassword(username)
 			util.WriteBackMessage(w, "User is updated successfully", http.StatusOK)
 			return
 		}
@@ -299,6 +304,8 @@ func (u *Users) deleteUser() http.HandlerFunc {
 
 		ok, err := u.es.deleteUser(req.Context(), username)
 		if ok && err == nil {
+			// Clear username record from the cache
+			auth.ClearPassword(username)
 			msg := fmt.Sprintf(`user with "username"="%s" deleted`, username)
 			util.WriteBackMessage(w, msg, http.StatusOK)
 			return
@@ -321,6 +328,8 @@ func (u *Users) deleteUserWithUsername() http.HandlerFunc {
 
 		ok, err := u.es.deleteUser(req.Context(), username)
 		if ok && err == nil {
+			// Clear username record from the cache
+			auth.ClearPassword(username)
 			msg := fmt.Sprintf(`user with "username"="%s" deleted`, username)
 			util.WriteBackMessage(w, msg, http.StatusOK)
 			return
