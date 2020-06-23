@@ -10,14 +10,14 @@ var CurrentResponseProcessMutex = sync.RWMutex{}
 var Response = make(map[string]map[string]interface{})
 
 // GetResponse returns the response by request ID
-func GetResponse(requestID string) *map[string]interface{} {
+func GetResponse(requestID string) map[string]interface{} {
 	CurrentResponseProcessMutex.Lock()
 	defer CurrentResponseProcessMutex.Unlock()
 	response, ok := Response[requestID]
 	if !ok {
 		return nil
 	}
-	return &response
+	return response
 }
 
 // SaveResponse returns the response by request ID
