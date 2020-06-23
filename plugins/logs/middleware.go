@@ -16,7 +16,8 @@ import (
 	"github.com/appbaseio/arc/model/category"
 	"github.com/appbaseio/arc/model/index"
 	"github.com/appbaseio/arc/model/request"
-	responseCtx "github.com/appbaseio/arc/model/response"
+	"github.com/appbaseio/arc/model/requestid"
+	"github.com/appbaseio/arc/model/response"
 	"github.com/appbaseio/arc/plugins/auth"
 	"github.com/appbaseio/arc/util"
 )
@@ -113,12 +114,24 @@ func (l *Logs) recorder(h http.HandlerFunc) http.HandlerFunc {
 		w.WriteHeader(respRecorder.Code)
 		w.Write(respRecorder.Body.Bytes())
 
+		requestID, err := requestid.FromContext(r.Context())
+		if err != nil {
+			log.Errorln(logTag, "request id not found in context :", err)
+			return
+		}
+
+		rsResponseBody := response.GetResponse(*requestID)
+		if rsResponseBody == nil {
+			log.Errorln(logTag, ":", "error reading response body")
+			return
+		}
+
 		// Record the document
-		go l.recordResponse(respRecorder, r)
+		go l.recordResponse(respRecorder, r, *rsResponseBody)
 	}
 }
 
-func (l *Logs) recordResponse(w *httptest.ResponseRecorder, r *http.Request) {
+func (l *Logs) recordResponse(w *httptest.ResponseRecorder, r *http.Request, rsResponseBody map[string]interface{}) {
 	// Read the request body
 	reqBody, err := ioutil.ReadAll(r.Body)
 	if err != nil {
@@ -194,15 +207,9 @@ func (l *Logs) recordResponse(w *httptest.ResponseRecorder, r *http.Request) {
 			Body:    string(marshalled[:util.Min(len(marshalled), 1000000)]),
 			Method:  r.Method,
 		}
-		// Read response body from context
-		rsResponseBody, err := responseCtx.FromContext(ctx)
-		if err != nil {
-			log.Errorln(logTag, "error encountered while reading response body:", err)
-			return
-		}
 		// ignore error to record error logs
 		if err == nil {
-			took, ok := (*rsResponseBody)["settings"].(map[string]interface{})["took"].(float64)
+			took, ok := rsResponseBody["settings"].(map[string]interface{})["took"].(float64)
 			if !ok {
 				log.Errorln(logTag, "error encountered while parsing response body:", err)
 				return
