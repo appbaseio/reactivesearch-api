@@ -3,7 +3,7 @@ package response
 import "sync"
 
 // CurrentResponseProcessMutex to stop concurrent writes on map
-var CurrentResponseProcessMutex = sync.RWMutex{}
+var CurrentResponseProcessMutex = sync.Mutex{}
 
 // Response represents the cached API response for a request
 // Key is the unique ID for each request
