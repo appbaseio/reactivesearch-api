@@ -44,11 +44,6 @@ func RemoveKeyToResponse(requestID string, key string) bool {
 	return false
 }
 
-// SaveResponse returns the response by request ID
-func SaveResponse(requestID string, response map[string]interface{}) {
-	Response.Store(requestID, response)
-}
-
 // ClearResponse clears the cache for a particular request ID
 func ClearResponse(requestID string) {
 	Response.Delete(requestID)
