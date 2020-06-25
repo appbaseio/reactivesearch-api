@@ -25,16 +25,6 @@ func InitResponse(requestID string) {
 	Response.Store(requestID, &newMap)
 }
 
-// AddKeyToResponse adds/updates a key in the response for a particular request id
-func AddKeyToResponse(requestID string, key string, value interface{}) bool {
-	responseMap := GetResponse(requestID)
-	if responseMap != nil {
-		responseMap.Store(key, value)
-		return true
-	}
-	return false
-}
-
 // RemoveKeyToResponse removes a key in the response for a particular request id
 func RemoveKeyToResponse(requestID string, key string) bool {
 	responseMap := GetResponse(requestID)
