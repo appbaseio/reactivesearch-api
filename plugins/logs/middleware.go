@@ -229,7 +229,12 @@ func (l *Logs) recordResponse(w *httptest.ResponseRecorder, r *http.Request, req
 				rec.Response.Took = &took
 			}
 		}
-		marshalledRes, err := json.Marshal(rsResponseBody)
+		responseBodyMap := make(map[interface{}]interface{})
+		rsResponseBody.Range(func(key interface{}, value interface{}) bool {
+			responseBodyMap[key] = value
+			return true
+		})
+		marshalledRes, err := json.Marshal(responseBodyMap)
 		if err != nil {
 			log.Errorln(logTag, "error encountered while marshalling response body:", err)
 			return
