@@ -7,6 +7,7 @@ import (
 	"net/http/httptest"
 	"net/http/httputil"
 	"strings"
+	"sync"
 	"time"
 
 	log "github.com/sirupsen/logrus"
@@ -124,7 +125,7 @@ func (l *Logs) recorder(h http.HandlerFunc) http.HandlerFunc {
 		respRecorder := httptest.NewRecorder()
 		h(respRecorder, r)
 
-		var rsResponseBody map[string]interface{}
+		var rsResponseBody *sync.Map
 		if *reqCategory == category.ReactiveSearch {
 			requestID, err := requestid.FromContext(ctx)
 			if err != nil {
@@ -144,11 +145,11 @@ func (l *Logs) recorder(h http.HandlerFunc) http.HandlerFunc {
 		w.WriteHeader(respRecorder.Code)
 		w.Write(respRecorder.Body.Bytes())
 		// Record the document
-		go l.recordResponse(respRecorder, r, dumpRequest, &rsResponseBody)
+		go l.recordResponse(respRecorder, r, dumpRequest, rsResponseBody)
 	}
 }
 
-func (l *Logs) recordResponse(w *httptest.ResponseRecorder, r *http.Request, reqBody []byte, rsResponseBody *map[string]interface{}) {
+func (l *Logs) recordResponse(w *httptest.ResponseRecorder, r *http.Request, reqBody []byte, rsResponseBody *sync.Map) {
 	var headers = make(map[string][]string)
 
 	for key, values := range r.Header {
@@ -214,12 +215,17 @@ func (l *Logs) recordResponse(w *httptest.ResponseRecorder, r *http.Request, req
 			Body:    string(marshalled[:util.Min(len(marshalled), 1000000)]),
 			Method:  r.Method,
 		}
-		took, ok := (*rsResponseBody)["settings"].(map[string]interface{})["took"].(float64)
+		settings, ok := rsResponseBody.Load("settings")
 		if !ok {
-			// ignore error to record error logs
-			log.Errorln(logTag, "error encountered while parsing response body:", err)
+			log.Errorln(logTag, "error encountered while reading settings key from response body:", err)
 		} else {
-			rec.Response.Took = &took
+			took, ok := settings.(map[string]interface{})["took"].(float64)
+			if !ok {
+				// ignore error to record error logs
+				log.Errorln(logTag, "error encountered while parsing response body:", err)
+			} else {
+				rec.Response.Took = &took
+			}
 		}
 		marshalledRes, err := json.Marshal(rsResponseBody)
 		if err != nil {
