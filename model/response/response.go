@@ -21,7 +21,7 @@ func GetResponse(requestID string) *sync.Map {
 
 // InitResponse initializes the map to store response
 func InitResponse(requestID string) {
-	Response.Store(requestID, sync.Map{})
+	Response.Store(requestID, new(sync.Map))
 }
 
 // AddKeyToResponse adds/updates a key in the response for a particular request id
