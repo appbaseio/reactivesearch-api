@@ -12,25 +12,45 @@ func SetDefaultIndexTemplate() error {
 	replicas := GetReplicas()
 	settings := fmt.Sprintf(`{
 		"index.number_of_shards": 1,
-		"max_ngram_diff": 8,
-		"max_shingle_diff": 8,
 		"index.number_of_replicas": %d,
-		"analysis": {
+		"index.auto_expand_replicas": "0-1",
+		"index.max_ngram_diff": 8,
+		"index.max_shingle_diff": 8,
+		"index.mapping": {
+			"total_fields": {
+				"limit": "10000"
+			}
+		},
+		"index.analysis": {
 			"analyzer": {
 				"universal": {
-					"tokenizer": "standard",
 					"filter": [
+						"cjk_width",
+						"lowercase",
+						"asciifolding",
 						"universal_stop"
-					]
+					],
+					"tokenizer": "standard"
+				},
+				"universal_delimiter_analyzer": {
+					"filter": [
+						"delimiter",
+						"flatten_graph",
+						"cjk_width",
+						"lowercase",
+						"asciifolding",
+						"universal_stop",
+						"stemmer"
+					],
+					"tokenizer": "whitespace"
 				},
 				"autosuggest_analyzer": {
 					"filter": [
+						"cjk_width",
 						"lowercase",
-						"asciifolding",
-						"autosuggest_filter"
+						"asciifolding"
 					],
-					"tokenizer": "standard",
-					"type": "custom"
+					"tokenizer": "autosuggest_tokenizer"
 				},
 				"ngram_analyzer": {
 					"filter": [
@@ -38,15 +58,22 @@ func SetDefaultIndexTemplate() error {
 						"asciifolding",
 						"ngram_filter"
 					],
-					"tokenizer": "standard",
-					"type": "custom"
+					"tokenizer": "standard"
 				},
 				"synonyms": {
-					"tokenizer": "standard",
 					"filter": [
 						"synonym_graph",
 						"lowercase"
-					]
+					],
+					"tokenizer": "standard"
+				},
+				"ngram_search_analyzer": {
+					"filter": [
+						"cjk_width",
+						"lowercase",
+						"asciifolding"
+					],
+					"tokenizer": "standard"
 				}
 			},
 			"filter": {
@@ -58,27 +85,36 @@ func SetDefaultIndexTemplate() error {
 					"type": "stop",
 					"stopwords": "_english_"
 				},
-				"autosuggest_filter": {
-					"max_gram": "20",
-					"min_gram": "1",
-					"token_chars": [
-						"letter",
-						"digit",
-						"punctuation",
-						"symbol"
-					],
-					"type": "edge_ngram"
-				},
 				"ngram_filter": {
-					"max_gram": "9",
-					"min_gram": "2",
+					"max_gram": "7",
+					"min_gram": "3",
+					"type": "ngram"
+				},
+				"delimiter": {
+					"catenate_all": "true",
+					"catenate_numbers": "true",
+					"catenate_words": "true",
+					"split_on_numerics": "true",
+					"generate_word_parts": "true",
+					"generate_number_parts": "true",
+					"preserve_original": "false",
+					"split_on_case_change": "true",
+					"stem_english_possessive": "true",
+					"type": "word_delimiter_graph"
+				}
+			},
+			"tokenizer": {
+				"autosuggest_tokenizer": {
+					"type": "edge_ngram",
+					"min_gram": 1,
+					"max_gram": 20,
 					"token_chars": [
 						"letter",
 						"digit",
 						"punctuation",
-						"symbol"
-					],
-					"type": "ngram"
+						"symbol",
+						"whitespace"
+					]
 				}
 			}
 		} 
@@ -91,11 +127,17 @@ func SetDefaultIndexTemplate() error {
 				"mapping": {
 					"type": "text",
 					"analyzer": "standard",
+					"index_phrases": true,
+					"index_prefixes": {
+						"min_chars": 1,
+						"max_chars": 12
+					},
 					"fields": {
 						"autosuggest": {
 							"type": "text",
 							"analyzer": "autosuggest_analyzer",
-							"search_analyzer": "standard"
+							"search_analyzer": "ngram_search_analyzer",
+							"index_options": "docs"
 						},
 						"keyword": {
 							"type": "keyword",
@@ -104,7 +146,8 @@ func SetDefaultIndexTemplate() error {
 						"search": {
 							"type": "text",
 							"analyzer": "ngram_analyzer",
-							"search_analyzer": "standard"
+							"search_analyzer": "ngram_search_analyzer",
+							"index_options": "docs"
 						},
 						"synonyms": {
 							"type": "text",
@@ -112,7 +155,13 @@ func SetDefaultIndexTemplate() error {
 						},
 						"lang": {
 							"type": "text",
-							"analyzer": "universal"
+							"analyzer": "universal",
+							"index_options": "offsets"
+						},
+						"delimiter": {
+							"type": "text",
+							"analyzer": "universal_delimiter_analyzer",
+							"index_options": "offsets"
 						}
 					}
 				}
@@ -128,7 +177,7 @@ func SetDefaultIndexTemplate() error {
 			"settings": %s,
 			"mappings": %s
 		}`, settings, mappings)
-		_, err := GetClient7().IndexPutTemplate("default_temp").BodyString(defaultSetting).Do(context.Background())
+		_, err := GetClient7().IndexPutTemplate("arc_index_template_v1").BodyString(defaultSetting).Do(context.Background())
 		if err != nil {
 			log.Errorln("[SET TEMPLATE ERROR V7]", ": ", err)
 			return err
@@ -143,7 +192,7 @@ func SetDefaultIndexTemplate() error {
 				"_doc": %s
 			}
 		}`, settings, mappings)
-		_, err := GetClient6().IndexPutTemplate("default_temp").BodyString(defaultSetting).Do(context.Background())
+		_, err := GetClient6().IndexPutTemplate("arc_index_template_v1").BodyString(defaultSetting).Do(context.Background())
 		if err != nil {
 			log.Errorln("[SET TEMPLATE ERROR V6]", ": ", err)
 			return err

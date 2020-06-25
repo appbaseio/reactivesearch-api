@@ -3,6 +3,7 @@ package reindexer
 import (
 	"context"
 	"fmt"
+	"os"
 	"regexp"
 	"strconv"
 	"strings"
@@ -113,4 +114,22 @@ func IsReIndexInProcess(source, destination string) bool {
 	}
 
 	return false
+}
+
+// Returns the index name for search relevancy
+func getSearchRelevancyIndex() string {
+	searchRelevancyIndex := os.Getenv("SEARCH_RELEVANCY_ES_INDEX")
+	if searchRelevancyIndex == "" {
+		searchRelevancyIndex = ".searchrelevancy"
+	}
+	return searchRelevancyIndex
+}
+
+// Returns the index name for synonyms
+func getSynonymsIndex() string {
+	synonymsIndex := os.Getenv("SYNONYMS_ES_INDEX")
+	if synonymsIndex == "" {
+		synonymsIndex = ".synonyms"
+	}
+	return synonymsIndex
 }

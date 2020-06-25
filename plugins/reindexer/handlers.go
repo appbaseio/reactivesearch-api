@@ -14,12 +14,13 @@ import (
 )
 
 type reindexConfig struct {
-	Mappings map[string]interface{} `json:"mappings"`
-	Settings map[string]interface{} `json:"settings"`
-	Include  []string               `json:"include_fields"`
-	Exclude  []string               `json:"exclude_fields"`
-	Types    []string               `json:"types"`
-	Action   []string               `json:"action,omitempty"`
+	Mappings                map[string]interface{}  `json:"mappings"`
+	Settings                map[string]interface{}  `json:"settings"`
+	SearchRelevancySettings *map[string]interface{} `json:"search_relevancy_settings"`
+	Include                 []string                `json:"include_fields"`
+	Exclude                 []string                `json:"exclude_fields"`
+	Types                   []string                `json:"types"`
+	Action                  []string                `json:"action,omitempty"`
 }
 
 func (rx *reindexer) reindex() http.HandlerFunc {

@@ -75,7 +75,9 @@ func GetSemanticVersion() string {
 // HiddenIndexSettings to set plugin indices as hidden index
 func HiddenIndexSettings() string {
 	esVersion := GetSemanticVersion()
-	if strings.Contains(esVersion, "7.7") {
+	// Golang allows using comparision operators with strings
+	// test: https://play.golang.org/p/2F36GFe3L0A
+	if esVersion >= "7.7.0" {
 		return `"index.hidden": true,`
 	}
 

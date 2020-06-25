@@ -86,7 +86,7 @@ func reindex(ctx context.Context, sourceIndex string, config *reindexConfig, wai
 	// If mappings are not passed, we fetch the mappings of the old index.
 	if config.Mappings == nil {
 		found := util.IsExists(Mappings.String(), config.Action)
-		if config.Action == nil || found {
+		if len(config.Action) == 0 || found {
 			config.Mappings, err = mappingsOf(ctx, sourceIndex)
 			if err != nil {
 				return nil, fmt.Errorf(`error fetching mappings of index "%s": %v`, sourceIndex, err)
@@ -97,7 +97,7 @@ func reindex(ctx context.Context, sourceIndex string, config *reindexConfig, wai
 	// If settings are not passed, we fetch the settings of the old index.
 	if config.Settings == nil {
 		found := util.IsExists(Settings.String(), config.Action)
-		if config.Action == nil || found {
+		if len(config.Action) == 0 || found {
 			config.Settings, err = settingsOf(ctx, sourceIndex)
 			if err != nil {
 				return nil, fmt.Errorf(`error fetching settings of index "%s": %v`, sourceIndex, err)
@@ -132,10 +132,32 @@ func reindex(ctx context.Context, sourceIndex string, config *reindexConfig, wai
 		return nil, err
 	}
 
+	/* Copy search relevancy settings if
+	- `search_relevancy_settings` object is present
+	- and action array has the `search_relevancy` action defined
+	*/
+	if config.SearchRelevancySettings != nil && util.IsExists(SearchRelevancy.String(), config.Action) {
+		// Index a document in .searchrelevancy index for the destination `index`
+		err := putSearchRelevancySettings(ctx, newIndexName, *config.SearchRelevancySettings)
+		if err != nil {
+			return nil, fmt.Errorf(`error while copying search relevancy settings: %v`, err)
+		}
+	}
+
+	/* Copy Synonyms if `synonyms` action is set in the action array
+	 */
+	if util.IsExists(Synonyms.String(), config.Action) {
+		// Update synonyms by query
+		err := updateSynonyms(ctx, sourceIndex, newIndexName)
+		if err != nil {
+			return nil, fmt.Errorf(`error while updating the synonyms: %v`, err)
+		}
+	}
+
 	found := util.IsExists(Data.String(), config.Action)
 
 	// do not copy data
-	if !(config.Action == nil || found) {
+	if !(len(config.Action) == 0 || found) {
 		return nil, nil
 	}
 
@@ -477,5 +499,44 @@ func asyncReIndex(taskID, source, destination string, operation ReIndexOperation
 			}
 			return
 		}
+	}
+}
+
+func putSearchRelevancySettings(ctx context.Context, docID string, record map[string]interface{}) error {
+	_, err := util.GetClient7().
+		Index().
+		Refresh("wait_for").
+		Index(getSearchRelevancyIndex()).
+		BodyJson(record).
+		Id(docID).
+		Do(ctx)
+	if err != nil {
+		log.Errorln(logTag, ": error indexing searchrelevancy record for id=", docID, ":", err)
+		return err
+	}
+	return nil
+}
+
+func updateSynonyms(ctx context.Context, sourceIndex string, destinationIndex string) error {
+	script := `
+		if(ctx._source.index == null) { 
+			ctx._source.index = [] 
+		} 
+		if(ctx._source.index instanceof String) { 
+			ctx._source.index = [ctx._source.index] 
+		} 
+		if (params.index != null) { 
+			if (ctx._source.index.indexOf(params.index) == -1) { 
+				ctx._source.index.add(params.index) 
+			}
+		}`
+	params := map[string]interface{}{
+		"index": destinationIndex,
+	}
+	switch util.GetVersion() {
+	case 6:
+		return updateSynonymsEs6(ctx, script, sourceIndex, params)
+	default:
+		return updateSynonymsEs7(ctx, script, sourceIndex, params)
 	}
 }
