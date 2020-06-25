@@ -12,16 +12,17 @@ func GetResponse(requestID string) *sync.Map {
 	if !ok {
 		return nil
 	}
-	responseAsMap, ok := response.(sync.Map)
+	responseAsMap, ok := response.(*sync.Map)
 	if !ok {
 		return nil
 	}
-	return &responseAsMap
+	return responseAsMap
 }
 
 // InitResponse initializes the map to store response
 func InitResponse(requestID string) {
-	Response.Store(requestID, new(sync.Map))
+	newMap := sync.Map{}
+	Response.Store(requestID, &newMap)
 }
 
 // AddKeyToResponse adds/updates a key in the response for a particular request id
