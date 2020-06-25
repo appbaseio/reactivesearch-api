@@ -191,7 +191,8 @@ func SetDefaultIndexTemplate() error {
 			"settings": %s,
 			"mappings": {
 				"_doc": %s
-			}
+			},
+			"order": 10
 		}`, settings, mappings)
 		_, err := GetClient6().IndexPutTemplate("arc_index_template_v1").BodyString(defaultSetting).Do(context.Background())
 		if err != nil {
