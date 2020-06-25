@@ -175,7 +175,8 @@ func SetDefaultIndexTemplate() error {
 		defaultSetting := fmt.Sprintf(`{
 			"index_patterns": ["*"],
 			"settings": %s,
-			"mappings": %s
+			"mappings": %s,
+			"order": 10
 		}`, settings, mappings)
 		_, err := GetClient7().IndexPutTemplate("arc_index_template_v1").BodyString(defaultSetting).Do(context.Background())
 		if err != nil {
