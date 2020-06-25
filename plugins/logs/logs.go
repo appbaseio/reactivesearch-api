@@ -85,7 +85,7 @@ func (l *Logs) InitFunc() error {
 	// configure lumberjack
 	l.lumberjack = lumberjack.Logger{
 		Filename:   filePath,
-		MaxSize:    500,
+		MaxSize:    1000,
 		MaxBackups: 3,
 		MaxAge:     30, //days
 	}
