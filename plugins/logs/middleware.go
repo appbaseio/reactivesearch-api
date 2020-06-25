@@ -229,9 +229,14 @@ func (l *Logs) recordResponse(w *httptest.ResponseRecorder, r *http.Request, req
 				rec.Response.Took = &took
 			}
 		}
-		responseBodyMap := make(map[interface{}]interface{})
+		responseBodyMap := make(map[string]interface{})
 		rsResponseBody.Range(func(key interface{}, value interface{}) bool {
-			responseBodyMap[key] = value
+			keyAsString, ok := key.(string)
+			if !ok {
+				log.Errorln(logTag, "error encountered while parsing map key as string")
+				return false
+			}
+			responseBodyMap[keyAsString] = value
 			return true
 		})
 		marshalledRes, err := json.Marshal(responseBodyMap)
