@@ -162,12 +162,10 @@ func (a *Auth) basicAuth(h http.HandlerFunc) http.HandlerFunc {
 				// if the request is made to elasticsearch using user credentials, then the user has to be an admin
 				reqUser := obj.(*user.User)
 				// No need to validate if already validated before
-				if !IsPasswordExist(reqUser.Username, password) {
-					if hasBasicAuth && !IsPasswordExist(reqUser.Username, password) && bcrypt.CompareHashAndPassword([]byte(reqUser.Password), []byte(password)) != nil {
-						w.Header().Set("www-authenticate", "Basic realm=\"Authentication Required\"")
-						util.WriteBackError(w, "invalid password", http.StatusUnauthorized)
-						return
-					}
+				if hasBasicAuth && !IsPasswordExist(reqUser.Username, password) && bcrypt.CompareHashAndPassword([]byte(reqUser.Password), []byte(password)) != nil {
+					w.Header().Set("www-authenticate", "Basic realm=\"Authentication Required\"")
+					util.WriteBackError(w, "invalid password", http.StatusUnauthorized)
+					return
 				}
 				// Save validated username to avoid the bcrypt comparison
 				SavePassword(reqUser.Username, password)
