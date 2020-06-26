@@ -32,5 +32,5 @@ func FromContext(ctx context.Context) (*Response, error) {
 	if !ok {
 		return nil, errors.NewInvalidCastError("ctxACL", "*category.Categories")
 	}
-	return reqACL, nil
+	return &reqACL, nil
 }
