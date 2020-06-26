@@ -166,6 +166,22 @@ func SetDefaultIndexTemplate() error {
 					}
 				}
 			}
+		},
+		{
+			"double": {
+				"match_mapping_type": "double",
+				"mapping": {
+					"type": "keyword"
+				}
+			}
+		},
+		{
+			"long": {
+				"match_mapping_type": "long",
+				"mapping": {
+					"type": "keyword"
+				}
+			}
 		}],
 		"dynamic": true
 	}`
