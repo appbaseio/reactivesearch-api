@@ -7,7 +7,6 @@ import (
 	"net/http/httptest"
 	"net/http/httputil"
 	"strings"
-	"sync"
 	"time"
 
 	log "github.com/sirupsen/logrus"
@@ -123,7 +122,7 @@ func (l *Logs) recorder(h http.HandlerFunc) http.HandlerFunc {
 		// Serve using response recorder
 		respRecorder := httptest.NewRecorder()
 		h(respRecorder, r)
-		var rsResponseBody *sync.Map
+		var rsResponseBody *response.Response
 		if *reqCategory == category.ReactiveSearch {
 			rsResponse, err := response.FromContext(ctx)
 			if err != nil {
@@ -131,7 +130,7 @@ func (l *Logs) recorder(h http.HandlerFunc) http.HandlerFunc {
 				util.WriteBackError(w, "error reading response body", http.StatusInternalServerError)
 				return
 			}
-			rsResponseBody = rsResponse.Response
+			rsResponseBody = rsResponse
 		}
 		// Copy the response to writer
 		for k, v := range respRecorder.Header() {
@@ -145,7 +144,7 @@ func (l *Logs) recorder(h http.HandlerFunc) http.HandlerFunc {
 	}
 }
 
-func (l *Logs) recordResponse(w *httptest.ResponseRecorder, r *http.Request, reqBody []byte, rsResponseBody *sync.Map) {
+func (l *Logs) recordResponse(w *httptest.ResponseRecorder, r *http.Request, reqBody []byte, rsResponseBody *response.Response) {
 	var headers = make(map[string][]string)
 
 	for key, values := range r.Header {
@@ -211,7 +210,9 @@ func (l *Logs) recordResponse(w *httptest.ResponseRecorder, r *http.Request, req
 			Body:    string(marshalled[:util.Min(len(marshalled), 1000000)]),
 			Method:  r.Method,
 		}
-		settings, ok := rsResponseBody.Load("settings")
+		rsResponseBody.L.Lock()
+		defer rsResponseBody.L.Unlock()
+		settings, ok := rsResponseBody.Response["settings"]
 		if !ok {
 			log.Errorln(logTag, "error encountered while reading settings key from response body:", err)
 		} else {
@@ -223,17 +224,7 @@ func (l *Logs) recordResponse(w *httptest.ResponseRecorder, r *http.Request, req
 				rec.Response.Took = &took
 			}
 		}
-		responseBodyMap := make(map[string]interface{})
-		rsResponseBody.Range(func(key interface{}, value interface{}) bool {
-			keyAsString, ok := key.(string)
-			if !ok {
-				log.Errorln(logTag, "error encountered while parsing map key as string")
-				return false
-			}
-			responseBodyMap[keyAsString] = value
-			return true
-		})
-		marshalledRes, err := json.Marshal(responseBodyMap)
+		marshalledRes, err := json.Marshal(rsResponseBody.Response)
 		if err != nil {
 			log.Errorln(logTag, "error encountered while marshalling response body:", err)
 			return

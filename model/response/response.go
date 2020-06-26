@@ -14,7 +14,7 @@ const ctxKey = contextKey("response")
 
 type Response struct {
 	L        *sync.RWMutex
-	Response *sync.Map
+	Response map[string]interface{}
 }
 
 // NewContext returns a new context with the given response body.
