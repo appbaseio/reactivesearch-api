@@ -192,15 +192,13 @@ func intercept(h http.HandlerFunc) http.HandlerFunc {
 						modifiedBody := []byte(modifiedBodyString)
 						req.Body = ioutil.NopCloser(bytes.NewReader(modifiedBody))
 					} else {
-						body, err := ioutil.ReadAll(req.Body)
+						reqBody := make(map[string]interface{})
+						err := json.NewDecoder(req.Body).Decode(&reqBody)
 						if err != nil {
 							log.Errorln(logTag, ":", err)
 							util.WriteBackError(w, err.Error(), http.StatusInternalServerError)
 							return
 						}
-						d := json.NewDecoder(ioutil.NopCloser(bytes.NewReader(body)))
-						reqBody := make(map[string]interface{})
-						d.Decode(&reqBody)
 						reqBody["_source"] = sources
 						modifiedBody, _ := json.Marshal(reqBody)
 						req.Body = ioutil.NopCloser(bytes.NewReader(modifiedBody))

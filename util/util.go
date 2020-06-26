@@ -287,3 +287,11 @@ func CheckIfIndexExists(ctx context.Context, indexName string) bool {
 	}
 	return exists
 }
+
+// Min return min of two integers
+func Min(a, b int) int {
+	if a < b {
+		return a
+	}
+	return b
+}

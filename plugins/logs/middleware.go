@@ -1,12 +1,12 @@
 package logs
 
 import (
-	"bytes"
-	"context"
 	"encoding/json"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
+	"net/http/httputil"
+	"strings"
 	"time"
 
 	log "github.com/sirupsen/logrus"
@@ -16,6 +16,8 @@ import (
 	"github.com/appbaseio/arc/middleware/validate"
 	"github.com/appbaseio/arc/model/category"
 	"github.com/appbaseio/arc/model/index"
+	"github.com/appbaseio/arc/model/request"
+	"github.com/appbaseio/arc/model/response"
 	"github.com/appbaseio/arc/plugins/auth"
 	"github.com/appbaseio/arc/util"
 )
@@ -101,47 +103,55 @@ func (l *Logs) recorder(h http.HandlerFunc) http.HandlerFunc {
 			h(w, r)
 			return
 		}
+		ctx := r.Context()
 
-		// Read the request body
-		reqBody, err := ioutil.ReadAll(r.Body)
+		reqCategory, err := category.FromContext(ctx)
 		if err != nil {
-			log.Errorln(logTag, ": unable to read request body: ", err)
-			util.WriteBackError(w, "Can't read request body", http.StatusInternalServerError)
+			log.Errorln(logTag, ":", err)
 			return
 		}
 
-		r.Body = ioutil.NopCloser(bytes.NewBuffer(reqBody))
-
-		var headers = make(map[string][]string)
-
-		for key, values := range r.Header {
-			headers[key] = values
-		}
-
-		request := Request{
-			URI:     r.URL.Path,
-			Headers: headers,
-			Body:    string(reqBody),
-			Method:  r.Method,
+		var dumpRequest []byte
+		if *reqCategory != category.ReactiveSearch {
+			dumpRequest, err = httputil.DumpRequest(r, true)
+			if err != nil {
+				log.Errorln(logTag, ":", err.Error())
+				return
+			}
 		}
 		// Serve using response recorder
 		respRecorder := httptest.NewRecorder()
 		h(respRecorder, r)
-
+		var rsResponseBody *response.Response
+		if *reqCategory == category.ReactiveSearch {
+			rsResponse, err := response.FromContext(ctx)
+			if err != nil {
+				log.Errorln(logTag, ":", err)
+				util.WriteBackError(w, "error reading response body", http.StatusInternalServerError)
+				return
+			}
+			rsResponseBody = rsResponse
+		}
 		// Copy the response to writer
 		for k, v := range respRecorder.Header() {
 			w.Header()[k] = v
 		}
 		w.WriteHeader(respRecorder.Code)
 		w.Write(respRecorder.Body.Bytes())
-
 		// Record the document
-		go l.recordResponse(&request, respRecorder, r)
+
+		go l.recordResponse(respRecorder, r, dumpRequest, rsResponseBody)
 	}
 }
 
-func (l *Logs) recordResponse(request *Request, w *httptest.ResponseRecorder, req *http.Request) {
-	ctx := req.Context()
+func (l *Logs) recordResponse(w *httptest.ResponseRecorder, r *http.Request, reqBody []byte, rsResponseBody *response.Response) {
+	var headers = make(map[string][]string)
+
+	for key, values := range r.Header {
+		headers[key] = values
+	}
+
+	ctx := r.Context()
 
 	reqCategory, err := category.FromContext(ctx)
 	if err != nil {
@@ -160,9 +170,6 @@ func (l *Logs) recordResponse(request *Request, w *httptest.ResponseRecorder, re
 	rec.Category = *reqCategory
 	rec.Timestamp = time.Now()
 
-	// record request
-	rec.Request = *request
-
 	// record response
 	response := w.Result()
 	rec.Response.Code = response.StatusCode
@@ -174,7 +181,6 @@ func (l *Logs) recordResponse(request *Request, w *httptest.ResponseRecorder, re
 		log.Errorln(logTag, "can't read response body: ", err)
 		return
 	}
-	rec.Response.Body = string(responseBody)
 	if *reqCategory == category.Search {
 		var resBody SearchResponseBody
 		err := json.Unmarshal(responseBody, &resBody)
@@ -187,15 +193,69 @@ func (l *Logs) recordResponse(request *Request, w *httptest.ResponseRecorder, re
 		}
 	}
 	if *reqCategory == category.ReactiveSearch {
-		var resBody ResponseBodyRS
-		err := json.Unmarshal(responseBody, &resBody)
+		// Read request body from context
+		rsRequestBody, err := request.FromContext(ctx)
+		// ignore error to record > 500 status code logs
 		if err != nil {
-			log.Errorln(logTag, "error encountered while parsing the response: ", err)
+			log.Errorln(logTag, "error encountered while reading request body:", err)
 		}
-		// ignore error to record error logs
-		if err == nil {
-			rec.Response.Took = &resBody.Settings.Took
+		marshalled, err := json.Marshal(rsRequestBody)
+		if err != nil {
+			log.Errorln(logTag, "error encountered while marshalling request body:", err)
+			return
 		}
+		rec.Request = Request{
+			URI:     r.URL.Path,
+			Headers: headers,
+			Body:    string(marshalled[:util.Min(len(marshalled), 1000000)]),
+			Method:  r.Method,
+		}
+		rsResponseBody.L.Lock()
+		defer rsResponseBody.L.Unlock()
+		settings, ok := rsResponseBody.Response["settings"]
+		if !ok {
+			log.Errorln(logTag, "error encountered while reading settings key from response body:", err)
+		} else {
+			took, ok := settings.(map[string]interface{})["took"].(float64)
+			if !ok {
+				// ignore error to record error logs
+				log.Errorln(logTag, "error encountered while parsing response body:", err)
+			} else {
+				rec.Response.Took = &took
+			}
+		}
+		marshalledRes, err := json.Marshal(rsResponseBody.Response)
+		if err != nil {
+			log.Errorln(logTag, "error encountered while marshalling response body:", err)
+			return
+		}
+		rec.Response.Body = string(marshalledRes[:util.Min(len(marshalledRes), 1000000)])
+	} else {
+		requestBody := strings.Split(string(reqBody), "\r\n\r\n")
+		var parsedBody []byte
+		if len(requestBody) > 1 {
+			parsedBody = []byte(requestBody[1])
+		}
+		// record request
+		rec.Request = Request{
+			URI:     r.URL.Path,
+			Headers: headers,
+			Body:    string(parsedBody[:util.Min(len(parsedBody), 1000000)]),
+			Method:  r.Method,
+		}
+		rec.Response.Body = string(responseBody[:util.Min(len(responseBody), 1000000)])
 	}
-	l.es.indexRecord(context.Background(), rec)
+	marshalledLog, err := json.Marshal(rec)
+	if err != nil {
+		log.Errorln(logTag, "error encountered while marshalling record :", err)
+		return
+	}
+	n, err := l.lumberjack.Write(marshalledLog)
+	if err != nil {
+		log.Errorln(logTag, "error encountered while writing logs :", err)
+		return
+	}
+	// Add new line character so filebeat can sync it with ES
+	l.lumberjack.Write([]byte("\n"))
+	log.Println(logTag, "logged request successfully", n)
 }
