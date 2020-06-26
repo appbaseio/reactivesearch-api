@@ -166,6 +166,22 @@ func SetDefaultIndexTemplate() error {
 					}
 				}
 			}
+		},
+		{
+			"double": {
+				"match_mapping_type": "double",
+				"mapping": {
+					"type": "keyword"
+				}
+			}
+		},
+		{
+			"long": {
+				"match_mapping_type": "long",
+				"mapping": {
+					"type": "keyword"
+				}
+			}
 		}],
 		"dynamic": true
 	}`
@@ -175,7 +191,8 @@ func SetDefaultIndexTemplate() error {
 		defaultSetting := fmt.Sprintf(`{
 			"index_patterns": ["*"],
 			"settings": %s,
-			"mappings": %s
+			"mappings": %s,
+			"order": 10
 		}`, settings, mappings)
 		_, err := GetClient7().IndexPutTemplate("arc_index_template_v1").BodyString(defaultSetting).Do(context.Background())
 		if err != nil {
@@ -190,7 +207,8 @@ func SetDefaultIndexTemplate() error {
 			"settings": %s,
 			"mappings": {
 				"_doc": %s
-			}
+			},
+			"order": 10
 		}`, settings, mappings)
 		_, err := GetClient6().IndexPutTemplate("arc_index_template_v1").BodyString(defaultSetting).Do(context.Background())
 		if err != nil {
