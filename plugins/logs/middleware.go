@@ -126,7 +126,7 @@ func (l *Logs) recorder(h http.HandlerFunc) http.HandlerFunc {
 		var rsResponseBody *sync.Map
 		if *reqCategory == category.ReactiveSearch {
 			rsResponse, err := response.FromContext(ctx)
-			if err == nil {
+			if err != nil {
 				log.Errorln(logTag, ":", err)
 				util.WriteBackError(w, "error reading response body", http.StatusInternalServerError)
 				return
