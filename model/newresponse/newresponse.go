@@ -13,8 +13,8 @@ type contextKey string
 const CtxKey = contextKey("response")
 
 type Response struct {
-	l        *sync.RWMutex
-	response *sync.Map
+	L        *sync.RWMutex
+	Response *sync.Map
 }
 
 // NewContext returns a new context with the given request body.
