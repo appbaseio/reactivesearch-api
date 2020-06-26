@@ -1,41 +1,36 @@
 package response
 
-import "sync"
+import (
+	"context"
+	"sync"
 
-// Response represents the cached API response for a request
-// Key is the unique ID for each request
-var Response = sync.Map{}
+	"github.com/appbaseio/arc/errors"
+)
 
-// GetResponse returns the response by request ID
-func GetResponse(requestID string) *sync.Map {
-	response, ok := Response.Load(requestID)
+type contextKey string
+
+// CtxKey is a key against which api response will get stored in the context.
+const ctxKey = contextKey("response")
+
+type Response struct {
+	L        *sync.RWMutex
+	Response *sync.Map
+}
+
+// NewContext returns a new context with the given response body.
+func NewContext(ctx context.Context, response Response) context.Context {
+	return context.WithValue(ctx, ctxKey, response)
+}
+
+// FromContext retrieves the api response body stored against the response.ctxKey from the context.
+func FromContext(ctx context.Context) (*Response, error) {
+	ctxResponse := ctx.Value(ctxKey)
+	if ctxResponse == nil {
+		return nil, errors.NewNotFoundInContextError("Response")
+	}
+	responseBody, ok := ctxResponse.(Response)
 	if !ok {
-		return nil
+		return nil, errors.NewInvalidCastError("responseBody", "Response")
 	}
-	responseAsMap, ok := response.(*sync.Map)
-	if !ok {
-		return nil
-	}
-	return responseAsMap
-}
-
-// InitResponse initializes the map to store response
-func InitResponse(requestID string) {
-	newMap := sync.Map{}
-	Response.Store(requestID, &newMap)
-}
-
-// RemoveKeyToResponse removes a key in the response for a particular request id
-func RemoveKeyToResponse(requestID string, key string) bool {
-	responseMap := GetResponse(requestID)
-	if responseMap != nil {
-		responseMap.Delete(key)
-		return true
-	}
-	return false
-}
-
-// ClearResponse clears the cache for a particular request ID
-func ClearResponse(requestID string) {
-	Response.Delete(requestID)
+	return &responseBody, nil
 }

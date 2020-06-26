@@ -18,7 +18,6 @@ import (
 	"github.com/appbaseio/arc/model/category"
 	"github.com/appbaseio/arc/model/index"
 	"github.com/appbaseio/arc/model/request"
-	"github.com/appbaseio/arc/model/requestid"
 	"github.com/appbaseio/arc/model/response"
 	"github.com/appbaseio/arc/plugins/auth"
 	"github.com/appbaseio/arc/util"
@@ -126,18 +125,13 @@ func (l *Logs) recorder(h http.HandlerFunc) http.HandlerFunc {
 		h(respRecorder, r)
 		var rsResponseBody *sync.Map
 		if *reqCategory == category.ReactiveSearch {
-			requestID, err := requestid.FromContext(ctx)
-			if err != nil {
-				log.Errorln(logTag, ":", err)
-				util.WriteBackError(w, "request id not found in context", http.StatusInternalServerError)
-				return
-			}
-			rsResponseBody = response.GetResponse(*requestID)
-			if rsResponseBody == nil {
+			rsResponse, err := response.FromContext(ctx)
+			if err == nil {
 				log.Errorln(logTag, ":", err)
 				util.WriteBackError(w, "error reading response body", http.StatusInternalServerError)
 				return
 			}
+			rsResponseBody = rsResponse.Response
 		}
 		// Copy the response to writer
 		for k, v := range respRecorder.Header() {
