@@ -28,7 +28,7 @@ func FromContext(ctx context.Context) (*Response, error) {
 	if ctxRequest == nil {
 		return nil, errors.NewNotFoundInContextError("*category.Categories")
 	}
-	reqACL, ok := ctxRequest.(*Response)
+	reqACL, ok := ctxRequest.(Response)
 	if !ok {
 		return nil, errors.NewInvalidCastError("ctxACL", "*category.Categories")
 	}
