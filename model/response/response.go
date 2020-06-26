@@ -14,8 +14,7 @@ const ctxKey = contextKey("response")
 
 type Response struct {
 	L        *sync.RWMutex
-	Wg       *sync.WaitGroup // use to control the go routine executions
-	Command  chan string
+	Command  chan string // use to control the go routine executions
 	Response map[string]interface{}
 }
 
