@@ -362,7 +362,7 @@ func getAliasedIndices(ctx context.Context) ([]AliasedIndices, error) {
 	v := url.Values{}
 	v.Set("format", "json")
 
-	if util.GetSemanticVersion() > "7.7.0" {
+	if util.GetSemanticVersion() >= "7.7.0" {
 		v.Add("expand_wildcards", "all")
 	}
 
