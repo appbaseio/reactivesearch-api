@@ -117,10 +117,19 @@ func (es *elasticsearch) rolloverIndexJob(alias string) {
 	settingsString := fmt.Sprintf(`{%s "index.number_of_shards": 1, "index.number_of_replicas": %d}`, util.HiddenIndexSettings(), util.GetReplicas())
 	settings := make(map[string]interface{})
 	json.Unmarshal([]byte(settingsString), &settings)
+
+	mappingString := LogsMappings
+	if util.GetVersion() == 6 {
+		mappingString = fmt.Sprintf(`{"_doc": %s}`, LogsMappings)
+	}
+
+	mappings := make(map[string]interface{})
+	json.Unmarshal([]byte(mappingString), &mappings)
 	rolloverService, err := es7.NewIndicesRolloverService(util.GetClient7()).
 		Alias(alias).
 		Conditions(rolloverConditions).
 		Settings(settings).
+		Mappings(mappings).
 		Do(ctx)
 	if err != nil {
 		log.Printf(logTag, "error while creating a rollover service %s %v", alias, err)
