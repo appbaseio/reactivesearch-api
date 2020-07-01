@@ -42,7 +42,13 @@ func initPlugin(alias, config string) (*elasticsearch, error) {
 	}
 
 	replicas := util.GetReplicas()
-	settings := fmt.Sprintf(config, alias, util.HiddenIndexSettings(), replicas)
+
+	settings := fmt.Sprintf(config, alias, util.HiddenIndexSettings(), replicas, LogsMappings)
+
+	if util.GetVersion() == 6 {
+		mappings := fmt.Sprintf(`{"_doc": %s}`, LogsMappings)
+		settings = fmt.Sprintf(config, alias, util.HiddenIndexSettings(), replicas, mappings)
+	}
 	// Meta index doesn't exist, create one
 	indexName := alias + `-000001`
 	// this works for ES6 client as well
