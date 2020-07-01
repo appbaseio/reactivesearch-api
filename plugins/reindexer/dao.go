@@ -157,7 +157,7 @@ func reindex(ctx context.Context, sourceIndex string, config *reindexConfig, wai
 
 	// do not copy data
 	if !(len(config.Action) == 0 || found) {
-		return nil, nil
+		return json.Marshal(make(map[string]interface{}))
 	}
 
 	// Configure reindex source
