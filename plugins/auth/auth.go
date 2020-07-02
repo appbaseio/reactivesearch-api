@@ -43,7 +43,6 @@ type Cache struct {
 }
 
 // CredentialCache represents the cached users/credentials where key is `username`
-// Auth (TODO - clear cache after fixed entries: LRU?)
 var CredentialCache = Cache{
 	mu:    sync.RWMutex{},
 	cache: make(map[string]credential.AuthCredential),
