@@ -12,6 +12,7 @@ import (
 	"github.com/appbaseio/arc/model/index"
 	"github.com/appbaseio/arc/model/permission"
 	"github.com/appbaseio/arc/model/user"
+	"github.com/appbaseio/arc/plugins/auth"
 	"github.com/appbaseio/arc/util"
 	"github.com/gorilla/mux"
 )
@@ -255,6 +256,10 @@ func (p *permissions) deletePermission() http.HandlerFunc {
 
 		ok, err := p.es.deletePermission(req.Context(), username)
 		if ok && err == nil {
+			// Clear username record from the cache
+			auth.ClearPassword(username)
+			// Clear user record from the user cache
+			auth.RemoveCredentialFromCache(username)
 			msg := fmt.Sprintf(`permission with "username"="%s" deleted`, username)
 			util.WriteBackMessage(w, msg, http.StatusOK)
 			return

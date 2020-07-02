@@ -118,6 +118,7 @@ func (u *Users) postUser() http.HandlerFunc {
 			msg := fmt.Sprintf("an error occurred while hashing password: %v", userBody.Password)
 			log.Errorln(logTag, ":", msg, ":", err)
 			util.WriteBackError(w, msg, http.StatusInternalServerError)
+			return
 		}
 
 		var newUser *user.User
@@ -211,10 +212,24 @@ func (u *Users) patchUser() http.HandlerFunc {
 			}
 		}
 
+		// If user is trying to update the password then store the hashed password
+		if patch["password"] != nil {
+			hashedPassword, err := bcrypt.GenerateFromPassword([]byte(userBody.Password), bcrypt.DefaultCost)
+			if err != nil {
+				msg := fmt.Sprintf("an error occurred while hashing password: %v", userBody.Password)
+				log.Errorln(logTag, ":", msg, ":", err)
+				util.WriteBackError(w, msg, http.StatusInternalServerError)
+				return
+			}
+			patch["password"] = string(hashedPassword)
+		}
+
 		_, err2 := u.es.patchUser(req.Context(), username, patch)
 		if err2 == nil {
 			// Clear username record from the cache
 			auth.ClearPassword(username)
+			// Clear user record from the user cache
+			auth.RemoveCredentialFromCache(username)
 			util.WriteBackMessage(w, "User is updated successfully", http.StatusOK)
 			return
 		}
@@ -284,10 +299,24 @@ func (u *Users) patchUserWithUsername() http.HandlerFunc {
 			}
 		}
 
+		// If user is trying to update the password then store the hashed password
+		if patch["password"] != nil {
+			hashedPassword, err := bcrypt.GenerateFromPassword([]byte(userBody.Password), bcrypt.DefaultCost)
+			if err != nil {
+				msg := fmt.Sprintf("an error occurred while hashing password: %v", userBody.Password)
+				log.Errorln(logTag, ":", msg, ":", err)
+				util.WriteBackError(w, msg, http.StatusInternalServerError)
+				return
+			}
+			patch["password"] = string(hashedPassword)
+		}
+
 		_, err2 := u.es.patchUser(req.Context(), username, patch)
 		if err2 == nil {
 			// Clear username record from the cache
 			auth.ClearPassword(username)
+			// Clear user record from the user cache
+			auth.RemoveCredentialFromCache(username)
 			util.WriteBackMessage(w, "User is updated successfully", http.StatusOK)
 			return
 		}
@@ -306,6 +335,8 @@ func (u *Users) deleteUser() http.HandlerFunc {
 		if ok && err == nil {
 			// Clear username record from the cache
 			auth.ClearPassword(username)
+			// Clear user record from the user cache
+			auth.RemoveCredentialFromCache(username)
 			msg := fmt.Sprintf(`user with "username"="%s" deleted`, username)
 			util.WriteBackMessage(w, msg, http.StatusOK)
 			return
@@ -330,6 +361,8 @@ func (u *Users) deleteUserWithUsername() http.HandlerFunc {
 		if ok && err == nil {
 			// Clear username record from the cache
 			auth.ClearPassword(username)
+			// Clear user record from the user cache
+			auth.RemoveCredentialFromCache(username)
 			msg := fmt.Sprintf(`user with "username"="%s" deleted`, username)
 			util.WriteBackMessage(w, msg, http.StatusOK)
 			return

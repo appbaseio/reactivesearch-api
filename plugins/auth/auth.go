@@ -36,10 +36,20 @@ var (
 	once      sync.Once
 )
 
-// Auth (TODO - clear cache after fixed entries: LRU?)
+// Cache represents the struct for CredentialCache
+type Cache struct {
+	mu    sync.RWMutex
+	cache map[string]credential.AuthCredential
+}
+
+// CredentialCache represents the cached users/credentials where key is `username`
+var CredentialCache = Cache{
+	mu:    sync.RWMutex{},
+	cache: make(map[string]credential.AuthCredential),
+}
+
 type Auth struct {
 	mu              sync.Mutex
-	credentialCache map[string]credential.AuthCredential
 	jwtRsaPublicKey *rsa.PublicKey
 	jwtRoleKey      string
 	es              authService
@@ -50,9 +60,7 @@ type Auth struct {
 // the instance of the plugin, in order to avoid stateless duplicates.
 func Instance() *Auth {
 	once.Do(func() {
-		singleton = &Auth{
-			credentialCache: make(map[string]credential.AuthCredential),
-		}
+		singleton = &Auth{}
 	})
 	return singleton
 }

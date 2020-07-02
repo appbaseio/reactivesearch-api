@@ -186,8 +186,8 @@ func (a *Auth) basicAuth(h http.HandlerFunc) http.HandlerFunc {
 				}
 
 				// cache the user
-				if _, ok := a.cachedCredential(username); !ok {
-					a.cacheCredential(username, reqUser)
+				if _, ok := GetCachedCredential(username); !ok {
+					SaveCredentialToCache(username, reqUser)
 				}
 
 				// store request user and credential identifier in the context
@@ -212,8 +212,8 @@ func (a *Auth) basicAuth(h http.HandlerFunc) http.HandlerFunc {
 				}
 
 				// cache the permission
-				if _, ok := a.cachedCredential(username); !ok {
-					a.cacheCredential(username, reqPermission)
+				if _, ok := GetCachedCredential(username); !ok {
+					SaveCredentialToCache(username, reqPermission)
 				}
 
 				// store the request permission and credential identifier in the context
@@ -234,7 +234,7 @@ func (a *Auth) basicAuth(h http.HandlerFunc) http.HandlerFunc {
 		// remove user/permission from cache on write operation
 		if *reqOp == op.Write || *reqOp == op.Delete {
 			username := mux.Vars(req)["username"]
-			a.removeCredentialFromCache(username)
+			RemoveCredentialFromCache(username)
 		}
 
 		h(w, req)
@@ -242,34 +242,37 @@ func (a *Auth) basicAuth(h http.HandlerFunc) http.HandlerFunc {
 }
 
 func (a *Auth) getCredential(ctx context.Context, username string) (credential.AuthCredential, error) {
-	c, ok := a.cachedCredential(username)
+	c, ok := GetCachedCredential(username)
 	if ok {
 		return c, nil
 	}
 	return a.es.getCredential(ctx, username)
 }
 
-func (a *Auth) cachedCredential(username string) (credential.AuthCredential, bool) {
-	a.mu.Lock()
-	defer a.mu.Unlock()
-	if c, ok := a.credentialCache[username]; ok {
+// GetCachedCredential returns the cached credential
+func GetCachedCredential(username string) (credential.AuthCredential, bool) {
+	CredentialCache.mu.Lock()
+	defer CredentialCache.mu.Unlock()
+	if c, ok := CredentialCache.cache[username]; ok {
 		return c, ok
 	}
 	return nil, false
 }
 
-func (a *Auth) removeCredentialFromCache(username string) {
-	a.mu.Lock()
-	defer a.mu.Unlock()
-	delete(a.credentialCache, username)
+// RemoveCredentialFromCache removes the credential from the cache
+func RemoveCredentialFromCache(username string) {
+	CredentialCache.mu.Lock()
+	defer CredentialCache.mu.Unlock()
+	delete(CredentialCache.cache, username)
 }
 
-func (a *Auth) cacheCredential(username string, c credential.AuthCredential) {
+// SaveCredentialToCache saves the credential to the cache
+func SaveCredentialToCache(username string, c credential.AuthCredential) {
 	if c == nil {
 		log.Println(logTag, ": cannot cache 'nil' credential, skipping...")
 		return
 	}
-	a.mu.Lock()
-	defer a.mu.Unlock()
-	a.credentialCache[username] = c
+	CredentialCache.mu.Lock()
+	CredentialCache.cache[username] = c
+	CredentialCache.mu.Unlock()
 }
