@@ -13,6 +13,7 @@ const (
 	ArcStandard
 	ArcEnterprise
 	HostedArcBasic
+	HostedArcBasicV2
 	HostedArcStandard
 	HostedArcEnterprise
 	Sandbox
@@ -40,6 +41,7 @@ func (o Plan) String() string {
 		"arc-standard",
 		"arc-enterprise",
 		"hosted-arc-basic",
+		"hosted-arc-basic-v2",
 		"hosted-arc-standard",
 		"hosted-arc-enterprise",
 		"sandbox",
@@ -77,6 +79,8 @@ func (o *Plan) UnmarshalJSON(bytes []byte) error {
 		*o = ArcEnterprise
 	case HostedArcBasic.String():
 		*o = HostedArcBasic
+	case HostedArcBasicV2.String():
+		*o = HostedArcBasicV2
 	case HostedArcStandard.String():
 		*o = HostedArcStandard
 	case HostedArcEnterprise.String():
@@ -131,6 +135,8 @@ func (o Plan) MarshalJSON() ([]byte, error) {
 		plan = ArcEnterprise.String()
 	case HostedArcBasic:
 		plan = HostedArcBasic.String()
+	case HostedArcBasicV2:
+		plan = HostedArcBasicV2.String()
 	case HostedArcStandard:
 		plan = HostedArcStandard.String()
 	case HostedArcEnterprise:
