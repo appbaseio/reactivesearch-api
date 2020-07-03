@@ -77,3 +77,16 @@ func GetFeatureSearchRelevancy() bool {
 func SetFeatureSearchRelevancy(val bool) {
 	featureSearchRelevancy = val
 }
+
+// Feature search grader
+var featureSearchGrader bool
+
+// GetFeatureSearchGrader returns the featureSearchGrader
+func GetFeatureSearchGrader() bool {
+	return featureSearchGrader
+}
+
+// SetFeatureSearchGrader sets the featureSearchGrader
+func SetFeatureSearchGrader(val bool) {
+	featureSearchGrader = val
+}
