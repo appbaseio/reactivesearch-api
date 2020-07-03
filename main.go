@@ -190,6 +190,8 @@ func main() {
 	if FeatureSearchRelevancy != "" && FeatureSearchRelevancy == "true" {
 		util.SetFeatureSearchRelevancy(true)
 	}
+	// Set port variable
+	util.Port = port
 
 	// ES client instantiation
 	// ES v7 and v6 clients
