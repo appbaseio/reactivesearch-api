@@ -63,6 +63,8 @@ var (
 	FeatureFunctions string
 	// FeatureSearchRelevancy for testing
 	FeatureSearchRelevancy string
+	// FeatureSearchGrader for testing
+	FeatureSearchGrader string
 )
 
 func init() {
@@ -172,24 +174,29 @@ func main() {
 		}
 		util.SetTier(temp2.Tier)
 	}
-	if FeatureCustomEvents != "" && FeatureCustomEvents == "true" {
+	if FeatureCustomEvents == "true" {
 		util.SetFeatureCustomEvents(true)
 	}
-	if FeatureSuggestions != "" && FeatureSuggestions == "true" {
+	if FeatureSuggestions == "true" {
 		util.SetFeatureSuggestions(true)
 	}
-	if FeatureRules != "" && FeatureRules == "true" {
+	if FeatureRules == "true" {
 		util.SetFeatureRules(true)
 	}
-	if FeatureFunctions != "" && FeatureFunctions == "true" {
+	if FeatureFunctions == "true" {
 		util.SetFeatureFunctions(true)
 	}
-	if FeatureTemplates != "" && FeatureTemplates == "true" {
+	if FeatureTemplates == "true" {
 		util.SetFeatureTemplates(true)
 	}
-	if FeatureSearchRelevancy != "" && FeatureSearchRelevancy == "true" {
+	if FeatureSearchRelevancy == "true" {
 		util.SetFeatureSearchRelevancy(true)
 	}
+	if FeatureSearchGrader == "true" {
+		util.SetFeatureSearchGrader(true)
+	}
+	// Set port variable
+	util.Port = port
 
 	// ES client instantiation
 	// ES v7 and v6 clients
