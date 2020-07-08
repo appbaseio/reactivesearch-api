@@ -442,10 +442,15 @@ func getAliasIndexMap(ctx context.Context) (map[string]string, error) {
 
 func getIndexSize(ctx context.Context, indexName string) (int64, error) {
 	var res int64
-	index := classify.GetAliasIndex(indexName)
-	if index == "" {
-		index = indexName
+	index := indexName
+	aliasesIndexMap, err := getAliasIndexMap(ctx)
+	if err != nil {
+		return res, err
 	}
+	if indexNameFromMap, ok := aliasesIndexMap[indexName]; ok {
+		index = indexNameFromMap
+	}
+
 	stats, err := util.GetClient7().IndexStats(indexName).Do(ctx)
 	if err != nil {
 		return res, err
