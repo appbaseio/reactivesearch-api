@@ -5,6 +5,7 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
+	"strings"
 
 	log "github.com/sirupsen/logrus"
 
@@ -52,10 +53,18 @@ func (es *elasticsearch) handler() http.HandlerFunc {
 			}
 		}
 
+		params := r.URL.Query()
+		formatParam := params.Get("format")
+		// need to add check for `strings.Contains(r.URL.Path, "_cat")` because
+		// ACL for root route `/` is also `Cat`.
+		if *reqACL == acl.Cat && strings.Contains(r.URL.Path, "_cat") && formatParam == "" {
+			params.Add("format", "text")
+		}
+
 		requestOptions := es7.PerformRequestOptions{
 			Method:  r.Method,
 			Path:    r.URL.Path,
-			Params:  r.URL.Query(),
+			Params:  params,
 			Headers: headers,
 		}
 
