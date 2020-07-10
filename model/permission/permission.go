@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net"
+	"os"
 	"regexp"
 	"strings"
 	"time"
@@ -449,11 +450,20 @@ func (p *Permission) CanAccessCluster() (bool, error) {
 
 // CanAccessIndex checks whether the permission has access to given index or index pattern.
 func (p *Permission) CanAccessIndex(name string) (bool, error) {
-	for _, pattern := range p.Indices {
+	indices := p.Indices
+	// If permission has suggestions category present then allow access to `.suggestions` index
+	if p.HasCategory(category.Suggestions) {
+		suggestionsIndex := os.Getenv("SUGGESTIONS_META_ES_INDEX")
+		if suggestionsIndex == "" {
+			suggestionsIndex = ".suggestions"
+		}
+		indices = append(indices, suggestionsIndex)
+	}
+	for _, pattern := range indices {
 		pattern = strings.Replace(pattern, "*", ".*", -1)
 		matched, err := regexp.MatchString(pattern, name)
 		if err != nil {
-			log.Errorln("invalid index regexp", pattern, "encontered: ", err)
+			log.Errorln("invalid index regexp", pattern, "encountered: ", err)
 			return false, err
 		}
 		if matched {
