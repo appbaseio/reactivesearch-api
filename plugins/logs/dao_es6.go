@@ -6,6 +6,7 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
+	"github.com/appbaseio/arc/model/category"
 	"github.com/appbaseio/arc/util"
 	es6 "gopkg.in/olivere/elastic.v6"
 )
@@ -18,7 +19,7 @@ func (es *elasticsearch) getRawLogsES6(ctx context.Context, logsFilter logsFilte
 	query := es6.NewBoolQuery().Filter(duration)
 	// apply category filter
 	if logsFilter.Filter == "search" {
-		filters := es6.NewTermQuery("category.keyword", "search")
+		filters := es6.NewTermsQuery("category.keyword", []interface{}{"search", category.ReactiveSearch.String()}...)
 		query.Filter(filters)
 	} else if logsFilter.Filter == "delete" {
 		filters := es6.NewMatchQuery("request.method.keyword", "DELETE")

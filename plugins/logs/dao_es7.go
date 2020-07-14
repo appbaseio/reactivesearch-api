@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 
+	"github.com/appbaseio/arc/model/category"
 	"github.com/appbaseio/arc/util"
 	es7 "github.com/olivere/elastic/v7"
 )
@@ -16,7 +17,7 @@ func (es *elasticsearch) getRawLogsES7(ctx context.Context, logsFilter logsFilte
 	query := es7.NewBoolQuery().Filter(duration)
 	// apply category filter
 	if logsFilter.Filter == "search" {
-		filters := es7.NewTermQuery("category.keyword", "search")
+		filters := es7.NewTermsQuery("category.keyword", []interface{}{"search", category.ReactiveSearch.String()}...)
 		query.Filter(filters)
 	} else if logsFilter.Filter == "delete" {
 		filters := es7.NewMatchQuery("request.method.keyword", "DELETE")
