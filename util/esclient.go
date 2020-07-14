@@ -2,6 +2,7 @@ package util
 
 import (
 	"fmt"
+	"net/url"
 	"os"
 	"strconv"
 	"strings"
@@ -39,11 +40,34 @@ func GetClient6() *es6.Client {
 	return client6
 }
 
+// GetESURL returns elasticsearch url with escaped auth
+func GetESURL() string {
+	esURL := os.Getenv("ES_CLUSTER_URL")
+
+	if esURL == "" {
+		log.Fatal("Error encountered: ", fmt.Errorf("ES_CLUSTER_URL must be set in the environment variables"))
+	}
+
+	if strings.Contains(esURL, "@") {
+		splitIndex := strings.LastIndex(esURL, "@")
+		protocolWithCredentials := strings.Split(esURL[0:splitIndex], "://")
+		credentials := protocolWithCredentials[1]
+		protocol := protocolWithCredentials[0]
+		host := esURL[splitIndex+1:]
+
+		credentialSeparator := strings.Index(credentials, ":")
+		username := credentials[0:credentialSeparator]
+		password := credentials[credentialSeparator+1:]
+		esURL = protocol + "://" + url.PathEscape(username) + ":" + url.PathEscape(password) + "@" + host
+	}
+	return esURL
+}
+
 // GetVersion returns the es version
 func GetVersion() int {
 	// Get the version if not present
 	if version == 0 {
-		esVersion, err := client7.ElasticsearchVersion(getURL())
+		esVersion, err := client7.ElasticsearchVersion(GetESURL())
 		if err != nil {
 			log.Fatal("Error encountered: ", fmt.Errorf("error while retrieving the elastic version: %v", err))
 		}
@@ -62,7 +86,7 @@ func GetVersion() int {
 func GetSemanticVersion() string {
 	// Get the version if not present
 	if semanticVersion == "" {
-		esVersion, err := client7.ElasticsearchVersion(getURL())
+		esVersion, err := client7.ElasticsearchVersion(GetESURL())
 		if err != nil {
 			log.Fatal("Error encountered: ", fmt.Errorf("error while retrieving the elastic version: %v", err))
 		} else {
@@ -84,14 +108,6 @@ func HiddenIndexSettings() string {
 	return ""
 }
 
-func getURL() string {
-	url := os.Getenv("ES_CLUSTER_URL")
-	if url == "" {
-		log.Fatal("Error encountered: ", fmt.Errorf("ES_CLUSTER_URL must be set in the environment variables"))
-	}
-	return url
-}
-
 func isSniffingEnabled() bool {
 	setSniffing := os.Getenv("SET_SNIFFING")
 	sniffing := false
@@ -110,7 +126,7 @@ func initClient6() {
 
 	// Initialize the ES v6 client
 	client6, err = es6.NewClient(
-		es6.SetURL(getURL()),
+		es6.SetURL(GetESURL()),
 		es6.SetRetrier(NewRetrier()),
 		es6.SetSniff(isSniffingEnabled()),
 		es6.SetHttpClient(HTTPClient()),
@@ -133,7 +149,7 @@ func initClient7() {
 	wrappedLoggerError := &WrapKitLoggerError{*loggerT}
 
 	client7, err = es7.NewClient(
-		es7.SetURL(getURL()),
+		es7.SetURL(GetESURL()),
 		es7.SetRetrier(NewRetrier()),
 		es7.SetSniff(isSniffingEnabled()),
 		es7.SetHttpClient(HTTPClient()),
