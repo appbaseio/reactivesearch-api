@@ -99,14 +99,9 @@ func reindex(ctx context.Context, sourceIndex string, config *reindexConfig, wai
 	}
 
 	// If settings are not passed, we fetch the settings of the old index.
-	if config.Settings == nil {
-		found := util.IsExists(Settings.String(), config.Action)
-		if len(config.Action) == 0 || found {
-			config.Settings, err = settingsOf(ctx, sourceIndex)
-			if err != nil {
-				return nil, fmt.Errorf(`error fetching settings of index "%s": %v`, sourceIndex, err)
-			}
-		}
+	config.Settings, err = settingsOf(ctx, sourceIndex)
+	if err != nil {
+		return nil, fmt.Errorf(`error fetching settings of index "%s": %v`, sourceIndex, err)
 	}
 
 	// Setup the destination index prior to running the _reindex action.
