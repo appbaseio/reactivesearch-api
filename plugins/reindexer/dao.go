@@ -113,7 +113,18 @@ func reindex(ctx context.Context, sourceIndex string, config *reindexConfig, wai
 		// set number of replicas to 0 while reindexing
 		indexSettingsAsMap, ok := config.Settings["index"].(map[string]interface{})
 		if replicasVal, ok := indexSettingsAsMap["number_of_replicas"]; ok {
-			replicas = replicasVal.(int)
+			if replicasInt, ok := replicasVal.(int); ok {
+				replicas = replicasInt
+			}
+
+			if replicasString, ok := replicasVal.(string); ok {
+				replicasInt, err := strconv.Atoi(replicasString)
+				if err != nil {
+					log.Errorln(logTag, " unable to parse replica value", err)
+				} else {
+					replicas = replicasInt
+				}
+			}
 		}
 
 		if ok {
