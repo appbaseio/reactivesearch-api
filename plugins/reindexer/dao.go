@@ -17,7 +17,7 @@ import (
 	es7 "github.com/olivere/elastic/v7"
 )
 
-func postReIndex(ctx context.Context, sourceIndex, newIndexName string, operation ReIndexOperation, replicas int) error {
+func postReIndex(ctx context.Context, sourceIndex, newIndexName string, operation ReIndexOperation, replicas interface{}) error {
 	// Fetch all the aliases of old index
 	alias, err := aliasesOf(ctx, sourceIndex)
 
@@ -45,7 +45,7 @@ func postReIndex(ctx context.Context, sourceIndex, newIndexName string, operatio
 		}
 	}
 
-	_, err = util.GetClient7().IndexPutSettings(newIndexName).BodyString(fmt.Sprintf(`{"index.number_of_replicas": %d}`, replicas)).Do(ctx)
+	_, err = util.GetClient7().IndexPutSettings(newIndexName).BodyString(fmt.Sprintf(`{"index.number_of_replicas": %v}`, replicas)).Do(ctx)
 	if err != nil {
 		return err
 	}
@@ -98,42 +98,38 @@ func reindex(ctx context.Context, sourceIndex string, config *reindexConfig, wai
 		}
 	}
 
-	replicas := util.GetReplicas()
+	// original index settings
+	originalSettings, err := settingsOf(ctx, sourceIndex)
+	if err != nil {
+		return nil, fmt.Errorf(`error fetching settings of index "%s": %v`, sourceIndex, err)
+	}
+
+	replicas := originalSettings["index.number_of_replicas"]
 
 	// If settings are not passed, we fetch the settings of the old index.
 	if config.Settings == nil {
 		found := util.IsExists(Settings.String(), config.Action)
 		if len(config.Action) == 0 || found {
-			config.Settings, err = settingsOf(ctx, sourceIndex)
-			if err != nil {
-				return nil, fmt.Errorf(`error fetching settings of index "%s": %v`, sourceIndex, err)
-			}
+			config.Settings = originalSettings
 		}
-	} else {
-		// set number of replicas to 0 while reindexing
-		indexSettingsAsMap, ok := config.Settings["index"].(map[string]interface{})
-		if replicasVal, ok := indexSettingsAsMap["number_of_replicas"]; ok {
-			if replicasInt, ok := replicasVal.(int); ok {
-				replicas = replicasInt
-			}
-
-			if replicasString, ok := replicasVal.(string); ok {
-				replicasInt, err := strconv.Atoi(replicasString)
-				if err != nil {
-					log.Errorln(logTag, " unable to parse replica value", err)
-				} else {
-					replicas = replicasInt
-				}
-			}
-		}
-
-		if ok {
-			indexSettingsAsMap["number_of_replicas"] = 0
-			indexSettingsAsMap["auto_expand_replicas"] = false
-		}
-
-		config.Settings["index"] = indexSettingsAsMap
 	}
+
+	indexSettingsAsMap, _ := config.Settings["index"].(map[string]interface{})
+	// update replicas if passed by frontend
+	if replicasVal, ok := indexSettingsAsMap["number_of_replicas"]; ok {
+		replicas = replicasVal
+	}
+
+	// if number of shards is not passed from the frontend then get the original index shards
+	if _, ok := indexSettingsAsMap["number_of_shards"]; !ok {
+		indexSettingsAsMap["number_of_shards"] = originalSettings["index.number_of_shards"]
+	}
+
+	// override replicas to 0 while re-indexing
+	indexSettingsAsMap["number_of_replicas"] = 0
+	indexSettingsAsMap["auto_expand_replicas"] = false
+
+	config.Settings["index"] = indexSettingsAsMap
 
 	// Setup the destination index prior to running the _reindex action.
 	body := make(map[string]interface{})
@@ -292,8 +288,7 @@ func settingsOf(ctx context.Context, indexName string) (map[string]interface{}, 
 
 	settings["index"] = make(map[string]interface{})
 	settings["index.number_of_shards"] = indexSettings["number_of_shards"]
-	settings["index.number_of_replicas"] = 0
-	settings["index.auto_expand_replicas"] = false
+	settings["index.number_of_replicas"] = indexSettings["number_of_replicas"]
 	analysis, found := indexSettings["analysis"]
 	if found {
 		settings["analysis"] = analysis
@@ -512,7 +507,7 @@ func isTaskCompleted(ctx context.Context, taskID string) (bool, error) {
 
 // go routine to track async re-indexing process for a given source and destination index.
 // it checks every 30s if task is completed or not.
-func asyncReIndex(taskID, source, destination string, operation ReIndexOperation, replicas int) {
+func asyncReIndex(taskID, source, destination string, operation ReIndexOperation, replicas interface{}) {
 	SetCurrentProcess(taskID, source, destination)
 	isCompleted := make(chan bool, 1)
 	ticker := time.Tick(30 * time.Second)
