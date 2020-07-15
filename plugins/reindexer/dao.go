@@ -45,10 +45,10 @@ func postReIndex(ctx context.Context, sourceIndex, newIndexName string, operatio
 		}
 	}
 
-	// _, err = util.GetClient7().IndexPutSettings(newIndexName).BodyString(fmt.Sprintf(`{"index.number_of_replicas": %d}`, util.GetReplicas())).Do(ctx)
-	// if err != nil {
-	// 	return err
-	// }
+	_, err = util.GetClient7().IndexPutSettings(newIndexName).BodyString(fmt.Sprintf(`{"index.number_of_replicas": %d}`, util.GetReplicas())).Do(ctx)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
