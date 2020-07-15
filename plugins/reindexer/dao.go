@@ -45,10 +45,10 @@ func postReIndex(ctx context.Context, sourceIndex, newIndexName string, operatio
 		}
 	}
 
-	_, err = util.GetClient7().IndexPutSettings(newIndexName).BodyString(fmt.Sprintf(`{"index.number_of_replicas": %d}`, util.GetReplicas())).Do(ctx)
-	if err != nil {
-		return err
-	}
+	// _, err = util.GetClient7().IndexPutSettings(newIndexName).BodyString(fmt.Sprintf(`{"index.number_of_replicas": %d}`, util.GetReplicas())).Do(ctx)
+	// if err != nil {
+	// 	return err
+	// }
 	return nil
 }
 
@@ -99,9 +99,24 @@ func reindex(ctx context.Context, sourceIndex string, config *reindexConfig, wai
 	}
 
 	// If settings are not passed, we fetch the settings of the old index.
-	config.Settings, err = settingsOf(ctx, sourceIndex)
-	if err != nil {
-		return nil, fmt.Errorf(`error fetching settings of index "%s": %v`, sourceIndex, err)
+	if config.Settings == nil {
+		found := util.IsExists(Settings.String(), config.Action)
+		if len(config.Action) == 0 || found {
+			config.Settings, err = settingsOf(ctx, sourceIndex)
+			if err != nil {
+				return nil, fmt.Errorf(`error fetching settings of index "%s": %v`, sourceIndex, err)
+			}
+		}
+	} else {
+		// set number of replicas to 0 while reindexing
+		config.Settings["index"] = make(map[string]interface{})
+		settingsAsMap, ok := config.Settings["index"].(map[string]interface{})
+		if ok {
+			settingsAsMap["number_of_replicas"] = 0
+			settingsAsMap["auto_expand_replicas"] = false
+		}
+
+		config.Settings["index"] = settingsAsMap
 	}
 
 	// Setup the destination index prior to running the _reindex action.
