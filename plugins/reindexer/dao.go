@@ -44,6 +44,11 @@ func postReIndex(ctx context.Context, sourceIndex, newIndexName string, operatio
 			return errors.New(`error setting alias for ` + newIndexName + "\n" + err.Error())
 		}
 	}
+
+	// _, err = util.GetClient7().IndexPutSettings(newIndexName).BodyString(fmt.Sprintf(`{"index.number_of_replicas": %d}`, util.GetReplicas())).Do(ctx)
+	// if err != nil {
+	// 	return err
+	// }
 	return nil
 }
 
@@ -185,6 +190,7 @@ func reindex(ctx context.Context, sourceIndex string, config *reindexConfig, wai
 		if operation == ReIndexWithDelete {
 			err = postReIndex(ctx, sourceIndex, newIndexName, ReIndexWithDelete)
 			if err != nil {
+				log.Errorln(logTag, " post re-indexing error: ", err)
 				return nil, err
 			}
 		}
@@ -259,8 +265,9 @@ func settingsOf(ctx context.Context, indexName string) (map[string]interface{}, 
 	settings := make(map[string]interface{})
 
 	settings["index"] = make(map[string]interface{})
-	settings["index.number_of_shards"] = 1
-	settings["index.number_of_replicas"] = util.GetReplicas()
+	settings["index.number_of_shards"] = indexSettings["number_of_shards"]
+	settings["index.number_of_replicas"] = 0
+	settings["index.auto_expand_replicas"] = false
 	analysis, found := indexSettings["analysis"]
 	if found {
 		settings["analysis"] = analysis
