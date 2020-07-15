@@ -109,14 +109,15 @@ func reindex(ctx context.Context, sourceIndex string, config *reindexConfig, wai
 		}
 	} else {
 		// set number of replicas to 0 while reindexing
-		config.Settings["index"] = make(map[string]interface{})
-		settingsAsMap, ok := config.Settings["index"].(map[string]interface{})
+		indexSettingsAsMap, ok := config.Settings["index"].(map[string]interface{})
+		fmt.Println("=> settings map", indexSettingsAsMap)
 		if ok {
-			settingsAsMap["number_of_replicas"] = 0
-			settingsAsMap["auto_expand_replicas"] = false
+			indexSettingsAsMap["number_of_replicas"] = 0
+			indexSettingsAsMap["auto_expand_replicas"] = false
 		}
 
-		config.Settings["index"] = settingsAsMap
+		config.Settings["index"] = indexSettingsAsMap
+		fmt.Println("=> final settings", config.Settings)
 	}
 
 	// Setup the destination index prior to running the _reindex action.
