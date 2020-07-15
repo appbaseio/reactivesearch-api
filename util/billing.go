@@ -414,7 +414,7 @@ func ReportUsage() {
 		return
 	}
 
-	NodeCount, err = fetchNodeCount(url)
+	NodeCount, err = fetchNodeCount()
 	if err != nil || NodeCount <= 0 {
 		log.Errorln("Unable to fetch a correct node count:", err)
 	}
@@ -463,7 +463,7 @@ func ReportHostedArcUsage() {
 		return
 	}
 
-	NodeCount, err = fetchNodeCount(url)
+	NodeCount, err = fetchNodeCount()
 	if err != nil || NodeCount <= 0 {
 		log.Errorln("Unable to fetch a correct node count:", err)
 	}
@@ -492,7 +492,7 @@ func ReportHostedArcUsage() {
 }
 
 // fetchNodeCount returns the number of current ElasticSearch nodes
-func fetchNodeCount(url string) (int, error) {
+func fetchNodeCount() (int, error) {
 	nodes, err := GetTotalNodes()
 	if err != nil {
 		return 0, err

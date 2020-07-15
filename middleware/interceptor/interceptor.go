@@ -3,7 +3,6 @@ package interceptor
 import (
 	"net/http"
 	"net/url"
-	"os"
 
 	log "github.com/sirupsen/logrus"
 
@@ -24,7 +23,7 @@ func Redirect() middleware.Middleware {
 
 func redirect(h http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		rawURL := os.Getenv("ES_CLUSTER_URL")
+		rawURL := util.GetESURL()
 		if rawURL == "" {
 			err := errors.NewEnvVarNotSetError(envEsClusterURL)
 			log.Errorln(logTag, ":", err)
