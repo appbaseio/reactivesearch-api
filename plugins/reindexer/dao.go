@@ -129,6 +129,14 @@ func reindex(ctx context.Context, sourceIndex string, config *reindexConfig, wai
 	indexSettingsAsMap["number_of_replicas"] = 0
 	indexSettingsAsMap["auto_expand_replicas"] = false
 
+	// delete the values `index.settings` that we set in settings of as we have already set them as part of config.Settings[index] map
+	if _, ok := config.Settings["index.number_of_replicas"]; ok {
+		delete(config.Settings, "index.number_of_replicas")
+	}
+	if _, ok := config.Settings["index.number_of_shards"]; ok {
+		delete(config.Settings, "index.number_of_shards")
+	}
+
 	config.Settings["index"] = indexSettingsAsMap
 
 	// Setup the destination index prior to running the _reindex action.
