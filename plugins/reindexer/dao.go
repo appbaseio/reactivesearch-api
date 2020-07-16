@@ -106,7 +106,7 @@ func reindex(ctx context.Context, sourceIndex string, config *reindexConfig, wai
 
 	replicas := originalSettings["index.number_of_replicas"]
 
-	// If settings are not passed, we fetch the settings of the old index.
+	// If settings are not passed, we use the settings of the original index
 	if config.Settings == nil {
 		found := util.IsExists(Settings.String(), config.Action)
 		if len(config.Action) == 0 || found {
@@ -114,13 +114,16 @@ func reindex(ctx context.Context, sourceIndex string, config *reindexConfig, wai
 		}
 	}
 
-	indexSettingsAsMap, _ := config.Settings["index"].(map[string]interface{})
+	indexSettingsAsMap := make(map[string]interface{})
+	if config.Settings["index"] != nil {
+		indexSettingsAsMap = config.Settings["index"].(map[string]interface{})
+	}
 	// update replicas if passed by frontend
 	if replicasVal, ok := indexSettingsAsMap["number_of_replicas"]; ok {
 		replicas = replicasVal
 	}
 
-	// if number of shards is not passed from the frontend then get the original index shards
+	// if number of shards is not passed from the frontend, then get the original index shards
 	if _, ok := indexSettingsAsMap["number_of_shards"]; !ok {
 		indexSettingsAsMap["number_of_shards"] = originalSettings["index.number_of_shards"]
 	}
