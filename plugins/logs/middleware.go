@@ -210,26 +210,32 @@ func (l *Logs) recordResponse(w *httptest.ResponseRecorder, r *http.Request, req
 			Body:    string(marshalled[:util.Min(len(marshalled), 1000000)]),
 			Method:  r.Method,
 		}
-		rsResponseBody.L.Lock()
-		defer rsResponseBody.L.Unlock()
-		settings, ok := rsResponseBody.Response["settings"]
-		if !ok {
-			log.Errorln(logTag, "error encountered while reading settings key from response body:", err)
+		if rec.Response.Code > http.StatusOK {
+			// read error response from response recorder body
+			rec.Response.Body = string(responseBody[:util.Min(len(responseBody), 1000000)])
 		} else {
-			took, ok := settings.(map[string]interface{})["took"].(float64)
+			// read success response from context
+			rsResponseBody.L.Lock()
+			defer rsResponseBody.L.Unlock()
+			settings, ok := rsResponseBody.Response["settings"]
 			if !ok {
-				// ignore error to record error logs
-				log.Errorln(logTag, "error encountered while parsing response body:", err)
+				log.Errorln(logTag, "error encountered while reading settings key from response body:", err)
 			} else {
-				rec.Response.Took = &took
+				took, ok := settings.(map[string]interface{})["took"].(float64)
+				if !ok {
+					// ignore error to record error logs
+					log.Errorln(logTag, "error encountered while parsing response body:", err)
+				} else {
+					rec.Response.Took = &took
+				}
 			}
+			marshalledRes, err := json.Marshal(rsResponseBody.Response)
+			if err != nil {
+				log.Errorln(logTag, "error encountered while marshalling response body:", err)
+				return
+			}
+			rec.Response.Body = string(marshalledRes[:util.Min(len(marshalledRes), 1000000)])
 		}
-		marshalledRes, err := json.Marshal(rsResponseBody.Response)
-		if err != nil {
-			log.Errorln(logTag, "error encountered while marshalling response body:", err)
-			return
-		}
-		rec.Response.Body = string(marshalledRes[:util.Min(len(marshalledRes), 1000000)])
 	} else {
 		requestBody := strings.Split(string(reqBody), "\r\n\r\n")
 		var parsedBody []byte
