@@ -83,41 +83,94 @@ func rangeQueryParams(values url.Values) NormalizedQueryParams {
 	}
 }
 
+func (l *Logs) logsHandler(w http.ResponseWriter, req *http.Request, isSearchLogs bool) {
+	indices := util.IndicesFromRequest(req)
+
+	offset := req.URL.Query().Get("from")
+	if offset == "" {
+		offset = "0"
+	}
+
+	parsedOffset, err := strconv.Atoi(offset)
+	if err != nil {
+		errMsg := fmt.Errorf(`invalid value "%v" for query param "from"`, offset)
+		log.Errorln(logTag, ": ", errMsg)
+		util.WriteBackError(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	rangeParams := rangeQueryParams(req.URL.Query())
+
+	filter := req.URL.Query().Get("filter")
+
+	logsFilterConfig := logsFilter{
+		Offset:    parsedOffset,
+		StartDate: rangeParams.StartDate,
+		EndDate:   rangeParams.EndDate,
+		Size:      rangeParams.Size,
+		Filter:    filter,
+		Indices:   indices,
+	}
+
+	// Apply Search request filters
+	if isSearchLogs {
+		startLatency := req.URL.Query().Get("start_latency")
+		if startLatency != "" {
+			startLatencyAsInt, err := strconv.Atoi(startLatency)
+			if err != nil {
+				errMsg := fmt.Errorf(`invalid value "%v" for query param "start_latency"`, startLatency)
+				log.Errorln(logTag, ": ", errMsg)
+				util.WriteBackError(w, err.Error(), http.StatusBadRequest)
+				return
+			}
+			logsFilterConfig.StartLatency = &startLatencyAsInt
+		}
+		endLatency := req.URL.Query().Get("end_latency")
+		if endLatency != "" {
+			endLatencyAsInt, err := strconv.Atoi(endLatency)
+			if err != nil {
+				errMsg := fmt.Errorf(`invalid value "%v" for query param "end_latency"`, endLatency)
+				log.Errorln(logTag, ": ", errMsg)
+				util.WriteBackError(w, errMsg.Error(), http.StatusBadRequest)
+				return
+			}
+			logsFilterConfig.EndLatency = &endLatencyAsInt
+		}
+		orderBy := req.URL.Query().Get("order_by_latency")
+		if orderBy != "" {
+			if !(orderBy == "asc" || orderBy == "desc") {
+				errMsg := fmt.Errorf(`invalid value "%v" for query param "order_by_latency"`, orderBy)
+				log.Errorln(logTag, ": ", errMsg)
+				util.WriteBackError(w, errMsg.Error(), http.StatusBadRequest)
+				return
+			}
+			logsFilterConfig.OrderByLatency = orderBy
+		} else {
+			// If not defined set default order_by value to `desc`
+			logsFilterConfig.OrderByLatency = "desc"
+		}
+		// Use search filter to always get search requests
+		logsFilterConfig.Filter = "search"
+	}
+
+	raw, err := l.es.getRawLogs(req.Context(), logsFilterConfig)
+	if err != nil {
+		log.Errorln(logTag, ": error fetching logs :", err)
+		util.WriteBackError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	util.WriteBackRaw(w, raw, http.StatusOK)
+}
+
 func (l *Logs) getLogs() http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
-		indices := util.IndicesFromRequest(req)
+		l.logsHandler(w, req, false)
+	}
+}
 
-		offset := req.URL.Query().Get("from")
-		if offset == "" {
-			offset = "0"
-		}
-
-		parsedOffset, err := strconv.Atoi(offset)
-		if err != nil {
-			errMsg := fmt.Errorf(`invalid value "%v" for query param "from"`, offset)
-			log.Errorln(logTag, ": ", errMsg)
-			util.WriteBackError(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-
-		rangeParams := rangeQueryParams(req.URL.Query())
-
-		filter := req.URL.Query().Get("filter")
-
-		raw, err := l.es.getRawLogs(req.Context(), logsFilter{
-			Offset:    parsedOffset,
-			StartDate: rangeParams.StartDate,
-			EndDate:   rangeParams.EndDate,
-			Size:      rangeParams.Size,
-			Filter:    filter,
-			Indices:   indices,
-		})
-		if err != nil {
-			log.Errorln(logTag, ": error fetching logs :", err)
-			util.WriteBackError(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-
-		util.WriteBackRaw(w, raw, http.StatusOK)
+func (l *Logs) getSearchLogs() http.HandlerFunc {
+	return func(w http.ResponseWriter, req *http.Request) {
+		l.logsHandler(w, req, true)
 	}
 }
