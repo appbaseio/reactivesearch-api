@@ -76,6 +76,7 @@ type ClusterPlan struct {
 	TierValidity           int64  `json:"tier_validity"`
 	TimeValidity           int64  `json:"time_validity"`
 	SubscriptionID         string `json:"subscription_id"`
+	ClusterID              string `json:"cluster_id"`
 }
 
 // ArcUsageResponse stores the response from ACCAPI
@@ -123,6 +124,7 @@ type ArcInstanceDetails struct {
 	FeatureFunctions       bool                   `json:"feature_functions"`
 	FeatureSearchRelevancy bool                   `json:"feature_search_relevancy"`
 	FeatureSearchGrader    bool                   `json:"feature_search_grader"`
+	ClusterID              string                 `json:"cluster_id"`
 }
 
 // SetDefaultTier sets the default tier when billing is disabled
@@ -210,6 +212,7 @@ func getArcInstance(arcID string) (ArcInstance, error) {
 		SetFeatureSearchRelevancy(arcInstanceByID.FeatureSearchRelevancy)
 		SetFeatureSearchGrader(arcInstanceByID.FeatureSearchGrader)
 		SetFeatureTemplates(arcInstanceByID.FeatureTemplates)
+		ClusterID = arcInstanceByID.ClusterID
 	} else {
 		return arcInstance, errors.New("No valid instance found for the provided ARC_ID")
 	}
@@ -261,6 +264,7 @@ func getArcClusterInstance(clusterID string) (ArcInstance, error) {
 		SetFeatureSearchRelevancy(arcInstanceDetails.FeatureSearchRelevancy)
 		SetFeatureSearchGrader(arcInstanceDetails.FeatureSearchGrader)
 		SetFeatureTemplates(arcInstanceDetails.FeatureTemplates)
+		ClusterID = arcInstanceDetails.ClusterID
 	} else {
 		return arcInstance, errors.New("No valid instance found for the provided CLUSTER_ID")
 	}
@@ -310,7 +314,7 @@ func getClusterPlan(clusterID string) (ClusterPlan, error) {
 	SetFeatureSearchRelevancy(response.Plan.FeatureSearchRelevancy)
 	SetFeatureSearchGrader(response.Plan.FeatureSearchGrader)
 	SetFeatureTemplates(response.Plan.FeatureTemplates)
-
+	ClusterID = response.Plan.ClusterID
 	return clusterPlan, nil
 }
 

@@ -37,6 +37,9 @@ var Version string
 // Port arc port
 var Port int
 
+// ClusterID represents the decrypted cluster id for appbase.io clusters and byoc billing
+var ClusterID string
+
 // RandStr returns "node" field of a UUID.
 // See: https://tools.ietf.org/html/rfc4122#section-4.1.6
 func RandStr() string {
