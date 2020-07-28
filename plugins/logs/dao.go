@@ -89,12 +89,15 @@ func (es *elasticsearch) indexRecord(ctx context.Context, rec record) {
 }
 
 type logsFilter struct {
-	Offset    int
-	StartDate string
-	EndDate   string
-	Size      int
-	Filter    string
-	Indices   []string
+	Offset         int
+	StartDate      string
+	EndDate        string
+	StartLatency   *int
+	EndLatency     *int
+	OrderByLatency string
+	Size           int
+	Filter         string
+	Indices        []string
 }
 
 func (es *elasticsearch) getRawLogs(ctx context.Context, logsFilter logsFilter) ([]byte, error) {

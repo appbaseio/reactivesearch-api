@@ -35,12 +35,30 @@ func (es *elasticsearch) getRawLogsES7(ctx context.Context, logsFilter logsFilte
 	// apply index filtering logic
 	util.GetIndexFilterQueryEs7(query, logsFilter.Indices...)
 
-	response, err := util.GetClient7().Search(es.indexName).
+	latencyRangeQuery := es7.NewRangeQuery("response.took")
+	if logsFilter.StartLatency != nil {
+		latencyRangeQuery.Gte(*logsFilter.StartLatency)
+	}
+	if logsFilter.EndLatency != nil {
+		latencyRangeQuery.Lte(*logsFilter.EndLatency)
+	}
+
+	query.Filter(latencyRangeQuery)
+
+	searchQuery := util.GetClient7().Search(es.indexName).
 		Query(query).
 		From(logsFilter.Offset).
-		Size(logsFilter.Size).
-		SortWithInfo(es7.SortInfo{Field: "timestamp", UnmappedType: "date", Ascending: false}).
-		Do(ctx)
+		Size(logsFilter.Size)
+	if logsFilter.OrderByLatency != "" {
+		ascending := false
+		if logsFilter.OrderByLatency == "asc" {
+			ascending = true
+		}
+		// sort by latency
+		searchQuery.SortWithInfo(es7.SortInfo{Field: "response.took", UnmappedType: "int", Ascending: ascending})
+	}
+	searchQuery.SortWithInfo(es7.SortInfo{Field: "timestamp", UnmappedType: "date", Ascending: false})
+	response, err := searchQuery.Do(ctx)
 	if err != nil {
 		return nil, err
 	}
