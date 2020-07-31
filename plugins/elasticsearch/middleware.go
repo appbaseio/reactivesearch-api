@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -194,7 +195,7 @@ func intercept(h http.HandlerFunc) http.HandlerFunc {
 					} else {
 						reqBody := make(map[string]interface{})
 						err := json.NewDecoder(req.Body).Decode(&reqBody)
-						if err != nil {
+						if err != nil && err != io.EOF {
 							log.Errorln(logTag, ":", err)
 							util.WriteBackError(w, err.Error(), http.StatusInternalServerError)
 							return
