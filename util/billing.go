@@ -399,6 +399,21 @@ func reportClusterUsageRequest(arcUsage ArcUsage) (ArcUsageResponse, error) {
 	return response, nil
 }
 
+// GetAppbaseID to get appbase id
+func GetAppbaseID() (string, error) {
+	arcID := os.Getenv("ARC_ID")
+	if arcID == "" {
+		appbaseID := os.Getenv("APPBASE_ID")
+		if appbaseID == "" {
+			return "", errors.New("APPBASE_ID env required but not present")
+		} else {
+			arcID = appbaseID
+		}
+	}
+
+	return arcID, nil
+}
+
 // ReportUsage reports Arc usage, intended to be called every hour
 func ReportUsage() {
 	url := os.Getenv("ES_CLUSTER_URL")
@@ -406,14 +421,10 @@ func ReportUsage() {
 		log.Fatalln("ES_CLUSTER_URL env required but not present")
 		return
 	}
-	arcID := os.Getenv("ARC_ID")
-	if arcID == "" {
-		appbaseID := os.Getenv("APPBASE_ID")
-		if appbaseID == "" {
-			log.Fatalln("APPBASE_ID env required but not present")
-		} else {
-			arcID = appbaseID
-		}
+
+	arcID, err := GetAppbaseID()
+	if err != nil {
+		log.Fatalln(err)
 		return
 	}
 
