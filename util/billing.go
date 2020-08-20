@@ -408,7 +408,12 @@ func ReportUsage() {
 	}
 	arcID := os.Getenv("ARC_ID")
 	if arcID == "" {
-		log.Fatalln("ARC_ID env required but not present")
+		appbaseID := os.Getenv("APPBASE_ID")
+		if appbaseID == "" {
+			log.Fatalln("APPBASE_ID env required but not present")
+		} else {
+			arcID = appbaseID
+		}
 		return
 	}
 
