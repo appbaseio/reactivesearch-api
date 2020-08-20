@@ -71,8 +71,16 @@ func init() {
 	flag.StringVar(&envFile, "env", ".env", "Path to file with environment variables to load in KEY=VALUE format")
 	flag.StringVar(&logMode, "log", "", "Define to change the default log mode(error), other options are: debug(most verbose) and info")
 	flag.BoolVar(&listPlugins, "plugins", false, "List currently registered plugins")
-	flag.StringVar(&address, "addr", "", "Address to serve on")
-	flag.IntVar(&port, "port", 8000, "Port number")
+	flag.StringVar(&address, "addr", "0.0.0.0", "Address to serve on")
+	// env port for deployments like heroku where port is dynamically assigned
+	envPort := os.Getenv("PORT")
+	defaultPort := 8000
+	if envPort != "" {
+		portValue, _ := strconv.Atoi(envPort)
+		defaultPort = portValue
+	}
+	fmt.Println("=> port used", defaultPort)
+	flag.IntVar(&port, "port", defaultPort, "Port number")
 	flag.StringVar(&pluginDir, "pluginDir", "build/plugins", "Directory containing the compiled plugins")
 	flag.BoolVar(&https, "https", false, "Starts a https server instead of a http server if true")
 }
