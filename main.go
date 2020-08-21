@@ -262,6 +262,16 @@ func main() {
 		log.Fatal("error loading plugins: ", err)
 	}
 
+	// Execute the migration scripts
+	for _, migration := range util.GetMigrationScripts() {
+		if migration.ConditionCheck() {
+			// Run the script
+			err := migration.Script()
+			if err != nil {
+				log.Fatal(err.Message, err.Err)
+			}
+		}
+	}
 	// CORS policy
 	c := cors.New(cors.Options{
 		AllowedOrigins: []string{"*"},
