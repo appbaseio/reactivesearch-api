@@ -268,7 +268,7 @@ func main() {
 			// Run the script
 			err := migration.Script()
 			if err != nil {
-				log.Fatal(err.Message, err.Err)
+				log.Fatal(err.Message+": ", err.Err)
 			}
 		}
 	}

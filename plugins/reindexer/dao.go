@@ -66,7 +66,7 @@ func postReIndex(ctx context.Context, sourceIndex, newIndexName string, operatio
 //
 // We accept a query param `wait_for_completion` which defaults to true, which when false, we don't create any aliases
 // and delete the old index, we instead return the tasks API response.
-func reindex(ctx context.Context, sourceIndex string, config *reindexConfig, waitForCompletion bool, destinationIndex string) ([]byte, error) {
+func Reindex(ctx context.Context, sourceIndex string, config *reindexConfig, waitForCompletion bool, destinationIndex string) ([]byte, error) {
 	var err error
 
 	// We fetch the index name pointing to the given alias first.

@@ -39,7 +39,7 @@ func (rx *reindexer) reindex() http.HandlerFunc {
 			return
 		}
 
-		response, err := reindex(req.Context(), indexName, &body, waitForCompletion, "")
+		response, err := Reindex(req.Context(), indexName, &body, waitForCompletion, "")
 		errorHandler(err, w, response)
 	}
 }
@@ -60,7 +60,7 @@ func (rx *reindexer) reindexSrcToDest() http.HandlerFunc {
 			return
 		}
 
-		response, err := reindex(req.Context(), sourceIndex, &body, waitForCompletion, destinationIndex)
+		response, err := Reindex(req.Context(), sourceIndex, &body, waitForCompletion, destinationIndex)
 		errorHandler(err, w, response)
 	}
 }
