@@ -264,7 +264,11 @@ func main() {
 
 	// Execute the migration scripts
 	for _, migration := range util.GetMigrationScripts() {
-		if migration.ConditionCheck() {
+		shouldExecute, err := migration.ConditionCheck()
+		if err != nil {
+			log.Fatal(err.Message+": ", err.Err)
+		}
+		if shouldExecute {
 			// Run the script
 			err := migration.Script()
 			if err != nil {
