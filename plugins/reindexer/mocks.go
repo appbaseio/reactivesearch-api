@@ -12,7 +12,7 @@ import (
 type mockES struct {
 }
 
-func (m *mockES) reindex(ctx context.Context, index string, body *reindexConfig, waitForCompletion bool) ([]byte, error) {
+func (m *mockES) reindex(ctx context.Context, index string, body *ReindexConfig, waitForCompletion bool) ([]byte, error) {
 	return nil, nil
 }
 
@@ -75,7 +75,7 @@ func (m *mockES) getIndicesByAlias(ctx context.Context, alias string) ([]string,
 type mockESIndicesByAliasErr struct {
 }
 
-func (m *mockESIndicesByAliasErr) reindex(ctx context.Context, index string, body *reindexConfig, waitForCompletion bool) ([]byte, error) {
+func (m *mockESIndicesByAliasErr) reindex(ctx context.Context, index string, body *ReindexConfig, waitForCompletion bool) ([]byte, error) {
 	return nil, nil
 }
 
@@ -113,7 +113,7 @@ func (m *mockESIndicesByAliasErr) getIndicesByAlias(ctx context.Context, alias s
 type mockESMappingsOfErr struct {
 }
 
-func (m *mockESMappingsOfErr) reindex(ctx context.Context, index string, body *reindexConfig, waitForCompletion bool) ([]byte, error) {
+func (m *mockESMappingsOfErr) reindex(ctx context.Context, index string, body *ReindexConfig, waitForCompletion bool) ([]byte, error) {
 	return nil, nil
 }
 
@@ -151,7 +151,7 @@ func (m *mockESMappingsOfErr) getIndicesByAlias(ctx context.Context, alias strin
 type mockESSettingsOfErr struct {
 }
 
-func (m *mockESSettingsOfErr) reindex(ctx context.Context, index string, body *reindexConfig, waitForCompletion bool) ([]byte, error) {
+func (m *mockESSettingsOfErr) reindex(ctx context.Context, index string, body *ReindexConfig, waitForCompletion bool) ([]byte, error) {
 	return nil, nil
 }
 
@@ -189,7 +189,7 @@ func (m *mockESSettingsOfErr) getIndicesByAlias(ctx context.Context, alias strin
 type mockESAliasesOfErr struct {
 }
 
-func (m *mockESAliasesOfErr) reindex(ctx context.Context, index string, body *reindexConfig, waitForCompletion bool) ([]byte, error) {
+func (m *mockESAliasesOfErr) reindex(ctx context.Context, index string, body *ReindexConfig, waitForCompletion bool) ([]byte, error) {
 	return nil, nil
 }
 
@@ -227,7 +227,7 @@ func (m *mockESAliasesOfErr) getIndicesByAlias(ctx context.Context, alias string
 type mockESCreateIndexErr struct {
 }
 
-func (m *mockESCreateIndexErr) reindex(ctx context.Context, index string, body *reindexConfig, waitForCompletion bool) ([]byte, error) {
+func (m *mockESCreateIndexErr) reindex(ctx context.Context, index string, body *ReindexConfig, waitForCompletion bool) ([]byte, error) {
 	return nil, nil
 }
 
@@ -265,7 +265,7 @@ func (m *mockESCreateIndexErr) getIndicesByAlias(ctx context.Context, alias stri
 type mockESDeleteIndexErr struct {
 }
 
-func (m *mockESDeleteIndexErr) reindex(ctx context.Context, index string, body *reindexConfig, waitForCompletion bool) ([]byte, error) {
+func (m *mockESDeleteIndexErr) reindex(ctx context.Context, index string, body *ReindexConfig, waitForCompletion bool) ([]byte, error) {
 	return nil, nil
 }
 
@@ -303,7 +303,7 @@ func (m *mockESDeleteIndexErr) getIndicesByAlias(ctx context.Context, alias stri
 type mockESSetAliasErr struct {
 }
 
-func (m *mockESSetAliasErr) reindex(ctx context.Context, index string, body *reindexConfig, waitForCompletion bool) ([]byte, error) {
+func (m *mockESSetAliasErr) reindex(ctx context.Context, index string, body *ReindexConfig, waitForCompletion bool) ([]byte, error) {
 	return nil, nil
 }
 

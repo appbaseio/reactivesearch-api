@@ -13,7 +13,7 @@ import (
 	"github.com/gorilla/mux"
 )
 
-type reindexConfig struct {
+type ReindexConfig struct {
 	Mappings                map[string]interface{}  `json:"mappings"`
 	Settings                map[string]interface{}  `json:"settings"`
 	SearchRelevancySettings *map[string]interface{} `json:"search_relevancy_settings"`
@@ -39,7 +39,7 @@ func (rx *reindexer) reindex() http.HandlerFunc {
 			return
 		}
 
-		response, err := reindex(req.Context(), indexName, &body, waitForCompletion, "")
+		response, err := Reindex(req.Context(), indexName, &body, waitForCompletion, "")
 		errorHandler(err, w, response)
 	}
 }
@@ -60,7 +60,7 @@ func (rx *reindexer) reindexSrcToDest() http.HandlerFunc {
 			return
 		}
 
-		response, err := reindex(req.Context(), sourceIndex, &body, waitForCompletion, destinationIndex)
+		response, err := Reindex(req.Context(), sourceIndex, &body, waitForCompletion, destinationIndex)
 		errorHandler(err, w, response)
 	}
 }
@@ -96,21 +96,21 @@ func checkVar(okS bool, w http.ResponseWriter, variable string) bool {
 	return false
 }
 
-func reindexConfigResponse(req *http.Request, w http.ResponseWriter, sourceIndex string) (error, reindexConfig, bool, bool) {
+func reindexConfigResponse(req *http.Request, w http.ResponseWriter, sourceIndex string) (error, ReindexConfig, bool, bool) {
 	reqBody, err := ioutil.ReadAll(req.Body)
 	if err != nil {
 		log.Errorln(logTag, ":", err)
 		util.WriteBackError(w, "Can't read request body", http.StatusBadRequest)
-		return nil, reindexConfig{}, false, true
+		return nil, ReindexConfig{}, false, true
 	}
 	defer req.Body.Close()
 
-	var body reindexConfig
+	var body ReindexConfig
 	err = json.Unmarshal(reqBody, &body)
 	if err != nil {
 		log.Errorln(logTag, ":", err)
 		util.WriteBackError(w, "Can't parse request body", http.StatusBadRequest)
-		return nil, reindexConfig{}, false, true
+		return nil, ReindexConfig{}, false, true
 	}
 
 	// By default, wait_for_completion depends on size of index
@@ -121,7 +121,7 @@ func reindexConfigResponse(req *http.Request, w http.ResponseWriter, sourceIndex
 		if err != nil {
 			log.Errorln(logTag, ":", err)
 			util.WriteBackError(w, "Unable to get the size of "+sourceIndex, http.StatusBadRequest)
-			return nil, reindexConfig{}, false, true
+			return nil, ReindexConfig{}, false, true
 		}
 		if size > IndexStoreSize {
 			param = "false"
@@ -133,7 +133,7 @@ func reindexConfigResponse(req *http.Request, w http.ResponseWriter, sourceIndex
 	if err != nil {
 		log.Errorln(logTag, ":", err)
 		util.WriteBackError(w, err.Error(), http.StatusBadRequest)
-		return nil, reindexConfig{}, false, true
+		return nil, ReindexConfig{}, false, true
 	}
 	return err, body, waitForCompletion, false
 }
