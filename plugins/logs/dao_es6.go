@@ -36,15 +36,17 @@ func (es *elasticsearch) getRawLogsES6(ctx context.Context, logsFilter logsFilte
 	// apply index filtering logic
 	util.GetIndexFilterQueryEs6(query, logsFilter.Filter)
 
-	latencyRangeQuery := es6.NewRangeQuery("response.took")
-	if logsFilter.StartLatency != nil {
-		latencyRangeQuery.Gte(*logsFilter.StartLatency)
+	// only apply latency filter when start or end range is available
+	if logsFilter.StartLatency != nil || logsFilter.EndLatency != nil {
+		latencyRangeQuery := es6.NewRangeQuery("response.took")
+		if logsFilter.StartLatency != nil {
+			latencyRangeQuery.Gte(*logsFilter.StartLatency)
+		}
+		if logsFilter.EndLatency != nil {
+			latencyRangeQuery.Lte(*logsFilter.EndLatency)
+		}
+		query.Filter(latencyRangeQuery)
 	}
-	if logsFilter.EndLatency != nil {
-		latencyRangeQuery.Lte(*logsFilter.EndLatency)
-	}
-
-	query.Filter(latencyRangeQuery)
 
 	searchQuery := util.GetClient6().Search(es.indexName).
 		Query(query).
