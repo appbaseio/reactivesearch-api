@@ -12,6 +12,9 @@ type Migration interface {
 	// This function allows you to execute the migration logic
 	// Execute the non-blocking scripts in a go routine and return the Error as nil
 	Script() *Error
+	// To determine wether to run script synchronously or asynchronously.
+	// Sync scripts will cause the fatal error if failed
+	IsAsync() bool
 }
 
 var migrationScripts []Migration

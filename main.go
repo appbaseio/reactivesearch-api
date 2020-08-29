@@ -270,9 +270,20 @@ func main() {
 		}
 		if shouldExecute {
 			// Run the script
-			err := migration.Script()
-			if err != nil {
-				log.Fatal(err.Message+": ", err.Err)
+			if migration.IsAsync() {
+				// execute the script in go routine(background) without affecting the init process
+				go func() {
+					err := migration.Script()
+					if err != nil {
+						log.Errorln(err.Message+": ", err.Err)
+					}
+				}()
+			} else {
+				// Sync scripts will cause the fatal error on failure
+				err := migration.Script()
+				if err != nil {
+					log.Fatal(err.Message+": ", err.Err)
+				}
 			}
 		}
 	}
