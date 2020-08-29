@@ -240,13 +240,13 @@ func Reindex(ctx context.Context, sourceIndex string, config *ReindexConfig, wai
 
 	go asyncReIndex(taskID, sourceIndex, newIndexName, operation, replicas)
 
-	// Get the reindex task by ID
-	task, err := util.GetClient7().TasksGetTask().TaskId(taskID).Do(context.Background())
-	if err != nil {
-		return nil, err
-	}
+	// // Get the reindex task by ID
+	// task, err := util.GetClient7().TasksGetTask().TaskId(taskID).Do(context.Background())
+	// if err != nil {
+	// 	return nil, err
+	// }
 
-	return json.Marshal(task)
+	return json.Marshal(response)
 }
 
 func mappingsOf(ctx context.Context, indexName string) (map[string]interface{}, error) {
