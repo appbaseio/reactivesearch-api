@@ -439,9 +439,12 @@ func getAliasedIndices(ctx context.Context) ([]AliasedIndices, error) {
 		indicesList[i].DocsDeleted, _ = strconv.Atoi(fmt.Sprintf("%v", index.DocsDeleted))
 		var alias string
 		regex := ".*reindexed_[0-9]+"
-		rolloverPatter := ".*-[0-9]+"
-		rolloverRegex, _ := regexp.Compile(rolloverPatter)
+		rolloverPattern := ".*-[0-9]+"
+		suggestionsPattern := ".suggestions_*"
+
 		indexRegex, _ := regexp.Compile(regex)
+		rolloverRegex, _ := regexp.Compile(rolloverPattern)
+		suggestionsRegex, _ := regexp.Compile(suggestionsPattern)
 
 		for _, row := range aliases {
 			// match the alias for rollover index
@@ -449,6 +452,9 @@ func getAliasedIndices(ctx context.Context) ([]AliasedIndices, error) {
 				alias = row.Alias
 				break
 			} else if row.Index == index.Index && indexRegex.MatchString(index.Index) {
+				alias = row.Alias
+				break
+			} else if row.Index == index.Index && suggestionsRegex.MatchString(index.Index) {
 				alias = row.Alias
 				break
 			}
