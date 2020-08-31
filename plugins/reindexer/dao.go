@@ -240,12 +240,7 @@ func Reindex(ctx context.Context, sourceIndex string, config *ReindexConfig, wai
 
 	go asyncReIndex(taskID, sourceIndex, newIndexName, operation, replicas)
 
-	// // Get the reindex task by ID
-	// task, err := util.GetClient7().TasksGetTask().TaskId(taskID).Do(context.Background())
-	// if err != nil {
-	// 	return nil, err
-	// }
-
+	// TODO: Update the response in API Ref.
 	return json.Marshal(response)
 }
 
