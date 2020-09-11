@@ -140,6 +140,9 @@ func Reindex(ctx context.Context, sourceIndex string, config *ReindexConfig, wai
 		delete(config.Settings, "index.number_of_shards")
 	}
 
+	if config.Settings == nil {
+		config.Settings = make(map[string]interface{})
+	}
 	config.Settings["index"] = indexSettingsAsMap
 
 	// Setup the destination index prior to running the _reindex action.
