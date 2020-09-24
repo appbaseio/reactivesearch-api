@@ -112,6 +112,12 @@ func (u *Users) postUser() http.HandlerFunc {
 			util.WriteBackError(w, `user "password" shouldn't be empty`, http.StatusBadRequest)
 			return
 		}
+		if userBody.Role == "" {
+			util.WriteBackError(w, `cannot create user without role`, http.StatusBadRequest)
+			return
+		} else {
+			opts = append(opts, user.SetRole(userBody.Role))
+		}
 
 		hashedPassword, err := bcrypt.GenerateFromPassword([]byte(userBody.Password), bcrypt.DefaultCost)
 		if err != nil {

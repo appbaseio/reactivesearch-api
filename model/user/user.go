@@ -37,6 +37,7 @@ type User struct {
 	Ops              []op.Operation      `json:"ops"`
 	Indices          []string            `json:"indices"`
 	CreatedAt        string              `json:"created_at"`
+	Role             string              `json:"role"`
 }
 
 // Options is a function type used to define a user's properties.
@@ -109,6 +110,14 @@ func SetIndices(indices []string) Options {
 			}
 		}
 		u.Indices = indices
+		return nil
+	}
+}
+
+// SetRole sets the user role.
+func SetRole(role string) Options {
+	return func(u *User) error {
+		u.Role = role
 		return nil
 	}
 }
