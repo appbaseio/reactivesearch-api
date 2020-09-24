@@ -311,6 +311,10 @@ func (u *User) GetPatch() (map[string]interface{}, error) {
 	if u.Email != "" {
 		patch["email"] = u.Email
 	}
+	if u.Role != "" {
+		patch["role"] = u.Role
+	}
+
 	if u.Categories != nil {
 		patch["categories"] = u.Categories
 		if u.ACLs != nil {
