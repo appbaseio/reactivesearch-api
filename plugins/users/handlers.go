@@ -112,7 +112,7 @@ func (u *Users) postUser() http.HandlerFunc {
 			util.WriteBackError(w, `user "password" shouldn't be empty`, http.StatusBadRequest)
 			return
 		}
-		if userBody.Role == "" {
+		if userBody.Role == nil {
 			util.WriteBackError(w, `cannot create user without role`, http.StatusBadRequest)
 			return
 		} else {

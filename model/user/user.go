@@ -6,6 +6,7 @@ import (
 	"regexp"
 	"strings"
 	"time"
+	"encoding/json"
 
 	"github.com/appbaseio/arc/errors"
 	"github.com/appbaseio/arc/model/acl"
@@ -25,6 +26,68 @@ const (
 	ctxKey = contextKey("user")
 )
 
+// Role user roles
+type Role int
+
+const (
+	Admin Role = iota
+	Editor
+	Dev
+	Finance
+)
+
+// String is the implementation of Stringer interface that returns the string representation of Plan type.
+func (o Role) String() string {
+	return [...]string{
+		"admin",
+		"editor",
+		"dev",
+		"finance",
+	}[o]
+}
+
+// UnmarshalJSON is the implementation of the Unmarshaler interface for unmarshaling Plan type.
+func (o *Role) UnmarshalJSON(bytes []byte) error {
+	var role string
+	err := json.Unmarshal(bytes, &role)
+	if err != nil {
+		return err
+	}
+	switch role {
+	case Admin.String():
+		*o = Admin
+	case Editor.String():
+		*o = Editor
+	case Dev.String():
+		*o = Dev
+	case Finance.String():
+		*o = Finance
+	
+	default:
+		return nil
+	}
+	return nil
+}
+
+// MarshalJSON is the implementation of the Marshaler interface for marshaling Plan type.
+func (o Role) MarshalJSON() ([]byte, error) {
+	var role string
+	switch o {
+	case Admin:
+		role = Admin.String()
+	case Editor:
+		role = Editor.String()
+	case Dev:
+		role = Dev.String()
+	case Finance:
+		role = Finance.String()
+	default:
+		return nil, nil
+	}
+	return json.Marshal(role)
+}
+
+
 // User defines a user type.
 type User struct {
 	Username         string              `json:"username"`
@@ -37,7 +100,7 @@ type User struct {
 	Ops              []op.Operation      `json:"ops"`
 	Indices          []string            `json:"indices"`
 	CreatedAt        string              `json:"created_at"`
-	Role             string              `json:"role"`
+	Role             *Role                `json:"role"`
 }
 
 // Options is a function type used to define a user's properties.
@@ -115,7 +178,7 @@ func SetIndices(indices []string) Options {
 }
 
 // SetRole sets the user role.
-func SetRole(role string) Options {
+func SetRole(role *Role) Options {
 	return func(u *User) error {
 		u.Role = role
 		return nil
@@ -311,7 +374,7 @@ func (u *User) GetPatch() (map[string]interface{}, error) {
 	if u.Email != "" {
 		patch["email"] = u.Email
 	}
-	if u.Role != "" {
+	if u.Role != nil {
 		patch["role"] = u.Role
 	}
 
@@ -342,3 +405,4 @@ func (u *User) GetPatch() (map[string]interface{}, error) {
 func (u *User) Id() string {
 	return u.Username
 }
+
