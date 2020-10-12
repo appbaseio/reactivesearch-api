@@ -90,3 +90,16 @@ func GetFeatureSearchGrader() bool {
 func SetFeatureSearchGrader(val bool) {
 	featureSearchGrader = val
 }
+
+// Feature ecommerce
+var featureEcommerce bool
+
+// GetFeatureEcommerce returns the featureEcommerce
+func GetFeatureEcommerce() bool {
+	return featureEcommerce
+}
+
+// SetFeatureEcommerce sets the featureEcommerce
+func SetFeatureEcommerce(val bool) {
+	featureEcommerce = val
+}

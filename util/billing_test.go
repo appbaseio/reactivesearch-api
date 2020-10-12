@@ -46,6 +46,10 @@ func TestBilling(t *testing.T) {
 			SetFeatureSearchGrader(true)
 			So(GetFeatureSearchGrader(), ShouldEqual, true)
 		})
+		Convey("Set FeatureEcommerce", func() {
+			SetFeatureEcommerce(true)
+			So(GetFeatureEcommerce(), ShouldEqual, true)
+		})
 		Convey("Validate TimeValidity: Positive Value", func() {
 			// Set TimeValidity to a positive value
 			var timeValidityMock = 1200000

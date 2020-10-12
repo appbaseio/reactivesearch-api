@@ -65,6 +65,8 @@ var (
 	FeatureSearchRelevancy string
 	// FeatureSearchGrader for testing
 	FeatureSearchGrader string
+	// FeatureEcommerce for testing
+	FeatureEcommerce string
 )
 
 func init() {
@@ -202,6 +204,9 @@ func main() {
 	}
 	if FeatureSearchGrader == "true" {
 		util.SetFeatureSearchGrader(true)
+	}
+	if FeatureEcommerce == "true" {
+		util.SetFeatureEcommerce(true)
 	}
 	// Set port variable
 	util.Port = port

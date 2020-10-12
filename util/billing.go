@@ -71,6 +71,7 @@ type ClusterPlan struct {
 	FeatureFunctions       bool   `json:"feature_functions"`
 	FeatureSearchRelevancy bool   `json:"feature_search_relevancy"`
 	FeatureSearchGrader    bool   `json:"feature_search_grader"`
+	FeatureEcommerce       bool   `json:"feature_ecommerce"`
 	Trial                  bool   `json:"trial"`
 	TrialValidity          int64  `json:"trial_validity"`
 	TierValidity           int64  `json:"tier_validity"`
@@ -124,6 +125,7 @@ type ArcInstanceDetails struct {
 	FeatureFunctions       bool                   `json:"feature_functions"`
 	FeatureSearchRelevancy bool                   `json:"feature_search_relevancy"`
 	FeatureSearchGrader    bool                   `json:"feature_search_grader"`
+	FeatureEcommerce       bool                   `json:"feature_ecommerce"`
 	ClusterID              string                 `json:"cluster_id"`
 }
 
@@ -212,6 +214,7 @@ func getArcInstance(arcID string) (ArcInstance, error) {
 		SetFeatureSearchRelevancy(arcInstanceByID.FeatureSearchRelevancy)
 		SetFeatureSearchGrader(arcInstanceByID.FeatureSearchGrader)
 		SetFeatureTemplates(arcInstanceByID.FeatureTemplates)
+		SetFeatureEcommerce(arcInstanceByID.FeatureEcommerce)
 		ClusterID = arcInstanceByID.ClusterID
 	} else {
 		return arcInstance, errors.New("No valid instance found for the provided ARC_ID")
@@ -264,6 +267,7 @@ func getArcClusterInstance(clusterID string) (ArcInstance, error) {
 		SetFeatureSearchRelevancy(arcInstanceDetails.FeatureSearchRelevancy)
 		SetFeatureSearchGrader(arcInstanceDetails.FeatureSearchGrader)
 		SetFeatureTemplates(arcInstanceDetails.FeatureTemplates)
+		SetFeatureEcommerce(arcInstanceDetails.FeatureEcommerce)
 		ClusterID = arcInstanceDetails.ClusterID
 	} else {
 		return arcInstance, errors.New("No valid instance found for the provided CLUSTER_ID")
@@ -314,6 +318,7 @@ func getClusterPlan(clusterID string) (ClusterPlan, error) {
 	SetFeatureSearchRelevancy(response.Plan.FeatureSearchRelevancy)
 	SetFeatureSearchGrader(response.Plan.FeatureSearchGrader)
 	SetFeatureTemplates(response.Plan.FeatureTemplates)
+	SetFeatureEcommerce(response.Plan.FeatureEcommerce)
 	ClusterID = response.Plan.ClusterID
 	return clusterPlan, nil
 }
