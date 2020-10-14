@@ -289,7 +289,7 @@ func (p *permissions) getPermissions() http.HandlerFunc {
 			return
 		}
 		// if user is not an admin then throw unauthorized error
-		if !*reqUser.IsAdmin {
+		if !*reqUser.IsAdmin && !reqUser.HasAction(user.AccessControl) {
 			msg := fmt.Sprintf(`You are not authorized to access the permissions. Please contact your admin.`)
 			log.Errorln(logTag, ":", msg, ":", err)
 			util.WriteBackError(w, msg, http.StatusUnauthorized)
