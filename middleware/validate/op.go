@@ -11,7 +11,6 @@ import (
 	"github.com/appbaseio/arc/model/credential"
 	"github.com/appbaseio/arc/model/op"
 	"github.com/appbaseio/arc/model/permission"
-	"github.com/appbaseio/arc/model/user"
 	"github.com/appbaseio/arc/util"
 )
 
@@ -60,11 +59,8 @@ func operation(h http.HandlerFunc) http.HandlerFunc {
 func canPerform(ctx context.Context, c credential.Credential, o *op.Operation) (bool, error) {
 	switch c {
 	case credential.User:
-		reqUser, err := user.FromContext(ctx)
-		if err != nil {
-			return false, err
-		}
-		return reqUser.CanDo(*o), nil
+		// access types (read, write) doesn't matter for user credential
+		return true, nil
 	case credential.Permission:
 		reqPermission, err := permission.FromContext(ctx)
 		if err != nil {

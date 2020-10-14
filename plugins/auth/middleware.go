@@ -159,7 +159,6 @@ func (a *Auth) basicAuth(h http.HandlerFunc) http.HandlerFunc {
 		switch obj.(type) {
 		case *user.User:
 			{
-				// if the request is made to elasticsearch using user credentials, then the user has to be an admin
 				reqUser := obj.(*user.User)
 				// No need to validate if already validated before
 				if hasBasicAuth && !IsPasswordExist(reqUser.Username, password) && bcrypt.CompareHashAndPassword([]byte(reqUser.Password), []byte(password)) != nil {
@@ -169,9 +168,21 @@ func (a *Auth) basicAuth(h http.HandlerFunc) http.HandlerFunc {
 				}
 				// Save validated username to avoid the bcrypt comparison
 				SavePassword(reqUser.Username, password)
-
-				if reqCategory.IsFromES() || reqCategory.IsFromRS() {
-					authenticated = *reqUser.IsAdmin
+				if *reqUser.IsAdmin {
+					authenticated = true
+				} else if reqCategory.IsFromES() {
+					// if the request is made to elasticsearch using user credentials,
+					// then the user must have the categories defined in the `Develop` action (scope)
+					if reqUser.IsAccessAllowedToES() {
+						authenticated = true
+					}
+				} else if reqCategory.IsFromRS() {
+					// if the request is made to reactivesearch api using user credentials,
+					// then the user must have the categories defined in the `Develop` action (scope)
+					// additionally they must have the `reactivesearch` category present
+					if reqUser.IsAccessAllowedToES() && reqUser.HasCategory(category.ReactiveSearch) {
+						authenticated = true
+					}
 				} else {
 					authenticated = true
 				}

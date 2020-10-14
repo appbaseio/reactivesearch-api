@@ -56,7 +56,7 @@ func classifyIndices(h http.HandlerFunc) http.HandlerFunc {
 	}
 }
 
-func isAdmin(h http.HandlerFunc) http.HandlerFunc {
+func hasUserAccess(h http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
 
@@ -67,13 +67,12 @@ func isAdmin(h http.HandlerFunc) http.HandlerFunc {
 			return
 		}
 
-		if !*reqUser.IsAdmin {
-			msg := fmt.Sprintf(`user with "username"="%s" is not an admin`, reqUser.Username)
+		if !*reqUser.IsAdmin && !reqUser.HasAction(user.UserManagement) {
+			msg := fmt.Sprintf(`user with "username"="%s" does not have access to user routes`, reqUser.Username)
 			w.Header().Set("www-authenticate", "Basic realm=\"Authentication Required\"")
 			util.WriteBackError(w, msg, http.StatusUnauthorized)
 			return
 		}
-
 		h(w, r)
 	}
 }

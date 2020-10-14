@@ -10,7 +10,6 @@ import (
 	"github.com/appbaseio/arc/errors"
 	"github.com/appbaseio/arc/model/acl"
 	"github.com/appbaseio/arc/model/category"
-	"github.com/appbaseio/arc/model/op"
 )
 
 type contextKey string
@@ -32,9 +31,9 @@ type User struct {
 	PasswordHashType string              `json:"password_hash_type"`
 	IsAdmin          *bool               `json:"is_admin"`
 	Categories       []category.Category `json:"categories"`
+	AllowedActions   *[]UserAction       `json:"allowed_actions"`
 	ACLs             []acl.ACL           `json:"acls"`
 	Email            string              `json:"email"`
-	Ops              []op.Operation      `json:"ops"`
 	Indices          []string            `json:"indices"`
 	CreatedAt        string              `json:"created_at"`
 }
@@ -43,21 +42,35 @@ type User struct {
 type Options func(u *User) error
 
 // SetIsAdmin defines whether a user is an admin or not.
+// It sets the default actions for admin users
 func SetIsAdmin(isAdmin bool) Options {
 	return func(u *User) error {
 		u.IsAdmin = &isAdmin
+		// Set default actions and categories for admin users
+		if *u.IsAdmin {
+			u.AllowedActions = &adminActions
+			u.Categories = GetCategories(adminActions)
+		}
 		return nil
 	}
 }
 
-// SetCategories sets the categories a user can have access to.
+// SetAllowedActions sets the actions a user can have access to.
+// It also sets the categories based on the allowed actions
 // Categories must always be set before setting the ACLs.
-func SetCategories(categories []category.Category) Options {
+func SetAllowedActions(actions []UserAction) Options {
 	return func(u *User) error {
-		if categories == nil {
+		if actions == nil {
 			return errors.ErrNilCategories
 		}
-		u.Categories = categories
+		// Set admin actions to admin users and ignore the actions from request body
+		if *u.IsAdmin {
+			u.AllowedActions = &adminActions
+			u.Categories = GetCategories(adminActions)
+		} else {
+			u.AllowedActions = &actions
+			u.Categories = GetCategories(actions)
+		}
 		return nil
 	}
 }
@@ -81,17 +94,6 @@ func SetACLs(acls []acl.ACL) Options {
 func SetEmail(email string) Options {
 	return func(u *User) error {
 		u.Email = email
-		return nil
-	}
-}
-
-// SetOps sets the operations that a user can perform.
-func SetOps(ops []op.Operation) Options {
-	return func(u *User) error {
-		if ops == nil {
-			return errors.ErrNilOps
-		}
-		u.Ops = ops
 		return nil
 	}
 }
@@ -122,13 +124,11 @@ func New(username, password string, opts ...Options) (*User, error) {
 
 	// create a default user
 	u := &User{
-		Username:   username,
-		Password:   password,
-		IsAdmin:    &isAdminFalse, // pointer to bool
-		Categories: defaultCategories,
-		Ops:        defaultOps,
-		Indices:    []string{},
-		CreatedAt:  time.Now().Format(time.RFC3339),
+		Username:  username,
+		Password:  password,
+		IsAdmin:   &isAdminFalse, // pointer to bool
+		Indices:   []string{},
+		CreatedAt: time.Now().Format(time.RFC3339),
 	}
 
 	// run the options on it
@@ -155,13 +155,13 @@ func NewAdmin(username, password string, opts ...Options) (*User, error) {
 
 	// create an admin user
 	u := &User{
-		Username:   username,
-		Password:   password,
-		IsAdmin:    &isAdminTrue,
-		Categories: adminCategories,
-		Ops:        adminOps,
-		Indices:    []string{"*"},
-		CreatedAt:  time.Now().Format(time.RFC3339),
+		Username:       username,
+		Password:       password,
+		IsAdmin:        &isAdminTrue,
+		Categories:     GetCategories(adminActions),
+		AllowedActions: &adminActions,
+		Indices:        []string{"*"},
+		CreatedAt:      time.Now().Format(time.RFC3339),
 	}
 
 	// run the options on it
@@ -207,6 +207,15 @@ func (u *User) HasCategory(category category.Category) bool {
 	return false
 }
 
+func (u *User) HasAction(action UserAction) bool {
+	for _, c := range *u.AllowedActions {
+		if c == action {
+			return true
+		}
+	}
+	return false
+}
+
 func (u *User) hasCategoryForACL(acl acl.ACL) bool {
 	for _, c := range u.Categories {
 		if c.HasACL(acl) {
@@ -230,16 +239,6 @@ func (u *User) ValidateACLs(acls ...acl.ACL) error {
 func (u *User) HasACL(acl acl.ACL) bool {
 	for _, a := range u.ACLs {
 		if a == acl {
-			return true
-		}
-	}
-	return false
-}
-
-// CanDo checks whether the user is permitted to do the given operation.
-func (u *User) CanDo(op op.Operation) bool {
-	for _, o := range u.Ops {
-		if o == op {
 			return true
 		}
 	}
@@ -298,23 +297,22 @@ func (u *User) GetPatch() (map[string]interface{}, error) {
 	}
 	if u.IsAdmin != nil {
 		patch["is_admin"] = u.IsAdmin
+		if *u.IsAdmin {
+			categories := GetCategories(adminActions)
+			// assign the admin actions
+			patch["allowed_actions"] = adminActions
+			patch["categories"] = categories
+			patch["acls"] = category.ACLsFor(categories...)
+		}
+	}
+	if u.AllowedActions != nil {
+		categories := GetCategories(*u.AllowedActions)
+		patch["allowed_actions"] = *u.AllowedActions
+		patch["categories"] = categories
+		patch["acls"] = category.ACLsFor(categories...)
 	}
 	if u.Email != "" {
 		patch["email"] = u.Email
-	}
-	if u.Categories != nil {
-		patch["categories"] = u.Categories
-		if u.ACLs != nil {
-			if err := u.ValidateACLs(u.ACLs...); err != nil {
-				return nil, err
-			}
-			patch["acls"] = u.ACLs
-		} else {
-			patch["acls"] = category.ACLsFor(u.Categories...)
-		}
-	}
-	if u.Ops != nil {
-		patch["ops"] = u.Ops
 	}
 	if u.Indices != nil {
 		patch["indices"] = u.Indices
@@ -328,4 +326,22 @@ func (u *User) GetPatch() (map[string]interface{}, error) {
 
 func (u *User) Id() string {
 	return u.Username
+}
+
+func (u *User) IsAccessAllowedToES() bool {
+	for _, v := range ActionToCategories[Develop] {
+		if !u.HasCategory(v) {
+			return false
+		}
+	}
+	return true
+}
+
+// GetCategories extracts the categories from the actions
+func GetCategories(actions []UserAction) []category.Category {
+	var categories []category.Category
+	for _, v := range actions {
+		categories = append(categories, ActionToCategories[v]...)
+	}
+	return categories
 }
