@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"strings"
 
 	log "github.com/sirupsen/logrus"
 
@@ -22,6 +23,13 @@ func Category() middleware.Middleware {
 
 func validateCategory(h http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
+		// ignore the category validation for /_user GET route
+		if req.Method == http.MethodGet {
+			if strings.HasSuffix(req.URL.RequestURI(), "_user") || strings.HasSuffix(req.URL.RequestURI(), "_user/") {
+				h(w, req)
+				return
+			}
+		}
 		ctx := req.Context()
 
 		errMsg := "an error occurred while validating request category"
