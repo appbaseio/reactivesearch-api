@@ -328,20 +328,18 @@ func (u *User) Id() string {
 	return u.Username
 }
 
-func (u *User) IsAccessAllowedToES() bool {
-	for _, v := range ActionToCategories[Develop] {
-		if !u.HasCategory(v) {
-			return false
-		}
-	}
-	return true
-}
-
 // GetCategories extracts the categories from the actions
 func GetCategories(actions []UserAction) []category.Category {
-	var categories []category.Category
+	// Use map to avoid duplicates
+	var categoriesMap = make(map[category.Category]bool)
 	for _, v := range actions {
-		categories = append(categories, ActionToCategories[v]...)
+		for _, category := range ActionToCategories[v] {
+			categoriesMap[category] = true
+		}
+	}
+	var categories []category.Category
+	for category := range categoriesMap {
+		categories = append(categories, category)
 	}
 	return categories
 }

@@ -90,13 +90,42 @@ func (o UserAction) MarshalJSON() ([]byte, error) {
 	return json.Marshal(userAction)
 }
 
+var developCategories = []category.Category{
+	category.Docs,
+	category.Search,
+	category.Indices,
+	category.Cat,
+	category.Clusters,
+	category.Misc,
+	category.Streams,
+	category.Logs,
+}
+
 var ActionToCategories = map[UserAction][]category.Category{
-	Develop:         {category.Docs, category.Search, category.Indices, category.Cat, category.Clusters, category.Misc, category.Streams, category.Logs},
-	Analytics:       {category.Analytics, category.Logs},
+	Develop: developCategories,
+	Analytics: {
+		category.Analytics,
+		category.Logs,
+		category.Cat,
+	},
 	CuratedInsights: {},
-	SearchRelevancy: {category.Rules, category.Templates, category.Suggestions, category.Functions, category.ReactiveSearch, category.SearchRelevancy, category.Synonyms, category.SearchGrader},
-	AccessControl:   {category.Auth, category.Permission},
-	UserManagement:  {category.User},
-	Billing:         {},
-	DowntimeAlerts:  {},
+	SearchRelevancy: append([]category.Category{
+		category.Rules,
+		category.Templates,
+		category.Suggestions,
+		category.Functions,
+		category.ReactiveSearch,
+		category.SearchRelevancy,
+		category.Synonyms,
+		category.SearchGrader,
+	}, developCategories...),
+	AccessControl: {
+		category.Auth,
+		category.Permission,
+	},
+	UserManagement: {
+		category.User,
+	},
+	Billing:        {},
+	DowntimeAlerts: {},
 }

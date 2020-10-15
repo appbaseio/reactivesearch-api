@@ -172,28 +172,20 @@ func (a *Auth) basicAuth(h http.HandlerFunc) http.HandlerFunc {
 					authenticated = true
 				} else if reqCategory.IsFromES() {
 					// if the request is made to elasticsearch using user credentials,
-					// then the user must have the categories defined in the `Develop` action (scope)
-					if reqUser.IsAccessAllowedToES() {
+					// then allow the access based on the categories present
+					if reqUser.HasCategory(*reqCategory) {
 						authenticated = true
+						errorMsg = "user not allowed to access elasticsearch"
 					}
 				} else if reqCategory.IsFromRS() {
 					// if the request is made to reactivesearch api using user credentials,
-					// then the user must have the categories defined in the `Develop` action (scope)
-					// additionally they must have the `reactivesearch` category present
-					if reqUser.IsAccessAllowedToES() && reqUser.HasCategory(category.ReactiveSearch) {
+					// then allow the access based on the `reactivesearch` category
+					if reqUser.HasCategory(category.ReactiveSearch) {
 						authenticated = true
+						errorMsg = "user not allowed to access reactivesearch API"
 					}
 				} else {
 					authenticated = true
-				}
-
-				if !authenticated {
-					if reqCategory.IsFromRS() {
-						errorMsg = "only admin users are allowed to access reactivesearch"
-					} else {
-						errorMsg = "only admin users are allowed to access elasticsearch"
-					}
-
 				}
 
 				// cache the user
