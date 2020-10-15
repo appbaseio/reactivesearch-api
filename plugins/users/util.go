@@ -2,6 +2,7 @@ package users
 
 import (
 	"bytes"
+	"encoding/json"
 	"errors"
 	"net/http"
 	"os"
@@ -16,7 +17,9 @@ func subscribeToDowntimeAlert(email string) error {
 	if util.ClusterBilling == "true" && email != "" {
 		clusterID := os.Getenv("CLUSTER_ID")
 		url := util.ACCAPI + "cluster/alert/" + clusterID
-		requestBody := []byte(`{"email":` + email + `}`)
+		requestBody, _ := json.Marshal(map[string]interface{}{
+			"email": email,
+		})
 		req, _ := http.NewRequest(http.MethodPost, url, bytes.NewBuffer(requestBody))
 		req.Header.Add("Content-Type", "application/json")
 		req.Header.Add("cache-control", "no-cache")
@@ -39,7 +42,9 @@ func unsubscribeToDowntimeAlert(email string) error {
 	if util.ClusterBilling == "true" {
 		clusterID := os.Getenv("CLUSTER_ID")
 		url := util.ACCAPI + "cluster/alert/" + clusterID
-		requestBody := []byte(`{"email":` + email + `}`)
+		requestBody, _ := json.Marshal(map[string]interface{}{
+			"email": email,
+		})
 		req, _ := http.NewRequest(http.MethodDelete, url, bytes.NewBuffer(requestBody))
 		req.Header.Add("Content-Type", "application/json")
 		req.Header.Add("cache-control", "no-cache")
