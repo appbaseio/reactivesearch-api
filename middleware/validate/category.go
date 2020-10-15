@@ -23,9 +23,11 @@ func Category() middleware.Middleware {
 
 func validateCategory(h http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
-		// ignore the category validation for /_user GET route
+		// ignore the category validation for following routes
+		// GET /_user
+		// GET /
 		if req.Method == http.MethodGet {
-			if strings.HasSuffix(req.RequestURI, "_user") {
+			if req.RequestURI == "/" || strings.HasSuffix(req.RequestURI, "_user") {
 				h(w, req)
 				return
 			}

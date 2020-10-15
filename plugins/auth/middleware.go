@@ -159,6 +159,7 @@ func (a *Auth) basicAuth(h http.HandlerFunc) http.HandlerFunc {
 		switch obj.(type) {
 		case *user.User:
 			{
+
 				reqUser := obj.(*user.User)
 				// No need to validate if already validated before
 				if hasBasicAuth && !IsPasswordExist(reqUser.Username, password) && bcrypt.CompareHashAndPassword([]byte(reqUser.Password), []byte(password)) != nil {
@@ -168,13 +169,18 @@ func (a *Auth) basicAuth(h http.HandlerFunc) http.HandlerFunc {
 				}
 				// Save validated username to avoid the bcrypt comparison
 				SavePassword(reqUser.Username, password)
-				if *reqUser.IsAdmin {
+
+				// ignore es auth for root route to fetch the cluster details
+				if req.RequestURI == "/" {
+					authenticated = true
+				} else if *reqUser.IsAdmin {
 					authenticated = true
 				} else if reqCategory.IsFromES() {
 					// if the request is made to elasticsearch using user credentials,
 					// then allow the access based on the categories present
 					if reqUser.HasCategory(*reqCategory) {
 						authenticated = true
+					} else {
 						errorMsg = "user not allowed to access elasticsearch"
 					}
 				} else if reqCategory.IsFromRS() {
@@ -183,6 +189,8 @@ func (a *Auth) basicAuth(h http.HandlerFunc) http.HandlerFunc {
 					if reqUser.HasCategory(category.ReactiveSearch) {
 						authenticated = true
 						errorMsg = "user not allowed to access reactivesearch API"
+					} else {
+						errorMsg = "user not allowed to access elasticsearch"
 					}
 				} else {
 					authenticated = true
