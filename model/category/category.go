@@ -38,6 +38,7 @@ const (
 	SearchRelevancy
 	Synonyms
 	SearchGrader
+	Logs
 )
 
 // String is an implementation of Stringer interface that returns the string representation of category.Categories.
@@ -62,6 +63,7 @@ func (c Category) String() string {
 		"searchrelevancy",
 		"synonyms",
 		"searchgrader",
+		"logs",
 	}[c]
 }
 
@@ -111,6 +113,8 @@ func (c *Category) UnmarshalJSON(bytes []byte) error {
 		*c = Synonyms
 	case SearchGrader.String():
 		*c = SearchGrader
+	case Logs.String():
+		*c = Logs
 	default:
 		return fmt.Errorf("invalid category encountered: %v", category)
 	}
@@ -159,6 +163,8 @@ func (c Category) MarshalJSON() ([]byte, error) {
 		category = Synonyms.String()
 	case SearchGrader:
 		category = SearchGrader.String()
+	case Logs:
+		category = Logs.String()
 	default:
 		return nil, fmt.Errorf("invalid category encountered: %v" + c.String())
 	}

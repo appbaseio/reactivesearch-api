@@ -8,7 +8,6 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
-	"github.com/appbaseio/arc/model/acl"
 	"github.com/appbaseio/arc/model/user"
 	"github.com/appbaseio/arc/plugins/auth"
 	"github.com/appbaseio/arc/util"
@@ -92,14 +91,11 @@ func (u *Users) postUser() http.HandlerFunc {
 		if userBody.IsAdmin != nil {
 			opts = append(opts, user.SetIsAdmin(*userBody.IsAdmin))
 		}
-		if userBody.Categories != nil {
-			opts = append(opts, user.SetCategories(userBody.Categories))
+		if userBody.AllowedActions != nil {
+			opts = append(opts, user.SetAllowedActions(*userBody.AllowedActions))
 		}
 		if userBody.ACLs != nil {
 			opts = append(opts, user.SetACLs(userBody.ACLs))
-		}
-		if userBody.Ops != nil {
-			opts = append(opts, user.SetOps(userBody.Ops))
 		}
 		if userBody.Indices != nil {
 			opts = append(opts, user.SetIndices(userBody.Indices))
@@ -111,6 +107,13 @@ func (u *Users) postUser() http.HandlerFunc {
 		if userBody.Password == "" {
 			util.WriteBackError(w, `user "password" shouldn't be empty`, http.StatusBadRequest)
 			return
+		}
+		// If user is not an admin then at least one action must present
+		if userBody.IsAdmin == nil || !*userBody.IsAdmin {
+			if userBody.AllowedActions == nil || len(*userBody.AllowedActions) == 0 {
+				util.WriteBackError(w, `user "allowed_actions" shouldn't be empty for non-admin users`, http.StatusBadRequest)
+				return
+			}
 		}
 
 		hashedPassword, err := bcrypt.GenerateFromPassword([]byte(userBody.Password), bcrypt.DefaultCost)
@@ -147,6 +150,13 @@ func (u *Users) postUser() http.HandlerFunc {
 
 		ok, err := u.es.postUser(req.Context(), *newUser)
 		if ok && err == nil {
+			// Subscribe to down time alerts
+			if newUser.HasAction(user.DowntimeAlerts) {
+				err := subscribeToDowntimeAlert(newUser.Email)
+				if err != nil {
+					log.Errorln(logTag, err.Error())
+				}
+			}
 			util.WriteBackRaw(w, rawUser, http.StatusCreated)
 			return
 		}
@@ -185,33 +195,6 @@ func (u *Users) patchUser() http.HandlerFunc {
 			return
 		}
 
-		// If user is trying to patch acls without providing categories.
-		if patch["categories"] == nil && patch["acls"] != nil {
-			// we need to fetch the user from elasticsearch before we make
-			// a patch request in order to validate the acls that the user intends
-			// to patch against the categories it already has.
-			reqUser, err := u.es.getUser(req.Context(), username)
-			if err != nil {
-				msg := fmt.Sprintf(`an error occurred while fetching user with username="%s"`, username)
-				log.Errorln(logTag, ":", err)
-				util.WriteBackError(w, msg, http.StatusInternalServerError)
-				return
-			}
-
-			acls, ok := patch["acls"].([]acl.ACL)
-			if !ok {
-				msg := fmt.Sprintf(`an error occurred while validating acls patch for user "%s"`, username)
-				log.Println(logTag, ": unable to cast acls patch to []acl.ACL")
-				util.WriteBackError(w, msg, http.StatusInternalServerError)
-				return
-			}
-
-			if err := reqUser.ValidateACLs(acls...); err != nil {
-				util.WriteBackError(w, err.Error(), http.StatusBadRequest)
-				return
-			}
-		}
-
 		// If user is trying to update the password then store the hashed password
 		if patch["password"] != nil {
 			hashedPassword, err := bcrypt.GenerateFromPassword([]byte(userBody.Password), bcrypt.DefaultCost)
@@ -230,6 +213,30 @@ func (u *Users) patchUser() http.HandlerFunc {
 			auth.ClearPassword(username)
 			// Clear user record from the user cache
 			auth.RemoveCredentialFromCache(username)
+
+			// Subscribe to down time alerts
+			if patch["allowed_actions"] != nil {
+				actions, ok := patch["allowed_actions"].([]user.UserAction)
+				if ok {
+					email, ok := patch["email"].(string)
+					if ok {
+						// subscribe to alerts if user has `downtime` action
+						// else unsubscribe to alerts
+						if HasAction(actions, user.DowntimeAlerts) {
+							err := subscribeToDowntimeAlert(email)
+							if err != nil {
+								log.Errorln(logTag, err.Error())
+							}
+						} else {
+							err := unsubscribeToDowntimeAlert(email)
+							if err != nil {
+								log.Errorln(logTag, err.Error())
+							}
+						}
+					}
+				}
+			}
+
 			util.WriteBackMessage(w, "User is updated successfully", http.StatusOK)
 			return
 		}
@@ -272,32 +279,6 @@ func (u *Users) patchUserWithUsername() http.HandlerFunc {
 			util.WriteBackError(w, err.Error(), http.StatusBadRequest)
 			return
 		}
-		// If user is trying to patch acls without providing categories.
-		if patch["categories"] == nil && patch["acls"] != nil {
-			// we need to fetch the user object from elasticsearch before we make
-			// a patch request in order to validate the acls that the user intends
-			// to patch against the categories it already has.
-			reqUser, err := u.es.getUser(req.Context(), username)
-			if err != nil {
-				msg := fmt.Sprintf(`an error occurred while fetching user with username="%s"`, username)
-				log.Errorln(logTag, ":", err)
-				util.WriteBackError(w, msg, http.StatusInternalServerError)
-				return
-			}
-
-			acls, ok := patch["acls"].([]acl.ACL)
-			if !ok {
-				msg := fmt.Sprintf(`an error occurred while validating acls patch for user "%s"`, username)
-				log.Println(logTag, ": unable to cast acl patch to []acl.ACL")
-				util.WriteBackError(w, msg, http.StatusInternalServerError)
-				return
-			}
-
-			if err := reqUser.ValidateACLs(acls...); err != nil {
-				util.WriteBackError(w, err.Error(), http.StatusBadRequest)
-				return
-			}
-		}
 
 		// If user is trying to update the password then store the hashed password
 		if patch["password"] != nil {
@@ -317,6 +298,30 @@ func (u *Users) patchUserWithUsername() http.HandlerFunc {
 			auth.ClearPassword(username)
 			// Clear user record from the user cache
 			auth.RemoveCredentialFromCache(username)
+
+			// Subscribe to down time alerts
+			if patch["allowed_actions"] != nil {
+				actions, ok := patch["allowed_actions"].([]user.UserAction)
+				if ok {
+					email, ok := patch["email"].(string)
+					if ok {
+						// subscribe to alerts if user has `downtime` action
+						// else unsubscribe to alerts
+						if HasAction(actions, user.DowntimeAlerts) {
+							err := subscribeToDowntimeAlert(email)
+							if err != nil {
+								log.Errorln(logTag, err.Error())
+							}
+						} else {
+							err := unsubscribeToDowntimeAlert(email)
+							if err != nil {
+								log.Errorln(logTag, err.Error())
+							}
+						}
+					}
+				}
+			}
+
 			util.WriteBackMessage(w, "User is updated successfully", http.StatusOK)
 			return
 		}
@@ -331,12 +336,27 @@ func (u *Users) deleteUser() http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
 		username, _, _ := req.BasicAuth()
 
+		userDetails, err := u.es.getUser(req.Context(), username)
+		if err != nil {
+			msg := fmt.Sprintf(`user with "username"="%s" not found`, username)
+			log.Errorln(logTag, ":", msg, ":", err)
+			util.WriteBackError(w, msg, http.StatusNotFound)
+			return
+		}
+
 		ok, err := u.es.deleteUser(req.Context(), username)
 		if ok && err == nil {
 			// Clear username record from the cache
 			auth.ClearPassword(username)
 			// Clear user record from the user cache
 			auth.RemoveCredentialFromCache(username)
+			// Unsubscribe to downtime alerts
+			if userDetails.HasAction(user.DowntimeAlerts) {
+				err := unsubscribeToDowntimeAlert(userDetails.Email)
+				if err != nil {
+					log.Errorln(logTag, err.Error())
+				}
+			}
 			msg := fmt.Sprintf(`user with "username"="%s" deleted`, username)
 			util.WriteBackMessage(w, msg, http.StatusOK)
 			return
@@ -357,12 +377,27 @@ func (u *Users) deleteUserWithUsername() http.HandlerFunc {
 			return
 		}
 
+		userDetails, err2 := u.es.getUser(req.Context(), username)
+		if err2 != nil {
+			msg := fmt.Sprintf(`user with "username"="%s" not found`, username)
+			log.Errorln(logTag, ":", msg, ":", err2)
+			util.WriteBackError(w, msg, http.StatusNotFound)
+			return
+		}
+
 		ok, err := u.es.deleteUser(req.Context(), username)
 		if ok && err == nil {
 			// Clear username record from the cache
 			auth.ClearPassword(username)
 			// Clear user record from the user cache
 			auth.RemoveCredentialFromCache(username)
+			// Unsubscribe to downtime alerts
+			if userDetails.HasAction(user.DowntimeAlerts) {
+				err := unsubscribeToDowntimeAlert(userDetails.Email)
+				if err != nil {
+					log.Errorln(logTag, err.Error())
+				}
+			}
 			msg := fmt.Sprintf(`user with "username"="%s" deleted`, username)
 			util.WriteBackMessage(w, msg, http.StatusOK)
 			return

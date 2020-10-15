@@ -74,6 +74,7 @@ type Limits struct {
 	ReactiveSearchLimit  int64 `json:"reactivesearch_limit"`
 	SearchRelevancyLimit int64 `json:"searchrelevancy_limit"`
 	SearchGraderLimit    int64 `json:"searchgrader_limit"`
+	LogsLimit            int64 `json:"logs_limit"`
 }
 
 // Options is a function type used to define a permission's properties.
@@ -257,6 +258,7 @@ func SetLimits(limits *Limits, isAdmin bool) Options {
 			ReactiveSearchLimit:  getNormalizedLimit(limits.ReactiveSearchLimit, defaults.ReactiveSearchLimit),
 			SearchRelevancyLimit: getNormalizedLimit(limits.SearchRelevancyLimit, defaults.SearchRelevancyLimit),
 			SearchGraderLimit:    getNormalizedLimit(limits.SearchGraderLimit, defaults.SearchGraderLimit),
+			LogsLimit:            getNormalizedLimit(limits.LogsLimit, defaults.LogsLimit),
 		}
 		return nil
 	}
@@ -522,6 +524,8 @@ func (p *Permission) GetLimitFor(c category.Category) (int64, error) {
 		return p.Limits.SearchRelevancyLimit, nil
 	case category.SearchGrader:
 		return p.Limits.SearchGraderLimit, nil
+	case category.Logs:
+		return p.Limits.LogsLimit, nil
 	default:
 		return -1, fmt.Errorf(`we do not rate limit "%s" category`, c)
 	}
@@ -645,6 +649,9 @@ func (p *Permission) GetPatch(rolePatched bool) (map[string]interface{}, error) 
 		}
 		if p.Limits.SearchGraderLimit != 0 {
 			limits["searchgrader_limit"] = p.Limits.SearchGraderLimit
+		}
+		if p.Limits.LogsLimit != 0 {
+			limits["logs_limit"] = p.Limits.LogsLimit
 		}
 
 		patch["limits"] = limits
