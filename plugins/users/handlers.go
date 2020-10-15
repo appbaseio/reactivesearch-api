@@ -150,6 +150,13 @@ func (u *Users) postUser() http.HandlerFunc {
 
 		ok, err := u.es.postUser(req.Context(), *newUser)
 		if ok && err == nil {
+			// Subscribe to down time alerts
+			if newUser.HasAction(user.DowntimeAlerts) {
+				err := subscribeToDowntimeAlert(newUser.Email)
+				if err != nil {
+					log.Errorln(logTag, err.Error())
+				}
+			}
 			util.WriteBackRaw(w, rawUser, http.StatusCreated)
 			return
 		}
@@ -206,6 +213,30 @@ func (u *Users) patchUser() http.HandlerFunc {
 			auth.ClearPassword(username)
 			// Clear user record from the user cache
 			auth.RemoveCredentialFromCache(username)
+
+			// Subscribe to down time alerts
+			if patch["allowed_actions"] != nil {
+				actions, ok := patch["allowed_actions"].([]user.UserAction)
+				if ok {
+					email, ok := patch["email"].(string)
+					if ok {
+						// subscribe to alerts if user has `downtime` action
+						// else unsubscribe to alerts
+						if HasAction(actions, user.DowntimeAlerts) {
+							err := subscribeToDowntimeAlert(email)
+							if err != nil {
+								log.Errorln(logTag, err.Error())
+							}
+						} else {
+							err := unsubscribeToDowntimeAlert(email)
+							if err != nil {
+								log.Errorln(logTag, err.Error())
+							}
+						}
+					}
+				}
+			}
+
 			util.WriteBackMessage(w, "User is updated successfully", http.StatusOK)
 			return
 		}
@@ -267,6 +298,30 @@ func (u *Users) patchUserWithUsername() http.HandlerFunc {
 			auth.ClearPassword(username)
 			// Clear user record from the user cache
 			auth.RemoveCredentialFromCache(username)
+
+			// Subscribe to down time alerts
+			if patch["allowed_actions"] != nil {
+				actions, ok := patch["allowed_actions"].([]user.UserAction)
+				if ok {
+					email, ok := patch["email"].(string)
+					if ok {
+						// subscribe to alerts if user has `downtime` action
+						// else unsubscribe to alerts
+						if HasAction(actions, user.DowntimeAlerts) {
+							err := subscribeToDowntimeAlert(email)
+							if err != nil {
+								log.Errorln(logTag, err.Error())
+							}
+						} else {
+							err := unsubscribeToDowntimeAlert(email)
+							if err != nil {
+								log.Errorln(logTag, err.Error())
+							}
+						}
+					}
+				}
+			}
+
 			util.WriteBackMessage(w, "User is updated successfully", http.StatusOK)
 			return
 		}
@@ -281,12 +336,27 @@ func (u *Users) deleteUser() http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
 		username, _, _ := req.BasicAuth()
 
+		userDetails, err := u.es.getUser(req.Context(), username)
+		if err != nil {
+			msg := fmt.Sprintf(`user with "username"="%s" not found`, username)
+			log.Errorln(logTag, ":", msg, ":", err)
+			util.WriteBackError(w, msg, http.StatusNotFound)
+			return
+		}
+
 		ok, err := u.es.deleteUser(req.Context(), username)
 		if ok && err == nil {
 			// Clear username record from the cache
 			auth.ClearPassword(username)
 			// Clear user record from the user cache
 			auth.RemoveCredentialFromCache(username)
+			// Unsubscribe to downtime alerts
+			if userDetails.HasAction(user.DowntimeAlerts) {
+				err := unsubscribeToDowntimeAlert(userDetails.Email)
+				if err != nil {
+					log.Errorln(logTag, err.Error())
+				}
+			}
 			msg := fmt.Sprintf(`user with "username"="%s" deleted`, username)
 			util.WriteBackMessage(w, msg, http.StatusOK)
 			return
@@ -307,12 +377,27 @@ func (u *Users) deleteUserWithUsername() http.HandlerFunc {
 			return
 		}
 
+		userDetails, err2 := u.es.getUser(req.Context(), username)
+		if err2 != nil {
+			msg := fmt.Sprintf(`user with "username"="%s" not found`, username)
+			log.Errorln(logTag, ":", msg, ":", err2)
+			util.WriteBackError(w, msg, http.StatusNotFound)
+			return
+		}
+
 		ok, err := u.es.deleteUser(req.Context(), username)
 		if ok && err == nil {
 			// Clear username record from the cache
 			auth.ClearPassword(username)
 			// Clear user record from the user cache
 			auth.RemoveCredentialFromCache(username)
+			// Unsubscribe to downtime alerts
+			if userDetails.HasAction(user.DowntimeAlerts) {
+				err := unsubscribeToDowntimeAlert(userDetails.Email)
+				if err != nil {
+					log.Errorln(logTag, err.Error())
+				}
+			}
 			msg := fmt.Sprintf(`user with "username"="%s" deleted`, username)
 			util.WriteBackMessage(w, msg, http.StatusOK)
 			return

@@ -337,7 +337,7 @@ func GetCategories(actions []UserAction) []category.Category {
 			categoriesMap[category] = true
 		}
 	}
-	var categories []category.Category
+	var categories = make([]category.Category, 0)
 	for category := range categoriesMap {
 		categories = append(categories, category)
 	}

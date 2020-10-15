@@ -171,7 +171,7 @@ func (a *Auth) basicAuth(h http.HandlerFunc) http.HandlerFunc {
 				SavePassword(reqUser.Username, password)
 
 				// ignore es auth for root route to fetch the cluster details
-				if req.RequestURI == "/" {
+				if req.Method == http.MethodGet && req.RequestURI == "/" {
 					authenticated = true
 				} else if *reqUser.IsAdmin {
 					authenticated = true
