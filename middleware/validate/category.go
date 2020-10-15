@@ -25,7 +25,7 @@ func validateCategory(h http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
 		// ignore the category validation for /_user GET route
 		if req.Method == http.MethodGet {
-			if strings.HasSuffix(req.URL.RequestURI(), "_user") || strings.HasSuffix(req.URL.RequestURI(), "_user/") {
+			if strings.HasSuffix(req.RequestURI, "_user") {
 				h(w, req)
 				return
 			}

@@ -2,6 +2,7 @@ package reindexer
 
 import (
 	"net/http"
+	"strings"
 
 	"github.com/appbaseio/arc/middleware"
 	"github.com/appbaseio/arc/middleware/classify"
@@ -34,7 +35,11 @@ func list() []middleware.Middleware {
 
 func classifyCategory(h http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
-		requestCategory := category.User
+		requestCategory := category.Docs
+		// Use `_cat` category for aliased indices endpoint
+		if strings.Contains(req.RequestURI, "_aliasedindices") {
+			requestCategory = category.Cat
+		}
 		ctx := category.NewContext(req.Context(), &requestCategory)
 		req = req.WithContext(ctx)
 		h(w, req)
