@@ -32,6 +32,7 @@ var adminCategories = []category.Category{
 	category.SearchRelevancy,
 	category.Synonyms,
 	category.SearchGrader,
+	category.Logs,
 }
 
 var adminOps = []op.Operation{
@@ -60,6 +61,7 @@ var defaultAdminLimits = permission.Limits{
 	ReactiveSearchLimit:  30,
 	SearchRelevancyLimit: 30,
 	SearchGraderLimit:    30,
+	LogsLimit:            30,
 }
 
 var createPermissionResponse = map[string]interface{}{

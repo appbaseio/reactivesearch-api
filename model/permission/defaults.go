@@ -32,6 +32,7 @@ var (
 		category.SearchRelevancy,
 		category.Synonyms,
 		category.SearchGrader,
+		category.Logs,
 	}
 
 	defaultOps = []op.Operation{
@@ -64,6 +65,7 @@ var (
 		ReactiveSearchLimit:  10,
 		SearchRelevancyLimit: 10,
 		SearchGraderLimit:    10,
+		LogsLimit:            10,
 	}
 
 	defaultAdminLimits = Limits{
@@ -86,5 +88,6 @@ var (
 		ReactiveSearchLimit:  30,
 		SearchRelevancyLimit: 30,
 		SearchGraderLimit:    30,
+		LogsLimit:            30,
 	}
 )
