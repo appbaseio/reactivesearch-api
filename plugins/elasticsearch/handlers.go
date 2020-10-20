@@ -76,12 +76,6 @@ func (es *elasticsearch) handler() http.HandlerFunc {
 
 		response, err := esClient.PerformRequest(ctx, requestOptions)
 
-		if err != nil {
-			log.Errorln(logTag, ": error fetching response for", r.URL.Path, err)
-			util.WriteBackError(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-
 		// Copy the headers
 		for k, v := range response.Header {
 			if k != "Content-Length" {
@@ -89,11 +83,15 @@ func (es *elasticsearch) handler() http.HandlerFunc {
 			}
 		}
 		w.Header().Set("X-Origin", "ES")
-
 		// Copy the status code
 		w.WriteHeader(response.StatusCode)
 
 		// Copy the body
 		io.Copy(w, bytes.NewReader(response.Body))
+		if err != nil {
+			log.Errorln(logTag, ": error fetching response for", r.URL.Path, err)
+			util.WriteBackError(w, err.Error(), response.StatusCode)
+			return
+		}
 	}
 }
