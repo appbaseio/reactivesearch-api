@@ -114,8 +114,14 @@ func Reindex(ctx context.Context, sourceIndex string, config *ReindexConfig, wai
 		}
 	}
 
-	// initialize the map with source index settings
 	indexSettingsAsMap := originalSettings
+
+	// initialize the map with source index settings
+	originalIndexSettings, ok := originalSettings["index"].(map[string]interface{})
+	if ok {
+		indexSettingsAsMap = originalIndexSettings
+	}
+
 	if config.Settings["index"] != nil {
 		indexSettingsAsMap = config.Settings["index"].(map[string]interface{})
 	}
@@ -297,7 +303,14 @@ func settingsOf(ctx context.Context, indexName string) (map[string]interface{}, 
 	settings := make(map[string]interface{})
 
 	// Copy all the index settings
-	settings["index"] = indexSettings
+	filteredIndexSettings := make(map[string]interface{})
+	blacklistedKeys := []string{"provided_name", "creation_date", "uuid", "version"}
+	for k, v := range indexSettings {
+		if !util.Contains(blacklistedKeys, k) {
+			filteredIndexSettings[k] = v
+		}
+	}
+	settings["index"] = filteredIndexSettings
 	settings["index.number_of_shards"] = indexSettings["number_of_shards"]
 	settings["index.number_of_replicas"] = indexSettings["number_of_replicas"]
 	analysis, found := indexSettings["analysis"]
