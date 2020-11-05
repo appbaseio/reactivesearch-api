@@ -295,7 +295,8 @@ func settingsOf(ctx context.Context, indexName string) (map[string]interface{}, 
 	}
 	settings := make(map[string]interface{})
 
-	settings["index"] = make(map[string]interface{})
+	// Copy all the index settings
+	settings["index"] = indexSettings
 	settings["index.number_of_shards"] = indexSettings["number_of_shards"]
 	settings["index.number_of_replicas"] = indexSettings["number_of_replicas"]
 	analysis, found := indexSettings["analysis"]
