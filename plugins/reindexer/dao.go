@@ -114,7 +114,8 @@ func Reindex(ctx context.Context, sourceIndex string, config *ReindexConfig, wai
 		}
 	}
 
-	indexSettingsAsMap := make(map[string]interface{})
+	// initialize the map with source index settings
+	indexSettingsAsMap := originalSettings
 	if config.Settings["index"] != nil {
 		indexSettingsAsMap = config.Settings["index"].(map[string]interface{})
 	}
