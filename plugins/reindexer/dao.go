@@ -237,8 +237,6 @@ func Reindex(ctx context.Context, sourceIndex string, config *ReindexConfig, wai
 
 	if waitForCompletion {
 		response, err := reindex.Do(ctx)
-		log.Println(logTag, "____ err ____")
-		log.Println(logTag, err)
 		if err != nil {
 			return nil, err
 		}
