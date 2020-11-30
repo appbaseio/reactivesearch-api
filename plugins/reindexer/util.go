@@ -28,6 +28,29 @@ type AliasedIndices struct {
 	PriStoreSize string      `json:"pri.store.size"`
 }
 
+type TaskResponseFailure struct {
+	Index string `json:"index"`
+	Type string `json:"type"`
+	ID string `json:"id"`
+	Status int32 `json:"status"`
+	Cause struct {
+		Type string `json:"type"`
+		Reason string `json:"reason"`
+		CausedBy struct {
+			Type string `json:"type"`
+			Reason string `json:"reason"`
+		} `json:"caused_by"`
+	} `json:"cause"`
+}
+
+
+type TaskResponseStruct struct {
+	Completed bool        `json:"completed"`
+	Response struct {
+		Failures []TaskResponseFailure `json:"failures"`
+	} `json:"response"`
+}
+
 // CurrentlyReIndexingProcess map of  taskID [source, destinations] indexes for which indexing process is going on
 var CurrentlyReIndexingProcess = make(map[string][]string)
 

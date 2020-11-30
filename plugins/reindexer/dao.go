@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io/ioutil"
+	"net/http"
 	"net/url"
 	"regexp"
 	"strconv"
@@ -48,6 +50,15 @@ func postReIndex(ctx context.Context, sourceIndex, newIndexName string, operatio
 	_, err = util.GetClient7().IndexPutSettings(newIndexName).BodyString(fmt.Sprintf(`{"index.number_of_replicas": %v}`, replicas)).Do(ctx)
 	if err != nil {
 		return err
+	}
+	return nil
+}
+
+func postReIndexFailure(ctx context.Context, newIndexName string) error {
+	_, err := util.GetClient7().DeleteIndex(newIndexName).Do(ctx)
+	if err != nil {
+		log.Errorln(logTag, "error deleting index", err)
+		return err;
 	}
 	return nil
 }
@@ -523,16 +534,33 @@ func getIndexSize(ctx context.Context, indexName string) (int64, error) {
 }
 
 func isTaskCompleted(ctx context.Context, taskID string) (bool, error) {
-	res := false
+	isCompleted := false
+	url := util.GetESURL() + "/_tasks/" + taskID
 
-	status, err := util.GetClient7().TasksGetTask().TaskId(taskID).Do(ctx)
+
+	response, err := http.Get(url)
 	if err != nil {
 		log.Errorln(logTag, " Get task status error", err)
-		return res, err
+		return isCompleted, err
 	}
 
-	res = status.Completed
-	return res, nil
+	defer response.Body.Close()
+
+	body, err := ioutil.ReadAll(response.Body)
+	if err != nil {
+		log.Errorln(logTag, " error reading json data", err)
+		return isCompleted, err
+	}
+
+	var data TaskResponseStruct
+	json.Unmarshal(body, &data)
+	isCompleted = data.Completed
+
+	if (isCompleted && len(data.Response.Failures) > 0) {
+		log.Errorln(logTag, "error re indexing data", data.Response.Failures[0])
+		return isCompleted, errors.New(data.Response.Failures[0].Cause.Reason)
+	}
+	return isCompleted, nil
 }
 
 // go routine to track async re-indexing process for a given source and destination index.
@@ -542,22 +570,32 @@ func asyncReIndex(taskID, source, destination string, operation ReIndexOperation
 	isCompleted := make(chan bool, 1)
 	ticker := time.Tick(30 * time.Second)
 	ctx := context.Background()
+	hasError := false;
 
 	for {
 		select {
 		case <-ticker:
-			ok, _ := isTaskCompleted(ctx, taskID)
-			log.Println(logTag, " "+taskID+" task is still re-indexing data...")
+			ok, err := isTaskCompleted(ctx, taskID)
+			if err != nil {
+				hasError = true
+			}
+
 			if ok {
 				isCompleted <- true
+			} else {
+				log.Println(logTag, " "+taskID+" task is still re-indexing data...")
 			}
 		case <-isCompleted:
-			log.Println(logTag, taskID+" task completed successfully")
 			// remove process from current cache
 			RemoveCurrentProcess(taskID)
-			err := postReIndex(ctx, source, destination, operation, replicas)
-			if err != nil {
-				log.Errorln(logTag, " post re-indexing error: ", err)
+			if (!hasError) {
+				log.Println(logTag, taskID+" task completed successfully")
+				err := postReIndex(ctx, source, destination, operation, replicas)
+				if err != nil {
+					log.Errorln(logTag, " post re-indexing error: ", err)
+				}
+			} else {
+				postReIndexFailure(ctx, destination)
 			}
 			return
 		}
