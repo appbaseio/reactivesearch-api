@@ -81,7 +81,7 @@ func (rx *reindexer) aliasedIndices() http.HandlerFunc {
 func errorHandler(err error, w http.ResponseWriter, response []byte) {
 	if err != nil {
 		log.Errorln(logTag, ":", err)
-		util.WriteBackError(w, err.Error(), http.StatusNotFound)
+		util.WriteBackError(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 

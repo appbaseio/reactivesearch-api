@@ -238,6 +238,7 @@ func Reindex(ctx context.Context, sourceIndex string, config *ReindexConfig, wai
 	if waitForCompletion {
 		response, err := reindex.Do(ctx)
 		if err != nil {
+			postReIndexFailure(ctx, newIndexName)
 			return nil, err
 		}
 
@@ -245,6 +246,7 @@ func Reindex(ctx context.Context, sourceIndex string, config *ReindexConfig, wai
 			err = postReIndex(ctx, sourceIndex, newIndexName, ReIndexWithDelete, replicas)
 			if err != nil {
 				log.Errorln(logTag, " post re-indexing error: ", err)
+				postReIndexFailure(ctx, newIndexName)
 				return nil, err
 			}
 		}
