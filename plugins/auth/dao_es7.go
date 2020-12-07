@@ -73,6 +73,10 @@ func (es *elasticsearch) getCredentialEs7(ctx context.Context, username string) 
 		}
 	}
 
+	if obj == nil {
+		return nil, fmt.Errorf(`invalid username or password`)
+	}
+
 	return obj, nil
 }
 
