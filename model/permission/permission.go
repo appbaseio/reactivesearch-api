@@ -55,26 +55,27 @@ type Permission struct {
 
 // Limits defines the rate limits for each category.
 type Limits struct {
-	IPLimit              int64 `json:"ip_limit"`
-	DocsLimit            int64 `json:"docs_limit"`
-	SearchLimit          int64 `json:"search_limit"`
-	IndicesLimit         int64 `json:"indices_limit"`
-	CatLimit             int64 `json:"cat_limit"`
-	ClustersLimit        int64 `json:"clusters_limit"`
-	MiscLimit            int64 `json:"misc_limit"`
-	UserLimit            int64 `json:"user_limit"`
-	PermissionLimit      int64 `json:"permission_limit"`
-	AnalyticsLimit       int64 `json:"analytics_limit"`
-	RulesLimit           int64 `json:"rules_limit"`
-	TemplatesLimit       int64 `json:"templates_limit"`
-	SuggestionsLimit     int64 `json:"suggestions_limit"`
-	StreamsLimit         int64 `json:"streams_limit"`
-	AuthLimit            int64 `json:"auth_limit"`
-	FunctionsLimit       int64 `json:"functions_limit"`
-	ReactiveSearchLimit  int64 `json:"reactivesearch_limit"`
-	SearchRelevancyLimit int64 `json:"searchrelevancy_limit"`
-	SearchGraderLimit    int64 `json:"searchgrader_limit"`
-	LogsLimit            int64 `json:"logs_limit"`
+	IPLimit               int64 `json:"ip_limit"`
+	DocsLimit             int64 `json:"docs_limit"`
+	SearchLimit           int64 `json:"search_limit"`
+	IndicesLimit          int64 `json:"indices_limit"`
+	CatLimit              int64 `json:"cat_limit"`
+	ClustersLimit         int64 `json:"clusters_limit"`
+	MiscLimit             int64 `json:"misc_limit"`
+	UserLimit             int64 `json:"user_limit"`
+	PermissionLimit       int64 `json:"permission_limit"`
+	AnalyticsLimit        int64 `json:"analytics_limit"`
+	RulesLimit            int64 `json:"rules_limit"`
+	TemplatesLimit        int64 `json:"templates_limit"`
+	SuggestionsLimit      int64 `json:"suggestions_limit"`
+	StreamsLimit          int64 `json:"streams_limit"`
+	AuthLimit             int64 `json:"auth_limit"`
+	FunctionsLimit        int64 `json:"functions_limit"`
+	ReactiveSearchLimit   int64 `json:"reactivesearch_limit"`
+	SearchRelevancyLimit  int64 `json:"searchrelevancy_limit"`
+	SearchGraderLimit     int64 `json:"searchgrader_limit"`
+	EcommIntegrationLimit int64 `json:"ecommintegration_limit"`
+	LogsLimit             int64 `json:"logs_limit"`
 }
 
 // Options is a function type used to define a permission's properties.
@@ -239,26 +240,27 @@ func SetLimits(limits *Limits, isAdmin bool) Options {
 		}
 		// Todo change
 		p.Limits = &Limits{
-			IPLimit:              getNormalizedLimit(limits.IPLimit, defaults.IPLimit),
-			DocsLimit:            getNormalizedLimit(limits.DocsLimit, defaults.DocsLimit),
-			SearchLimit:          getNormalizedLimit(limits.SearchLimit, defaults.SearchLimit),
-			IndicesLimit:         getNormalizedLimit(limits.IndicesLimit, defaults.IndicesLimit),
-			CatLimit:             getNormalizedLimit(limits.CatLimit, defaults.CatLimit),
-			ClustersLimit:        getNormalizedLimit(limits.ClustersLimit, defaults.ClustersLimit),
-			MiscLimit:            getNormalizedLimit(limits.MiscLimit, defaults.MiscLimit),
-			UserLimit:            getNormalizedLimit(limits.UserLimit, defaults.UserLimit),
-			PermissionLimit:      getNormalizedLimit(limits.PermissionLimit, defaults.PermissionLimit),
-			AnalyticsLimit:       getNormalizedLimit(limits.AnalyticsLimit, defaults.AnalyticsLimit),
-			RulesLimit:           getNormalizedLimit(limits.RulesLimit, defaults.RulesLimit),
-			TemplatesLimit:       getNormalizedLimit(limits.TemplatesLimit, defaults.TemplatesLimit),
-			SuggestionsLimit:     getNormalizedLimit(limits.SuggestionsLimit, defaults.SuggestionsLimit),
-			StreamsLimit:         getNormalizedLimit(limits.StreamsLimit, defaults.StreamsLimit),
-			AuthLimit:            getNormalizedLimit(limits.AuthLimit, defaults.AuthLimit),
-			FunctionsLimit:       getNormalizedLimit(limits.FunctionsLimit, defaults.FunctionsLimit),
-			ReactiveSearchLimit:  getNormalizedLimit(limits.ReactiveSearchLimit, defaults.ReactiveSearchLimit),
-			SearchRelevancyLimit: getNormalizedLimit(limits.SearchRelevancyLimit, defaults.SearchRelevancyLimit),
-			SearchGraderLimit:    getNormalizedLimit(limits.SearchGraderLimit, defaults.SearchGraderLimit),
-			LogsLimit:            getNormalizedLimit(limits.LogsLimit, defaults.LogsLimit),
+			IPLimit:               getNormalizedLimit(limits.IPLimit, defaults.IPLimit),
+			DocsLimit:             getNormalizedLimit(limits.DocsLimit, defaults.DocsLimit),
+			SearchLimit:           getNormalizedLimit(limits.SearchLimit, defaults.SearchLimit),
+			IndicesLimit:          getNormalizedLimit(limits.IndicesLimit, defaults.IndicesLimit),
+			CatLimit:              getNormalizedLimit(limits.CatLimit, defaults.CatLimit),
+			ClustersLimit:         getNormalizedLimit(limits.ClustersLimit, defaults.ClustersLimit),
+			MiscLimit:             getNormalizedLimit(limits.MiscLimit, defaults.MiscLimit),
+			UserLimit:             getNormalizedLimit(limits.UserLimit, defaults.UserLimit),
+			PermissionLimit:       getNormalizedLimit(limits.PermissionLimit, defaults.PermissionLimit),
+			AnalyticsLimit:        getNormalizedLimit(limits.AnalyticsLimit, defaults.AnalyticsLimit),
+			RulesLimit:            getNormalizedLimit(limits.RulesLimit, defaults.RulesLimit),
+			TemplatesLimit:        getNormalizedLimit(limits.TemplatesLimit, defaults.TemplatesLimit),
+			SuggestionsLimit:      getNormalizedLimit(limits.SuggestionsLimit, defaults.SuggestionsLimit),
+			StreamsLimit:          getNormalizedLimit(limits.StreamsLimit, defaults.StreamsLimit),
+			AuthLimit:             getNormalizedLimit(limits.AuthLimit, defaults.AuthLimit),
+			FunctionsLimit:        getNormalizedLimit(limits.FunctionsLimit, defaults.FunctionsLimit),
+			ReactiveSearchLimit:   getNormalizedLimit(limits.ReactiveSearchLimit, defaults.ReactiveSearchLimit),
+			SearchRelevancyLimit:  getNormalizedLimit(limits.SearchRelevancyLimit, defaults.SearchRelevancyLimit),
+			SearchGraderLimit:     getNormalizedLimit(limits.SearchGraderLimit, defaults.SearchGraderLimit),
+			EcommIntegrationLimit: getNormalizedLimit(limits.EcommIntegrationLimit, defaults.EcommIntegrationLimit),
+			LogsLimit:             getNormalizedLimit(limits.LogsLimit, defaults.LogsLimit),
 		}
 		return nil
 	}
@@ -524,6 +526,8 @@ func (p *Permission) GetLimitFor(c category.Category) (int64, error) {
 		return p.Limits.SearchRelevancyLimit, nil
 	case category.SearchGrader:
 		return p.Limits.SearchGraderLimit, nil
+	case category.EcommIntegration:
+		return p.Limits.EcommIntegrationLimit, nil
 	case category.Logs:
 		return p.Limits.LogsLimit, nil
 	default:
@@ -649,6 +653,9 @@ func (p *Permission) GetPatch(rolePatched bool) (map[string]interface{}, error) 
 		}
 		if p.Limits.SearchGraderLimit != 0 {
 			limits["searchgrader_limit"] = p.Limits.SearchGraderLimit
+		}
+		if p.Limits.EcommIntegrationLimit != 0 {
+			limits["ecommintegration_limit"] = p.Limits.EcommIntegrationLimit
 		}
 		if p.Limits.LogsLimit != 0 {
 			limits["logs_limit"] = p.Limits.LogsLimit

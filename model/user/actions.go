@@ -18,6 +18,7 @@ const (
 	UserManagement
 	Billing
 	DowntimeAlerts
+	EcommIntegration
 )
 
 // String is the implementation of Stringer interface that returns the string representation of UserAction type.
@@ -31,6 +32,7 @@ func (o UserAction) String() string {
 		"user-management",
 		"billing",
 		"downtime-alerts",
+		"ecommintegration",
 	}[o]
 }
 
@@ -58,6 +60,8 @@ func (o *UserAction) UnmarshalJSON(bytes []byte) error {
 		*o = Billing
 	case DowntimeAlerts.String():
 		*o = DowntimeAlerts
+	case EcommIntegration.String():
+		*o = EcommIntegration
 	default:
 		return fmt.Errorf("invalid user action encountered: %v", userAction)
 	}
@@ -84,6 +88,8 @@ func (o UserAction) MarshalJSON() ([]byte, error) {
 		userAction = Billing.String()
 	case DowntimeAlerts:
 		userAction = DowntimeAlerts.String()
+	case EcommIntegration:
+		userAction = EcommIntegration.String()
 	default:
 		return nil, fmt.Errorf("invalid user action encountered: %v", o)
 	}
@@ -119,6 +125,7 @@ var ActionToCategories = map[UserAction][]category.Category{
 		category.Synonyms,
 		category.SearchGrader,
 	}, developCategories...),
+	EcommIntegration: {category.EcommIntegration},
 	AccessControl: {
 		category.Auth,
 		category.Permission,
