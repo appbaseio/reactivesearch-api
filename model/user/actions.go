@@ -18,7 +18,7 @@ const (
 	UserManagement
 	Billing
 	DowntimeAlerts
-	EcommIntegration
+	UIIntegrations
 )
 
 // String is the implementation of Stringer interface that returns the string representation of UserAction type.
@@ -32,7 +32,7 @@ func (o UserAction) String() string {
 		"user-management",
 		"billing",
 		"downtime-alerts",
-		"ecommintegration",
+		"uiintegrations",
 	}[o]
 }
 
@@ -60,8 +60,8 @@ func (o *UserAction) UnmarshalJSON(bytes []byte) error {
 		*o = Billing
 	case DowntimeAlerts.String():
 		*o = DowntimeAlerts
-	case EcommIntegration.String():
-		*o = EcommIntegration
+	case UIIntegrations.String():
+		*o = UIIntegrations
 	default:
 		return fmt.Errorf("invalid user action encountered: %v", userAction)
 	}
@@ -88,8 +88,8 @@ func (o UserAction) MarshalJSON() ([]byte, error) {
 		userAction = Billing.String()
 	case DowntimeAlerts:
 		userAction = DowntimeAlerts.String()
-	case EcommIntegration:
-		userAction = EcommIntegration.String()
+	case UIIntegrations:
+		userAction = UIIntegrations.String()
 	default:
 		return nil, fmt.Errorf("invalid user action encountered: %v", o)
 	}
@@ -132,7 +132,13 @@ var ActionToCategories = map[UserAction][]category.Category{
 	UserManagement: {
 		category.User,
 	},
-	Billing:          {},
-	DowntimeAlerts:   {},
-	EcommIntegration: {category.EcommIntegration},
+	Billing:        {},
+	DowntimeAlerts: {},
+	UIIntegrations: {
+		category.Cat,
+		category.UIIntegrations,
+		category.Search,
+		category.ReactiveSearch,
+		category.SearchRelevancy,
+	},
 }

@@ -32,7 +32,7 @@ var (
 		category.SearchRelevancy,
 		category.Synonyms,
 		category.SearchGrader,
-		category.EcommIntegration,
+		category.UIIntegrations,
 		category.Logs,
 	}
 

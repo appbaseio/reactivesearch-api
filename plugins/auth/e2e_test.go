@@ -31,7 +31,7 @@ var adminCategories = []category.Category{
 	category.SearchRelevancy,
 	category.Synonyms,
 	category.SearchGrader,
-	category.EcommIntegration,
+	category.UIIntegrations,
 	category.Logs,
 }
 
