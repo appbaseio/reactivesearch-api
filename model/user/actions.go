@@ -125,7 +125,6 @@ var ActionToCategories = map[UserAction][]category.Category{
 		category.Synonyms,
 		category.SearchGrader,
 	}, developCategories...),
-	EcommIntegration: {category.EcommIntegration},
 	AccessControl: {
 		category.Auth,
 		category.Permission,
@@ -133,6 +132,7 @@ var ActionToCategories = map[UserAction][]category.Category{
 	UserManagement: {
 		category.User,
 	},
-	Billing:        {},
-	DowntimeAlerts: {},
+	Billing:          {},
+	DowntimeAlerts:   {},
+	EcommIntegration: {category.EcommIntegration},
 }
