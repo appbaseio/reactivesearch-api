@@ -107,6 +107,17 @@ var developCategories = []category.Category{
 	category.Logs,
 }
 
+var searchRelevancyCategories = append([]category.Category{
+	category.Rules,
+	category.Templates,
+	category.Suggestions,
+	category.Functions,
+	category.ReactiveSearch,
+	category.SearchRelevancy,
+	category.Synonyms,
+	category.SearchGrader,
+}, developCategories...)
+
 var ActionToCategories = map[UserAction][]category.Category{
 	Develop: developCategories,
 	Analytics: {
@@ -115,16 +126,7 @@ var ActionToCategories = map[UserAction][]category.Category{
 		category.Cat,
 	},
 	CuratedInsights: {},
-	SearchRelevancy: append([]category.Category{
-		category.Rules,
-		category.Templates,
-		category.Suggestions,
-		category.Functions,
-		category.ReactiveSearch,
-		category.SearchRelevancy,
-		category.Synonyms,
-		category.SearchGrader,
-	}, developCategories...),
+	SearchRelevancy: searchRelevancyCategories,
 	AccessControl: {
 		category.Auth,
 		category.Permission,
@@ -134,11 +136,7 @@ var ActionToCategories = map[UserAction][]category.Category{
 	},
 	Billing:        {},
 	DowntimeAlerts: {},
-	UIBuilder: {
-		category.Cat,
+	UIBuilder: append([]category.Category{
 		category.UIBuilder,
-		category.Search,
-		category.ReactiveSearch,
-		category.SearchRelevancy,
-	},
+	}, searchRelevancyCategories...),
 }
