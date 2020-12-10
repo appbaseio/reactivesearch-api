@@ -10,7 +10,7 @@ var (
 		UserManagement,
 		Billing,
 		DowntimeAlerts,
-		UIIntegrations,
+		UIBuilder,
 	}
 
 	// NOTE: we are storing the address of the isAdmin variable in the user

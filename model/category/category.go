@@ -38,7 +38,7 @@ const (
 	SearchRelevancy
 	Synonyms
 	SearchGrader
-	UIIntegrations
+	UIBuilder
 	Logs
 )
 
@@ -64,7 +64,7 @@ func (c Category) String() string {
 		"searchrelevancy",
 		"synonyms",
 		"searchgrader",
-		"uiintegrations",
+		"uibuilder",
 		"logs",
 	}[c]
 }
@@ -115,8 +115,8 @@ func (c *Category) UnmarshalJSON(bytes []byte) error {
 		*c = Synonyms
 	case SearchGrader.String():
 		*c = SearchGrader
-	case UIIntegrations.String():
-		*c = UIIntegrations
+	case UIBuilder.String():
+		*c = UIBuilder
 	case Logs.String():
 		*c = Logs
 	default:
@@ -167,8 +167,8 @@ func (c Category) MarshalJSON() ([]byte, error) {
 		category = Synonyms.String()
 	case SearchGrader:
 		category = SearchGrader.String()
-	case UIIntegrations:
-		category = UIIntegrations.String()
+	case UIBuilder:
+		category = UIBuilder.String()
 	case Logs:
 		category = Logs.String()
 	default:

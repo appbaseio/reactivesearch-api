@@ -526,7 +526,7 @@ func (p *Permission) GetLimitFor(c category.Category) (int64, error) {
 		return p.Limits.SearchRelevancyLimit, nil
 	case category.SearchGrader:
 		return p.Limits.SearchGraderLimit, nil
-	case category.UIIntegrations:
+	case category.UIBuilder:
 		return p.Limits.EcommIntegrationLimit, nil
 	case category.Logs:
 		return p.Limits.LogsLimit, nil
