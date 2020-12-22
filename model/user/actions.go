@@ -18,6 +18,7 @@ const (
 	UserManagement
 	Billing
 	DowntimeAlerts
+	UIBuilder
 )
 
 // String is the implementation of Stringer interface that returns the string representation of UserAction type.
@@ -31,6 +32,7 @@ func (o UserAction) String() string {
 		"user-management",
 		"billing",
 		"downtime-alerts",
+		"uibuilder",
 	}[o]
 }
 
@@ -58,6 +60,8 @@ func (o *UserAction) UnmarshalJSON(bytes []byte) error {
 		*o = Billing
 	case DowntimeAlerts.String():
 		*o = DowntimeAlerts
+	case UIBuilder.String():
+		*o = UIBuilder
 	default:
 		return fmt.Errorf("invalid user action encountered: %v", userAction)
 	}
@@ -84,6 +88,8 @@ func (o UserAction) MarshalJSON() ([]byte, error) {
 		userAction = Billing.String()
 	case DowntimeAlerts:
 		userAction = DowntimeAlerts.String()
+	case UIBuilder:
+		userAction = UIBuilder.String()
 	default:
 		return nil, fmt.Errorf("invalid user action encountered: %v", o)
 	}
@@ -101,6 +107,17 @@ var developCategories = []category.Category{
 	category.Logs,
 }
 
+var searchRelevancyCategories = append([]category.Category{
+	category.Rules,
+	category.Templates,
+	category.Suggestions,
+	category.Functions,
+	category.ReactiveSearch,
+	category.SearchRelevancy,
+	category.Synonyms,
+	category.SearchGrader,
+}, developCategories...)
+
 var ActionToCategories = map[UserAction][]category.Category{
 	Develop: developCategories,
 	Analytics: {
@@ -109,16 +126,7 @@ var ActionToCategories = map[UserAction][]category.Category{
 		category.Cat,
 	},
 	CuratedInsights: {},
-	SearchRelevancy: append([]category.Category{
-		category.Rules,
-		category.Templates,
-		category.Suggestions,
-		category.Functions,
-		category.ReactiveSearch,
-		category.SearchRelevancy,
-		category.Synonyms,
-		category.SearchGrader,
-	}, developCategories...),
+	SearchRelevancy: searchRelevancyCategories,
 	AccessControl: {
 		category.Auth,
 		category.Permission,
@@ -128,4 +136,7 @@ var ActionToCategories = map[UserAction][]category.Category{
 	},
 	Billing:        {},
 	DowntimeAlerts: {},
+	UIBuilder: append([]category.Category{
+		category.UIBuilder,
+	}, searchRelevancyCategories...),
 }
