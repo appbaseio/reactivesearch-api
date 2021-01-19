@@ -25,6 +25,11 @@ will hit Arc first and then be proxied to the Elasticsearch cluster. In between 
                              |_____________________|____________________|
                              |                     |                    |
                              |                     |                    |
+                             |   Search Relevancy  | ReactiveSearch API |
+                             |                     |                    |
+                             |_____________________|____________________|
+                             |                     |                    |
+                             |                     |                    |
                              |   Security   _______|_______  Caching    |
                              |             |               |            |
 .----------------.           |             |               |            |           .-----------------.
@@ -32,12 +37,18 @@ will hit Arc first and then be proxied to the Elasticsearch cluster. In between 
 |   REST APIs    | <-------- |             |               |            | <-------- |    upstream     |
 .----------------.           |             |               |            |           .-----------------.
                              |             |_______________|            |
-                             |    Logging          |         ACLs       |
+                             |   Logging           |         Analytics  |
                              |                     |                    |
                              |_____________________|____________________|
                              |                     |                    |
                              |                     |                    |
-                             |   Query Rules       |   Rate-Limiting    |
+                             |   Query Rules       | Popular Suggestions|
+                             |                     |                    |
+                             |                     |                    |
+                             |_____________________|____________________|
+                             |                     |                    |
+                             |                     |                    |
+                             |   Synonyms          | Functions          |
                              |                     |                    |
                              |                     |                    |
                              .------------------------------------------.
@@ -57,7 +68,7 @@ In order to run arc, you'll require an Elasticsearch node. There are multiple wa
 
 2. Start a single node Elasticsearch cluster locally
 
-        docker run -d --rm --name elasticsearch -p 9200:9200 -p 9300:9300 --net=arc -e "discovery.type=single-node" docker.elastic.co/elasticsearch/elasticsearch-oss:7.2.0
+        docker run -d --rm --name elasticsearch -p 9200:9200 -p 9300:9300 --net=arc -e "discovery.type=single-node" docker.elastic.co/elasticsearch/elasticsearch-oss:7.10.1
 
 3. Start Arc locally
 
@@ -192,7 +203,7 @@ A `User` grants a `Permission` to a certain `User`, predefining its capabilities
 
 Categories can be used to control access to data and APIs in Arc. Along with Elasticsearch APIs, Categories cover the APIs provided by Arc itself to allow fine-grained control over the API consumption. For Elasticsearch, Categories broadly resembles to the API [classification](https://www.elastic.co/guide/en/elasticsearch/reference/current/index.html) that Elasticsearch
 provides such as **Document APIs**, **Search APIs**, **Indices APIs** and so on. For Arc, Categories resembles to the
-additional APIs on top of Elasticsearch APIs, such as analytics and book keeping. Refer to category [docs](https://github.com/appbaseio/arc/blob/ugo/update-readme/31-12-2018/docs/categories.md) for the list of
+additional APIs on top of Elasticsearch APIs, such as analytics and book keeping. Refer to category [docs](https://github.com/appbaseio/arc/blob/dev/docs/categories.md) for the list of
 categories that Arc supports.
 
 #### ACL
@@ -200,7 +211,7 @@ categories that Arc supports.
 ACLs allow a fine grained control over the Elasticsearch APIs in addition to the Categories. Each ACL resembles an
 action performed by an Elasticsearch API. For brevity, setting and organising Categories automatically sets the default
 ACLs associated with the set Categories. Setting ACLs adds just another level of control to provide access to
-Elasticsearch APIs within a given Category. Refer to acl [docs](https://github.com/appbaseio/arc/blob/ugo/update-readme/31-12-2018/docs/acls.md) for the list of acls that Arc supports.
+Elasticsearch APIs within a given Category. Refer to acl [docs](https://github.com/appbaseio/arc/blob/dev/docs/acls.md) for the list of acls that Arc supports.
 
 #### Op
 
@@ -224,9 +235,5 @@ cluster. The dedicated endpoints to fetch the index/cluster logs can be found [h
 
 ## Docs
 
-Refer to the RESTful API [docs](https://arc-api.appbase.io/) that are currently included in Arc for more information.
+Refer to the REST API [docs](https://arc-api.appbase.io/) for Arc.
 
-## Improvements
-
-- Improve the way middleware are handled
-- Propagate the es upstream errors back to the clients
