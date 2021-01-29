@@ -63,6 +63,7 @@ var defaultAdminLimits = permission.Limits{
 	SearchGraderLimit:     30,
 	EcommIntegrationLimit: 30,
 	LogsLimit:             30,
+	SynonymsLimit:         30,
 }
 
 var createPermissionResponse = map[string]interface{}{

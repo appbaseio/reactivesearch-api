@@ -68,6 +68,7 @@ var (
 		SearchGraderLimit:     10,
 		EcommIntegrationLimit: 10,
 		LogsLimit:             10,
+		SynonymsLimit:         10,
 	}
 
 	defaultAdminLimits = Limits{
@@ -92,5 +93,6 @@ var (
 		SearchGraderLimit:     30,
 		EcommIntegrationLimit: 30,
 		LogsLimit:             30,
+		SynonymsLimit:         30,
 	}
 )
