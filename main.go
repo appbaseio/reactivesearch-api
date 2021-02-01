@@ -20,6 +20,7 @@ import (
 	"github.com/appbaseio/arc/plugins"
 	"github.com/appbaseio/arc/util"
 	"github.com/gorilla/mux"
+	"github.com/pkg/profile"
 	"github.com/robfig/cron"
 	"github.com/rs/cors"
 
@@ -36,6 +37,7 @@ var (
 	port        int
 	pluginDir   string
 	https       bool
+	cpuprofile  bool
 	// Version arc version set during build
 	Version string
 	// PlanRefreshInterval can be used to define the custom interval to refresh the plan
@@ -85,9 +87,11 @@ func init() {
 	flag.IntVar(&port, "port", defaultPort, "Port number")
 	flag.StringVar(&pluginDir, "pluginDir", "build/plugins", "Directory containing the compiled plugins")
 	flag.BoolVar(&https, "https", false, "Starts a https server instead of a http server if true")
+	flag.BoolVar(&cpuprofile, "cpuprofile", false, "write cpu profile to `file`")
 }
 
 func main() {
+
 	flag.Parse()
 	log.SetReportCaller(true)
 	log.SetFormatter(&log.TextFormatter{
@@ -99,6 +103,11 @@ func main() {
 			return "", fmt.Sprintf(" %s:%d", filename, f.Line)
 		},
 	})
+
+	// add cpu profilling
+	if cpuprofile {
+		defer profile.Start().Stop()
+	}
 
 	switch logMode {
 	case "debug":

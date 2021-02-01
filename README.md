@@ -110,6 +110,9 @@ Prints the basic information
 #### error (default)
 Only log the errors
 
+### CPU Profile
+Set the `cpuprofile` flag to `true` at runtime to enable to cpu profilling. Read this article to know more about the usage https://flaviocopes.com/golang-profiling/.
+
 #### TLS Support
 
 You can optionally start arc to serve https requests instead of http requests using the flag https. You also need to provide the server key & certificate file location through the environment file. `config/manual.env` is configured to use demo server key & certificates, which work for localhost.
