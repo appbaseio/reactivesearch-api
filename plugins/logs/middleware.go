@@ -6,10 +6,9 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/http/httputil"
+	"strconv"
 	"strings"
 	"time"
-
-	log "github.com/sirupsen/logrus"
 
 	"github.com/appbaseio/arc/middleware"
 	"github.com/appbaseio/arc/middleware/classify"
@@ -20,6 +19,8 @@ import (
 	"github.com/appbaseio/arc/model/response"
 	"github.com/appbaseio/arc/plugins/auth"
 	"github.com/appbaseio/arc/util"
+	"github.com/buger/jsonparser"
+	log "github.com/sirupsen/logrus"
 )
 
 type chain struct {
@@ -217,12 +218,12 @@ func (l *Logs) recordResponse(w *httptest.ResponseRecorder, r *http.Request, req
 			// read success response from context
 			rsResponseBody.L.Lock()
 			defer rsResponseBody.L.Unlock()
-			settings, ok := rsResponseBody.Response["settings"]
-			if !ok {
+			tookValue, _, _, err := jsonparser.Get(rsResponseBody.Response, "settings", "took")
+			if err != nil {
 				log.Errorln(logTag, "error encountered while reading settings key from response body:", err)
 			} else {
-				took, ok := settings.(map[string]interface{})["took"].(float64)
-				if !ok {
+				took, err2 := strconv.ParseFloat(string(tookValue), 64)
+				if err2 != nil {
 					// ignore error to record error logs
 					log.Errorln(logTag, "error encountered while parsing response body:", err)
 				} else {
