@@ -6,7 +6,6 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/http/httputil"
-	"strconv"
 	"strings"
 	"time"
 
@@ -16,7 +15,6 @@ import (
 	"github.com/appbaseio/arc/model/category"
 	"github.com/appbaseio/arc/model/index"
 	"github.com/appbaseio/arc/model/request"
-	"github.com/appbaseio/arc/model/response"
 	"github.com/appbaseio/arc/plugins/auth"
 	"github.com/appbaseio/arc/util"
 	"github.com/buger/jsonparser"
@@ -123,16 +121,6 @@ func (l *Logs) recorder(h http.HandlerFunc) http.HandlerFunc {
 		// Serve using response recorder
 		respRecorder := httptest.NewRecorder()
 		h(respRecorder, r)
-		var rsResponseBody *response.Response
-		if *reqCategory == category.ReactiveSearch {
-			rsResponse, err := response.FromContext(ctx)
-			if err != nil {
-				log.Errorln(logTag, ":", err)
-				util.WriteBackError(w, "error reading response body", http.StatusInternalServerError)
-				return
-			}
-			rsResponseBody = rsResponse
-		}
 		// Copy the response to writer
 		for k, v := range respRecorder.Header() {
 			w.Header()[k] = v
@@ -141,11 +129,11 @@ func (l *Logs) recorder(h http.HandlerFunc) http.HandlerFunc {
 		w.Write(respRecorder.Body.Bytes())
 		// Record the document
 
-		go l.recordResponse(respRecorder, r, dumpRequest, rsResponseBody)
+		go l.recordResponse(respRecorder, r, dumpRequest)
 	}
 }
 
-func (l *Logs) recordResponse(w *httptest.ResponseRecorder, r *http.Request, reqBody []byte, rsResponseBody *response.Response) {
+func (l *Logs) recordResponse(w *httptest.ResponseRecorder, r *http.Request, reqBody []byte) {
 	var headers = make(map[string][]string)
 
 	for key, values := range r.Header {
@@ -211,32 +199,16 @@ func (l *Logs) recordResponse(w *httptest.ResponseRecorder, r *http.Request, req
 			Body:    string(marshalled[:util.Min(len(marshalled), 1000000)]),
 			Method:  r.Method,
 		}
-		if rec.Response.Code > http.StatusOK {
-			// read error response from response recorder body
-			rec.Response.Body = string(responseBody[:util.Min(len(responseBody), 1000000)])
-		} else {
-			// read success response from context
-			rsResponseBody.L.Lock()
-			defer rsResponseBody.L.Unlock()
-			tookValue, _, _, err := jsonparser.Get(rsResponseBody.Response, "settings", "took")
-			if err != nil {
-				log.Errorln(logTag, "error encountered while reading settings key from response body:", err)
-			} else {
-				took, err2 := strconv.ParseFloat(string(tookValue), 64)
-				if err2 != nil {
-					// ignore error to record error logs
-					log.Errorln(logTag, "error encountered while parsing response body:", err)
-				} else {
-					rec.Response.Took = &took
-				}
-			}
-			marshalledRes, err := json.Marshal(rsResponseBody.Response)
-			if err != nil {
-				log.Errorln(logTag, "error encountered while marshalling response body:", err)
-				return
-			}
-			rec.Response.Body = string(marshalledRes[:util.Min(len(marshalledRes), 1000000)])
+		// read success response from context
+		tookValue, err := jsonparser.GetFloat(w.Body.Bytes(), "settings", "took")
+		if err != nil {
+			log.Errorln(logTag, "error encountered while reading took key from response body:", err)
+			return
 		}
+		// Set took value
+		rec.Response.Took = &tookValue
+		// read error response from response recorder body
+		rec.Response.Body = string(responseBody[:util.Min(len(responseBody), 1000000)])
 	} else {
 		requestBody := strings.Split(string(reqBody), "\r\n\r\n")
 		var parsedBody []byte
