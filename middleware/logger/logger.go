@@ -2,10 +2,11 @@ package logger
 
 import (
 	"fmt"
-	log "github.com/sirupsen/logrus"
 	"net/http"
 	"strings"
 	"time"
+
+	log "github.com/sirupsen/logrus"
 )
 
 const logTag = "[logger]"
@@ -17,8 +18,8 @@ func Log(next http.Handler) http.Handler {
 		start := time.Now()
 		req.URL.Path = trimTrailingSlashes(req.URL.Path)
 		next.ServeHTTP(w, req)
-		log.Println(fmt.Sprintf("%s: finished %s, took %fs",
-			logTag, fmt.Sprintf("%s %s", req.Method, req.URL.Path), time.Since(start).Seconds()))
+		log.Println(fmt.Sprintf("%s: finished %s, took %ds",
+			logTag, fmt.Sprintf("%s %s", req.Method, req.URL.Path), time.Since(start)))
 	})
 }
 
