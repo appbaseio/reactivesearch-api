@@ -1,6 +1,7 @@
 module github.com/appbaseio/arc
 
 require (
+	github.com/buger/jsonparser v1.1.1
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/gobuffalo/envy v1.6.15 // indirect
 	github.com/gobuffalo/packr v1.22.0
