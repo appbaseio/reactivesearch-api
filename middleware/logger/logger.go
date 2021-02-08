@@ -18,8 +18,8 @@ func Log(next http.Handler) http.Handler {
 		start := time.Now()
 		req.URL.Path = trimTrailingSlashes(req.URL.Path)
 		next.ServeHTTP(w, req)
-		log.Println(fmt.Sprintf("%s: finished %s, took %ds",
-			logTag, fmt.Sprintf("%s %s", req.Method, req.URL.Path), time.Since(start)))
+		log.Println(fmt.Sprintf("%s: finished %s, took %dms",
+			logTag, fmt.Sprintf("%s %s", req.Method, req.URL.Path), time.Since(start).Milliseconds()))
 	})
 }
 

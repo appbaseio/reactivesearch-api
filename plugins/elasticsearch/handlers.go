@@ -1,12 +1,15 @@
 package elasticsearch
 
 import (
-	"io"
+	"fmt"
+	"io/ioutil"
 	"net/http"
 	"strings"
 	"time"
 
 	log "github.com/sirupsen/logrus"
+
+	es7 "github.com/olivere/elastic/v7"
 
 	"github.com/appbaseio/arc/model/acl"
 	"github.com/appbaseio/arc/model/category"
@@ -59,30 +62,26 @@ func (es *elasticsearch) handler() http.HandlerFunc {
 			params.Add("format", "text")
 		}
 
-		// requestOptions := es7.PerformRequestOptions{
-		// 	Method:  r.Method,
-		// 	Path:    r.URL.Path,
-		// 	Params:  params,
-		// 	Headers: headers,
-		// }
+		requestOptions := es7.PerformRequestOptions{
+			Method:  r.Method,
+			Path:    r.URL.Path,
+			Params:  params,
+			Headers: headers,
+		}
 
 		// convert body to string string as oliver Perform request can accept io.Reader, String, interface
-		// body, err := ioutil.ReadAll(r.Body)
-		// if len(body) > 0 {
-		// 	requestOptions.Body = string(body)
-		// }
-		req, _ := http.NewRequest(r.Method, util.GetESURL()+r.URL.Path, r.Body)
-		req.Header.Add("Content-Type", "application/json")
-		req.Header.Add("cache-control", "no-cache")
+		body, err := ioutil.ReadAll(r.Body)
+		if len(body) > 0 {
+			requestOptions.Body = string(body)
+		}
 		start := time.Now()
-		response, err := http.DefaultClient.Do(req)
-		log.Println("TIME TAKEN BY ES:", time.Since(start))
+		response, err := util.GetClient7().PerformRequest(ctx, requestOptions)
+		log.Println(fmt.Sprintf("TIME TAKEN BY ES: %dms", time.Since(start).Milliseconds()))
 		if err != nil {
 			log.Errorln(logTag, ": error while sending request :", r.URL.Path, err)
 			util.WriteBackError(w, err.Error(), response.StatusCode)
 			return
 		}
-
 		// Copy the headers
 		if response.Header != nil {
 			for k, v := range response.Header {
@@ -92,15 +91,11 @@ func (es *elasticsearch) handler() http.HandlerFunc {
 			}
 		}
 		w.Header().Set("X-Origin", "ES")
-		// Copy the status code
-		w.WriteHeader(response.StatusCode)
-
-		// Copy the body
-		io.Copy(w, response.Body)
 		if err != nil {
 			log.Errorln(logTag, ": error fetching response for", r.URL.Path, err)
 			util.WriteBackError(w, err.Error(), response.StatusCode)
 			return
 		}
+		util.WriteBackRaw(w, response.Body, response.StatusCode)
 	}
 }
