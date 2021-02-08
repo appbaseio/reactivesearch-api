@@ -111,7 +111,7 @@ Prints the basic information
 Only log the errors
 
 ### CPU Profile
-Set the `cpuprofile` flag to `true` at runtime to enable to cpu profilling. Read this article to know more about the usage https://flaviocopes.com/golang-profiling/.
+Set the `cpuprofile` flag to `true` at runtime to enable CPU profiling. Read this article to know more about the usage https://flaviocopes.com/golang-profiling/.
 
 #### TLS Support
 
@@ -239,4 +239,3 @@ cluster. The dedicated endpoints to fetch the index/cluster logs can be found [h
 ## Docs
 
 Refer to the REST API [docs](https://arc-api.appbase.io/) for Arc.
-
