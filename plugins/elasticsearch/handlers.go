@@ -1,7 +1,9 @@
 package elasticsearch
 
 import (
+	"bytes"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"strings"
@@ -88,12 +90,14 @@ func (es *elasticsearch) handler() http.HandlerFunc {
 				}
 			}
 		}
+		w.WriteHeader(response.StatusCode)
+		// Copy the body
+		io.Copy(w, bytes.NewReader(response.Body))
 		w.Header().Set("X-Origin", "ES")
 		if err != nil {
 			log.Errorln(logTag, ": error fetching response for", r.URL.Path, err)
 			util.WriteBackError(w, err.Error(), response.StatusCode)
 			return
 		}
-		util.WriteBackRaw(w, response.Body, response.StatusCode)
 	}
 }
