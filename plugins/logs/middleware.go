@@ -203,10 +203,10 @@ func (l *Logs) recordResponse(w *httptest.ResponseRecorder, r *http.Request, req
 		tookValue, err := jsonparser.GetFloat(w.Body.Bytes(), "settings", "took")
 		if err != nil {
 			log.Errorln(logTag, "error encountered while reading took key from response body:", err)
-			return
+		} else {
+			// Set took value
+			rec.Response.Took = &tookValue
 		}
-		// Set took value
-		rec.Response.Took = &tookValue
 		// read error response from response recorder body
 		rec.Response.Body = string(responseBody[:util.Min(len(responseBody), 1000000)])
 	} else {
