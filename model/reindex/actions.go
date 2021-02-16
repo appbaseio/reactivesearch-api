@@ -1,4 +1,4 @@
-package reindexer
+package reindex
 
 type Action int
 

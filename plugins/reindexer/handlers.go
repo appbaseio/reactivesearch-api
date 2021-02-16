@@ -9,19 +9,10 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
+	"github.com/appbaseio/arc/model/reindex"
 	"github.com/appbaseio/arc/util"
 	"github.com/gorilla/mux"
 )
-
-type ReindexConfig struct {
-	Mappings                map[string]interface{}  `json:"mappings"`
-	Settings                map[string]interface{}  `json:"settings"`
-	SearchRelevancySettings *map[string]interface{} `json:"search_relevancy_settings"`
-	Include                 []string                `json:"include_fields"`
-	Exclude                 []string                `json:"exclude_fields"`
-	Types                   []string                `json:"types"`
-	Action                  []string                `json:"action,omitempty"`
-}
 
 func (rx *reindexer) reindex() http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
@@ -30,7 +21,7 @@ func (rx *reindexer) reindex() http.HandlerFunc {
 		if checkVar(ok, w, "index") {
 			return
 		}
-		if IsReIndexInProcess(indexName, "") {
+		if reindex.IsReIndexInProcess(indexName, "") {
 			util.WriteBackError(w, fmt.Sprintf(`Re-indexing is already in progress for %s index`, indexName), http.StatusInternalServerError)
 			return
 		}
@@ -39,7 +30,7 @@ func (rx *reindexer) reindex() http.HandlerFunc {
 			return
 		}
 
-		response, err := Reindex(req.Context(), indexName, &body, waitForCompletion, "")
+		response, err := reindex.Reindex(req.Context(), indexName, &body, waitForCompletion, "")
 		errorHandler(err, w, response)
 	}
 }
@@ -60,14 +51,14 @@ func (rx *reindexer) reindexSrcToDest() http.HandlerFunc {
 			return
 		}
 
-		response, err := Reindex(req.Context(), sourceIndex, &body, waitForCompletion, destinationIndex)
+		response, err := reindex.Reindex(req.Context(), sourceIndex, &body, waitForCompletion, destinationIndex)
 		errorHandler(err, w, response)
 	}
 }
 
 func (rx *reindexer) aliasedIndices() http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
-		res, err := getAliasedIndices(req.Context())
+		res, err := reindex.GetAliasedIndices(req.Context())
 		if err != nil {
 			util.WriteBackError(w, "Unable to get aliased indices.\n"+err.Error(), http.StatusInternalServerError)
 			return
@@ -96,21 +87,21 @@ func checkVar(okS bool, w http.ResponseWriter, variable string) bool {
 	return false
 }
 
-func reindexConfigResponse(req *http.Request, w http.ResponseWriter, sourceIndex string) (error, ReindexConfig, bool, bool) {
+func reindexConfigResponse(req *http.Request, w http.ResponseWriter, sourceIndex string) (error, reindex.ReindexConfig, bool, bool) {
 	reqBody, err := ioutil.ReadAll(req.Body)
 	if err != nil {
 		log.Errorln(logTag, ":", err)
 		util.WriteBackError(w, "Can't read request body", http.StatusBadRequest)
-		return nil, ReindexConfig{}, false, true
+		return nil, reindex.ReindexConfig{}, false, true
 	}
 	defer req.Body.Close()
 
-	var body ReindexConfig
+	var body reindex.ReindexConfig
 	err = json.Unmarshal(reqBody, &body)
 	if err != nil {
 		log.Errorln(logTag, ":", err)
 		util.WriteBackError(w, "Can't parse request body", http.StatusBadRequest)
-		return nil, ReindexConfig{}, false, true
+		return nil, reindex.ReindexConfig{}, false, true
 	}
 
 	// By default, wait_for_completion depends on size of index
@@ -121,9 +112,9 @@ func reindexConfigResponse(req *http.Request, w http.ResponseWriter, sourceIndex
 		if err != nil {
 			log.Errorln(logTag, ":", err)
 			util.WriteBackError(w, "Unable to get the size of "+sourceIndex, http.StatusBadRequest)
-			return nil, ReindexConfig{}, false, true
+			return nil, reindex.ReindexConfig{}, false, true
 		}
-		if size > IndexStoreSize {
+		if size > reindex.IndexStoreSize {
 			param = "false"
 		} else {
 			param = "true"
@@ -133,7 +124,7 @@ func reindexConfigResponse(req *http.Request, w http.ResponseWriter, sourceIndex
 	if err != nil {
 		log.Errorln(logTag, ":", err)
 		util.WriteBackError(w, err.Error(), http.StatusBadRequest)
-		return nil, ReindexConfig{}, false, true
+		return nil, reindex.ReindexConfig{}, false, true
 	}
 	return err, body, waitForCompletion, false
 }

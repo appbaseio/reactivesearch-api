@@ -11,6 +11,7 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"github.com/appbaseio/arc/middleware/classify"
+	"github.com/appbaseio/arc/model/reindex"
 	"github.com/appbaseio/arc/util"
 	es7 "github.com/olivere/elastic/v7"
 )
@@ -56,7 +57,43 @@ func initPlugin(alias, config string) (*elasticsearch, error) {
 		Body(settings).
 		Do(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("error while creating index named \"%s\" %v", indexName, err)
+		log.Errorln(logTag, " : ", fmt.Errorf("error while creating index named \"%s\" %v", indexName, err))
+		isAliasExistsAsIndex, err := util.GetClient7().IndexExists(alias).Do(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("error while checking if index already exists: %v", err)
+		}
+		if !isAliasExistsAsIndex {
+			return nil, fmt.Errorf("error while creating index named \"%s\" %v", indexName, err)
+		}
+		// If .logs exists as an index then perform following steps:
+		// 1. Re-index `.logs` to `.logs-000001`
+		// 2. Delete ``.logs` and continue
+		sourceIndex := alias
+		destinationIndex := indexName
+		var settingsAsMap map[string]interface{}
+		err1 := json.Unmarshal([]byte(settings), &settingsAsMap)
+		if err1 != nil {
+			log.Errorln(logTag, ":", err1)
+			return nil, fmt.Errorf("error while un-marshalling logs mappings %v", err1)
+		}
+		settings, _ := settingsAsMap["settings"].(map[string]interface{})
+		mappings, _ := settingsAsMap["mappings"].(map[string]interface{})
+		reIndexConfig := reindex.ReindexConfig{
+			Settings: settings,
+			Mappings: mappings,
+		}
+		taskDetails, err := reindex.Reindex(context.Background(), sourceIndex, &reIndexConfig, false, destinationIndex)
+		if err != nil {
+			log.Errorln(logTag, ":", err)
+			return nil, fmt.Errorf("error while re-indexing logs index %v", err)
+		}
+		// Re-index synchronously
+		reindex.TrackReindex(reindex.SetAliasConfig{
+			AliasName:    sourceIndex,
+			NewIndex:     destinationIndex,
+			OldIndex:     sourceIndex,
+			IsWriteIndex: true,
+		}, taskDetails)
 	}
 
 	log.Println(logTag, ": successfully created index name", indexName)

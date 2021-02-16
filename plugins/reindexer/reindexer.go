@@ -4,6 +4,7 @@ import (
 	"sync"
 
 	"github.com/appbaseio/arc/middleware"
+	"github.com/appbaseio/arc/model/reindex"
 	"github.com/appbaseio/arc/plugins"
 )
 
@@ -33,8 +34,8 @@ func (rx *reindexer) Name() string {
 }
 
 func (rx *reindexer) InitFunc() error {
-	InitIndexAliasCache()
-	InitAliasIndexCache()
+	reindex.InitIndexAliasCache()
+	reindex.InitAliasIndexCache()
 	return nil
 }
 
