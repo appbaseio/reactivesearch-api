@@ -77,6 +77,7 @@ type Limits struct {
 	EcommIntegrationLimit int64 `json:"ecommintegration_limit"`
 	LogsLimit             int64 `json:"logs_limit"`
 	SynonymsLimit         int64 `json:"synonyms_limit"`
+	CacheLimit            int64 `json:"cache_limit"`
 }
 
 // Options is a function type used to define a permission's properties.
@@ -263,6 +264,7 @@ func SetLimits(limits *Limits, isAdmin bool) Options {
 			EcommIntegrationLimit: getNormalizedLimit(limits.EcommIntegrationLimit, defaults.EcommIntegrationLimit),
 			LogsLimit:             getNormalizedLimit(limits.LogsLimit, defaults.LogsLimit),
 			SynonymsLimit:         getNormalizedLimit(limits.SynonymsLimit, defaults.SynonymsLimit),
+			CacheLimit:            getNormalizedLimit(limits.CacheLimit, defaults.CacheLimit),
 		}
 		return nil
 	}
@@ -534,6 +536,8 @@ func (p *Permission) GetLimitFor(c category.Category) (int64, error) {
 		return p.Limits.LogsLimit, nil
 	case category.Synonyms:
 		return p.Limits.SynonymsLimit, nil
+	case category.Cache:
+		return p.Limits.CacheLimit, nil
 	default:
 		return -1, fmt.Errorf(`we do not rate limit "%s" category`, c)
 	}
@@ -666,6 +670,9 @@ func (p *Permission) GetPatch(rolePatched bool) (map[string]interface{}, error) 
 		}
 		if p.Limits.SynonymsLimit != 0 {
 			limits["synonyms_limit"] = p.Limits.SynonymsLimit
+		}
+		if p.Limits.CacheLimit != 0 {
+			limits["cache_limit"] = p.Limits.CacheLimit
 		}
 
 		patch["limits"] = limits

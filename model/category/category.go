@@ -40,6 +40,7 @@ const (
 	SearchGrader
 	UIBuilder
 	Logs
+	Cache
 )
 
 // String is an implementation of Stringer interface that returns the string representation of category.Categories.
@@ -66,6 +67,7 @@ func (c Category) String() string {
 		"searchgrader",
 		"uibuilder",
 		"logs",
+		"cache",
 	}[c]
 }
 
@@ -119,6 +121,8 @@ func (c *Category) UnmarshalJSON(bytes []byte) error {
 		*c = UIBuilder
 	case Logs.String():
 		*c = Logs
+	case Cache.String():
+		*c = Cache
 	default:
 		return fmt.Errorf("invalid category encountered: %v", category)
 	}
@@ -171,6 +175,8 @@ func (c Category) MarshalJSON() ([]byte, error) {
 		category = UIBuilder.String()
 	case Logs:
 		category = Logs.String()
+	case Cache:
+		category = Cache.String()
 	default:
 		return nil, fmt.Errorf("invalid category encountered: %v" + c.String())
 	}

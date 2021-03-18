@@ -34,6 +34,7 @@ var (
 		category.SearchGrader,
 		category.UIBuilder,
 		category.Logs,
+		category.Cache,
 	}
 
 	defaultOps = []op.Operation{
@@ -69,6 +70,7 @@ var (
 		EcommIntegrationLimit: 10,
 		LogsLimit:             10,
 		SynonymsLimit:         10,
+		CacheLimit:            10,
 	}
 
 	defaultAdminLimits = Limits{
@@ -94,5 +96,6 @@ var (
 		EcommIntegrationLimit: 30,
 		LogsLimit:             30,
 		SynonymsLimit:         30,
+		CacheLimit:            10,
 	}
 )
