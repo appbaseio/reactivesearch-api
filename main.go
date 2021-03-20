@@ -69,6 +69,8 @@ var (
 	FeatureSearchGrader string
 	// FeatureEcommerce for testing
 	FeatureEcommerce string
+	// FeatureCache for testing
+	FeatureCache string
 )
 
 func init() {
@@ -216,6 +218,9 @@ func main() {
 	}
 	if FeatureEcommerce == "true" {
 		util.SetFeatureEcommerce(true)
+	}
+	if FeatureCache == "true" {
+		util.SetFeatureCache(true)
 	}
 	// Set port variable
 	util.Port = port

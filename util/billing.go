@@ -72,6 +72,7 @@ type ClusterPlan struct {
 	FeatureSearchRelevancy bool   `json:"feature_search_relevancy"`
 	FeatureSearchGrader    bool   `json:"feature_search_grader"`
 	FeatureEcommerce       bool   `json:"feature_ecommerce"`
+	FeatureCache           bool   `json:"feature_cache"`
 	Trial                  bool   `json:"trial"`
 	TrialValidity          int64  `json:"trial_validity"`
 	TierValidity           int64  `json:"tier_validity"`
@@ -126,6 +127,7 @@ type ArcInstanceDetails struct {
 	FeatureSearchRelevancy bool                   `json:"feature_search_relevancy"`
 	FeatureSearchGrader    bool                   `json:"feature_search_grader"`
 	FeatureEcommerce       bool                   `json:"feature_ecommerce"`
+	FeatureCache           bool                   `json:"feature_cache"`
 	ClusterID              string                 `json:"cluster_id"`
 }
 
@@ -215,6 +217,7 @@ func getArcInstance(arcID string) (ArcInstance, error) {
 		SetFeatureSearchGrader(arcInstanceByID.FeatureSearchGrader)
 		SetFeatureTemplates(arcInstanceByID.FeatureTemplates)
 		SetFeatureEcommerce(arcInstanceByID.FeatureEcommerce)
+		SetFeatureCache(arcInstanceByID.FeatureCache)
 		ClusterID = arcInstanceByID.ClusterID
 	} else {
 		return arcInstance, errors.New("No valid instance found for the provided ARC_ID")
@@ -268,6 +271,7 @@ func getArcClusterInstance(clusterID string) (ArcInstance, error) {
 		SetFeatureSearchGrader(arcInstanceDetails.FeatureSearchGrader)
 		SetFeatureTemplates(arcInstanceDetails.FeatureTemplates)
 		SetFeatureEcommerce(arcInstanceDetails.FeatureEcommerce)
+		SetFeatureCache(arcInstanceDetails.FeatureCache)
 		ClusterID = arcInstanceDetails.ClusterID
 	} else {
 		return arcInstance, errors.New("No valid instance found for the provided CLUSTER_ID")
@@ -319,6 +323,7 @@ func getClusterPlan(clusterID string) (ClusterPlan, error) {
 	SetFeatureSearchGrader(response.Plan.FeatureSearchGrader)
 	SetFeatureTemplates(response.Plan.FeatureTemplates)
 	SetFeatureEcommerce(response.Plan.FeatureEcommerce)
+	SetFeatureCache(response.Plan.FeatureCache)
 	ClusterID = response.Plan.ClusterID
 	return clusterPlan, nil
 }
