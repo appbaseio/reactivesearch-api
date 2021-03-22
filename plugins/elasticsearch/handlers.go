@@ -79,7 +79,11 @@ func (es *elasticsearch) handler() http.HandlerFunc {
 		log.Println(fmt.Sprintf("TIME TAKEN BY ES: %dms", time.Since(start).Milliseconds()))
 		if err != nil {
 			log.Errorln(logTag, ": error while sending request :", r.URL.Path, err)
-			util.WriteBackError(w, err.Error(), response.StatusCode)
+			if response != nil {
+				util.WriteBackError(w, err.Error(), response.StatusCode)
+				return
+			}
+			util.WriteBackError(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 		// Copy the headers
