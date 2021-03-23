@@ -5,6 +5,8 @@ import (
 	"net"
 	"net/http"
 	"strings"
+
+	log "github.com/sirupsen/logrus"
 )
 
 var cidrs []*net.IPNet
@@ -53,7 +55,8 @@ func FromRequest(r *http.Request) string {
 	// Fetch header value
 	xRealIP := r.Header.Get("X-Real-Ip")
 	xForwardedFor := r.Header.Get("X-Forwarded-For")
-
+	log.Errorln("REMOTE IP: ", "xRealIP =>", xRealIP, "xForwardedFor =>", xForwardedFor)
+	log.Errorln("REMOTE IP: ", "r.RemoteAddr =>", r.RemoteAddr)
 	// If both empty, return IP from remote address
 	if xRealIP == "" && xForwardedFor == "" {
 		var remoteIP string
@@ -65,7 +68,7 @@ func FromRequest(r *http.Request) string {
 		} else {
 			remoteIP = r.RemoteAddr
 		}
-
+		log.Errorln("REMOTE IP: ", "remoteIP =>", remoteIP)
 		return remoteIP
 	}
 
@@ -74,10 +77,11 @@ func FromRequest(r *http.Request) string {
 		address = strings.TrimSpace(address)
 		isPrivate, err := isPrivateAddress(address)
 		if !isPrivate && err == nil {
+			log.Errorln("REMOTE IP: ", "returning address =>", address)
 			return address
 		}
 	}
-
+	log.Errorln("REMOTE IP: ", "returning xRealIP =>", xRealIP)
 	// If nothing succeed, return X-Real-IP
 	return xRealIP
 }
