@@ -13,6 +13,10 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+const ArcIDEnvName = "ARC_ID"
+const ClusterIDEnvName = "CLUSTER_ID"
+const AppbaseIDEnvName = "APPBASE_ID"
+
 // ACCAPI URL
 var ACCAPI = "https://accapi.appbase.io/"
 
@@ -348,7 +352,7 @@ func getClusterPlan(clusterID string) (ClusterPlan, error) {
 // SetClusterPlan fetches the cluster plan & sets the Tier value
 func SetClusterPlan() {
 	log.Println("=> Getting cluster plan details")
-	clusterID := os.Getenv("CLUSTER_ID")
+	clusterID := os.Getenv(ClusterIDEnvName)
 	if clusterID == "" {
 		log.Fatalln("CLUSTER_ID env required but not present")
 		return
@@ -428,9 +432,9 @@ func reportClusterUsageRequest(arcUsage ArcUsage) (ArcUsageResponse, error) {
 
 // GetAppbaseID to get appbase id
 func GetAppbaseID() (string, error) {
-	arcID := os.Getenv("ARC_ID")
+	arcID := os.Getenv(ArcIDEnvName)
 	if arcID == "" {
-		appbaseID := os.Getenv("APPBASE_ID")
+		appbaseID := os.Getenv(AppbaseIDEnvName)
 		if appbaseID == "" {
 			return "", errors.New("APPBASE_ID env required but not present")
 		} else {
