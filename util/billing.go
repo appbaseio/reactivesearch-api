@@ -31,6 +31,18 @@ func GetTier() *Plan {
 	return tier
 }
 
+// Number of arc machines
+var numberOfMachines int64
+
+func setNumberOfMachines(machines int64) {
+	numberOfMachines = machines
+}
+
+// To retrieve the total number of machines
+func GetNumberOfMachines() int64 {
+	return numberOfMachines
+}
+
 // TimeValidity to be obtained from ACCAPI (in secs)
 var timeValidity int64
 
@@ -79,6 +91,7 @@ type ClusterPlan struct {
 	TimeValidity           int64  `json:"time_validity"`
 	SubscriptionID         string `json:"subscription_id"`
 	ClusterID              string `json:"cluster_id"`
+	NumberOfMachines       int64  `json:"number_of_machines"`
 }
 
 // ArcUsageResponse stores the response from ACCAPI
@@ -129,6 +142,7 @@ type ArcInstanceDetails struct {
 	FeatureEcommerce       bool                   `json:"feature_ecommerce"`
 	FeatureCache           bool                   `json:"feature_cache"`
 	ClusterID              string                 `json:"cluster_id"`
+	NumberOfMachines       int64                  `json:"number_of_machines"`
 }
 
 // SetDefaultTier sets the default tier when billing is disabled
@@ -218,9 +232,10 @@ func getArcInstance(arcID string) (ArcInstance, error) {
 		SetFeatureTemplates(arcInstanceByID.FeatureTemplates)
 		SetFeatureEcommerce(arcInstanceByID.FeatureEcommerce)
 		SetFeatureCache(arcInstanceByID.FeatureCache)
+		setNumberOfMachines(arcInstanceByID.NumberOfMachines)
 		ClusterID = arcInstanceByID.ClusterID
 	} else {
-		return arcInstance, errors.New("No valid instance found for the provided ARC_ID")
+		return arcInstance, errors.New("no valid instance found for the provided ARC_ID")
 	}
 
 	if err != nil {
@@ -272,9 +287,10 @@ func getArcClusterInstance(clusterID string) (ArcInstance, error) {
 		SetFeatureTemplates(arcInstanceDetails.FeatureTemplates)
 		SetFeatureEcommerce(arcInstanceDetails.FeatureEcommerce)
 		SetFeatureCache(arcInstanceDetails.FeatureCache)
+		setNumberOfMachines(arcInstanceDetails.NumberOfMachines)
 		ClusterID = arcInstanceDetails.ClusterID
 	} else {
-		return arcInstance, errors.New("No valid instance found for the provided CLUSTER_ID")
+		return arcInstance, errors.New("no valid instance found for the provided CLUSTER_ID")
 	}
 	return arcInstance, nil
 }
@@ -324,6 +340,7 @@ func getClusterPlan(clusterID string) (ClusterPlan, error) {
 	SetFeatureTemplates(response.Plan.FeatureTemplates)
 	SetFeatureEcommerce(response.Plan.FeatureEcommerce)
 	SetFeatureCache(response.Plan.FeatureCache)
+	setNumberOfMachines(response.Plan.NumberOfMachines)
 	ClusterID = response.Plan.ClusterID
 	return clusterPlan, nil
 }
