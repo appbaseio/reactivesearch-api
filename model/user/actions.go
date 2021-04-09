@@ -145,5 +145,5 @@ var ActionToCategories = map[UserAction][]category.Category{
 	UIBuilder: append([]category.Category{
 		category.UIBuilder,
 	}, searchRelevancyCategories...),
-	Speed: {category.Cache},
+	Speed: {category.Cache, category.Cat},
 }
