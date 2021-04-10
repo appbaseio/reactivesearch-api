@@ -32,6 +32,12 @@ const (
 	ProductionSecond2019
 	ProductionThird2019
 	ProductionFourth2019
+	Starter2021
+	ProductionFirst2021
+	ProductionSecond2021
+	ProductionThird2021
+	HostedArcStandard2021
+	HostedArcEnterprise2021
 )
 
 // String is the implementation of Stringer interface that returns the string representation of Plan type.
@@ -60,6 +66,12 @@ func (o Plan) String() string {
 		"2019-production-2",
 		"2019-production-3",
 		"2019-production-4",
+		"2021-starter",
+		"2021-production-1",
+		"2021-production-2",
+		"2021-production-3",
+		"2021-hosted-arc-standard",
+		"2021-hosted-arc-enterprise",
 	}[o]
 }
 
@@ -117,6 +129,18 @@ func (o *Plan) UnmarshalJSON(bytes []byte) error {
 		*o = ProductionThird2019
 	case ProductionFourth2019.String():
 		*o = ProductionFourth2019
+	case Starter2021.String():
+		*o = Starter2021
+	case ProductionFirst2021.String():
+		*o = ProductionFirst2021
+	case ProductionSecond2021.String():
+		*o = ProductionSecond2021
+	case ProductionThird2021.String():
+		*o = ProductionThird2021
+	case HostedArcStandard2021.String():
+		*o = HostedArcStandard2021
+	case HostedArcEnterprise2021.String():
+		*o = HostedArcEnterprise2021
 	default:
 		return fmt.Errorf("invalid plan encountered: %v", plan)
 	}
@@ -173,6 +197,18 @@ func (o Plan) MarshalJSON() ([]byte, error) {
 		plan = ProductionThird2019.String()
 	case ProductionFourth2019:
 		plan = ProductionFourth2019.String()
+	case Starter2021:
+		plan = Starter2021.String()
+	case ProductionFirst2021:
+		plan = ProductionFirst2021.String()
+	case ProductionSecond2021:
+		plan = ProductionSecond2021.String()
+	case ProductionThird2021:
+		plan = ProductionThird2021.String()
+	case HostedArcStandard2021:
+		plan = HostedArcStandard2021.String()
+	case HostedArcEnterprise2021:
+		plan = HostedArcEnterprise2021.String()
 	default:
 		return nil, fmt.Errorf("invalid plan encountered: %v", o)
 	}
@@ -198,7 +234,16 @@ func ValidatePlans(validPlans []Plan, byPassValidation bool) bool {
 // IsProductionPlan validates if the user's plan is a production plan
 func IsProductionPlan() bool {
 	switch GetTier().String() {
-	case ArcEnterprise.String(), ProductionFirst2019.String(), ProductionSecond2019.String(), ProductionThird2019.String(), ProductionFourth2019.String():
+	case ArcEnterprise.String(),
+		HostedArcEnterprise.String(),
+		ProductionFirst2019.String(),
+		ProductionSecond2019.String(),
+		ProductionThird2019.String(),
+		ProductionFourth2019.String(),
+		ProductionFirst2021.String(),
+		ProductionSecond2021.String(),
+		ProductionThird2021.String(),
+		HostedArcEnterprise2021.String():
 		return true
 	default:
 		return false
