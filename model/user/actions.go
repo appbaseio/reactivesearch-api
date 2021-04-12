@@ -19,6 +19,7 @@ const (
 	Billing
 	DowntimeAlerts
 	UIBuilder
+	Speed
 )
 
 // String is the implementation of Stringer interface that returns the string representation of UserAction type.
@@ -33,6 +34,7 @@ func (o UserAction) String() string {
 		"billing",
 		"downtime-alerts",
 		"uibuilder",
+		"speed",
 	}[o]
 }
 
@@ -62,6 +64,8 @@ func (o *UserAction) UnmarshalJSON(bytes []byte) error {
 		*o = DowntimeAlerts
 	case UIBuilder.String():
 		*o = UIBuilder
+	case Speed.String():
+		*o = Speed
 	default:
 		return fmt.Errorf("invalid user action encountered: %v", userAction)
 	}
@@ -90,6 +94,8 @@ func (o UserAction) MarshalJSON() ([]byte, error) {
 		userAction = DowntimeAlerts.String()
 	case UIBuilder:
 		userAction = UIBuilder.String()
+	case Speed:
+		userAction = Speed.String()
 	default:
 		return nil, fmt.Errorf("invalid user action encountered: %v", o)
 	}
@@ -139,4 +145,5 @@ var ActionToCategories = map[UserAction][]category.Category{
 	UIBuilder: append([]category.Category{
 		category.UIBuilder,
 	}, searchRelevancyCategories...),
+	Speed: {category.Cache, category.Cat},
 }

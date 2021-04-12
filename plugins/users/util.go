@@ -15,7 +15,7 @@ import (
 func subscribeToDowntimeAlert(email string) error {
 	// Downtime alerts only work for cluster users
 	if util.ClusterBilling == "true" && email != "" {
-		clusterID := os.Getenv("CLUSTER_ID")
+		clusterID := os.Getenv(util.ClusterIDEnvName)
 		url := util.ACCAPI + "cluster/alert/" + clusterID
 		requestBody, _ := json.Marshal(map[string]interface{}{
 			"email": email,
@@ -40,7 +40,7 @@ func subscribeToDowntimeAlert(email string) error {
 func unsubscribeToDowntimeAlert(email string) error {
 	// Downtime alerts only work for cluster users
 	if util.ClusterBilling == "true" {
-		clusterID := os.Getenv("CLUSTER_ID")
+		clusterID := os.Getenv(util.ClusterIDEnvName)
 		url := util.ACCAPI + "cluster/alert/" + clusterID
 		requestBody, _ := json.Marshal(map[string]interface{}{
 			"email": email,

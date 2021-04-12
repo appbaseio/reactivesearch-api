@@ -34,6 +34,7 @@ var adminCategories = []category.Category{
 	category.SearchGrader,
 	category.UIBuilder,
 	category.Logs,
+	category.Cache,
 }
 
 var adminOps = []op.Operation{
@@ -65,6 +66,7 @@ var defaultAdminLimits = permission.Limits{
 	EcommIntegrationLimit: 30,
 	LogsLimit:             30,
 	SynonymsLimit:         30,
+	CacheLimit:            30,
 }
 
 var createPermissionResponse = map[string]interface{}{

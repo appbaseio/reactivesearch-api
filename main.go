@@ -69,6 +69,8 @@ var (
 	FeatureSearchGrader string
 	// FeatureEcommerce for testing
 	FeatureEcommerce string
+	// FeatureCache for testing
+	FeatureCache string
 )
 
 func init() {
@@ -217,6 +219,9 @@ func main() {
 	if FeatureEcommerce == "true" {
 		util.SetFeatureEcommerce(true)
 	}
+	if FeatureCache == "true" {
+		util.SetFeatureCache(true)
+	}
 	// Set port variable
 	util.Port = port
 
@@ -225,7 +230,7 @@ func main() {
 	util.NewClient()
 	util.SetDefaultIndexTemplate()
 	// map of specific plugins
-	sequencedPlugins := []string{"searchrelevancy.so", "rules.so", "functions.so", "analytics.so", "suggestions.so"}
+	sequencedPlugins := []string{"cache.so", "searchrelevancy.so", "rules.so", "functions.so", "analytics.so", "suggestions.so"}
 	sequencedPluginsByPath := make(map[string]string)
 
 	var elasticSearchPath, reactiveSearchPath string

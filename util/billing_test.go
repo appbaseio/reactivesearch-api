@@ -50,6 +50,10 @@ func TestBilling(t *testing.T) {
 			SetFeatureEcommerce(true)
 			So(GetFeatureEcommerce(), ShouldEqual, true)
 		})
+		Convey("Set FeatureCache", func() {
+			SetFeatureCache(true)
+			So(GetFeatureCache(), ShouldEqual, true)
+		})
 		Convey("Validate TimeValidity: Positive Value", func() {
 			// Set TimeValidity to a positive value
 			var timeValidityMock = 1200000

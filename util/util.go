@@ -12,11 +12,13 @@ import (
 	"math"
 	"net"
 	"net/http"
+	"os"
 	"regexp"
 	"strings"
 	"sync"
 	"time"
 
+	appbase_errors "github.com/appbaseio/arc/errors"
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 	log "github.com/sirupsen/logrus"
@@ -300,4 +302,23 @@ func Min(a, b int) int {
 		return a
 	}
 	return b
+}
+
+// GetArcID returns the cluster ID
+func GetArcID() (string, error) {
+	var arcID string
+	// If hosted/cluster billing is true replace the clusterID with the arcID
+	if HostedBilling == "true" || ClusterBilling == "true" {
+		arcID = os.Getenv(ClusterIDEnvName)
+		if arcID == "" {
+			return "", appbase_errors.NewEnvVarNotSetError(ClusterIDEnvName)
+		}
+	} else {
+		appbaseID, err := GetAppbaseID()
+		if err != nil {
+			return "", err
+		}
+		arcID = appbaseID
+	}
+	return arcID, nil
 }

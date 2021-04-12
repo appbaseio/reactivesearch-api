@@ -103,3 +103,16 @@ func GetFeatureEcommerce() bool {
 func SetFeatureEcommerce(val bool) {
 	featureEcommerce = val
 }
+
+// Feature cache
+var featureCache bool
+
+// GetFeatureCache returns the featureCache
+func GetFeatureCache() bool {
+	return featureCache
+}
+
+// SetFeatureEcommerce sets the featureCache
+func SetFeatureCache(val bool) {
+	featureCache = val
+}
