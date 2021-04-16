@@ -76,6 +76,7 @@ type ArcUsage struct {
 	SubscriptionID string `json:"subscription_id"`
 	Quantity       int    `json:"quantity"`
 	ClusterID      string `json:"cluster_id"`
+	MachineID      string `json:"machine_id"`
 }
 
 type ClusterPlan struct {
@@ -389,7 +390,6 @@ func reportUsageRequest(arcUsage ArcUsage) (ArcUsageResponse, error) {
 		return response, err
 	}
 	err = json.Unmarshal(body, &response)
-
 	if err != nil {
 		log.Errorln("error while unmarshalling res body:", err)
 		return response, err
@@ -476,10 +476,12 @@ func ReportUsage() {
 		return
 	}
 
-	usageBody := ArcUsage{}
-	usageBody.ArcID = arcID
-	usageBody.SubscriptionID = subID
-	usageBody.Quantity = NodeCount
+	usageBody := ArcUsage{
+		ArcID:          arcID,
+		SubscriptionID: subID,
+		Quantity:       NodeCount,
+		MachineID:      MachineID,
+	}
 	response, err1 := reportUsageRequest(usageBody)
 	if err1 != nil {
 		log.Errorln("Please contact support@appbase.io with your ARC_ID or registered e-mail address. Usage is not getting reported:", err1)
@@ -525,10 +527,12 @@ func ReportHostedArcUsage() {
 		return
 	}
 
-	usageBody := ArcUsage{}
-	usageBody.ClusterID = clusterID
-	usageBody.SubscriptionID = subID
-	usageBody.Quantity = NodeCount
+	usageBody := ArcUsage{
+		ClusterID:      clusterID,
+		SubscriptionID: subID,
+		Quantity:       NodeCount,
+		MachineID:      MachineID,
+	}
 	response, err1 := reportClusterUsageRequest(usageBody)
 	if err1 != nil {
 		log.Errorln("Please contact support@appbase.io with your CLUSTER_ID or registered e-mail address. Usage is not getting reported:", err1)
