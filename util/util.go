@@ -36,6 +36,9 @@ var ClusterBilling string
 // Version arc version
 var Version string
 
+// Machine ID
+var MachineID string
+
 // Port arc port
 var Port int
 

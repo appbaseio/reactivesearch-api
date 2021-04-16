@@ -19,6 +19,7 @@ import (
 	"github.com/appbaseio/arc/middleware/logger"
 	"github.com/appbaseio/arc/plugins"
 	"github.com/appbaseio/arc/util"
+	"github.com/denisbrodbeck/machineid"
 	"github.com/gorilla/mux"
 	"github.com/pkg/profile"
 	"github.com/robfig/cron"
@@ -50,7 +51,6 @@ var (
 	ClusterBilling string
 	// IgnoreBillingMiddleware ignores the billing middleware
 	IgnoreBillingMiddleware string
-
 	// Tier for testing
 	Tier string
 	// FeatureCustomEvents for testing
@@ -93,7 +93,11 @@ func init() {
 }
 
 func main() {
-
+	id, err1 := machineid.ID()
+	if err1 != nil {
+		log.Fatal(logTag, ": ", err1)
+	}
+	util.MachineID = id
 	flag.Parse()
 	log.SetReportCaller(true)
 	log.SetFormatter(&log.TextFormatter{
