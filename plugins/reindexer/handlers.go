@@ -9,6 +9,7 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
+	"github.com/appbaseio/arc/middleware/classify"
 	"github.com/appbaseio/arc/model/reindex"
 	"github.com/appbaseio/arc/util"
 	"github.com/gorilla/mux"
@@ -62,6 +63,13 @@ func (rx *reindexer) aliasedIndices() http.HandlerFunc {
 		if err != nil {
 			util.WriteBackError(w, "Unable to get aliased indices.\n"+err.Error(), http.StatusInternalServerError)
 			return
+		}
+
+		for _, aliasIndex := range res {
+			if aliasIndex.Alias != "" {
+				classify.SetIndexAlias(aliasIndex.Index, aliasIndex.Alias)
+				classify.SetAliasIndex(aliasIndex.Alias, aliasIndex.Index)
+			}
 		}
 
 		response, err := json.Marshal(res)
