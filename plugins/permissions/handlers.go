@@ -159,7 +159,14 @@ func (p *permissions) patchPermission() http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
 		vars := mux.Vars(req)
 		username := vars["username"]
-
+		// To decide whether to just update the local state
+		isLocal := req.URL.Query().Get("local")
+		if isLocal == "true" {
+			// delete user details locally
+			auth.ClearLocalUser(username)
+			util.WriteBackMessage(w, "permission is updated successfully", http.StatusOK)
+			return
+		}
 		body, err := ioutil.ReadAll(req.Body)
 		if err != nil {
 			msg := "can't read request body"
@@ -239,6 +246,31 @@ func (p *permissions) patchPermission() http.HandlerFunc {
 
 		_, err2 := p.es.patchPermission(req.Context(), username, patch)
 		if err2 == nil {
+			// Invoke ACCAPI
+			res, err := util.ProxyACCAPI(util.ProxyConfig{
+				Method: http.MethodPatch,
+				URL:    "/_permission/" + username,
+				Body:   nil,
+			})
+			if err != nil {
+				log.Errorln(logTag, ":", err)
+				util.WriteBackError(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+			// Failed to update all nodes, return error response
+			if res != nil {
+				log.Errorln(logTag, ":", "error encountered updating permission")
+				bodyBytes, err := ioutil.ReadAll(res.Body)
+				if err != nil {
+					log.Errorln(logTag, ":", err)
+					util.WriteBackError(w, err.Error(), http.StatusInternalServerError)
+					return
+				}
+				util.WriteBackRaw(w, bodyBytes, res.StatusCode)
+				return
+			}
+			// clear user details locally
+			auth.ClearLocalUser(username)
 			util.WriteBackMessage(w, "permission is updated successfully", http.StatusOK)
 			return
 		}
@@ -253,13 +285,43 @@ func (p *permissions) deletePermission() http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
 		vars := mux.Vars(req)
 		username := vars["username"]
+		// To decide whether to just update the local state
+		isLocal := req.URL.Query().Get("local")
+		if isLocal == "true" {
+			// delete user details locally
+			auth.ClearLocalUser(username)
+			msg := fmt.Sprintf(`permission with "username"="%s" deleted`, username)
+			util.WriteBackMessage(w, msg, http.StatusOK)
+			return
+		}
 
 		ok, err := p.es.deletePermission(req.Context(), username)
 		if ok && err == nil {
-			// Clear username record from the cache
-			auth.ClearPassword(username)
-			// Clear user record from the user cache
-			auth.RemoveCredentialFromCache(username)
+			// Invoke ACCAPI
+			res, err := util.ProxyACCAPI(util.ProxyConfig{
+				Method: http.MethodDelete,
+				URL:    "/_permission/" + username,
+				Body:   nil,
+			})
+			if err != nil {
+				log.Errorln(logTag, ":", err)
+				util.WriteBackError(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+			// Failed to update all nodes, return error response
+			if res != nil {
+				log.Errorln(logTag, ":", "error encountered deleting permission")
+				bodyBytes, err := ioutil.ReadAll(res.Body)
+				if err != nil {
+					log.Errorln(logTag, ":", err)
+					util.WriteBackError(w, err.Error(), http.StatusInternalServerError)
+					return
+				}
+				util.WriteBackRaw(w, bodyBytes, res.StatusCode)
+				return
+			}
+			// clear user details locally
+			auth.ClearLocalUser(username)
 			msg := fmt.Sprintf(`permission with "username"="%s" deleted`, username)
 			util.WriteBackMessage(w, msg, http.StatusOK)
 			return
@@ -355,10 +417,10 @@ func (p *permissions) role() http.HandlerFunc {
 			p.postPermission(permission.SetRole(role))(w, req)
 			return
 		case http.MethodPatch:
-			http.Redirect(w, req, "/_permission/"+perm.Username, 308)
+			http.Redirect(w, req, "/_permission/"+perm.Username, http.StatusPermanentRedirect)
 			return
 		case http.MethodDelete:
-			http.Redirect(w, req, "/_permission/"+perm.Username, 308)
+			http.Redirect(w, req, "/_permission/"+perm.Username, http.StatusPermanentRedirect)
 			return
 		}
 	}

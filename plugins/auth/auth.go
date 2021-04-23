@@ -114,9 +114,17 @@ func (a *Auth) InitFunc() error {
 			var record = publicKey{}
 			record.PublicKey = string(publicKeyBuf)
 			record.RoleKey = a.jwtRoleKey
-			_, err = a.savePublicKey(context.Background(), publicKeyIndex, record)
+			jwtRsaPublicKey, err := getJWTPublickKey(record)
 			if err != nil {
 				log.Errorln(logTag, ":unable to save public key record from environment,", err)
+			} else {
+				_, err = a.savePublicKey(context.Background(), publicKeyIndex, record)
+				if err != nil {
+					log.Errorln(logTag, ":unable to save public key record from environment,", err)
+				} else {
+					// Update local state
+					a.updateLocalPublicKey(jwtRsaPublicKey, record.RoleKey)
+				}
 			}
 		}
 	} else {
