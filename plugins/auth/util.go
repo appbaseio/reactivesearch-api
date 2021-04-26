@@ -34,3 +34,11 @@ func IsPasswordExist(username string, password string) bool {
 	}
 	return cachedPassword == password
 }
+
+// deletes the user record from local state
+func ClearLocalUser(username string) {
+	// Clear username record from the cache
+	ClearPassword(username)
+	// Clear user record from the user cache
+	RemoveCredentialFromCache(username)
+}

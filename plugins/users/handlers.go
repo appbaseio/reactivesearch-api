@@ -171,6 +171,15 @@ func (u *Users) patchUser() http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
 		username, _, _ := req.BasicAuth()
 
+		// To decide whether to just update the local state
+		isLocal := req.URL.Query().Get("local")
+		if isLocal == "true" {
+			// clear user details locally
+			auth.ClearLocalUser(username)
+			util.WriteBackMessage(w, "User is updated successfully", http.StatusOK)
+			return
+		}
+
 		body, err := ioutil.ReadAll(req.Body)
 		if err != nil {
 			msg := "can't read request body"
@@ -206,14 +215,33 @@ func (u *Users) patchUser() http.HandlerFunc {
 			}
 			patch["password"] = string(hashedPassword)
 		}
-
 		_, err2 := u.es.patchUser(req.Context(), username, patch)
 		if err2 == nil {
-			// Clear username record from the cache
-			auth.ClearPassword(username)
-			// Clear user record from the user cache
-			auth.RemoveCredentialFromCache(username)
-
+			// Invoke ACCAPI
+			res, err := util.ProxyACCAPI(util.ProxyConfig{
+				Method: http.MethodPatch,
+				URL:    "/_user",
+				Body:   nil,
+			})
+			if err != nil {
+				log.Errorln(logTag, ":", err)
+				util.WriteBackError(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+			// Failed to update all nodes, return error response
+			if res != nil {
+				log.Errorln(logTag, ":", "error encountered updating user")
+				bodyBytes, err := ioutil.ReadAll(res.Body)
+				if err != nil {
+					log.Errorln(logTag, ":", err)
+					util.WriteBackError(w, err.Error(), http.StatusInternalServerError)
+					return
+				}
+				util.WriteBackRaw(w, bodyBytes, res.StatusCode)
+				return
+			}
+			// clear user details locally
+			auth.ClearLocalUser(username)
 			// Subscribe to down time alerts
 			if patch["allowed_actions"] != nil {
 				actions, ok := patch["allowed_actions"].([]user.UserAction)
@@ -255,6 +283,14 @@ func (u *Users) patchUserWithUsername() http.HandlerFunc {
 			util.WriteBackError(w, `can't patch user without a "username"`, http.StatusBadRequest)
 			return
 		}
+		// To decide whether to just update the local state
+		isLocal := req.URL.Query().Get("local")
+		if isLocal == "true" {
+			// clear user details locally
+			auth.ClearLocalUser(username)
+			util.WriteBackMessage(w, "User is updated successfully", http.StatusOK)
+			return
+		}
 
 		body, err := ioutil.ReadAll(req.Body)
 		if err != nil {
@@ -294,10 +330,31 @@ func (u *Users) patchUserWithUsername() http.HandlerFunc {
 
 		_, err2 := u.es.patchUser(req.Context(), username, patch)
 		if err2 == nil {
-			// Clear username record from the cache
-			auth.ClearPassword(username)
-			// Clear user record from the user cache
-			auth.RemoveCredentialFromCache(username)
+			// Invoke ACCAPI
+			res, err := util.ProxyACCAPI(util.ProxyConfig{
+				Method: http.MethodPatch,
+				URL:    "/_user/" + username,
+				Body:   nil,
+			})
+			if err != nil {
+				log.Errorln(logTag, ":", err)
+				util.WriteBackError(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+			// Failed to update all nodes, return error response
+			if res != nil {
+				log.Errorln(logTag, ":", "error encountered updating user")
+				bodyBytes, err := ioutil.ReadAll(res.Body)
+				if err != nil {
+					log.Errorln(logTag, ":", err)
+					util.WriteBackError(w, err.Error(), http.StatusInternalServerError)
+					return
+				}
+				util.WriteBackRaw(w, bodyBytes, res.StatusCode)
+				return
+			}
+			// clear user details locally
+			auth.ClearLocalUser(username)
 
 			// Subscribe to down time alerts
 			if patch["allowed_actions"] != nil {
@@ -336,6 +393,16 @@ func (u *Users) deleteUser() http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
 		username, _, _ := req.BasicAuth()
 
+		// To decide whether to just update the local state
+		isLocal := req.URL.Query().Get("local")
+		if isLocal == "true" {
+			// delete user details locally
+			auth.ClearLocalUser(username)
+			msg := fmt.Sprintf(`user with "username"="%s" deleted`, username)
+			util.WriteBackMessage(w, msg, http.StatusOK)
+			return
+		}
+
 		userDetails, err := u.es.getUser(req.Context(), username)
 		if err != nil {
 			msg := fmt.Sprintf(`user with "username"="%s" not found`, username)
@@ -343,13 +410,33 @@ func (u *Users) deleteUser() http.HandlerFunc {
 			util.WriteBackError(w, msg, http.StatusNotFound)
 			return
 		}
-
 		ok, err := u.es.deleteUser(req.Context(), username)
 		if ok && err == nil {
-			// Clear username record from the cache
-			auth.ClearPassword(username)
-			// Clear user record from the user cache
-			auth.RemoveCredentialFromCache(username)
+			// Invoke ACCAPI
+			res, err := util.ProxyACCAPI(util.ProxyConfig{
+				Method: http.MethodDelete,
+				URL:    "/_user",
+				Body:   nil,
+			})
+			if err != nil {
+				log.Errorln(logTag, ":", err)
+				util.WriteBackError(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+			// Failed to update all nodes, return error response
+			if res != nil {
+				log.Errorln(logTag, ":", "error encountered deleting user")
+				bodyBytes, err := ioutil.ReadAll(res.Body)
+				if err != nil {
+					log.Errorln(logTag, ":", err)
+					util.WriteBackError(w, err.Error(), http.StatusInternalServerError)
+					return
+				}
+				util.WriteBackRaw(w, bodyBytes, res.StatusCode)
+				return
+			}
+			// delete user details locally
+			auth.ClearLocalUser(username)
 			// Unsubscribe to downtime alerts
 			if userDetails.HasAction(user.DowntimeAlerts) {
 				err := unsubscribeToDowntimeAlert(userDetails.Email)
@@ -376,7 +463,15 @@ func (u *Users) deleteUserWithUsername() http.HandlerFunc {
 			util.WriteBackError(w, `can't delete a user without a "username"`, http.StatusBadRequest)
 			return
 		}
-
+		// To decide whether to just update the local state
+		isLocal := req.URL.Query().Get("local")
+		if isLocal == "true" {
+			// delete user details locally
+			auth.ClearLocalUser(username)
+			msg := fmt.Sprintf(`user with "username"="%s" deleted`, username)
+			util.WriteBackMessage(w, msg, http.StatusOK)
+			return
+		}
 		userDetails, err2 := u.es.getUser(req.Context(), username)
 		if err2 != nil {
 			msg := fmt.Sprintf(`user with "username"="%s" not found`, username)
@@ -384,13 +479,33 @@ func (u *Users) deleteUserWithUsername() http.HandlerFunc {
 			util.WriteBackError(w, msg, http.StatusNotFound)
 			return
 		}
-
 		ok, err := u.es.deleteUser(req.Context(), username)
 		if ok && err == nil {
-			// Clear username record from the cache
-			auth.ClearPassword(username)
-			// Clear user record from the user cache
-			auth.RemoveCredentialFromCache(username)
+			// Invoke ACCAPI
+			res, err := util.ProxyACCAPI(util.ProxyConfig{
+				Method: http.MethodDelete,
+				URL:    "/_user/" + username,
+				Body:   nil,
+			})
+			if err != nil {
+				log.Errorln(logTag, ":", err)
+				util.WriteBackError(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+			// Failed to update all nodes, return error response
+			if res != nil {
+				log.Errorln(logTag, ":", "error encountered deleting user with username ", username)
+				bodyBytes, err := ioutil.ReadAll(res.Body)
+				if err != nil {
+					log.Errorln(logTag, ":", err)
+					util.WriteBackError(w, err.Error(), http.StatusInternalServerError)
+					return
+				}
+				util.WriteBackRaw(w, bodyBytes, res.StatusCode)
+				return
+			}
+			// delete user details locally
+			auth.ClearLocalUser(username)
 			// Unsubscribe to downtime alerts
 			if userDetails.HasAction(user.DowntimeAlerts) {
 				err := unsubscribeToDowntimeAlert(userDetails.Email)
@@ -402,7 +517,6 @@ func (u *Users) deleteUserWithUsername() http.HandlerFunc {
 			util.WriteBackMessage(w, msg, http.StatusOK)
 			return
 		}
-
 		msg := fmt.Sprintf(`user with "username"="%s" not found`, username)
 		log.Errorln(logTag, ":", msg, ":", err)
 		util.WriteBackError(w, msg, http.StatusNotFound)
