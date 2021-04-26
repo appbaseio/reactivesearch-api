@@ -157,6 +157,7 @@ func getJWTPublickKey(record publicKey) (*rsa.PublicKey, error) {
 			log.Errorln(logTag, ": error indexing public key record", err)
 			return jwtRsaPublicKey, err
 		}
+		return jwtRsaPublicKey, nil
 	}
 	return nil, errors.New("public key is missing in the request body")
 }
