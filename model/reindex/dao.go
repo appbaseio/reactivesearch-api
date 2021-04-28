@@ -114,6 +114,11 @@ func Reindex(ctx context.Context, sourceIndex string, config *ReindexConfig, wai
 	if err != nil {
 		return nil, fmt.Errorf(`error fetching settings of index "%s": %v`, sourceIndex, err)
 	}
+	// delete auto-generated metadata as this can't be re-used
+	delete(originalSettings, "index.history")
+	delete(originalSettings, "index.provided_name")
+	delete(originalSettings, "index.uuid")
+	delete(originalSettings, "index.version")
 
 	replicas := originalSettings["index.number_of_replicas"]
 

@@ -246,31 +246,38 @@ func (p *permissions) patchPermission() http.HandlerFunc {
 
 		_, err2 := p.es.patchPermission(req.Context(), username, patch)
 		if err2 == nil {
-			// Invoke ACCAPI
-			res, err := util.ProxyACCAPI(util.ProxyConfig{
-				Method: http.MethodPatch,
-				URL:    "/_permission/" + username,
-				Body:   nil,
-			})
-			if err != nil {
-				log.Errorln(logTag, ":", err)
-				util.WriteBackError(w, err.Error(), http.StatusInternalServerError)
-				return
-			}
-			// Failed to update all nodes, return error response
-			if res != nil {
-				log.Errorln(logTag, ":", "error encountered updating permission")
-				bodyBytes, err := ioutil.ReadAll(res.Body)
+			// Only update local state when proxy API has not been called
+			// If proxy API would get called then it would automatically update the
+			// state for all machines
+			// Updating the local state again can cause insconsistency issues
+			if util.ShouldProxyToACCAPI() {
+				// Invoke ACCAPI
+				res, err := util.ProxyACCAPI(util.ProxyConfig{
+					Method: http.MethodPatch,
+					URL:    "/_permission/" + username,
+					Body:   nil,
+				})
 				if err != nil {
 					log.Errorln(logTag, ":", err)
 					util.WriteBackError(w, err.Error(), http.StatusInternalServerError)
 					return
 				}
-				util.WriteBackRaw(w, bodyBytes, res.StatusCode)
-				return
+				// Failed to update all nodes, return error response
+				if res != nil {
+					log.Errorln(logTag, ":", "error encountered updating permission")
+					bodyBytes, err := ioutil.ReadAll(res.Body)
+					if err != nil {
+						log.Errorln(logTag, ":", err)
+						util.WriteBackError(w, err.Error(), http.StatusInternalServerError)
+						return
+					}
+					util.WriteBackRaw(w, bodyBytes, res.StatusCode)
+					return
+				}
+			} else {
+				// clear user details locally
+				auth.ClearLocalUser(username)
 			}
-			// clear user details locally
-			auth.ClearLocalUser(username)
 			util.WriteBackMessage(w, "permission is updated successfully", http.StatusOK)
 			return
 		}
@@ -297,31 +304,38 @@ func (p *permissions) deletePermission() http.HandlerFunc {
 
 		ok, err := p.es.deletePermission(req.Context(), username)
 		if ok && err == nil {
-			// Invoke ACCAPI
-			res, err := util.ProxyACCAPI(util.ProxyConfig{
-				Method: http.MethodDelete,
-				URL:    "/_permission/" + username,
-				Body:   nil,
-			})
-			if err != nil {
-				log.Errorln(logTag, ":", err)
-				util.WriteBackError(w, err.Error(), http.StatusInternalServerError)
-				return
-			}
-			// Failed to update all nodes, return error response
-			if res != nil {
-				log.Errorln(logTag, ":", "error encountered deleting permission")
-				bodyBytes, err := ioutil.ReadAll(res.Body)
+			// Only update local state when proxy API has not been called
+			// If proxy API would get called then it would automatically update the
+			// state for all machines
+			// Updating the local state again can cause insconsistency issues
+			if util.ShouldProxyToACCAPI() {
+				// Invoke ACCAPI
+				res, err := util.ProxyACCAPI(util.ProxyConfig{
+					Method: http.MethodDelete,
+					URL:    "/_permission/" + username,
+					Body:   nil,
+				})
 				if err != nil {
 					log.Errorln(logTag, ":", err)
 					util.WriteBackError(w, err.Error(), http.StatusInternalServerError)
 					return
 				}
-				util.WriteBackRaw(w, bodyBytes, res.StatusCode)
-				return
+				// Failed to update all nodes, return error response
+				if res != nil {
+					log.Errorln(logTag, ":", "error encountered deleting permission")
+					bodyBytes, err := ioutil.ReadAll(res.Body)
+					if err != nil {
+						log.Errorln(logTag, ":", err)
+						util.WriteBackError(w, err.Error(), http.StatusInternalServerError)
+						return
+					}
+					util.WriteBackRaw(w, bodyBytes, res.StatusCode)
+					return
+				}
+			} else {
+				// clear user details locally
+				auth.ClearLocalUser(username)
 			}
-			// clear user details locally
-			auth.ClearLocalUser(username)
 			msg := fmt.Sprintf(`permission with "username"="%s" deleted`, username)
 			util.WriteBackMessage(w, msg, http.StatusOK)
 			return
