@@ -332,36 +332,41 @@ type ProxyConfig struct {
 	Body   map[string]interface{} `json:"body,omitempty"`
 }
 
-func ProxyACCAPI(proxyConfig ProxyConfig) (*http.Response, error) {
+// To decide whether to proxy the ACCAPI
+func ShouldProxyToACCAPI() bool {
 	// Avoid calling ACCAPI for self hosted
 	if Billing == "true" {
-		return nil, nil
+		return false
 	}
 	// call if number of active machines are more than 1
 	if GetNumberOfMachines() > 1 {
-		// Call ACCAPI to trigger update for other nodes
-		arcID, err := GetArcID()
-		if err != nil {
-			return nil, err
-		}
-		marshalledRequest, err := json.Marshal(proxyConfig)
-		if err != nil {
-			return nil, err
-		}
-		req, err := http.NewRequest(http.MethodPost, ACCAPI+"arc/"+arcID+"/proxy", bytes.NewBuffer(marshalledRequest))
-		if err != nil {
-			return nil, err
-		}
-		req.Header.Add("Content-Type", "application/json")
-		req.Header.Add("cache-control", "no-cache")
-		res, err := http.DefaultClient.Do(req)
-		if err != nil {
-			return nil, err
-		}
-		if res.StatusCode != http.StatusOK {
-			return res, nil
-		}
-		return nil, nil
+		return true
+	}
+	return false
+}
+
+func ProxyACCAPI(proxyConfig ProxyConfig) (*http.Response, error) {
+	// Call ACCAPI to trigger update for other nodes
+	arcID, err := GetArcID()
+	if err != nil {
+		return nil, err
+	}
+	marshalledRequest, err := json.Marshal(proxyConfig)
+	if err != nil {
+		return nil, err
+	}
+	req, err := http.NewRequest(http.MethodPost, ACCAPI+"arc/"+arcID+"/proxy", bytes.NewBuffer(marshalledRequest))
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Add("Content-Type", "application/json")
+	req.Header.Add("cache-control", "no-cache")
+	res, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if res.StatusCode != http.StatusOK {
+		return res, nil
 	}
 	return nil, nil
 }

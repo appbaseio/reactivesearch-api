@@ -97,39 +97,38 @@ func (a *Auth) setPublicKey() http.HandlerFunc {
 			util.WriteBackError(w, err2.Error(), http.StatusBadRequest)
 			return
 		}
-		res, err := util.ProxyACCAPI(util.ProxyConfig{
-			Method: http.MethodPut,
-			URL:    "/_public_key",
-			Body:   bodyJSON, // forward body
-		})
-		if err != nil {
-			log.Errorln(logTag, ":", err)
-			util.WriteBackError(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-		// Failed to update all nodes, return error response
-		if res != nil {
-			log.Errorln(logTag, ":", "error encountered updating public key")
-			bodyBytes, err := ioutil.ReadAll(res.Body)
+		// Only update local state when proxy API has not been called
+		// If proxy API would get called then it would automatically update the
+		// state for all machines
+		// Updating the local state again can cause insconsistency issues
+		if util.ShouldProxyToACCAPI() {
+			res, err := util.ProxyACCAPI(util.ProxyConfig{
+				Method: http.MethodPut,
+				URL:    "/_public_key",
+				Body:   bodyJSON, // forward body
+			})
 			if err != nil {
 				log.Errorln(logTag, ":", err)
 				util.WriteBackError(w, err.Error(), http.StatusInternalServerError)
 				return
 			}
-			util.WriteBackRaw(w, bodyBytes, res.StatusCode)
-			return
+			// Failed to update all nodes, return error response
+			if res != nil {
+				log.Errorln(logTag, ":", "error encountered updating public key")
+				bodyBytes, err := ioutil.ReadAll(res.Body)
+				if err != nil {
+					log.Errorln(logTag, ":", err)
+					util.WriteBackError(w, err.Error(), http.StatusInternalServerError)
+					return
+				}
+				util.WriteBackRaw(w, bodyBytes, res.StatusCode)
+				return
+			}
+		} else {
+			// Update local state
+			a.updateLocalPublicKey(jwtRsaPublicKey, body.RoleKey)
 		}
-		// Update local state
-		a.updateLocalPublicKey(jwtRsaPublicKey, body.RoleKey)
-		raw, err2 := json.Marshal(map[string]interface{}{
-			"message": "Public key saved successfully.",
-		})
-		if err2 != nil {
-			log.Errorln(logTag, ":", err2)
-			util.WriteBackError(w, err2.Error(), http.StatusInternalServerError)
-			return
-		}
-		util.WriteBackRaw(w, raw, http.StatusOK)
+		util.WriteBackMessage(w, "Public key saved successfully.", http.StatusOK)
 	}
 }
 
