@@ -126,7 +126,7 @@ func main() {
 
 	// Load all env vars from envFile
 	if err := LoadEnvFromFile(envFile); err != nil {
-		log.Errorln(logTag, ": reading env file", envFile, ": ", err)
+		log.Infoln(logTag, ": reading env file", envFile, ". This may happen if the environments are declared directly : ", err)
 	}
 
 	router := mux.NewRouter().StrictSlash(true)

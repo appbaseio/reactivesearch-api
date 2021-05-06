@@ -156,7 +156,7 @@ func SetDefaultTier() {
 	SetTier(&plan)
 }
 
-// ValidateArcID validates the ARC_ID by checking the response returned from the ACCAPI
+// ValidateArcID validates the APPBASE_ID by checking the response returned from the ACCAPI
 func ValidateArcID(statusCode int) {
 	if statusCode == http.StatusBadRequest {
 		// Set the flag to `true` so `Arc` can start throwing errors immediately
@@ -183,8 +183,8 @@ func BillingMiddleware(next http.Handler) http.Handler {
 		log.Println("current time validity value: ", GetTimeValidity())
 
 		if isInvalidArcIDUsed {
-			// throw invalid ARC_ID usage error
-			WriteBackError(w, "Please make sure that you're using a valid ARC_ID. If the issue persists please contact support@appbase.io with your ARC_ID or registered e-mail address.", http.StatusBadRequest)
+			// throw invalid APPBASE_ID usage error
+			WriteBackError(w, "Please make sure that you're using a valid APPBASE_ID. If the issue persists please contact support@appbase.io with your APPBASE_ID or registered e-mail address.", http.StatusBadRequest)
 			return
 		}
 		// Blacklist subscription routes
@@ -240,7 +240,7 @@ func getArcInstance(arcID string) (ArcInstance, error) {
 		setNumberOfMachines(arcInstanceByID.NumberOfMachines)
 		ClusterID = arcInstanceByID.ClusterID
 	} else {
-		return arcInstance, errors.New("no valid instance found for the provided ARC_ID")
+		return arcInstance, errors.New("no valid instance found for the provided APPBASE_ID")
 	}
 
 	if err != nil {
@@ -360,7 +360,7 @@ func SetClusterPlan() {
 	}
 	_, err := getClusterPlan(clusterID)
 	if err != nil {
-		log.Errorln("Unable to fetch the cluster plan. Please make sure that you're using a valid CLUSTER_ID. If the issue persists please contact support@appbase.io with your ARC_ID or registered e-mail address.", err)
+		log.Errorln("Unable to fetch the cluster plan. Please make sure that you're using a valid CLUSTER_ID. If the issue persists please contact support@appbase.io with your APPBASE_ID or registered e-mail address.", err)
 		return
 	}
 }
@@ -461,7 +461,7 @@ func ReportUsage() {
 
 	result, err := getArcInstance(arcID)
 	if err != nil {
-		log.Errorln("Unable to fetch the arc instance. Please make sure that you're using a valid ARC_ID. If the issue persists please contact support@appbase.io with your ARC_ID or registered e-mail address.")
+		log.Errorln("Unable to fetch the appbase.io instance. Please make sure that you're using a valid APPBASE_ID. If the issue persists please contact support@appbase.io with your APPBASE_ID or registered e-mail address.")
 		return
 	}
 
@@ -484,7 +484,7 @@ func ReportUsage() {
 	}
 	response, err1 := reportUsageRequest(usageBody)
 	if err1 != nil {
-		log.Errorln("Please contact support@appbase.io with your ARC_ID or registered e-mail address. Usage is not getting reported:", err1)
+		log.Errorln("Please contact support@appbase.io with your APPBASE_ID or registered e-mail address. Usage is not getting reported:", err1)
 	}
 
 	if response.WarningMsg != "" {
@@ -512,7 +512,7 @@ func ReportHostedArcUsage() {
 	// getArcClusterInstance(clusterId)
 	result, err := getArcClusterInstance(clusterID)
 	if err != nil {
-		log.Errorln("Unable to fetch the arc instance. Please make sure that you're using a valid CLUSTER_ID. If the issue persists please contact support@appbase.io with your ARC_ID or registered e-mail address.", err)
+		log.Errorln("Unable to fetch the arc instance. Please make sure that you're using a valid CLUSTER_ID. If the issue persists please contact support@appbase.io with your APPBASE_ID or registered e-mail address.", err)
 		return
 	}
 
