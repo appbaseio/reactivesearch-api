@@ -114,7 +114,7 @@ func (es *elasticsearch) preprocess(mw []middleware.Middleware) error {
 		Methods:     []string{http.MethodGet, http.MethodHead},
 		Path:        "/arc/health",
 		HandlerFunc: es.healthCheck(),
-		Description: "To retrieve the cluster health",
+		Description: "Retrieve the cluster health, both appbase.io and Elasticsearch",
 	}
 	routes = append(routes, indexRoute, healthCheckRoute)
 	return nil
