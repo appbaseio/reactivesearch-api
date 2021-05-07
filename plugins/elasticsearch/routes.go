@@ -109,7 +109,14 @@ func (es *elasticsearch) preprocess(mw []middleware.Middleware) error {
 		HandlerFunc: middlewareFunction(mw, es.handler()),
 		Description: "You know, for search",
 	}
-	routes = append(routes, indexRoute)
+	healthCheckRoute := plugins.Route{
+		Name:        "health check",
+		Methods:     []string{http.MethodGet, http.MethodHead},
+		Path:        "/arc/health",
+		HandlerFunc: es.healthCheck(),
+		Description: "To retrieve the cluster health",
+	}
+	routes = append(routes, indexRoute, healthCheckRoute)
 	return nil
 }
 
