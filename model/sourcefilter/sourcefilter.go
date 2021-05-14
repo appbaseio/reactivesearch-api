@@ -11,7 +11,7 @@ import (
 const logTag = "[sourcefiltering]"
 
 // To filter the source based on the include and exclude patterns
-func applySourceFiltering(source map[string]interface{}, include []string, exclude []string) interface{} {
+func ApplySourceFiltering(source map[string]interface{}, include []string, exclude []string) interface{} {
 	// Avoid calculation if source filters are not defined
 	if len(include) == 0 && len(exclude) == 0 {
 		return source

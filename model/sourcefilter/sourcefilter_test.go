@@ -8,7 +8,7 @@ import (
 
 func TestApplySourceFiltering(t *testing.T) {
 	Convey("Should return the exact source if include or exclude properties are empty", t, func() {
-		output := applySourceFiltering(map[string]interface{}{
+		output := ApplySourceFiltering(map[string]interface{}{
 			"key1": "value1",
 		}, []string{}, []string{})
 		So(output, ShouldResemble, map[string]interface{}{
@@ -16,7 +16,7 @@ func TestApplySourceFiltering(t *testing.T) {
 		})
 	})
 	Convey("Filter by exact name (include)", t, func() {
-		output := applySourceFiltering(map[string]interface{}{
+		output := ApplySourceFiltering(map[string]interface{}{
 			"key1": "value1",
 			"key2": "value2",
 			"key3": "value3",
@@ -27,7 +27,7 @@ func TestApplySourceFiltering(t *testing.T) {
 		})
 	})
 	Convey("Filter by exact name (exclude)", t, func() {
-		output := applySourceFiltering(map[string]interface{}{
+		output := ApplySourceFiltering(map[string]interface{}{
 			"key1": "value1",
 			"key2": "value2",
 			"key3": "value3",
@@ -40,7 +40,7 @@ func TestApplySourceFiltering(t *testing.T) {
 		})
 	})
 	Convey("Filter by exact name (both), multiple values", t, func() {
-		output := applySourceFiltering(map[string]interface{}{
+		output := ApplySourceFiltering(map[string]interface{}{
 			"key1": "value1",
 			"key2": "value2",
 			"key3": "value3",
@@ -52,7 +52,7 @@ func TestApplySourceFiltering(t *testing.T) {
 		})
 	})
 	Convey("Filter by exact name (both), exclude must have priority for matching keys", t, func() {
-		output := applySourceFiltering(map[string]interface{}{
+		output := ApplySourceFiltering(map[string]interface{}{
 			"key1": "value1",
 			"key2": "value2",
 			"key3": "value3",
@@ -61,7 +61,7 @@ func TestApplySourceFiltering(t *testing.T) {
 		So(output, ShouldResemble, nil)
 	})
 	Convey("Filter by exact name: nested object", t, func() {
-		output := applySourceFiltering(map[string]interface{}{
+		output := ApplySourceFiltering(map[string]interface{}{
 			"key1": map[string]interface{}{
 				"key11": "value11",
 				"key12": "value12",
@@ -75,7 +75,7 @@ func TestApplySourceFiltering(t *testing.T) {
 		})
 	})
 	Convey("Filter by exact name: nested object advanced", t, func() {
-		output := applySourceFiltering(map[string]interface{}{
+		output := ApplySourceFiltering(map[string]interface{}{
 			"key1": []interface{}{
 				map[string]interface{}{
 					"key11": "value11",
@@ -106,7 +106,7 @@ func TestApplySourceFiltering(t *testing.T) {
 		})
 	})
 	Convey("Filter by pattern: include", t, func() {
-		output := applySourceFiltering(map[string]interface{}{
+		output := ApplySourceFiltering(map[string]interface{}{
 			"key1": []interface{}{"value11", "value12", "value13"},
 			"key2": map[string]interface{}{
 				"key21": "value21",
@@ -125,7 +125,7 @@ func TestApplySourceFiltering(t *testing.T) {
 		})
 	})
 	Convey("Filter by pattern: exclude", t, func() {
-		output := applySourceFiltering(map[string]interface{}{
+		output := ApplySourceFiltering(map[string]interface{}{
 			"key1": []interface{}{"value11", "value12", "value13"},
 			"key2": map[string]interface{}{
 				"key21": "value21",
