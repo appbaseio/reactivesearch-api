@@ -10,6 +10,7 @@ import (
 	"net/http/httptest"
 	"strings"
 
+	"github.com/buger/jsonparser"
 	log "github.com/sirupsen/logrus"
 
 	"github.com/appbaseio/arc/middleware"
@@ -22,11 +23,16 @@ import (
 	"github.com/appbaseio/arc/model/index"
 	"github.com/appbaseio/arc/model/op"
 	"github.com/appbaseio/arc/model/permission"
+	"github.com/appbaseio/arc/model/sourcefilter"
 	"github.com/appbaseio/arc/plugins/auth"
 	"github.com/appbaseio/arc/plugins/logs"
 	"github.com/appbaseio/arc/util"
 	"github.com/gorilla/mux"
 )
+
+type MGetResponse struct {
+	Docs []map[string]interface{} `json:"docs"`
+}
 
 type chain struct {
 	middleware.Fifo
@@ -42,7 +48,7 @@ func list() []middleware.Middleware {
 		classifyACL,
 		classifyOp,
 		classify.Indices(),
-		logs.Recorder(),
+		recordLogs,
 		auth.BasicAuth(),
 		ratelimiter.Limit(),
 		validate.Sources(),
@@ -53,6 +59,18 @@ func list() []middleware.Middleware {
 		validate.Operation(),
 		validate.PermissionExpiry(),
 		intercept,
+	}
+}
+
+func recordLogs(h http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, req *http.Request) {
+		// Don't record logs for cluster health route
+		if strings.Contains(req.RequestURI, "_cluster/health") {
+			h(w, req)
+			return
+		}
+		// Forward the request to logs middleware
+		logs.Recorder()(h)(w, req)
 	}
 }
 
@@ -76,8 +94,7 @@ func classifyCategory(h http.HandlerFunc) http.HandlerFunc {
 			routeCategory = category.Streams
 		}
 
-		ctx := req.Context()
-		ctx = category.NewContext(req.Context(), &routeCategory)
+		ctx := category.NewContext(req.Context(), &routeCategory)
 		req = req.WithContext(ctx)
 
 		h(w, req)
@@ -206,11 +223,13 @@ func intercept(h http.HandlerFunc) http.HandlerFunc {
 					}
 				}
 			}
-
 		}
 
 		resp := httptest.NewRecorder()
 		indices, err := index.FromContext(req.Context())
+		if err != nil {
+			log.Errorln(logTag, ":", err)
+		}
 		h(resp, req)
 
 		// Copy the response to writer
@@ -224,6 +243,109 @@ func intercept(h http.HandlerFunc) http.HandlerFunc {
 			log.Errorln(logTag, ":", err2)
 			util.WriteBackError(w, "error reading response body", http.StatusInternalServerError)
 			return
+		}
+
+		reqPermission, err := permission.FromContext(ctx)
+		if err == nil {
+			// Apply Appbase source filtering to the following type of requests
+			// GET /:index/_doc/:id
+			// GET /:index/_source/:id
+			// GET /_mget
+			// GET /:index/_mget
+			if len(reqPermission.Includes) > 0 || len(reqPermission.Excludes) > 0 {
+				isDoc := strings.Contains(req.RequestURI, "_doc")
+				isSource := strings.Contains(req.RequestURI, "_source")
+				if *reqACL == acl.Get {
+					if isDoc || isSource {
+						var responseAsMap map[string]interface{}
+						err := json.Unmarshal(body, &responseAsMap)
+						if err != nil {
+							log.Errorln(logTag, ":", err2)
+							util.WriteBackError(w, "error un-marshalling _doc response", http.StatusInternalServerError)
+							return
+						}
+						if isSource {
+							filteredSource := sourcefilter.ApplySourceFiltering(responseAsMap, reqPermission.Includes, reqPermission.Excludes)
+							if filteredSource != nil {
+								responseAsMap = filteredSource.(map[string]interface{})
+							} else {
+								responseAsMap = make(map[string]interface{})
+							}
+							// Convert filtered response to byte
+							filteredResponseInBytes, err := json.Marshal(responseAsMap)
+							if err != nil {
+								log.Errorln(logTag, ":", err2)
+								util.WriteBackError(w, "error marshalling response", http.StatusInternalServerError)
+								return
+							}
+							// Assign the filtered source to body
+							body = filteredResponseInBytes
+						} else {
+							sourceAsMap, ok := responseAsMap["_source"].(map[string]interface{})
+							if !ok {
+								errMsg := "unable to type cast source to map[string]interface{}"
+								log.Errorln(logTag, ":", errMsg)
+								util.WriteBackError(w, errMsg, http.StatusInternalServerError)
+								return
+							}
+							filteredSource := sourcefilter.ApplySourceFiltering(sourceAsMap, reqPermission.Includes, reqPermission.Excludes)
+							if filteredSource != nil {
+								responseAsMap["_source"] = filteredSource
+							} else {
+								responseAsMap["_source"] = make(map[string]interface{})
+							}
+							// Convert filtered response to byte
+							filteredSourceInBytes, err := json.Marshal(responseAsMap)
+							if err != nil {
+								log.Errorln(logTag, ":", err2)
+								util.WriteBackError(w, "error marshalling response", http.StatusInternalServerError)
+								return
+							}
+							filteredResponseInBytes, err := jsonparser.Set(body, filteredSourceInBytes, "_source")
+							if err != nil {
+								log.Errorln(logTag, ":", err2)
+								util.WriteBackError(w, "error setting _source key in response", http.StatusInternalServerError)
+								return
+							}
+							// Assign the filtered source to body
+							body = filteredResponseInBytes
+						}
+					}
+				}
+				if *reqACL == acl.Mget {
+					var mGetResponse MGetResponse
+					err := json.Unmarshal(body, &mGetResponse)
+					if err != nil {
+						log.Errorln(logTag, ":", err2)
+						util.WriteBackError(w, "error un-marshalling response", http.StatusInternalServerError)
+						return
+					}
+					for _, doc := range mGetResponse.Docs {
+						sourceAsMap, ok := doc["_source"].(map[string]interface{})
+						if !ok {
+							errMsg := "unable to type cast source to map[string]interface{}"
+							log.Errorln(logTag, ":", errMsg)
+							util.WriteBackError(w, errMsg, http.StatusInternalServerError)
+							return
+						}
+						filteredSource := sourcefilter.ApplySourceFiltering(sourceAsMap, reqPermission.Includes, reqPermission.Excludes)
+						if filteredSource != nil {
+							doc["_source"] = filteredSource
+						} else {
+							doc["_source"] = make(map[string]interface{})
+						}
+					}
+					// Convert filtered response to byte
+					filteredResponseInBytes, err := json.Marshal(mGetResponse)
+					if err != nil {
+						log.Errorln(logTag, ":", err2)
+						util.WriteBackError(w, "error marshalling response", http.StatusInternalServerError)
+						return
+					}
+					// Assign the filtered source to body
+					body = filteredResponseInBytes
+				}
+			}
 		}
 		for _, index := range indices {
 			alias := classify.GetIndexAlias(index)
