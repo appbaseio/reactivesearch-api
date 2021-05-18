@@ -245,16 +245,17 @@ func intercept(h http.HandlerFunc) http.HandlerFunc {
 		}
 
 		reqPermission, err := permission.FromContext(ctx)
-		if err == nil {
+		if err == nil && result.StatusCode == http.StatusOK {
 			// Apply Appbase source filtering to the following type of requests
 			// GET /:index/_doc/:id
+			// GET /:index/_doc/:id/_source
 			// GET /:index/_source/:id
 			// GET /_mget
 			// GET /:index/_mget
 			if len(reqPermission.Includes) > 0 || len(reqPermission.Excludes) > 0 {
 				isDoc := strings.Contains(req.RequestURI, "_doc")
 				isSource := strings.Contains(req.RequestURI, "_source")
-				if *reqACL == acl.Get {
+				if *reqACL == acl.Get || *reqACL == acl.Source {
 					if isDoc || isSource {
 						var responseAsMap map[string]interface{}
 						err := json.Unmarshal(body, &responseAsMap)
