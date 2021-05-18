@@ -15,7 +15,6 @@ import (
 
 	"github.com/appbaseio/arc/middleware"
 	"github.com/appbaseio/arc/middleware/classify"
-	"github.com/appbaseio/arc/middleware/interceptor"
 	"github.com/appbaseio/arc/middleware/ratelimiter"
 	"github.com/appbaseio/arc/middleware/validate"
 	"github.com/appbaseio/arc/model/acl"
@@ -39,7 +38,7 @@ type chain struct {
 }
 
 func (c *chain) Wrap(mw []middleware.Middleware, h http.HandlerFunc) http.HandlerFunc {
-	return c.Adapt(h, append(append(list(), mw...), interceptor.Redirect())...)
+	return c.Adapt(h, append(list(), mw...)...)
 }
 
 func list() []middleware.Middleware {
