@@ -46,14 +46,20 @@ func (es *elasticsearch) handler() http.HandlerFunc {
 			return
 		}
 		log.Println(logTag, ": category=", *reqCategory, ", acl=", *reqACL, ", op=", *reqOp)
+		// disable gzip compression
+		encoding := r.Header.Get("Accept-Encoding")
+		if encoding != "" {
+			r.Header.Set("Accept-Encoding", "identity")
+		}
 		// Forward the request to elasticsearch
 		// remove content-type header from r.Headers as that is internally managed my oliver
 		// and can give following error if passed `{"error":{"code":500,"message":"elastic: Error 400 (Bad Request): java.lang.IllegalArgumentException: only one Content-Type header should be provided [type=content_type_header_exception]","status":"Internal Server Error"}}`
 		headers := http.Header{}
-		for k, v := range r.Header {
-			if k != "Content-Type" {
-				headers.Set(k, v[0])
+		for k := range r.Header {
+			if k == "Content-Type" || k == "Authorization" {
+				continue
 			}
+			headers.Set(k, r.Header.Get(k))
 		}
 
 		params := r.URL.Query()
