@@ -6,6 +6,7 @@ require (
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/gobuffalo/envy v1.6.15 // indirect
 	github.com/gobuffalo/packr v1.22.0
+	github.com/gogo/protobuf v1.2.0 // indirect
 	github.com/golang/mock v1.2.0 // indirect
 	github.com/google/uuid v1.1.2
 	github.com/gorilla/mux v1.7.1
@@ -13,6 +14,7 @@ require (
 	github.com/olivere/elastic v6.2.21+incompatible
 	github.com/olivere/elastic/v7 v7.0.24
 	github.com/pkg/profile v1.5.0
+	github.com/prometheus/client_golang v0.9.3-0.20190127221311-3c4408c8b829 // indirect
 	github.com/prometheus/common v0.2.0
 	github.com/robfig/cron v1.1.0
 	github.com/rogpeppe/go-internal v1.2.2 // indirect
