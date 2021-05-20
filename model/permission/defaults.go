@@ -96,6 +96,6 @@ var (
 		EcommIntegrationLimit: 30,
 		LogsLimit:             30,
 		SynonymsLimit:         30,
-		CacheLimit:            10,
+		CacheLimit:            30,
 	}
 )
