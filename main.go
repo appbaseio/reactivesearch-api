@@ -2,12 +2,14 @@ package main
 
 import (
 	"bufio"
+	"bytes"
 	"encoding/json"
 	"flag"
 	"fmt"
 	"io"
 	"net/http"
 	"os"
+	"os/exec"
 	"path"
 	"path/filepath"
 	"plugin"
@@ -93,11 +95,38 @@ func init() {
 }
 
 func main() {
-	id, err1 := machineid.ID()
-	if err1 != nil {
-		log.Fatal(logTag, ": ", err1)
+	isRunTimeDocker := false
+	if _, err := os.Stat("/proc/1/cgroup"); err == nil {
+		// /proc/1/cgroup exists
+		log.Println(logTag, "Runtime detected as docker container ...")
+		isRunTimeDocker = true
+	} else if os.IsNotExist(err) {
+		// /proc/1/cgroup does *not* exist
+		isRunTimeDocker = false
+	} else {
+		log.Fatal(logTag, ": Error encountered while detecting runtime", err)
 	}
-	util.MachineID = id
+	if isRunTimeDocker {
+		cmd := exec.Command("/bin/sh", "-c", "head -1 /proc/self/cgroup|cut -d/ -f3")
+		var out bytes.Buffer
+		cmd.Stdout = &out
+		err := cmd.Run()
+		id := out.String()
+		if err != nil {
+			log.Fatal(logTag, ": runtime detected as docker container: ", err)
+		}
+		if id == "" {
+			log.Fatal(logTag, ": runtime detected as docker container: machineid can not be empty")
+		}
+		util.MachineID = strings.TrimSuffix(id, "\n")
+	} else {
+		log.Println(logTag, "Runtime detected as a host machine ...")
+		id, err1 := machineid.ID()
+		if err1 != nil {
+			log.Fatal(logTag, ": runtime detected as a host machine: ", err1)
+		}
+		util.MachineID = id
+	}
 	flag.Parse()
 	log.SetReportCaller(true)
 	log.SetFormatter(&log.TextFormatter{
