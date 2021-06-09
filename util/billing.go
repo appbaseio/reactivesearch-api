@@ -315,6 +315,13 @@ func getClusterPlan(clusterID string) (ClusterPlan, error) {
 		return clusterPlan, err
 	}
 	defer res.Body.Close()
+
+	// If ACCAPI is down then set the highest plan
+	if res.StatusCode >= 500 {
+		plan := ProductionThird2021
+		SetTier(&plan)
+		return clusterPlan, err
+	}
 	body, err := ioutil.ReadAll(res.Body)
 	if err != nil {
 		log.Errorln("error reading res body:", err)
