@@ -15,6 +15,11 @@ const logTag = "[logger]"
 // it trims the trailing slashes from the matched route.
 func Log(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		// avoid logging requests for the following endpoints
+		if strings.Contains(req.RequestURI, "/arc/health") {
+			next.ServeHTTP(w, req)
+			return
+		}
 		start := time.Now()
 		req.URL.Path = trimTrailingSlashes(req.URL.Path)
 		next.ServeHTTP(w, req)
