@@ -310,20 +310,14 @@ func getClusterPlan(clusterID string) (ClusterPlan, error) {
 	req.Header.Add("cache-control", "no-cache")
 
 	res, err := http.DefaultClient.Do(req)
-	log.Println("THIS IS RESPONSE", res)
-	log.Println("THIS IS ERROR", err)
-	if err != nil {
+	// If ACCAPI is down then set the highest plan
+	if (res != nil && res.StatusCode >= 500) || err != nil {
+		plan := ProductionThird2021
+		SetTier(&plan)
 		log.Errorln("error while sending request:", err)
 		return clusterPlan, err
 	}
 	defer res.Body.Close()
-
-	// If ACCAPI is down then set the highest plan
-	if res.StatusCode >= 500 {
-		plan := ProductionThird2021
-		SetTier(&plan)
-		return clusterPlan, err
-	}
 	body, err := ioutil.ReadAll(res.Body)
 	if err != nil {
 		log.Errorln("error reading res body:", err)
