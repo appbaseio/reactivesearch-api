@@ -235,7 +235,6 @@ func intercept(h http.HandlerFunc) http.HandlerFunc {
 		for k, v := range resp.Header() {
 			w.Header()[k] = v
 		}
-		w.WriteHeader(resp.Code)
 		result := resp.Result()
 		body, err2 := ioutil.ReadAll(result.Body)
 		if err2 != nil {

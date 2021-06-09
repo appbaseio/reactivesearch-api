@@ -25,6 +25,8 @@ func (es *elasticsearch) handler() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
 
+		isClusterHealth := strings.Contains(r.RequestURI, "/_cluster/health")
+
 		reqCategory, err := category.FromContext(ctx)
 		if err != nil {
 			log.Errorln(logTag, ":", err)
@@ -45,7 +47,9 @@ func (es *elasticsearch) handler() http.HandlerFunc {
 			util.WriteBackError(w, "error classifying request op", http.StatusInternalServerError)
 			return
 		}
-		log.Println(logTag, ": category=", *reqCategory, ", acl=", *reqACL, ", op=", *reqOp)
+		if !isClusterHealth {
+			log.Println(logTag, ": category=", *reqCategory, ", acl=", *reqACL, ", op=", *reqOp)
+		}
 		// disable gzip compression
 		encoding := r.Header.Get("Accept-Encoding")
 		if encoding != "" {
@@ -84,7 +88,9 @@ func (es *elasticsearch) handler() http.HandlerFunc {
 		}
 		start := time.Now()
 		response, err := util.GetClient7().PerformRequest(ctx, requestOptions)
-		log.Println(fmt.Sprintf("TIME TAKEN BY ES: %dms", time.Since(start).Milliseconds()))
+		if !isClusterHealth {
+			log.Println(fmt.Sprintf("TIME TAKEN BY ES: %dms", time.Since(start).Milliseconds()))
+		}
 		if err != nil {
 			log.Errorln(logTag, ": error while sending request :", r.URL.Path, err)
 			if response != nil {
