@@ -16,7 +16,7 @@ const logTag = "[logger]"
 func Log(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		// avoid logging requests for the following endpoints
-		if strings.Contains(req.RequestURI, "/arc/health") || strings.Contains(req.RequestURI, "/_cluster/health") {
+		if strings.Contains(req.RequestURI, "/arc/health") {
 			next.ServeHTTP(w, req)
 			return
 		}

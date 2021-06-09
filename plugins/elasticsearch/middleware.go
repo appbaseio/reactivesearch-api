@@ -47,7 +47,7 @@ func list() []middleware.Middleware {
 		classifyACL,
 		classifyOp,
 		classify.Indices(),
-		recordLogs,
+		logs.Recorder(),
 		auth.BasicAuth(),
 		ratelimiter.Limit(),
 		validate.Sources(),
@@ -58,18 +58,6 @@ func list() []middleware.Middleware {
 		validate.Operation(),
 		validate.PermissionExpiry(),
 		intercept,
-	}
-}
-
-func recordLogs(h http.HandlerFunc) http.HandlerFunc {
-	return func(w http.ResponseWriter, req *http.Request) {
-		// Don't record logs for cluster health route
-		if strings.Contains(req.RequestURI, "_cluster/health") {
-			h(w, req)
-			return
-		}
-		// Forward the request to logs middleware
-		logs.Recorder()(h)(w, req)
 	}
 }
 
