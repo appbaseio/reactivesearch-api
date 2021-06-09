@@ -310,6 +310,8 @@ func getClusterPlan(clusterID string) (ClusterPlan, error) {
 	req.Header.Add("cache-control", "no-cache")
 
 	res, err := http.DefaultClient.Do(req)
+	log.Println("THIS IS RESPONSE", res)
+	log.Println("THIS IS ERROR", err)
 	if err != nil {
 		log.Errorln("error while sending request:", err)
 		return clusterPlan, err
