@@ -1,4 +1,4 @@
-FROM golang:1.16-alpine as builder
+FROM golang:1.16.4-alpine3.13 as builder
 
 # Default value
 # Run `--build-arg BILLING=true` to enable billing
@@ -38,7 +38,7 @@ COPY . .
 RUN make
 
 # Final stage: Create the running container
-FROM alpine:3.10.1 AS final
+FROM alpine:3.13 AS final
 
 # Get ca certs, for making api calls
 RUN apk add --no-cache ca-certificates
