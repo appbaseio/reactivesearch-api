@@ -96,17 +96,22 @@ func init() {
 
 func main() {
 	isRunTimeDocker := false
-	if _, err := os.Stat("/proc/1/cgroup"); err == nil {
-		// /proc/1/cgroup exists
-		log.Println(logTag, "Runtime detected as docker container ...")
-		isRunTimeDocker = true
-	} else if os.IsNotExist(err) {
-		// /proc/1/cgroup does *not* exist
-		isRunTimeDocker = false
-	} else {
-		log.Fatal(logTag, ": Error encountered while detecting runtime", err)
+
+	cmdToDetectRunTime := exec.Command("/bin/sh", "-c", "if [[ -f /.dockerenv ]] || grep -Eq '(lxc|docker)' /proc/1/cgroup; then echo True; else echo False; fi")
+	var output bytes.Buffer
+	cmdToDetectRunTime.Stdout = &output
+	runtimeDetectErr := cmdToDetectRunTime.Run()
+	if runtimeDetectErr != nil {
+		log.Fatal(logTag, ": Error encountered while detecting runtime :", runtimeDetectErr)
 	}
+	// True or False
+	parsedOutput := strings.TrimSpace(output.String())
+	if parsedOutput == "True" {
+		isRunTimeDocker = true
+	}
+
 	if isRunTimeDocker {
+		log.Println(logTag, "Runtime detected as docker container ...")
 		cmd := exec.Command("/bin/sh", "-c", "head -1 /proc/self/cgroup|cut -d/ -f3")
 		var out bytes.Buffer
 		cmd.Stdout = &out
