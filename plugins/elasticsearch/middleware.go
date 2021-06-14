@@ -130,6 +130,14 @@ func classifyOp(h http.HandlerFunc) http.HandlerFunc {
 	}
 }
 
+func shouldApplyFilters(reqPermission *permission.Permission) bool {
+	isIncludesPresent := len(reqPermission.Includes) > 0
+	isExcludesPresent := len(reqPermission.Excludes) > 0
+	isEmpty := !isIncludesPresent && !isExcludesPresent
+	isDefaultInclude := isIncludesPresent && reqPermission.Includes[0] == "*"
+	return !isEmpty && (!isDefaultInclude || isExcludesPresent)
+}
+
 func intercept(h http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
 		ctx := req.Context()
@@ -146,21 +154,18 @@ func intercept(h http.HandlerFunc) http.HandlerFunc {
 			if err != nil {
 				log.Errorln(logTag, ":", err)
 			} else {
-				sources := make(map[string]interface{})
-				var Includes, Excludes []string
-				Includes = reqPermission.Includes
-				Excludes = reqPermission.Excludes
-				if len(Includes) > 0 {
-					sources["includes"] = Includes
-				}
-				if len(Excludes) > 0 {
-					sources["excludes"] = Excludes
-				}
-				_, isExcludesPresent := sources["excludes"]
-				isEmpty := len(Includes) == 0 && len(Excludes) == 0
-				isDefaultInclude := len(Includes) > 0 && Includes[0] == "*"
-				shouldApplyFilters := !isEmpty && (!isDefaultInclude || isExcludesPresent)
+				shouldApplyFilters := shouldApplyFilters(reqPermission)
 				if shouldApplyFilters {
+					sources := make(map[string]interface{})
+					var Includes, Excludes []string
+					Includes = reqPermission.Includes
+					Excludes = reqPermission.Excludes
+					if len(Includes) > 0 {
+						sources["includes"] = Includes
+					}
+					if len(Excludes) > 0 {
+						sources["excludes"] = Excludes
+					}
 					if isMsearch {
 						// Handle the _msearch requests
 						body, err := ioutil.ReadAll(req.Body)
@@ -239,7 +244,8 @@ func intercept(h http.HandlerFunc) http.HandlerFunc {
 			// GET /:index/_source/:id
 			// GET /_mget
 			// GET /:index/_mget
-			if len(reqPermission.Includes) > 0 || len(reqPermission.Excludes) > 0 {
+			shouldApplyFilters := shouldApplyFilters(reqPermission)
+			if shouldApplyFilters {
 				isDoc := strings.Contains(req.RequestURI, "_doc")
 				isSource := strings.Contains(req.RequestURI, "_source")
 				if *reqACL == acl.Get || *reqACL == acl.Source {
@@ -276,13 +282,11 @@ func intercept(h http.HandlerFunc) http.HandlerFunc {
 								return
 							}
 							filteredSource := sourcefilter.ApplySourceFiltering(sourceAsMap, reqPermission.Includes, reqPermission.Excludes)
-							if filteredSource != nil {
-								responseAsMap["_source"] = filteredSource
-							} else {
-								responseAsMap["_source"] = make(map[string]interface{})
+							if filteredSource == nil {
+								filteredSource = make(map[string]interface{})
 							}
 							// Convert filtered response to byte
-							filteredSourceInBytes, err := json.Marshal(responseAsMap)
+							filteredSourceInBytes, err := json.Marshal(filteredSource)
 							if err != nil {
 								log.Errorln(logTag, ":", err2)
 								util.WriteBackError(w, "error marshalling response", http.StatusInternalServerError)
