@@ -116,6 +116,7 @@ func Reindex(ctx context.Context, sourceIndex string, config *ReindexConfig, wai
 	}
 	// delete auto-generated metadata as this can't be re-used
 	delete(originalSettings, "index.history")
+	delete(originalSettings, "index.history.uuid")
 	delete(originalSettings, "index.provided_name")
 	delete(originalSettings, "index.uuid")
 	delete(originalSettings, "index.version")
