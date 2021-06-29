@@ -214,8 +214,10 @@ func (a *Auth) basicAuth(h http.HandlerFunc) http.HandlerFunc {
 					util.WriteBackError(w, "invalid password", http.StatusUnauthorized)
 					return
 				}
-
-				if reqPermission.HasCategory(*reqCategory) {
+				// ignore es auth for root route to fetch the cluster details
+				if req.Method == http.MethodGet && req.RequestURI == "/" {
+					authenticated = true
+				} else if reqPermission.HasCategory(*reqCategory) {
 					authenticated = true
 				} else {
 					str := (*reqCategory).String()
