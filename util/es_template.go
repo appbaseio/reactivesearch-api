@@ -7,7 +7,7 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-// SetDefaultIndexTemplate to set default template for indexes
+// SetDefaultIndexTemplate sets default template for user indexes
 func SetDefaultIndexTemplate() error {
 	replicas := GetReplicas()
 	settings := fmt.Sprintf(`{
@@ -187,7 +187,7 @@ func SetDefaultIndexTemplate() error {
 	version := GetVersion()
 	if version == 7 {
 		defaultSetting := fmt.Sprintf(`{
-			"index_patterns": ["*"],
+			"index_patterns": ["*", ],
 			"settings": %s,
 			"mappings": %s,
 			"order": 10
@@ -209,6 +209,88 @@ func SetDefaultIndexTemplate() error {
 			"order": 10
 		}`, settings, mappings)
 		_, err := GetClient6().IndexPutTemplate("arc_index_template_v1").BodyString(defaultSetting).Do(context.Background())
+		if err != nil {
+			log.Errorln("[SET TEMPLATE ERROR V6]", ": ", err)
+			return err
+		}
+	}
+	return nil
+}
+
+// SetSystemIndexTemplate sets default template for system indexes
+func SetSystemIndexTemplate() error {
+	replicas := GetReplicas()
+	settings := fmt.Sprintf(`{
+		"index.number_of_shards": 1,
+		"index.number_of_replicas": %d,
+		"index.auto_expand_replicas": "0-1",
+		"index.mapping": {
+			"total_fields": {
+				"limit": "10000"
+			}
+		}
+	}`, replicas)
+
+	mappings := `{
+		"dynamic_templates": [{
+			"strings": {
+				"match_mapping_type": "string",
+				"mapping": {
+					"type": "text",
+					"analyzer": "standard",
+					"fields": {
+						"keyword": {
+							"type": "keyword",
+							"ignore_above": 256
+						}
+					}
+				}
+			}
+		},
+		{
+			"double": {
+				"match_mapping_type": "double",
+				"mapping": {
+					"type": "double"
+				}
+			}
+		},
+		{
+			"long": {
+				"match_mapping_type": "long",
+				"mapping": {
+					"type": "long"
+				}
+			}
+		}],
+		"dynamic": true
+	}`
+
+	version := GetVersion()
+	if version == 7 {
+		defaultSetting := fmt.Sprintf(`{
+			"index_patterns": [".*"],
+			"settings": %s,
+			"mappings": %s,
+			"order": 20
+		}`, settings, mappings)
+		_, err := GetClient7().IndexPutTemplate("system_index_template_v1").BodyString(defaultSetting).Do(context.Background())
+		if err != nil {
+			log.Errorln("[SET TEMPLATE ERROR V7]", ": ", err)
+			return err
+		}
+	}
+
+	if version == 6 {
+		defaultSetting := fmt.Sprintf(`{
+			"index_patterns": [".*"],
+			"settings": %s,
+			"mappings": {
+				"_doc": %s
+			},
+			"order": 10
+		}`, settings, mappings)
+		_, err := GetClient6().IndexPutTemplate("system_index_template_v1").BodyString(defaultSetting).Do(context.Background())
 		if err != nil {
 			log.Errorln("[SET TEMPLATE ERROR V6]", ": ", err)
 			return err
