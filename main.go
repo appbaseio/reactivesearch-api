@@ -95,26 +95,43 @@ func init() {
 }
 
 func main() {
-	// check if image is running as a docker container
-	// if yes, use the cgroup command
-	// else use the machineid below
-	id, err1 := machineid.ID()
-	if err1 != nil {
-		// Fallback for docker containers, use below as the machineid
-		// Reference: https://github.com/denisbrodbeck/machineid/issues/10
-		cmd := exec.Command("/bin/sh -c 'head -1 /proc/self/cgroup|cut -d/ -f3'")
+	isRunTimeDocker := false
 
+	cmdToDetectRunTime := exec.Command("/bin/sh", "-c", "if [[ -f /.dockerenv ]] || grep -Eq '(lxc|docker)' /proc/1/cgroup; then echo True; else echo False; fi")
+	var output bytes.Buffer
+	cmdToDetectRunTime.Stdout = &output
+	runtimeDetectErr := cmdToDetectRunTime.Run()
+	if runtimeDetectErr != nil {
+		log.Fatal(logTag, ": Error encountered while detecting runtime :", runtimeDetectErr)
+	}
+	// True or False
+	parsedOutput := strings.TrimSpace(output.String())
+	if parsedOutput == "True" {
+		isRunTimeDocker = true
+	}
+
+	if isRunTimeDocker {
+		log.Println(logTag, "Runtime detected as docker container ...")
+		cmd := exec.Command("/bin/sh", "-c", "head -1 /proc/self/cgroup|cut -d/ -f3")
 		var out bytes.Buffer
 		cmd.Stdout = &out
-
 		err := cmd.Run()
-
+		id := out.String()
 		if err != nil {
-			log.Fatal(logTag, ": ", err1)
+			log.Fatal(logTag, ": runtime detected as docker container: ", err)
 		}
-		id = out.String()
+		if id == "" {
+			log.Fatal(logTag, ": runtime detected as docker container: machineid can not be empty")
+		}
+		util.MachineID = strings.TrimSuffix(id, "\n")
+	} else {
+		log.Println(logTag, "Runtime detected as a host machine ...")
+		id, err1 := machineid.ID()
+		if err1 != nil {
+			log.Fatal(logTag, ": runtime detected as a host machine: ", err1)
+		}
+		util.MachineID = id
 	}
-	util.MachineID = id
 	flag.Parse()
 	log.SetReportCaller(true)
 	log.SetFormatter(&log.TextFormatter{
