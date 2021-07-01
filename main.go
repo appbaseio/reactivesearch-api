@@ -95,43 +95,26 @@ func init() {
 }
 
 func main() {
-	isRunTimeDocker := false
+	// check if image is running as a docker container
+	// if yes, use the cgroup command
+	// else use the machineid below
+	id, err1 := machineid.ID()
+	if err1 != nil {
+		// Fallback for docker containers, use below as the machineid
+		// Reference: https://github.com/denisbrodbeck/machineid/issues/10
+		cmd := exec.Command("/bin/sh -c 'head -1 /proc/self/cgroup|cut -d/ -f3'")
 
-	cmdToDetectRunTime := exec.Command("/bin/sh", "-c", "if [[ -f /.dockerenv ]] || grep -Eq '(lxc|docker)' /proc/1/cgroup; then echo True; else echo False; fi")
-	var output bytes.Buffer
-	cmdToDetectRunTime.Stdout = &output
-	runtimeDetectErr := cmdToDetectRunTime.Run()
-	if runtimeDetectErr != nil {
-		log.Fatal(logTag, ": Error encountered while detecting runtime :", runtimeDetectErr)
-	}
-	// True or False
-	parsedOutput := strings.TrimSpace(output.String())
-	if parsedOutput == "True" {
-		isRunTimeDocker = true
-	}
-
-	if isRunTimeDocker {
-		log.Println(logTag, "Runtime detected as docker container ...")
-		cmd := exec.Command("/bin/sh", "-c", "head -1 /proc/self/cgroup|cut -d/ -f3")
 		var out bytes.Buffer
 		cmd.Stdout = &out
+
 		err := cmd.Run()
-		id := out.String()
+
 		if err != nil {
-			log.Fatal(logTag, ": runtime detected as docker container: ", err)
+			log.Fatal(logTag, ": ", err1)
 		}
-		if id == "" {
-			log.Fatal(logTag, ": runtime detected as docker container: machineid can not be empty")
-		}
-		util.MachineID = strings.TrimSuffix(id, "\n")
-	} else {
-		log.Println(logTag, "Runtime detected as a host machine ...")
-		id, err1 := machineid.ID()
-		if err1 != nil {
-			log.Fatal(logTag, ": runtime detected as a host machine: ", err1)
-		}
-		util.MachineID = id
+		id = out.String()
 	}
+	util.MachineID = id
 	flag.Parse()
 	log.SetReportCaller(true)
 	log.SetFormatter(&log.TextFormatter{
@@ -267,6 +250,7 @@ func main() {
 	// ES v7 and v6 clients
 	util.NewClient()
 	util.SetDefaultIndexTemplate()
+	util.SetSystemIndexTemplate()
 	// map of specific plugins
 	sequencedPlugins := []string{"cache.so", "searchrelevancy.so", "rules.so", "functions.so", "analytics.so", "suggestions.so"}
 	sequencedPluginsByPath := make(map[string]string)
