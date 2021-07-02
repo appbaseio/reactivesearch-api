@@ -187,14 +187,14 @@ func SetDefaultIndexTemplate() error {
 	version := GetVersion()
 	if version == 7 {
 		defaultSetting := fmt.Sprintf(`{
-			"index_patterns": ["*", ],
+			"index_patterns": ["*"],
 			"settings": %s,
 			"mappings": %s,
 			"order": 10
 		}`, settings, mappings)
 		_, err := GetClient7().IndexPutTemplate("arc_index_template_v1").BodyString(defaultSetting).Do(context.Background())
 		if err != nil {
-			log.Errorln("[SET TEMPLATE ERROR V7]", ": ", err)
+			log.Errorln("[SET USER INDEX TEMPLATE ERROR V7]", ": ", err)
 			return err
 		}
 	}
@@ -210,7 +210,7 @@ func SetDefaultIndexTemplate() error {
 		}`, settings, mappings)
 		_, err := GetClient6().IndexPutTemplate("arc_index_template_v1").BodyString(defaultSetting).Do(context.Background())
 		if err != nil {
-			log.Errorln("[SET TEMPLATE ERROR V6]", ": ", err)
+			log.Errorln("[SET USER INDEX TEMPLATE ERROR V6]", ": ", err)
 			return err
 		}
 	}
@@ -276,7 +276,7 @@ func SetSystemIndexTemplate() error {
 		}`, settings, mappings)
 		_, err := GetClient7().IndexPutTemplate("system_index_template_v1").BodyString(defaultSetting).Do(context.Background())
 		if err != nil {
-			log.Errorln("[SET TEMPLATE ERROR V7]", ": ", err)
+			log.Errorln("[SET SYSTEM INDEX TEMPLATE ERROR V7]", ": ", err)
 			return err
 		}
 	}
@@ -292,7 +292,7 @@ func SetSystemIndexTemplate() error {
 		}`, settings, mappings)
 		_, err := GetClient6().IndexPutTemplate("system_index_template_v1").BodyString(defaultSetting).Do(context.Background())
 		if err != nil {
-			log.Errorln("[SET TEMPLATE ERROR V6]", ": ", err)
+			log.Errorln("[SET SYSTEM INDEX TEMPLATE ERROR V6]", ": ", err)
 			return err
 		}
 	}
