@@ -109,7 +109,7 @@ func InitIndexAliasCache() {
 			classify.SetIndexAlias(aliasIndex.Index, aliasIndex.Alias)
 		}
 	}
-	log.Println(logTag, "=> Index Alias Cache", classify.GetIndexAliasCache())
+	log.Debugln(logTag, "=> Index Alias Cache", classify.GetIndexAliasCache())
 }
 
 // InitAliasIndexCache to set alias -> index cache on initialization
@@ -117,7 +117,7 @@ func InitAliasIndexCache() {
 	ctx := context.Background()
 	aliasIndexMap, _ := GetAliasIndexMap(ctx)
 	classify.SetAliasIndexCache(aliasIndexMap)
-	log.Println(logTag, "=> Alias Index Cache", classify.GetAliasIndexCache())
+	log.Debugln(logTag, "=> Alias Index Cache", classify.GetAliasIndexCache())
 }
 
 // SetCurrentProcess set indexes for current reindexing process
