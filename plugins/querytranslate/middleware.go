@@ -24,8 +24,6 @@ type chain struct {
 	middleware.Fifo
 }
 
-const CachedRequestHeader = "X-request-Cache"
-
 func (c *chain) Wrap(mw []middleware.Middleware, h http.HandlerFunc) http.HandlerFunc {
 	// Append logger middleware at the begining
 	mw = append([]middleware.Middleware{logger}, mw...)
