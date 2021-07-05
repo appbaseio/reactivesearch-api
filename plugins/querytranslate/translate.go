@@ -11,7 +11,7 @@ import (
 // transform the query
 func translateQuery(rsQuery RSQuery) (string, error) {
 	// Validate custom events
-	if rsQuery.Settings != nil || rsQuery.Settings.CustomEvents != nil {
+	if rsQuery.Settings != nil && rsQuery.Settings.CustomEvents != nil {
 		for k, v := range *rsQuery.Settings.CustomEvents {
 			_, ok := v.(string)
 			if !ok {
