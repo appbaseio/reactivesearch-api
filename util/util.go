@@ -370,3 +370,8 @@ func ProxyACCAPI(proxyConfig ProxyConfig) (*http.Response, error) {
 	}
 	return nil, nil
 }
+
+// Returns true if req path matches with RS API validate route
+func IsRSAPIValidateRoute(req *http.Request) bool {
+	return strings.HasSuffix(req.URL.Path, "_reactivesearch.v3/validate") || strings.HasSuffix(req.URL.Path, "_reactivesearch/validate")
+}
