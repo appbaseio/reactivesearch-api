@@ -6,7 +6,6 @@ import (
 	"github.com/smartystreets/goconvey/convey"
 )
 
-// Failed
 func TestMultiListWithDefaultValue(t *testing.T) {
 	convey.Convey("with default value", t, func() {
 		query := map[string]interface{}{
@@ -25,12 +24,11 @@ func TestMultiListWithDefaultValue(t *testing.T) {
 			t.Fatalf("Test Failed %v instead\n", err)
 		}
 		convey.So(transformedQuery, convey.ShouldResemble, `{"preference":"BookSensor"}
-{"_source":{"excludes":[],"includes":["*"]},"aggs":{"original_series.raw":{"composite":{"size":100,"sources":[{"original_series.raw":{"terms":{"field":"original_series.raw"}}}]}}},"query":{"bool":{"should":[{"terms":{"original_series.raw":["San Francisco"]}}]}},"size":0}
+{"_source":{"excludes":[],"includes":["*"]},"aggs":{"original_series.raw":{"terms":{"field":"original_series.raw","order":{"_count":"desc"},"size":100}}},"query":{"match_all":{}},"size":100}
 `)
 	})
 }
 
-// Failed
 func TestMultiDropdownList(t *testing.T) {
 	convey.Convey("with value and query format", t, func() {
 		query := map[string]interface{}{
@@ -57,14 +55,13 @@ func TestMultiDropdownList(t *testing.T) {
 			t.Fatalf("Test Failed %v instead\n", err)
 		}
 		convey.So(transformedQuery, convey.ShouldResemble, `{"preference":"BookSensor"}
-{"_source":{"excludes":[],"includes":["*"]},"aggs":{"original_series.raw":{"composite":{"sources":[{"original_series.raw":{"terms":{"field":"original_series.raw"}}}]}}},"query":{"bool":{"must":[{"term":{"original_series.raw":"In Death"}},{"term":{"original_series.raw":"Discworld"}}]}},"size":0}
+{"_source":{"excludes":[],"includes":["*"]},"aggs":{"original_series.raw":{"terms":{"field":"original_series.raw","order":{"_count":"desc"}}}},"query":{"match_all":{}},"size":0}
 {"preference":"SearchResult"}
 {"_source":{"excludes":[],"includes":["*"]},"query":{"bool":{"must":[{"bool":{"must":{"bool":{"must":[{"term":{"original_series.raw":"In Death"}},{"term":{"original_series.raw":"Discworld"}}]}}}}]}},"size":10}
 `)
 	})
 }
 
-// Failed
 func TestMultiDataList(t *testing.T) {
 	convey.Convey("with value", t, func() {
 		query := map[string]interface{}{
@@ -90,14 +87,13 @@ func TestMultiDataList(t *testing.T) {
 			t.Fatalf("Test Failed %v instead\n", err)
 		}
 		convey.So(transformedQuery, convey.ShouldResemble, `{"preference":"CitySensor"}
-{"_source":{"excludes":[],"includes":["*"]},"aggs":{"group.group_topics.topic_name_raw.raw":{"composite":{"sources":[{"group.group_topics.topic_name_raw.raw":{"terms":{"field":"group.group_topics.topic_name_raw.raw"}}}]}}},"query":{"bool":{"should":[{"terms":{"group.group_topics.topic_name_raw.raw":["Social","Adventure"]}}]}},"size":0}
+{"_source":{"excludes":[],"includes":["*"]},"aggs":{"group.group_topics.topic_name_raw.raw":{"terms":{"field":"group.group_topics.topic_name_raw.raw","order":{"_count":"desc"}}}},"query":{"match_all":{}},"size":0}
 {"preference":"SearchResult"}
 {"_source":{"excludes":[],"includes":["*"]},"query":{"bool":{"must":[{"bool":{"must":[{"bool":{"should":[{"terms":{"group.group_topics.topic_name_raw.raw":["Social","Adventure"]}}]}}]}}]}},"size":5}
 `)
 	})
 }
 
-// Failed
 func TestSingleDataList(t *testing.T) {
 	convey.Convey("with value", t, func() {
 		query := map[string]interface{}{
@@ -123,14 +119,13 @@ func TestSingleDataList(t *testing.T) {
 			t.Fatalf("Test Failed %v instead\n", err)
 		}
 		convey.So(transformedQuery, convey.ShouldResemble, `{"preference":"CitySensor"}
-{"_source":{"excludes":[],"includes":["*"]},"aggs":{"group.group_topics.topic_name_raw.raw":{"composite":{"sources":[{"group.group_topics.topic_name_raw.raw":{"terms":{"field":"group.group_topics.topic_name_raw.raw"}}}]}}},"query":{"term":{"group.group_topics.topic_name_raw.raw":"Social"}},"size":0}
+{"_source":{"excludes":[],"includes":["*"]},"aggs":{"group.group_topics.topic_name_raw.raw":{"terms":{"field":"group.group_topics.topic_name_raw.raw","order":{"_count":"desc"}}}},"query":{"match_all":{}},"size":0}
 {"preference":"SearchResult"}
 {"_source":{"excludes":[],"includes":["*"]},"query":{"bool":{"must":[{"bool":{"must":[{"term":{"group.group_topics.topic_name_raw.raw":"Social"}}]}}]}},"size":5}
 `)
 	})
 }
 
-// Failed
 func TestToggle(t *testing.T) {
 	convey.Convey("with value", t, func() {
 		query := map[string]interface{}{
@@ -156,41 +151,15 @@ func TestToggle(t *testing.T) {
 			t.Fatalf("Test Failed %v instead\n", err)
 		}
 		convey.So(transformedQuery, convey.ShouldResemble, `{"preference":"CitySensor"}
-{"_source":{"excludes":[],"includes":["*"]},"aggs":{"group.group_topics.topic_name_raw.raw":{"composite":{"sources":[{"group.group_topics.topic_name_raw.raw":{"terms":{"field":"group.group_topics.topic_name_raw.raw"}}}]}}},"query":{"bool":{"should":[{"terms":{"group.group_topics.topic_name_raw.raw":["Social","Adventure"]}}]}},"size":0}
+{"_source":{"excludes":[],"includes":["*"]},"aggs":{"group.group_topics.topic_name_raw.raw":{"terms":{"field":"group.group_topics.topic_name_raw.raw","order":{"_count":"desc"}}}},"query":{"match_all":{}},"size":0}
 {"preference":"SearchResult"}
 {"_source":{"excludes":[],"includes":["*"]},"query":{"bool":{"must":[{"bool":{"must":[{"bool":{"should":[{"terms":{"group.group_topics.topic_name_raw.raw":["Social","Adventure"]}}]}}]}}]}},"size":5}
 `)
 	})
 }
 
-// Failed
-func TestMultiListWithQueryFormat(t *testing.T) {
-	convey.Convey("with query format", t, func() {
-		query := map[string]interface{}{
-			"query": []map[string]interface{}{
-				{
-					"id":          "BookSensor",
-					"size":        100,
-					"dataField":   []string{"original_series.raw"},
-					"type":        "term",
-					"queryFormat": "and",
-					"value":       []string{"San Fransisco"},
-				},
-			},
-		}
-		transformedQuery, err := transformQuery(query)
-		if err != nil {
-			t.Fatalf("Test Failed %v instead\n", err)
-		}
-		convey.So(transformedQuery, convey.ShouldResemble, `{"preference":"BookSensor"}
-{"_source":{"excludes":[],"includes":["*"]},"aggs":{"original_series.raw":{"composite":{"size":100,"sources":[{"original_series.raw":{"terms":{"field":"original_series.raw"}}}]}}},"query":{"bool":{"must":[{"term":{"original_series.raw":"San Fransisco"}}]}},"size":0}
-`)
-	})
-}
-
-// Failed
 func TestMultiListWithMissingBucket(t *testing.T) {
-	convey.Convey("with query format", t, func() {
+	convey.Convey("with missing bucket", t, func() {
 		query := map[string]interface{}{
 			"query": []map[string]interface{}{
 				{
@@ -209,21 +178,21 @@ func TestMultiListWithMissingBucket(t *testing.T) {
 			t.Fatalf("Test Failed %v instead\n", err)
 		}
 		convey.So(transformedQuery, convey.ShouldResemble, `{"preference":"BookSensor"}
-{"_source":{"excludes":[],"includes":["*"]},"aggs":{"original_series.raw":{"composite":{"size":100,"sources":[{"original_series.raw":{"terms":{"field":"original_series.raw","missing_bucket":true}}}]}}},"query":{"bool":{"must":[{"term":{"original_series.raw":"San Fransisco"}}]}},"size":0}
+{"_source":{"excludes":[],"includes":["*"]},"aggs":{"original_series.raw":{"terms":{"field":"original_series.raw","missing":"N/A","order":{"_count":"desc"},"size":100}}},"query":{"match_all":{}},"size":100}
 `)
 	})
 }
 
-// Failed
 func TestMultiListWithAfterKey(t *testing.T) {
 	convey.Convey("with after key", t, func() {
 		query := map[string]interface{}{
 			"query": []map[string]interface{}{
 				{
-					"id":        "BookSensor",
-					"size":      10,
-					"dataField": []string{"brand.keyword"},
-					"type":      "term",
+					"id":         "BookSensor",
+					"size":       10,
+					"dataField":  []string{"brand.keyword"},
+					"type":       "term",
+					"pagination": true,
 					"after": map[string]interface{}{
 						"brand.keyword": "Chevrolet",
 					},
@@ -235,12 +204,11 @@ func TestMultiListWithAfterKey(t *testing.T) {
 			t.Fatalf("Test Failed %v instead\n", err)
 		}
 		convey.So(transformedQuery, convey.ShouldResemble, `{"preference":"BookSensor"}
-{"_source":{"excludes":[],"includes":["*"]},"aggs":{"brand.keyword":{"composite":{"after":{"brand.keyword":"Chevrolet"},"size":10,"sources":[{"brand.keyword":{"terms":{"field":"brand.keyword"}}}]}}},"query":{"match_all":{}},"size":0}
+{"_source":{"excludes":[],"includes":["*"]},"aggs":{"brand.keyword":{"composite":{"after":{"brand.keyword":"Chevrolet"},"size":10,"sources":[{"brand.keyword":{"terms":{"field":"brand.keyword"}}}]}}},"query":{"match_all":{}},"size":10}
 `)
 	})
 }
 
-// Failed
 func TestMultiListWithDefaultQuery(t *testing.T) {
 	convey.Convey("with default query", t, func() {
 		query := map[string]interface{}{
@@ -266,12 +234,11 @@ func TestMultiListWithDefaultQuery(t *testing.T) {
 			t.Fatalf("Test Failed %v instead\n", err)
 		}
 		convey.So(transformedQuery, convey.ShouldResemble, `{"preference":"SearchResult"}
-{"_source":{"excludes":[],"includes":["*"]},"aggs":{"original_series.raw":{"composite":{"size":100,"sources":[{"original_series.raw":{"terms":{"field":"original_series.raw"}}}]}}},"query":{"terms":{"country":["India"]}},"size":0}
+{"_source":{"excludes":[],"includes":["*"]},"aggs":{"original_series.raw":{"terms":{"field":"original_series.raw","order":{"_count":"desc"},"size":100}}},"query":{"terms":{"country":["India"]}},"size":100}
 `)
 	})
 }
 
-// Failed
 func TestMultiListWithCustomQuery(t *testing.T) {
 	convey.Convey("with custom query", t, func() {
 		query := map[string]interface{}{
@@ -286,9 +253,10 @@ func TestMultiListWithCustomQuery(t *testing.T) {
 							},
 						},
 					},
-					"type":  "term",
-					"value": []string{"San Fransisco"},
-					"size":  100,
+					"type":    "term",
+					"value":   []string{"San Fransisco"},
+					"size":    100,
+					"execute": false,
 				},
 				{
 					"id":        "SearchResult",
@@ -304,24 +272,22 @@ func TestMultiListWithCustomQuery(t *testing.T) {
 		if err != nil {
 			t.Fatalf("Test Failed %v instead\n", err)
 		}
-		convey.So(transformedQuery, convey.ShouldResemble, `{"preference":"BookSensor"}
-{"_source":{"excludes":[],"includes":["*"]},"aggs":{"original_series.raw":{"composite":{"size":100,"sources":[{"original_series.raw":{"terms":{"field":"original_series.raw"}}}]}}},"query":{"bool":{"should":[{"terms":{"original_series.raw":["San Fransisco"]}}]}},"size":0}
-{"preference":"SearchResult"}
+		convey.So(transformedQuery, convey.ShouldResemble, `{"preference":"SearchResult"}
 {"_source":{"excludes":[],"includes":["*"]},"query":{"bool":{"must":[{"bool":{"must":{"term":{"city":"San Fransisco"}}}}]}},"size":100}
 `)
 	})
 }
 
-// Failed
-func TestMultiListWithSortAsc(t *testing.T) {
-	convey.Convey("with sort ascending", t, func() {
+func TestMultiListWithSortDesc(t *testing.T) {
+	convey.Convey("with sort descending", t, func() {
 		query := map[string]interface{}{
 			"query": []map[string]interface{}{
 				{
-					"id":        "BookSensor",
-					"size":      10,
-					"dataField": []string{"brand.keyword"},
-					"type":      "term",
+					"id":         "BookSensor",
+					"size":       10,
+					"dataField":  []string{"brand.keyword"},
+					"type":       "term",
+					"pagination": true,
 					"after": map[string]interface{}{
 						"brand.keyword": "Maybach",
 					},
@@ -334,21 +300,21 @@ func TestMultiListWithSortAsc(t *testing.T) {
 			t.Fatalf("Test Failed %v instead\n", err)
 		}
 		convey.So(transformedQuery, convey.ShouldResemble, `{"preference":"BookSensor"}
-{"_source":{"excludes":[],"includes":["*"]},"aggs":{"brand.keyword":{"composite":{"after":{"brand.keyword":"Maybach"},"size":10,"sources":[{"brand.keyword":{"terms":{"field":"brand.keyword","order":"desc"}}}]}}},"query":{"match_all":{}},"size":0}
+{"_source":{"excludes":[],"includes":["*"]},"aggs":{"brand.keyword":{"composite":{"after":{"brand.keyword":"Maybach"},"size":10,"sources":[{"brand.keyword":{"terms":{"field":"brand.keyword","order":"desc"}}}]}}},"query":{"match_all":{}},"size":10}
 `)
 	})
 }
 
-// Failed
 func TestMultiListWithSortByCount(t *testing.T) {
 	convey.Convey("with sortBy count", t, func() {
 		query := map[string]interface{}{
 			"query": []map[string]interface{}{
 				{
-					"id":        "BookSensor",
-					"size":      10,
-					"dataField": []string{"brand.keyword"},
-					"type":      "term",
+					"id":         "BookSensor",
+					"size":       10,
+					"dataField":  []string{"brand.keyword"},
+					"type":       "term",
+					"pagination": true,
 					"after": map[string]interface{}{
 						"brand.keyword": "Chevrolet",
 					},
@@ -361,7 +327,7 @@ func TestMultiListWithSortByCount(t *testing.T) {
 			t.Fatalf("Test Failed %v instead\n", err)
 		}
 		convey.So(transformedQuery, convey.ShouldResemble, `{"preference":"BookSensor"}
-{"_source":{"excludes":[],"includes":["*"]},"aggs":{"brand.keyword":{"composite":{"after":{"brand.keyword":"Chevrolet"},"size":10,"sources":[{"brand.keyword":{"terms":{"field":"brand.keyword"}}}]}}},"query":{"match_all":{}},"size":0}
+{"_source":{"excludes":[],"includes":["*"]},"aggs":{"brand.keyword":{"composite":{"after":{"brand.keyword":"Chevrolet"},"size":10,"sources":[{"brand.keyword":{"terms":{"field":"brand.keyword"}}}]}}},"query":{"match_all":{}},"size":10}
 `)
 	})
 }

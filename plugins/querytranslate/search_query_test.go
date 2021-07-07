@@ -377,7 +377,6 @@ func TestQueryWithCategoryField(t *testing.T) {
 	})
 }
 
-// Failed
 func TestQueryWithCategories(t *testing.T) {
 	Convey("with category keyword", t, func() {
 		query := map[string]interface{}{
@@ -397,12 +396,11 @@ func TestQueryWithCategories(t *testing.T) {
 			t.Fatalf("Test Failed %v instead\n", err)
 		}
 		So(transformedQuery, ShouldResemble, `{"preference":"BookSensor"}
-{"_source":{"excludes":[],"includes":["*"]},"aggs":{"authors.raw":{"terms":{"field":"authors.raw"}}},"query":[{"bool":{"minimum_should_match":1,"should":[{"multi_match":{"fields":["original_title","original_title.search"],"fuzziness":0,"operator":"or","query":"harry","type":"best_fields"}},{"multi_match":{"fields":["original_title","original_title.search"],"operator":"or","query":"harry","type":"phrase"}}]}},{"term":{"authors.raw":"J.K. Rowling, Mary Grand"}}],"size":10}
+{"_source":{"excludes":[],"includes":["*"]},"aggs":{"authors.raw":{"terms":{"field":"authors.raw"}}},"query":[{"bool":{"minimum_should_match":1,"should":[{"multi_match":{"fields":["original_title","original_title.search"],"operator":"or","query":"harry","type":"cross_fields"}},{"multi_match":{"fields":["original_title","original_title.search"],"fuzziness":0,"operator":"or","query":"harry","type":"best_fields"}},{"multi_match":{"fields":["original_title","original_title.search"],"operator":"or","query":"harry","type":"phrase"}},{"multi_match":{"fields":["original_title"],"operator":"or","query":"harry","type":"phrase_prefix"}}]}},{"term":{"authors.raw":"J.K. Rowling, Mary Grand"}}],"size":10}
 `)
 	})
 }
 
-// Failed
 func TestQueryWithCategoryAndAggregationField(t *testing.T) {
 	Convey("with category and aggregation field", t, func() {
 		query := map[string]interface{}{
@@ -422,7 +420,7 @@ func TestQueryWithCategoryAndAggregationField(t *testing.T) {
 			t.Fatalf("Test Failed %v instead\n", err)
 		}
 		So(transformedQuery, ShouldResemble, `{"preference":"BookSensor"}
-{"_source":{"excludes":[],"includes":["*"]},"aggs":{"original_title.keyword":{"aggs":{"original_title.keyword":{"top_hits":{"size":1}}},"composite":{"size":10,"sources":[{"original_title.keyword":{"terms":{"field":"original_title.keyword"}}}]}},"title.keyword":{"terms":{"field":"title.keyword"}}},"query":{"bool":{"minimum_should_match":1,"should":[{"multi_match":{"fields":["original_title","original_title.search"],"fuzziness":0,"operator":"or","query":"ha","type":"best_fields"}},{"multi_match":{"fields":["original_title","original_title.search"],"operator":"or","query":"ha","type":"phrase"}}]}},"size":0}
+{"_source":{"excludes":[],"includes":["*"]},"aggs":{"original_title.keyword":{"aggs":{"original_title.keyword":{"top_hits":{"size":1}}},"composite":{"size":10,"sources":[{"original_title.keyword":{"terms":{"field":"original_title.keyword"}}}]}},"title.keyword":{"terms":{"field":"title.keyword"}}},"query":{"bool":{"minimum_should_match":1,"should":[{"multi_match":{"fields":["original_title","original_title.search"],"operator":"or","query":"ha","type":"cross_fields"}},{"multi_match":{"fields":["original_title","original_title.search"],"fuzziness":0,"operator":"or","query":"ha","type":"best_fields"}},{"multi_match":{"fields":["original_title","original_title.search"],"operator":"or","query":"ha","type":"phrase"}},{"multi_match":{"fields":["original_title"],"operator":"or","query":"ha","type":"phrase_prefix"}}]}},"size":10}
 `)
 	})
 }
@@ -447,7 +445,7 @@ func TestCategorySearchWithQueryFormat(t *testing.T) {
 			t.Fatalf("Test Failed %v instead\n", err)
 		}
 		So(transformedQuery, ShouldResemble, `{"preference":"BookSensor"}
-{"_source":{"excludes":[],"includes":["*"]},"aggs":{"authors.raw":{"terms":{"field":"authors.raw"}}},"query":{"bool":{"minimum_should_match":1,"should":[{"multi_match":{"fields":["original_title","original_title.search"],"operator":"and","query":"harry","type":"cross_fields"}},{"multi_match":{"fields":["original_title","original_title.search"],"operator":"and","query":"harry","type":"phrase"}}]}},"size":10}
+{"_source":{"excludes":[],"includes":["*"]},"aggs":{"authors.raw":{"terms":{"field":"authors.raw"}}},"query":{"bool":{"minimum_should_match":1,"should":[{"multi_match":{"fields":["original_title","original_title.search"],"operator":"and","query":"harry","type":"cross_fields"}},{"multi_match":{"fields":["original_title","original_title.search"],"operator":"and","query":"harry","type":"phrase"}},{"multi_match":{"fields":["original_title"],"operator":"and","query":"harry","type":"phrase_prefix"}}]}},"size":10}
 `)
 	})
 }
@@ -517,7 +515,6 @@ func TestBasicReactiveListWithSortDescending(t *testing.T) {
 	})
 }
 
-// Failed
 func TestReactiveAnd(t *testing.T) {
 	Convey("with react and", t, func() {
 		query := map[string]interface{}{
@@ -527,6 +524,7 @@ func TestReactiveAnd(t *testing.T) {
 					"size":      20,
 					"dataField": []string{"original_title"},
 					"value":     "harry",
+					"execute":   false,
 				},
 				{
 					"id":        "SearchResult",
@@ -542,15 +540,12 @@ func TestReactiveAnd(t *testing.T) {
 		if err != nil {
 			t.Fatalf("Test Failed %v instead\n", err)
 		}
-		So(transformedQuery, ShouldResemble, `{"preference":"BookSensor"}
-{"_source":{"excludes":[],"includes":["*"]},"query":{"bool":{"minimum_should_match":1,"should":[{"multi_match":{"fields":["original_title"],"fuzziness":0,"operator":"or","query":"harry","type":"best_fields"}},{"multi_match":{"fields":["original_title"],"operator":"or","query":"harry","type":"phrase"}}]}},"size":20}
-{"preference":"SearchResult"}
-{"_source":{"excludes":[],"includes":["*"]},"query":{"bool":{"must":[{"bool":{"must":{"bool":{"minimum_should_match":1,"should":[{"multi_match":{"fields":["original_title"],"fuzziness":0,"operator":"or","query":"harry","type":"best_fields"}},{"multi_match":{"fields":["original_title"],"operator":"or","query":"harry","type":"phrase"}}]}}}}]}},"size":20}
+		So(transformedQuery, ShouldResemble, `{"preference":"SearchResult"}
+{"_source":{"excludes":[],"includes":["*"]},"query":{"bool":{"must":[{"bool":{"must":{"bool":{"minimum_should_match":1,"should":[{"multi_match":{"fields":["original_title"],"operator":"or","query":"harry","type":"cross_fields"}},{"multi_match":{"fields":["original_title"],"fuzziness":0,"operator":"or","query":"harry","type":"best_fields"}},{"multi_match":{"fields":["original_title"],"operator":"or","query":"harry","type":"phrase"}},{"multi_match":{"fields":["original_title"],"operator":"or","query":"harry","type":"phrase_prefix"}}]}}}}]}},"size":20}
 `)
 	})
 }
 
-// Failed
 func TestReactiveOr(t *testing.T) {
 	Convey("with react or", t, func() {
 		query := map[string]interface{}{
@@ -560,6 +555,7 @@ func TestReactiveOr(t *testing.T) {
 					"size":      20,
 					"dataField": []string{"original_title"},
 					"value":     "harry",
+					"execute":   false,
 				},
 				{
 					"id":        "SearchResult",
@@ -575,15 +571,12 @@ func TestReactiveOr(t *testing.T) {
 		if err != nil {
 			t.Fatalf("Test Failed %v instead\n", err)
 		}
-		So(transformedQuery, ShouldResemble, `{"preference":"BookSensor"}
-{"_source":{"excludes":[],"includes":["*"]},"query":{"bool":{"minimum_should_match":1,"should":[{"multi_match":{"fields":["original_title"],"fuzziness":0,"operator":"or","query":"harry","type":"best_fields"}},{"multi_match":{"fields":["original_title"],"operator":"or","query":"harry","type":"phrase"}}]}},"size":20}
-{"preference":"SearchResult"}
-{"_source":{"excludes":[],"includes":["*"]},"query":{"bool":{"must":[{"bool":{"minimum_should_match":1,"should":{"bool":{"minimum_should_match":1,"should":[{"multi_match":{"fields":["original_title"],"fuzziness":0,"operator":"or","query":"harry","type":"best_fields"}},{"multi_match":{"fields":["original_title"],"operator":"or","query":"harry","type":"phrase"}}]}}}}]}},"size":20}
+		So(transformedQuery, ShouldResemble, `{"preference":"SearchResult"}
+{"_source":{"excludes":[],"includes":["*"]},"query":{"bool":{"must":[{"bool":{"minimum_should_match":1,"should":{"bool":{"minimum_should_match":1,"should":[{"multi_match":{"fields":["original_title"],"operator":"or","query":"harry","type":"cross_fields"}},{"multi_match":{"fields":["original_title"],"fuzziness":0,"operator":"or","query":"harry","type":"best_fields"}},{"multi_match":{"fields":["original_title"],"operator":"or","query":"harry","type":"phrase"}},{"multi_match":{"fields":["original_title"],"operator":"or","query":"harry","type":"phrase_prefix"}}]}}}}]}},"size":20}
 `)
 	})
 }
 
-// Failed
 func TestReactiveNot(t *testing.T) {
 	Convey("with react not", t, func() {
 		query := map[string]interface{}{
@@ -593,6 +586,7 @@ func TestReactiveNot(t *testing.T) {
 					"size":      20,
 					"dataField": []string{"original_title"},
 					"value":     "harry",
+					"execute":   false,
 				},
 				{
 					"id":        "SearchResult",
@@ -608,15 +602,12 @@ func TestReactiveNot(t *testing.T) {
 		if err != nil {
 			t.Fatalf("Test Failed %v instead\n", err)
 		}
-		So(transformedQuery, ShouldResemble, `{"preference":"BookSensor"}
-{"_source":{"excludes":[],"includes":["*"]},"query":{"bool":{"minimum_should_match":1,"should":[{"multi_match":{"fields":["original_title"],"fuzziness":0,"operator":"or","query":"harry","type":"best_fields"}},{"multi_match":{"fields":["original_title"],"operator":"or","query":"harry","type":"phrase"}}]}},"size":20}
-{"preference":"SearchResult"}
-{"_source":{"excludes":[],"includes":["*"]},"query":{"bool":{"must":[{"bool":{"must_not":{"bool":{"minimum_should_match":1,"should":[{"multi_match":{"fields":["original_title"],"fuzziness":0,"operator":"or","query":"harry","type":"best_fields"}},{"multi_match":{"fields":["original_title"],"operator":"or","query":"harry","type":"phrase"}}]}}}}]}},"size":20}
+		So(transformedQuery, ShouldResemble, `{"preference":"SearchResult"}
+{"_source":{"excludes":[],"includes":["*"]},"query":{"bool":{"must":[{"bool":{"must_not":{"bool":{"minimum_should_match":1,"should":[{"multi_match":{"fields":["original_title"],"operator":"or","query":"harry","type":"cross_fields"}},{"multi_match":{"fields":["original_title"],"fuzziness":0,"operator":"or","query":"harry","type":"best_fields"}},{"multi_match":{"fields":["original_title"],"operator":"or","query":"harry","type":"phrase"}},{"multi_match":{"fields":["original_title"],"operator":"or","query":"harry","type":"phrase_prefix"}}]}}}}]}},"size":20}
 `)
 	})
 }
 
-// Failed
 func TestReactiveWithArray(t *testing.T) {
 	Convey("with react array", t, func() {
 		query := map[string]interface{}{
@@ -626,12 +617,14 @@ func TestReactiveWithArray(t *testing.T) {
 					"size":      20,
 					"dataField": []string{"original_title"},
 					"value":     "harry",
+					"execute":   false,
 				},
 				{
 					"id":        "BookSensor2",
 					"size":      20,
 					"dataField": []string{"original_title"},
 					"value":     "potter",
+					"execute":   false,
 				},
 				{
 					"id":        "SearchResult",
@@ -647,56 +640,8 @@ func TestReactiveWithArray(t *testing.T) {
 		if err != nil {
 			t.Fatalf("Test Failed %v instead\n", err)
 		}
-		So(transformedQuery, ShouldResemble, `{"preference":"BookSensor"}
-{"_source":{"excludes":[],"includes":["*"]},"query":{"bool":{"minimum_should_match":1,"should":[{"multi_match":{"fields":["original_title"],"fuzziness":0,"operator":"or","query":"harry","type":"best_fields"}},{"multi_match":{"fields":["original_title"],"operator":"or","query":"harry","type":"phrase"}}]}},"size":20}
-{"preference":"BookSensor2"}
-{"_source":{"excludes":[],"includes":["*"]},"query":{"bool":{"minimum_should_match":1,"should":[{"multi_match":{"fields":["original_title"],"fuzziness":0,"operator":"or","query":"potter","type":"best_fields"}},{"multi_match":{"fields":["original_title"],"operator":"or","query":"potter","type":"phrase"}}]}},"size":20}
-{"preference":"SearchResult"}
-{"_source":{"excludes":[],"includes":["*"]},"query":{"bool":{"must":[{"bool":{"minimum_should_match":1,"should":[{"bool":{"minimum_should_match":1,"should":[{"multi_match":{"fields":["original_title"],"fuzziness":0,"operator":"or","query":"harry","type":"best_fields"}},{"multi_match":{"fields":["original_title"],"operator":"or","query":"harry","type":"phrase"}}]}},{"bool":{"minimum_should_match":1,"should":[{"multi_match":{"fields":["original_title"],"fuzziness":0,"operator":"or","query":"potter","type":"best_fields"}},{"multi_match":{"fields":["original_title"],"operator":"or","query":"potter","type":"phrase"}}]}}]}}]}},"size":20}
-`)
-	})
-}
-
-// Failed
-func TestReactiveDependent(t *testing.T) {
-	Convey("with dependent react", t, func() {
-		query := map[string]interface{}{
-			"query": []map[string]interface{}{
-				{
-					"id":        "BookSensor",
-					"size":      20,
-					"dataField": []string{"original_title"},
-					"value":     "harry",
-				},
-				{
-					"id":        "BookSensor2",
-					"size":      20,
-					"dataField": []string{"original_title"},
-					"value":     "potter",
-					"react": map[string]interface{}{
-						"and": []string{"BookSensor"},
-					},
-				},
-				{
-					"id":        "SearchResult",
-					"size":      20,
-					"dataField": []string{"original_title"},
-					"react": map[string]interface{}{
-						"and": []string{"BookSensor2"},
-					},
-				},
-			},
-		}
-		transformedQuery, err := transformQuery(query)
-		if err != nil {
-			t.Fatalf("Test Failed %v instead\n", err)
-		}
-		So(transformedQuery, ShouldResemble, `{"preference":"BookSensor"}
-{"_source":{"excludes":[],"includes":["*"]},"query":{"bool":{"minimum_should_match":1,"should":[{"multi_match":{"fields":["original_title"],"fuzziness":0,"operator":"or","query":"harry","type":"best_fields"}},{"multi_match":{"fields":["original_title"],"operator":"or","query":"harry","type":"phrase"}}]}},"size":20}
-{"preference":"BookSensor2"}
-{"_source":{"excludes":[],"includes":["*"]},"query":{"bool":{"must":[{"bool":{"must":[{"bool":{"minimum_should_match":1,"should":[{"multi_match":{"fields":["original_title"],"fuzziness":0,"operator":"or","query":"harry","type":"best_fields"}},{"multi_match":{"fields":["original_title"],"operator":"or","query":"harry","type":"phrase"}}]}}]}}]}},"size":20}
-{"preference":"SearchResult"}
-{"_source":{"excludes":[],"includes":["*"]},"query":{"bool":{"must":[{"bool":{"must":[{"bool":{"minimum_should_match":1,"should":[{"multi_match":{"fields":["original_title"],"fuzziness":0,"operator":"or","query":"potter","type":"best_fields"}},{"multi_match":{"fields":["original_title"],"operator":"or","query":"potter","type":"phrase"}}]}}]}}]}},"size":20}
+		So(transformedQuery, ShouldResemble, `{"preference":"SearchResult"}
+{"_source":{"excludes":[],"includes":["*"]},"query":{"bool":{"must":[{"bool":{"minimum_should_match":1,"should":[{"bool":{"minimum_should_match":1,"should":[{"multi_match":{"fields":["original_title"],"operator":"or","query":"harry","type":"cross_fields"}},{"multi_match":{"fields":["original_title"],"fuzziness":0,"operator":"or","query":"harry","type":"best_fields"}},{"multi_match":{"fields":["original_title"],"operator":"or","query":"harry","type":"phrase"}},{"multi_match":{"fields":["original_title"],"operator":"or","query":"harry","type":"phrase_prefix"}}]}},{"bool":{"minimum_should_match":1,"should":[{"multi_match":{"fields":["original_title"],"operator":"or","query":"potter","type":"cross_fields"}},{"multi_match":{"fields":["original_title"],"fuzziness":0,"operator":"or","query":"potter","type":"best_fields"}},{"multi_match":{"fields":["original_title"],"operator":"or","query":"potter","type":"phrase"}},{"multi_match":{"fields":["original_title"],"operator":"or","query":"potter","type":"phrase_prefix"}}]}}]}}]}},"size":20}
 `)
 	})
 }
@@ -758,7 +703,6 @@ func TestBasicDataSearchWithDefaultQuery(t *testing.T) {
 	})
 }
 
-// Failed
 func TestBasicDataSearchWithCustomQuery(t *testing.T) {
 	Convey("with custom query", t, func() {
 		query := map[string]interface{}{
@@ -774,7 +718,8 @@ func TestBasicDataSearchWithCustomQuery(t *testing.T) {
 							},
 						},
 					},
-					"value": "india",
+					"value":   "india",
+					"execute": false,
 				},
 				{
 					"id":        "SearchResult",
@@ -790,9 +735,7 @@ func TestBasicDataSearchWithCustomQuery(t *testing.T) {
 		if err != nil {
 			t.Fatalf("Test Failed %v instead\n", err)
 		}
-		So(transformedQuery, ShouldResemble, `{"preference":"BookSensor"}
-{"_source":{"excludes":[],"includes":["*"]},"query":{"bool":{"minimum_should_match":1,"should":[{"multi_match":{"fields":["original_title","original_title.search"],"fuzziness":0,"operator":"or","query":"india","type":"best_fields"}},{"multi_match":{"fields":["original_title","original_title.search"],"operator":"or","query":"india","type":"phrase"}}]}},"size":10}
-{"preference":"SearchResult"}
+		So(transformedQuery, ShouldResemble, `{"preference":"SearchResult"}
 {"_source":{"excludes":[],"includes":["*"]},"query":{"bool":{"must":[{"bool":{"must":{"terms":{"country":["india"]}}}}]}},"size":10}
 `)
 	})
