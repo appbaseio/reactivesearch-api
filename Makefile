@@ -20,6 +20,6 @@ $(call PLUGIN_LOC_FUNC,so): %.so: %.go
 	$(GC) $(PLUGIN_FLAGS) -o $(PLUGIN_BUILD_DIR)/$(@F) $<
 
 test: 
-	$(GT) -p 1 ./...
+	$(GT) -p 1 ./... -tags=unit
 clean:
 	rm -rf $(BUILD_DIR)

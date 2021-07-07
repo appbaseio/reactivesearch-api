@@ -20,6 +20,7 @@ func transformQuery(query map[string]interface{}) (string, error) {
 	return translateQuery(body)
 }
 
+// Failed
 func TestQueryWithValue(t *testing.T) {
 	Convey("with value", t, func() {
 		query := map[string]interface{}{
@@ -62,6 +63,7 @@ func TestBasicQuery(t *testing.T) {
 	})
 }
 
+// Failed
 func TestWithMultipleDataFields(t *testing.T) {
 	Convey("with multiple data fields", t, func() {
 		query := map[string]interface{}{
@@ -101,6 +103,7 @@ func TestWithNoDataField(t *testing.T) {
 	})
 }
 
+// Failed
 func TestWithFieldWeights(t *testing.T) {
 	Convey("with multiple field weights", t, func() {
 		query := map[string]interface{}{
@@ -123,6 +126,7 @@ func TestWithFieldWeights(t *testing.T) {
 	})
 }
 
+// Failed
 func TestQueryFormat(t *testing.T) {
 	Convey("with query format", t, func() {
 		query := map[string]interface{}{
@@ -169,6 +173,7 @@ func TestSearchOperators(t *testing.T) {
 	})
 }
 
+// Failed
 func TestQueryWithFuzziness(t *testing.T) {
 	Convey("with fuzziness", t, func() {
 		query := map[string]interface{}{
@@ -192,6 +197,7 @@ func TestQueryWithFuzziness(t *testing.T) {
 	})
 }
 
+// Failed
 func TestQueryWithIncludeFields(t *testing.T) {
 	Convey("with include fields", t, func() {
 		query := map[string]interface{}{
@@ -215,6 +221,7 @@ func TestQueryWithIncludeFields(t *testing.T) {
 	})
 }
 
+// Failed
 func TestQueryWithExcludeFields(t *testing.T) {
 	Convey("with exclude fields", t, func() {
 		query := map[string]interface{}{
@@ -238,6 +245,7 @@ func TestQueryWithExcludeFields(t *testing.T) {
 	})
 }
 
+// Failed
 func TestQueryFrom(t *testing.T) {
 	Convey("with `from`", t, func() {
 		query := map[string]interface{}{
@@ -261,6 +269,7 @@ func TestQueryFrom(t *testing.T) {
 	})
 }
 
+// Failed
 func TestQueryHighlight(t *testing.T) {
 	Convey("with highlight", t, func() {
 		query := map[string]interface{}{
@@ -284,6 +293,7 @@ func TestQueryHighlight(t *testing.T) {
 	})
 }
 
+// Failed
 func TestQueryHighlightField(t *testing.T) {
 	Convey("with highlight field", t, func() {
 		query := map[string]interface{}{
@@ -308,6 +318,7 @@ func TestQueryHighlightField(t *testing.T) {
 	})
 }
 
+// Failed
 func TestQueryNestedField(t *testing.T) {
 	Convey("with nested field", t, func() {
 		query := map[string]interface{}{
@@ -331,6 +342,7 @@ func TestQueryNestedField(t *testing.T) {
 	})
 }
 
+// Failed
 func TestQueryWithAggregationField(t *testing.T) {
 	Convey("with aggregation field", t, func() {
 		query := map[string]interface{}{
@@ -354,6 +366,7 @@ func TestQueryWithAggregationField(t *testing.T) {
 	})
 }
 
+// Failed
 func TestQueryWithCategoryField(t *testing.T) {
 	Convey("with category field", t, func() {
 		query := map[string]interface{}{
@@ -377,6 +390,7 @@ func TestQueryWithCategoryField(t *testing.T) {
 	})
 }
 
+// Failed
 func TestQueryWithCategories(t *testing.T) {
 	Convey("with category keyword", t, func() {
 		query := map[string]interface{}{
@@ -401,6 +415,7 @@ func TestQueryWithCategories(t *testing.T) {
 	})
 }
 
+// Failed
 func TestQueryWithCategoryAndAggregationField(t *testing.T) {
 	Convey("with category and aggregation field", t, func() {
 		query := map[string]interface{}{
@@ -425,6 +440,7 @@ func TestQueryWithCategoryAndAggregationField(t *testing.T) {
 	})
 }
 
+// Failed
 func TestCategorySearchWithQueryFormat(t *testing.T) {
 	Convey("with query format", t, func() {
 		query := map[string]interface{}{
@@ -514,6 +530,7 @@ func TestBasicReactiveListWithSortDescending(t *testing.T) {
 	})
 }
 
+// Failed
 func TestReactiveAnd(t *testing.T) {
 	Convey("with react and", t, func() {
 		query := map[string]interface{}{
@@ -546,6 +563,7 @@ func TestReactiveAnd(t *testing.T) {
 	})
 }
 
+// Failed
 func TestReactiveOr(t *testing.T) {
 	Convey("with react or", t, func() {
 		query := map[string]interface{}{
@@ -578,6 +596,7 @@ func TestReactiveOr(t *testing.T) {
 	})
 }
 
+// Failed
 func TestReactiveNot(t *testing.T) {
 	Convey("with react not", t, func() {
 		query := map[string]interface{}{
@@ -610,6 +629,7 @@ func TestReactiveNot(t *testing.T) {
 	})
 }
 
+// Failed
 func TestReactiveWithArray(t *testing.T) {
 	Convey("with react array", t, func() {
 		query := map[string]interface{}{
@@ -650,6 +670,7 @@ func TestReactiveWithArray(t *testing.T) {
 	})
 }
 
+// Failed
 func TestReactiveDependent(t *testing.T) {
 	Convey("with dependent react", t, func() {
 		query := map[string]interface{}{
@@ -750,6 +771,7 @@ func TestBasicDataSearchWithDefaultQuery(t *testing.T) {
 	})
 }
 
+// Failed
 func TestBasicDataSearchWithCustomQuery(t *testing.T) {
 	Convey("with custom query", t, func() {
 		query := map[string]interface{}{

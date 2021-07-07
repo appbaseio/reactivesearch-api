@@ -1,10 +1,12 @@
 package querytranslate
 
 import (
-	"github.com/smartystreets/goconvey/convey"
 	"testing"
+
+	"github.com/smartystreets/goconvey/convey"
 )
 
+// Failed
 func TestMultiListWithDefaultValue(t *testing.T) {
 	convey.Convey("with default value", t, func() {
 		query := map[string]interface{}{
@@ -28,6 +30,7 @@ func TestMultiListWithDefaultValue(t *testing.T) {
 	})
 }
 
+// Failed
 func TestMultiDropdownList(t *testing.T) {
 	convey.Convey("with value and query format", t, func() {
 		query := map[string]interface{}{
@@ -61,6 +64,7 @@ func TestMultiDropdownList(t *testing.T) {
 	})
 }
 
+// Failed
 func TestMultiDataList(t *testing.T) {
 	convey.Convey("with value", t, func() {
 		query := map[string]interface{}{
@@ -93,6 +97,7 @@ func TestMultiDataList(t *testing.T) {
 	})
 }
 
+// Failed
 func TestSingleDataList(t *testing.T) {
 	convey.Convey("with value", t, func() {
 		query := map[string]interface{}{
@@ -125,6 +130,7 @@ func TestSingleDataList(t *testing.T) {
 	})
 }
 
+// Failed
 func TestToggle(t *testing.T) {
 	convey.Convey("with value", t, func() {
 		query := map[string]interface{}{
@@ -157,6 +163,7 @@ func TestToggle(t *testing.T) {
 	})
 }
 
+// Failed
 func TestMultiListWithQueryFormat(t *testing.T) {
 	convey.Convey("with query format", t, func() {
 		query := map[string]interface{}{
@@ -181,6 +188,7 @@ func TestMultiListWithQueryFormat(t *testing.T) {
 	})
 }
 
+// Failed
 func TestMultiListWithMissingBucket(t *testing.T) {
 	convey.Convey("with query format", t, func() {
 		query := map[string]interface{}{
@@ -206,6 +214,7 @@ func TestMultiListWithMissingBucket(t *testing.T) {
 	})
 }
 
+// Failed
 func TestMultiListWithAfterKey(t *testing.T) {
 	convey.Convey("with after key", t, func() {
 		query := map[string]interface{}{
@@ -231,6 +240,7 @@ func TestMultiListWithAfterKey(t *testing.T) {
 	})
 }
 
+// Failed
 func TestMultiListWithDefaultQuery(t *testing.T) {
 	convey.Convey("with default query", t, func() {
 		query := map[string]interface{}{
@@ -261,6 +271,7 @@ func TestMultiListWithDefaultQuery(t *testing.T) {
 	})
 }
 
+// Failed
 func TestMultiListWithCustomQuery(t *testing.T) {
 	convey.Convey("with custom query", t, func() {
 		query := map[string]interface{}{
@@ -301,6 +312,7 @@ func TestMultiListWithCustomQuery(t *testing.T) {
 	})
 }
 
+// Failed
 func TestMultiListWithSortAsc(t *testing.T) {
 	convey.Convey("with sort ascending", t, func() {
 		query := map[string]interface{}{
@@ -327,6 +339,7 @@ func TestMultiListWithSortAsc(t *testing.T) {
 	})
 }
 
+// Failed
 func TestMultiListWithSortByCount(t *testing.T) {
 	convey.Convey("with sortBy count", t, func() {
 		query := map[string]interface{}{
