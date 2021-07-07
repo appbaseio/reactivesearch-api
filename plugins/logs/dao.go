@@ -172,7 +172,7 @@ func (es *elasticsearch) rolloverIndexJob(alias string) {
 		Mappings(mappings).
 		Do(ctx)
 	if err != nil {
-		log.Printf(logTag, "error while creating a rollover service %s %v", alias, err)
+		log.Println(logTag, "error while creating a rollover service", alias, err)
 	}
 	log.Println(logTag, ": rollover res oldIndex", rolloverService.OldIndex)
 	log.Println(logTag, ": rollover res newIndex", rolloverService.NewIndex)
