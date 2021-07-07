@@ -20,7 +20,6 @@ func transformQuery(query map[string]interface{}) (string, error) {
 	return translateQuery(body)
 }
 
-// Failed
 func TestQueryWithValue(t *testing.T) {
 	Convey("with value", t, func() {
 		query := map[string]interface{}{
@@ -38,7 +37,7 @@ func TestQueryWithValue(t *testing.T) {
 			t.Fatalf("Test Failed %v instead\n", err)
 		}
 		So(transformedQuery, ShouldResemble, `{"preference":"BookSensor"}
-{"_source":{"excludes":[],"includes":["*"]},"query":{"bool":{"minimum_should_match":1,"should":[{"multi_match":{"fields":["original_title"],"fuzziness":0,"operator":"or","query":"harry","type":"best_fields"}},{"multi_match":{"fields":["original_title"],"operator":"or","query":"harry","type":"phrase"}}]}},"size":20}
+{"_source":{"excludes":[],"includes":["*"]},"query":{"bool":{"minimum_should_match":1,"should":[{"multi_match":{"fields":["original_title"],"operator":"or","query":"harry","type":"cross_fields"}},{"multi_match":{"fields":["original_title"],"fuzziness":0,"operator":"or","query":"harry","type":"best_fields"}},{"multi_match":{"fields":["original_title"],"operator":"or","query":"harry","type":"phrase"}},{"multi_match":{"fields":["original_title"],"operator":"or","query":"harry","type":"phrase_prefix"}}]}},"size":20}
 `)
 	})
 }
@@ -63,7 +62,6 @@ func TestBasicQuery(t *testing.T) {
 	})
 }
 
-// Failed
 func TestWithMultipleDataFields(t *testing.T) {
 	Convey("with multiple data fields", t, func() {
 		query := map[string]interface{}{
@@ -80,7 +78,7 @@ func TestWithMultipleDataFields(t *testing.T) {
 			t.Fatalf("Test Failed %v instead\n", err)
 		}
 		So(transformedQuery, ShouldResemble, `{"preference":"BookSensor"}
-{"_source":{"excludes":[],"includes":["*"]},"query":{"bool":{"minimum_should_match":1,"should":[{"multi_match":{"fields":["original_title","original_title.raw"],"fuzziness":0,"operator":"or","query":"harry","type":"best_fields"}},{"multi_match":{"fields":["original_title","original_title.raw"],"operator":"or","query":"harry","type":"phrase"}}]}}}
+{"_source":{"excludes":[],"includes":["*"]},"query":{"bool":{"minimum_should_match":1,"should":[{"multi_match":{"fields":["original_title","original_title.raw"],"operator":"or","query":"harry","type":"cross_fields"}},{"multi_match":{"fields":["original_title","original_title.raw"],"fuzziness":0,"operator":"or","query":"harry","type":"best_fields"}},{"multi_match":{"fields":["original_title","original_title.raw"],"operator":"or","query":"harry","type":"phrase"}},{"multi_match":{"fields":["original_title","original_title.raw"],"operator":"or","query":"harry","type":"phrase_prefix"}}]}}}
 `)
 	})
 }
@@ -103,7 +101,6 @@ func TestWithNoDataField(t *testing.T) {
 	})
 }
 
-// Failed
 func TestWithFieldWeights(t *testing.T) {
 	Convey("with multiple field weights", t, func() {
 		query := map[string]interface{}{
@@ -111,7 +108,7 @@ func TestWithFieldWeights(t *testing.T) {
 				{
 					"id":           "BookSensor",
 					"dataField":    []string{"original_title", "original_title.raw"},
-					"fieldWeights": []string{"1", "3"},
+					"fieldWeights": []float64{1, 3},
 					"value":        "harry",
 				},
 			},
@@ -121,12 +118,11 @@ func TestWithFieldWeights(t *testing.T) {
 			t.Fatalf("Test Failed %v instead\n", err)
 		}
 		So(transformedQuery, ShouldResemble, `{"preference":"BookSensor"}
-{"_source":{"excludes":[],"includes":["*"]},"query":{"bool":{"minimum_should_match":1,"should":[{"multi_match":{"fields":["original_title^1","original_title.raw^3"],"fuzziness":0,"operator":"or","query":"harry","type":"best_fields"}},{"multi_match":{"fields":["original_title^1","original_title.raw^3"],"operator":"or","query":"harry","type":"phrase"}}]}}}
+{"_source":{"excludes":[],"includes":["*"]},"query":{"bool":{"minimum_should_match":1,"should":[{"multi_match":{"fields":["original_title^1.00","original_title.raw^3.00"],"operator":"or","query":"harry","type":"cross_fields"}},{"multi_match":{"fields":["original_title^1.00","original_title.raw^3.00"],"fuzziness":0,"operator":"or","query":"harry","type":"best_fields"}},{"multi_match":{"fields":["original_title^1.00","original_title.raw^3.00"],"operator":"or","query":"harry","type":"phrase"}},{"multi_match":{"fields":["original_title^1.0","original_title.raw^1.0"],"operator":"or","query":"harry","type":"phrase_prefix"}}]}}}
 `)
 	})
 }
 
-// Failed
 func TestQueryFormat(t *testing.T) {
 	Convey("with query format", t, func() {
 		query := map[string]interface{}{
@@ -145,7 +141,7 @@ func TestQueryFormat(t *testing.T) {
 			t.Fatalf("Test Failed %v instead\n", err)
 		}
 		So(transformedQuery, ShouldResemble, `{"preference":"BookSensor"}
-{"_source":{"excludes":[],"includes":["*"]},"query":{"bool":{"minimum_should_match":1,"should":[{"multi_match":{"fields":["original_title"],"operator":"and","query":"harry","type":"cross_fields"}},{"multi_match":{"fields":["original_title"],"operator":"and","query":"harry","type":"phrase"}}]}},"size":20}
+{"_source":{"excludes":[],"includes":["*"]},"query":{"bool":{"minimum_should_match":1,"should":[{"multi_match":{"fields":["original_title"],"operator":"and","query":"harry","type":"cross_fields"}},{"multi_match":{"fields":["original_title"],"operator":"and","query":"harry","type":"phrase"}},{"multi_match":{"fields":["original_title"],"operator":"and","query":"harry","type":"phrase_prefix"}}]}},"size":20}
 `)
 	})
 }
@@ -173,7 +169,6 @@ func TestSearchOperators(t *testing.T) {
 	})
 }
 
-// Failed
 func TestQueryWithFuzziness(t *testing.T) {
 	Convey("with fuzziness", t, func() {
 		query := map[string]interface{}{
@@ -192,12 +187,11 @@ func TestQueryWithFuzziness(t *testing.T) {
 			t.Fatalf("Test Failed %v instead\n", err)
 		}
 		So(transformedQuery, ShouldResemble, `{"preference":"BookSensor"}
-{"_source":{"excludes":[],"includes":["*"]},"query":{"bool":{"minimum_should_match":1,"should":[{"multi_match":{"fields":["original_title"],"fuzziness":2,"operator":"or","query":"harry","type":"best_fields"}},{"multi_match":{"fields":["original_title"],"operator":"or","query":"harry","type":"phrase"}}]}},"size":20}
+{"_source":{"excludes":[],"includes":["*"]},"query":{"bool":{"minimum_should_match":1,"should":[{"multi_match":{"fields":["original_title"],"operator":"or","query":"harry","type":"cross_fields"}},{"multi_match":{"fields":["original_title"],"fuzziness":2,"operator":"or","query":"harry","type":"best_fields"}},{"multi_match":{"fields":["original_title"],"operator":"or","query":"harry","type":"phrase"}},{"multi_match":{"fields":["original_title"],"operator":"or","query":"harry","type":"phrase_prefix"}}]}},"size":20}
 `)
 	})
 }
 
-// Failed
 func TestQueryWithIncludeFields(t *testing.T) {
 	Convey("with include fields", t, func() {
 		query := map[string]interface{}{
@@ -216,12 +210,11 @@ func TestQueryWithIncludeFields(t *testing.T) {
 			t.Fatalf("Test Failed %v instead\n", err)
 		}
 		So(transformedQuery, ShouldResemble, `{"preference":"BookSensor"}
-{"_source":{"excludes":[],"includes":["original_title.raw"]},"query":{"bool":{"minimum_should_match":1,"should":[{"multi_match":{"fields":["original_title"],"fuzziness":0,"operator":"or","query":"Harry Potter Collection (Harry Potter, #1-6)","type":"best_fields"}},{"multi_match":{"fields":["original_title"],"operator":"or","query":"Harry Potter Collection (Harry Potter, #1-6)","type":"phrase"}}]}},"size":10}
+{"_source":{"excludes":[],"includes":["original_title.raw"]},"query":{"bool":{"minimum_should_match":1,"should":[{"multi_match":{"fields":["original_title"],"operator":"or","query":"Harry Potter Collection (Harry Potter, #1-6)","type":"cross_fields"}},{"multi_match":{"fields":["original_title"],"fuzziness":0,"operator":"or","query":"Harry Potter Collection (Harry Potter, #1-6)","type":"best_fields"}},{"multi_match":{"fields":["original_title"],"operator":"or","query":"Harry Potter Collection (Harry Potter, #1-6)","type":"phrase"}},{"multi_match":{"fields":["original_title"],"operator":"or","query":"Harry Potter Collection (Harry Potter, #1-6)","type":"phrase_prefix"}}]}},"size":10}
 `)
 	})
 }
 
-// Failed
 func TestQueryWithExcludeFields(t *testing.T) {
 	Convey("with exclude fields", t, func() {
 		query := map[string]interface{}{
@@ -240,12 +233,11 @@ func TestQueryWithExcludeFields(t *testing.T) {
 			t.Fatalf("Test Failed %v instead\n", err)
 		}
 		So(transformedQuery, ShouldResemble, `{"preference":"BookSensor"}
-{"_source":{"excludes":["original_title.raw"],"includes":["*"]},"query":{"bool":{"minimum_should_match":1,"should":[{"multi_match":{"fields":["original_title"],"fuzziness":0,"operator":"or","query":"Harry Potter Collection (Harry Potter, #1-6)","type":"best_fields"}},{"multi_match":{"fields":["original_title"],"operator":"or","query":"Harry Potter Collection (Harry Potter, #1-6)","type":"phrase"}}]}},"size":10}
+{"_source":{"excludes":["original_title.raw"],"includes":["*"]},"query":{"bool":{"minimum_should_match":1,"should":[{"multi_match":{"fields":["original_title"],"operator":"or","query":"Harry Potter Collection (Harry Potter, #1-6)","type":"cross_fields"}},{"multi_match":{"fields":["original_title"],"fuzziness":0,"operator":"or","query":"Harry Potter Collection (Harry Potter, #1-6)","type":"best_fields"}},{"multi_match":{"fields":["original_title"],"operator":"or","query":"Harry Potter Collection (Harry Potter, #1-6)","type":"phrase"}},{"multi_match":{"fields":["original_title"],"operator":"or","query":"Harry Potter Collection (Harry Potter, #1-6)","type":"phrase_prefix"}}]}},"size":10}
 `)
 	})
 }
 
-// Failed
 func TestQueryFrom(t *testing.T) {
 	Convey("with `from`", t, func() {
 		query := map[string]interface{}{
@@ -264,12 +256,11 @@ func TestQueryFrom(t *testing.T) {
 			t.Fatalf("Test Failed %v instead\n", err)
 		}
 		So(transformedQuery, ShouldResemble, `{"preference":"BookSensor"}
-{"_source":{"excludes":[],"includes":["*"]},"from":40,"query":{"bool":{"minimum_should_match":1,"should":[{"multi_match":{"fields":["original_title"],"fuzziness":0,"operator":"or","query":"Harvesting the Heart","type":"best_fields"}},{"multi_match":{"fields":["original_title"],"operator":"or","query":"Harvesting the Heart","type":"phrase"}}]}},"size":20}
+{"_source":{"excludes":[],"includes":["*"]},"from":40,"query":{"bool":{"minimum_should_match":1,"should":[{"multi_match":{"fields":["original_title"],"operator":"or","query":"Harvesting the Heart","type":"cross_fields"}},{"multi_match":{"fields":["original_title"],"fuzziness":0,"operator":"or","query":"Harvesting the Heart","type":"best_fields"}},{"multi_match":{"fields":["original_title"],"operator":"or","query":"Harvesting the Heart","type":"phrase"}},{"multi_match":{"fields":["original_title"],"operator":"or","query":"Harvesting the Heart","type":"phrase_prefix"}}]}},"size":20}
 `)
 	})
 }
 
-// Failed
 func TestQueryHighlight(t *testing.T) {
 	Convey("with highlight", t, func() {
 		query := map[string]interface{}{
@@ -288,12 +279,11 @@ func TestQueryHighlight(t *testing.T) {
 			t.Fatalf("Test Failed %v instead\n", err)
 		}
 		So(transformedQuery, ShouldResemble, `{"preference":"BookSensor"}
-{"_source":{"excludes":[],"includes":["*"]},"highlight":{"fields":{"original_title":{}},"post_tags":["\u003c/mark\u003e"],"pre_tags":["\u003cmark\u003e"]},"query":{"bool":{"minimum_should_match":1,"should":[{"multi_match":{"fields":["original_title"],"fuzziness":0,"operator":"or","query":"harry","type":"best_fields"}},{"multi_match":{"fields":["original_title"],"operator":"or","query":"harry","type":"phrase"}}]}},"size":20}
+{"_source":{"excludes":[],"includes":["*"]},"highlight":{"fields":{"original_title":{}},"post_tags":["\u003c/mark\u003e"],"pre_tags":["\u003cmark\u003e"]},"query":{"bool":{"minimum_should_match":1,"should":[{"multi_match":{"fields":["original_title"],"operator":"or","query":"harry","type":"cross_fields"}},{"multi_match":{"fields":["original_title"],"fuzziness":0,"operator":"or","query":"harry","type":"best_fields"}},{"multi_match":{"fields":["original_title"],"operator":"or","query":"harry","type":"phrase"}},{"multi_match":{"fields":["original_title"],"operator":"or","query":"harry","type":"phrase_prefix"}}]}},"size":20}
 `)
 	})
 }
 
-// Failed
 func TestQueryHighlightField(t *testing.T) {
 	Convey("with highlight field", t, func() {
 		query := map[string]interface{}{
@@ -313,12 +303,11 @@ func TestQueryHighlightField(t *testing.T) {
 			t.Fatalf("Test Failed %v instead\n", err)
 		}
 		So(transformedQuery, ShouldResemble, `{"preference":"BookSensor"}
-{"_source":{"excludes":[],"includes":["*"]},"highlight":{"fields":{"original_title":{}},"post_tags":["\u003c/mark\u003e"],"pre_tags":["\u003cmark\u003e"],"require_field_match":false},"query":{"bool":{"minimum_should_match":1,"should":[{"multi_match":{"fields":["original_title"],"fuzziness":0,"operator":"or","query":"harry","type":"best_fields"}},{"multi_match":{"fields":["original_title"],"operator":"or","query":"harry","type":"phrase"}}]}},"size":20}
+{"_source":{"excludes":[],"includes":["*"]},"highlight":{"fields":{"original_title":{}},"post_tags":["\u003c/mark\u003e"],"pre_tags":["\u003cmark\u003e"],"require_field_match":false},"query":{"bool":{"minimum_should_match":1,"should":[{"multi_match":{"fields":["original_title"],"operator":"or","query":"harry","type":"cross_fields"}},{"multi_match":{"fields":["original_title"],"fuzziness":0,"operator":"or","query":"harry","type":"best_fields"}},{"multi_match":{"fields":["original_title"],"operator":"or","query":"harry","type":"phrase"}},{"multi_match":{"fields":["original_title"],"operator":"or","query":"harry","type":"phrase_prefix"}}]}},"size":20}
 `)
 	})
 }
 
-// Failed
 func TestQueryNestedField(t *testing.T) {
 	Convey("with nested field", t, func() {
 		query := map[string]interface{}{
@@ -337,12 +326,11 @@ func TestQueryNestedField(t *testing.T) {
 			t.Fatalf("Test Failed %v instead\n", err)
 		}
 		So(transformedQuery, ShouldResemble, `{"preference":"BookSensor"}
-{"_source":{"excludes":[],"includes":["*"]},"query":{"nested":{"path":"original_title.raw","query":{"bool":{"minimum_should_match":1,"should":[{"multi_match":{"fields":["original_title"],"fuzziness":0,"operator":"or","query":"harry","type":"best_fields"}},{"multi_match":{"fields":["original_title"],"operator":"or","query":"harry","type":"phrase"}}]}}}},"size":20}
+{"_source":{"excludes":[],"includes":["*"]},"query":{"nested":{"path":"original_title.raw","query":{"bool":{"minimum_should_match":1,"should":[{"multi_match":{"fields":["original_title"],"operator":"or","query":"harry","type":"cross_fields"}},{"multi_match":{"fields":["original_title"],"fuzziness":0,"operator":"or","query":"harry","type":"best_fields"}},{"multi_match":{"fields":["original_title"],"operator":"or","query":"harry","type":"phrase"}},{"multi_match":{"fields":["original_title"],"operator":"or","query":"harry","type":"phrase_prefix"}}]}}}},"size":20}
 `)
 	})
 }
 
-// Failed
 func TestQueryWithAggregationField(t *testing.T) {
 	Convey("with aggregation field", t, func() {
 		query := map[string]interface{}{
@@ -361,12 +349,11 @@ func TestQueryWithAggregationField(t *testing.T) {
 			t.Fatalf("Test Failed %v instead\n", err)
 		}
 		So(transformedQuery, ShouldResemble, `{"preference":"CarSensor"}
-{"_source":{"excludes":[],"includes":["*"]},"aggs":{"brand.keyword":{"aggs":{"brand.keyword":{"top_hits":{"size":1}}},"composite":{"size":10,"sources":[{"brand.keyword":{"terms":{"field":"brand.keyword"}}}]}}},"query":{"bool":{"minimum_should_match":1,"should":[{"multi_match":{"fields":["brand"],"fuzziness":0,"operator":"or","query":"bmw","type":"best_fields"}},{"multi_match":{"fields":["brand"],"operator":"or","query":"bmw","type":"phrase"}}]}},"size":0}
+{"_source":{"excludes":[],"includes":["*"]},"aggs":{"brand.keyword":{"aggs":{"brand.keyword":{"top_hits":{"size":1}}},"composite":{"size":10,"sources":[{"brand.keyword":{"terms":{"field":"brand.keyword"}}}]}}},"query":{"bool":{"minimum_should_match":1,"should":[{"multi_match":{"fields":["brand"],"operator":"or","query":"bmw","type":"cross_fields"}},{"multi_match":{"fields":["brand"],"fuzziness":0,"operator":"or","query":"bmw","type":"best_fields"}},{"multi_match":{"fields":["brand"],"operator":"or","query":"bmw","type":"phrase"}},{"multi_match":{"fields":["brand"],"operator":"or","query":"bmw","type":"phrase_prefix"}}]}},"size":10}
 `)
 	})
 }
 
-// Failed
 func TestQueryWithCategoryField(t *testing.T) {
 	Convey("with category field", t, func() {
 		query := map[string]interface{}{
@@ -385,7 +372,7 @@ func TestQueryWithCategoryField(t *testing.T) {
 			t.Fatalf("Test Failed %v instead\n", err)
 		}
 		So(transformedQuery, ShouldResemble, `{"preference":"BookSensor"}
-{"_source":{"excludes":[],"includes":["*"]},"aggs":{"authors.raw":{"terms":{"field":"authors.raw"}}},"query":{"bool":{"minimum_should_match":1,"should":[{"multi_match":{"fields":["original_title","original_title.search"],"fuzziness":0,"operator":"or","query":"harry","type":"best_fields"}},{"multi_match":{"fields":["original_title","original_title.search"],"operator":"or","query":"harry","type":"phrase"}}]}},"size":10}
+{"_source":{"excludes":[],"includes":["*"]},"aggs":{"authors.raw":{"terms":{"field":"authors.raw"}}},"query":{"bool":{"minimum_should_match":1,"should":[{"multi_match":{"fields":["original_title","original_title.search"],"operator":"or","query":"harry","type":"cross_fields"}},{"multi_match":{"fields":["original_title","original_title.search"],"fuzziness":0,"operator":"or","query":"harry","type":"best_fields"}},{"multi_match":{"fields":["original_title","original_title.search"],"operator":"or","query":"harry","type":"phrase"}},{"multi_match":{"fields":["original_title"],"operator":"or","query":"harry","type":"phrase_prefix"}}]}},"size":10}
 `)
 	})
 }
