@@ -157,6 +157,5 @@ func (r *QueryTranslate) validate() http.HandlerFunc {
 			return
 		}
 		util.WriteBackRaw(w, []byte(string(reqBody)), http.StatusOK)
-		return
 	}
 }

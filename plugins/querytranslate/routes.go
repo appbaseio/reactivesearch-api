@@ -11,12 +11,21 @@ var (
 	routes []plugins.Route
 )
 
+func (c *chain) ValidateWrap(h http.HandlerFunc) http.HandlerFunc {
+	// Save request to ctx
+	mw := []middleware.Middleware{saveRequestToCtx}
+	// Append query translate middleware at the end
+	mw = append(mw, queryTranslate)
+	return c.Adapt(h, mw...)
+}
+
 func (px *QueryTranslate) routes() []plugins.Route {
+	middlewareFunction := (&chain{}).ValidateWrap
 	routes = append(routes, plugins.Route{
 		Name:        "To validate reactivesearch query",
 		Methods:     []string{http.MethodPost},
 		Path:        "/_reactivesearch.v3/validate",
-		HandlerFunc: px.validate(), // Validate route is an open route, don't apply middleware on it
+		HandlerFunc: middlewareFunction(px.validate()), // Validate route is an open route, don't apply middleware on it
 		Description: "Validates the query props and returns the query DSL.",
 	})
 	// Routes without v3 suffix
@@ -24,7 +33,7 @@ func (px *QueryTranslate) routes() []plugins.Route {
 		Name:        "To validate reactivesearch query",
 		Methods:     []string{http.MethodPost},
 		Path:        "/_reactivesearch/validate",
-		HandlerFunc: px.validate(), // Validate route is an open route, don't apply middleware on it
+		HandlerFunc: middlewareFunction(px.validate()), // Validate route is an open route, don't apply middleware on it
 		Description: "Validates the query props and returns the query DSL.",
 	})
 	return routes
