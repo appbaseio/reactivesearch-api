@@ -34,31 +34,24 @@ func translateQuery(rsQuery RSQuery) (string, error) {
 		if query.ID == nil {
 			return "", errors.New("Field 'id' can't be empty")
 		}
-		// Validate DataField
-		if len(query.DataField) == 0 {
-			return "", errors.New("Field 'dataField' can't be empty")
-		}
+		normalizedFields := NormalizedDataFields(query.DataField, query.FieldWeights)
+
 		// Validate multiple DataFields for term and geo queries
-		if (query.Type == Term || query.Type == Geo) && len(query.DataField) > 1 {
+		if (query.Type == Term || query.Type == Geo) && len(normalizedFields) > 1 {
 			return "", errors.New("Field 'dataField' can not have multiple fields for 'term' or 'geo' queries")
 		}
 
 		// Parse synonyms fields if `EnableSynonyms` is set to `false`
 		if query.Type == Search && query.EnableSynonyms != nil && !*query.EnableSynonyms {
 			var normalizedDataFields = []string{}
-			var normalizedFieldWeights = []float64{}
-			for dataFieldIndex, dataField := range query.DataField {
-				if !strings.HasSuffix(dataField, synonymsFieldKey) {
-					normalizedDataFields = append(normalizedDataFields, dataField)
-					if len(query.FieldWeights) > dataFieldIndex {
-						normalizedFieldWeights = append(normalizedFieldWeights, query.FieldWeights[dataFieldIndex])
-					}
+			for _, dataField := range normalizedFields {
+				if !strings.HasSuffix(dataField.Field, synonymsFieldKey) {
+					normalizedDataFields = append(normalizedDataFields, dataField.Field)
 				}
 			}
 			if len(normalizedDataFields) > 0 {
 				// Set the updated fields
 				rsQuery.Query[queryIndex].DataField = normalizedDataFields
-				rsQuery.Query[queryIndex].FieldWeights = normalizedFieldWeights
 			} else {
 				return "", errors.New("You're using .synonyms suffix in all the fields defined in the 'dataField' property but 'enableSynonyms' property is set to `false` which is contradictory")
 			}
@@ -84,7 +77,10 @@ func translateQuery(rsQuery RSQuery) (string, error) {
 			finalQuery["query"] = translatedQuery
 
 			// Apply query options
-			buildQueryOptions := query.buildQueryOptions()
+			buildQueryOptions, err := query.buildQueryOptions()
+			if err != nil {
+				return mSearchQuery, err
+			}
 			finalQuery = mergeMaps(finalQuery, buildQueryOptions)
 			// Apply defaultQuery if present
 			if query.DefaultQuery != nil {
@@ -117,24 +113,24 @@ func translateQuery(rsQuery RSQuery) (string, error) {
 }
 
 // Generate the queryDSL without options for a particular query type
-func (query *Query) generateQueryByType(rsQuery RSQuery) (*interface{}, error) {
+func (query *Query) generateQueryByType() (*interface{}, error) {
 	var translatedQuery interface{}
 	var translateError error
 	switch query.Type {
 	case Term:
-		translatedQuery, translateError = query.generateTermQuery(rsQuery)
+		translatedQuery, translateError = query.generateTermQuery()
 	case Range:
-		translatedQuery, translateError = query.generateRangeQuery(rsQuery)
+		translatedQuery, translateError = query.generateRangeQuery()
 	case Geo:
-		translatedQuery, translateError = query.generateGeoQuery(rsQuery)
+		translatedQuery, translateError = query.generateGeoQuery()
 	default:
-		translatedQuery, translateError = query.generateSearchQuery(rsQuery)
+		translatedQuery, translateError = query.generateSearchQuery()
 	}
 	return &translatedQuery, translateError
 }
 
 // Builds the query options for e.g `size`, `from`, `highlight` etc.
-func (query *Query) buildQueryOptions() map[string]interface{} {
+func (query *Query) buildQueryOptions() (map[string]interface{}, error) {
 	queryWithOptions := make(map[string]interface{})
 	if query.Size != nil {
 		queryWithOptions["size"] = query.Size
@@ -161,11 +157,17 @@ func (query *Query) buildQueryOptions() map[string]interface{} {
 		queryWithOptions["from"] = query.From
 	}
 
+	normalizedFields := NormalizedDataFields(query.DataField, query.FieldWeights)
+
 	// Only apply sort on search queries
 	if query.SortBy != nil && query.Type == Search {
+		if len(normalizedFields) < 1 {
+			return nil, errors.New("Field 'dataField' must be present to apply 'sortBy' property")
+		}
+		dataField := normalizedFields[0].Field
 		queryWithOptions["sort"] = []map[string]interface{}{
 			{
-				query.DataField[0]: map[string]interface{}{
+				dataField: map[string]interface{}{
 					"order": *query.SortBy,
 				},
 			},
@@ -193,7 +195,11 @@ func (query *Query) buildQueryOptions() map[string]interface{} {
 	if query.Type == Term {
 		// If pagination is true then use composite aggregations
 		if query.Pagination != nil && *query.Pagination {
-			query.applyCompositeAggsQuery(&queryWithOptions, query.DataField[0])
+			if len(normalizedFields) < 1 {
+				return nil, errors.New("Field 'dataField' must be present to make 'pagination' work for 'term' type of queries")
+			}
+			dataField := normalizedFields[0].Field
+			query.applyCompositeAggsQuery(&queryWithOptions, dataField)
 		} else {
 			query.applyTermsAggsQuery(&queryWithOptions)
 		}
@@ -225,48 +231,54 @@ func (query *Query) buildQueryOptions() map[string]interface{} {
 	}
 
 	// Apply aggs from aggregations field
-	if query.Aggregations != nil && query.Type == Range {
-		tempAggs := *query.Aggregations
-		if len(tempAggs) == 2 && tempAggs[0] == "min" && tempAggs[1] == "max" {
-			rangeAggs := map[string]interface{}{
-				"min": map[string]interface{}{
-					"min": map[string]interface{}{"field": query.DataField[0]}},
-				"max": map[string]interface{}{
-					"max": map[string]interface{}{"field": query.DataField[0]}},
-			}
-			if query.NestedField != nil {
-				tempNestedField := *query.NestedField
-				queryWithOptions["aggs"] = map[string]interface{}{
-					tempNestedField: map[string]interface{}{
-						"nested": map[string]interface{}{
-							"path": tempNestedField,
-						},
-						"aggs": rangeAggs,
-					},
+	if query.Aggregations != nil {
+		if len(normalizedFields) < 1 {
+			return nil, errors.New("Field 'dataField' must be present to make 'aggregations' property work")
+		}
+		if query.Type == Range {
+			dataField := normalizedFields[0].Field
+			tempAggs := *query.Aggregations
+			if len(tempAggs) == 2 && tempAggs[0] == "min" && tempAggs[1] == "max" {
+				rangeAggs := map[string]interface{}{
+					"min": map[string]interface{}{
+						"min": map[string]interface{}{"field": dataField}},
+					"max": map[string]interface{}{
+						"max": map[string]interface{}{"field": dataField}},
 				}
-			} else {
-				queryWithOptions["aggs"] = rangeAggs
-			}
-
-		} else if len(tempAggs) == 1 && tempAggs[0] == "histogram" && query.Value != nil {
-
-			rangeValue, err := query.getRangeValue(*query.Value)
-			if err != nil {
-				log.Errorln(logTag, ":", err)
-			} else if rangeValue != nil && rangeValue.Start != nil && rangeValue.End != nil {
-				queryWithOptions["aggs"] = map[string]interface{}{
-					query.DataField[0]: map[string]interface{}{
-						"histogram": map[string]interface{}{
-							"field":    query.DataField[0],
-							"interval": getValidInterval(query.Interval, *rangeValue),
-							"offset":   rangeValue.Start,
+				if query.NestedField != nil {
+					tempNestedField := *query.NestedField
+					queryWithOptions["aggs"] = map[string]interface{}{
+						tempNestedField: map[string]interface{}{
+							"nested": map[string]interface{}{
+								"path": tempNestedField,
+							},
+							"aggs": rangeAggs,
 						},
-					},
+					}
+				} else {
+					queryWithOptions["aggs"] = rangeAggs
+				}
+
+			} else if len(tempAggs) == 1 && tempAggs[0] == "histogram" && query.Value != nil {
+
+				rangeValue, err := query.getRangeValue(*query.Value)
+				if err != nil {
+					log.Errorln(logTag, ":", err)
+				} else if rangeValue != nil && rangeValue.Start != nil && rangeValue.End != nil {
+					queryWithOptions["aggs"] = map[string]interface{}{
+						dataField: map[string]interface{}{
+							"histogram": map[string]interface{}{
+								"field":    dataField,
+								"interval": getValidInterval(query.Interval, *rangeValue),
+								"offset":   rangeValue.Start,
+							},
+						},
+					}
 				}
 			}
 		}
 	}
-	return queryWithOptions
+	return queryWithOptions, nil
 }
 
 func (query *Query) applyNestedFieldQuery(originalQuery interface{}) interface{} {
@@ -293,8 +305,11 @@ func (query *Query) applyHighlightQuery(queryOptions *map[string]interface{}) {
 		} else {
 			var fields = make(map[string]interface{})
 			var highlightField = query.HighlightField
+			normalizedFields := NormalizedDataFields(query.DataField, query.FieldWeights)
 			if len(highlightField) == 0 {
-				highlightField = query.DataField
+				for _, v := range normalizedFields {
+					highlightField = append(highlightField, v.Field)
+				}
 			}
 			for _, field := range highlightField {
 				fields[field] = make(map[string]interface{})

@@ -88,7 +88,7 @@ func (query *Query) getGeoValue() (*GeoValue, error) {
 	return &geoValue, nil
 }
 
-func (query *Query) generateGeoQuery(rsQuery RSQuery) (*interface{}, error) {
+func (query *Query) generateGeoQuery() (*interface{}, error) {
 	geoValue, err := query.getGeoValue()
 
 	if err != nil {
@@ -99,19 +99,25 @@ func (query *Query) generateGeoQuery(rsQuery RSQuery) (*interface{}, error) {
 		return nil, nil
 	}
 
+	normalizedFields := NormalizedDataFields(query.DataField, query.FieldWeights)
+	if len(normalizedFields) < 1 {
+		return nil, errors.New("Field 'dataField' cannot be empty")
+	}
+	dataField := normalizedFields[0].Field
+
 	var geoQuery interface{}
 
 	if geoValue.Distance != nil && geoValue.Location != nil && geoValue.Unit != nil {
 		geoQuery = map[string]interface{}{
 			"geo_distance": map[string]interface{}{
-				"distance":         strconv.Itoa(*geoValue.Distance) + *geoValue.Unit,
-				query.DataField[0]: *geoValue.Location,
+				"distance": strconv.Itoa(*geoValue.Distance) + *geoValue.Unit,
+				dataField:  *geoValue.Location,
 			},
 		}
 	} else if geoValue.BoundingBox != nil {
 		geoQuery = map[string]interface{}{
 			"geo_bounding_box": map[string]interface{}{
-				query.DataField[0]: map[string]interface{}{
+				dataField: map[string]interface{}{
 					"top_left":     geoValue.BoundingBox.TopLeft,
 					"bottom_right": geoValue.BoundingBox.BottomRight,
 				},

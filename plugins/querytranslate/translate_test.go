@@ -11,9 +11,9 @@ func TestTranslateQuery(t *testing.T) {
 		id := "test"
 		rsQuery := RSQuery{
 			Query: []Query{
-				Query{
+				{
 					ID:        &id,
-					DataField: []string{"data_field_1", "data_field_2"},
+					DataField: []interface{}{"data_field_1", "data_field_2"},
 					Type:      Geo,
 				},
 			},
@@ -25,9 +25,9 @@ func TestTranslateQuery(t *testing.T) {
 		id := "test"
 		rsQuery := RSQuery{
 			Query: []Query{
-				Query{
+				{
 					ID:        &id,
-					DataField: []string{"data_field_1"},
+					DataField: "data_field_1",
 					Type:      Geo,
 				},
 			},
@@ -39,9 +39,9 @@ func TestTranslateQuery(t *testing.T) {
 		id := "test"
 		rsQuery := RSQuery{
 			Query: []Query{
-				Query{
+				{
 					ID:        &id,
-					DataField: []string{"data_field_1", "data_field_2"},
+					DataField: []interface{}{"data_field_1", "data_field_2"},
 					Type:      Term,
 				},
 			},
@@ -53,9 +53,9 @@ func TestTranslateQuery(t *testing.T) {
 		id := "test"
 		rsQuery := RSQuery{
 			Query: []Query{
-				Query{
+				{
 					ID:        &id,
-					DataField: []string{"data_field_1"},
+					DataField: "data_field_1",
 					Type:      Term,
 				},
 			},
@@ -67,13 +67,28 @@ func TestTranslateQuery(t *testing.T) {
 		id := "test"
 		rsQuery := RSQuery{
 			Query: []Query{
-				Query{
+				{
 					ID:        &id,
-					DataField: []string{"data_field_1", "data_field_2"},
+					DataField: []interface{}{"data_field_1", "data_field_2"},
 				},
 			},
 		}
 		_, err := translateQuery(rsQuery)
 		So(err, ShouldBeNil)
+	})
+	Convey("without dataField", t, func() {
+		id := "test"
+		var value interface{} = "data_field"
+		rsQuery := RSQuery{
+			Query: []Query{
+				{
+					ID:    &id,
+					Type:  Term,
+					Value: &value,
+				},
+			},
+		}
+		_, err := translateQuery(rsQuery)
+		So(err, ShouldNotBeNil)
 	})
 }

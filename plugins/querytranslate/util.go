@@ -201,7 +201,7 @@ type Query struct {
 	Type                QueryType                `json:"type,omitempty"`
 	React               *map[string]interface{}  `json:"react,omitempty"`
 	QueryFormat         *QueryFormat             `json:"queryFormat,omitempty"`
-	DataField           []string                 `json:"dataField,omitempty"`
+	DataField           interface{}              `json:"dataField,omitempty"`
 	CategoryField       *string                  `json:"categoryField,omitempty"`
 	CategoryValue       *interface{}             `json:"categoryValue,omitempty"`
 	FieldWeights        []float64                `json:"fieldWeights,omitempty"`
@@ -236,6 +236,11 @@ type Query struct {
 	DistinctField       *string                  `json:"distinctField,omitempty"`
 	DistinctFieldConfig *map[string]interface{}  `json:"distinctFieldConfig,omitempty"`
 	Index               *string                  `json:"index,omitempty"`
+}
+
+type DataField struct {
+	Field  string  `json:"field"`
+	Weight float64 `json:"weight,omitempty"`
 }
 
 // Settings represents the search settings
@@ -280,15 +285,17 @@ func ExtractEnvsFromRequest(req RSQuery) QueryEnvs {
 			}
 		}
 		// Set term filters
-		if query.Type == Term && query.Value != nil {
+		normalizedFields := NormalizedDataFields(query.DataField, query.FieldWeights)
+		if query.Type == Term && query.Value != nil && len(normalizedFields) > 0 {
 			value := *query.Value
 			valueAsArray, ok := value.([]interface{})
+			dataField := normalizedFields[0].Field
 			if ok {
 				for _, val := range valueAsArray {
 					// Use lower case for filter values
 					filterValue := strings.ToLower(fmt.Sprintf("%v", val))
 					termFilters = append(termFilters, TermFilter{
-						Key:   query.DataField[0],
+						Key:   dataField,
 						Value: filterValue,
 					})
 				}
@@ -296,7 +303,7 @@ func ExtractEnvsFromRequest(req RSQuery) QueryEnvs {
 				// Use lower case for filter value
 				filterValue := strings.ToLower(fmt.Sprintf("%v", value))
 				termFilters = append(termFilters, TermFilter{
-					Key:   query.DataField[0],
+					Key:   dataField,
 					Value: filterValue,
 				})
 			}
@@ -352,14 +359,17 @@ func evalReactProp(query []interface{}, queryOptions *map[string]interface{}, co
 					componentQueryInstance := getQueryInstanceByID(componentID, rsQuery)
 					// ignore if query is not present for a component id i.e invalid component id has been used
 					if componentQueryInstance != nil {
-						translatedQuery, err := componentQueryInstance.generateQueryByType(rsQuery)
+						queryOps, err := componentQueryInstance.buildQueryOptions()
 						if err != nil {
 							return query, err
 						}
 						// query options specific to a component for e.g `highlight`
-						componentQueryOptions := getFilteredOptions(componentQueryInstance.buildQueryOptions())
+						componentQueryOptions := getFilteredOptions(queryOps)
 						// Apply custom query
-						translatedQuery, options := componentQueryInstance.applyCustomQuery(translatedQuery)
+						translatedQuery, options, err := componentQueryInstance.applyCustomQuery()
+						if err != nil {
+							return query, err
+						}
 						mergedQueryOptions := getFilteredOptions(mergeMaps(*queryOptions, mergeMaps(componentQueryOptions, options)))
 						*queryOptions = mergedQueryOptions
 						// Only apply query if not nil
@@ -384,14 +394,17 @@ func evalReactProp(query []interface{}, queryOptions *map[string]interface{}, co
 			if isString {
 				componentQueryInstance := getQueryInstanceByID(reactAsString, rsQuery)
 				if componentQueryInstance != nil {
-					translatedQuery, err := componentQueryInstance.generateQueryByType(rsQuery)
+					queryOps, err := componentQueryInstance.buildQueryOptions()
 					if err != nil {
 						return query, err
 					}
 					// query options specific to a component for e.g `highlight`
-					componentQueryOptions := getFilteredOptions(componentQueryInstance.buildQueryOptions())
+					componentQueryOptions := getFilteredOptions(queryOps)
 					// Apply custom query
-					translatedQuery, options := componentQueryInstance.applyCustomQuery(translatedQuery)
+					translatedQuery, options, err := componentQueryInstance.applyCustomQuery()
+					if err != nil {
+						return query, err
+					}
 					mergedQueryOptions := getFilteredOptions(mergeMaps(*queryOptions, mergeMaps(componentQueryOptions, options)))
 					*queryOptions = mergedQueryOptions
 					if !isNilInterface(*translatedQuery) {
@@ -421,14 +434,19 @@ func (query *Query) getQuery(rsQuery RSQuery) (*interface{}, map[string]interfac
 		}
 	}
 	if len(finalQuery) != 0 {
-		var boolQuery interface{}
-		boolQuery = map[string]interface{}{
+		var boolQuery interface{} = map[string]interface{}{
 			"bool": map[string]interface{}{
 				"must": finalQuery,
 			}}
 		return &boolQuery, finalOptions, true, nil
+	} else if query.DefaultQuery != nil {
+		defaultQuery := *query.DefaultQuery
+		if defaultQuery["query"] != nil {
+			var query interface{}
+			return &query, finalOptions, false, nil
+		}
 	}
-	queryByType, err := query.generateQueryByType(rsQuery)
+	queryByType, err := query.generateQueryByType()
 	return queryByType, finalOptions, false, err
 }
 
@@ -444,7 +462,7 @@ func getFilteredOptions(options map[string]interface{}) map[string]interface{} {
 }
 
 // Apply the custom query
-func (query *Query) applyCustomQuery(originalQuery *interface{}) (*interface{}, map[string]interface{}) {
+func (query *Query) applyCustomQuery() (*interface{}, map[string]interface{}, error) {
 	queryOptions := make(map[string]interface{})
 	if query.CustomQuery != nil {
 		customQuery := *query.CustomQuery
@@ -452,13 +470,16 @@ func (query *Query) applyCustomQuery(originalQuery *interface{}) (*interface{}, 
 			finalQuery := customQuery["query"]
 			queryOptions = getFilteredOptions(customQuery)
 			// filter query options keys
-			return &finalQuery, queryOptions
+			return &finalQuery, queryOptions, nil
 		}
 		// filter query options keys
 		queryOptions = getFilteredOptions(customQuery)
-		return originalQuery, queryOptions
 	}
-	return originalQuery, queryOptions
+	originalQuery, err := query.generateQueryByType()
+	if err != nil {
+		return nil, queryOptions, err
+	}
+	return originalQuery, queryOptions, nil
 }
 
 // Creates the bool query
@@ -508,18 +529,6 @@ func isExist(s []string, e string) bool {
 		}
 	}
 	return false
-}
-
-// Returns the aggs order
-func getAggsOrder(sortBy *SortBy) map[string]interface{} {
-	if sortBy != nil {
-		return map[string]interface{}{
-			"_term": sortBy.String(),
-		}
-	}
-	return map[string]interface{}{
-		"_count": "desc",
-	}
 }
 
 // Merges the two maps, same keys will be overridden by the second map
@@ -587,4 +596,95 @@ func makeESRequest(ctx context.Context, url, method string, reqBody []byte) (*es
 		return response, err
 	}
 	return response, nil
+}
+
+// To construct the data field string with field weight from `DataField` struct
+func ParseDataFieldToString(dataFieldAsMap map[string]interface{}) *DataField {
+	if dataFieldAsMap["field"] != nil {
+		fieldAsString, ok := dataFieldAsMap["field"].(string)
+		if ok && fieldAsString != "" {
+			dataField := DataField{
+				Field: fieldAsString,
+			}
+			if dataFieldAsMap["weight"] != nil {
+				fieldWeight, ok := dataFieldAsMap["weight"].(float64)
+				if ok {
+					dataField.Weight = fieldWeight
+				} else {
+					fieldWeight, ok := dataFieldAsMap["weight"].(int)
+					if ok {
+						dataField.Weight = float64(fieldWeight)
+					}
+				}
+			}
+			return &dataField
+		}
+	}
+	return nil
+}
+
+// The `dataField` property can be of following types
+// - string
+// - `DataField` struct with `field` and `weight` keys
+// - Array of strings
+// - Array of `DataField` struct
+// - Array of strings and `DataField` struct
+//
+// The following method normalizes the dataField input into a array of strings
+// It also supports the fieldWeights in old format
+func NormalizedDataFields(dataField interface{}, fieldWeights []float64) []DataField {
+	dataFieldAsString, ok := dataField.(string)
+	if ok {
+		return []DataField{{
+			Field: dataFieldAsString,
+		}}
+	}
+	dataFieldAsMap, ok := dataField.(map[string]interface{})
+	if ok {
+		parsedField := ParseDataFieldToString(dataFieldAsMap)
+		if parsedField != nil {
+			return []DataField{*parsedField}
+		}
+	}
+	dataFieldAsArray, ok := dataField.([]interface{})
+	if ok {
+		parsedFields := []DataField{}
+		for index, field := range dataFieldAsArray {
+			dataFieldAsString, ok := field.(string)
+			if ok {
+				dataField := DataField{
+					Field: dataFieldAsString,
+				}
+				// Consider field weights to support older format
+				if len(fieldWeights) > index {
+					dataField.Weight = fieldWeights[index]
+				}
+				parsedFields = append(parsedFields, dataField)
+			}
+			dataFieldAsMap, ok := field.(map[string]interface{})
+			if ok {
+				parsedField := ParseDataFieldToString(dataFieldAsMap)
+				if parsedField != nil {
+					parsedFields = append(parsedFields, *parsedField)
+				}
+			}
+		}
+		return parsedFields
+	}
+	dataFieldAsArrayOfString, ok := dataField.([]string)
+	if ok {
+		parsedFields := []DataField{}
+		for index, field := range dataFieldAsArrayOfString {
+			dataField := DataField{
+				Field: field,
+			}
+			// Consider field weights to support older format
+			if len(fieldWeights) > index {
+				dataField.Weight = fieldWeights[index]
+			}
+			parsedFields = append(parsedFields, dataField)
+		}
+		return parsedFields
+	}
+	return make([]DataField, 0)
 }

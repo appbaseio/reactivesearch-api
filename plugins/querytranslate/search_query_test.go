@@ -84,20 +84,61 @@ func TestWithMultipleDataFields(t *testing.T) {
 }
 
 func TestWithNoDataField(t *testing.T) {
-	Convey("with no data field", t, func() {
+	Convey("should throw error when `dataField` is not present and `defaultQuery` has not `query` key", t, func() {
 		query := map[string]interface{}{
 			"query": []map[string]interface{}{
 				{
 					"id":    "BookSensor",
 					"value": "harry",
+					"defaultQuery": map[string]interface{}{
+						"size": 10,
+					},
 				},
 			},
 		}
 		_, err := transformQuery(query)
-		if err == nil {
-			t.Fatalf("Error wanted (Field 'dataField' can't be empty), but didn't got one")
+		So(err, ShouldNotBeNil)
+	})
+	Convey("should not throw error when dataField is not defined and `defaultQuery` has `query` key", t, func() {
+		query := map[string]interface{}{
+			"query": []map[string]interface{}{
+				{
+					"id":    "BookSensor",
+					"value": "harry",
+					"defaultQuery": map[string]interface{}{
+						"size": 10,
+						"query": map[string]interface{}{
+							"match": map[string]interface{}{
+								"title": "harry",
+							},
+						},
+					},
+				},
+			},
 		}
-		So(true, ShouldEqual, true)
+		_, err := transformQuery(query)
+		So(err, ShouldBeNil)
+	})
+	Convey("should throw when `sortBy` is defined even if the defaultQuery is present", t, func() {
+		query := map[string]interface{}{
+			"query": []map[string]interface{}{
+				{
+					"id":     "BookSensor",
+					"value":  "harry",
+					"sortBy": "asc",
+					"defaultQuery": map[string]interface{}{
+						"size": 10,
+						"query": map[string]interface{}{
+							"match": map[string]interface{}{
+								"title": "harry",
+							},
+						},
+					},
+				},
+			},
+		}
+		_, err := transformQuery(query)
+		So(err, ShouldNotBeNil)
 	})
 }
 
@@ -674,6 +715,32 @@ func TestBasicReactiveListWithDefaultQuery(t *testing.T) {
 	})
 }
 
+func TestBasicReactiveListWithDefaultQueryWithoutField(t *testing.T) {
+	Convey("without dataField and with default query", t, func() {
+		query := map[string]interface{}{
+			"query": []map[string]interface{}{
+				{
+					"id":   "SearchResult",
+					"size": 3,
+					"defaultQuery": map[string]interface{}{
+						"query": map[string]interface{}{
+							"terms": map[string]interface{}{
+								"country": []string{"India"},
+							},
+						},
+					},
+				},
+			},
+		}
+		transformedQuery, err := transformQuery(query)
+		if err != nil {
+			t.Fatalf("Test Failed %v instead\n", err)
+		}
+		So(transformedQuery, ShouldResemble, `{"preference":"SearchResult"}
+{"_source":{"excludes":[],"includes":["*"]},"query":{"terms":{"country":["India"]}},"size":3}
+`)
+	})
+}
 func TestBasicDataSearchWithDefaultQuery(t *testing.T) {
 	Convey("with default query", t, func() {
 		query := map[string]interface{}{
@@ -725,6 +792,42 @@ func TestBasicDataSearchWithCustomQuery(t *testing.T) {
 					"id":        "SearchResult",
 					"size":      10,
 					"dataField": []string{"original_title"},
+					"react": map[string]interface{}{
+						"and": "BookSensor",
+					},
+				},
+			},
+		}
+		transformedQuery, err := transformQuery(query)
+		if err != nil {
+			t.Fatalf("Test Failed %v instead\n", err)
+		}
+		So(transformedQuery, ShouldResemble, `{"preference":"SearchResult"}
+{"_source":{"excludes":[],"includes":["*"]},"query":{"bool":{"must":[{"bool":{"must":{"terms":{"country":["india"]}}}}]}},"size":10}
+`)
+	})
+}
+
+func TestBasicDataSearchWithCustomQueryWithoutField(t *testing.T) {
+	Convey("without dataField and with custom query", t, func() {
+		query := map[string]interface{}{
+			"query": []map[string]interface{}{
+				{
+					"id":   "BookSensor",
+					"size": 10,
+					"customQuery": map[string]interface{}{
+						"query": map[string]interface{}{
+							"terms": map[string]interface{}{
+								"country": []string{"india"},
+							},
+						},
+					},
+					"value":   "india",
+					"execute": false,
+				},
+				{
+					"id":   "SearchResult",
+					"size": 10,
 					"react": map[string]interface{}{
 						"and": "BookSensor",
 					},
