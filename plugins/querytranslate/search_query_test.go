@@ -164,6 +164,36 @@ func TestWithFieldWeights(t *testing.T) {
 	})
 }
 
+func TestWithFieldWeightsNewFromat(t *testing.T) {
+	Convey("with multiple fields with weights", t, func() {
+		query := map[string]interface{}{
+			"query": []map[string]interface{}{
+				{
+					"id": "BookSensor",
+					"dataField": []interface{}{
+						map[string]interface{}{
+							"field":  "original_title",
+							"weight": 1,
+						},
+						map[string]interface{}{
+							"field":  "original_title.raw",
+							"weight": 3,
+						},
+					},
+					"value": "harry",
+				},
+			},
+		}
+		transformedQuery, err := transformQuery(query)
+		if err != nil {
+			t.Fatalf("Test Failed %v instead\n", err)
+		}
+		So(transformedQuery, ShouldResemble, `{"preference":"BookSensor"}
+{"_source":{"excludes":[],"includes":["*"]},"query":{"bool":{"minimum_should_match":1,"should":[{"multi_match":{"fields":["original_title^1.00","original_title.raw^3.00"],"operator":"or","query":"harry","type":"cross_fields"}},{"multi_match":{"fields":["original_title^1.00","original_title.raw^3.00"],"fuzziness":0,"operator":"or","query":"harry","type":"best_fields"}},{"multi_match":{"fields":["original_title^1.00","original_title.raw^3.00"],"operator":"or","query":"harry","type":"phrase"}},{"multi_match":{"fields":["original_title^1.0","original_title.raw^1.0"],"operator":"or","query":"harry","type":"phrase_prefix"}}]}}}
+`)
+	})
+}
+
 func TestQueryFormat(t *testing.T) {
 	Convey("with query format", t, func() {
 		query := map[string]interface{}{

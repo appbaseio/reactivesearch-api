@@ -84,7 +84,7 @@ func (query *Query) generateShouldQuery() (interface{}, error) {
 	if len(normalizedFields) < 1 {
 		return nil, errors.New("Field 'dataField' cannot be empty")
 	}
-	for index, dataField := range normalizedFields {
+	for _, dataField := range normalizedFields {
 		var fieldWeight string
 		if dataField.Weight != 0 {
 			fieldWeight = strconv.FormatFloat(dataField.Weight, 'f', 2, 64)
@@ -92,7 +92,7 @@ func (query *Query) generateShouldQuery() (interface{}, error) {
 		shouldIgnore := strings.HasSuffix(dataField.Field, ".keyword") ||
 			strings.HasSuffix(dataField.Field, ".autosuggest") ||
 			strings.HasSuffix(dataField.Field, ".search")
-		if len(query.FieldWeights) > index && fieldWeight != "" {
+		if fieldWeight != "" {
 			weightedField := dataField.Field + "^" + fieldWeight
 			fields = append(fields, weightedField)
 			if !shouldIgnore {
