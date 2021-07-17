@@ -635,9 +635,13 @@ func ParseDataFieldToString(dataFieldAsMap map[string]interface{}) *DataField {
 func NormalizedDataFields(dataField interface{}, fieldWeights []float64) []DataField {
 	dataFieldAsString, ok := dataField.(string)
 	if ok {
-		return []DataField{{
+		dataField := DataField{
 			Field: dataFieldAsString,
-		}}
+		}
+		if len(fieldWeights) > 0 {
+			dataField.Weight = fieldWeights[0]
+		}
+		return []DataField{dataField}
 	}
 	dataFieldAsMap, ok := dataField.(map[string]interface{})
 	if ok {
