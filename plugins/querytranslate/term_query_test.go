@@ -42,7 +42,7 @@ func TestTermWithNoDataField(t *testing.T) {
 		_, err := transformQuery(query)
 		convey.So(err, convey.ShouldBeNil)
 	})
-	convey.Convey("should throw error when value is defined and `dataField` is not defined and `react` property is not defined and `defaultQuery` is present no `query` key", t, func() {
+	convey.Convey("should not throw error when value is not defined and `dataField` is not defined and `react` property is not defined and `defaultQuery` is present with no `query` key", t, func() {
 		query := map[string]interface{}{
 			"query": []map[string]interface{}{
 				{
