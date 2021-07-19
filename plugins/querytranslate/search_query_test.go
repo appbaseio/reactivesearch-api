@@ -84,7 +84,7 @@ func TestWithMultipleDataFields(t *testing.T) {
 }
 
 func TestSearchWithNoDataField(t *testing.T) {
-	Convey("should not throw error when value is defined and `dataField` is not defined and `react` property is not defined and `defaultQuery` is not defined", t, func() {
+	Convey("should not throw error when value is not defined and `dataField` is not defined and `react` property is not defined and `defaultQuery` is not defined", t, func() {
 		query := map[string]interface{}{
 			"query": []map[string]interface{}{
 				{
