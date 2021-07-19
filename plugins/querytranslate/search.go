@@ -86,7 +86,7 @@ func (query *Query) generateShouldQuery() (interface{}, error) {
 	}
 	for _, dataField := range normalizedFields {
 		var fieldWeight string
-		if dataField.Weight != 0 {
+		if dataField.Weight > 0 {
 			fieldWeight = strconv.FormatFloat(dataField.Weight, 'f', 2, 64)
 		}
 		shouldIgnore := strings.HasSuffix(dataField.Field, ".keyword") ||
