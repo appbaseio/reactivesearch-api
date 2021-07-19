@@ -119,7 +119,7 @@ func TestWithNoDataField(t *testing.T) {
 		_, err := transformQuery(query)
 		So(err, ShouldBeNil)
 	})
-	Convey("should throw when `sortBy` is defined even if the defaultQuery is present", t, func() {
+	Convey("should throw when `sortBy` is defined but dataField isn't defined, even if a defaultQuery is present", t, func() {
 		query := map[string]interface{}{
 			"query": []map[string]interface{}{
 				{
