@@ -29,6 +29,35 @@ func TestMultiListWithDefaultValue(t *testing.T) {
 	})
 }
 
+func TestTermWithNoDataField(t *testing.T) {
+	convey.Convey("should not throw error when value is defined and `dataField` is not defined and `react` property is not defined and `defaultQuery` is not defined", t, func() {
+		query := map[string]interface{}{
+			"query": []map[string]interface{}{
+				{
+					"id":   "BookSensor",
+					"type": "term",
+				},
+			},
+		}
+		_, err := transformQuery(query)
+		convey.So(err, convey.ShouldBeNil)
+	})
+	convey.Convey("should throw error when value is defined and `dataField` is not defined and `react` property is not defined and `defaultQuery` is present no `query` key", t, func() {
+		query := map[string]interface{}{
+			"query": []map[string]interface{}{
+				{
+					"id":   "BookSensor",
+					"type": "term",
+					"defaultQuery": map[string]interface{}{
+						"size": 10,
+					},
+				},
+			},
+		}
+		_, err := transformQuery(query)
+		convey.So(err, convey.ShouldBeNil)
+	})
+}
 func TestMultiDropdownList(t *testing.T) {
 	convey.Convey("with value and query format", t, func() {
 		query := map[string]interface{}{

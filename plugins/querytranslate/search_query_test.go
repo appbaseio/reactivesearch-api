@@ -83,7 +83,18 @@ func TestWithMultipleDataFields(t *testing.T) {
 	})
 }
 
-func TestWithNoDataField(t *testing.T) {
+func TestSearchWithNoDataField(t *testing.T) {
+	Convey("should not throw error when value is defined and `dataField` is not defined and `react` property is not defined and `defaultQuery` is not defined", t, func() {
+		query := map[string]interface{}{
+			"query": []map[string]interface{}{
+				{
+					"id": "BookSensor",
+				},
+			},
+		}
+		_, err := transformQuery(query)
+		So(err, ShouldBeNil)
+	})
 	Convey("should throw error when value is defined and `dataField` is not defined and `react` property is not defined and `defaultQuery` is present no `query` key", t, func() {
 		query := map[string]interface{}{
 			"query": []map[string]interface{}{
@@ -92,6 +103,21 @@ func TestWithNoDataField(t *testing.T) {
 					"value": "harry",
 					"defaultQuery": map[string]interface{}{
 						"size": 10,
+					},
+				},
+			},
+		}
+		_, err := transformQuery(query)
+		So(err, ShouldNotBeNil)
+	})
+	Convey("should throw error when value is defined, dataField, defaultQuery aren't defined, react prop is defined but has a nil query", t, func() {
+		query := map[string]interface{}{
+			"query": []map[string]interface{}{
+				{
+					"id":    "Results",
+					"value": "harry",
+					"react": map[string]interface{}{
+						"and": "BookSensor",
 					},
 				},
 			},
