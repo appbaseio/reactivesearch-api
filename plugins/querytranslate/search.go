@@ -1,25 +1,38 @@
 package querytranslate
 
 import (
+	"errors"
 	"strconv"
 	"strings"
 )
 
 // Generate the queryDSL for search type request
-func (query *Query) generateSearchQuery(rsQuery RSQuery) (*interface{}, error) {
+func (query *Query) generateSearchQuery() (*interface{}, error) {
 	var searchQuery interface{}
 	rankQuery := query.getRankFeatureQuery()
 
 	if query.Value != nil {
 		if query.QueryString != nil && *query.QueryString {
+			shouldQuery, err := query.generateShouldQuery()
+			if err != nil {
+				return nil, err
+			}
 			searchQuery = map[string]interface{}{
-				"query_string": query.generateShouldQuery(),
+				"query_string": shouldQuery,
 			}
 		} else if query.SearchOperators != nil && *query.SearchOperators {
+			shouldQuery, err := query.generateShouldQuery()
+			if err != nil {
+				return nil, err
+			}
 			searchQuery = map[string]interface{}{
-				"simple_query_string": query.generateShouldQuery(),
+				"simple_query_string": shouldQuery,
 			}
 		} else {
+			shouldQuery, err := query.generateShouldQuery()
+			if err != nil {
+				return nil, err
+			}
 			minimumShouldMatch := 1
 			// Use minimum_should_match value as 2 if rank query is present
 			if rankQuery != nil {
@@ -27,7 +40,7 @@ func (query *Query) generateSearchQuery(rsQuery RSQuery) (*interface{}, error) {
 			}
 			searchQuery = map[string]interface{}{
 				"bool": map[string]interface{}{
-					"should":               query.generateShouldQuery(),
+					"should":               shouldQuery,
 					"minimum_should_match": minimumShouldMatch,
 				},
 			}
@@ -64,17 +77,23 @@ func (query *Query) generateSearchQuery(rsQuery RSQuery) (*interface{}, error) {
 	return &searchQuery, nil
 }
 
-func (query *Query) generateShouldQuery() interface{} {
+func (query *Query) generateShouldQuery() (interface{}, error) {
 	var fields []string
 	var phrasePrefixFields []string
-	for index, field := range query.DataField {
+	normalizedFields := NormalizedDataFields(query.DataField, query.FieldWeights)
+	if len(normalizedFields) < 1 {
+		return nil, errors.New("Field 'dataField' cannot be empty")
+	}
+	for _, dataField := range normalizedFields {
 		var fieldWeight string
-		if len(query.FieldWeights) > index {
-			fieldWeight = strconv.FormatFloat(query.FieldWeights[index], 'f', 2, 64)
+		if dataField.Weight > 0 {
+			fieldWeight = strconv.FormatFloat(dataField.Weight, 'f', 2, 64)
 		}
-		shouldIgnore := strings.HasSuffix(field, ".keyword") || strings.HasSuffix(field, ".autosuggest") || strings.HasSuffix(field, ".search")
-		if len(query.FieldWeights) > index && fieldWeight != "" {
-			weightedField := field + "^" + fieldWeight
+		shouldIgnore := strings.HasSuffix(dataField.Field, ".keyword") ||
+			strings.HasSuffix(dataField.Field, ".autosuggest") ||
+			strings.HasSuffix(dataField.Field, ".search")
+		if fieldWeight != "" {
+			weightedField := dataField.Field + "^" + fieldWeight
 			fields = append(fields, weightedField)
 			if !shouldIgnore {
 				// add fields for phrase_prefix with same weights normalized to 1.0
@@ -83,13 +102,13 @@ func (query *Query) generateShouldQuery() interface{} {
 				// based on possible matches. This happens as a multiplication to the
 				// weights set. Resetting the weights to 1 should reduce the boosting
 				// factor of prefix queries.
-				phrasePrefixFields = append(phrasePrefixFields, field + "^1.0")
+				phrasePrefixFields = append(phrasePrefixFields, dataField.Field+"^1.0")
 			}
 		} else {
-			fields = append(fields, field)
+			fields = append(fields, dataField.Field)
 			// add fields for phrase_prefix
 			if !shouldIgnore {
-				phrasePrefixFields = append(phrasePrefixFields, field)
+				phrasePrefixFields = append(phrasePrefixFields, dataField.Field)
 			}
 		}
 	}
@@ -104,7 +123,7 @@ func (query *Query) generateShouldQuery() interface{} {
 		return map[string]interface{}{
 			"query":            query.Value,
 			"default_operator": queryFormat.String(),
-		}
+		}, nil
 	}
 
 	if query.SearchOperators != nil && *query.SearchOperators {
@@ -112,7 +131,7 @@ func (query *Query) generateShouldQuery() interface{} {
 			"query":            query.Value,
 			"fields":           fields,
 			"default_operator": queryFormat.String(),
-		}
+		}, nil
 	}
 
 	if queryFormat.String() == And.String() {
@@ -179,7 +198,7 @@ func (query *Query) generateShouldQuery() interface{} {
 				}
 			}
 		}
-		return finalQuery
+		return finalQuery, nil
 	}
 	var fuzziness interface{}
 	if query.Fuzziness != nil {
@@ -232,7 +251,7 @@ func (query *Query) generateShouldQuery() interface{} {
 		})
 	}
 
-	return finalQuery
+	return finalQuery, nil
 }
 
 func (query *Query) getRankFeatureQuery() *[]map[string]interface{} {

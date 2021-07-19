@@ -54,6 +54,12 @@ func (query *Query) getRangeQuery(value interface{}) (*map[string]interface{}, e
 		return nil, nil
 	}
 
+	normalizedFields := NormalizedDataFields(query.DataField, query.FieldWeights)
+	if len(normalizedFields) < 1 {
+		return nil, errors.New("Field 'dataField' cannot be empty")
+	}
+	dataField := normalizedFields[0].Field
+
 	var rangeQuery map[string]interface{}
 	tempRangeQuery := make(map[string]interface{})
 
@@ -68,7 +74,7 @@ func (query *Query) getRangeQuery(value interface{}) (*map[string]interface{}, e
 	}
 	rangeQuery = map[string]interface{}{
 		"range": map[string]interface{}{
-			query.DataField[0]: tempRangeQuery,
+			dataField: tempRangeQuery,
 		},
 	}
 
@@ -81,7 +87,7 @@ func (query *Query) getRangeQuery(value interface{}) (*map[string]interface{}, e
 						"bool": map[string]interface{}{
 							"must_not": map[string]interface{}{
 								"exists": map[string]interface{}{
-									"field": query.DataField[0],
+									"field": dataField,
 								},
 							},
 						},
@@ -93,7 +99,7 @@ func (query *Query) getRangeQuery(value interface{}) (*map[string]interface{}, e
 	return &rangeQuery, nil
 }
 
-func (query *Query) generateRangeQuery(rsQuery RSQuery) (*interface{}, error) {
+func (query *Query) generateRangeQuery() (*interface{}, error) {
 
 	if query.Value == nil {
 		return nil, nil

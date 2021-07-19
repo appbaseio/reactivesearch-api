@@ -1,6 +1,8 @@
 package querytranslate
 
-func (query *Query) generateTermQuery(rsQuery RSQuery) (*interface{}, error) {
+import "errors"
+
+func (query *Query) generateTermQuery() (*interface{}, error) {
 
 	if query.Value == nil {
 		return nil, nil
@@ -14,6 +16,12 @@ func (query *Query) generateTermQuery(rsQuery RSQuery) (*interface{}, error) {
 		return nil, nil
 	}
 
+	normalizedFields := NormalizedDataFields(query.DataField, query.FieldWeights)
+	if len(normalizedFields) < 1 {
+		return nil, errors.New("Field 'dataField' cannot be empty")
+	}
+	dataField := normalizedFields[0].Field
+
 	if query.SelectAllLabel != nil && (isArray && contains(valueAsArray, *query.SelectAllLabel) || isString && valueAsString == *query.SelectAllLabel) {
 		if query.ShowMissing {
 			termQuery = map[string]interface{}{
@@ -22,7 +30,7 @@ func (query *Query) generateTermQuery(rsQuery RSQuery) (*interface{}, error) {
 		} else {
 			termQuery = map[string]interface{}{
 				"exists": map[string]interface{}{
-					"field": query.DataField[0],
+					"field": dataField,
 				},
 			}
 		}
@@ -43,7 +51,7 @@ func (query *Query) generateTermQuery(rsQuery RSQuery) (*interface{}, error) {
 			var should = []map[string]interface{}{
 				{
 					queryType: map[string]interface{}{
-						query.DataField[0]: query.filterValue(valueAsArray),
+						dataField: query.filterValue(valueAsArray),
 					},
 				},
 			}
@@ -54,7 +62,7 @@ func (query *Query) generateTermQuery(rsQuery RSQuery) (*interface{}, error) {
 						"bool": map[string]interface{}{
 							"must_not": map[string]interface{}{
 								"exists": map[string]interface{}{
-									"field": query.DataField[0],
+									"field": dataField,
 								},
 							},
 						},
@@ -72,7 +80,7 @@ func (query *Query) generateTermQuery(rsQuery RSQuery) (*interface{}, error) {
 			for _, item := range valueAsArray {
 				queryArray = append(queryArray, map[string]interface{}{
 					queryType: map[string]interface{}{
-						query.DataField[0]: item,
+						dataField: item,
 					},
 				})
 			}
@@ -89,7 +97,7 @@ func (query *Query) generateTermQuery(rsQuery RSQuery) (*interface{}, error) {
 				"bool": map[string]interface{}{
 					"must_not": map[string]interface{}{
 						"exists": map[string]interface{}{
-							"field": query.DataField[0],
+							"field": dataField,
 						},
 					},
 				},
@@ -97,7 +105,7 @@ func (query *Query) generateTermQuery(rsQuery RSQuery) (*interface{}, error) {
 		} else {
 			termQuery = map[string]interface{}{
 				"term": map[string]interface{}{
-					query.DataField[0]: valueAsString,
+					dataField: valueAsString,
 				},
 			}
 		}
@@ -177,12 +185,17 @@ func (query *Query) applyCompositeAggsQuery(queryOptions *map[string]interface{}
 	}
 }
 
-func (query *Query) applyTermsAggsQuery(queryOptions *map[string]interface{}) {
+func (query *Query) applyTermsAggsQuery(queryOptions *map[string]interface{}) error {
 	if queryOptions != nil {
+		normalizedFields := NormalizedDataFields(query.DataField, query.FieldWeights)
+		if len(normalizedFields) < 1 {
+			return errors.New("Field 'dataField' cannot be empty")
+		}
+		dataField := normalizedFields[0].Field
 		clonedQuery := *queryOptions
 
 		termsQuery := map[string]interface{}{
-			"field": query.DataField[0],
+			"field": dataField,
 		}
 
 		if query.AggregationSize != nil {
@@ -212,7 +225,7 @@ func (query *Query) applyTermsAggsQuery(queryOptions *map[string]interface{}) {
 		}
 
 		termQuery := map[string]interface{}{
-			query.DataField[0]: map[string]interface{}{
+			dataField: map[string]interface{}{
 				"terms": termsQuery,
 			},
 		}
@@ -230,4 +243,5 @@ func (query *Query) applyTermsAggsQuery(queryOptions *map[string]interface{}) {
 			clonedQuery["aggs"] = termQuery
 		}
 	}
+	return nil
 }

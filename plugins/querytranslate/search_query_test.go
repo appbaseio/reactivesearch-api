@@ -83,21 +83,88 @@ func TestWithMultipleDataFields(t *testing.T) {
 	})
 }
 
-func TestWithNoDataField(t *testing.T) {
-	Convey("with no data field", t, func() {
+func TestSearchWithNoDataField(t *testing.T) {
+	Convey("should not throw error when value is not defined and `dataField` is not defined and `react` property is not defined and `defaultQuery` is not defined", t, func() {
+		query := map[string]interface{}{
+			"query": []map[string]interface{}{
+				{
+					"id": "BookSensor",
+				},
+			},
+		}
+		_, err := transformQuery(query)
+		So(err, ShouldBeNil)
+	})
+	Convey("should throw error when value is defined and `dataField` is not defined and `react` property is not defined and `defaultQuery` is present with no `query` key", t, func() {
 		query := map[string]interface{}{
 			"query": []map[string]interface{}{
 				{
 					"id":    "BookSensor",
 					"value": "harry",
+					"defaultQuery": map[string]interface{}{
+						"size": 10,
+					},
 				},
 			},
 		}
 		_, err := transformQuery(query)
-		if err == nil {
-			t.Fatalf("Error wanted (Field 'dataField' can't be empty), but didn't got one")
+		So(err, ShouldNotBeNil)
+	})
+	Convey("should throw error when value is defined, dataField, defaultQuery aren't defined, react prop is defined but has a nil query", t, func() {
+		query := map[string]interface{}{
+			"query": []map[string]interface{}{
+				{
+					"id":    "Results",
+					"value": "harry",
+					"react": map[string]interface{}{
+						"and": "BookSensor",
+					},
+				},
+			},
 		}
-		So(true, ShouldEqual, true)
+		_, err := transformQuery(query)
+		So(err, ShouldNotBeNil)
+	})
+	Convey("should not throw error when dataField is not defined and `defaultQuery` has `query` key", t, func() {
+		query := map[string]interface{}{
+			"query": []map[string]interface{}{
+				{
+					"id":    "BookSensor",
+					"value": "harry",
+					"defaultQuery": map[string]interface{}{
+						"size": 10,
+						"query": map[string]interface{}{
+							"match": map[string]interface{}{
+								"title": "harry",
+							},
+						},
+					},
+				},
+			},
+		}
+		_, err := transformQuery(query)
+		So(err, ShouldBeNil)
+	})
+	Convey("should throw when `sortBy` is defined but dataField isn't defined, even if a defaultQuery is present", t, func() {
+		query := map[string]interface{}{
+			"query": []map[string]interface{}{
+				{
+					"id":     "BookSensor",
+					"value":  "harry",
+					"sortBy": "asc",
+					"defaultQuery": map[string]interface{}{
+						"size": 10,
+						"query": map[string]interface{}{
+							"match": map[string]interface{}{
+								"title": "harry",
+							},
+						},
+					},
+				},
+			},
+		}
+		_, err := transformQuery(query)
+		So(err, ShouldNotBeNil)
 	})
 }
 
@@ -110,6 +177,36 @@ func TestWithFieldWeights(t *testing.T) {
 					"dataField":    []string{"original_title", "original_title.raw"},
 					"fieldWeights": []float64{1, 3},
 					"value":        "harry",
+				},
+			},
+		}
+		transformedQuery, err := transformQuery(query)
+		if err != nil {
+			t.Fatalf("Test Failed %v instead\n", err)
+		}
+		So(transformedQuery, ShouldResemble, `{"preference":"BookSensor"}
+{"_source":{"excludes":[],"includes":["*"]},"query":{"bool":{"minimum_should_match":1,"should":[{"multi_match":{"fields":["original_title^1.00","original_title.raw^3.00"],"operator":"or","query":"harry","type":"cross_fields"}},{"multi_match":{"fields":["original_title^1.00","original_title.raw^3.00"],"fuzziness":0,"operator":"or","query":"harry","type":"best_fields"}},{"multi_match":{"fields":["original_title^1.00","original_title.raw^3.00"],"operator":"or","query":"harry","type":"phrase"}},{"multi_match":{"fields":["original_title^1.0","original_title.raw^1.0"],"operator":"or","query":"harry","type":"phrase_prefix"}}]}}}
+`)
+	})
+}
+
+func TestWithFieldWeightsNewFromat(t *testing.T) {
+	Convey("with multiple fields with weights", t, func() {
+		query := map[string]interface{}{
+			"query": []map[string]interface{}{
+				{
+					"id": "BookSensor",
+					"dataField": []interface{}{
+						map[string]interface{}{
+							"field":  "original_title",
+							"weight": 1,
+						},
+						map[string]interface{}{
+							"field":  "original_title.raw",
+							"weight": 3,
+						},
+					},
+					"value": "harry",
 				},
 			},
 		}
@@ -674,6 +771,32 @@ func TestBasicReactiveListWithDefaultQuery(t *testing.T) {
 	})
 }
 
+func TestBasicReactiveListWithDefaultQueryWithoutField(t *testing.T) {
+	Convey("without dataField and with default query", t, func() {
+		query := map[string]interface{}{
+			"query": []map[string]interface{}{
+				{
+					"id":   "SearchResult",
+					"size": 3,
+					"defaultQuery": map[string]interface{}{
+						"query": map[string]interface{}{
+							"terms": map[string]interface{}{
+								"country": []string{"India"},
+							},
+						},
+					},
+				},
+			},
+		}
+		transformedQuery, err := transformQuery(query)
+		if err != nil {
+			t.Fatalf("Test Failed %v instead\n", err)
+		}
+		So(transformedQuery, ShouldResemble, `{"preference":"SearchResult"}
+{"_source":{"excludes":[],"includes":["*"]},"query":{"terms":{"country":["India"]}},"size":3}
+`)
+	})
+}
 func TestBasicDataSearchWithDefaultQuery(t *testing.T) {
 	Convey("with default query", t, func() {
 		query := map[string]interface{}{
@@ -725,6 +848,42 @@ func TestBasicDataSearchWithCustomQuery(t *testing.T) {
 					"id":        "SearchResult",
 					"size":      10,
 					"dataField": []string{"original_title"},
+					"react": map[string]interface{}{
+						"and": "BookSensor",
+					},
+				},
+			},
+		}
+		transformedQuery, err := transformQuery(query)
+		if err != nil {
+			t.Fatalf("Test Failed %v instead\n", err)
+		}
+		So(transformedQuery, ShouldResemble, `{"preference":"SearchResult"}
+{"_source":{"excludes":[],"includes":["*"]},"query":{"bool":{"must":[{"bool":{"must":{"terms":{"country":["india"]}}}}]}},"size":10}
+`)
+	})
+}
+
+func TestBasicDataSearchWithCustomQueryWithoutField(t *testing.T) {
+	Convey("without dataField and with custom query", t, func() {
+		query := map[string]interface{}{
+			"query": []map[string]interface{}{
+				{
+					"id":   "BookSensor",
+					"size": 10,
+					"customQuery": map[string]interface{}{
+						"query": map[string]interface{}{
+							"terms": map[string]interface{}{
+								"country": []string{"india"},
+							},
+						},
+					},
+					"value":   "india",
+					"execute": false,
+				},
+				{
+					"id":   "SearchResult",
+					"size": 10,
 					"react": map[string]interface{}{
 						"and": "BookSensor",
 					},

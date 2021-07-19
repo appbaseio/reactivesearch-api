@@ -1,8 +1,9 @@
 package querytranslate
 
 import (
-	"github.com/smartystreets/goconvey/convey"
 	"testing"
+
+	"github.com/smartystreets/goconvey/convey"
 )
 
 func TestGeoDropdownWithValue(t *testing.T) {
@@ -29,6 +30,21 @@ func TestGeoDropdownWithValue(t *testing.T) {
 		convey.So(transformedQuery, convey.ShouldResemble, `{"preference":"GeoDistanceDropdown"}
 {"_source":{"excludes":[],"includes":["*"]},"query":{"geo_distance":{"distance":"10mi","location":"51.5073509, -0.1277583"}},"size":100}
 `)
+	})
+}
+
+func TestGeoWithNoDataField(t *testing.T) {
+	convey.Convey("should not throw error when value is not defined and `dataField` is not defined and `react` property is not defined and `defaultQuery` is not defined", t, func() {
+		query := map[string]interface{}{
+			"query": []map[string]interface{}{
+				{
+					"id":   "BookSensor",
+					"type": "geo",
+				},
+			},
+		}
+		_, err := transformQuery(query)
+		convey.So(err, convey.ShouldBeNil)
 	})
 }
 

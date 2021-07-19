@@ -1,8 +1,9 @@
 package querytranslate
 
 import (
-	"github.com/smartystreets/goconvey/convey"
 	"testing"
+
+	"github.com/smartystreets/goconvey/convey"
 )
 
 func TestMultiRangeWithValue(t *testing.T) {
@@ -207,5 +208,33 @@ func TestDateRangePicker(t *testing.T) {
 {"preference":"DateSensor"}
 {"_source":{"excludes":[],"includes":["*"]},"query":{"range":{"date_to":{"lte":"20170518"}}},"size":40}
 `)
+	})
+}
+
+func TestRangeWithNoDataField(t *testing.T) {
+	convey.Convey("should not throw error when value is not defined and `dataField` is not defined and `react` property is not defined and `defaultQuery` is not defined", t, func() {
+		query := map[string]interface{}{
+			"query": []map[string]interface{}{
+				{
+					"id":   "BookSensor",
+					"type": "range",
+				},
+			},
+		}
+		_, err := transformQuery(query)
+		convey.So(err, convey.ShouldBeNil)
+	})
+	convey.Convey("should throw 400 error when aggregations is defined but dataField isn't defined", t, func() {
+		query := map[string]interface{}{
+			"query": []map[string]interface{}{
+				{
+					"id":           "BookSensor",
+					"type":         "range",
+					"aggregations": []string{"min", "max"},
+				},
+			},
+		}
+		_, err := transformQuery(query)
+		convey.So(err, convey.ShouldNotBeNil)
 	})
 }
