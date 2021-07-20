@@ -5,9 +5,9 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/appbaseio/arc/middleware"
-	"github.com/appbaseio/arc/model/index"
-	"github.com/appbaseio/arc/util"
+	"github.com/appbaseio/reactivesearch-api/middleware"
+	"github.com/appbaseio/reactivesearch-api/model/index"
+	"github.com/appbaseio/reactivesearch-api/util"
 )
 
 // Indices returns a middleware that identifies the indices present in the es route.

@@ -8,9 +8,9 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
-	"github.com/appbaseio/arc/model/user"
-	"github.com/appbaseio/arc/plugins/auth"
-	"github.com/appbaseio/arc/util"
+	"github.com/appbaseio/reactivesearch-api/model/user"
+	"github.com/appbaseio/reactivesearch-api/plugins/auth"
+	"github.com/appbaseio/reactivesearch-api/util"
 	"github.com/gorilla/mux"
 	"golang.org/x/crypto/bcrypt"
 )

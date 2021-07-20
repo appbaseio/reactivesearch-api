@@ -35,7 +35,7 @@ func GetTier() *Plan {
 	return tier
 }
 
-// Number of arc machines
+// Number of ReactiveSearch machines
 var numberOfMachines int64
 
 func setNumberOfMachines(machines int64) {
@@ -66,7 +66,7 @@ var maxErrorTime int64 = 72 // in hrs
 // NodeCount is the current node count, defaults to 1
 var NodeCount = 1
 
-// isInvalidArcIDUsed flag is being used to determine that if the arc id is invalid.
+// isInvalidArcIDUsed flag is being used to determine that if the ReactiveSearch/Appbase.io id is invalid.
 // If it is `true` then `Arc` will start throwing errors immediately with a status code of `400` instead of `402`
 var isInvalidArcIDUsed = false
 
@@ -124,7 +124,7 @@ type ClusterPlanResponse struct {
 	Plan ClusterPlan `json:"plan"`
 }
 
-// ArcInstanceDetails contains the info about an Arc Instance
+// ArcInstanceDetails contains the info about a ReactiveSearch Instance
 type ArcInstanceDetails struct {
 	NodeCount              int                    `json:"node_count"`
 	Description            string                 `json:"description"`
@@ -378,7 +378,7 @@ func reportUsageRequest(arcUsage ArcUsage) (ArcUsageResponse, error) {
 	response := ArcUsageResponse{}
 	url := ACCAPI + "arc/report_usage"
 	marshalledRequest, err := json.Marshal(arcUsage)
-	log.Println("Arc usage for Arc ID:", arcUsage)
+	log.Println("ReactiveSearch usage for APPBASE_ID:", arcUsage)
 	if err != nil {
 		log.Errorln("error while marshalling req body:", err)
 		return response, err
@@ -392,7 +392,7 @@ func reportUsageRequest(arcUsage ArcUsage) (ArcUsageResponse, error) {
 	if (res != nil && res.StatusCode >= 500) || err != nil {
 		plan := GetTier()
 		// If plan is not set already (that would be the case at the time of initialization)
-		// then set the highest arc plan
+		// then set the highest appbase.io plan
 		if plan == nil {
 			highestPlan := ArcEnterprise
 			plan = &highestPlan
@@ -419,7 +419,7 @@ func reportClusterUsageRequest(arcUsage ArcUsage) (ArcUsageResponse, error) {
 	response := ArcUsageResponse{}
 	url := ACCAPI + "byoc/report_usage"
 	marshalledRequest, err := json.Marshal(arcUsage)
-	log.Println("Arc usage for Cluster ID:", arcUsage)
+	log.Println("ReactiveSearch usage for Cluster ID:", arcUsage)
 	if err != nil {
 		log.Errorln("error while marshalling req body:", err)
 		return response, err
@@ -433,7 +433,7 @@ func reportClusterUsageRequest(arcUsage ArcUsage) (ArcUsageResponse, error) {
 	if (res != nil && res.StatusCode >= 500) || err != nil {
 		plan := GetTier()
 		// If plan is not set already (that would be the case at the time of initialization)
-		// then set the highest hosted arc plan
+		// then set the highest hosted appbase.io plan
 		if plan == nil {
 			highestPlan := HostedArcEnterprise2021
 			plan = &highestPlan
@@ -472,7 +472,7 @@ func GetAppbaseID() (string, error) {
 	return arcID, nil
 }
 
-// ReportUsage reports Arc usage, intended to be called every hour
+// ReportUsage reports ReactiveSearch usage, intended to be called every hour
 func ReportUsage() {
 	url := os.Getenv("ES_CLUSTER_URL")
 	if url == "" {
@@ -522,9 +522,9 @@ func ReportUsage() {
 	}
 }
 
-// ReportHostedArcUsage reports Arc usage by hosted cluster, intended to be called every hour
+// ReportHostedArcUsage reports ReactiveSearch usage by hosted cluster, intended to be called every hour
 func ReportHostedArcUsage() {
-	log.Println("=> Reporting hosted arc usage")
+	log.Println("=> Reporting hosted ReactiveSearch usage")
 	url := os.Getenv("ES_CLUSTER_URL")
 	if url == "" {
 		log.Fatalln("ES_CLUSTER_URL env required but not present")
@@ -539,7 +539,7 @@ func ReportHostedArcUsage() {
 	// getArcClusterInstance(clusterId)
 	result, err := getArcClusterInstance(clusterID)
 	if err != nil {
-		log.Errorln("Unable to fetch the arc instance. Please make sure that you're using a valid CLUSTER_ID. If the issue persists please contact support@appbase.io with your APPBASE_ID or registered e-mail address.", err)
+		log.Errorln("Unable to fetch the ReactiveSearch API server. Please make sure that you're using a valid CLUSTER_ID. If the issue persists please contact support@appbase.io with your APPBASE_ID or registered e-mail address.", err)
 		return
 	}
 

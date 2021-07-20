@@ -3,7 +3,7 @@ package auth
 import (
 	"net/http"
 
-	"github.com/appbaseio/arc/plugins"
+	"github.com/appbaseio/reactivesearch-api/plugins"
 )
 
 func (a *Auth) routes() []plugins.Route {

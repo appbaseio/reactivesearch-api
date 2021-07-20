@@ -17,10 +17,10 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/appbaseio/arc/middleware"
-	"github.com/appbaseio/arc/middleware/logger"
-	"github.com/appbaseio/arc/plugins"
-	"github.com/appbaseio/arc/util"
+	"github.com/appbaseio/reactivesearch-api/middleware"
+	"github.com/appbaseio/reactivesearch-api/middleware/logger"
+	"github.com/appbaseio/reactivesearch-api/plugins"
+	"github.com/appbaseio/reactivesearch-api/util"
 	"github.com/denisbrodbeck/machineid"
 	"github.com/gorilla/mux"
 	"github.com/pkg/profile"
@@ -41,7 +41,7 @@ var (
 	pluginDir   string
 	https       bool
 	cpuprofile  bool
-	// Version arc version set during build
+	// Version Reactivesearch version set during build
 	Version string
 	// PlanRefreshInterval can be used to define the custom interval to refresh the plan
 	PlanRefreshInterval string
@@ -182,7 +182,7 @@ func main() {
 	util.Version = Version
 
 	if Billing == "true" {
-		log.Println("You're running Arc with billing module enabled.")
+		log.Println("You're running ReactiveSearch with billing module enabled.")
 		util.ReportUsage()
 		cronjob := cron.New()
 		cronjob.AddFunc(interval, util.ReportUsage)
@@ -191,7 +191,7 @@ func main() {
 			router.Use(util.BillingMiddleware)
 		}
 	} else if HostedBilling == "true" {
-		log.Println("You're running Arc with hosted billing module enabled.")
+		log.Println("You're running ReactiveSearch with hosted billing module enabled.")
 		util.ReportHostedArcUsage()
 		cronjob := cron.New()
 		cronjob.AddFunc(interval, util.ReportHostedArcUsage)
@@ -200,7 +200,7 @@ func main() {
 			router.Use(util.BillingMiddleware)
 		}
 	} else if ClusterBilling == "true" {
-		log.Println("You're running Arc with cluster billing module enabled.")
+		log.Println("You're running ReactiveSearch with cluster billing module enabled.")
 		util.SetClusterPlan()
 		// refresh plan
 		cronjob := cron.New()
@@ -211,7 +211,7 @@ func main() {
 		}
 	} else {
 		util.SetDefaultTier()
-		log.Println("You're running Arc with billing module disabled.")
+		log.Println("You're running ReactiveSearch with billing module disabled.")
 	}
 
 	// Testing Env: Set variables based on the build blags

@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/appbaseio/arc/model/category"
+	"github.com/appbaseio/reactivesearch-api/model/category"
 )
 
 type UserAction int

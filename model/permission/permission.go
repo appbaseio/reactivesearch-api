@@ -11,11 +11,11 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
-	"github.com/appbaseio/arc/errors"
-	"github.com/appbaseio/arc/model/acl"
-	"github.com/appbaseio/arc/model/category"
-	"github.com/appbaseio/arc/model/op"
-	"github.com/appbaseio/arc/util"
+	"github.com/appbaseio/reactivesearch-api/errors"
+	"github.com/appbaseio/reactivesearch-api/model/acl"
+	"github.com/appbaseio/reactivesearch-api/model/category"
+	"github.com/appbaseio/reactivesearch-api/model/op"
+	"github.com/appbaseio/reactivesearch-api/util"
 	"github.com/google/uuid"
 )
 

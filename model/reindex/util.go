@@ -9,7 +9,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/appbaseio/arc/middleware/classify"
+	"github.com/appbaseio/reactivesearch-api/middleware/classify"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -99,7 +99,7 @@ func reindexedName(indexName string) (string, error) {
 	return indexName, nil
 }
 
-// InitIndexAliasCache to set cache on arc initialization
+// InitIndexAliasCache to set cache on ReactiveSearch initialization
 func InitIndexAliasCache() {
 	ctx := context.Background()
 	indexAlias, _ := GetAliasedIndices(ctx)

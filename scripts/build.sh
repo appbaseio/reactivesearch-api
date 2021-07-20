@@ -11,13 +11,13 @@ fi
 export GOARCH=amd64
 
 export GOOS=darwin
-packr build -o "arc-${GOOS}-${VERSION}" ./../arc/cmd/...
-zip -r "arc-${GOOS}-${VERSION}.zip" "arc-${GOOS}-${VERSION}"
+packr build -o "reactivesearch-${GOOS}-${VERSION}" ./../reactivesearch/cmd/...
+zip -r "reactivesearch-${GOOS}-${VERSION}.zip" "reactivesearch-${GOOS}-${VERSION}"
 
 export GOOS=windows
-packr build -o "arc-${GOOS}-${VERSION}.exe" ./../arc/cmd/...
-zip -r "arc-${GOOS}-${VERSION}.zip" "arc-${GOOS}-${VERSION}.exe"
+packr build -o "reactivesearch-${GOOS}-${VERSION}.exe" ./../reactivesearch/cmd/...
+zip -r "reactivesearch-${GOOS}-${VERSION}.zip" "reactivesearch-${GOOS}-${VERSION}.exe"
 
 export GOOS=linux
-packr build -o "abc-${GOOS}-${VERSION}" ./../arc/cmd/...
-zip -r "abc-${GOOS}-${VERSION}.zip" "abc-${GOOS}-${VERSION}"
+packr build -o "abc-${GOOS}-${VERSION}" ./../reactivesearch/cmd/...
+zip -r "reactivesearch-${GOOS}-${VERSION}.zip" "reactivesearch-${GOOS}-${VERSION}"

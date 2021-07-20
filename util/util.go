@@ -18,7 +18,7 @@ import (
 	"sync"
 	"time"
 
-	appbase_errors "github.com/appbaseio/arc/errors"
+	appbase_errors "github.com/appbaseio/reactivesearch-api/errors"
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 	log "github.com/sirupsen/logrus"
@@ -33,13 +33,13 @@ var HostedBilling string
 // ClusterBilling is a build time variable
 var ClusterBilling string
 
-// Version arc version
+// Version ReactiveSearch version
 var Version string
 
 // Machine ID
 var MachineID string
 
-// Port arc port
+// Port ReactiveSearch port
 var Port int
 
 // ClusterID represents the (decrypted) cluster id for appbase.io cloud and byoc clusters

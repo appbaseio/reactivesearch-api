@@ -14,7 +14,7 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-// TestURL for arc
+// TestURL for ReactiveSearch
 var TestURL = "http://foo:bar@localhost:8000"
 
 type BuildArc struct {
@@ -46,7 +46,7 @@ func StartArc(b *BuildArc) BuildArc {
 	if err != nil {
 		log.Fatal("Error while running clean command", err)
 	}
-	buildCmd := exec.Command("/bin/sh", "-c", "cd ..; cd ..; ./build/arc --env=config/manual.env;")
+	buildCmd := exec.Command("/bin/sh", "-c", "cd ..; cd ..; ./build/reactivesearch --env=config/manual.env;")
 	buildCmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
 	err2 := buildCmd.Start()
 	if err2 != nil {

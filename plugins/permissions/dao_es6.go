@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/appbaseio/arc/util"
+	"github.com/appbaseio/reactivesearch-api/util"
 	es6 "gopkg.in/olivere/elastic.v6"
 )
 

@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/appbaseio/arc/errors"
+	"github.com/appbaseio/reactivesearch-api/errors"
 )
 
 type contextKey string

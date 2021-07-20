@@ -3,8 +3,8 @@ package querytranslate
 import (
 	"context"
 
-	"github.com/appbaseio/arc/errors"
-	"github.com/appbaseio/arc/model/request"
+	"github.com/appbaseio/reactivesearch-api/errors"
+	"github.com/appbaseio/reactivesearch-api/model/request"
 )
 
 // ctxKey is a key against which rs api request will get stored in the context.

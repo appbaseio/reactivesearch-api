@@ -7,9 +7,9 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/appbaseio/arc/middleware/classify"
-	"github.com/appbaseio/arc/model/index"
-	"github.com/appbaseio/arc/util"
+	"github.com/appbaseio/reactivesearch-api/middleware/classify"
+	"github.com/appbaseio/reactivesearch-api/model/index"
+	"github.com/appbaseio/reactivesearch-api/util"
 	"github.com/buger/jsonparser"
 	"github.com/gorilla/mux"
 	log "github.com/sirupsen/logrus"

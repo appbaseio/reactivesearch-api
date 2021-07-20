@@ -1,7 +1,6 @@
 # Plugins
 
-Arc can be extended with **plugins**. Plugins add missing functionality to Arc. They are "plugged-in" at compile time. Arc presents a set of functionalities on top of Elasticsearch such as book keeping, 
-analytics, streaming and more. An arc plugin can usually interacts with HTTP requests and responses to implement an arbitrary logic. A plugin can extend the functionality of Arc by handling a set of routes or it can serve as a simple middleware to other plugins. 
+ReactiveSearch API can be extended with **plugins**. Plugins can enhance/augment the ReactiveSearch. These are "plugged-in" at compile time. ReactiveSearch provides a set of functionalities on top of Elasticsearch such as a declarative querying API, authentication and access controls. A ReactiveSearch plugin can usually interacts with HTTP requests and responses to implement a custom business logic. A plugin can extend the functionality of ReactiveSearch by handling a set of routes or it can serve as a simple middleware to other plugins. 
 
 ## File structure
 
@@ -39,7 +38,7 @@ The `greeter.go` would be responsible for implementing the `Plugin` interface an
 	import (
 		"fmt"
 	
-		"github.com/appbaseio/arc/arc/plugin"
+		"github.com/appbaseio/reactivesearch-api/plugins"
 	)
 
 	const pluginName = "greeter"
@@ -68,7 +67,9 @@ The `greeter.go` would be responsible for implementing the `Plugin` interface an
 		return g.routes()
 	}
 	```
+
 ### 2. Define the routes
+
 Define a list of routes that the plugin aims to handle.
 - `routes.go`
 
@@ -78,7 +79,7 @@ Define a list of routes that the plugin aims to handle.
 	import (
 	 	"net/http"
  	
-  		"github.com/appbaseio/arc/arc/plugin"
+  		"github.com/appbaseio/reactivesearch-api/plugins"
 	)
 	
 	func (g *Greeter) routes() []plugin.Route {
@@ -95,6 +96,7 @@ Define a list of routes that the plugin aims to handle.
 	```
 	
 ### 3. Implement the handlers
+
 In `handlers.go` implement a method that returns a `http.HandlerFunc` which encapsulates the custom logic to handle a specific route or a set of routes.
 - `handlers.go`
 	```go
@@ -109,15 +111,19 @@ In `handlers.go` implement a method that returns a `http.HandlerFunc` which enca
 		}
 	}
 	```
+
 ### 4. Register your plugin.
 
-Within an `init` function, register your plugin with Arc. For example:
+Place the plugin inside of the `plugins` directory for it to be compiled and registered with the ReactiveSearch API. Finally, to instantiate the plugin, use the `initFunc` function:
 
 - `greeter.go`
 	```go
 	...
-	func init() {
-		arc.RegisterPlugin(&Greeter{"Greetings!"})
+	func InitFunc() {
+		// perform any state instantiation, e.g. reading env variables
+
+
+		return nil
 	}
 	...
 	```

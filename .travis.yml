@@ -31,14 +31,14 @@ jobs:
       before_deploy:
         - mkdir -p go/pkg/mod/github.com/appbaseio/
         - sudo mv $GOPATH/pkg/mod/github.com/appbaseio/* go/pkg/mod/github.com/appbaseio/
-        - zip -r arc-linux.zip build go sample
+        - zip -r reactivesearch-linux.zip build go sample
         - export TRAVIS_TAG="preview"
 
       deploy:
         provider: releases
         api_key: $GITHUB_TOKEN
         skip_cleanup: true
-        file: arc-linux.zip
+        file: reactivesearch-linux.zip
         draft: true
         overwrite: true
         on:

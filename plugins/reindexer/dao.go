@@ -4,8 +4,8 @@ import (
 	"context"
 	"errors"
 
-	"github.com/appbaseio/arc/model/reindex"
-	"github.com/appbaseio/arc/util"
+	"github.com/appbaseio/reactivesearch-api/model/reindex"
+	"github.com/appbaseio/reactivesearch-api/util"
 )
 
 func getIndexSize(ctx context.Context, indexName string) (int64, error) {

@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/appbaseio/arc/util"
+	"github.com/appbaseio/reactivesearch-api/util"
 )
 
 // Recovery is a middleware that wraps an http handler to recover from panics.

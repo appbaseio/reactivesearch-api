@@ -3,7 +3,7 @@ package reindexer
 import (
 	"net/http"
 
-	"github.com/appbaseio/arc/plugins"
+	"github.com/appbaseio/reactivesearch-api/plugins"
 )
 
 func (rx *reindexer) routes() []plugins.Route {

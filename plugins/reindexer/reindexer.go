@@ -3,9 +3,9 @@ package reindexer
 import (
 	"sync"
 
-	"github.com/appbaseio/arc/middleware"
-	"github.com/appbaseio/arc/model/reindex"
-	"github.com/appbaseio/arc/plugins"
+	"github.com/appbaseio/reactivesearch-api/middleware"
+	"github.com/appbaseio/reactivesearch-api/model/reindex"
+	"github.com/appbaseio/reactivesearch-api/plugins"
 )
 
 const (

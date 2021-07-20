@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/appbaseio/arc/util"
+	"github.com/appbaseio/reactivesearch-api/util"
 
 	. "github.com/smartystreets/goconvey/convey"
 )

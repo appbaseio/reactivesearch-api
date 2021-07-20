@@ -1,8 +1,8 @@
 package permission
 
 import (
-	"github.com/appbaseio/arc/model/category"
-	"github.com/appbaseio/arc/model/op"
+	"github.com/appbaseio/reactivesearch-api/model/category"
+	"github.com/appbaseio/reactivesearch-api/model/op"
 )
 
 var (

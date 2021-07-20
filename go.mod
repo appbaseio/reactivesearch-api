@@ -1,4 +1,4 @@
-module github.com/appbaseio/arc
+module github.com/appbaseio/reactivesearch-api
 
 require (
 	github.com/buger/jsonparser v1.1.1

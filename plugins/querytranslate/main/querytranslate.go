@@ -1,8 +1,8 @@
 package main
 
 import (
-	"github.com/appbaseio/arc/plugins"
-	"github.com/appbaseio/arc/plugins/querytranslate"
+	"github.com/appbaseio/reactivesearch-api/plugins"
+	"github.com/appbaseio/reactivesearch-api/plugins/querytranslate"
 )
 
 var PluginInstance plugins.RSPlugin = querytranslate.Instance()

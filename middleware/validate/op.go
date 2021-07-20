@@ -7,11 +7,11 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
-	"github.com/appbaseio/arc/middleware"
-	"github.com/appbaseio/arc/model/credential"
-	"github.com/appbaseio/arc/model/op"
-	"github.com/appbaseio/arc/model/permission"
-	"github.com/appbaseio/arc/util"
+	"github.com/appbaseio/reactivesearch-api/middleware"
+	"github.com/appbaseio/reactivesearch-api/model/credential"
+	"github.com/appbaseio/reactivesearch-api/model/op"
+	"github.com/appbaseio/reactivesearch-api/model/permission"
+	"github.com/appbaseio/reactivesearch-api/util"
 )
 
 // Operation returns a middleware that validates the request operation against the credential operations.

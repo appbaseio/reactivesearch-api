@@ -4,7 +4,7 @@ services:
     image: docker.elastic.co/elasticsearch/elasticsearch-oss:7.2.0
     container_name: elasticsearch
     networks:
-      - arc
+      - reactivesearch
     environment:
     - bootstrap.memory_lock=true
     - discovery.type=single-node
@@ -19,38 +19,19 @@ services:
         hard: -1
     ports:
       - 9200:9200
-  arc:
+  reactivesearch:
     build: ./
-    container_name: arc
+    container_name: reactivesearch
     env_file:
       - config/docker.env
     networks:
-      - arc
+      - reactivesearch
     restart: on-failure
     ports:
       - 8000:8000
     depends_on:
       - elasticsearch
-  streams:
-    image: appbaseio/streams:latest
-    container_name: streams
-    networks:
-      - arc
-    environment:
-      - ES_NODES=arc:8000
-      - SSL_OFF=yes
-      - AUTH_OFF=yes
-      - DNS_SERVER=127.0.0.11
-      - DOMAIN_NAME=localhost
-      - ARC_USER=foo
-      - ARC_PASS=bar
-    ports:
-      - 80:80
-      - 443:443
-      - 5678:5678
-    depends_on:
-      - arc
 
 networks:
-  arc:
+  reactivesearch:
     driver: bridge

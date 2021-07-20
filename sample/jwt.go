@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/appbaseio/arc/util"
+	"github.com/appbaseio/reactivesearch-api/util"
 
 	"github.com/dgrijalva/jwt-go"
 	log "github.com/sirupsen/logrus"

@@ -6,8 +6,8 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
-	"github.com/appbaseio/arc/model/category"
-	"github.com/appbaseio/arc/util"
+	"github.com/appbaseio/reactivesearch-api/model/category"
+	"github.com/appbaseio/reactivesearch-api/util"
 	es6 "gopkg.in/olivere/elastic.v6"
 )
 

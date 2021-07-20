@@ -7,8 +7,8 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/appbaseio/arc/model/category"
-	"github.com/appbaseio/arc/util"
+	"github.com/appbaseio/reactivesearch-api/model/category"
+	"github.com/appbaseio/reactivesearch-api/util"
 	. "github.com/smartystreets/goconvey/convey"
 )
 

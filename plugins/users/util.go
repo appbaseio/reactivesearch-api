@@ -7,8 +7,8 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/appbaseio/arc/model/user"
-	"github.com/appbaseio/arc/util"
+	"github.com/appbaseio/reactivesearch-api/model/user"
+	"github.com/appbaseio/reactivesearch-api/util"
 	log "github.com/sirupsen/logrus"
 )
 

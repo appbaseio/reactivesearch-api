@@ -3,7 +3,7 @@ package reindex
 import (
 	"context"
 
-	"github.com/appbaseio/arc/util"
+	"github.com/appbaseio/reactivesearch-api/util"
 	log "github.com/sirupsen/logrus"
 	es6 "gopkg.in/olivere/elastic.v6"
 )

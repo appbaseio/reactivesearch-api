@@ -1,6 +1,8 @@
 package main
 
-import "github.com/appbaseio/arc/plugins/elasticsearch"
-import "github.com/appbaseio/arc/plugins"
+import (
+	"github.com/appbaseio/reactivesearch-api/plugins"
+	"github.com/appbaseio/reactivesearch-api/plugins/elasticsearch"
+)
 
 var PluginInstance plugins.ESPlugin = elasticsearch.Instance()

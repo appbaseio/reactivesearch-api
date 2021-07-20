@@ -8,8 +8,8 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
-	"github.com/appbaseio/arc/model/user"
-	"github.com/appbaseio/arc/util"
+	"github.com/appbaseio/reactivesearch-api/model/user"
+	"github.com/appbaseio/reactivesearch-api/util"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -107,7 +107,7 @@ func (es *elasticsearch) hashPasswords() error {
 
 func (es *elasticsearch) postMasterUser() error {
 	// Create a master user, if credentials are not provided, we create a default
-	// master user. Arc shouldn't be initialized without a root user.
+	// master user. ReactiveSearch shouldn't be initialized without a root user.
 	username, password := os.Getenv("USERNAME"), os.Getenv("PASSWORD")
 	if username == "" {
 		username, password = "foo", "bar"

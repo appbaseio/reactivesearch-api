@@ -3,7 +3,7 @@ package permissions
 import (
 	"context"
 
-	"github.com/appbaseio/arc/model/permission"
+	"github.com/appbaseio/reactivesearch-api/model/permission"
 )
 
 type permissionService interface {

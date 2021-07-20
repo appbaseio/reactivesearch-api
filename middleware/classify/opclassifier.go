@@ -3,8 +3,8 @@ package classify
 import (
 	"net/http"
 
-	"github.com/appbaseio/arc/middleware"
-	"github.com/appbaseio/arc/model/op"
+	"github.com/appbaseio/reactivesearch-api/middleware"
+	"github.com/appbaseio/reactivesearch-api/model/op"
 )
 
 // Op returns a middleware that classifies request operation.

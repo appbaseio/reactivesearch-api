@@ -10,9 +10,9 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
-	"github.com/appbaseio/arc/middleware/classify"
-	"github.com/appbaseio/arc/model/reindex"
-	"github.com/appbaseio/arc/util"
+	"github.com/appbaseio/reactivesearch-api/middleware/classify"
+	"github.com/appbaseio/reactivesearch-api/model/reindex"
+	"github.com/appbaseio/reactivesearch-api/util"
 	es7 "github.com/olivere/elastic/v7"
 )
 
@@ -184,7 +184,7 @@ func (es *elasticsearch) rolloverIndexJob(alias string) {
 	}
 
 	// We cannot rely on rollover service response here,
-	// Because it returns rollover as false when we restart arc.
+	// Because it returns rollover as false when we restart ReactiveSearch.
 	// To preserve the last 2 index and delete others:
 	// -> cat all the indices with .logs-*
 	// -> if count is > 2

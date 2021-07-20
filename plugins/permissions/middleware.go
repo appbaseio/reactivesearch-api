@@ -3,12 +3,12 @@ package permissions
 import (
 	"net/http"
 
-	"github.com/appbaseio/arc/middleware"
-	"github.com/appbaseio/arc/middleware/classify"
-	"github.com/appbaseio/arc/middleware/validate"
-	"github.com/appbaseio/arc/model/category"
-	"github.com/appbaseio/arc/plugins/auth"
-	"github.com/appbaseio/arc/plugins/logs"
+	"github.com/appbaseio/reactivesearch-api/middleware"
+	"github.com/appbaseio/reactivesearch-api/middleware/classify"
+	"github.com/appbaseio/reactivesearch-api/middleware/validate"
+	"github.com/appbaseio/reactivesearch-api/model/category"
+	"github.com/appbaseio/reactivesearch-api/plugins/auth"
+	"github.com/appbaseio/reactivesearch-api/plugins/logs"
 )
 
 type chain struct {

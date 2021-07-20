@@ -7,11 +7,11 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
-	"github.com/appbaseio/arc/middleware"
-	"github.com/appbaseio/arc/model/credential"
-	"github.com/appbaseio/arc/model/permission"
-	"github.com/appbaseio/arc/util"
-	"github.com/appbaseio/arc/util/iplookup"
+	"github.com/appbaseio/reactivesearch-api/middleware"
+	"github.com/appbaseio/reactivesearch-api/model/credential"
+	"github.com/appbaseio/reactivesearch-api/model/permission"
+	"github.com/appbaseio/reactivesearch-api/util"
+	"github.com/appbaseio/reactivesearch-api/util/iplookup"
 )
 
 const logTag = "[validate]"

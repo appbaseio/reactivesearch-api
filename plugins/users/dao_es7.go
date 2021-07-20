@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 
-	"github.com/appbaseio/arc/util"
+	"github.com/appbaseio/reactivesearch-api/util"
 )
 
 func (es *elasticsearch) getRawUsersEs7(ctx context.Context) ([]byte, error) {

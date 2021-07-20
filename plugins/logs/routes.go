@@ -3,7 +3,7 @@ package logs
 import (
 	"net/http"
 
-	"github.com/appbaseio/arc/plugins"
+	"github.com/appbaseio/reactivesearch-api/plugins"
 )
 
 func (l *Logs) routes() []plugins.Route {

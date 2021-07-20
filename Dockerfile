@@ -5,7 +5,7 @@ FROM golang:1.16.4-alpine3.13 as builder
 ARG BILLING=false
 ENV BILLING="${BILLING}"
 
-# Run `--build-arg HOSTED_BILLING=true` to enable billing for hosted arc
+# Run `--build-arg HOSTED_BILLING=true` to enable billing for hosted reactivesearch
 ARG HOSTED_BILLING=false
 ENV HOSTED_BILLING="${HOSTED_BILLING}"
 
@@ -24,7 +24,7 @@ ENV PLAN_REFRESH_INTERVAL="${PLAN_REFRESH_INTERVAL}"
 # Install tools required for project
 # Run `docker build --no-cache .` to update dependencies
 RUN apk add --no-cache build-base git
-WORKDIR /arc
+WORKDIR /reactivesearch
 
 # List project dependencies with go.mod and go.sum
 COPY go.mod go.sum ./
@@ -45,11 +45,11 @@ RUN apk add --no-cache ca-certificates
 
 
 # Create env folder
-RUN mkdir /arc-data && touch /arc-data/.env && chmod 777 /arc-data/.env
+RUN mkdir /reactivesearch-data && touch /reactivesearch-data/.env && chmod 777 /reactivesearch-data/.env
 
 # Import the compiled executable from the first stage.
-COPY --from=builder /arc /arc
-WORKDIR /arc
+COPY --from=builder /reactivesearch /reactivesearch
+WORKDIR /reactivesearch
 
 EXPOSE 8000
-ENTRYPOINT ["build/arc", "--log", "stdout", "--plugins"]
+ENTRYPOINT ["build/reactivesearch", "--log", "stdout", "--plugins"]

@@ -7,10 +7,10 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/appbaseio/arc/model/category"
-	"github.com/appbaseio/arc/model/op"
-	"github.com/appbaseio/arc/model/permission"
-	"github.com/appbaseio/arc/util"
+	"github.com/appbaseio/reactivesearch-api/model/category"
+	"github.com/appbaseio/reactivesearch-api/model/op"
+	"github.com/appbaseio/reactivesearch-api/model/permission"
+	"github.com/appbaseio/reactivesearch-api/util"
 	. "github.com/smartystreets/goconvey/convey"
 )
 

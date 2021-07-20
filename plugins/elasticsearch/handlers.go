@@ -15,10 +15,10 @@ import (
 
 	es7 "github.com/olivere/elastic/v7"
 
-	"github.com/appbaseio/arc/model/acl"
-	"github.com/appbaseio/arc/model/category"
-	"github.com/appbaseio/arc/model/op"
-	"github.com/appbaseio/arc/util"
+	"github.com/appbaseio/reactivesearch-api/model/acl"
+	"github.com/appbaseio/reactivesearch-api/model/category"
+	"github.com/appbaseio/reactivesearch-api/model/op"
+	"github.com/appbaseio/reactivesearch-api/util"
 )
 
 func (es *elasticsearch) handler() http.HandlerFunc {

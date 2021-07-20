@@ -5,8 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/appbaseio/arc/errors"
-	"github.com/appbaseio/arc/model/acl"
+	"github.com/appbaseio/reactivesearch-api/errors"
+	"github.com/appbaseio/reactivesearch-api/model/acl"
 )
 
 type contextKey string

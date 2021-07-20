@@ -5,7 +5,7 @@ everything here and write out the request, providing as much context as you can.
 
 -->
 
-### What version of `arc` are you using ?
+### What version of `ReactiveSearch API` are you using ?
 
 ### What issue did you run into?
 

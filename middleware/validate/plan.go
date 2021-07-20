@@ -3,12 +3,12 @@ package validate
 import (
 	"net/http"
 
-	"github.com/appbaseio/arc/middleware"
-	"github.com/appbaseio/arc/util"
+	"github.com/appbaseio/reactivesearch-api/middleware"
+	"github.com/appbaseio/reactivesearch-api/util"
 )
 
 // Plan returns a middleware that validates the user's plan.
-// For e.g `validate.Plan([]util.Plan{util.ArcEnterprise}),` restricts the route to only arc-enterprise users.
+// For e.g `validate.Plan([]util.Plan{util.ArcEnterprise}),` restricts the route to only appbase.io enterprise users.
 func Plan(validPlans []util.Plan, byPassValidation bool) middleware.Middleware {
 	if util.ValidatePlans(validPlans, byPassValidation) {
 		return validPlan

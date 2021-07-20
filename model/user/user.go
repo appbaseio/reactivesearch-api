@@ -7,9 +7,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/appbaseio/arc/errors"
-	"github.com/appbaseio/arc/model/acl"
-	"github.com/appbaseio/arc/model/category"
+	"github.com/appbaseio/reactivesearch-api/errors"
+	"github.com/appbaseio/reactivesearch-api/model/acl"
+	"github.com/appbaseio/reactivesearch-api/model/category"
 )
 
 type contextKey string

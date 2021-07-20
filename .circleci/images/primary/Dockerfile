@@ -1,5 +1,5 @@
 
-# A custom container image for building arc
+# A custom container image for building Reactivesearch
 #
 # Build locally:
 #   docker build .circleci/images/primary
@@ -12,7 +12,7 @@
 #
 # Release:
 #   docker push appbaseio/golang:<version>
-FROM golang:1.11
+FROM golang:1.16.5
 
 RUN apt-get update
 
