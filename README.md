@@ -123,27 +123,6 @@ or
 go test -p 1 ./...
 ```
 
-
-## ReactiveSearch: UI Libraries
-
-The ReactiveSearch API is used by [ReactiveSearch](https://github.com/appbaseio/reactivesearch-api) and [Searchbox](https://github.com/appbaseio/searchbox) libraries. If you're building a search UI using React, Vue, Flutter, React Native or Vanilla JS, these libraries provide scaffolding and commonly used search components that can compress weeks of development time into days.
-
-
-
-## ReactiveSearch 🍞 and appbase.io 🧈
-
-appbase.io extends the opensource ReactiveSearch API with the following functionalities:
-
-1. **Actionable Analytics** capture telemetry from the ReactiveSearch API and provide powerful search-driven insights into users, clicks, conversions, geographical distribution, slow searches and more.
-2. **Search Relevance** provides a REST API and point-and-click interface to deploy a search relevance strategy by being able to configure language, Search/Aggregation/Results settings, Query Rules.
-3. **Application Cache** provides a blazing fast search performance and improved thorughput for search.
-4. **UI Builder** allows creating Search and Recommendations UI widgets with no code.
-
-You can deploy
-
-
-
-
 ### Extending ReactiveSearch API
 
 The functionality in ReactiveSearch can extended via plugins. A ReactiveSearch plugin can be considered as a service in itself; it can have its own set of routes that it handles (keeping in mind it doesn't overlap with existing routes of other plugins), define its own chain of middlewares and more importantly its own database it intends to interact with (in our case it is Elasticsearch). For example, one can easily have multiple plugins providing specific services that interact with more than one database. The plugin is responsible for its own request lifecycle in this case.
@@ -224,6 +203,25 @@ both read and write requests but would forbid making delete requests.
 ReactiveSearch server currently maintains audit logs for all the requests made via it to elasticsearch. Both request and responses are stored
 for the users to view and inspect later. The request logs can be fetched for both specific indices or the whole
 cluster. The dedicated endpoints to fetch the index/cluster logs can be found [here](https://arc-api.appbase.io/).
+
+
+## ReactiveSearch: UI Libraries
+
+The ReactiveSearch API is used by [ReactiveSearch](https://github.com/appbaseio/reactivesearch-api) and [Searchbox](https://github.com/appbaseio/searchbox) libraries. If you're building a search UI using React, Vue, Flutter, React Native or Vanilla JS, these libraries provide scaffolding and commonly used search components that can compress weeks of development time into days.
+
+
+
+## ReactiveSearch 🍞 and appbase.io 🧈
+
+appbase.io extends the opensource ReactiveSearch API with the following functionalities:
+
+1. **Actionable Analytics** capture telemetry from the ReactiveSearch API and provide powerful search-driven insights into users, clicks, conversions, geographical distribution, slow searches and more.
+2. **Search Relevance** provides a REST API and point-and-click interface to deploy a search relevance strategy by being able to configure language, Search/Aggregation/Results settings, Query Rules.
+3. **Application Cache** provides a blazing fast search performance and improved thorughput for search.
+4. **UI Builder** allows creating Search and Recommendations UI widgets with no code.
+
+You can deploy [appbase.io in cloud](https://www.appbase.io/). We also provide one-click installs for AWS, Heroku, Docker and Kubernetes. Get started with these over [here](https://docs.appbase.io/docs/hosting/byoc/#quickstart-recipes).
+
 
 ## Docs
 
