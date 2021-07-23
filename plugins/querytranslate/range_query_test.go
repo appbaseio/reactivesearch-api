@@ -145,7 +145,7 @@ func TestRangeSliderWithHistogram(t *testing.T) {
 			t.Fatalf("Test Failed %v instead\n", err)
 		}
 		convey.So(transformedQuery, convey.ShouldResemble, `{"preference":"BookSensor"}
-{"_source":{"excludes":[],"includes":["*"]},"aggs":{"ratings_count":{"histogram":{"field":"ratings_count","interval":470,"offset":3000}}},"query":{"nested":{"path":"ratings_count.raw","query":{"range":{"ratings_count":{"boost":2,"gte":3000,"lte":50000}}}}},"size":3}
+{"_source":{"excludes":[],"includes":["*"]},"aggs":{"ratings_count.raw":{"aggs":{"ratings_count":{"histogram":{"field":"ratings_count","interval":470,"offset":3000}}},"nested":{"path":"ratings_count.raw"}}},"query":{"nested":{"path":"ratings_count.raw","query":{"range":{"ratings_count":{"boost":2,"gte":3000,"lte":50000}}}}},"size":3}
 `)
 	})
 }
