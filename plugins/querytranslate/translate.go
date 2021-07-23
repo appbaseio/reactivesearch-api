@@ -5,6 +5,7 @@ import (
 	"errors"
 	"strings"
 
+	"github.com/appbaseio/reactivesearch-api/util"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -238,43 +239,41 @@ func (query *Query) buildQueryOptions() (map[string]interface{}, error) {
 		if query.Type == Range {
 			dataField := normalizedFields[0].Field
 			tempAggs := *query.Aggregations
-			if len(tempAggs) == 2 && tempAggs[0] == "min" && tempAggs[1] == "max" {
-				rangeAggs := map[string]interface{}{
-					"min": map[string]interface{}{
-						"min": map[string]interface{}{"field": dataField}},
-					"max": map[string]interface{}{
-						"max": map[string]interface{}{"field": dataField}},
-				}
-				if query.NestedField != nil {
-					tempNestedField := *query.NestedField
-					queryWithOptions["aggs"] = map[string]interface{}{
-						tempNestedField: map[string]interface{}{
-							"nested": map[string]interface{}{
-								"path": tempNestedField,
-							},
-							"aggs": rangeAggs,
-						},
-					}
-				} else {
-					queryWithOptions["aggs"] = rangeAggs
-				}
-
-			} else if len(tempAggs) == 1 && tempAggs[0] == "histogram" && query.Value != nil {
-
+			rangeAggs := map[string]interface{}{}
+			if util.Contains(tempAggs, "min") {
+				rangeAggs["min"] = map[string]interface{}{
+					"min": map[string]interface{}{"field": dataField}}
+			}
+			if util.Contains(tempAggs, "max") {
+				rangeAggs["max"] = map[string]interface{}{
+					"max": map[string]interface{}{"field": dataField}}
+			}
+			if util.Contains(tempAggs, "histogram") && query.Value != nil {
 				rangeValue, err := query.getRangeValue(*query.Value)
 				if err != nil {
 					log.Errorln(logTag, ":", err)
 				} else if rangeValue != nil && rangeValue.Start != nil && rangeValue.End != nil {
-					queryWithOptions["aggs"] = map[string]interface{}{
-						dataField: map[string]interface{}{
-							"histogram": map[string]interface{}{
-								"field":    dataField,
-								"interval": getValidInterval(query.Interval, *rangeValue),
-								"offset":   rangeValue.Start,
-							},
+					rangeAggs[dataField] = map[string]interface{}{
+						"histogram": map[string]interface{}{
+							"field":    dataField,
+							"interval": getValidInterval(query.Interval, *rangeValue),
+							"offset":   rangeValue.Start,
 						},
 					}
 				}
+			}
+			if query.NestedField != nil {
+				tempNestedField := *query.NestedField
+				queryWithOptions["aggs"] = map[string]interface{}{
+					tempNestedField: map[string]interface{}{
+						"nested": map[string]interface{}{
+							"path": tempNestedField,
+						},
+						"aggs": rangeAggs,
+					},
+				}
+			} else {
+				queryWithOptions["aggs"] = rangeAggs
 			}
 		}
 	}
