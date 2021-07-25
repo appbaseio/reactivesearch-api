@@ -125,13 +125,12 @@ func Reindex(ctx context.Context, sourceIndex string, config *ReindexConfig, wai
 	}
 
 	// initialize the map with passed index settings with a fallback to using the source index settings
-	var indexSettingsAsMap map[string]interface{}
 	indexSettingsAsMap, ok := config.Settings["index"].(map[string]interface{})
 	if !ok {
 		indexSettingsAsMap = originalSettings["index"].(map[string]interface{})
 	}
 
-	// delete auto-generated metadata as this can't be re-used
+	// delete system-generated metadata as this can't be passed by client
 	delete(indexSettingsAsMap, "history")
 	delete(indexSettingsAsMap, "history.uuid")
 	delete(indexSettingsAsMap, "provided_name")
