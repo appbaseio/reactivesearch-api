@@ -430,24 +430,40 @@ func (query *Query) getQuery(rsQuery RSQuery) (*interface{}, map[string]interfac
 		finalQuery, err = evalReactProp(finalQuery, &finalOptions, "", *query.React, rsQuery)
 		if err != nil {
 			log.Errorln(logTag, ":", err)
-			return nil, finalOptions, false, err
+			return nil, finalOptions, true, err
 		}
 	}
 	if len(finalQuery) != 0 {
+		if query.DefaultQuery != nil {
+			defaultQuery := *query.DefaultQuery
+			if defaultQuery["query"] != nil {
+				finalQuery = append(finalQuery, defaultQuery["query"])
+			}
+		} else if query.Type == Search {
+			// Only apply query by `value` for search queries
+			queryByType, err := query.generateQueryByType()
+			if err != nil {
+				log.Errorln(logTag, ":", err)
+				return nil, finalOptions, false, err
+			}
+			if queryByType != nil && !isNilInterface(*queryByType) {
+				finalQuery = append(finalQuery, queryByType)
+			}
+		}
 		var boolQuery interface{} = map[string]interface{}{
 			"bool": map[string]interface{}{
 				"must": finalQuery,
 			}}
-		return &boolQuery, finalOptions, true, nil
+		return &boolQuery, finalOptions, false, nil
 	} else if query.DefaultQuery != nil {
 		defaultQuery := *query.DefaultQuery
 		if defaultQuery["query"] != nil {
-			var query interface{}
+			var query interface{} = defaultQuery["query"]
 			return &query, finalOptions, false, nil
 		}
 	}
 	queryByType, err := query.generateQueryByType()
-	return queryByType, finalOptions, false, err
+	return queryByType, finalOptions, true, err
 }
 
 // removes some options from the query option added by react property

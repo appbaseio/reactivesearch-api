@@ -156,6 +156,9 @@ func (r *QueryTranslate) validate() http.HandlerFunc {
 			util.WriteBackError(w, "Can't read request body", http.StatusBadRequest)
 			return
 		}
-		util.WriteBackRaw(w, []byte(string(reqBody)), http.StatusOK)
+		w.Header().Add("Content-Type", "application/x-ndjson")
+		w.Header().Set("X-Content-Type-Options", "nosniff")
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(string(reqBody)))
 	}
 }
