@@ -114,15 +114,8 @@ func Reindex(ctx context.Context, sourceIndex string, config *ReindexConfig, wai
 	if err != nil {
 		return nil, fmt.Errorf(`error fetching settings of index "%s": %v`, sourceIndex, err)
 	}
-	// delete auto-generated metadata as this can't be re-used
-	delete(originalSettings, "index.history")
-	delete(originalSettings, "index.history.uuid")
-	delete(originalSettings, "index.provided_name")
-	delete(originalSettings, "index.uuid")
-	delete(originalSettings, "index.version")
 
 	replicas := originalSettings["index.number_of_replicas"]
-
 	// If settings are not passed, we use the settings of the original index
 	if config.Settings == nil {
 		found := util.IsExists(Settings.String(), config.Action)
@@ -131,17 +124,19 @@ func Reindex(ctx context.Context, sourceIndex string, config *ReindexConfig, wai
 		}
 	}
 
-	indexSettingsAsMap := originalSettings
-
-	// initialize the map with source index settings
-	originalIndexSettings, ok := originalSettings["index"].(map[string]interface{})
-	if ok {
-		indexSettingsAsMap = originalIndexSettings
+	// initialize the map with passed index settings with a fallback to using the source index settings
+	indexSettingsAsMap, ok := config.Settings["index"].(map[string]interface{})
+	if !ok {
+		indexSettingsAsMap = originalSettings["index"].(map[string]interface{})
 	}
 
-	if config.Settings["index"] != nil {
-		indexSettingsAsMap = config.Settings["index"].(map[string]interface{})
-	}
+	// delete system-generated metadata as this can't be passed by client
+	delete(indexSettingsAsMap, "history")
+	delete(indexSettingsAsMap, "history.uuid")
+	delete(indexSettingsAsMap, "provided_name")
+	delete(indexSettingsAsMap, "uuid")
+	delete(indexSettingsAsMap, "version")
+
 	// update replicas if passed by frontend
 	if replicasVal, ok := indexSettingsAsMap["number_of_replicas"]; ok {
 		replicas = replicasVal
@@ -155,14 +150,6 @@ func Reindex(ctx context.Context, sourceIndex string, config *ReindexConfig, wai
 	// override replicas to 0 while re-indexing
 	indexSettingsAsMap["number_of_replicas"] = 0
 	indexSettingsAsMap["auto_expand_replicas"] = false
-
-	// delete the values `index.settings` that we set in settingsOf method for originalSettings var as we have already set them as part of config.Settings[index] map
-	if _, ok := config.Settings["index.number_of_replicas"]; ok {
-		delete(config.Settings, "index.number_of_replicas")
-	}
-	if _, ok := config.Settings["index.number_of_shards"]; ok {
-		delete(config.Settings, "index.number_of_shards")
-	}
 
 	if config.Settings == nil {
 		config.Settings = make(map[string]interface{})
