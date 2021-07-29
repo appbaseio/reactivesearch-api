@@ -14,6 +14,7 @@ import (
 	"github.com/appbaseio/reactivesearch-api/model/user"
 	"github.com/appbaseio/reactivesearch-api/plugins/auth"
 	"github.com/appbaseio/reactivesearch-api/plugins/logs"
+	"github.com/appbaseio/reactivesearch-api/plugins/telemetry"
 	"github.com/appbaseio/reactivesearch-api/util"
 )
 
@@ -34,6 +35,7 @@ func list() []middleware.Middleware {
 		auth.BasicAuth(),
 		validate.Operation(),
 		validate.Category(),
+		telemetry.Recorder(),
 	}
 }
 

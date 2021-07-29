@@ -16,6 +16,7 @@ import (
 	"github.com/appbaseio/reactivesearch-api/model/permission"
 	"github.com/appbaseio/reactivesearch-api/plugins/auth"
 	"github.com/appbaseio/reactivesearch-api/plugins/logs"
+	"github.com/appbaseio/reactivesearch-api/plugins/telemetry"
 	"github.com/appbaseio/reactivesearch-api/util"
 	log "github.com/sirupsen/logrus"
 )
@@ -25,10 +26,10 @@ type chain struct {
 }
 
 func (c *chain) Wrap(mw []middleware.Middleware, h http.HandlerFunc) http.HandlerFunc {
-	// Append logger middleware at the begining
-	mw = append([]middleware.Middleware{logger}, mw...)
 	// Append query translate middleware at the end
 	mw = append(mw, queryTranslate)
+	// Append telemetry at the end
+	mw = append(mw, telemetry.Recorder())
 	return c.Adapt(h, append(list(), mw...)...)
 }
 
@@ -49,15 +50,6 @@ func list() []middleware.Middleware {
 		validate.PermissionExpiry(),
 		applySourceFiltering,
 	}
-}
-
-// Tracks the starting time for request
-func logger(h http.HandlerFunc) http.HandlerFunc {
-	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-		ctx := NewLoggerContext(req.Context())
-		req = req.WithContext(ctx)
-		h(w, req)
-	})
 }
 
 func classifyCategory(h http.HandlerFunc) http.HandlerFunc {

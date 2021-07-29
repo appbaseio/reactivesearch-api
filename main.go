@@ -19,10 +19,12 @@ import (
 
 	"github.com/appbaseio/reactivesearch-api/middleware"
 	"github.com/appbaseio/reactivesearch-api/middleware/logger"
+	"github.com/appbaseio/reactivesearch-api/model/tracktime"
 	"github.com/appbaseio/reactivesearch-api/plugins"
 	"github.com/appbaseio/reactivesearch-api/util"
 	"github.com/denisbrodbeck/machineid"
 	"github.com/gorilla/mux"
+	"github.com/mackerelio/go-osstat/memory"
 	"github.com/pkg/profile"
 	"github.com/robfig/cron"
 	"github.com/rs/cors"
@@ -124,6 +126,7 @@ func main() {
 			log.Fatal(logTag, ": runtime detected as docker container: machineid can not be empty")
 		}
 		util.MachineID = strings.TrimSuffix(id, "\n")
+		util.RunTime = "Docker"
 	} else {
 		log.Println(logTag, "Runtime detected as a host machine ...")
 		id, err1 := machineid.ID()
@@ -131,7 +134,16 @@ func main() {
 			log.Fatal(logTag, ": runtime detected as a host machine: ", err1)
 		}
 		util.MachineID = id
+		util.RunTime = "Linux"
 	}
+
+	memory, memErr := memory.Get()
+	if memErr != nil {
+		log.Warnln(logTag, ":", memErr)
+	} else {
+		util.MemoryAllocated = memory.Total
+	}
+
 	flag.Parse()
 	log.SetReportCaller(true)
 	log.SetFormatter(&log.TextFormatter{
@@ -353,6 +365,9 @@ func main() {
 		ExposedHeaders: []string{"*"},
 	})
 	handler := c.Handler(router)
+	// Add time tracker middleware
+	handler = tracktime.Track(handler)
+	// Add logger middleware
 	handler = logger.Log(handler)
 
 	// Listen and serve ...

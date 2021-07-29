@@ -39,11 +39,17 @@ var Version string
 // Machine ID
 var MachineID string
 
+// RunTime
+var RunTime string
+
 // Port ReactiveSearch port
 var Port int
 
 // ClusterID represents the (decrypted) cluster id for appbase.io cloud and byoc clusters
 var ClusterID string
+
+// Memory Allocated in number of bytes
+var MemoryAllocated uint64
 
 // RandStr returns "node" field of a UUID.
 // See: https://tools.ietf.org/html/rfc4122#section-4.1.6

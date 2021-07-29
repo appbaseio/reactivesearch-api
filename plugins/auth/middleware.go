@@ -16,7 +16,9 @@ import (
 	"github.com/appbaseio/reactivesearch-api/model/index"
 	"github.com/appbaseio/reactivesearch-api/model/op"
 	"github.com/appbaseio/reactivesearch-api/model/permission"
+	"github.com/appbaseio/reactivesearch-api/model/trackmiddleware"
 	"github.com/appbaseio/reactivesearch-api/model/user"
+	"github.com/appbaseio/reactivesearch-api/plugins/telemetry"
 	"github.com/appbaseio/reactivesearch-api/util"
 	"github.com/dgrijalva/jwt-go"
 	"github.com/dgrijalva/jwt-go/request"
@@ -40,6 +42,7 @@ func list() []middleware.Middleware {
 		BasicAuth(),
 		validate.Operation(),
 		validate.Category(),
+		telemetry.Recorder(),
 	}
 }
 
@@ -161,6 +164,11 @@ func (a *Auth) basicAuth(h http.HandlerFunc) http.HandlerFunc {
 			{
 
 				reqUser := obj.(*user.User)
+
+				// track `user` middleware
+				ctx := trackmiddleware.TrackMiddleware(ctx, "user")
+				req = req.WithContext(ctx)
+
 				// No need to validate if already validated before
 				if hasBasicAuth && !IsPasswordExist(reqUser.Username, password) && bcrypt.CompareHashAndPassword([]byte(reqUser.Password), []byte(password)) != nil {
 					w.Header().Set("www-authenticate", "Basic realm=\"Authentication Required\"")
@@ -208,6 +216,10 @@ func (a *Auth) basicAuth(h http.HandlerFunc) http.HandlerFunc {
 			}
 		case *permission.Permission:
 			{
+				// track `permission` middleware
+				ctx := trackmiddleware.TrackMiddleware(ctx, "permission")
+				req = req.WithContext(ctx)
+
 				reqPermission := obj.(*permission.Permission)
 				if hasBasicAuth && reqPermission.Password != password {
 					w.Header().Set("www-authenticate", "Basic realm=\"Authentication Required\"")

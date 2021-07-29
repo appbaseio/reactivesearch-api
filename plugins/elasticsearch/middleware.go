@@ -25,6 +25,7 @@ import (
 	"github.com/appbaseio/reactivesearch-api/model/sourcefilter"
 	"github.com/appbaseio/reactivesearch-api/plugins/auth"
 	"github.com/appbaseio/reactivesearch-api/plugins/logs"
+	"github.com/appbaseio/reactivesearch-api/plugins/telemetry"
 	"github.com/appbaseio/reactivesearch-api/util"
 	"github.com/gorilla/mux"
 )
@@ -38,7 +39,8 @@ type chain struct {
 }
 
 func (c *chain) Wrap(mw []middleware.Middleware, h http.HandlerFunc) http.HandlerFunc {
-	return c.Adapt(h, append(list(), mw...)...)
+	// Append telemetry middleware at the end
+	return c.Adapt(h, append(append(list(), mw...), telemetry.Recorder())...)
 }
 
 func list() []middleware.Middleware {
