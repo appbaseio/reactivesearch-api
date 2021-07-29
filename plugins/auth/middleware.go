@@ -16,7 +16,7 @@ import (
 	"github.com/appbaseio/reactivesearch-api/model/index"
 	"github.com/appbaseio/reactivesearch-api/model/op"
 	"github.com/appbaseio/reactivesearch-api/model/permission"
-	"github.com/appbaseio/reactivesearch-api/model/trackmiddleware"
+	"github.com/appbaseio/reactivesearch-api/model/trackplugin"
 	"github.com/appbaseio/reactivesearch-api/model/user"
 	"github.com/appbaseio/reactivesearch-api/plugins/telemetry"
 	"github.com/appbaseio/reactivesearch-api/util"
@@ -166,7 +166,7 @@ func (a *Auth) basicAuth(h http.HandlerFunc) http.HandlerFunc {
 				reqUser := obj.(*user.User)
 
 				// track `user` middleware
-				ctx := trackmiddleware.TrackMiddleware(ctx, "user")
+				ctx := trackplugin.TrackPlugin(ctx, "user")
 				req = req.WithContext(ctx)
 
 				// No need to validate if already validated before
@@ -217,7 +217,7 @@ func (a *Auth) basicAuth(h http.HandlerFunc) http.HandlerFunc {
 		case *permission.Permission:
 			{
 				// track `permission` middleware
-				ctx := trackmiddleware.TrackMiddleware(ctx, "permission")
+				ctx := trackplugin.TrackPlugin(ctx, "permission")
 				req = req.WithContext(ctx)
 
 				reqPermission := obj.(*permission.Permission)

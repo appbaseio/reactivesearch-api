@@ -12,7 +12,7 @@ import (
 	"github.com/appbaseio/reactivesearch-api/middleware"
 	"github.com/appbaseio/reactivesearch-api/model/acl"
 	"github.com/appbaseio/reactivesearch-api/model/category"
-	"github.com/appbaseio/reactivesearch-api/model/trackmiddleware"
+	"github.com/appbaseio/reactivesearch-api/model/trackplugin"
 	"github.com/appbaseio/reactivesearch-api/model/tracktime"
 	"github.com/appbaseio/reactivesearch-api/util"
 	"github.com/appbaseio/reactivesearch-api/util/iplookup"
@@ -251,7 +251,7 @@ func (t *Telemetry) recordTelemetry(w *httptest.ResponseRecorder, r *http.Reques
 		log.Errorln(logTag, ": ", errUnmarshal)
 	}
 	// ---- Add applied middlewares ----
-	appliedMiddlewares := trackmiddleware.FromTimeTrackerContext(ctx)
+	appliedMiddlewares := trackplugin.FrompluginTrackerContext(ctx)
 	for _, v := range appliedMiddlewares {
 		if len(v) >= 2 {
 			recordMap["p_"+v[0:2]] = true
