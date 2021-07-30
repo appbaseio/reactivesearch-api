@@ -9,7 +9,16 @@ import (
 
 // Returns the server mode based on the billing type
 func getServerMode() string {
-	var serverMode string = defaultServerMode
+	serverMode := getCustomer()
+	if serverMode == "" {
+		serverMode = defaultServerMode
+	}
+	return serverMode
+}
+
+// Returns the type of the customer
+func getCustomer() string {
+	var serverMode string
 	if util.ClusterBilling == "true" {
 		serverMode = "Cloud"
 	} else if util.HostedBilling == "true" {

@@ -11,8 +11,11 @@ const (
 	logTag            = "[telemetry]"
 	eventType         = "telemetry" // New relic event name
 	frontEndHeader    = "X-Search-Client"
+	telemetryHeader   = "X-Enable-Telemetry"
 	defaultServerMode = "OSS"
 )
+
+var blacklistRoutes = []string{"/"}
 
 var (
 	singleton *Telemetry

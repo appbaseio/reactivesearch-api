@@ -33,6 +33,13 @@ var HostedBilling string
 // ClusterBilling is a build time variable
 var ClusterBilling string
 
+// Opensource is a build time variable
+var Opensource string
+
+// We set it in the `main.go` based on the env variable and run time flag
+// defaults to `true`
+var IsTelemetryEnabled bool = true
+
 // Version ReactiveSearch version
 var Version string
 

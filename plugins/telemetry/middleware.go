@@ -66,18 +66,24 @@ type TelemetryRecord struct {
 
 func (t *Telemetry) recorder(h http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		// Serve using response recorder
-		respRecorder := httptest.NewRecorder()
-		h(respRecorder, r)
-		// Copy the response to writer
-		for k, v := range respRecorder.Header() {
-			w.Header()[k] = v
-		}
-		w.WriteHeader(respRecorder.Code)
-		w.Write(respRecorder.Body.Bytes())
-		// Record the document
+		if util.IsTelemetryEnabled &&
+			r.Header.Get(telemetryHeader) != "false" &&
+			!util.Contains(blacklistRoutes, r.RequestURI) {
+			// Serve using response recorder
+			respRecorder := httptest.NewRecorder()
+			h(respRecorder, r)
+			// Copy the response to writer
+			for k, v := range respRecorder.Header() {
+				w.Header()[k] = v
+			}
+			w.WriteHeader(respRecorder.Code)
+			w.Write(respRecorder.Body.Bytes())
+			// Record the document
 
-		go t.recordTelemetry(respRecorder, r)
+			go t.recordTelemetry(respRecorder, r)
+		} else {
+			h(w, r)
+		}
 	}
 }
 
@@ -257,5 +263,12 @@ func (t *Telemetry) recordTelemetry(w *httptest.ResponseRecorder, r *http.Reques
 			recordMap["p_"+v[0:2]] = true
 		}
 	}
+	var eventType string
+	if getCustomer() != "" || util.Opensource == "true" {
+		eventType = "telemetry_production"
+	} else {
+		eventType = "telemetry_staging"
+	}
+	recordMap["event_type"] = eventType
 	log.Println(recordMap)
 }
