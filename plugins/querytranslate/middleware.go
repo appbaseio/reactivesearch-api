@@ -14,6 +14,7 @@ import (
 	"github.com/appbaseio/reactivesearch-api/model/category"
 	"github.com/appbaseio/reactivesearch-api/model/op"
 	"github.com/appbaseio/reactivesearch-api/model/permission"
+	"github.com/appbaseio/reactivesearch-api/model/trackplugin"
 	"github.com/appbaseio/reactivesearch-api/plugins/auth"
 	"github.com/appbaseio/reactivesearch-api/plugins/logs"
 	"github.com/appbaseio/reactivesearch-api/plugins/telemetry"
@@ -140,6 +141,11 @@ func queryTranslate(h http.HandlerFunc) http.HandlerFunc {
 		}
 		// Update the request body to the parsed query
 		req.Body = ioutil.NopCloser(strings.NewReader(msearchQuery))
+
+		// Track plugin
+		ctxTrackPlugin := trackplugin.TrackPlugin(req.Context(), "qt")
+		req = req.WithContext(ctxTrackPlugin)
+
 		h(w, req)
 	}
 }

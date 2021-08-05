@@ -7,6 +7,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"runtime"
+	"strconv"
 	"time"
 
 	"github.com/appbaseio/reactivesearch-api/middleware"
@@ -17,6 +18,7 @@ import (
 	"github.com/appbaseio/reactivesearch-api/util"
 	"github.com/appbaseio/reactivesearch-api/util/iplookup"
 	"github.com/buger/jsonparser"
+	badger "github.com/dgraph-io/badger/v3"
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/sys/unix"
 )
@@ -269,6 +271,23 @@ func (t *Telemetry) recordTelemetry(w *httptest.ResponseRecorder, r *http.Reques
 	} else {
 		eventType = "telemetry_staging"
 	}
-	recordMap["event_type"] = eventType
+	recordMap["eventType"] = eventType
+	recordInBytes, marshalErr := json.Marshal(recordMap)
+	if marshalErr != nil {
+		log.Errorln(logTag, " : ", marshalErr)
+	}
 	log.Println(recordMap)
+	dbError := t.db.Update(func(txn *badger.Txn) error {
+		key := []byte(strconv.FormatInt(time.Now().UnixNano(), 10))
+		// record with a ttl value
+		e := badger.NewEntry(key, recordInBytes).WithTTL(time.Minute*syncInterval + deltaInterval)
+		err := txn.SetEntry(e)
+		if err != nil {
+			log.Errorln(logTag, "error while writing telemetry record to badger", recordInBytes)
+		}
+		return nil
+	})
+	if dbError != nil {
+		log.Errorln(logTag, "error encountered while connecting badger", dbError)
+	}
 }

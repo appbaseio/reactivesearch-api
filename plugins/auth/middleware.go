@@ -166,7 +166,7 @@ func (a *Auth) basicAuth(h http.HandlerFunc) http.HandlerFunc {
 				reqUser := obj.(*user.User)
 
 				// track `user` middleware
-				ctx := trackplugin.TrackPlugin(ctx, "user")
+				ctx := trackplugin.TrackPlugin(ctx, "au")
 				req = req.WithContext(ctx)
 
 				// No need to validate if already validated before
@@ -217,7 +217,7 @@ func (a *Auth) basicAuth(h http.HandlerFunc) http.HandlerFunc {
 		case *permission.Permission:
 			{
 				// track `permission` middleware
-				ctx := trackplugin.TrackPlugin(ctx, "permission")
+				ctx := trackplugin.TrackPlugin(ctx, "ap")
 				req = req.WithContext(ctx)
 
 				reqPermission := obj.(*permission.Permission)
