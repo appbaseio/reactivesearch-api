@@ -286,6 +286,7 @@ func (p *permissions) patchPermission() http.HandlerFunc {
 		msg := fmt.Sprintf(`permission with "username"="%s" not found`, username)
 		log.Errorln(logTag, ":", msg, ":", err)
 		telemetry.WriteBackErrorWithTelemetry(req, w, msg, http.StatusNotFound)
+		return
 	}
 }
 
@@ -345,6 +346,7 @@ func (p *permissions) deletePermission() http.HandlerFunc {
 		msg := fmt.Sprintf(`permission with "username"="%s" not found`, username)
 		log.Errorln(logTag, ":", msg, ":", err)
 		telemetry.WriteBackErrorWithTelemetry(req, w, msg, http.StatusNotFound)
+		return
 	}
 }
 

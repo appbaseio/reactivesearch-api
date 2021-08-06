@@ -120,6 +120,7 @@ func (es *elasticsearch) healthCheck() http.HandlerFunc {
 		if err != nil {
 			log.Errorln(logTag, ": error fetching cluster health", err)
 			telemetry.WriteBackErrorWithTelemetry(r, w, err.Error(), http.StatusInternalServerError)
+			return
 		}
 		util.WriteBackRaw(w, []byte{}, code)
 	}

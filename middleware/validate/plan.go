@@ -25,6 +25,7 @@ func invalidPlan(h http.HandlerFunc) http.HandlerFunc {
 			msg = "This feature is not available for the " + util.GetTier().String() + " plan users, please upgrade to a higher plan."
 		}
 		telemetry.WriteBackErrorWithTelemetry(req, w, msg, http.StatusPaymentRequired)
+		return
 	}
 }
 

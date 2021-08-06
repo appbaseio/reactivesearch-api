@@ -24,6 +24,7 @@ func Recovery(next http.Handler) http.Handler {
 					err = fmt.Errorf("unknown error occurred: %v", err)
 				}
 				telemetry.WriteBackErrorWithTelemetry(req, w, err.Error(), http.StatusInternalServerError)
+				return
 			}
 		}()
 		next.ServeHTTP(w, req)

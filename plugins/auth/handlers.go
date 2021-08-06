@@ -41,6 +41,7 @@ func (a *Auth) getPublicKey() http.HandlerFunc {
 		if err != nil {
 			msg := fmt.Sprintf(`public key record not found`)
 			telemetry.WriteBackErrorWithTelemetry(req, w, msg, http.StatusNotFound)
+			return
 		}
 		util.WriteBackRaw(w, rawPermission, http.StatusOK)
 	}
