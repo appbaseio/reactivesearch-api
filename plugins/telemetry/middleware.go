@@ -70,7 +70,7 @@ type TelemetryRecord struct {
 func WriteBackErrorWithTelemetry(req *http.Request, w http.ResponseWriter, err string, code int) {
 	util.WriteBackError(w, err, code)
 	respRecorder := httptest.NewRecorder()
-	respRecorder.Code = http.StatusBadRequest
+	respRecorder.Code = code
 	// call telemetry directly
 	Instance().recorderError(respRecorder, req)
 }
