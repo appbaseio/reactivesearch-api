@@ -3,7 +3,6 @@ package elasticsearch
 import (
 	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -116,28 +115,11 @@ func (es *elasticsearch) handler() http.HandlerFunc {
 
 func (es *elasticsearch) healthCheck() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		result, code, err := util.GetClient7().Ping(util.GetESURL()).Do(context.Background())
+		_, code, err := util.GetClient7().Ping(util.GetESURL()).Do(context.Background())
 		if err != nil {
 			log.Errorln(logTag, ": error fetching cluster health", err)
 			util.WriteBackError(w, err.Error(), http.StatusInternalServerError)
 		}
-		responseInBytes, err := json.Marshal(result)
-		if err != nil {
-			log.Errorln(logTag, ": error while marshalling the ping result", err)
-			util.WriteBackError(w, err.Error(), http.StatusInternalServerError)
-		}
-		var response map[string]interface{}
-		err2 := json.Unmarshal(responseInBytes, &response)
-		if err2 != nil {
-			log.Errorln(logTag, ": error while un-marshalling the response", err2)
-			util.WriteBackError(w, err2.Error(), http.StatusInternalServerError)
-		}
-		response["appbase_version"] = util.Version
-		finalResponseInBytes, err := json.Marshal(response)
-		if err != nil {
-			log.Errorln(logTag, ": error while marshalling the response", err)
-			util.WriteBackError(w, err.Error(), http.StatusInternalServerError)
-		}
-		util.WriteBackRaw(w, finalResponseInBytes, code)
+		util.WriteBackRaw(w, []byte{}, code)
 	}
 }
