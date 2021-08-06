@@ -9,7 +9,6 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
-	"github.com/appbaseio/reactivesearch-api/plugins/telemetry"
 	"github.com/appbaseio/reactivesearch-api/util"
 )
 
@@ -96,7 +95,7 @@ func (l *Logs) logsHandler(w http.ResponseWriter, req *http.Request, isSearchLog
 	if err != nil {
 		errMsg := fmt.Errorf(`invalid value "%v" for query param "from"`, offset)
 		log.Errorln(logTag, ": ", errMsg)
-		telemetry.WriteBackErrorWithTelemetry(req, w, err.Error(), http.StatusBadRequest)
+		util.WriteBackError(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
@@ -121,7 +120,7 @@ func (l *Logs) logsHandler(w http.ResponseWriter, req *http.Request, isSearchLog
 			if err != nil {
 				errMsg := fmt.Errorf(`invalid value "%v" for query param "start_latency"`, startLatency)
 				log.Errorln(logTag, ": ", errMsg)
-				telemetry.WriteBackErrorWithTelemetry(req, w, err.Error(), http.StatusBadRequest)
+				util.WriteBackError(w, err.Error(), http.StatusBadRequest)
 				return
 			}
 			logsFilterConfig.StartLatency = &startLatencyAsInt
@@ -132,7 +131,7 @@ func (l *Logs) logsHandler(w http.ResponseWriter, req *http.Request, isSearchLog
 			if err != nil {
 				errMsg := fmt.Errorf(`invalid value "%v" for query param "end_latency"`, endLatency)
 				log.Errorln(logTag, ": ", errMsg)
-				telemetry.WriteBackErrorWithTelemetry(req, w, errMsg.Error(), http.StatusBadRequest)
+				util.WriteBackError(w, errMsg.Error(), http.StatusBadRequest)
 				return
 			}
 			logsFilterConfig.EndLatency = &endLatencyAsInt
@@ -142,7 +141,7 @@ func (l *Logs) logsHandler(w http.ResponseWriter, req *http.Request, isSearchLog
 			if !(orderBy == "asc" || orderBy == "desc") {
 				errMsg := fmt.Errorf(`invalid value "%v" for query param "order_by_latency"`, orderBy)
 				log.Errorln(logTag, ": ", errMsg)
-				telemetry.WriteBackErrorWithTelemetry(req, w, errMsg.Error(), http.StatusBadRequest)
+				util.WriteBackError(w, errMsg.Error(), http.StatusBadRequest)
 				return
 			}
 			logsFilterConfig.OrderByLatency = orderBy
@@ -157,7 +156,7 @@ func (l *Logs) logsHandler(w http.ResponseWriter, req *http.Request, isSearchLog
 	raw, err := l.es.getRawLogs(req.Context(), logsFilterConfig)
 	if err != nil {
 		log.Errorln(logTag, ": error fetching logs :", err)
-		telemetry.WriteBackErrorWithTelemetry(req, w, err.Error(), http.StatusInternalServerError)
+		util.WriteBackError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 

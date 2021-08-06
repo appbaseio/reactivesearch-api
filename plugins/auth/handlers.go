@@ -5,7 +5,6 @@ import (
 	"crypto/rsa"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -15,7 +14,6 @@ import (
 
 	"github.com/dgrijalva/jwt-go"
 
-	"github.com/appbaseio/reactivesearch-api/plugins/telemetry"
 	"github.com/appbaseio/reactivesearch-api/util"
 )
 
@@ -39,8 +37,8 @@ func (a *Auth) getPublicKey() http.HandlerFunc {
 		record, _ := a.es.getPublicKey(req.Context())
 		rawPermission, err := json.Marshal(record)
 		if err != nil {
-			msg := fmt.Sprintf(`public key record not found`)
-			telemetry.WriteBackErrorWithTelemetry(req, w, msg, http.StatusNotFound)
+			msg := "public key record not found"
+			util.WriteBackError(w, msg, http.StatusNotFound)
 			return
 		}
 		util.WriteBackRaw(w, rawPermission, http.StatusOK)
@@ -52,7 +50,7 @@ func (a *Auth) setPublicKey() http.HandlerFunc {
 		reqBody, err := ioutil.ReadAll(req.Body)
 		if err != nil {
 			log.Errorln(logTag, ":", err)
-			telemetry.WriteBackErrorWithTelemetry(req, w, "Can't read request body", http.StatusBadRequest)
+			util.WriteBackError(w, "Can't read request body", http.StatusBadRequest)
 			return
 		}
 		defer req.Body.Close()
@@ -61,7 +59,7 @@ func (a *Auth) setPublicKey() http.HandlerFunc {
 		err = json.Unmarshal(reqBody, &body)
 		if err != nil {
 			log.Errorln(logTag, ":", err)
-			telemetry.WriteBackErrorWithTelemetry(req, w, "Can't parse request body", http.StatusBadRequest)
+			util.WriteBackError(w, "Can't parse request body", http.StatusBadRequest)
 			return
 		}
 
@@ -73,7 +71,7 @@ func (a *Auth) setPublicKey() http.HandlerFunc {
 		jwtRsaPublicKey, err := getJWTPublickKey(body)
 		if err != nil {
 			log.Errorln(logTag, ":", err)
-			telemetry.WriteBackErrorWithTelemetry(req, w, err.Error(), http.StatusBadRequest)
+			util.WriteBackError(w, err.Error(), http.StatusBadRequest)
 			return
 		}
 		// To decide whether to just update the local state
@@ -87,7 +85,7 @@ func (a *Auth) setPublicKey() http.HandlerFunc {
 		_, err = a.savePublicKey(req.Context(), publicKeyIndex, body)
 		if err != nil {
 			log.Errorln(logTag, ":", err)
-			telemetry.WriteBackErrorWithTelemetry(req, w, err.Error(), http.StatusBadRequest)
+			util.WriteBackError(w, err.Error(), http.StatusBadRequest)
 			return
 		}
 		// Invoke ACCAPI
@@ -96,7 +94,7 @@ func (a *Auth) setPublicKey() http.HandlerFunc {
 		err2 := json.Unmarshal(reqBody, &bodyJSON)
 		if err2 != nil {
 			log.Errorln(logTag, ":", err2)
-			telemetry.WriteBackErrorWithTelemetry(req, w, err2.Error(), http.StatusBadRequest)
+			util.WriteBackError(w, err2.Error(), http.StatusBadRequest)
 			return
 		}
 		// Only update local state when proxy API has not been called
@@ -111,7 +109,7 @@ func (a *Auth) setPublicKey() http.HandlerFunc {
 			})
 			if err != nil {
 				log.Errorln(logTag, ":", err)
-				telemetry.WriteBackErrorWithTelemetry(req, w, err.Error(), http.StatusInternalServerError)
+				util.WriteBackError(w, err.Error(), http.StatusInternalServerError)
 				return
 			}
 			// Failed to update all nodes, return error response
@@ -120,7 +118,7 @@ func (a *Auth) setPublicKey() http.HandlerFunc {
 				bodyBytes, err := ioutil.ReadAll(res.Body)
 				if err != nil {
 					log.Errorln(logTag, ":", err)
-					telemetry.WriteBackErrorWithTelemetry(req, w, err.Error(), http.StatusInternalServerError)
+					util.WriteBackError(w, err.Error(), http.StatusInternalServerError)
 					return
 				}
 				util.WriteBackRaw(w, bodyBytes, res.StatusCode)
