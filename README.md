@@ -7,9 +7,9 @@ ReactiveSearch API is a declarative, open-source API for querying Elasticsearch.
 
 Lets take a search query for a books e-commerce site where a user is searching for the keyword "chronicles" on either `title` or `author` fields, has a rating filter applied to only return books with a rating `gte` 4.
 
-This query takes ~80 lines of code to write with Elasticsearch's DSL. The same query can be expressed in ~30 lines of code with ReactiveSearch.
+This query takes ~80 lines of code to write with Elasticsearch's DSL. The same query can be expressed in ~20 lines of code with ReactiveSearch.
 
-![](https://i.imgur.com/tEx39Kq.png)
+![](https://i.imgur.com/0wIHBWB.png)
 
 Lets understand the key differences between the two formats:
 
