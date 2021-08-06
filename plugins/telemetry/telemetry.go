@@ -18,8 +18,8 @@ const (
 	frontEndHeader           = "X-Search-Client"
 	telemetryHeader          = "X-Enable-Telemetry"
 	defaultServerMode        = "OSS"
-	syncInterval             = 10 // interval in minutes to sync telemetry records
-	deltaInterval            = 2  // in minutes
+	syncInterval             = 10  // interval in minutes to sync telemetry records
+	deltaInterval            = 100 // in ms
 	totalEventsPerRequest    = 2000
 	defaultTelemetryFilePath = "/var/log/arc/telemetry"
 	envTelemetryFilePath     = "TELEMETRY_FILE_PATH" // Just for local testing
