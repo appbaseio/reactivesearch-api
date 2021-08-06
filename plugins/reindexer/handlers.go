@@ -19,7 +19,7 @@ func (rx *reindexer) reindex() http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
 		vars := mux.Vars(req)
 		indexName, ok := vars["index"]
-		if checkVar(ok, w, "index") {
+		if checkVar(ok, req, w, "index") {
 			return
 		}
 		if reindex.IsReIndexInProcess(indexName, "") {
@@ -32,7 +32,7 @@ func (rx *reindexer) reindex() http.HandlerFunc {
 		}
 
 		response, err := reindex.Reindex(req.Context(), indexName, &body, waitForCompletion, "")
-		errorHandler(err, w, response)
+		errorHandler(err, req, w, response)
 	}
 }
 
@@ -41,10 +41,10 @@ func (rx *reindexer) reindexSrcToDest() http.HandlerFunc {
 		vars := mux.Vars(req)
 		sourceIndex, okS := vars["source_index"]
 		destinationIndex, okD := vars["destination_index"]
-		if checkVar(okS, w, "source_index") {
+		if checkVar(okS, req, w, "source_index") {
 			return
 		}
-		if checkVar(okD, w, "destination_index") {
+		if checkVar(okD, req, w, "destination_index") {
 			return
 		}
 		err, body, waitForCompletion, done := reindexConfigResponse(req, w, sourceIndex)
@@ -53,7 +53,7 @@ func (rx *reindexer) reindexSrcToDest() http.HandlerFunc {
 		}
 
 		response, err := reindex.Reindex(req.Context(), sourceIndex, &body, waitForCompletion, destinationIndex)
-		errorHandler(err, w, response)
+		errorHandler(err, req, w, response)
 	}
 }
 
@@ -73,11 +73,11 @@ func (rx *reindexer) aliasedIndices() http.HandlerFunc {
 		}
 
 		response, err := json.Marshal(res)
-		errorHandler(nil, w, response)
+		errorHandler(nil, req, w, response)
 	}
 }
 
-func errorHandler(err error, w http.ResponseWriter, response []byte) {
+func errorHandler(err error, req *http.Request, w http.ResponseWriter, response []byte) {
 	if err != nil {
 		log.Errorln(logTag, ":", err)
 		util.WriteBackError(w, err.Error(), http.StatusBadRequest)
@@ -87,7 +87,7 @@ func errorHandler(err error, w http.ResponseWriter, response []byte) {
 	util.WriteBackRaw(w, response, http.StatusOK)
 }
 
-func checkVar(okS bool, w http.ResponseWriter, variable string) bool {
+func checkVar(okS bool, req *http.Request, w http.ResponseWriter, variable string) bool {
 	if !okS {
 		util.WriteBackError(w, "Route inconsistency, expecting var "+variable, http.StatusInternalServerError)
 		return true

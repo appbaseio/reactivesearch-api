@@ -10,6 +10,7 @@ import (
 	"github.com/appbaseio/reactivesearch-api/model/category"
 	"github.com/appbaseio/reactivesearch-api/plugins/auth"
 	"github.com/appbaseio/reactivesearch-api/plugins/logs"
+	"github.com/appbaseio/reactivesearch-api/plugins/telemetry"
 )
 
 type chain struct {
@@ -30,6 +31,7 @@ func list() []middleware.Middleware {
 		validate.Indices(),
 		validate.Operation(),
 		validate.Category(),
+		telemetry.Recorder(),
 	}
 }
 

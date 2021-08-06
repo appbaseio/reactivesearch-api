@@ -14,7 +14,7 @@ import (
 	"github.com/appbaseio/reactivesearch-api/model/user"
 	"github.com/appbaseio/reactivesearch-api/plugins/auth"
 	"github.com/appbaseio/reactivesearch-api/plugins/logs"
-	"github.com/appbaseio/reactivesearch-api/util"
+	"github.com/appbaseio/reactivesearch-api/plugins/telemetry"
 )
 
 type chain struct {
@@ -34,6 +34,7 @@ func list() []middleware.Middleware {
 		auth.BasicAuth(),
 		validate.Operation(),
 		validate.Category(),
+		telemetry.Recorder(),
 	}
 }
 
@@ -63,14 +64,14 @@ func hasUserAccess(h http.HandlerFunc) http.HandlerFunc {
 		reqUser, err := user.FromContext(ctx)
 		if err != nil {
 			log.Errorln(logTag, ":", err)
-			util.WriteBackError(w, "an error occurred while validating user admin", http.StatusInternalServerError)
+			telemetry.WriteBackErrorWithTelemetry(r, w, "an error occurred while validating user admin", http.StatusInternalServerError)
 			return
 		}
 
 		if !*reqUser.IsAdmin && !reqUser.HasAction(user.UserManagement) {
 			msg := fmt.Sprintf(`user with "username"="%s" does not have access to user routes`, reqUser.Username)
 			w.Header().Set("www-authenticate", "Basic realm=\"Authentication Required\"")
-			util.WriteBackError(w, msg, http.StatusUnauthorized)
+			telemetry.WriteBackErrorWithTelemetry(r, w, msg, http.StatusUnauthorized)
 			return
 		}
 		h(w, r)

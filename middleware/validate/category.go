@@ -13,7 +13,7 @@ import (
 	"github.com/appbaseio/reactivesearch-api/model/credential"
 	"github.com/appbaseio/reactivesearch-api/model/permission"
 	"github.com/appbaseio/reactivesearch-api/model/user"
-	"github.com/appbaseio/reactivesearch-api/util"
+	"github.com/appbaseio/reactivesearch-api/plugins/telemetry"
 )
 
 // Category returns a middleware that validates the request category against credential categories.
@@ -38,28 +38,28 @@ func validateCategory(h http.HandlerFunc) http.HandlerFunc {
 		reqCategory, err := category.FromContext(ctx)
 		if err != nil {
 			log.Errorln(logTag, ":", err)
-			util.WriteBackError(w, errMsg, http.StatusInternalServerError)
+			telemetry.WriteBackErrorWithTelemetry(req, w, errMsg, http.StatusInternalServerError)
 			return
 		}
 
 		reqCredential, err := credential.FromContext(ctx)
 		if err != nil {
 			log.Errorln(logTag, ":", err)
-			util.WriteBackError(w, errMsg, http.StatusInternalServerError)
+			telemetry.WriteBackErrorWithTelemetry(req, w, errMsg, http.StatusInternalServerError)
 			return
 		}
 
 		ok, err := hasCategory(ctx, reqCredential, reqCategory)
 		if err != nil {
 			log.Errorln(logTag, ":", err)
-			util.WriteBackError(w, errMsg, http.StatusInternalServerError)
+			telemetry.WriteBackErrorWithTelemetry(req, w, errMsg, http.StatusInternalServerError)
 			return
 		}
 
 		if !ok {
 			msg := fmt.Sprintf(`credential can't access "%s" category`, reqCategory.String())
 			w.Header().Set("www-authenticate", "Basic realm=\"Authentication Required\"")
-			util.WriteBackError(w, msg, http.StatusUnauthorized)
+			telemetry.WriteBackErrorWithTelemetry(req, w, msg, http.StatusUnauthorized)
 			return
 		}
 

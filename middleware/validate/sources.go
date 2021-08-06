@@ -10,7 +10,7 @@ import (
 	"github.com/appbaseio/reactivesearch-api/middleware"
 	"github.com/appbaseio/reactivesearch-api/model/credential"
 	"github.com/appbaseio/reactivesearch-api/model/permission"
-	"github.com/appbaseio/reactivesearch-api/util"
+	"github.com/appbaseio/reactivesearch-api/plugins/telemetry"
 	"github.com/appbaseio/reactivesearch-api/util/iplookup"
 )
 
@@ -28,7 +28,7 @@ func sources(h http.HandlerFunc) http.HandlerFunc {
 		reqCredential, err := credential.FromContext(ctx)
 		if err != nil {
 			log.Errorln(logTag, ":", err)
-			util.WriteBackError(w, err.Error(), http.StatusInternalServerError)
+			telemetry.WriteBackErrorWithTelemetry(req, w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 
@@ -37,7 +37,7 @@ func sources(h http.HandlerFunc) http.HandlerFunc {
 			if reqIP == "" {
 				msg := fmt.Sprintf(`failed to recognize request ip: "%s"`, reqIP)
 				w.Header().Set("www-authenticate", "Basic realm=\"Authentication Required\"")
-				util.WriteBackError(w, msg, http.StatusUnauthorized)
+				telemetry.WriteBackErrorWithTelemetry(req, w, msg, http.StatusUnauthorized)
 				return
 			}
 			ip := net.ParseIP(reqIP)
@@ -45,7 +45,7 @@ func sources(h http.HandlerFunc) http.HandlerFunc {
 			reqPermission, err := permission.FromContext(ctx)
 			if err != nil {
 				log.Errorln(logTag, ":", err)
-				util.WriteBackError(w, err.Error(), http.StatusInternalServerError)
+				telemetry.WriteBackErrorWithTelemetry(req, w, err.Error(), http.StatusInternalServerError)
 				return
 			}
 			allowedSources := reqPermission.Sources
@@ -59,7 +59,7 @@ func sources(h http.HandlerFunc) http.HandlerFunc {
 				_, ipNet, err := net.ParseCIDR(source)
 				if err != nil {
 					log.Errorln(logTag, ":", err)
-					util.WriteBackError(w, err.Error(), http.StatusInternalServerError)
+					telemetry.WriteBackErrorWithTelemetry(req, w, err.Error(), http.StatusInternalServerError)
 					return
 				}
 				if ipNet.Contains(ip) {
@@ -72,7 +72,7 @@ func sources(h http.HandlerFunc) http.HandlerFunc {
 				msg := fmt.Sprintf(`permission with username %s doesn't have required sources. reqIP = %s, sources = %s`,
 					reqPermission.Username, reqIP, allowedSources)
 				w.Header().Set("www-authenticate", "Basic realm=\"Authentication Required\"")
-				util.WriteBackError(w, msg, http.StatusUnauthorized)
+				telemetry.WriteBackErrorWithTelemetry(req, w, msg, http.StatusUnauthorized)
 				return
 			}
 		}

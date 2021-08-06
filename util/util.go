@@ -33,17 +33,30 @@ var HostedBilling string
 // ClusterBilling is a build time variable
 var ClusterBilling string
 
+// Opensource is a build time variable
+var Opensource string
+
+// We set it in the `main.go` based on the env variable and run time flag
+// defaults to `true`
+var IsTelemetryEnabled bool = true
+
 // Version ReactiveSearch version
 var Version string
 
 // Machine ID
 var MachineID string
 
+// RunTime
+var RunTime string
+
 // Port ReactiveSearch port
 var Port int
 
 // ClusterID represents the (decrypted) cluster id for appbase.io cloud and byoc clusters
 var ClusterID string
+
+// Memory Allocated in number of bytes
+var MemoryAllocated uint64
 
 // RandStr returns "node" field of a UUID.
 // See: https://tools.ietf.org/html/rfc4122#section-4.1.6

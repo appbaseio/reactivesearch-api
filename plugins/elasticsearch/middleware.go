@@ -25,6 +25,7 @@ import (
 	"github.com/appbaseio/reactivesearch-api/model/sourcefilter"
 	"github.com/appbaseio/reactivesearch-api/plugins/auth"
 	"github.com/appbaseio/reactivesearch-api/plugins/logs"
+	"github.com/appbaseio/reactivesearch-api/plugins/telemetry"
 	"github.com/appbaseio/reactivesearch-api/util"
 	"github.com/gorilla/mux"
 )
@@ -38,7 +39,8 @@ type chain struct {
 }
 
 func (c *chain) Wrap(mw []middleware.Middleware, h http.HandlerFunc) http.HandlerFunc {
-	return c.Adapt(h, append(list(), mw...)...)
+	// Append telemetry middleware at the end
+	return c.Adapt(h, append(append(list(), mw...), telemetry.Recorder())...)
 }
 
 func list() []middleware.Middleware {
@@ -68,7 +70,7 @@ func classifyCategory(h http.HandlerFunc) http.HandlerFunc {
 		template, err := route.GetPathTemplate()
 		if err != nil {
 			log.Errorln(logTag, ":", err)
-			util.WriteBackError(w, "page not found", http.StatusNotFound)
+			telemetry.WriteBackErrorWithTelemetry(req, w, "page not found", http.StatusNotFound)
 			return
 		}
 		key := fmt.Sprintf("%s:%s", req.Method, template)
@@ -95,7 +97,7 @@ func classifyACL(h http.HandlerFunc) http.HandlerFunc {
 		template, err := currentRoute.GetPathTemplate()
 		if err != nil {
 			log.Errorln(logTag, ":", err)
-			util.WriteBackError(w, "page not found", http.StatusNotFound)
+			telemetry.WriteBackErrorWithTelemetry(req, w, "page not found", http.StatusNotFound)
 			return
 		}
 		key := fmt.Sprintf("%s:%s", req.Method, template)
@@ -116,7 +118,7 @@ func classifyOp(h http.HandlerFunc) http.HandlerFunc {
 		template, err := route.GetPathTemplate()
 		if err != nil {
 			log.Errorln(logTag, ":", err)
-			util.WriteBackError(w, "page not found", http.StatusNotFound)
+			telemetry.WriteBackErrorWithTelemetry(req, w, "page not found", http.StatusNotFound)
 			return
 		}
 		key := fmt.Sprintf("%s:%s", req.Method, template)
@@ -171,7 +173,7 @@ func intercept(h http.HandlerFunc) http.HandlerFunc {
 						body, err := ioutil.ReadAll(req.Body)
 						if err != nil {
 							log.Errorln(logTag, ":", err)
-							util.WriteBackError(w, err.Error(), http.StatusInternalServerError)
+							telemetry.WriteBackErrorWithTelemetry(req, w, err.Error(), http.StatusInternalServerError)
 							return
 						}
 						var reqBodyString = string(body)
@@ -183,14 +185,14 @@ func intercept(h http.HandlerFunc) http.HandlerFunc {
 								err := json.Unmarshal([]byte(element), &reqBody)
 								if err != nil {
 									log.Errorln(logTag, ":", err)
-									util.WriteBackError(w, err.Error(), http.StatusInternalServerError)
+									telemetry.WriteBackErrorWithTelemetry(req, w, err.Error(), http.StatusInternalServerError)
 									return
 								}
 								reqBody["_source"] = sources
 								raw, err := json.Marshal(reqBody)
 								if err != nil {
 									log.Errorln(logTag, ":", err)
-									util.WriteBackError(w, err.Error(), http.StatusInternalServerError)
+									telemetry.WriteBackErrorWithTelemetry(req, w, err.Error(), http.StatusInternalServerError)
 									return
 								}
 								modifiedBodyString += string(raw)
@@ -206,7 +208,7 @@ func intercept(h http.HandlerFunc) http.HandlerFunc {
 						err := json.NewDecoder(req.Body).Decode(&reqBody)
 						if err != nil && err != io.EOF {
 							log.Errorln(logTag, ":", err)
-							util.WriteBackError(w, err.Error(), http.StatusInternalServerError)
+							telemetry.WriteBackErrorWithTelemetry(req, w, err.Error(), http.StatusInternalServerError)
 							return
 						}
 						reqBody["_source"] = sources
@@ -232,7 +234,7 @@ func intercept(h http.HandlerFunc) http.HandlerFunc {
 		body, err2 := ioutil.ReadAll(result.Body)
 		if err2 != nil {
 			log.Errorln(logTag, ":", err2)
-			util.WriteBackError(w, "error reading response body", http.StatusInternalServerError)
+			telemetry.WriteBackErrorWithTelemetry(req, w, "error reading response body", http.StatusInternalServerError)
 			return
 		}
 
@@ -254,7 +256,7 @@ func intercept(h http.HandlerFunc) http.HandlerFunc {
 						err := json.Unmarshal(body, &responseAsMap)
 						if err != nil {
 							log.Errorln(logTag, ":", err2)
-							util.WriteBackError(w, "error un-marshalling _doc response", http.StatusInternalServerError)
+							telemetry.WriteBackErrorWithTelemetry(req, w, "error un-marshalling _doc response", http.StatusInternalServerError)
 							return
 						}
 						if isSource {
@@ -268,7 +270,7 @@ func intercept(h http.HandlerFunc) http.HandlerFunc {
 							filteredResponseInBytes, err := json.Marshal(responseAsMap)
 							if err != nil {
 								log.Errorln(logTag, ":", err2)
-								util.WriteBackError(w, "error marshalling response", http.StatusInternalServerError)
+								telemetry.WriteBackErrorWithTelemetry(req, w, "error marshalling response", http.StatusInternalServerError)
 								return
 							}
 							// Assign the filtered source to body
@@ -278,7 +280,7 @@ func intercept(h http.HandlerFunc) http.HandlerFunc {
 							if !ok {
 								errMsg := "unable to type cast source to map[string]interface{}"
 								log.Errorln(logTag, ":", errMsg)
-								util.WriteBackError(w, errMsg, http.StatusInternalServerError)
+								telemetry.WriteBackErrorWithTelemetry(req, w, errMsg, http.StatusInternalServerError)
 								return
 							}
 							filteredSource := sourcefilter.ApplySourceFiltering(sourceAsMap, reqPermission.Includes, reqPermission.Excludes)
@@ -289,13 +291,13 @@ func intercept(h http.HandlerFunc) http.HandlerFunc {
 							filteredSourceInBytes, err := json.Marshal(filteredSource)
 							if err != nil {
 								log.Errorln(logTag, ":", err2)
-								util.WriteBackError(w, "error marshalling response", http.StatusInternalServerError)
+								telemetry.WriteBackErrorWithTelemetry(req, w, "error marshalling response", http.StatusInternalServerError)
 								return
 							}
 							filteredResponseInBytes, err := jsonparser.Set(body, filteredSourceInBytes, "_source")
 							if err != nil {
 								log.Errorln(logTag, ":", err2)
-								util.WriteBackError(w, "error setting _source key in response", http.StatusInternalServerError)
+								telemetry.WriteBackErrorWithTelemetry(req, w, "error setting _source key in response", http.StatusInternalServerError)
 								return
 							}
 							// Assign the filtered source to body
@@ -308,7 +310,7 @@ func intercept(h http.HandlerFunc) http.HandlerFunc {
 					err := json.Unmarshal(body, &mGetResponse)
 					if err != nil {
 						log.Errorln(logTag, ":", err2)
-						util.WriteBackError(w, "error un-marshalling response", http.StatusInternalServerError)
+						telemetry.WriteBackErrorWithTelemetry(req, w, "error un-marshalling response", http.StatusInternalServerError)
 						return
 					}
 					for _, doc := range mGetResponse.Docs {
@@ -316,7 +318,7 @@ func intercept(h http.HandlerFunc) http.HandlerFunc {
 						if !ok {
 							errMsg := "unable to type cast source to map[string]interface{}"
 							log.Errorln(logTag, ":", errMsg)
-							util.WriteBackError(w, errMsg, http.StatusInternalServerError)
+							telemetry.WriteBackErrorWithTelemetry(req, w, errMsg, http.StatusInternalServerError)
 							return
 						}
 						filteredSource := sourcefilter.ApplySourceFiltering(sourceAsMap, reqPermission.Includes, reqPermission.Excludes)
@@ -330,7 +332,7 @@ func intercept(h http.HandlerFunc) http.HandlerFunc {
 					filteredResponseInBytes, err := json.Marshal(mGetResponse)
 					if err != nil {
 						log.Errorln(logTag, ":", err2)
-						util.WriteBackError(w, "error marshalling response", http.StatusInternalServerError)
+						telemetry.WriteBackErrorWithTelemetry(req, w, "error marshalling response", http.StatusInternalServerError)
 						return
 					}
 					// Assign the filtered source to body

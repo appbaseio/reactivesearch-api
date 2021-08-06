@@ -12,7 +12,7 @@ import (
 	"github.com/appbaseio/reactivesearch-api/model/index"
 	"github.com/appbaseio/reactivesearch-api/model/permission"
 	"github.com/appbaseio/reactivesearch-api/model/user"
-	"github.com/appbaseio/reactivesearch-api/util"
+	"github.com/appbaseio/reactivesearch-api/plugins/telemetry"
 )
 
 // Indices returns a middleware that validates the request indices against the credential indices.
@@ -28,14 +28,14 @@ func indices(h http.HandlerFunc) http.HandlerFunc {
 		reqIndices, err := index.FromContext(ctx)
 		if err != nil {
 			log.Errorln(logTag, ": unable to fetch indices from request context:", err)
-			util.WriteBackError(w, errMsg, http.StatusInternalServerError)
+			telemetry.WriteBackErrorWithTelemetry(req, w, errMsg, http.StatusInternalServerError)
 			return
 		}
 
 		reqCredential, err := credential.FromContext(ctx)
 		if err != nil {
 			log.Errorln(logTag, ":", err)
-			util.WriteBackError(w, errMsg, http.StatusInternalServerError)
+			telemetry.WriteBackErrorWithTelemetry(req, w, errMsg, http.StatusInternalServerError)
 			return
 		}
 
@@ -44,12 +44,12 @@ func indices(h http.HandlerFunc) http.HandlerFunc {
 			ok, err := allowedClusterAccess(ctx, reqCredential)
 			if err != nil {
 				log.Errorln(logTag, ":", err)
-				util.WriteBackError(w, errMsg, http.StatusInternalServerError)
+				telemetry.WriteBackErrorWithTelemetry(req, w, errMsg, http.StatusInternalServerError)
 				return
 			}
 			if !ok {
 				w.Header().Set("www-authenticate", "Basic realm=\"Authentication Required\"")
-				util.WriteBackError(w, "credentials cannot access cluster level routes", http.StatusUnauthorized)
+				telemetry.WriteBackErrorWithTelemetry(req, w, "credentials cannot access cluster level routes", http.StatusUnauthorized)
 				return
 			}
 		} else {
@@ -57,13 +57,13 @@ func indices(h http.HandlerFunc) http.HandlerFunc {
 			ok, err := allowedIndexAccess(ctx, reqCredential, reqIndices)
 			if err != nil {
 				log.Errorln(logTag, ":", err)
-				util.WriteBackError(w, errMsg, http.StatusInternalServerError)
+				telemetry.WriteBackErrorWithTelemetry(req, w, errMsg, http.StatusInternalServerError)
 				return
 			}
 			if !ok {
 				msg := fmt.Sprintf("credentials cannot access %v index/indices", reqIndices)
 				w.Header().Set("www-authenticate", "Basic realm=\"Authentication Required\"")
-				util.WriteBackError(w, msg, http.StatusUnauthorized)
+				telemetry.WriteBackErrorWithTelemetry(req, w, msg, http.StatusUnauthorized)
 				return
 			}
 		}

@@ -164,6 +164,7 @@ func (u *Users) postUser() http.HandlerFunc {
 		msg := fmt.Sprintf(`an error occurred while creating a user with "username"="%s": %v`, userBody.Username, err)
 		log.Println(logTag, ":", msg)
 		util.WriteBackError(w, msg, http.StatusInternalServerError)
+		return
 	}
 }
 
@@ -279,6 +280,7 @@ func (u *Users) patchUser() http.HandlerFunc {
 		msg := fmt.Sprintf(`user with "username"="%s" not found`, username)
 		log.Errorln(logTag, ":", msg, ":", err)
 		util.WriteBackError(w, msg, http.StatusNotFound)
+		return
 	}
 }
 
@@ -399,6 +401,7 @@ func (u *Users) patchUserWithUsername() http.HandlerFunc {
 		msg := fmt.Sprintf(`user with "username"="%s" not found`, username)
 		log.Errorln(logTag, ":", msg, ":", err)
 		util.WriteBackError(w, msg, http.StatusNotFound)
+		return
 	}
 }
 
@@ -473,6 +476,7 @@ func (u *Users) deleteUser() http.HandlerFunc {
 		msg := fmt.Sprintf(`user with "username"="%s" not found`, username)
 		log.Errorln(logTag, ":", msg, ":", err)
 		util.WriteBackError(w, msg, http.StatusNotFound)
+		return
 	}
 }
 
@@ -549,6 +553,7 @@ func (u *Users) deleteUserWithUsername() http.HandlerFunc {
 		msg := fmt.Sprintf(`user with "username"="%s" not found`, username)
 		log.Errorln(logTag, ":", msg, ":", err)
 		util.WriteBackError(w, msg, http.StatusNotFound)
+		return
 	}
 }
 

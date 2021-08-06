@@ -19,10 +19,12 @@ import (
 
 	"github.com/appbaseio/reactivesearch-api/middleware"
 	"github.com/appbaseio/reactivesearch-api/middleware/logger"
+	"github.com/appbaseio/reactivesearch-api/model/tracktime"
 	"github.com/appbaseio/reactivesearch-api/plugins"
 	"github.com/appbaseio/reactivesearch-api/util"
 	"github.com/denisbrodbeck/machineid"
 	"github.com/gorilla/mux"
+	"github.com/mackerelio/go-osstat/memory"
 	"github.com/pkg/profile"
 	"github.com/robfig/cron"
 	"github.com/rs/cors"
@@ -33,14 +35,15 @@ import (
 const logTag = "[cmd]"
 
 var (
-	envFile     string
-	logMode     string
-	listPlugins bool
-	address     string
-	port        int
-	pluginDir   string
-	https       bool
-	cpuprofile  bool
+	envFile         string
+	logMode         string
+	listPlugins     bool
+	address         string
+	port            int
+	pluginDir       string
+	https           bool
+	cpuprofile      bool
+	enableTelemetry string
 	// Version Reactivesearch version set during build
 	Version string
 	// PlanRefreshInterval can be used to define the custom interval to refresh the plan
@@ -51,6 +54,8 @@ var (
 	HostedBilling string
 	// ClusterBilling is a build time flag
 	ClusterBilling string
+	// Opensource is a build time flag
+	Opensource string
 	// IgnoreBillingMiddleware ignores the billing middleware
 	IgnoreBillingMiddleware string
 	// Tier for testing
@@ -92,6 +97,7 @@ func init() {
 	flag.StringVar(&pluginDir, "pluginDir", "build/plugins", "Directory containing the compiled plugins")
 	flag.BoolVar(&https, "https", false, "Starts a https server instead of a http server if true")
 	flag.BoolVar(&cpuprofile, "cpuprofile", false, "write cpu profile to `file`")
+	flag.StringVar(&enableTelemetry, "enable-telemetry", "", "Set as `false` to disable telemetry")
 }
 
 func main() {
@@ -124,6 +130,7 @@ func main() {
 			log.Fatal(logTag, ": runtime detected as docker container: machineid can not be empty")
 		}
 		util.MachineID = strings.TrimSuffix(id, "\n")
+		util.RunTime = "Docker"
 	} else {
 		log.Println(logTag, "Runtime detected as a host machine ...")
 		id, err1 := machineid.ID()
@@ -131,7 +138,16 @@ func main() {
 			log.Fatal(logTag, ": runtime detected as a host machine: ", err1)
 		}
 		util.MachineID = id
+		util.RunTime = "Linux"
 	}
+
+	memory, memErr := memory.Get()
+	if memErr != nil {
+		log.Warnln(logTag, ":", memErr)
+	} else {
+		util.MemoryAllocated = memory.Total
+	}
+
 	flag.Parse()
 	log.SetReportCaller(true)
 	log.SetFormatter(&log.TextFormatter{
@@ -179,6 +195,7 @@ func main() {
 	util.Billing = Billing
 	util.HostedBilling = HostedBilling
 	util.ClusterBilling = ClusterBilling
+	util.Opensource = Opensource
 	util.Version = Version
 
 	if Billing == "true" {
@@ -301,7 +318,7 @@ func main() {
 	})
 	// load plugins in a sequence
 	for _, pluginName := range sequencedPlugins {
-		path, _ := sequencedPluginsByPath[pluginName]
+		path := sequencedPluginsByPath[pluginName]
 		if path != "" {
 			plugin, err := LoadPluginFromFile(router, path)
 			if err != nil {
@@ -345,6 +362,25 @@ func main() {
 			}
 		}
 	}
+	// Set telemetry based on the user input
+	// Runtime flag gets the highest priority
+	telemetryEnvVar := os.Getenv("ENABLE_TELEMETRY")
+	if enableTelemetry != "" {
+		b, err := strconv.ParseBool(enableTelemetry)
+		if err != nil {
+			log.Fatal(logTag, ": runtime flag `enable-telemetry` must be boolean: ", err)
+		}
+		util.IsTelemetryEnabled = b
+	} else if telemetryEnvVar != "" {
+		b, err := strconv.ParseBool(telemetryEnvVar)
+		if err != nil {
+			log.Fatal(logTag, ": environment value `ENABLE_TELEMETRY` must be boolean: ", err)
+		}
+		util.IsTelemetryEnabled = b
+	}
+	if util.IsTelemetryEnabled {
+		log.Println("Appbase Telemetry is enabled. You can disable it by setting the `enable-telemetry` runtime flag as `false`")
+	}
 	// CORS policy
 	c := cors.New(cors.Options{
 		AllowedOrigins: []string{"*"},
@@ -353,6 +389,9 @@ func main() {
 		ExposedHeaders: []string{"*"},
 	})
 	handler := c.Handler(router)
+	// Add time tracker middleware
+	handler = tracktime.Track(handler)
+	// Add logger middleware
 	handler = logger.Log(handler)
 
 	// Listen and serve ...

@@ -5,7 +5,6 @@ import (
 	"crypto/rsa"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -38,8 +37,9 @@ func (a *Auth) getPublicKey() http.HandlerFunc {
 		record, _ := a.es.getPublicKey(req.Context())
 		rawPermission, err := json.Marshal(record)
 		if err != nil {
-			msg := fmt.Sprintf(`public key record not found`)
+			msg := "public key record not found"
 			util.WriteBackError(w, msg, http.StatusNotFound)
+			return
 		}
 		util.WriteBackRaw(w, rawPermission, http.StatusOK)
 	}

@@ -10,7 +10,7 @@ import (
 	"github.com/appbaseio/reactivesearch-api/middleware"
 	"github.com/appbaseio/reactivesearch-api/model/credential"
 	"github.com/appbaseio/reactivesearch-api/model/permission"
-	"github.com/appbaseio/reactivesearch-api/util"
+	"github.com/appbaseio/reactivesearch-api/plugins/telemetry"
 )
 
 // Referers returns a middleware that validates the request referers against the permission referers.
@@ -25,7 +25,7 @@ func referers(h http.HandlerFunc) http.HandlerFunc {
 		reqCredential, err := credential.FromContext(ctx)
 		if err != nil {
 			log.Errorln(logTag, ":", err)
-			util.WriteBackError(w, err.Error(), http.StatusInternalServerError)
+			telemetry.WriteBackErrorWithTelemetry(req, w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 
@@ -35,7 +35,7 @@ func referers(h http.HandlerFunc) http.HandlerFunc {
 			reqPermission, err := permission.FromContext(ctx)
 			if err != nil {
 				log.Errorln(logTag, ":", err)
-				util.WriteBackError(w, err.Error(), http.StatusInternalServerError)
+				telemetry.WriteBackErrorWithTelemetry(req, w, err.Error(), http.StatusInternalServerError)
 				return
 			}
 
@@ -49,7 +49,7 @@ func referers(h http.HandlerFunc) http.HandlerFunc {
 				matched, err := regexp.MatchString(referer, reqDomain)
 				if err != nil {
 					log.Errorln(logTag, ":", err)
-					util.WriteBackError(w, err.Error(), http.StatusInternalServerError)
+					telemetry.WriteBackErrorWithTelemetry(req, w, err.Error(), http.StatusInternalServerError)
 					return
 				}
 				if matched {
@@ -60,7 +60,7 @@ func referers(h http.HandlerFunc) http.HandlerFunc {
 
 			if !validated {
 				w.Header().Set("www-authenticate", "Basic realm=\"Authentication Required\"")
-				util.WriteBackError(w, "permission doesn't have required referers", http.StatusUnauthorized)
+				telemetry.WriteBackErrorWithTelemetry(req, w, "permission doesn't have required referers", http.StatusUnauthorized)
 				return
 			}
 		}

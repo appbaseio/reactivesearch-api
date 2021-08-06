@@ -16,6 +16,7 @@ import (
 	"github.com/appbaseio/reactivesearch-api/model/index"
 	"github.com/appbaseio/reactivesearch-api/model/request"
 	"github.com/appbaseio/reactivesearch-api/plugins/auth"
+	"github.com/appbaseio/reactivesearch-api/plugins/telemetry"
 	"github.com/appbaseio/reactivesearch-api/util"
 	"github.com/buger/jsonparser"
 	log "github.com/sirupsen/logrus"
@@ -53,6 +54,7 @@ func list() []middleware.Middleware {
 		validate.Indices(),
 		validate.Operation(),
 		validate.Category(),
+		telemetry.Recorder(),
 	}
 }
 

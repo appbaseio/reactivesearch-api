@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/appbaseio/reactivesearch-api/util"
+	"github.com/appbaseio/reactivesearch-api/plugins/telemetry"
 )
 
 // Recovery is a middleware that wraps an http handler to recover from panics.
@@ -23,7 +23,8 @@ func Recovery(next http.Handler) http.Handler {
 				default:
 					err = fmt.Errorf("unknown error occurred: %v", err)
 				}
-				util.WriteBackError(w, err.Error(), http.StatusInternalServerError)
+				telemetry.WriteBackErrorWithTelemetry(req, w, err.Error(), http.StatusInternalServerError)
+				return
 			}
 		}()
 		next.ServeHTTP(w, req)

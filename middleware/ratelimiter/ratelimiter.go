@@ -13,6 +13,7 @@ import (
 	"github.com/appbaseio/reactivesearch-api/model/category"
 	"github.com/appbaseio/reactivesearch-api/model/credential"
 	"github.com/appbaseio/reactivesearch-api/model/permission"
+	"github.com/appbaseio/reactivesearch-api/plugins/telemetry"
 	"github.com/appbaseio/reactivesearch-api/util"
 	"github.com/appbaseio/reactivesearch-api/util/iplookup"
 	"github.com/ulule/limiter"
@@ -62,7 +63,7 @@ func (rl *Ratelimiter) rateLimit(h http.HandlerFunc) http.HandlerFunc {
 		reqCredential, err := credential.FromContext(ctx)
 		if err != nil {
 			log.Errorln(logTag, ":", err)
-			util.WriteBackError(w, err.Error(), http.StatusInternalServerError)
+			telemetry.WriteBackErrorWithTelemetry(req, w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 
@@ -72,14 +73,14 @@ func (rl *Ratelimiter) rateLimit(h http.HandlerFunc) http.HandlerFunc {
 			reqPermission, err := permission.FromContext(ctx)
 			if err != nil {
 				log.Errorln(logTag, ":", err)
-				util.WriteBackError(w, errMsg, http.StatusInternalServerError)
+				telemetry.WriteBackErrorWithTelemetry(req, w, errMsg, http.StatusInternalServerError)
 				return
 			}
 
 			reqCategory, err := category.FromContext(ctx)
 			if err != nil {
 				log.Errorln(logTag, ":", err)
-				util.WriteBackError(w, errMsg, http.StatusInternalServerError)
+				telemetry.WriteBackErrorWithTelemetry(req, w, errMsg, http.StatusInternalServerError)
 				return
 			}
 
@@ -87,7 +88,7 @@ func (rl *Ratelimiter) rateLimit(h http.HandlerFunc) http.HandlerFunc {
 			categoryLimit, err := reqPermission.GetLimitFor(*reqCategory)
 			if err != nil {
 				w.Header().Set("www-authenticate", "Basic realm=\"Authentication Required\"")
-				util.WriteBackError(w, err.Error(), http.StatusUnauthorized)
+				telemetry.WriteBackErrorWithTelemetry(req, w, err.Error(), http.StatusUnauthorized)
 				return
 			}
 

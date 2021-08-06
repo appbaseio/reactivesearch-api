@@ -14,9 +14,10 @@ import (
 	"github.com/appbaseio/reactivesearch-api/model/category"
 	"github.com/appbaseio/reactivesearch-api/model/op"
 	"github.com/appbaseio/reactivesearch-api/model/permission"
+	"github.com/appbaseio/reactivesearch-api/model/trackplugin"
 	"github.com/appbaseio/reactivesearch-api/plugins/auth"
 	"github.com/appbaseio/reactivesearch-api/plugins/logs"
-	"github.com/appbaseio/reactivesearch-api/util"
+	"github.com/appbaseio/reactivesearch-api/plugins/telemetry"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -25,10 +26,10 @@ type chain struct {
 }
 
 func (c *chain) Wrap(mw []middleware.Middleware, h http.HandlerFunc) http.HandlerFunc {
-	// Append logger middleware at the begining
-	mw = append([]middleware.Middleware{logger}, mw...)
 	// Append query translate middleware at the end
 	mw = append(mw, queryTranslate)
+	// Append telemetry at the end
+	mw = append(mw, telemetry.Recorder())
 	return c.Adapt(h, append(list(), mw...)...)
 }
 
@@ -49,15 +50,6 @@ func list() []middleware.Middleware {
 		validate.PermissionExpiry(),
 		applySourceFiltering,
 	}
-}
-
-// Tracks the starting time for request
-func logger(h http.HandlerFunc) http.HandlerFunc {
-	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-		ctx := NewLoggerContext(req.Context())
-		req = req.WithContext(ctx)
-		h(w, req)
-	})
 }
 
 func classifyCategory(h http.HandlerFunc) http.HandlerFunc {
@@ -87,7 +79,7 @@ func saveRequestToCtx(h http.HandlerFunc) http.HandlerFunc {
 		err := json.NewDecoder(req.Body).Decode(&body)
 		if err != nil {
 			log.Errorln(logTag, ":", err)
-			util.WriteBackError(w, fmt.Sprintf("Can't parse request body: %v", err), http.StatusBadRequest)
+			telemetry.WriteBackErrorWithTelemetry(req, w, fmt.Sprintf("Can't parse request body: %v", err), http.StatusBadRequest)
 			return
 		}
 		// Set request body as nil to avoid memory issues (storage duplication)
@@ -116,7 +108,8 @@ func applySourceFiltering(h http.HandlerFunc) http.HandlerFunc {
 			requestQuery, err := FromContext(req.Context())
 			if err != nil {
 				log.Errorln(logTag, ":", err)
-				util.WriteBackError(w, "error encountered while retrieving request from context", http.StatusInternalServerError)
+
+				telemetry.WriteBackErrorWithTelemetry(req, w, "error encountered while retrieving request from context", http.StatusInternalServerError)
 				return
 			}
 			for index := range requestQuery.Query {
@@ -134,7 +127,7 @@ func queryTranslate(h http.HandlerFunc) http.HandlerFunc {
 		body, err := FromContext(req.Context())
 		if err != nil {
 			log.Errorln(logTag, ":", err)
-			util.WriteBackError(w, "error encountered while retrieving request from context", http.StatusInternalServerError)
+			telemetry.WriteBackErrorWithTelemetry(req, w, "error encountered while retrieving request from context", http.StatusInternalServerError)
 			return
 		}
 
@@ -143,11 +136,16 @@ func queryTranslate(h http.HandlerFunc) http.HandlerFunc {
 		// log.Println("RS QUERY", msearchQuery)
 		if err != nil {
 			log.Errorln(logTag, ":", err)
-			util.WriteBackError(w, err.Error(), http.StatusBadRequest)
+			telemetry.WriteBackErrorWithTelemetry(req, w, err.Error(), http.StatusBadRequest)
 			return
 		}
 		// Update the request body to the parsed query
 		req.Body = ioutil.NopCloser(strings.NewReader(msearchQuery))
+
+		// Track plugin
+		ctxTrackPlugin := trackplugin.TrackPlugin(req.Context(), "qt")
+		req = req.WithContext(ctxTrackPlugin)
+
 		h(w, req)
 	}
 }
