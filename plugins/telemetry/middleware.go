@@ -3,6 +3,7 @@ package telemetry
 import (
 	"encoding/json"
 	"io/ioutil"
+	"math"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -90,7 +91,6 @@ func (t *Telemetry) recorder(h http.HandlerFunc) http.HandlerFunc {
 }
 
 func (t *Telemetry) recordTelemetry(w *httptest.ResponseRecorder, r *http.Request) {
-
 	ctx := r.Context()
 
 	// ---- Start Category Calculation: Required ----
@@ -226,7 +226,7 @@ func (t *Telemetry) recordTelemetry(w *httptest.ResponseRecorder, r *http.Reques
 	// ---- End IP Calculation ----
 
 	record := TelemetryRecord{
-		TimeStamp:           time.Now().Unix(),
+		TimeStamp:           time.Now().UnixNano() / int64(math.Pow(10, 6)), // unix timestamp in ms
 		ClientIPv4:          clientIPv4,
 		ClientIPv6:          clientIPv6,
 		FrontEndClient:      frontEndHeaderValue,
