@@ -18,6 +18,7 @@ import (
 	"github.com/appbaseio/reactivesearch-api/model/acl"
 	"github.com/appbaseio/reactivesearch-api/model/category"
 	"github.com/appbaseio/reactivesearch-api/model/op"
+	"github.com/appbaseio/reactivesearch-api/plugins/telemetry"
 	"github.com/appbaseio/reactivesearch-api/util"
 )
 
@@ -28,21 +29,21 @@ func (es *elasticsearch) handler() http.HandlerFunc {
 		reqCategory, err := category.FromContext(ctx)
 		if err != nil {
 			log.Errorln(logTag, ":", err)
-			util.WriteBackError(w, "error classifying request acl", http.StatusInternalServerError)
+			telemetry.WriteBackErrorWithTelemetry(r, w, "error classifying request acl", http.StatusInternalServerError)
 			return
 		}
 
 		reqACL, err := acl.FromContext(ctx)
 		if err != nil {
 			log.Errorln(logTag, ":", err)
-			util.WriteBackError(w, "error classifying request category", http.StatusInternalServerError)
+			telemetry.WriteBackErrorWithTelemetry(r, w, "error classifying request category", http.StatusInternalServerError)
 			return
 		}
 
 		reqOp, err := op.FromContext(ctx)
 		if err != nil {
 			log.Errorln(logTag, ":", err)
-			util.WriteBackError(w, "error classifying request op", http.StatusInternalServerError)
+			telemetry.WriteBackErrorWithTelemetry(r, w, "error classifying request op", http.StatusInternalServerError)
 			return
 		}
 		log.Println(logTag, ": category=", *reqCategory, ", acl=", *reqACL, ", op=", *reqOp)
@@ -88,10 +89,10 @@ func (es *elasticsearch) handler() http.HandlerFunc {
 		if err != nil {
 			log.Errorln(logTag, ": error while sending request :", r.URL.Path, err)
 			if response != nil {
-				util.WriteBackError(w, err.Error(), response.StatusCode)
+				telemetry.WriteBackErrorWithTelemetry(r, w, err.Error(), response.StatusCode)
 				return
 			}
-			util.WriteBackError(w, err.Error(), http.StatusInternalServerError)
+			telemetry.WriteBackErrorWithTelemetry(r, w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 		// Copy the headers
@@ -108,7 +109,7 @@ func (es *elasticsearch) handler() http.HandlerFunc {
 		w.Header().Set("X-Origin", "appbase.io")
 		if err != nil {
 			log.Errorln(logTag, ": error fetching response for", r.URL.Path, err)
-			util.WriteBackError(w, err.Error(), response.StatusCode)
+			telemetry.WriteBackErrorWithTelemetry(r, w, err.Error(), response.StatusCode)
 			return
 		}
 	}
@@ -119,24 +120,24 @@ func (es *elasticsearch) healthCheck() http.HandlerFunc {
 		result, code, err := util.GetClient7().Ping(util.GetESURL()).Do(context.Background())
 		if err != nil {
 			log.Errorln(logTag, ": error fetching cluster health", err)
-			util.WriteBackError(w, err.Error(), http.StatusInternalServerError)
+			telemetry.WriteBackErrorWithTelemetry(r, w, err.Error(), http.StatusInternalServerError)
 		}
 		responseInBytes, err := json.Marshal(result)
 		if err != nil {
 			log.Errorln(logTag, ": error while marshalling the ping result", err)
-			util.WriteBackError(w, err.Error(), http.StatusInternalServerError)
+			telemetry.WriteBackErrorWithTelemetry(r, w, err.Error(), http.StatusInternalServerError)
 		}
 		var response map[string]interface{}
 		err2 := json.Unmarshal(responseInBytes, &response)
 		if err2 != nil {
 			log.Errorln(logTag, ": error while un-marshalling the response", err2)
-			util.WriteBackError(w, err2.Error(), http.StatusInternalServerError)
+			telemetry.WriteBackErrorWithTelemetry(r, w, err2.Error(), http.StatusInternalServerError)
 		}
 		response["appbase_version"] = util.Version
 		finalResponseInBytes, err := json.Marshal(response)
 		if err != nil {
 			log.Errorln(logTag, ": error while marshalling the response", err)
-			util.WriteBackError(w, err.Error(), http.StatusInternalServerError)
+			telemetry.WriteBackErrorWithTelemetry(r, w, err.Error(), http.StatusInternalServerError)
 		}
 		util.WriteBackRaw(w, finalResponseInBytes, code)
 	}

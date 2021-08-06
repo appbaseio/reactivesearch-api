@@ -67,6 +67,23 @@ type TelemetryRecord struct {
 	Acl           *string `json:"acl,omitempty"`
 }
 
+func WriteBackErrorWithTelemetry(req *http.Request, w http.ResponseWriter, err string, code int) {
+	util.WriteBackError(w, err, code)
+	respRecorder := httptest.NewRecorder()
+	respRecorder.Code = http.StatusBadRequest
+	// call telemetry directly
+	Instance().recorderError(respRecorder, req)
+}
+
+// records the telemetry for handlers
+func (t *Telemetry) recorderError(w *httptest.ResponseRecorder, r *http.Request) {
+	if util.IsTelemetryEnabled &&
+		r.Header.Get(telemetryHeader) != "false" &&
+		!util.Contains(blacklistRoutes, r.RequestURI) {
+		go t.recordTelemetry(w, r)
+	}
+}
+
 func (t *Telemetry) recorder(h http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if util.IsTelemetryEnabled &&

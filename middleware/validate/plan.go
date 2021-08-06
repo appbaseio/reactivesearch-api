@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/appbaseio/reactivesearch-api/middleware"
+	"github.com/appbaseio/reactivesearch-api/plugins/telemetry"
 	"github.com/appbaseio/reactivesearch-api/util"
 )
 
@@ -23,7 +24,7 @@ func invalidPlan(h http.HandlerFunc) http.HandlerFunc {
 		if util.GetTier() != nil {
 			msg = "This feature is not available for the " + util.GetTier().String() + " plan users, please upgrade to a higher plan."
 		}
-		util.WriteBackError(w, msg, http.StatusPaymentRequired)
+		telemetry.WriteBackErrorWithTelemetry(req, w, msg, http.StatusPaymentRequired)
 	}
 }
 

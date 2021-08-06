@@ -9,6 +9,7 @@ import (
 
 	"github.com/appbaseio/reactivesearch-api/middleware/classify"
 	"github.com/appbaseio/reactivesearch-api/model/index"
+	"github.com/appbaseio/reactivesearch-api/plugins/telemetry"
 	"github.com/appbaseio/reactivesearch-api/util"
 	"github.com/buger/jsonparser"
 	"github.com/gorilla/mux"
@@ -22,7 +23,7 @@ func (r *QueryTranslate) search() http.HandlerFunc {
 		reqBody, err := ioutil.ReadAll(req.Body)
 		if err != nil {
 			log.Errorln(logTag, ":", err)
-			util.WriteBackError(w, "Can't read request body", http.StatusBadRequest)
+			telemetry.WriteBackErrorWithTelemetry(req, w, "Can't read request body", http.StatusBadRequest)
 			return
 		}
 		defer req.Body.Close()
@@ -34,24 +35,24 @@ func (r *QueryTranslate) search() http.HandlerFunc {
 			log.Errorln(logTag, ":", err)
 			// Response can be nil sometimes
 			if httpRes != nil {
-				util.WriteBackError(w, msg, httpRes.StatusCode)
+				telemetry.WriteBackErrorWithTelemetry(req, w, msg, httpRes.StatusCode)
 				return
 			}
-			util.WriteBackError(w, msg, http.StatusInternalServerError)
+			telemetry.WriteBackErrorWithTelemetry(req, w, msg, http.StatusInternalServerError)
 			return
 		}
 		log.Println("TIME TAKEN BY ES:", time.Since(start))
 		if httpRes.StatusCode > 500 {
 			msg := "unable to connect to the upstream Elasticsearch cluster"
 			log.Errorln(logTag, ":", msg)
-			util.WriteBackError(w, msg, httpRes.StatusCode)
+			telemetry.WriteBackErrorWithTelemetry(req, w, msg, httpRes.StatusCode)
 			return
 		}
 		rsAPIRequest, err := FromContext(req.Context())
 		if err != nil {
 			msg := "error occurred while retrieving request body from context"
 			log.Errorln(logTag, ":", err)
-			util.WriteBackError(w, msg, http.StatusInternalServerError)
+			telemetry.WriteBackErrorWithTelemetry(req, w, msg, http.StatusInternalServerError)
 			return
 		}
 
@@ -63,14 +64,14 @@ func (r *QueryTranslate) search() http.HandlerFunc {
 		// ignore not exist error
 		if err != nil && valueType1 != jsonparser.NotExist {
 			log.Errorln(logTag, ":", err)
-			util.WriteBackError(w, "can't parse took key from response", http.StatusInternalServerError)
+			telemetry.WriteBackErrorWithTelemetry(req, w, "can't parse took key from response", http.StatusInternalServerError)
 			return
 		}
 		// Set the `settings` key to response
 		rsResponseWithTook, err := jsonparser.Set(rsResponse, []byte(fmt.Sprintf(`{ "took": %s }`, string(took))), "settings")
 		if err != nil {
 			log.Errorln(logTag, ":", err)
-			util.WriteBackError(w, "can't add settings key to response", http.StatusInternalServerError)
+			telemetry.WriteBackErrorWithTelemetry(req, w, "can't add settings key to response", http.StatusInternalServerError)
 			return
 		}
 		// Assign updated json to actual response
@@ -80,14 +81,14 @@ func (r *QueryTranslate) search() http.HandlerFunc {
 		// ignore not exist error
 		if err != nil && valueType2 != jsonparser.NotExist {
 			log.Errorln(logTag, ":", err)
-			util.WriteBackError(w, "can't parse error key from response", http.StatusInternalServerError)
+			telemetry.WriteBackErrorWithTelemetry(req, w, "can't parse error key from response", http.StatusInternalServerError)
 			return
 		} else if responseError != nil {
 			// Set the `error` key to response
 			rsResponseWithError, err := jsonparser.Set(rsResponse, responseError, "error")
 			if err != nil {
 				log.Errorln(logTag, ":", err)
-				util.WriteBackError(w, "can't add error key to response", http.StatusInternalServerError)
+				telemetry.WriteBackErrorWithTelemetry(req, w, "can't add error key to response", http.StatusInternalServerError)
 				return
 			}
 			// Assign updated json to actual response
@@ -99,7 +100,7 @@ func (r *QueryTranslate) search() http.HandlerFunc {
 		// ignore not exist error
 		if err4 != nil && valueType3 != jsonparser.NotExist {
 			log.Errorln(logTag, ":", err4)
-			util.WriteBackError(w, "can't parse responses key from response", http.StatusInternalServerError)
+			telemetry.WriteBackErrorWithTelemetry(req, w, "can't parse responses key from response", http.StatusInternalServerError)
 			return
 		}
 
@@ -110,7 +111,7 @@ func (r *QueryTranslate) search() http.HandlerFunc {
 				rsResponseWithSearchResponse, err := jsonparser.Set(rsResponse, value, queryIds[index])
 				if err != nil {
 					log.Errorln(logTag, ":", err)
-					util.WriteBackError(w, "can't add search response to final response", http.StatusInternalServerError)
+					telemetry.WriteBackErrorWithTelemetry(req, w, "can't add search response to final response", http.StatusInternalServerError)
 					return
 				}
 				rsResponse = rsResponseWithSearchResponse
@@ -122,7 +123,7 @@ func (r *QueryTranslate) search() http.HandlerFunc {
 		if err != nil {
 			msg := "error getting the index names from context"
 			log.Errorln(logTag, ":", err)
-			util.WriteBackError(w, msg, http.StatusInternalServerError)
+			telemetry.WriteBackErrorWithTelemetry(req, w, msg, http.StatusInternalServerError)
 			return
 		}
 		// Replace indices to alias
@@ -153,7 +154,7 @@ func (r *QueryTranslate) validate() http.HandlerFunc {
 		reqBody, err := ioutil.ReadAll(req.Body)
 		if err != nil {
 			log.Errorln(logTag, ":", err)
-			util.WriteBackError(w, "Can't read request body", http.StatusBadRequest)
+			telemetry.WriteBackErrorWithTelemetry(req, w, "Can't read request body", http.StatusBadRequest)
 			return
 		}
 		w.Header().Add("Content-Type", "application/x-ndjson")

@@ -10,6 +10,7 @@ import (
 
 	"github.com/appbaseio/reactivesearch-api/model/user"
 	"github.com/appbaseio/reactivesearch-api/plugins/auth"
+	"github.com/appbaseio/reactivesearch-api/plugins/telemetry"
 	"github.com/appbaseio/reactivesearch-api/util"
 	"github.com/gorilla/mux"
 	"golang.org/x/crypto/bcrypt"
@@ -26,7 +27,7 @@ func (u *Users) getUser() http.HandlerFunc {
 			if err != nil {
 				msg := "error parsing the context user object"
 				log.Errorln(logTag, ":", msg, ":", err)
-				util.WriteBackError(w, msg, http.StatusInternalServerError)
+				telemetry.WriteBackErrorWithTelemetry(req, w, msg, http.StatusInternalServerError)
 				return
 			}
 			util.WriteBackRaw(w, rawUser, http.StatusOK)
@@ -38,7 +39,7 @@ func (u *Users) getUser() http.HandlerFunc {
 		if err != nil {
 			msg := fmt.Sprintf(`user with "username"="%s" not found`, username)
 			log.Errorln(logTag, ":", msg, ":", err)
-			util.WriteBackError(w, msg, http.StatusNotFound)
+			telemetry.WriteBackErrorWithTelemetry(req, w, msg, http.StatusNotFound)
 			return
 		}
 		util.WriteBackRaw(w, rawUser, http.StatusOK)
@@ -51,7 +52,7 @@ func (u *Users) getUserWithUsername() http.HandlerFunc {
 		vars := mux.Vars(req)
 		username, ok := vars["username"]
 		if !ok {
-			util.WriteBackError(w, `can't get a user without a "username"`, http.StatusBadRequest)
+			telemetry.WriteBackErrorWithTelemetry(req, w, `can't get a user without a "username"`, http.StatusBadRequest)
 			return
 		}
 
@@ -59,7 +60,7 @@ func (u *Users) getUserWithUsername() http.HandlerFunc {
 		if err != nil {
 			msg := fmt.Sprintf(`user with "username"="%s" not found`, username)
 			log.Errorln(logTag, ":", msg, ":", err)
-			util.WriteBackError(w, msg, http.StatusNotFound)
+			telemetry.WriteBackErrorWithTelemetry(req, w, msg, http.StatusNotFound)
 			return
 		}
 		util.WriteBackRaw(w, rawUser, http.StatusOK)
@@ -72,7 +73,7 @@ func (u *Users) postUser() http.HandlerFunc {
 		if err != nil {
 			const msg = "can't read request body"
 			log.Errorln(logTag, ":", msg, ":", err)
-			util.WriteBackError(w, msg, http.StatusBadRequest)
+			telemetry.WriteBackErrorWithTelemetry(req, w, msg, http.StatusBadRequest)
 			return
 		}
 
@@ -81,7 +82,7 @@ func (u *Users) postUser() http.HandlerFunc {
 		if err != nil {
 			msg := "can't parse request body"
 			log.Errorln(logTag, ":", msg, ":", err)
-			util.WriteBackError(w, msg, http.StatusBadRequest)
+			telemetry.WriteBackErrorWithTelemetry(req, w, msg, http.StatusBadRequest)
 			return
 		}
 
@@ -101,17 +102,17 @@ func (u *Users) postUser() http.HandlerFunc {
 			opts = append(opts, user.SetIndices(userBody.Indices))
 		}
 		if userBody.Username == "" {
-			util.WriteBackError(w, `can't create a user without a "username"`, http.StatusBadRequest)
+			telemetry.WriteBackErrorWithTelemetry(req, w, `can't create a user without a "username"`, http.StatusBadRequest)
 			return
 		}
 		if userBody.Password == "" {
-			util.WriteBackError(w, `user "password" shouldn't be empty`, http.StatusBadRequest)
+			telemetry.WriteBackErrorWithTelemetry(req, w, `user "password" shouldn't be empty`, http.StatusBadRequest)
 			return
 		}
 		// If user is not an admin then at least one action must present
 		if userBody.IsAdmin == nil || !*userBody.IsAdmin {
 			if userBody.AllowedActions == nil || len(*userBody.AllowedActions) == 0 {
-				util.WriteBackError(w, `user "allowed_actions" shouldn't be empty for non-admin users`, http.StatusBadRequest)
+				telemetry.WriteBackErrorWithTelemetry(req, w, `user "allowed_actions" shouldn't be empty for non-admin users`, http.StatusBadRequest)
 				return
 			}
 		}
@@ -120,7 +121,7 @@ func (u *Users) postUser() http.HandlerFunc {
 		if err != nil {
 			msg := fmt.Sprintf("an error occurred while hashing password: %v", userBody.Password)
 			log.Errorln(logTag, ":", msg, ":", err)
-			util.WriteBackError(w, msg, http.StatusInternalServerError)
+			telemetry.WriteBackErrorWithTelemetry(req, w, msg, http.StatusInternalServerError)
 			return
 		}
 
@@ -134,7 +135,7 @@ func (u *Users) postUser() http.HandlerFunc {
 		if err != nil {
 			msg := fmt.Sprintf("an error occurred while creating user: %v", err)
 			log.Errorln(logTag, ":", msg, ":", err)
-			util.WriteBackError(w, msg, http.StatusBadRequest)
+			telemetry.WriteBackErrorWithTelemetry(req, w, msg, http.StatusBadRequest)
 			return
 		}
 
@@ -144,7 +145,7 @@ func (u *Users) postUser() http.HandlerFunc {
 		if err != nil {
 			msg := fmt.Sprintf(`an error occurred while creating a user with "username"="%s"`, userBody.Username)
 			log.Errorln(logTag, ":", msg, ":", err)
-			util.WriteBackError(w, msg, http.StatusInternalServerError)
+			telemetry.WriteBackErrorWithTelemetry(req, w, msg, http.StatusInternalServerError)
 			return
 		}
 
@@ -163,7 +164,7 @@ func (u *Users) postUser() http.HandlerFunc {
 
 		msg := fmt.Sprintf(`an error occurred while creating a user with "username"="%s": %v`, userBody.Username, err)
 		log.Println(logTag, ":", msg)
-		util.WriteBackError(w, msg, http.StatusInternalServerError)
+		telemetry.WriteBackErrorWithTelemetry(req, w, msg, http.StatusInternalServerError)
 	}
 }
 
@@ -184,7 +185,7 @@ func (u *Users) patchUser() http.HandlerFunc {
 		if err != nil {
 			msg := "can't read request body"
 			log.Errorln(logTag, ":", msg, ":", err)
-			util.WriteBackError(w, msg, http.StatusBadRequest)
+			telemetry.WriteBackErrorWithTelemetry(req, w, msg, http.StatusBadRequest)
 			return
 		}
 
@@ -193,14 +194,14 @@ func (u *Users) patchUser() http.HandlerFunc {
 		if err != nil {
 			msg := "can't parse request body"
 			log.Errorln(logTag, ":", msg, ":", err)
-			util.WriteBackError(w, msg, http.StatusBadRequest)
+			telemetry.WriteBackErrorWithTelemetry(req, w, msg, http.StatusBadRequest)
 			return
 		}
 
 		patch, err := userBody.GetPatch()
 		if err != nil {
 			log.Errorln(logTag, ":", err)
-			util.WriteBackError(w, err.Error(), http.StatusBadRequest)
+			telemetry.WriteBackErrorWithTelemetry(req, w, err.Error(), http.StatusBadRequest)
 			return
 		}
 
@@ -210,7 +211,7 @@ func (u *Users) patchUser() http.HandlerFunc {
 			if err != nil {
 				msg := fmt.Sprintf("an error occurred while hashing password: %v", userBody.Password)
 				log.Errorln(logTag, ":", msg, ":", err)
-				util.WriteBackError(w, msg, http.StatusInternalServerError)
+				telemetry.WriteBackErrorWithTelemetry(req, w, msg, http.StatusInternalServerError)
 				return
 			}
 			patch["password"] = string(hashedPassword)
@@ -230,7 +231,7 @@ func (u *Users) patchUser() http.HandlerFunc {
 				})
 				if err != nil {
 					log.Errorln(logTag, ":", err)
-					util.WriteBackError(w, err.Error(), http.StatusInternalServerError)
+					telemetry.WriteBackErrorWithTelemetry(req, w, err.Error(), http.StatusInternalServerError)
 					return
 				}
 				// Failed to update all nodes, return error response
@@ -239,7 +240,7 @@ func (u *Users) patchUser() http.HandlerFunc {
 					bodyBytes, err := ioutil.ReadAll(res.Body)
 					if err != nil {
 						log.Errorln(logTag, ":", err)
-						util.WriteBackError(w, err.Error(), http.StatusInternalServerError)
+						telemetry.WriteBackErrorWithTelemetry(req, w, err.Error(), http.StatusInternalServerError)
 						return
 					}
 					util.WriteBackRaw(w, bodyBytes, res.StatusCode)
@@ -278,7 +279,7 @@ func (u *Users) patchUser() http.HandlerFunc {
 
 		msg := fmt.Sprintf(`user with "username"="%s" not found`, username)
 		log.Errorln(logTag, ":", msg, ":", err)
-		util.WriteBackError(w, msg, http.StatusNotFound)
+		telemetry.WriteBackErrorWithTelemetry(req, w, msg, http.StatusNotFound)
 	}
 }
 
@@ -287,7 +288,7 @@ func (u *Users) patchUserWithUsername() http.HandlerFunc {
 		vars := mux.Vars(req)
 		username, ok := vars["username"]
 		if !ok {
-			util.WriteBackError(w, `can't patch user without a "username"`, http.StatusBadRequest)
+			telemetry.WriteBackErrorWithTelemetry(req, w, `can't patch user without a "username"`, http.StatusBadRequest)
 			return
 		}
 		// To decide whether to just update the local state
@@ -303,7 +304,7 @@ func (u *Users) patchUserWithUsername() http.HandlerFunc {
 		if err != nil {
 			msg := "can't read request body"
 			log.Errorln(logTag, ":", msg, ":", err)
-			util.WriteBackError(w, msg, http.StatusBadRequest)
+			telemetry.WriteBackErrorWithTelemetry(req, w, msg, http.StatusBadRequest)
 			return
 		}
 
@@ -312,14 +313,14 @@ func (u *Users) patchUserWithUsername() http.HandlerFunc {
 		if err != nil {
 			msg := "can't parse request body"
 			log.Errorln(logTag, ":", msg, ":", err)
-			util.WriteBackError(w, msg, http.StatusBadRequest)
+			telemetry.WriteBackErrorWithTelemetry(req, w, msg, http.StatusBadRequest)
 			return
 		}
 
 		patch, err := userBody.GetPatch()
 		if err != nil {
 			log.Errorln(logTag, ":", err)
-			util.WriteBackError(w, err.Error(), http.StatusBadRequest)
+			telemetry.WriteBackErrorWithTelemetry(req, w, err.Error(), http.StatusBadRequest)
 			return
 		}
 
@@ -329,7 +330,7 @@ func (u *Users) patchUserWithUsername() http.HandlerFunc {
 			if err != nil {
 				msg := fmt.Sprintf("an error occurred while hashing password: %v", userBody.Password)
 				log.Errorln(logTag, ":", msg, ":", err)
-				util.WriteBackError(w, msg, http.StatusInternalServerError)
+				telemetry.WriteBackErrorWithTelemetry(req, w, msg, http.StatusInternalServerError)
 				return
 			}
 			patch["password"] = string(hashedPassword)
@@ -350,7 +351,7 @@ func (u *Users) patchUserWithUsername() http.HandlerFunc {
 				})
 				if err != nil {
 					log.Errorln(logTag, ":", err)
-					util.WriteBackError(w, err.Error(), http.StatusInternalServerError)
+					telemetry.WriteBackErrorWithTelemetry(req, w, err.Error(), http.StatusInternalServerError)
 					return
 				}
 				// Failed to update all nodes, return error response
@@ -359,7 +360,7 @@ func (u *Users) patchUserWithUsername() http.HandlerFunc {
 					bodyBytes, err := ioutil.ReadAll(res.Body)
 					if err != nil {
 						log.Errorln(logTag, ":", err)
-						util.WriteBackError(w, err.Error(), http.StatusInternalServerError)
+						telemetry.WriteBackErrorWithTelemetry(req, w, err.Error(), http.StatusInternalServerError)
 						return
 					}
 					util.WriteBackRaw(w, bodyBytes, res.StatusCode)
@@ -398,7 +399,7 @@ func (u *Users) patchUserWithUsername() http.HandlerFunc {
 
 		msg := fmt.Sprintf(`user with "username"="%s" not found`, username)
 		log.Errorln(logTag, ":", msg, ":", err)
-		util.WriteBackError(w, msg, http.StatusNotFound)
+		telemetry.WriteBackErrorWithTelemetry(req, w, msg, http.StatusNotFound)
 	}
 }
 
@@ -420,7 +421,7 @@ func (u *Users) deleteUser() http.HandlerFunc {
 		if err != nil {
 			msg := fmt.Sprintf(`user with "username"="%s" not found`, username)
 			log.Errorln(logTag, ":", msg, ":", err)
-			util.WriteBackError(w, msg, http.StatusNotFound)
+			telemetry.WriteBackErrorWithTelemetry(req, w, msg, http.StatusNotFound)
 			return
 		}
 		ok, err := u.es.deleteUser(req.Context(), username)
@@ -438,7 +439,7 @@ func (u *Users) deleteUser() http.HandlerFunc {
 				})
 				if err != nil {
 					log.Errorln(logTag, ":", err)
-					util.WriteBackError(w, err.Error(), http.StatusInternalServerError)
+					telemetry.WriteBackErrorWithTelemetry(req, w, err.Error(), http.StatusInternalServerError)
 					return
 				}
 				// Failed to update all nodes, return error response
@@ -447,7 +448,7 @@ func (u *Users) deleteUser() http.HandlerFunc {
 					bodyBytes, err := ioutil.ReadAll(res.Body)
 					if err != nil {
 						log.Errorln(logTag, ":", err)
-						util.WriteBackError(w, err.Error(), http.StatusInternalServerError)
+						telemetry.WriteBackErrorWithTelemetry(req, w, err.Error(), http.StatusInternalServerError)
 						return
 					}
 					util.WriteBackRaw(w, bodyBytes, res.StatusCode)
@@ -472,7 +473,7 @@ func (u *Users) deleteUser() http.HandlerFunc {
 
 		msg := fmt.Sprintf(`user with "username"="%s" not found`, username)
 		log.Errorln(logTag, ":", msg, ":", err)
-		util.WriteBackError(w, msg, http.StatusNotFound)
+		telemetry.WriteBackErrorWithTelemetry(req, w, msg, http.StatusNotFound)
 	}
 }
 
@@ -481,7 +482,7 @@ func (u *Users) deleteUserWithUsername() http.HandlerFunc {
 		vars := mux.Vars(req)
 		username, ok := vars["username"]
 		if !ok {
-			util.WriteBackError(w, `can't delete a user without a "username"`, http.StatusBadRequest)
+			telemetry.WriteBackErrorWithTelemetry(req, w, `can't delete a user without a "username"`, http.StatusBadRequest)
 			return
 		}
 		// To decide whether to just update the local state
@@ -497,7 +498,7 @@ func (u *Users) deleteUserWithUsername() http.HandlerFunc {
 		if err2 != nil {
 			msg := fmt.Sprintf(`user with "username"="%s" not found`, username)
 			log.Errorln(logTag, ":", msg, ":", err2)
-			util.WriteBackError(w, msg, http.StatusNotFound)
+			telemetry.WriteBackErrorWithTelemetry(req, w, msg, http.StatusNotFound)
 			return
 		}
 		ok, err := u.es.deleteUser(req.Context(), username)
@@ -515,7 +516,7 @@ func (u *Users) deleteUserWithUsername() http.HandlerFunc {
 				})
 				if err != nil {
 					log.Errorln(logTag, ":", err)
-					util.WriteBackError(w, err.Error(), http.StatusInternalServerError)
+					telemetry.WriteBackErrorWithTelemetry(req, w, err.Error(), http.StatusInternalServerError)
 					return
 				}
 				// Failed to update all nodes, return error response
@@ -524,7 +525,7 @@ func (u *Users) deleteUserWithUsername() http.HandlerFunc {
 					bodyBytes, err := ioutil.ReadAll(res.Body)
 					if err != nil {
 						log.Errorln(logTag, ":", err)
-						util.WriteBackError(w, err.Error(), http.StatusInternalServerError)
+						telemetry.WriteBackErrorWithTelemetry(req, w, err.Error(), http.StatusInternalServerError)
 						return
 					}
 					util.WriteBackRaw(w, bodyBytes, res.StatusCode)
@@ -548,7 +549,7 @@ func (u *Users) deleteUserWithUsername() http.HandlerFunc {
 		}
 		msg := fmt.Sprintf(`user with "username"="%s" not found`, username)
 		log.Errorln(logTag, ":", msg, ":", err)
-		util.WriteBackError(w, msg, http.StatusNotFound)
+		telemetry.WriteBackErrorWithTelemetry(req, w, msg, http.StatusNotFound)
 	}
 }
 
@@ -558,7 +559,7 @@ func (u *Users) getAllUsers() http.HandlerFunc {
 		if err != nil {
 			msg := `an error occurred while fetching users`
 			log.Errorln(logTag, ":", err)
-			util.WriteBackError(w, msg, http.StatusNotFound)
+			telemetry.WriteBackErrorWithTelemetry(req, w, msg, http.StatusNotFound)
 			return
 		}
 

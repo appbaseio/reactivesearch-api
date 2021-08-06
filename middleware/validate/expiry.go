@@ -9,7 +9,7 @@ import (
 	"github.com/appbaseio/reactivesearch-api/middleware"
 	"github.com/appbaseio/reactivesearch-api/model/credential"
 	"github.com/appbaseio/reactivesearch-api/model/permission"
-	"github.com/appbaseio/reactivesearch-api/util"
+	"github.com/appbaseio/reactivesearch-api/plugins/telemetry"
 )
 
 // PermissionExpiry returns a middleware that checks whether a permission is expired or not.
@@ -24,7 +24,7 @@ func validateExpiry(h http.HandlerFunc) http.HandlerFunc {
 		reqCredential, err := credential.FromContext(ctx)
 		if err != nil {
 			log.Errorln(logTag, ":", err)
-			util.WriteBackError(w, err.Error(), http.StatusInternalServerError)
+			telemetry.WriteBackErrorWithTelemetry(req, w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 
@@ -32,21 +32,21 @@ func validateExpiry(h http.HandlerFunc) http.HandlerFunc {
 			reqPermission, err := permission.FromContext(ctx)
 			if err != nil {
 				log.Errorln(logTag, ":", err)
-				util.WriteBackError(w, err.Error(), http.StatusInternalServerError)
+				telemetry.WriteBackErrorWithTelemetry(req, w, err.Error(), http.StatusInternalServerError)
 				return
 			}
 
 			expired, err := reqPermission.IsExpired()
 			if err != nil {
 				log.Errorln(logTag, ":", err)
-				util.WriteBackError(w, err.Error(), http.StatusInternalServerError)
+				telemetry.WriteBackErrorWithTelemetry(req, w, err.Error(), http.StatusInternalServerError)
 				return
 			}
 
 			if expired {
 				msg := fmt.Sprintf("permission with username=%s is expired", reqPermission.Username)
 				w.Header().Set("www-authenticate", "Basic realm=\"Authentication Required\"")
-				util.WriteBackError(w, msg, http.StatusUnauthorized)
+				telemetry.WriteBackErrorWithTelemetry(req, w, msg, http.StatusUnauthorized)
 				return
 			}
 		}

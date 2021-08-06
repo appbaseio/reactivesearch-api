@@ -18,7 +18,6 @@ import (
 	"github.com/appbaseio/reactivesearch-api/plugins/auth"
 	"github.com/appbaseio/reactivesearch-api/plugins/logs"
 	"github.com/appbaseio/reactivesearch-api/plugins/telemetry"
-	"github.com/appbaseio/reactivesearch-api/util"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -80,7 +79,7 @@ func saveRequestToCtx(h http.HandlerFunc) http.HandlerFunc {
 		err := json.NewDecoder(req.Body).Decode(&body)
 		if err != nil {
 			log.Errorln(logTag, ":", err)
-			util.WriteBackError(w, fmt.Sprintf("Can't parse request body: %v", err), http.StatusBadRequest)
+			telemetry.WriteBackErrorWithTelemetry(req, w, fmt.Sprintf("Can't parse request body: %v", err), http.StatusBadRequest)
 			return
 		}
 		// Set request body as nil to avoid memory issues (storage duplication)
@@ -109,7 +108,8 @@ func applySourceFiltering(h http.HandlerFunc) http.HandlerFunc {
 			requestQuery, err := FromContext(req.Context())
 			if err != nil {
 				log.Errorln(logTag, ":", err)
-				util.WriteBackError(w, "error encountered while retrieving request from context", http.StatusInternalServerError)
+
+				telemetry.WriteBackErrorWithTelemetry(req, w, "error encountered while retrieving request from context", http.StatusInternalServerError)
 				return
 			}
 			for index := range requestQuery.Query {
@@ -127,7 +127,7 @@ func queryTranslate(h http.HandlerFunc) http.HandlerFunc {
 		body, err := FromContext(req.Context())
 		if err != nil {
 			log.Errorln(logTag, ":", err)
-			util.WriteBackError(w, "error encountered while retrieving request from context", http.StatusInternalServerError)
+			telemetry.WriteBackErrorWithTelemetry(req, w, "error encountered while retrieving request from context", http.StatusInternalServerError)
 			return
 		}
 
@@ -136,7 +136,7 @@ func queryTranslate(h http.HandlerFunc) http.HandlerFunc {
 		// log.Println("RS QUERY", msearchQuery)
 		if err != nil {
 			log.Errorln(logTag, ":", err)
-			util.WriteBackError(w, err.Error(), http.StatusBadRequest)
+			telemetry.WriteBackErrorWithTelemetry(req, w, err.Error(), http.StatusBadRequest)
 			return
 		}
 		// Update the request body to the parsed query

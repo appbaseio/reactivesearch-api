@@ -19,7 +19,6 @@ import (
 	"github.com/appbaseio/reactivesearch-api/model/trackplugin"
 	"github.com/appbaseio/reactivesearch-api/model/user"
 	"github.com/appbaseio/reactivesearch-api/plugins/telemetry"
-	"github.com/appbaseio/reactivesearch-api/util"
 	"github.com/dgrijalva/jwt-go"
 	"github.com/dgrijalva/jwt-go/request"
 	"github.com/gorilla/mux"
@@ -81,14 +80,14 @@ func (a *Auth) basicAuth(h http.HandlerFunc) http.HandlerFunc {
 		reqCategory, err := category.FromContext(ctx)
 		if err != nil {
 			log.Errorln(logTag, ": *category.Category not found in request context:", err)
-			util.WriteBackError(w, "error occurred while authenticating the request", http.StatusInternalServerError)
+			telemetry.WriteBackErrorWithTelemetry(req, w, "error occurred while authenticating the request", http.StatusInternalServerError)
 			return
 		}
 
 		reqOp, err := op.FromContext(ctx)
 		if err != nil {
 			log.Errorln(logTag, ": *op.Op not found the request context:", err)
-			util.WriteBackError(w, "error occurred while authenticating the request", http.StatusInternalServerError)
+			telemetry.WriteBackErrorWithTelemetry(req, w, "error occurred while authenticating the request", http.StatusInternalServerError)
 			return
 		}
 
@@ -110,7 +109,7 @@ func (a *Auth) basicAuth(h http.HandlerFunc) http.HandlerFunc {
 				msg = fmt.Sprintf("Unable to parse JWT: %v", err)
 			}
 			w.Header().Set("www-authenticate", "Basic realm=\"Authentication Required\"")
-			util.WriteBackError(w, msg, http.StatusUnauthorized)
+			telemetry.WriteBackErrorWithTelemetry(req, w, msg, http.StatusUnauthorized)
 			return
 		}
 
@@ -123,12 +122,12 @@ func (a *Auth) basicAuth(h http.HandlerFunc) http.HandlerFunc {
 					role = u.(string)
 				} else {
 					w.Header().Set("www-authenticate", "Basic realm=\"Authentication Required\"")
-					util.WriteBackError(w, fmt.Sprintf("Invalid JWT"), http.StatusUnauthorized)
+					telemetry.WriteBackErrorWithTelemetry(req, w, fmt.Sprintf("Invalid JWT"), http.StatusUnauthorized)
 					return
 				}
 			} else {
 				w.Header().Set("www-authenticate", "Basic realm=\"Authentication Required\"")
-				util.WriteBackError(w, fmt.Sprintf("Invalid JWT"), http.StatusUnauthorized)
+				telemetry.WriteBackErrorWithTelemetry(req, w, fmt.Sprintf("Invalid JWT"), http.StatusUnauthorized)
 				return
 			}
 		}
@@ -140,7 +139,7 @@ func (a *Auth) basicAuth(h http.HandlerFunc) http.HandlerFunc {
 				msg := fmt.Sprintf("No API credentials match with provided role: %s", role)
 				log.Errorln(logTag, ":", err)
 				w.Header().Set("www-authenticate", "Basic realm=\"Authentication Required\"")
-				util.WriteBackError(w, msg, http.StatusUnauthorized)
+				telemetry.WriteBackErrorWithTelemetry(req, w, msg, http.StatusUnauthorized)
 				return
 			}
 		} else {
@@ -149,7 +148,7 @@ func (a *Auth) basicAuth(h http.HandlerFunc) http.HandlerFunc {
 				msg := fmt.Sprintf("No API credentials match with provided username: %s", username)
 				log.Errorln(logTag, ":", err)
 				w.Header().Set("www-authenticate", "Basic realm=\"Authentication Required\"")
-				util.WriteBackError(w, msg, http.StatusUnauthorized)
+				telemetry.WriteBackErrorWithTelemetry(req, w, msg, http.StatusUnauthorized)
 				return
 			}
 		}
@@ -172,7 +171,7 @@ func (a *Auth) basicAuth(h http.HandlerFunc) http.HandlerFunc {
 				// No need to validate if already validated before
 				if hasBasicAuth && !IsPasswordExist(reqUser.Username, password) && bcrypt.CompareHashAndPassword([]byte(reqUser.Password), []byte(password)) != nil {
 					w.Header().Set("www-authenticate", "Basic realm=\"Authentication Required\"")
-					util.WriteBackError(w, "invalid password", http.StatusUnauthorized)
+					telemetry.WriteBackErrorWithTelemetry(req, w, "invalid password", http.StatusUnauthorized)
 					return
 				}
 				// Save validated username to avoid the bcrypt comparison
@@ -223,7 +222,7 @@ func (a *Auth) basicAuth(h http.HandlerFunc) http.HandlerFunc {
 				reqPermission := obj.(*permission.Permission)
 				if hasBasicAuth && reqPermission.Password != password {
 					w.Header().Set("www-authenticate", "Basic realm=\"Authentication Required\"")
-					util.WriteBackError(w, "invalid password", http.StatusUnauthorized)
+					telemetry.WriteBackErrorWithTelemetry(req, w, "invalid password", http.StatusUnauthorized)
 					return
 				}
 				// ignore es auth for root route to fetch the cluster details
@@ -252,7 +251,7 @@ func (a *Auth) basicAuth(h http.HandlerFunc) http.HandlerFunc {
 
 		if !authenticated {
 			w.Header().Set("www-authenticate", "Basic realm=\"Authentication Required\"")
-			util.WriteBackError(w, errorMsg, http.StatusUnauthorized)
+			telemetry.WriteBackErrorWithTelemetry(req, w, errorMsg, http.StatusUnauthorized)
 			return
 		}
 

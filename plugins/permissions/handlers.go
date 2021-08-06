@@ -13,6 +13,7 @@ import (
 	"github.com/appbaseio/reactivesearch-api/model/permission"
 	"github.com/appbaseio/reactivesearch-api/model/user"
 	"github.com/appbaseio/reactivesearch-api/plugins/auth"
+	"github.com/appbaseio/reactivesearch-api/plugins/telemetry"
 	"github.com/appbaseio/reactivesearch-api/util"
 	"github.com/gorilla/mux"
 )
@@ -26,7 +27,7 @@ func (p *permissions) getPermission() http.HandlerFunc {
 		if err != nil {
 			msg := fmt.Sprintf(`permission with "username"="%s" not found`, username)
 			log.Errorln(logTag, ":", msg, ":", err)
-			util.WriteBackError(w, msg, http.StatusNotFound)
+			telemetry.WriteBackErrorWithTelemetry(req, w, msg, http.StatusNotFound)
 			return
 		}
 		util.WriteBackRaw(w, rawPermission, http.StatusOK)
@@ -44,7 +45,7 @@ func (p *permissions) postPermission(opts ...permission.Options) http.HandlerFun
 		reqUser, err := user.FromContext(req.Context())
 		if err != nil {
 			log.Errorln(logTag, ":", err)
-			util.WriteBackError(w, err.Error(), http.StatusInternalServerError)
+			telemetry.WriteBackErrorWithTelemetry(req, w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 
@@ -52,7 +53,7 @@ func (p *permissions) postPermission(opts ...permission.Options) http.HandlerFun
 		if err != nil {
 			msg := "can't read request body"
 			log.Errorln(logTag, ":", msg, ":", err)
-			util.WriteBackError(w, msg, http.StatusBadRequest)
+			telemetry.WriteBackErrorWithTelemetry(req, w, msg, http.StatusBadRequest)
 			return
 		}
 
@@ -61,7 +62,7 @@ func (p *permissions) postPermission(opts ...permission.Options) http.HandlerFun
 		if err != nil {
 			msg := "can't parse request body"
 			log.Errorln(logTag, ":", msg, ":", err)
-			util.WriteBackError(w, msg, http.StatusBadRequest)
+			telemetry.WriteBackErrorWithTelemetry(req, w, msg, http.StatusBadRequest)
 			return
 		}
 
@@ -113,7 +114,7 @@ func (p *permissions) postPermission(opts ...permission.Options) http.HandlerFun
 		}
 		if err != nil {
 			log.Errorln(logTag, ":", err)
-			util.WriteBackError(w, err.Error(), http.StatusBadRequest)
+			telemetry.WriteBackErrorWithTelemetry(req, w, err.Error(), http.StatusBadRequest)
 			return
 		}
 
@@ -121,7 +122,7 @@ func (p *permissions) postPermission(opts ...permission.Options) http.HandlerFun
 		if err != nil {
 			msg := fmt.Sprintf(`an error occurred while creating permission for "creator"="%s"`, creator)
 			log.Errorln(logTag, ": unable to marshal newPermission object", err)
-			util.WriteBackError(w, msg, http.StatusInternalServerError)
+			telemetry.WriteBackErrorWithTelemetry(req, w, msg, http.StatusInternalServerError)
 			return
 		}
 
@@ -131,13 +132,13 @@ func (p *permissions) postPermission(opts ...permission.Options) http.HandlerFun
 			if roleExists {
 				msg := fmt.Sprintf(`permission with role=%s already exists`, newPermission.Role)
 				log.Errorln(logTag, ":", err)
-				util.WriteBackError(w, msg, http.StatusBadRequest)
+				telemetry.WriteBackErrorWithTelemetry(req, w, msg, http.StatusBadRequest)
 				return
 			}
 			if err != nil {
 				msg := fmt.Sprintf(`an error occurred while creating permission for role=%s`, newPermission.Role)
 				log.Errorln(logTag, ": unable to check if role=", newPermission.Role, "exists:", err)
-				util.WriteBackError(w, msg, http.StatusInternalServerError)
+				telemetry.WriteBackErrorWithTelemetry(req, w, msg, http.StatusInternalServerError)
 				return
 			}
 		}
@@ -150,7 +151,7 @@ func (p *permissions) postPermission(opts ...permission.Options) http.HandlerFun
 
 		msg := fmt.Sprintf(`an error occurred while creating permission for "creator"="%s"`, creator)
 		log.Errorln(logTag, ":", msg, ":", err)
-		util.WriteBackError(w, msg, http.StatusInternalServerError)
+		telemetry.WriteBackErrorWithTelemetry(req, w, msg, http.StatusInternalServerError)
 		return
 	}
 }
@@ -171,7 +172,7 @@ func (p *permissions) patchPermission() http.HandlerFunc {
 		if err != nil {
 			msg := "can't read request body"
 			log.Errorln(logTag, ":", msg, ":", err)
-			util.WriteBackError(w, msg, http.StatusBadRequest)
+			telemetry.WriteBackErrorWithTelemetry(req, w, msg, http.StatusBadRequest)
 			return
 		}
 
@@ -180,7 +181,7 @@ func (p *permissions) patchPermission() http.HandlerFunc {
 		if err != nil {
 			msg := "can't parse request body"
 			log.Errorln(logTag, ":", msg, ":", err)
-			util.WriteBackError(w, msg, http.StatusBadRequest)
+			telemetry.WriteBackErrorWithTelemetry(req, w, msg, http.StatusBadRequest)
 			return
 		}
 
@@ -189,7 +190,7 @@ func (p *permissions) patchPermission() http.HandlerFunc {
 		if err != nil {
 			msg := "can't parse request body"
 			log.Errorln(logTag, ": ", msg, ":", err)
-			util.WriteBackError(w, msg, http.StatusBadRequest)
+			telemetry.WriteBackErrorWithTelemetry(req, w, msg, http.StatusBadRequest)
 			return
 		}
 		_, roleExistsInPatch := perMap["role"]
@@ -197,7 +198,7 @@ func (p *permissions) patchPermission() http.HandlerFunc {
 		patch, err := obj.GetPatch(roleExistsInPatch)
 		if err != nil {
 			log.Errorln(logTag, ":", err)
-			util.WriteBackError(w, err.Error(), http.StatusBadRequest)
+			telemetry.WriteBackErrorWithTelemetry(req, w, err.Error(), http.StatusBadRequest)
 			return
 		}
 
@@ -209,7 +210,7 @@ func (p *permissions) patchPermission() http.HandlerFunc {
 			reqPermission, err := p.es.getPermission(req.Context(), username)
 			if err != nil {
 				log.Errorln(logTag, ":", err)
-				util.WriteBackError(w, err.Error(), http.StatusInternalServerError)
+				telemetry.WriteBackErrorWithTelemetry(req, w, err.Error(), http.StatusInternalServerError)
 				return
 			}
 
@@ -217,12 +218,12 @@ func (p *permissions) patchPermission() http.HandlerFunc {
 			if !ok {
 				msg := fmt.Sprintf(`an error occurred while validating categories patch for user "%s"`, username)
 				log.Println(logTag, ": unable to cast categories patch to []acl.ACL")
-				util.WriteBackError(w, msg, http.StatusInternalServerError)
+				telemetry.WriteBackErrorWithTelemetry(req, w, msg, http.StatusInternalServerError)
 				return
 			}
 
 			if err := reqPermission.ValidateACLs(acls...); err != nil {
-				util.WriteBackError(w, err.Error(), http.StatusBadRequest)
+				telemetry.WriteBackErrorWithTelemetry(req, w, err.Error(), http.StatusBadRequest)
 				return
 			}
 		}
@@ -233,13 +234,13 @@ func (p *permissions) patchPermission() http.HandlerFunc {
 			if roleExistsInES {
 				msg := fmt.Sprintf(`permission with role=%s already exists`, obj.Role)
 				log.Errorln(logTag, ":", err)
-				util.WriteBackError(w, msg, http.StatusBadRequest)
+				telemetry.WriteBackErrorWithTelemetry(req, w, msg, http.StatusBadRequest)
 				return
 			}
 			if err != nil {
 				msg := fmt.Sprintf(`an error occurred while creating permission for role=%s`, obj.Role)
 				log.Errorln(logTag, ": unable to check if role=", obj.Role, "exists")
-				util.WriteBackError(w, msg, http.StatusInternalServerError)
+				telemetry.WriteBackErrorWithTelemetry(req, w, msg, http.StatusInternalServerError)
 				return
 			}
 		}
@@ -259,7 +260,7 @@ func (p *permissions) patchPermission() http.HandlerFunc {
 				})
 				if err != nil {
 					log.Errorln(logTag, ":", err)
-					util.WriteBackError(w, err.Error(), http.StatusInternalServerError)
+					telemetry.WriteBackErrorWithTelemetry(req, w, err.Error(), http.StatusInternalServerError)
 					return
 				}
 				// Failed to update all nodes, return error response
@@ -268,7 +269,7 @@ func (p *permissions) patchPermission() http.HandlerFunc {
 					bodyBytes, err := ioutil.ReadAll(res.Body)
 					if err != nil {
 						log.Errorln(logTag, ":", err)
-						util.WriteBackError(w, err.Error(), http.StatusInternalServerError)
+						telemetry.WriteBackErrorWithTelemetry(req, w, err.Error(), http.StatusInternalServerError)
 						return
 					}
 					util.WriteBackRaw(w, bodyBytes, res.StatusCode)
@@ -284,7 +285,7 @@ func (p *permissions) patchPermission() http.HandlerFunc {
 
 		msg := fmt.Sprintf(`permission with "username"="%s" not found`, username)
 		log.Errorln(logTag, ":", msg, ":", err)
-		util.WriteBackError(w, msg, http.StatusNotFound)
+		telemetry.WriteBackErrorWithTelemetry(req, w, msg, http.StatusNotFound)
 	}
 }
 
@@ -317,7 +318,7 @@ func (p *permissions) deletePermission() http.HandlerFunc {
 				})
 				if err != nil {
 					log.Errorln(logTag, ":", err)
-					util.WriteBackError(w, err.Error(), http.StatusInternalServerError)
+					telemetry.WriteBackErrorWithTelemetry(req, w, err.Error(), http.StatusInternalServerError)
 					return
 				}
 				// Failed to update all nodes, return error response
@@ -326,7 +327,7 @@ func (p *permissions) deletePermission() http.HandlerFunc {
 					bodyBytes, err := ioutil.ReadAll(res.Body)
 					if err != nil {
 						log.Errorln(logTag, ":", err)
-						util.WriteBackError(w, err.Error(), http.StatusInternalServerError)
+						telemetry.WriteBackErrorWithTelemetry(req, w, err.Error(), http.StatusInternalServerError)
 						return
 					}
 					util.WriteBackRaw(w, bodyBytes, res.StatusCode)
@@ -343,7 +344,7 @@ func (p *permissions) deletePermission() http.HandlerFunc {
 
 		msg := fmt.Sprintf(`permission with "username"="%s" not found`, username)
 		log.Errorln(logTag, ":", msg, ":", err)
-		util.WriteBackError(w, msg, http.StatusNotFound)
+		telemetry.WriteBackErrorWithTelemetry(req, w, msg, http.StatusNotFound)
 	}
 }
 
@@ -354,28 +355,28 @@ func (p *permissions) getPermissions() http.HandlerFunc {
 		if err != nil {
 			msg := "an error occurred while fetching permissions"
 			log.Errorln(logTag, ":", err)
-			util.WriteBackError(w, msg, http.StatusInternalServerError)
+			telemetry.WriteBackErrorWithTelemetry(req, w, msg, http.StatusInternalServerError)
 			return
 		}
 		reqUser, err := user.FromContext(req.Context())
 		if reqUser == nil || err != nil {
 			msg := fmt.Sprintf(`an error occurred while fetching the user details`)
 			log.Errorln(logTag, ":", msg, ":", err)
-			util.WriteBackError(w, msg, http.StatusNotFound)
+			telemetry.WriteBackErrorWithTelemetry(req, w, msg, http.StatusNotFound)
 			return
 		}
 		// if user is not an admin then throw unauthorized error
 		if !*reqUser.IsAdmin && !reqUser.HasAction(user.AccessControl) {
 			msg := fmt.Sprintf(`You are not authorized to access the permissions. Please contact your admin.`)
 			log.Errorln(logTag, ":", msg, ":", err)
-			util.WriteBackError(w, msg, http.StatusUnauthorized)
+			telemetry.WriteBackErrorWithTelemetry(req, w, msg, http.StatusUnauthorized)
 			return
 		}
 		raw, err := p.es.getPermissions(ctx, indices)
 		if err != nil {
 			msg := fmt.Sprintf(`an error occurred while fetching permissions`)
 			log.Errorln(logTag, ":", msg, ":", err)
-			util.WriteBackError(w, msg, http.StatusInternalServerError)
+			telemetry.WriteBackErrorWithTelemetry(req, w, msg, http.StatusInternalServerError)
 			return
 		}
 
@@ -391,7 +392,7 @@ func (p *permissions) getUserPermissions() http.HandlerFunc {
 		if err != nil {
 			msg := fmt.Sprintf(`an error occurred while fetching permissions for "owner"="%s"`, owner)
 			log.Errorln(logTag, ":", msg, ":", err)
-			util.WriteBackError(w, msg, http.StatusNotFound)
+			telemetry.WriteBackErrorWithTelemetry(req, w, msg, http.StatusNotFound)
 			return
 		}
 
@@ -412,14 +413,14 @@ func (p *permissions) role() http.HandlerFunc {
 			if raw == nil || err != nil {
 				msg := fmt.Sprintf(`an error occurred while fetching permissions for role=%s`, role)
 				log.Errorln(logTag, ":", msg, ":", err)
-				util.WriteBackError(w, msg, http.StatusNotFound)
+				telemetry.WriteBackErrorWithTelemetry(req, w, msg, http.StatusNotFound)
 				return
 			}
 			err = json.Unmarshal(raw, &perm)
 			if err != nil {
 				msg := fmt.Sprintf(`an error occurred while fetching permissions for role=%s`, role)
 				log.Errorln(logTag, ":", msg, ":", err)
-				util.WriteBackError(w, msg, http.StatusInternalServerError)
+				telemetry.WriteBackErrorWithTelemetry(req, w, msg, http.StatusInternalServerError)
 				return
 			}
 		}
