@@ -14,7 +14,7 @@ ARG CLUSTER_BILLING=false
 ENV CLUSTER_BILLING="${CLUSTER_BILLING}"
 
 # Run `--build-arg OPENSOURCE=true` to build opensource 
-ARG OPENSOURCE=false
+ARG OPENSOURCE=true
 ENV OPENSOURCE="${OPENSOURCE}"
 
 # Run `--build-arg IGNORE_BILLING_MIDDLEWARE=true` to disable billing middleware for testing
