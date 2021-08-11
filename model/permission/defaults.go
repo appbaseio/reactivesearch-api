@@ -35,6 +35,7 @@ var (
 		category.UIBuilder,
 		category.Logs,
 		category.Cache,
+		category.StoredQuery,
 	}
 
 	defaultOps = []op.Operation{
@@ -71,6 +72,7 @@ var (
 		LogsLimit:             10,
 		SynonymsLimit:         10,
 		CacheLimit:            10,
+		StoredQueryLimit:      10,
 	}
 
 	defaultAdminLimits = Limits{
@@ -97,5 +99,6 @@ var (
 		LogsLimit:             30,
 		SynonymsLimit:         30,
 		CacheLimit:            30,
+		StoredQueryLimit:      30,
 	}
 )
