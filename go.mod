@@ -10,7 +10,7 @@ require (
 	github.com/golang/mock v1.2.0 // indirect
 	github.com/google/uuid v1.1.2
 	github.com/gorilla/mux v1.7.1
-	github.com/mackerelio/go-osstat v0.2.0 // indirect
+	github.com/mackerelio/go-osstat v0.2.0
 	github.com/natefinch/lumberjack v2.0.1-0.20190411184413-94d9e492cc53+incompatible
 	github.com/olivere/elastic v6.2.21+incompatible
 	github.com/olivere/elastic/v7 v7.0.24
