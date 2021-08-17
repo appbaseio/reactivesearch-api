@@ -103,7 +103,10 @@ func init() {
 func main() {
 	isRunTimeDocker := false
 
-	cmdToDetectRunTime := exec.Command("/bin/sh", "-c", "if [[ -f /.dockerenv ]] || grep -Eq '(lxc|docker)' /proc/1/cgroup; then echo True; else echo False; fi")
+	// Summarizing how we're detecting a container runtime:
+	// For Docker runtime, we check for the presence of `lxc` or `docker` or `kubepods` string in the output of /proc/1/cgroup, https://stackoverflow.com/a/23558932/1221677
+	// For Podman (OCI) runtime, we check for the presence of /run/.containerenv, http://docs.podman.io/en/latest/markdown/podman-run.1.html
+	cmdToDetectRunTime := exec.Command("/bin/sh", "-c", "if [[ -f /.dockerenv ]] || [[ -f /run/.containerenv ]] || grep -Eq '(lxc|docker|kubepods)' /proc/1/cgroup; then echo True; else echo False; fi")
 	var output bytes.Buffer
 	cmdToDetectRunTime.Stdout = &output
 	runtimeDetectErr := cmdToDetectRunTime.Run()
@@ -117,17 +120,17 @@ func main() {
 	}
 
 	if isRunTimeDocker {
-		log.Println(logTag, "Runtime detected as docker container ...")
+		log.Println(logTag, "Runtime detected as docker or OCI container ...")
 		cmd := exec.Command("/bin/sh", "-c", "head -1 /proc/self/cgroup|cut -d/ -f3")
 		var out bytes.Buffer
 		cmd.Stdout = &out
 		err := cmd.Run()
 		id := out.String()
 		if err != nil {
-			log.Fatal(logTag, ": runtime detected as docker container: ", err)
+			log.Fatal(logTag, ": runtime detected as docker or OCI container: ", err)
 		}
 		if id == "" {
-			log.Fatal(logTag, ": runtime detected as docker container: machineid can not be empty")
+			log.Fatal(logTag, ": runtime detected as docker or OCI container: machineid can not be empty")
 		}
 		util.MachineID = strings.TrimSuffix(id, "\n")
 		util.RunTime = "Docker"
