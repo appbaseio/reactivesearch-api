@@ -3,6 +3,9 @@ package main
 import (
 	"bufio"
 	"bytes"
+	"crypto/hmac"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"flag"
 	"fmt"
@@ -132,11 +135,13 @@ func main() {
 		if id == "" {
 			log.Fatal(logTag, ": runtime detected as docker or OCI container: machineid can not be empty")
 		}
-		util.MachineID = strings.TrimSuffix(id, "\n")
+		h := hmac.New(sha256.New, []byte(strings.TrimSuffix(id, "\n")))
+		h.Write([]byte("reactivesearch"))
+		util.MachineID = hex.EncodeToString(h.Sum(nil))
 		util.RunTime = "Docker"
 	} else {
 		log.Println(logTag, "Runtime detected as a host machine ...")
-		id, err1 := machineid.ID()
+		id, err1 := machineid.ProtectedID("reactivesearch")
 		if err1 != nil {
 			log.Fatal(logTag, ": runtime detected as a host machine: ", err1)
 		}
