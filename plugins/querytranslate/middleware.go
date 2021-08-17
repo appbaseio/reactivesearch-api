@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"strconv"
 	"strings"
 
 	"github.com/appbaseio/reactivesearch-api/middleware"
@@ -129,6 +130,110 @@ func queryTranslate(h http.HandlerFunc) http.HandlerFunc {
 			log.Errorln(logTag, ":", err)
 			telemetry.WriteBackErrorWithTelemetry(req, w, "error encountered while retrieving request from context", http.StatusInternalServerError)
 			return
+		}
+
+		// validate request by permission
+		reqPermission, err := permission.FromContext(req.Context())
+		if err != nil {
+			log.Warnln(logTag, ":", err)
+		}
+		if reqPermission != nil && reqPermission.ReactiveSearchConfig != nil {
+			for _, query := range body.Query {
+
+				// valiate query DSL
+				if reqPermission.ReactiveSearchConfig.DisbaleQueryDSL != nil {
+					if *reqPermission.ReactiveSearchConfig.DisbaleQueryDSL {
+						errorMsg := "raw query DSL is disabled. Please use a stored query instead"
+						defaultQuery := *query.DefaultQuery
+						if defaultQuery != nil {
+							storedQueryId := defaultQuery["id"]
+							if storedQueryId == nil {
+								telemetry.WriteBackErrorWithTelemetry(req, w, errorMsg, http.StatusBadRequest)
+								return
+							}
+							idAsString, ok := storedQueryId.(string)
+							if !ok || idAsString == "" {
+								telemetry.WriteBackErrorWithTelemetry(req, w, errorMsg, http.StatusBadRequest)
+								return
+							}
+						}
+						customQuery := *query.CustomQuery
+						if customQuery != nil {
+							storedQueryId := customQuery["id"]
+							if storedQueryId == nil {
+								telemetry.WriteBackErrorWithTelemetry(req, w, errorMsg, http.StatusBadRequest)
+								return
+							}
+							idAsString, ok := storedQueryId.(string)
+							if !ok || idAsString == "" {
+								telemetry.WriteBackErrorWithTelemetry(req, w, errorMsg, http.StatusBadRequest)
+								return
+							}
+						}
+					}
+				}
+
+				// validate query size
+				if reqPermission.ReactiveSearchConfig.MaxSize != nil {
+					// validate size from defaultQuery if present
+					if query.DefaultQuery != nil {
+						defaultQuery := *query.DefaultQuery
+						if defaultQuery["size"] != nil {
+							sizeAsFloat, ok := defaultQuery["size"].(float64)
+							if ok {
+								intSize := int(sizeAsFloat)
+								querySize := &intSize
+								// throw error if query size is greater than specified size
+								if querySize != nil && *querySize > *reqPermission.ReactiveSearchConfig.MaxSize {
+									errorMsg := "maximum allowed size is " + strconv.Itoa(*reqPermission.ReactiveSearchConfig.MaxSize)
+									telemetry.WriteBackErrorWithTelemetry(req, w, errorMsg, http.StatusBadRequest)
+									return
+								}
+							}
+						}
+					}
+
+					if query.Size != nil {
+						querySize := query.Size
+						// throw error if query size is greater than specified size
+						if querySize != nil && *querySize > *reqPermission.ReactiveSearchConfig.MaxSize {
+							errorMsg := "maximum allowed size is " + strconv.Itoa(*reqPermission.ReactiveSearchConfig.MaxSize)
+							telemetry.WriteBackErrorWithTelemetry(req, w, errorMsg, http.StatusBadRequest)
+							return
+						}
+					}
+				}
+
+				// validate aggregation size
+				if reqPermission.ReactiveSearchConfig.MaxAggregationSize != nil {
+					// validate size from defaultQuery if present
+					if query.DefaultQuery != nil {
+						size := getSizeFromQuery(query.DefaultQuery, "size")
+						if size != nil {
+							sizeAsFloat, ok := (*size).(float64)
+							if ok {
+								sizeAsInt := int(sizeAsFloat)
+								aggsSize := &sizeAsInt
+								// throw error if query size is greater than specified size
+								if aggsSize != nil && *aggsSize > *reqPermission.ReactiveSearchConfig.MaxAggregationSize {
+									errorMsg := "maximum allowed aggregation size is " + strconv.Itoa(*reqPermission.ReactiveSearchConfig.MaxAggregationSize)
+									telemetry.WriteBackErrorWithTelemetry(req, w, errorMsg, http.StatusBadRequest)
+									return
+								}
+							}
+						}
+					}
+					if query.AggregationSize != nil {
+						aggsSize := query.AggregationSize
+						// throw error if query size is greater than specified size
+						if aggsSize != nil && *aggsSize > *reqPermission.ReactiveSearchConfig.MaxAggregationSize {
+							errorMsg := "maximum allowed aggregation size is " + strconv.Itoa(*reqPermission.ReactiveSearchConfig.MaxAggregationSize)
+							telemetry.WriteBackErrorWithTelemetry(req, w, errorMsg, http.StatusBadRequest)
+							return
+						}
+					}
+				}
+			}
 		}
 
 		// Translate query

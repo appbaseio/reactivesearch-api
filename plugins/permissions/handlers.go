@@ -101,6 +101,9 @@ func (p *permissions) postPermission(opts ...permission.Options) http.HandlerFun
 		if permissionBody.Description != "" {
 			permissionOptions = append(permissionOptions, permission.SetDescription(permissionBody.Description))
 		}
+		if permissionBody.ReactiveSearchConfig != nil {
+			permissionOptions = append(permissionOptions, permission.SetReactivesearchConfig(*permissionBody.ReactiveSearchConfig))
+		}
 		if permissionBody.TTL != 0 {
 			permissionOptions = append(permissionOptions, permission.SetTTL(permissionBody.TTL))
 		}
