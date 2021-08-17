@@ -36,6 +36,7 @@ var adminCategories = []category.Category{
 	category.UIBuilder,
 	category.Logs,
 	category.Cache,
+	category.StoredQuery,
 }
 
 var adminOps = []op.Operation{
@@ -68,6 +69,7 @@ var defaultAdminLimits = permission.Limits{
 	LogsLimit:             30,
 	SynonymsLimit:         30,
 	CacheLimit:            30,
+	StoredQueryLimit:      30,
 }
 
 var createPermissionResponse = map[string]interface{}{

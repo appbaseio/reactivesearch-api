@@ -78,6 +78,7 @@ type Limits struct {
 	LogsLimit             int64 `json:"logs_limit"`
 	SynonymsLimit         int64 `json:"synonyms_limit"`
 	CacheLimit            int64 `json:"cache_limit"`
+	StoredQueryLimit      int64 `json:"storedquery_limit"`
 }
 
 // Options is a function type used to define a permission's properties.
@@ -265,6 +266,7 @@ func SetLimits(limits *Limits, isAdmin bool) Options {
 			LogsLimit:             getNormalizedLimit(limits.LogsLimit, defaults.LogsLimit),
 			SynonymsLimit:         getNormalizedLimit(limits.SynonymsLimit, defaults.SynonymsLimit),
 			CacheLimit:            getNormalizedLimit(limits.CacheLimit, defaults.CacheLimit),
+			StoredQueryLimit:      getNormalizedLimit(limits.StoredQueryLimit, defaults.StoredQueryLimit),
 		}
 		return nil
 	}
@@ -538,6 +540,8 @@ func (p *Permission) GetLimitFor(c category.Category) (int64, error) {
 		return p.Limits.SynonymsLimit, nil
 	case category.Cache:
 		return p.Limits.CacheLimit, nil
+	case category.StoredQuery:
+		return p.Limits.StoredQueryLimit, nil
 	default:
 		return -1, fmt.Errorf(`we do not rate limit "%s" category`, c)
 	}
@@ -673,6 +677,9 @@ func (p *Permission) GetPatch(rolePatched bool) (map[string]interface{}, error) 
 		}
 		if p.Limits.CacheLimit != 0 {
 			limits["cache_limit"] = p.Limits.CacheLimit
+		}
+		if p.Limits.StoredQueryLimit != 0 {
+			limits["storedquery_limit"] = p.Limits.StoredQueryLimit
 		}
 
 		patch["limits"] = limits

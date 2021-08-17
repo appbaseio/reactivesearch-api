@@ -41,6 +41,7 @@ const (
 	UIBuilder
 	Logs
 	Cache
+	StoredQuery
 )
 
 // String is an implementation of Stringer interface that returns the string representation of category.Categories.
@@ -68,6 +69,7 @@ func (c Category) String() string {
 		"uibuilder",
 		"logs",
 		"cache",
+		"storedquery",
 	}[c]
 }
 
@@ -123,6 +125,8 @@ func (c *Category) UnmarshalJSON(bytes []byte) error {
 		*c = Logs
 	case Cache.String():
 		*c = Cache
+	case StoredQuery.String():
+		*c = StoredQuery
 	default:
 		return fmt.Errorf("invalid category encountered: %v", category)
 	}
@@ -177,6 +181,8 @@ func (c Category) MarshalJSON() ([]byte, error) {
 		category = Logs.String()
 	case Cache:
 		category = Cache.String()
+	case StoredQuery:
+		category = StoredQuery.String()
 	default:
 		return nil, fmt.Errorf("invalid category encountered: %v" + c.String())
 	}

@@ -122,6 +122,7 @@ var searchRelevancyCategories = append([]category.Category{
 	category.SearchRelevancy,
 	category.Synonyms,
 	category.SearchGrader,
+	category.StoredQuery,
 }, developCategories...)
 
 var ActionToCategories = map[UserAction][]category.Category{
