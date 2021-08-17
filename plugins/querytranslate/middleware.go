@@ -144,30 +144,34 @@ func queryTranslate(h http.HandlerFunc) http.HandlerFunc {
 				if reqPermission.ReactiveSearchConfig.DisbaleQueryDSL != nil {
 					if *reqPermission.ReactiveSearchConfig.DisbaleQueryDSL {
 						errorMsg := "raw query DSL is disabled. Please use a stored query instead"
-						defaultQuery := *query.DefaultQuery
-						if defaultQuery != nil {
-							storedQueryId := defaultQuery["id"]
-							if storedQueryId == nil {
-								telemetry.WriteBackErrorWithTelemetry(req, w, errorMsg, http.StatusBadRequest)
-								return
-							}
-							idAsString, ok := storedQueryId.(string)
-							if !ok || idAsString == "" {
-								telemetry.WriteBackErrorWithTelemetry(req, w, errorMsg, http.StatusBadRequest)
-								return
+						if query.DefaultQuery != nil {
+							defaultQuery := *query.DefaultQuery
+							if defaultQuery != nil {
+								storedQueryId := defaultQuery["id"]
+								if storedQueryId == nil {
+									telemetry.WriteBackErrorWithTelemetry(req, w, errorMsg, http.StatusBadRequest)
+									return
+								}
+								idAsString, ok := storedQueryId.(string)
+								if !ok || idAsString == "" {
+									telemetry.WriteBackErrorWithTelemetry(req, w, errorMsg, http.StatusBadRequest)
+									return
+								}
 							}
 						}
-						customQuery := *query.CustomQuery
-						if customQuery != nil {
-							storedQueryId := customQuery["id"]
-							if storedQueryId == nil {
-								telemetry.WriteBackErrorWithTelemetry(req, w, errorMsg, http.StatusBadRequest)
-								return
-							}
-							idAsString, ok := storedQueryId.(string)
-							if !ok || idAsString == "" {
-								telemetry.WriteBackErrorWithTelemetry(req, w, errorMsg, http.StatusBadRequest)
-								return
+						if query.CustomQuery != nil {
+							customQuery := *query.CustomQuery
+							if customQuery != nil {
+								storedQueryId := customQuery["id"]
+								if storedQueryId == nil {
+									telemetry.WriteBackErrorWithTelemetry(req, w, errorMsg, http.StatusBadRequest)
+									return
+								}
+								idAsString, ok := storedQueryId.(string)
+								if !ok || idAsString == "" {
+									telemetry.WriteBackErrorWithTelemetry(req, w, errorMsg, http.StatusBadRequest)
+									return
+								}
 							}
 						}
 					}
