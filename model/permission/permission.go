@@ -34,7 +34,7 @@ const (
 type ReactiveSearchConfig struct {
 	MaxSize            *int  `json:"maxSize,omitempty"`
 	MaxAggregationSize *int  `json:"maxAggregationSize,omitempty"`
-	DisbaleQueryDSL    *bool `json:"disbaleQueryDSL,omitempty"`
+	DisbaleQueryDSL    *bool `json:"disableQueryDSL,omitempty"`
 }
 
 // Permission defines a permission type.
