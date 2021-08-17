@@ -104,7 +104,7 @@ func main() {
 	isRunTimeDocker := false
 
 	// Summarizing how we're detecting a container runtime:
-	// For Docker runtime, we check for the presence of `lxc` or `docker` string in the output of /proc/1/cgroup, https://stackoverflow.com/a/23558932/1221677
+	// For Docker runtime, we check for the presence of `lxc` or `docker` or `kubepods` string in the output of /proc/1/cgroup, https://stackoverflow.com/a/23558932/1221677
 	// For Podman (OCI) runtime, we check for the presence of /run/.containerenv, http://docs.podman.io/en/latest/markdown/podman-run.1.html
 	cmdToDetectRunTime := exec.Command("/bin/sh", "-c", "if [[ -f /.dockerenv ]] || [[ -f /run/.containerenv ]] || grep -Eq '(lxc|docker|kubepods)' /proc/1/cgroup; then echo True; else echo False; fi")
 	var output bytes.Buffer
