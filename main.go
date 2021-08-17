@@ -3,6 +3,9 @@ package main
 import (
 	"bufio"
 	"bytes"
+	"crypto/hmac"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"flag"
 	"fmt"
@@ -103,7 +106,10 @@ func init() {
 func main() {
 	isRunTimeDocker := false
 
-	cmdToDetectRunTime := exec.Command("/bin/sh", "-c", "if [[ -f /.dockerenv ]] || grep -Eq '(lxc|docker)' /proc/1/cgroup; then echo True; else echo False; fi")
+	// Summarizing how we're detecting a container runtime:
+	// For Docker runtime, we check for the presence of `lxc` or `docker` or `kubepods` string in the output of /proc/1/cgroup, https://stackoverflow.com/a/23558932/1221677
+	// For Podman (OCI) runtime, we check for the presence of /run/.containerenv, http://docs.podman.io/en/latest/markdown/podman-run.1.html
+	cmdToDetectRunTime := exec.Command("/bin/sh", "-c", "if [[ -f /.dockerenv ]] || [[ -f /run/.containerenv ]] || grep -Eq '(lxc|docker|kubepods)' /proc/1/cgroup; then echo True; else echo False; fi")
 	var output bytes.Buffer
 	cmdToDetectRunTime.Stdout = &output
 	runtimeDetectErr := cmdToDetectRunTime.Run()
@@ -117,23 +123,25 @@ func main() {
 	}
 
 	if isRunTimeDocker {
-		log.Println(logTag, "Runtime detected as docker container ...")
+		log.Println(logTag, "Runtime detected as docker or OCI container ...")
 		cmd := exec.Command("/bin/sh", "-c", "head -1 /proc/self/cgroup|cut -d/ -f3")
 		var out bytes.Buffer
 		cmd.Stdout = &out
 		err := cmd.Run()
 		id := out.String()
 		if err != nil {
-			log.Fatal(logTag, ": runtime detected as docker container: ", err)
+			log.Fatal(logTag, ": runtime detected as docker or OCI container: ", err)
 		}
 		if id == "" {
-			log.Fatal(logTag, ": runtime detected as docker container: machineid can not be empty")
+			log.Fatal(logTag, ": runtime detected as docker or OCI container: machineid can not be empty")
 		}
-		util.MachineID = strings.TrimSuffix(id, "\n")
+		h := hmac.New(sha256.New, []byte(strings.TrimSuffix(id, "\n")))
+		h.Write([]byte("reactivesearch"))
+		util.MachineID = hex.EncodeToString(h.Sum(nil))
 		util.RunTime = "Docker"
 	} else {
 		log.Println(logTag, "Runtime detected as a host machine ...")
-		id, err1 := machineid.ID()
+		id, err1 := machineid.ProtectedID("reactivesearch")
 		if err1 != nil {
 			log.Fatal(logTag, ": runtime detected as a host machine: ", err1)
 		}
@@ -286,7 +294,7 @@ func main() {
 	util.SetDefaultIndexTemplate()
 	util.SetSystemIndexTemplate()
 	// map of specific plugins
-	sequencedPlugins := []string{"cache.so", "searchrelevancy.so", "rules.so", "functions.so", "analytics.so", "suggestions.so", "applycache.so"}
+	sequencedPlugins := []string{"cache.so", "searchrelevancy.so", "rules.so", "functions.so", "storedquery.so", "analytics.so", "suggestions.so", "applycache.so"}
 	sequencedPluginsByPath := make(map[string]string)
 
 	var elasticSearchPath, reactiveSearchPath string
