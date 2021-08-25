@@ -388,3 +388,16 @@ func ProxyACCAPI(proxyConfig ProxyConfig) (*http.Response, error) {
 func IsRSAPIValidateRoute(req *http.Request) bool {
 	return strings.HasSuffix(req.URL.Path, "_reactivesearch.v3/validate") || strings.HasSuffix(req.URL.Path, "_reactivesearch/validate")
 }
+
+// ValidateIndex validates an index against a pattern
+func ValidateIndex(index string, pattern string) (bool, error) {
+	pattern = strings.Replace(pattern, "*", ".*", -1)
+	if !strings.HasSuffix(pattern, ".*") {
+		pattern += "\\b"
+	}
+	matched, err := regexp.MatchString(pattern, index)
+	if err != nil {
+		return true, err
+	}
+	return matched, nil
+}

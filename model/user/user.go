@@ -10,6 +10,7 @@ import (
 	"github.com/appbaseio/reactivesearch-api/errors"
 	"github.com/appbaseio/reactivesearch-api/model/acl"
 	"github.com/appbaseio/reactivesearch-api/model/category"
+	"github.com/appbaseio/reactivesearch-api/util"
 )
 
 type contextKey string
@@ -262,9 +263,8 @@ func (u *User) CanAccessCluster() (bool, error) {
 
 // CanAccessIndex checks whether the user has access to the given index or index pattern.
 func (u *User) CanAccessIndex(name string) (bool, error) {
-	for _, pattern := range u.Indices {
-		pattern = strings.Replace(pattern, "*", ".*", -1)
-		matched, err := regexp.MatchString(pattern, name)
+	for _, index := range u.Indices {
+		matched, err := util.ValidateIndex(index, name)
 		if err != nil {
 			return false, err
 		}

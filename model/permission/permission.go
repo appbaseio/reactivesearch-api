@@ -484,11 +484,10 @@ func (p *Permission) CanAccessIndex(name string) (bool, error) {
 		}
 		indices = append(indices, suggestionsIndex)
 	}
-	for _, pattern := range indices {
-		pattern = strings.Replace(pattern, "*", ".*", -1)
-		matched, err := regexp.MatchString(pattern, name)
+	for _, index := range indices {
+		matched, err := util.ValidateIndex(index, name)
 		if err != nil {
-			log.Errorln("invalid index regexp", pattern, "encountered: ", err)
+			log.Errorln("invalid index regexp", index, "encountered: ", err)
 			return false, err
 		}
 		if matched {
