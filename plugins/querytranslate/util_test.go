@@ -117,3 +117,29 @@ func TestNormalizedDataFields(t *testing.T) {
 			})
 	})
 }
+
+func TestGetSizeFromQuery(t *testing.T) {
+	Convey("empty map should return nil", t, func() {
+		query := map[string]interface{}{}
+		So(getSizeFromQuery(&query, "size"), ShouldBeNil)
+	})
+	Convey("key at first level", t, func() {
+		query := map[string]interface{}{
+			"size": 10,
+		}
+		value := getSizeFromQuery(&query, "size")
+		So(*value, ShouldResemble, 10)
+	})
+	Convey("key at nested level", t, func() {
+		query := map[string]interface{}{
+			"aggs": map[string]interface{}{
+				"product": map[string]interface{}{
+					"terms": map[string]interface{}{},
+					"size":  10,
+				},
+			},
+		}
+		value := getSizeFromQuery(&query, "size")
+		So(*value, ShouldResemble, 10)
+	})
+}

@@ -31,26 +31,33 @@ const (
 	ctxKey = contextKey("permission")
 )
 
+type ReactiveSearchConfig struct {
+	MaxSize            *int  `json:"maxSize,omitempty"`
+	MaxAggregationSize *int  `json:"maxAggregationSize,omitempty"`
+	DisbaleQueryDSL    *bool `json:"disableQueryDSL,omitempty"`
+}
+
 // Permission defines a permission type.
 type Permission struct {
-	Username    string              `json:"username"`
-	Password    string              `json:"password"`
-	Owner       string              `json:"owner"`
-	Creator     string              `json:"creator"`
-	Role        string              `json:"role"`
-	Categories  []category.Category `json:"categories"`
-	ACLs        []acl.ACL           `json:"acls"`
-	Ops         []op.Operation      `json:"ops"`
-	Indices     []string            `json:"indices"`
-	Sources     []string            `json:"sources"`
-	Referers    []string            `json:"referers"`
-	CreatedAt   string              `json:"created_at"`
-	TTL         time.Duration       `json:"ttl"`
-	Limits      *Limits             `json:"limits"`
-	Description string              `json:"description"`
-	Includes    []string            `json:"include_fields"`
-	Excludes    []string            `json:"exclude_fields"`
-	Expired     bool                `json:"expired"`
+	Username             string                `json:"username"`
+	Password             string                `json:"password"`
+	Owner                string                `json:"owner"`
+	Creator              string                `json:"creator"`
+	Role                 string                `json:"role"`
+	Categories           []category.Category   `json:"categories"`
+	ACLs                 []acl.ACL             `json:"acls"`
+	Ops                  []op.Operation        `json:"ops"`
+	Indices              []string              `json:"indices"`
+	Sources              []string              `json:"sources"`
+	Referers             []string              `json:"referers"`
+	CreatedAt            string                `json:"created_at"`
+	TTL                  time.Duration         `json:"ttl"`
+	Limits               *Limits               `json:"limits"`
+	Description          string                `json:"description"`
+	Includes             []string              `json:"include_fields"`
+	Excludes             []string              `json:"exclude_fields"`
+	Expired              bool                  `json:"expired"`
+	ReactiveSearchConfig *ReactiveSearchConfig `json:"reactivesearchConfig,omitempty"`
 }
 
 // Limits defines the rate limits for each category.
@@ -276,6 +283,14 @@ func SetLimits(limits *Limits, isAdmin bool) Options {
 func SetDescription(description string) Options {
 	return func(p *Permission) error {
 		p.Description = description
+		return nil
+	}
+}
+
+// SetDescription sets the permission reactivesearchConfig.
+func SetReactivesearchConfig(config ReactiveSearchConfig) Options {
+	return func(p *Permission) error {
+		p.ReactiveSearchConfig = &config
 		return nil
 	}
 }
@@ -686,6 +701,9 @@ func (p *Permission) GetPatch(rolePatched bool) (map[string]interface{}, error) 
 	}
 	if p.Description != "" {
 		patch["description"] = p.Description
+	}
+	if p.ReactiveSearchConfig != nil {
+		patch["reactivesearchConfig"] = p.ReactiveSearchConfig
 	}
 	if p.Includes != nil {
 		patch["include_fields"] = p.Includes

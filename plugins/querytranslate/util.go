@@ -708,3 +708,26 @@ func NormalizedDataFields(dataField interface{}, fieldWeights []float64) []DataF
 	}
 	return make([]DataField, 0)
 }
+
+// This function scans all the keys in the nested query
+// and finds the top most value of a specified key
+// For e.g to find the size defined for custom aggs where aggs key is unknown
+func getSizeFromQuery(query *map[string]interface{}, key string) *interface{} {
+	if query != nil {
+		for k, v := range *query {
+			// key found
+			if k == key {
+				return &v
+			}
+
+			valueAsMap, ok := v.(map[string]interface{})
+			if ok {
+				value := getSizeFromQuery(&valueAsMap, key)
+				if value != nil {
+					return value
+				}
+			}
+		}
+	}
+	return nil
+}
