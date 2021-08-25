@@ -395,6 +395,9 @@ func ValidateIndex(pattern string, index string) (bool, error) {
 	if !strings.HasSuffix(pattern, ".*") {
 		pattern += "\\b"
 	}
+	if !strings.HasPrefix(pattern, ".*") {
+		pattern = "\\b" + pattern
+	}
 	matched, err := regexp.MatchString(pattern, index)
 	if err != nil {
 		return true, err

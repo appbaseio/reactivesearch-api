@@ -41,8 +41,12 @@ func TestValidateIndex(t *testing.T) {
 			m, _ := ValidateIndex("test", "test")
 			So(m, ShouldBeTrue)
 		})
-		Convey("Exact Match (failure)", func() {
+		Convey("Exact Match start (failure)", func() {
 			m, _ := ValidateIndex("test", "testt")
+			So(m, ShouldBeFalse)
+		})
+		Convey("Exact Match end (failure)", func() {
+			m, _ := ValidateIndex("test", "ttest")
 			So(m, ShouldBeFalse)
 		})
 	})
