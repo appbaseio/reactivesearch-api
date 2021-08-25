@@ -263,8 +263,8 @@ func (u *User) CanAccessCluster() (bool, error) {
 
 // CanAccessIndex checks whether the user has access to the given index or index pattern.
 func (u *User) CanAccessIndex(name string) (bool, error) {
-	for _, index := range u.Indices {
-		matched, err := util.ValidateIndex(index, name)
+	for _, pattern := range u.Indices {
+		matched, err := util.ValidateIndex(pattern, name)
 		if err != nil {
 			return false, err
 		}

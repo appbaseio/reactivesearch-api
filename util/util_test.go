@@ -9,31 +9,31 @@ import (
 func TestValidateIndex(t *testing.T) {
 	Convey("ValidateIndex", t, func() {
 		Convey("* pattern", func() {
-			m, _ := ValidateIndex("dede", "*")
+			m, _ := ValidateIndex("*", "dede")
 			So(m, ShouldBeTrue)
 		})
 		Convey("* in between (success)", func() {
-			m, _ := ValidateIndex("test3m", "test*m")
+			m, _ := ValidateIndex("test*m", "test3m")
 			So(m, ShouldBeTrue)
 		})
 		Convey("* in between (failure)", func() {
-			m, _ := ValidateIndex("test3mn", "test*m")
+			m, _ := ValidateIndex("test*m", "test3mn")
 			So(m, ShouldBeFalse)
 		})
 		Convey("* at end (success)", func() {
-			m, _ := ValidateIndex("test2", "test*")
+			m, _ := ValidateIndex("test*", "test2")
 			So(m, ShouldBeTrue)
 		})
 		Convey("* at end (failure)", func() {
-			m, _ := ValidateIndex("def", "test*")
+			m, _ := ValidateIndex("test*", "def")
 			So(m, ShouldBeFalse)
 		})
 		Convey("* at start (success)", func() {
-			m, _ := ValidateIndex("pl_test", "*test")
+			m, _ := ValidateIndex("*test", "pl_test")
 			So(m, ShouldBeTrue)
 		})
 		Convey("* at start (failure)", func() {
-			m, _ := ValidateIndex("pl_ded", "*test")
+			m, _ := ValidateIndex("*test", "pl_ded")
 			So(m, ShouldBeFalse)
 		})
 
@@ -42,7 +42,7 @@ func TestValidateIndex(t *testing.T) {
 			So(m, ShouldBeTrue)
 		})
 		Convey("Exact Match (failure)", func() {
-			m, _ := ValidateIndex("testt", "test")
+			m, _ := ValidateIndex("test", "testt")
 			So(m, ShouldBeFalse)
 		})
 	})

@@ -390,7 +390,7 @@ func IsRSAPIValidateRoute(req *http.Request) bool {
 }
 
 // ValidateIndex validates an index against a pattern
-func ValidateIndex(index string, pattern string) (bool, error) {
+func ValidateIndex(pattern string, index string) (bool, error) {
 	pattern = strings.Replace(pattern, "*", ".*", -1)
 	if !strings.HasSuffix(pattern, ".*") {
 		pattern += "\\b"
