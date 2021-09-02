@@ -84,7 +84,6 @@ type ClusterPlan struct {
 	FeatureCustomEvents    bool   `json:"feature_custom_events"`
 	FeatureSuggestions     bool   `json:"feature_suggestions"`
 	FeatureRules           bool   `json:"feature_rules"`
-	FeatureTemplates       bool   `json:"feature_templates"`
 	FeatureFunctions       bool   `json:"feature_functions"`
 	FeatureSearchRelevancy bool   `json:"feature_search_relevancy"`
 	FeatureSearchGrader    bool   `json:"feature_search_grader"`
@@ -140,7 +139,6 @@ type ArcInstanceDetails struct {
 	FeatureCustomEvents    bool                   `json:"feature_custom_events"`
 	FeatureSuggestions     bool                   `json:"feature_suggestions"`
 	FeatureRules           bool                   `json:"feature_rules"`
-	FeatureTemplates       bool                   `json:"feature_templates"`
 	FeatureFunctions       bool                   `json:"feature_functions"`
 	FeatureSearchRelevancy bool                   `json:"feature_search_relevancy"`
 	FeatureSearchGrader    bool                   `json:"feature_search_grader"`
@@ -234,7 +232,6 @@ func getArcInstance(arcID string) (ArcInstance, error) {
 		SetFeatureFunctions(arcInstanceByID.FeatureFunctions)
 		SetFeatureSearchRelevancy(arcInstanceByID.FeatureSearchRelevancy)
 		SetFeatureSearchGrader(arcInstanceByID.FeatureSearchGrader)
-		SetFeatureTemplates(arcInstanceByID.FeatureTemplates)
 		SetFeatureEcommerce(arcInstanceByID.FeatureEcommerce)
 		SetFeatureCache(arcInstanceByID.FeatureCache)
 		setNumberOfMachines(arcInstanceByID.NumberOfMachines)
@@ -289,7 +286,6 @@ func getArcClusterInstance(clusterID string) (ArcInstance, error) {
 		SetFeatureFunctions(arcInstanceDetails.FeatureFunctions)
 		SetFeatureSearchRelevancy(arcInstanceDetails.FeatureSearchRelevancy)
 		SetFeatureSearchGrader(arcInstanceDetails.FeatureSearchGrader)
-		SetFeatureTemplates(arcInstanceDetails.FeatureTemplates)
 		SetFeatureEcommerce(arcInstanceDetails.FeatureEcommerce)
 		SetFeatureCache(arcInstanceDetails.FeatureCache)
 		setNumberOfMachines(arcInstanceDetails.NumberOfMachines)
@@ -351,7 +347,6 @@ func getClusterPlan(clusterID string) (ClusterPlan, error) {
 	SetFeatureFunctions(response.Plan.FeatureFunctions)
 	SetFeatureSearchRelevancy(response.Plan.FeatureSearchRelevancy)
 	SetFeatureSearchGrader(response.Plan.FeatureSearchGrader)
-	SetFeatureTemplates(response.Plan.FeatureTemplates)
 	SetFeatureEcommerce(response.Plan.FeatureEcommerce)
 	SetFeatureCache(response.Plan.FeatureCache)
 	setNumberOfMachines(response.Plan.NumberOfMachines)

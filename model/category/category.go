@@ -3,7 +3,6 @@ package category
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 
 	"github.com/appbaseio/reactivesearch-api/errors"
 	"github.com/appbaseio/reactivesearch-api/model/acl"
@@ -30,7 +29,6 @@ const (
 	Analytics
 	Streams
 	Rules
-	Templates
 	Suggestions
 	Auth
 	Functions
@@ -58,7 +56,6 @@ func (c Category) String() string {
 		"analytics",
 		"streams",
 		"rules",
-		"templates",
 		"suggestions",
 		"auth",
 		"functions",
@@ -103,8 +100,6 @@ func (c *Category) UnmarshalJSON(bytes []byte) error {
 		*c = Streams
 	case Rules.String():
 		*c = Rules
-	case Templates.String():
-		*c = Templates
 	case Suggestions.String():
 		*c = Suggestions
 	case Auth.String():
@@ -128,7 +123,7 @@ func (c *Category) UnmarshalJSON(bytes []byte) error {
 	case StoredQuery.String():
 		*c = StoredQuery
 	default:
-		return fmt.Errorf("invalid category encountered: %v", category)
+		return nil
 	}
 	return nil
 }
@@ -159,8 +154,6 @@ func (c Category) MarshalJSON() ([]byte, error) {
 		category = Streams.String()
 	case Rules:
 		category = Rules.String()
-	case Templates:
-		category = Templates.String()
 	case Suggestions:
 		category = Suggestions.String()
 	case Auth:
@@ -184,7 +177,7 @@ func (c Category) MarshalJSON() ([]byte, error) {
 	case StoredQuery:
 		category = StoredQuery.String()
 	default:
-		return nil, fmt.Errorf("invalid category encountered: %v" + c.String())
+		return nil, nil
 	}
 	return json.Marshal(category)
 }
