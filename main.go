@@ -69,8 +69,6 @@ var (
 	FeatureSuggestions string
 	// FeatureRules for testing
 	FeatureRules string
-	// FeatureTemplates for testing
-	FeatureTemplates string
 	// FeatureFunctions for testing
 	FeatureFunctions string
 	// FeatureSearchRelevancy for testing
@@ -269,9 +267,6 @@ func main() {
 	}
 	if FeatureFunctions == "true" {
 		util.SetFeatureFunctions(true)
-	}
-	if FeatureTemplates == "true" {
-		util.SetFeatureTemplates(true)
 	}
 	if FeatureSearchRelevancy == "true" {
 		util.SetFeatureSearchRelevancy(true)
