@@ -39,19 +39,6 @@ func SetFeatureRules(val bool) {
 	featureRules = val
 }
 
-// Feature templates
-var featureTemplates bool
-
-// GetFeatureTemplates returns the featureTemplates
-func GetFeatureTemplates() bool {
-	return featureTemplates
-}
-
-// SetFeatureTemplates sets the featureTemplates
-func SetFeatureTemplates(val bool) {
-	featureTemplates = val
-}
-
 // Feature functions
 var featureFunctions bool
 
