@@ -73,7 +73,6 @@ type Limits struct {
 	PermissionLimit       int64 `json:"permission_limit"`
 	AnalyticsLimit        int64 `json:"analytics_limit"`
 	RulesLimit            int64 `json:"rules_limit"`
-	TemplatesLimit        int64 `json:"templates_limit"`
 	SuggestionsLimit      int64 `json:"suggestions_limit"`
 	StreamsLimit          int64 `json:"streams_limit"`
 	AuthLimit             int64 `json:"auth_limit"`
@@ -261,7 +260,6 @@ func SetLimits(limits *Limits, isAdmin bool) Options {
 			PermissionLimit:       getNormalizedLimit(limits.PermissionLimit, defaults.PermissionLimit),
 			AnalyticsLimit:        getNormalizedLimit(limits.AnalyticsLimit, defaults.AnalyticsLimit),
 			RulesLimit:            getNormalizedLimit(limits.RulesLimit, defaults.RulesLimit),
-			TemplatesLimit:        getNormalizedLimit(limits.TemplatesLimit, defaults.TemplatesLimit),
 			SuggestionsLimit:      getNormalizedLimit(limits.SuggestionsLimit, defaults.SuggestionsLimit),
 			StreamsLimit:          getNormalizedLimit(limits.StreamsLimit, defaults.StreamsLimit),
 			AuthLimit:             getNormalizedLimit(limits.AuthLimit, defaults.AuthLimit),
@@ -485,8 +483,7 @@ func (p *Permission) CanAccessIndex(name string) (bool, error) {
 		indices = append(indices, suggestionsIndex)
 	}
 	for _, pattern := range indices {
-		pattern = strings.Replace(pattern, "*", ".*", -1)
-		matched, err := regexp.MatchString(pattern, name)
+		matched, err := util.ValidateIndex(pattern, name)
 		if err != nil {
 			log.Errorln("invalid index regexp", pattern, "encountered: ", err)
 			return false, err
@@ -531,8 +528,6 @@ func (p *Permission) GetLimitFor(c category.Category) (int64, error) {
 		return p.Limits.AnalyticsLimit, nil
 	case category.Rules:
 		return p.Limits.RulesLimit, nil
-	case category.Templates:
-		return p.Limits.TemplatesLimit, nil
 	case category.Suggestions:
 		return p.Limits.SuggestionsLimit, nil
 	case category.Auth:
@@ -656,9 +651,6 @@ func (p *Permission) GetPatch(rolePatched bool) (map[string]interface{}, error) 
 		}
 		if p.Limits.RulesLimit != 0 {
 			limits["rules_limit"] = p.Limits.RulesLimit
-		}
-		if p.Limits.TemplatesLimit != 0 {
-			limits["templates_limit"] = p.Limits.TemplatesLimit
 		}
 		if p.Limits.SuggestionsLimit != 0 {
 			limits["suggestions_limit"] = p.Limits.SuggestionsLimit
