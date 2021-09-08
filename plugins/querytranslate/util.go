@@ -338,16 +338,27 @@ func getQueryInstanceByID(id string, rsQuery RSQuery) *Query {
 func evalReactProp(query []interface{}, queryOptions *map[string]interface{}, conjunction string, react interface{}, rsQuery RSQuery) ([]interface{}, error) {
 	nestedReact, isNestedReact := react.(map[string]interface{})
 	if isNestedReact {
+		var err error
 		// handle react prop as struct
 		if nestedReact["and"] != nil {
-			return evalReactProp(query, queryOptions, "and", nestedReact["and"], rsQuery)
+			query, err = evalReactProp(query, queryOptions, "and", nestedReact["and"], rsQuery)
+			if err != nil {
+				return query, err
+			}
 		}
 		if nestedReact["or"] != nil {
-			return evalReactProp(query, queryOptions, "or", nestedReact["or"], rsQuery)
+			query, err = evalReactProp(query, queryOptions, "or", nestedReact["or"], rsQuery)
+			if err != nil {
+				return query, err
+			}
 		}
 		if nestedReact["not"] != nil {
-			return evalReactProp(query, queryOptions, "not", nestedReact["not"], rsQuery)
+			query, err = evalReactProp(query, queryOptions, "not", nestedReact["not"], rsQuery)
+			if err != nil {
+				return query, err
+			}
 		}
+		return query, nil
 	} else {
 		// handle react prop as an array
 		reactAsArray, isArray := react.([]interface{})
