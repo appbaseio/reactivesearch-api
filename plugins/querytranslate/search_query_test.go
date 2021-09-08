@@ -899,3 +899,52 @@ func TestBasicDataSearchWithCustomQueryWithoutField(t *testing.T) {
 `)
 	})
 }
+
+func TestQueryWithReact(t *testing.T) {
+	Convey("with and & or clauses", t, func() {
+		query := map[string]interface{}{
+			"query": []map[string]interface{}{
+				{
+					"id":        "BookSensor",
+					"dataField": []string{"original_title"},
+					"value":     "batman",
+					"size":      1,
+					"execute":   false,
+				},
+				{
+					"id":              "AuthorFilter",
+					"type":            "term",
+					"dataField":       []string{"genres_new_data.keyword"},
+					"aggregationSize": 5,
+					"size":            0,
+					"value": []string{
+						"Romance",
+					},
+					"execute": false,
+				},
+				{
+					"id": "Results",
+					"react": map[string]interface{}{
+						"and": []string{"BookSensor"},
+						"or":  []string{"AuthorFilter"},
+					},
+					"dataField": []interface{}{
+						map[string]interface{}{
+							"field":  "original_title.keyword",
+							"weight": 1,
+						},
+					},
+					"sortBy": "asc",
+					"size":   5,
+				},
+			},
+		}
+		transformedQuery, err := transformQuery(query)
+		if err != nil {
+			t.Fatalf("Test Failed %v instead\n", err)
+		}
+		So(transformedQuery, ShouldResemble, `{"preference":"Results"}
+{"_source":{"excludes":[],"includes":["*"]},"query":{"bool":{"must":[{"bool":{"must":[{"bool":{"minimum_should_match":1,"should":[{"multi_match":{"fields":["original_title"],"operator":"or","query":"batman","type":"cross_fields"}},{"multi_match":{"fields":["original_title"],"fuzziness":0,"operator":"or","query":"batman","type":"best_fields"}},{"multi_match":{"fields":["original_title"],"operator":"or","query":"batman","type":"phrase"}},{"multi_match":{"fields":["original_title"],"operator":"or","query":"batman","type":"phrase_prefix"}}]}}]}},{"bool":{"minimum_should_match":1,"should":[{"bool":{"should":[{"terms":{"genres_new_data.keyword":["Romance"]}}]}}]}}]}},"size":5,"sort":[{"original_title.keyword":{"order":"asc"}}]}
+`)
+	})
+}
