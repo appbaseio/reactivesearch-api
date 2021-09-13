@@ -484,7 +484,7 @@ func TestQueryWithCategories(t *testing.T) {
 					"value":         "harry",
 					"size":          10,
 					"categoryField": "authors.raw",
-					"categoryValue": "J.K. Rowling, Mary Grand",
+					"categoryValue": "J.K. Rowling",
 				},
 			},
 		}
@@ -493,7 +493,7 @@ func TestQueryWithCategories(t *testing.T) {
 			t.Fatalf("Test Failed %v instead\n", err)
 		}
 		So(transformedQuery, ShouldResemble, `{"preference":"BookSensor"}
-{"_source":{"excludes":[],"includes":["*"]},"aggs":{"authors.raw":{"terms":{"field":"authors.raw"}}},"query":[{"bool":{"minimum_should_match":1,"should":[{"multi_match":{"fields":["original_title","original_title.search"],"operator":"or","query":"harry","type":"cross_fields"}},{"multi_match":{"fields":["original_title","original_title.search"],"fuzziness":0,"operator":"or","query":"harry","type":"best_fields"}},{"multi_match":{"fields":["original_title","original_title.search"],"operator":"or","query":"harry","type":"phrase"}},{"multi_match":{"fields":["original_title"],"operator":"or","query":"harry","type":"phrase_prefix"}}]}},{"term":{"authors.raw":"J.K. Rowling, Mary Grand"}}],"size":10}
+{"_source":{"excludes":[],"includes":["*"]},"aggs":{"authors.raw":{"terms":{"field":"authors.raw"}}},"query":{"bool":{"must":[{"bool":{"minimum_should_match":1,"should":[{"multi_match":{"fields":["original_title","original_title.search"],"operator":"or","query":"harry","type":"cross_fields"}},{"multi_match":{"fields":["original_title","original_title.search"],"fuzziness":0,"operator":"or","query":"harry","type":"best_fields"}},{"multi_match":{"fields":["original_title","original_title.search"],"operator":"or","query":"harry","type":"phrase"}},{"multi_match":{"fields":["original_title"],"operator":"or","query":"harry","type":"phrase_prefix"}}]}},{"term":{"authors.raw":"J.K. Rowling"}}]}},"size":10}
 `)
 	})
 }
