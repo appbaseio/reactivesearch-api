@@ -47,11 +47,15 @@ func (query *Query) generateSearchQuery() (*interface{}, error) {
 		}
 
 		if query.CategoryValue != nil && query.CategoryField != nil && *query.CategoryValue != "*" {
-			searchQuery = []map[string]interface{}{
-				searchQuery.(map[string]interface{}),
-				{
-					"term": map[string]interface{}{
-						*query.CategoryField: query.CategoryValue,
+			searchQuery = map[string]interface{}{
+				"bool": map[string]interface{}{
+					"must": []interface{}{
+						searchQuery.(map[string]interface{}),
+						map[string]interface{}{
+							"term": map[string]interface{}{
+								*query.CategoryField: query.CategoryValue,
+							},
+						},
 					},
 				},
 			}
