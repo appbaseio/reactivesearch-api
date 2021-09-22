@@ -352,6 +352,6 @@ func intercept(h http.HandlerFunc) http.HandlerFunc {
 				body = bytes.Replace(body, []byte(`"`+indexName+`"`), []byte(`"`+index+`"`), -1)
 			}
 		}
-		util.WriteBackRaw(w, body, http.StatusOK)
+		util.WriteBackRaw(w, body, result.StatusCode)
 	}
 }
