@@ -110,19 +110,51 @@ func (r *QueryTranslate) search() http.HandlerFunc {
 			jsonparser.ArrayEach(responses, func(value []byte, dataType jsonparser.ValueType, offset int, err error) {
 				queryID := queryIds[index]
 				var isSuggestionRequest bool
+				var suggestions = make([]SuggestionHIT, 0)
 				// parse suggestions if query is of type `suggestion`
 				for _, query := range rsAPIRequest.Query {
 					if *query.ID == queryID && query.Type == Suggestion {
 						isSuggestionRequest = true
+						// Index suggestions are not meant for empty query
+						if query.Value != nil {
+							valueAsString, ok := (*query.Value).(string)
+							if ok {
+								var normalizedDataFields = []string{}
+								normalizedFields := NormalizedDataFields(query.DataField, query.FieldWeights)
+								for _, dataField := range normalizedFields {
+									normalizedDataFields = append(normalizedDataFields, dataField.Field)
+								}
+								suggestionsConfig := SuggestionsConfig{
+									// Fields to extract suggestions
+									DataFields: normalizedDataFields,
+									// Query value
+									Value:                       valueAsString,
+									ShowDistinctSuggestions:     query.ShowDistinctSuggestions,
+									EnablePredictiveSuggestions: query.EnablePredictiveSuggestions,
+									MaxPredictedWords:           query.MaxPredictedWords,
+									EnableSynonyms:              query.EnableSynonyms,
+								}
+
+								var rawHits []ESDoc
+								hits, dataType, _, err1 := jsonparser.Get(value, "hits", "hits")
+								if dataType != jsonparser.NotExist && err1 != nil {
+									log.Errorln(logTag, ":", err1)
+									util.WriteBackError(w, "error while retriving hits: "+err1.Error(), http.StatusInternalServerError)
+									return
+								}
+								err := json.Unmarshal(hits, &rawHits)
+								if err != nil {
+									log.Errorln(logTag, ":", err)
+									util.WriteBackError(w, "error while parsing ES response to hits: "+err.Error(), http.StatusInternalServerError)
+									return
+								}
+								log.Println("RAW HITS", rawHits)
+								suggestions = getFinalSuggestions(suggestionsConfig, rawHits)
+							}
+						}
 					}
 				}
 				if isSuggestionRequest {
-					var suggestions = make([]SuggestionHIT, 0)
-					// TODO: Parse suggestions
-					// suggestions = append(suggestions, SuggestionHIT{
-					// 	Value: "harry",
-					// 	Label: "harry",
-					// })
 					responseInByte, err := json.Marshal(suggestions)
 					if err != nil {
 						log.Errorln(logTag, ":", err)

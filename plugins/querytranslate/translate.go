@@ -43,7 +43,7 @@ func translateQuery(rsQuery RSQuery) (string, error) {
 		}
 
 		// Parse synonyms fields if `EnableSynonyms` is set to `false`
-		if query.Type == Search && query.EnableSynonyms != nil && !*query.EnableSynonyms {
+		if (query.Type == Search || query.Type == Suggestion) && query.EnableSynonyms != nil && !*query.EnableSynonyms {
 			var normalizedDataFields = []string{}
 			for _, dataField := range normalizedFields {
 				if !strings.HasSuffix(dataField.Field, synonymsFieldKey) {
@@ -215,7 +215,7 @@ func (query *Query) buildQueryOptions() (map[string]interface{}, error) {
 	}
 
 	// Apply category aggs
-	if query.CategoryField != nil && query.Type == Search {
+	if query.CategoryField != nil && (query.Type == Search || query.Type == Suggestion) {
 		// Add aggregations for the category
 		aggs := make(map[string]interface{})
 		termsQuery := map[string]interface{}{

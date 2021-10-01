@@ -25,7 +25,9 @@ require (
 	github.com/smartystreets/goconvey v1.6.4
 	github.com/ulule/limiter v2.2.0+incompatible
 	golang.org/x/crypto v0.0.0-20200622213623-75b288015ac9
+	golang.org/x/net v0.0.0-20210928044308-7d9f5e0b762b // indirect
 	golang.org/x/sys v0.0.0-20210630005230-0f9fa26af87c // indirect
+	golang.org/x/text v0.3.7 // indirect
 	google.golang.org/api v0.3.1 // indirect
 	gopkg.in/natefinch/lumberjack.v2 v2.0.0
 	gopkg.in/olivere/elastic.v6 v6.2.26
