@@ -288,7 +288,7 @@ func ExtractEnvsFromRequest(req RSQuery) QueryEnvs {
 	var termFilters []TermFilter
 	for _, query := range req.Query {
 		// Set query
-		if query.Type == Search && query.Value != nil {
+		if (query.Type == Search || query.Type == Suggestion) && query.Value != nil {
 			value := *query.Value
 			valueAsString, ok := value.(string)
 			if ok {
@@ -463,7 +463,7 @@ func (query *Query) getQuery(rsQuery RSQuery) (*interface{}, map[string]interfac
 			if defaultQuery["query"] != nil {
 				finalQuery = append(finalQuery, defaultQuery["query"])
 			}
-		} else if query.Type == Search {
+		} else if query.Type == Search || query.Type == Suggestion {
 			// Only apply query by `value` for search queries
 			queryByType, err := query.generateQueryByType()
 			if err != nil {
