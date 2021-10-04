@@ -243,12 +243,13 @@ type Query struct {
 	DistinctFieldConfig         *map[string]interface{}    `json:"distinctFieldConfig,omitempty"`
 	Index                       *string                    `json:"index,omitempty"`
 	EnableRecentSuggestions     *bool                      `json:"enableRecentSuggestions,omitempty"`
-	RecentSuggestions           *RecentSuggestionsOptions  `json:"recentSuggestionsConfig,omitempty"`
+	RecentSuggestionsConfig     *RecentSuggestionsOptions  `json:"recentSuggestionsConfig,omitempty"`
 	EnablePopularSuggestions    *bool                      `json:"enablePopularSuggestions,omitempty"`
-	PopularSuggestions          *PopularSuggestionsOptions `json:"popularSuggestionsConfig,omitempty"`
+	PopularSuggestionsConfig    *PopularSuggestionsOptions `json:"popularSuggestionsConfig,omitempty"`
 	ShowDistinctSuggestions     *bool                      `json:"showDistinctSuggestions,omitempty"`
 	EnablePredictiveSuggestions *bool                      `json:"enablePredictiveSuggestions,omitempty"`
 	MaxPredictedWords           *int                       `json:"maxPredictedWords,omitempty"`
+	URLField                    *string                    `json:"urlField,omitempty"`
 }
 
 type DataField struct {
