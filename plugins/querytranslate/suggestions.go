@@ -97,8 +97,10 @@ type SuggestionESResponse struct {
 
 // RecentSuggestionsOptions represents the options to configure recent suggestions
 type RecentSuggestionsOptions struct {
-	Size  *int    `json:"size,omitempty"`
-	Index *string `json:"index,omitempty"`
+	Size     *int    `json:"size,omitempty"`
+	Index    *string `json:"index,omitempty"`
+	MinHits  *int    `json:"min_hits,omitempty"`
+	MinChars *int    `json:"min_char,omitempty"`
 }
 
 // PopularSuggestionsOptions represents the options to configure popular suggestions
