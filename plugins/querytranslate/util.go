@@ -250,6 +250,7 @@ type Settings struct {
 	CustomEvents     *map[string]interface{} `json:"customEvents,omitempty"`
 	EnableQueryRules *bool                   `json:"enableQueryRules,omitempty"`
 	UseCache         *bool                   `json:"useCache,omitempty"`
+	QueryRule        *map[string]interface{} `json:"queryRule,omitempty"`
 }
 
 // RSQuery represents the request body
