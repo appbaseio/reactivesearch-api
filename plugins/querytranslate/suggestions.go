@@ -400,7 +400,7 @@ func traverseSuggestions(
 }
 
 type ESDoc struct {
-	Index     string                 `json:"index"`
+	Index     string                 `json:"_index"`
 	Type      string                 `json:"type"`
 	Id        string                 `json:"_id"`
 	Score     float64                `json:"_score"`
