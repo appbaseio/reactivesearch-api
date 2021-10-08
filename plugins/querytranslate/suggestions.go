@@ -3,17 +3,20 @@ package querytranslate
 import (
 	"encoding/json"
 	"fmt"
-	"io"
 	"regexp"
 	"strings"
 	"unicode"
 
 	"github.com/appbaseio/reactivesearch-api/util"
+	"github.com/microcosm-cc/bluemonday"
 	log "github.com/sirupsen/logrus"
-	"golang.org/x/net/html"
 	"golang.org/x/text/transform"
 	"golang.org/x/text/unicode/norm"
 )
+
+// Do this once for each unique policy, and use the policy for the life of the program
+// Policy creation/editing is not safe to use in multiple goroutines
+var p = bluemonday.StrictPolicy()
 
 type SuggestionType int
 
@@ -99,8 +102,8 @@ type SuggestionESResponse struct {
 type RecentSuggestionsOptions struct {
 	Size     *int    `json:"size,omitempty"`
 	Index    *string `json:"index,omitempty"`
-	MinHits  *int    `json:"min_hits,omitempty"`
-	MinChars *int    `json:"min_char,omitempty"`
+	MinHits  *int    `json:"minHits,omitempty"`
+	MinChars *int    `json:"minChars,omitempty"`
 }
 
 // PopularSuggestionsOptions represents the options to configure popular suggestions
@@ -174,29 +177,13 @@ func populateSuggestionsList(
 
 // extracts the string from HTML tags
 func getTextFromHTML(body string) string {
-	reader := strings.NewReader(body)
-	tokenizer := html.NewTokenizer(reader)
-	text := ""
-	for {
-		tt := tokenizer.Next()
-		if tt == html.ErrorToken {
-			if tokenizer.Err() == io.EOF {
-				return body
-			}
-			log.Warnln(logTag, ":", tokenizer.Err())
-			return body
-		}
-		_, hasAttr := tokenizer.TagName()
-		if hasAttr {
-			for {
-				_, attrValue, moreAttr := tokenizer.TagAttr()
-				text += string(attrValue)
-				if !moreAttr {
-					return text
-				}
-			}
-		}
-	}
+
+	// The policy can then be used to sanitize lots of input and it is safe to use the policy in multiple goroutines
+	html := p.Sanitize(
+		body,
+	)
+
+	return html
 }
 
 func getPredictiveSuggestions(config SuggestionsConfig, suggestions *[]SuggestionHIT) []SuggestionHIT {
@@ -228,29 +215,30 @@ func getPredictiveSuggestions(config SuggestionsConfig, suggestions *[]Suggestio
 				}
 				matchIndex = regex2.FindStringIndex(parsedContent)
 			}
-			log.Println("CHECKBOX 1", matchIndex)
-			log.Println("CHECKBOX 1.1", parsedContent, currentValueTrimmed)
 			if matchIndex != nil && len(parsedContent) > matchIndex[0] {
 				matchedString := parsedContent[matchIndex[0]:]
-				words := strings.Split(matchedString[:len(currentValueTrimmed)], " ")
+				words := strings.Split(matchedString[len(currentValueTrimmed):], " ")
 				maxPredictedWords := 2
 				if config.MaxPredictedWords != nil {
 					maxPredictedWords = *config.MaxPredictedWords
 				}
-				log.Println("CHECKBOX 2", matchedString)
-				if maxPredictedWords < len(words) {
-					highlightedWord := strings.Join(words[:maxPredictedWords+1], " ")
-					suggestionPhrase := currentValueTrimmed + `<mark class="highlight">${highlightedWord}</mark>`
-					suggestionValue := currentValueTrimmed + highlightedWord
-					log.Println("CHECKBOX 3", suggestionPhrase)
-					// to show unique results only
-					if !suggestionsMap[suggestionPhrase] {
-						predictiveSuggestion := suggestion
-						predictiveSuggestion.Label = suggestionPhrase
-						predictiveSuggestion.Value = suggestionValue
-						suggestionsList = append(suggestionsList, predictiveSuggestion)
-						// update map
-						suggestionsMap[suggestionPhrase] = true
+				matched := false
+				for i := maxPredictedWords + 1; i >= 2; i-- {
+					// find the longest match
+					if i < len(words) && !matched {
+						highlightedWord := strings.Join(words[:i], " ")
+						suggestionPhrase := currentValueTrimmed + `<mark class="highlight">` + highlightedWord + `</mark>`
+						suggestionValue := currentValueTrimmed + highlightedWord
+						matched = true
+						// to show unique results only
+						if !suggestionsMap[suggestionPhrase] {
+							predictiveSuggestion := suggestion
+							predictiveSuggestion.Label = suggestionPhrase
+							predictiveSuggestion.Value = suggestionValue
+							suggestionsList = append(suggestionsList, predictiveSuggestion)
+							// update map
+							suggestionsMap[suggestionPhrase] = true
+						}
 					}
 				}
 			}
