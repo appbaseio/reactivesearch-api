@@ -152,8 +152,13 @@ func (r *QueryTranslate) search() http.HandlerFunc {
 									util.WriteBackError(w, "error while parsing ES response to hits: "+err.Error(), http.StatusInternalServerError)
 									return
 								}
-								log.Println("RAW HITS", rawHits)
+								// trim extra suggestions
 								suggestions = getFinalSuggestions(suggestionsConfig, rawHits)
+								if query.Size != nil {
+									if len(suggestions) > *query.Size {
+										suggestions = suggestions[:*query.Size]
+									}
+								}
 							}
 						}
 					}
