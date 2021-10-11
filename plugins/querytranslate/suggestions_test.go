@@ -1,6 +1,7 @@
 package querytranslate
 
 import (
+	"sort"
 	"testing"
 
 	. "github.com/smartystreets/goconvey/convey"
@@ -191,5 +192,90 @@ func TestPredictiveSuggestions(t *testing.T) {
 				Label: "bat<mark class=\"highlight\">man</mark>",
 			},
 		})
+	})
+}
+
+func TestIndexSuggestions(t *testing.T) {
+	// when highlight is `true` then suggestion value shouldn't contain html tags
+	Convey("index suggestions: highlight", t, func() {
+		index := "test"
+		rawHits := []ESDoc{
+			{
+				Id: "1",
+				Source: map[string]interface{}{
+					"title": "Rabindranath Tagore Hall",
+				},
+				Highlight: map[string]interface{}{
+					"title": []interface{}{"<mark>Rabindranath Tagore Hall</mark>"},
+				},
+				Index: index,
+			},
+		}
+		suggestions := getFinalSuggestions(SuggestionsConfig{
+			Value:      "tagore",
+			DataFields: []string{"title"},
+		}, rawHits)
+		score := float64(0)
+		id := "1"
+		So(suggestions, ShouldResemble, []SuggestionHIT{
+			{
+				Label: "<mark>Rabindranath Tagore Hall</mark>",
+				Value: "Rabindranath Tagore Hall",
+				Id:    &id,
+				Index: &index,
+				Score: &score,
+				Source: map[string]interface{}{
+					"title": "Rabindranath Tagore Hall",
+				},
+			},
+		})
+	})
+}
+
+func TestExtractFieldsFromSource(t *testing.T) {
+	Convey("basic", t, func() {
+		So(extractFieldsFromSource(map[string]interface{}{
+			"title": "ded",
+		}), ShouldResemble, []string{"title"})
+	})
+	Convey("advanced: nested", t, func() {
+		output := extractFieldsFromSource(map[string]interface{}{
+			"title": "ded",
+			"person": map[string]interface{}{
+				"name": "John",
+				"work": "Painter",
+			},
+		})
+		sort.Strings(output)
+		So(output, ShouldResemble, []string{"person.name", "person.work", "title"})
+	})
+	Convey("advanced: nested with array of objects", t, func() {
+		expectedOutput := []string{
+			"person.education.degree",
+			"person.education.university",
+			"person.name",
+			"title",
+			"person.work",
+		}
+		sort.Strings(expectedOutput)
+		actualOutput := extractFieldsFromSource(map[string]interface{}{
+			"title": "ded",
+			"person": map[string]interface{}{
+				"name": "John",
+				"work": "Painter",
+				"education": []interface{}{
+					map[string]interface{}{
+						"degree":     "graduation",
+						"university": "harvard",
+					},
+					map[string]interface{}{
+						"degree":     "post graduation",
+						"university": "harvard",
+					},
+				},
+			},
+		})
+		sort.Strings(actualOutput)
+		So(actualOutput, ShouldResemble, expectedOutput)
 	})
 }

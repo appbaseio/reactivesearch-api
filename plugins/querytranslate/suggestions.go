@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"regexp"
+	"strconv"
 	"strings"
 	"unicode"
 
@@ -158,7 +159,7 @@ func populateSuggestionsList(
 	}
 	if isWordMatch && !util.Contains(*labelsList, val) {
 		suggestion := SuggestionHIT{
-			Value: val,
+			Value: getTextFromHTML(val),
 			Label: val,
 			// URL      *string        `json:"url"`
 			Type: Index,
@@ -436,28 +437,35 @@ func traverseSuggestions(
 ) {
 	for _, suggestion := range suggestions {
 		for _, field := range config.DataFields {
-			parseField(suggestion.Source, field, skipWordMatch, suggestionsList, labelsList, suggestion, config)
+			parseField(suggestion.ParsedSource, field, skipWordMatch, suggestionsList, labelsList, suggestion, config)
 		}
 	}
 }
 
 type ESDoc struct {
-	Index     string                 `json:"_index"`
-	Type      string                 `json:"type"`
-	Id        string                 `json:"_id"`
-	Score     float64                `json:"_score"`
-	Source    map[string]interface{} `json:"_source"`
-	Highlight map[string]interface{} `json:"highlight"`
+	Index        string                 `json:"_index"`
+	Type         string                 `json:"type"`
+	Id           string                 `json:"_id"`
+	Score        float64                `json:"_score"`
+	Source       map[string]interface{} `json:"_source"`
+	Highlight    map[string]interface{} `json:"highlight"`
+	ParsedSource map[string]interface{}
 }
 
 // Highlights the fields by replacing the actual value with markup
 func highlightResults(source ESDoc) ESDoc {
+	source.ParsedSource = make(map[string]interface{})
+	// clone map
+	for k, v := range source.Source {
+		source.ParsedSource[k] = v
+	}
+
 	if source.Highlight != nil {
 		for highlightItem, highlightedValue := range source.Highlight {
 			highlightValueArray, ok := highlightedValue.([]interface{})
 			if ok && len(highlightValueArray) > 0 {
 				highlightValue := highlightValueArray[0]
-				source.Source[highlightItem] = highlightValue
+				source.ParsedSource[highlightItem] = highlightValue
 			}
 		}
 	}
@@ -473,10 +481,91 @@ func parseHits(hits []ESDoc) []ESDoc {
 	return results
 }
 
+// Util method to extract the fields from elasticsearch source object
+// It can handle nested objects and arrays too.
+// Example 1:
+// Input: { a: 1, b: { b_1: 2, b_2: 3}}
+// Output: ['a', 'b.b_1', 'b.b_2']
+// Example 2:
+// Input: { a: 1, b: [{c: 1}, {d: 2}, {c: 3}]}
+// Output: ['a', 'b.c', 'b.d']
+func getFields(source interface{}, prefix string) map[string]interface{} {
+	dataFields := make(map[string]interface{})
+	sourceAsMap, ok := source.(map[string]interface{})
+	if ok {
+		for field := range sourceAsMap {
+			var key string
+			if prefix != "" {
+				key = prefix + "." + field
+			} else {
+				key = field
+			}
+			if sourceAsMap[field] != nil {
+				mapValue, ok := sourceAsMap[field].(map[string]interface{})
+				if ok {
+					mergeMaps(dataFields, getFields(mapValue, key))
+				} else {
+					mapValueAsArray, ok := sourceAsMap[field].([]interface{})
+					if ok {
+						mergeMaps(dataFields, getFields(mapValueAsArray, key))
+					} else {
+						mergeMaps(dataFields, map[string]interface{}{
+							key: true,
+						})
+					}
+				}
+			}
+		}
+	} else {
+		sourceAsArray, ok := source.([]interface{})
+		if ok {
+			for field := range sourceAsArray {
+				var key string
+				if prefix != "" {
+					key = prefix
+				} else {
+					key = strconv.Itoa(field)
+				}
+				if sourceAsArray[field] != nil {
+					mapValue, ok := sourceAsArray[field].(map[string]interface{})
+					if ok {
+						mergeMaps(dataFields, getFields(mapValue, key))
+					} else {
+						mapValueAsArray, ok := sourceAsArray[field].([]interface{})
+						if ok {
+							mergeMaps(dataFields, getFields(mapValueAsArray, key))
+						} else {
+							mergeMaps(dataFields, map[string]interface{}{
+								key: true,
+							})
+						}
+					}
+				}
+			}
+		}
+	}
+
+	return dataFields
+}
+
+func extractFieldsFromSource(source map[string]interface{}) []string {
+	dataFields := []string{}
+	var sourceAsInterface interface{} = source
+	dataFieldsMap := getFields(sourceAsInterface, "")
+	for k := range dataFieldsMap {
+		dataFields = append(dataFields, k)
+	}
+	return dataFields
+}
+
 func getFinalSuggestions(config SuggestionsConfig, rawHits []ESDoc) []SuggestionHIT {
+	// extract dataFields
+	if len(config.DataFields) == 0 && len(rawHits) > 0 {
+		// extract fields from first hit source
+		config.DataFields = extractFieldsFromSource(rawHits[0].Source)
+	}
 	// parse hits
 	parsedHits := parseHits(rawHits)
-	// TODO: Extract data fields from source
 	// TODO: Restrict length by size
 	return getSuggestions(config, parsedHits)
 }
