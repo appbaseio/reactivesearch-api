@@ -25,6 +25,7 @@ const (
 	Index SuggestionType = iota
 	Popular
 	Recent
+	Promoted
 )
 
 // String is the implementation of Stringer interface that returns the string representation of SuggestionType type.
@@ -33,6 +34,7 @@ func (o SuggestionType) String() string {
 		"index",
 		"popular",
 		"recent",
+		"promoted",
 	}[o]
 }
 
@@ -50,8 +52,10 @@ func (o *SuggestionType) UnmarshalJSON(bytes []byte) error {
 		*o = Popular
 	case Recent.String():
 		*o = Recent
+	case Promoted.String():
+		*o = Promoted
 	default:
-		return fmt.Errorf("invalid suggestionType encountered: %v", suggestionType)
+		return fmt.Errorf("invalid suggestion type encountered: %v", suggestionType)
 	}
 	return nil
 }
@@ -66,8 +70,10 @@ func (o SuggestionType) MarshalJSON() ([]byte, error) {
 		suggestionType = Popular.String()
 	case Recent:
 		suggestionType = Recent.String()
+	case Promoted:
+		suggestionType = Promoted.String()
 	default:
-		return nil, fmt.Errorf("invalid suggestionType encountered: %v", o)
+		return nil, fmt.Errorf("invalid suggestion type encountered: %v", o)
 	}
 	return json.Marshal(suggestionType)
 }
@@ -126,6 +132,8 @@ type SuggestionsConfig struct {
 	EnableSynonyms              *bool
 	ApplyStopwords              *bool
 	Stopwords                   *[]string
+	URLField                    *string
+	CategoryField               *string
 }
 
 func isMn(r rune) bool {
@@ -138,40 +146,60 @@ func replaceDiacritics(query string) string {
 	return queryKey
 }
 
+type SuggestionInfo struct {
+	value         string
+	skipWordMatch bool
+	source        map[string]interface{}
+	urlField      *string
+	categoryField *string
+	rawHit        ESDoc
+}
+
 func populateSuggestionsList(
-	val string,
-	skipWordMatch bool,
 	labelsList *[]string,
 	suggestionsList *[]SuggestionHIT,
-	source map[string]interface{},
-	rawHit ESDoc,
+	suggestionsInfo SuggestionInfo,
 ) bool {
 
 	// check if the suggestion includes the current value
 	// and not already included in other suggestions
-	isWordMatch := skipWordMatch
+	isWordMatch := suggestionsInfo.skipWordMatch
 	// find match
-	for _, value := range strings.Split(strings.Trim(val, " "), " ") {
-		if strings.Contains(strings.ToLower(replaceDiacritics(val)), replaceDiacritics(value)) {
+	for _, value := range strings.Split(strings.Trim(suggestionsInfo.value, " "), " ") {
+		if strings.Contains(strings.ToLower(replaceDiacritics(suggestionsInfo.value)), replaceDiacritics(value)) {
 			isWordMatch = true
 			break
 		}
 	}
-	if isWordMatch && !util.Contains(*labelsList, val) {
+	if isWordMatch && !util.Contains(*labelsList, suggestionsInfo.value) {
+		var url string
+		if suggestionsInfo.urlField != nil {
+			urlString, ok := suggestionsInfo.rawHit.Source[*suggestionsInfo.urlField].(string)
+			if ok {
+				url = urlString
+			}
+		}
+		var category string
+		if suggestionsInfo.categoryField != nil {
+			categoryString, ok := suggestionsInfo.rawHit.Source[*suggestionsInfo.categoryField].(string)
+			if ok {
+				category = categoryString
+			}
+		}
 		suggestion := SuggestionHIT{
-			Value: getTextFromHTML(val),
-			Label: val,
-			// URL      *string        `json:"url"`
-			Type: Index,
-			// Category *string        `json:"_category"`
+			Value:    getTextFromHTML(suggestionsInfo.value),
+			Label:    suggestionsInfo.value,
+			URL:      &url,
+			Type:     Index,
+			Category: &category,
 			// ES response properties
-			Id:     &rawHit.Id,
-			Index:  &rawHit.Index,
-			Source: rawHit.Source,
-			Score:  &rawHit.Score,
+			Id:     &suggestionsInfo.rawHit.Id,
+			Index:  &suggestionsInfo.rawHit.Index,
+			Source: suggestionsInfo.rawHit.Source,
+			Score:  &suggestionsInfo.rawHit.Score,
 		}
 
-		*labelsList = append(*labelsList, val)
+		*labelsList = append(*labelsList, suggestionsInfo.value)
 		*suggestionsList = append(*suggestionsList, suggestion)
 		return false
 	}
@@ -389,7 +417,15 @@ func parseField(
 		val := extractSuggestion(topLabel)
 		valAsString, ok := val.(string)
 		if ok && valAsString != "" {
-			return populateSuggestionsList(valAsString, skipWordMatch, labelsList, suggestionsList, source, rawHit)
+			suggestionInfo := SuggestionInfo{
+				value:         valAsString,
+				skipWordMatch: skipWordMatch,
+				source:        source,
+				urlField:      config.URLField,
+				categoryField: config.CategoryField,
+				rawHit:        rawHit,
+			}
+			return populateSuggestionsList(labelsList, suggestionsList, suggestionInfo)
 		}
 	}
 	// if the type of field is array of strings
@@ -421,7 +457,15 @@ func parseField(
 			val := extractSuggestion(label)
 			valAsString, ok := val.(string)
 			if ok {
-				return populateSuggestionsList(valAsString, skipWordMatch, labelsList, suggestionsList, source, rawHit)
+				suggestionInfo := SuggestionInfo{
+					value:         valAsString,
+					skipWordMatch: skipWordMatch,
+					source:        source,
+					urlField:      config.URLField,
+					categoryField: config.CategoryField,
+					rawHit:        rawHit,
+				}
+				return populateSuggestionsList(labelsList, suggestionsList, suggestionInfo)
 			}
 		}
 	}

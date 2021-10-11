@@ -135,6 +135,8 @@ func (r *QueryTranslate) search() http.HandlerFunc {
 									EnableSynonyms:              query.EnableSynonyms,
 									ApplyStopwords:              query.ApplyStopwords,
 									Stopwords:                   query.Stopwords,
+									URLField:                    query.URLField,
+									CategoryField:               query.CategoryField,
 								}
 
 								var rawHits []ESDoc
