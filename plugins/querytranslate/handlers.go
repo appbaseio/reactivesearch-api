@@ -141,8 +141,7 @@ func (r *QueryTranslate) search() http.HandlerFunc {
 
 								var rawHits []ESDoc
 								hits, dataType, _, err1 := jsonparser.Get(value, "hits", "hits")
-								if dataType != jsonparser.NotExist && err1 != nil {
-									log.Errorln(logTag, ":", err1)
+								if dataType == jsonparser.NotExist {
 									// write raw response
 									rsResponseWithSearchResponse, err := jsonparser.Set(rsResponse, value, queryID)
 									if err != nil {
@@ -151,19 +150,17 @@ func (r *QueryTranslate) search() http.HandlerFunc {
 										return
 									}
 									rsResponse = rsResponseWithSearchResponse
+									continue
+								}
+								if err1 != nil {
+									log.Errorln(logTag, ":", err1)
+									util.WriteBackError(w, "error while retriving hits: "+err1.Error(), http.StatusInternalServerError)
 									return
 								}
 								err := json.Unmarshal(hits, &rawHits)
 								if err != nil {
 									log.Errorln(logTag, ":", err)
-									// write raw response
-									rsResponseWithSearchResponse, err := jsonparser.Set(rsResponse, value, queryID)
-									if err != nil {
-										log.Errorln(logTag, ":", err)
-										util.WriteBackError(w, "can't add search response to final response", http.StatusInternalServerError)
-										return
-									}
-									rsResponse = rsResponseWithSearchResponse
+									util.WriteBackError(w, "error while parsing ES response to hits: "+err.Error(), http.StatusInternalServerError)
 									return
 								}
 								// trim extra suggestions
@@ -181,40 +178,19 @@ func (r *QueryTranslate) search() http.HandlerFunc {
 					responseInByte, err := json.Marshal(suggestions)
 					if err != nil {
 						log.Errorln(logTag, ":", err)
-						// write raw response
-						rsResponseWithSearchResponse, err := jsonparser.Set(rsResponse, value, queryID)
-						if err != nil {
-							log.Errorln(logTag, ":", err)
-							util.WriteBackError(w, "can't add search response to final response", http.StatusInternalServerError)
-							return
-						}
-						rsResponse = rsResponseWithSearchResponse
+						util.WriteBackError(w, "error while parsing suggestions", http.StatusInternalServerError)
 						return
 					}
 					rsResponseWithSuggestions, err := jsonparser.Set(value, responseInByte, "hits", "hits")
 					if err != nil {
 						log.Errorln(logTag, ":", err)
-						// write raw response
-						rsResponseWithSearchResponse, err := jsonparser.Set(rsResponse, value, queryID)
-						if err != nil {
-							log.Errorln(logTag, ":", err)
-							util.WriteBackError(w, "can't add search response to final response", http.StatusInternalServerError)
-							return
-						}
-						rsResponse = rsResponseWithSearchResponse
+						util.WriteBackError(w, "can't add suggestions to final response", http.StatusInternalServerError)
 						return
 					}
 					rsResponseWithSearchResponse, err := jsonparser.Set(rsResponse, rsResponseWithSuggestions, queryID)
 					if err != nil {
 						log.Errorln(logTag, ":", err)
-						// write raw response
-						rsResponseWithSearchResponse, err := jsonparser.Set(rsResponse, value, queryID)
-						if err != nil {
-							log.Errorln(logTag, ":", err)
-							util.WriteBackError(w, "can't add search response to final response", http.StatusInternalServerError)
-							return
-						}
-						rsResponse = rsResponseWithSearchResponse
+						util.WriteBackError(w, "can't add search response to final response", http.StatusInternalServerError)
 						return
 					}
 					rsResponse = rsResponseWithSearchResponse
