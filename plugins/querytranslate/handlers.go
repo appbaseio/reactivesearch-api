@@ -133,6 +133,8 @@ func (r *QueryTranslate) search() http.HandlerFunc {
 									EnablePredictiveSuggestions: query.EnablePredictiveSuggestions,
 									MaxPredictedWords:           query.MaxPredictedWords,
 									EnableSynonyms:              query.EnableSynonyms,
+									ApplyStopwords:              query.ApplyStopwords,
+									Stopwords:                   query.Stopwords,
 								}
 
 								var rawHits []ESDoc

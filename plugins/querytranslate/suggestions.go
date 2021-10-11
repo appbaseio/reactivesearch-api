@@ -123,6 +123,8 @@ type SuggestionsConfig struct {
 	EnablePredictiveSuggestions *bool
 	MaxPredictedWords           *int
 	EnableSynonyms              *bool
+	ApplyStopwords              *bool
+	Stopwords                   *[]string
 }
 
 func isMn(r rune) bool {
@@ -197,13 +199,12 @@ func getPredictiveSuggestions(config SuggestionsConfig, suggestions *[]Suggestio
 			parsedContent := getTextFromHTML(suggestion.Label)
 			// to match the partial start of word.
 			// example if searchTerm is `select` and string contains `selected`
-			regex, err := regexp.Compile("(?i)" + "^" + regexp.QuoteMeta(currentValueTrimmed) + "\\w+")
+			regex, err := regexp.Compile("(?i)" + regexp.QuoteMeta(currentValueTrimmed))
 			if err != nil {
 				log.Warnln(logTag, ":", err.Error())
 				continue
 			}
 			matchIndex := regex.FindStringIndex(parsedContent)
-			log.Println("CHECKBOX 0", matchIndex)
 			// if not matchIndex not present then it means either there is no match or there are chances
 			// that exact word is present
 			if matchIndex == nil {
@@ -217,27 +218,80 @@ func getPredictiveSuggestions(config SuggestionsConfig, suggestions *[]Suggestio
 			}
 			if matchIndex != nil && len(parsedContent) > matchIndex[0] {
 				matchedString := parsedContent[matchIndex[0]:]
-				words := strings.Split(matchedString[len(currentValueTrimmed):], " ")
+				suffixWords := strings.Split(matchedString[len(currentValueTrimmed):], " ")
+				prefixWords := strings.Split(parsedContent[:matchIndex[0]], " ")
 				maxPredictedWords := 2
 				if config.MaxPredictedWords != nil {
 					maxPredictedWords = *config.MaxPredictedWords
 				}
 				matched := false
-				for i := maxPredictedWords + 1; i >= 2; i-- {
-					// find the longest match
-					if i < len(words) && !matched {
-						highlightedWord := strings.Join(words[:i], " ")
-						suggestionPhrase := currentValueTrimmed + `<mark class="highlight">` + highlightedWord + `</mark>`
-						suggestionValue := currentValueTrimmed + highlightedWord
-						matched = true
-						// to show unique results only
-						if !suggestionsMap[suggestionPhrase] {
-							predictiveSuggestion := suggestion
-							predictiveSuggestion.Label = suggestionPhrase
-							predictiveSuggestion.Value = suggestionValue
-							suggestionsList = append(suggestionsList, predictiveSuggestion)
-							// update map
-							suggestionsMap[suggestionPhrase] = true
+				stopwordsToApply := stopwords
+				// use custom stopwords if present
+				if config.Stopwords != nil {
+					stopwordsToApply = make(map[string]bool)
+					for _, v := range *config.Stopwords {
+						stopwordsToApply[v] = true
+					}
+				}
+				// apply suffix match
+				if len(suffixWords) > 0 {
+					for i := maxPredictedWords + 1; i > 0; i-- {
+						// find the longest match
+						if i <= len(suffixWords) && !matched {
+							highlightedWord := strings.Join(suffixWords[:i], " ")
+							if strings.Trim(highlightedWord, "") != "" &&
+								len(strings.Split(highlightedWord, " ")) <= maxPredictedWords+1 {
+								// a prefix shouldn't be a stopword
+								if config.ApplyStopwords != nil && *config.ApplyStopwords {
+									lastWord := strings.Trim(suffixWords[:i][len(suffixWords[:i])-1], " ")
+									if stopwordsToApply[lastWord] {
+										continue
+									}
+								}
+								suggestionPhrase := currentValueTrimmed + `<mark class="highlight">` + highlightedWord + `</mark>`
+								suggestionValue := currentValueTrimmed + highlightedWord
+								matched = true
+								// to show unique results only
+								if !suggestionsMap[suggestionPhrase] {
+									predictiveSuggestion := suggestion
+									predictiveSuggestion.Label = strings.ToLower(suggestionPhrase)
+									predictiveSuggestion.Value = strings.ToLower(suggestionValue)
+									suggestionsList = append(suggestionsList, predictiveSuggestion)
+									// update map
+									suggestionsMap[suggestionPhrase] = true
+								}
+							}
+						}
+					}
+				}
+				// apply prefix match
+				if !matched && len(prefixWords) > 0 {
+					for i := maxPredictedWords + 1; i >= 0; i-- {
+						// find the shortest match
+						if i <= len(prefixWords) && !matched {
+							highlightedWord := strings.Join(prefixWords[i:], " ")
+							if strings.Trim(highlightedWord, "") != "" && len(strings.Split(highlightedWord, " ")) <= maxPredictedWords+1 {
+								// a prefix shouldn't be a stopword
+								if config.ApplyStopwords != nil && *config.ApplyStopwords {
+									firstWord := strings.Trim(prefixWords[i:][0], " ")
+									if stopwordsToApply[firstWord] {
+										continue
+									}
+								}
+								suggestionPhrase := `<mark class="highlight">` + highlightedWord + `</mark>` + currentValueTrimmed
+								suggestionValue := highlightedWord + currentValueTrimmed
+								matched = true
+								// to show unique results only
+								if !suggestionsMap[suggestionPhrase] {
+									predictiveSuggestion := suggestion
+									predictiveSuggestion.Label = strings.ToLower(suggestionPhrase)
+									predictiveSuggestion.Value = strings.ToLower(suggestionValue)
+									suggestionsList = append(suggestionsList, predictiveSuggestion)
+									// update map
+									suggestionsMap[suggestionPhrase] = true
+								}
+							}
+
 						}
 					}
 				}
