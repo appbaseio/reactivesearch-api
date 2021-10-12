@@ -139,8 +139,7 @@ func queryTranslate(h http.HandlerFunc) http.HandlerFunc {
 		}
 		if reqPermission != nil && reqPermission.ReactiveSearchConfig != nil {
 			for _, query := range body.Query {
-
-				// valiate query DSL
+				// validate query DSL
 				if reqPermission.ReactiveSearchConfig.DisbaleQueryDSL != nil {
 					if *reqPermission.ReactiveSearchConfig.DisbaleQueryDSL {
 						errorMsg := "raw query DSL is disabled. Please use a stored query instead"

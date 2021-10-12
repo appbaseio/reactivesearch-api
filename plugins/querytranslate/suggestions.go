@@ -118,6 +118,8 @@ type PopularSuggestionsOptions struct {
 	Size       *int    `json:"size,omitempty"`
 	Index      *string `json:"index,omitempty"`
 	ShowGlobal *bool   `json:"showGlobal,omitempty"`
+	MinChars   *int    `json:"minChars,omitempty"`
+	MinCount   *int    `json:"minCount,omitempty"`
 }
 
 type SuggestionsConfig struct {
