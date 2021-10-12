@@ -194,11 +194,11 @@ func (r *QueryTranslate) search() http.HandlerFunc {
 						util.WriteBackError(w, "can't add search response to final response", http.StatusInternalServerError)
 						return
 					}
-					// Modify total value value
+					// Modify total suggestions value
 					rsResponseWithSearchResponse, err2 := jsonparser.Set(rsResponseWithSearchResponse, []byte(strconv.Itoa(len(suggestions))), queryID, "hits", "total", "value")
 					if err2 != nil {
 						log.Errorln(logTag, ":", err2)
-						util.WriteBackError(w, "can't apply hits value", http.StatusInternalServerError)
+						util.WriteBackError(w, "can't apply total value for hits", http.StatusInternalServerError)
 						return
 					}
 					rsResponse = rsResponseWithSearchResponse
