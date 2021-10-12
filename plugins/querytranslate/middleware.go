@@ -139,43 +139,7 @@ func queryTranslate(h http.HandlerFunc) http.HandlerFunc {
 		}
 		if reqPermission != nil && reqPermission.ReactiveSearchConfig != nil {
 			for _, query := range body.Query {
-				// validate query DSL
-				if reqPermission.ReactiveSearchConfig.DisbaleQueryDSL != nil {
-					if *reqPermission.ReactiveSearchConfig.DisbaleQueryDSL {
-						errorMsg := "raw query DSL is disabled. Please use a stored query instead"
-						if query.DefaultQuery != nil {
-							defaultQuery := *query.DefaultQuery
-							if defaultQuery != nil {
-								storedQueryId := defaultQuery["id"]
-								if storedQueryId == nil {
-									telemetry.WriteBackErrorWithTelemetry(req, w, errorMsg, http.StatusBadRequest)
-									return
-								}
-								idAsString, ok := storedQueryId.(string)
-								if !ok || idAsString == "" {
-									telemetry.WriteBackErrorWithTelemetry(req, w, errorMsg, http.StatusBadRequest)
-									return
-								}
-							}
-						}
-						if query.CustomQuery != nil {
-							customQuery := *query.CustomQuery
-							if customQuery != nil {
-								storedQueryId := customQuery["id"]
-								if storedQueryId == nil {
-									telemetry.WriteBackErrorWithTelemetry(req, w, errorMsg, http.StatusBadRequest)
-									return
-								}
-								idAsString, ok := storedQueryId.(string)
-								if !ok || idAsString == "" {
-									telemetry.WriteBackErrorWithTelemetry(req, w, errorMsg, http.StatusBadRequest)
-									return
-								}
-							}
-						}
-					}
-				}
-
+				// Note: Query DSL validation is handled by noss
 				// validate query size
 				if reqPermission.ReactiveSearchConfig.MaxSize != nil {
 					// validate size from defaultQuery if present
