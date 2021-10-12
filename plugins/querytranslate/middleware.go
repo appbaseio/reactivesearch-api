@@ -31,7 +31,6 @@ func (c *chain) Wrap(mw []middleware.Middleware, h http.HandlerFunc) http.Handle
 	mw = append(mw, queryTranslate)
 	// Append telemetry at the end
 	mw = append(mw, telemetry.Recorder())
-	log.Println("FINAL MIDDLEWARES", mw)
 	return c.Adapt(h, append(list(), mw...)...)
 }
 

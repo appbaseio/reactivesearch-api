@@ -333,7 +333,6 @@ func main() {
 	}
 	// Load ReactiveSearch plugin
 	if reactiveSearchPath != "" {
-		log.Println("REACTIVESEARCH MIDDLEWARES", reactiveSearchMiddleware)
 		LoadRSPluginFromFile(router, reactiveSearchPath, reactiveSearchMiddleware)
 	}
 	LoadESPluginFromFile(router, elasticSearchPath, elasticSearchMiddleware)
