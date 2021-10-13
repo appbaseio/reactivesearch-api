@@ -16,18 +16,22 @@ func TestHighlightResults(t *testing.T) {
 			},
 			Highlight: map[string]interface{}{
 				"title": []interface{}{
-					"<mark>Harry</mark> Potter Collection (<mark>Harry</mark> Potter, #1-6)",
+					"<b>Harry</b> Potter Collection (<b>Harry</b> Potter, #1-6)",
 				},
 			},
 		}), ShouldResemble, ESDoc{
 			Source: map[string]interface{}{
-				"title":       "<mark>Harry</mark> Potter Collection (<mark>Harry</mark> Potter, #1-6)",
+				"title":       "Harry Potter Collection",
 				"description": "desc1",
 			},
 			Highlight: map[string]interface{}{
 				"title": []interface{}{
-					"<mark>Harry</mark> Potter Collection (<mark>Harry</mark> Potter, #1-6)",
+					"<b>Harry</b> Potter Collection (<b>Harry</b> Potter, #1-6)",
 				},
+			},
+			ParsedSource: map[string]interface{}{
+				"title":       "<b>Harry</b> Potter Collection (<b>Harry</b> Potter, #1-6)",
+				"description": "desc1",
 			},
 		})
 	})
@@ -39,6 +43,10 @@ func TestHighlightResults(t *testing.T) {
 			},
 		}), ShouldResemble, ESDoc{
 			Source: map[string]interface{}{
+				"title":       "Harry Potter Collection",
+				"description": "desc1",
+			},
+			ParsedSource: map[string]interface{}{
 				"title":       "Harry Potter Collection",
 				"description": "desc1",
 			},
@@ -66,7 +74,7 @@ func TestPredictiveSuggestions(t *testing.T) {
 		}, &suggestions)
 		So(predictiveSuggestions, ShouldResemble, []SuggestionHIT{
 			{
-				Label: "tagore<mark class=\"highlight\"> hall</mark>",
+				Label: "tagore<b class=\"highlight\"> hall</b>",
 				Value: "tagore hall",
 			},
 		})
@@ -90,7 +98,7 @@ func TestPredictiveSuggestions(t *testing.T) {
 		}, &suggestions)
 		So(predictiveSuggestions, ShouldResemble, []SuggestionHIT{
 			{
-				Label: "<mark class=\"highlight\">rabindranath </mark>tagore",
+				Label: "<b class=\"highlight\">rabindranath </b>tagore",
 				Value: "rabindranath tagore",
 			},
 		})
@@ -116,7 +124,7 @@ func TestPredictiveSuggestions(t *testing.T) {
 		}, &suggestions)
 		So(predictiveSuggestions, ShouldResemble, []SuggestionHIT{
 			// {
-			// 	Label: "<mark class=\"highlight\">here and </mark>there",
+			// 	Label: "<b class=\"highlight\">here and </b>there",
 			// 	Value: "here and there",
 			// },
 		})
@@ -162,7 +170,7 @@ func TestPredictiveSuggestions(t *testing.T) {
 		}, &suggestions)
 		So(predictiveSuggestions, ShouldResemble, []SuggestionHIT{
 			{
-				Label: "<mark class=\"highlight\">and </mark>there",
+				Label: "<b class=\"highlight\">and </b>there",
 				Value: "and there",
 			},
 		})
@@ -189,7 +197,7 @@ func TestPredictiveSuggestions(t *testing.T) {
 		So(predictiveSuggestions, ShouldResemble, []SuggestionHIT{
 			{
 				Value: "batman",
-				Label: "bat<mark class=\"highlight\">man</mark>",
+				Label: "bat<b class=\"highlight\">man</b>",
 			},
 		})
 	})
@@ -206,7 +214,7 @@ func TestIndexSuggestions(t *testing.T) {
 					"title": "Rabindranath Tagore Hall",
 				},
 				Highlight: map[string]interface{}{
-					"title": []interface{}{"<mark>Rabindranath Tagore Hall</mark>"},
+					"title": []interface{}{"<b>Rabindranath Tagore Hall</b>"},
 				},
 				Index: index,
 			},
@@ -219,7 +227,7 @@ func TestIndexSuggestions(t *testing.T) {
 		id := "1"
 		So(suggestions, ShouldResemble, []SuggestionHIT{
 			{
-				Label: "<mark>Rabindranath Tagore Hall</mark>",
+				Label: "<b>Rabindranath Tagore Hall</b>",
 				Value: "Rabindranath Tagore Hall",
 				Id:    &id,
 				Index: &index,

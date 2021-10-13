@@ -197,26 +197,26 @@ func populateSuggestionsList(
 		}
 	}
 	if isWordMatch && !util.Contains(*labelsList, suggestionsInfo.value) {
-		var url string
+		var url *string
 		if suggestionsInfo.urlField != nil {
 			urlString, ok := suggestionsInfo.rawHit.Source[*suggestionsInfo.urlField].(string)
 			if ok {
-				url = urlString
+				url = &urlString
 			}
 		}
-		var category string
+		var category *string
 		if suggestionsInfo.categoryField != nil {
 			categoryString, ok := suggestionsInfo.rawHit.Source[*suggestionsInfo.categoryField].(string)
 			if ok {
-				category = categoryString
+				category = &categoryString
 			}
 		}
 		suggestion := SuggestionHIT{
 			Value:    strip(getTextFromHTML(suggestionsInfo.value)),
 			Label:    suggestionsInfo.value,
-			URL:      &url,
+			URL:      url,
 			Type:     Index,
-			Category: &category,
+			Category: category,
 			// ES response properties
 			Id:     &suggestionsInfo.rawHit.Id,
 			Index:  &suggestionsInfo.rawHit.Index,
