@@ -212,7 +212,7 @@ func populateSuggestionsList(
 			}
 		}
 		suggestion := SuggestionHIT{
-			Value:    strip(getTextFromHTML(suggestionsInfo.value)),
+			Value:    getTextFromHTML(suggestionsInfo.value),
 			Label:    suggestionsInfo.value,
 			URL:      url,
 			Type:     Index,
@@ -292,7 +292,7 @@ func getPredictiveSuggestions(config SuggestionsConfig, suggestions *[]Suggestio
 					for i := maxPredictedWords + 1; i > 0; i-- {
 						// find the longest match
 						if i <= len(suffixWords) && !matched {
-							highlightedWord := strings.Join(suffixWords[:i], " ")
+							highlightedWord := strip(strings.Join(suffixWords[:i], " "))
 							if strings.Trim(highlightedWord, "") != "" &&
 								len(strings.Split(highlightedWord, " ")) <= maxPredictedWords+1 {
 								// a prefix shouldn't be a stopword
@@ -323,7 +323,7 @@ func getPredictiveSuggestions(config SuggestionsConfig, suggestions *[]Suggestio
 					for i := maxPredictedWords + 1; i >= 0; i-- {
 						// find the shortest match
 						if i <= len(prefixWords) && !matched {
-							highlightedWord := strings.Join(prefixWords[i:], " ")
+							highlightedWord := strip(strings.Join(prefixWords[i:], " "))
 							if strings.Trim(highlightedWord, "") != "" && len(strings.Split(highlightedWord, " ")) <= maxPredictedWords+1 {
 								// a prefix shouldn't be a stopword
 								if config.ApplyStopwords != nil && *config.ApplyStopwords {

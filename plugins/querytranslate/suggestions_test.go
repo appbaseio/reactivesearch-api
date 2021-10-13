@@ -201,6 +201,29 @@ func TestPredictiveSuggestions(t *testing.T) {
 			},
 		})
 	})
+	// handle special characters
+	Convey("predictive suggestions: 6", t, func() {
+		var suggestions = []SuggestionHIT{
+			{
+				Label: "[batman and sons]",
+				Value: "[batman and sons]",
+			},
+		}
+		enable := true
+		maxPredictedWords := 1
+		predictiveSuggestions := getPredictiveSuggestions(SuggestionsConfig{
+			Value:                       "bat",
+			EnablePredictiveSuggestions: &enable,
+			ApplyStopwords:              &enable,
+			MaxPredictedWords:           &maxPredictedWords,
+		}, &suggestions)
+		So(predictiveSuggestions, ShouldResemble, []SuggestionHIT{
+			{
+				Value: "batman",
+				Label: "bat<b class=\"highlight\">man</b>",
+			},
+		})
+	})
 }
 
 func TestIndexSuggestions(t *testing.T) {
