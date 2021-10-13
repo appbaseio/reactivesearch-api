@@ -14,6 +14,7 @@ import (
 	"github.com/appbaseio/reactivesearch-api/util"
 	"github.com/buger/jsonparser"
 	"github.com/gorilla/mux"
+	es7 "github.com/olivere/elastic/v7"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -164,8 +165,38 @@ func (r *QueryTranslate) search() http.HandlerFunc {
 									util.WriteBackError(w, "error while parsing ES response to hits: "+err.Error(), http.StatusInternalServerError)
 									return
 								}
+								// extract category suggestions
+								if query.CategoryField != nil {
+									categories, dataType2, _, err2 := jsonparser.Get(value, "aggregations", *query.CategoryField, "buckets")
+									if err2 != nil {
+										log.Errorln(logTag, ":", err2)
+										util.WriteBackError(w, "error while retriving aggregations: "+err2.Error(), http.StatusInternalServerError)
+										return
+									}
+									if dataType2 != jsonparser.NotExist {
+										var buckets []es7.AggregationBucketKeyItem
+										err := json.Unmarshal(categories, &buckets)
+										if err != nil {
+											log.Errorln(logTag, ":", err)
+											util.WriteBackError(w, "error while parsing ES aggregations to suggestions: "+err.Error(), http.StatusInternalServerError)
+											return
+										}
+										for _, v := range buckets {
+											key, ok := v.Key.(string)
+											if ok {
+												count := int(v.DocCount)
+												suggestions = append(suggestions, SuggestionHIT{
+													Label:    valueAsString + " in " + key,
+													Value:    valueAsString,
+													Count:    &count,
+													Category: &key,
+												})
+											}
+										}
+									}
+								}
 								// trim extra suggestions
-								suggestions = getFinalSuggestions(suggestionsConfig, rawHits)
+								suggestions = append(suggestions, getFinalSuggestions(suggestionsConfig, rawHits)...)
 								if query.Size != nil {
 									if len(suggestions) > *query.Size {
 										suggestions = suggestions[:*query.Size]
