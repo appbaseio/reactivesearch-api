@@ -203,6 +203,16 @@ func queryTranslate(h http.HandlerFunc) http.HandlerFunc {
 			}
 		}
 
+		for i, query := range body.Query {
+			// apply default highlight for suggestions
+			if query.Type == Suggestion &&
+				query.Highlight != nil && *query.Highlight &&
+				query.CustomHighlight == nil {
+				defaultHighlight := getDefaultSuggestionsHighlight(query)
+				body.Query[i].CustomHighlight = &defaultHighlight
+			}
+		}
+
 		// Translate query
 		msearchQuery, err := translateQuery(*body)
 		// log.Println("RS QUERY", msearchQuery)

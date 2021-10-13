@@ -138,6 +138,29 @@ type SuggestionsConfig struct {
 	CategoryField               *string
 }
 
+const preTags = `<b class="highlight">`
+const postTags = `</b>`
+
+func getDefaultSuggestionsHighlight(query Query) map[string]interface{} {
+	highlightFields := make(map[string]interface{})
+	fields := query.HighlightField
+	if len(fields) == 0 {
+		// use data fields as highlighted field
+		dataFields := NormalizedDataFields(query.DataField, []float64{})
+		for _, v := range dataFields {
+			fields = append(fields, v.Field)
+		}
+	}
+	for _, v := range fields {
+		highlightFields[v] = make(map[string]interface{})
+	}
+	return map[string]interface{}{
+		"fields":    highlightFields,
+		"pre_tags":  preTags,
+		"post_tags": postTags,
+	}
+}
+
 func isMn(r rune) bool {
 	return unicode.Is(unicode.Mn, r) // Mn: nonspacing marks
 }
@@ -279,7 +302,7 @@ func getPredictiveSuggestions(config SuggestionsConfig, suggestions *[]Suggestio
 										continue
 									}
 								}
-								suggestionPhrase := currentValueTrimmed + `<mark class="highlight">` + highlightedWord + `</mark>`
+								suggestionPhrase := currentValueTrimmed + preTags + highlightedWord + postTags
 								suggestionValue := currentValueTrimmed + highlightedWord
 								matched = true
 								// to show unique results only
@@ -309,7 +332,7 @@ func getPredictiveSuggestions(config SuggestionsConfig, suggestions *[]Suggestio
 										continue
 									}
 								}
-								suggestionPhrase := `<mark class="highlight">` + highlightedWord + `</mark>` + currentValueTrimmed
+								suggestionPhrase := preTags + highlightedWord + postTags + currentValueTrimmed
 								suggestionValue := highlightedWord + currentValueTrimmed
 								matched = true
 								// to show unique results only
