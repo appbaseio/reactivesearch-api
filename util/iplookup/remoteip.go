@@ -54,8 +54,19 @@ func FromRequest(r *http.Request) string {
 	xRealIP := r.Header.Get("X-Real-Ip")
 	xForwardedFor := r.Header.Get("X-Forwarded-For")
 
-	// If both empty, return IP from remote address
-	if xRealIP == "" && xForwardedFor == "" {
+	if xForwardedFor != "" {
+		// Check list of IP in X-Forwarded-For and return the first global address
+		for _, address := range strings.Split(xForwardedFor, ",") {
+			address = strings.TrimSpace(address)
+			isPrivate, err := isPrivateAddress(address)
+			if !isPrivate && err == nil {
+				return address
+			}
+		}
+	}
+
+	// If xRealIP empty, return IP from remote address
+	if xRealIP == "" {
 		var remoteIP string
 
 		// If there are colon in remote address, remove the port number
@@ -67,15 +78,6 @@ func FromRequest(r *http.Request) string {
 		}
 
 		return remoteIP
-	}
-
-	// Check list of IP in X-Forwarded-For and return the first global address
-	for _, address := range strings.Split(xForwardedFor, ",") {
-		address = strings.TrimSpace(address)
-		isPrivate, err := isPrivateAddress(address)
-		if !isPrivate && err == nil {
-			return address
-		}
 	}
 
 	// If nothing succeed, return X-Real-IP

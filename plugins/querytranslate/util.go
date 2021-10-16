@@ -43,6 +43,7 @@ const (
 	Term
 	Range
 	Geo
+	Suggestion
 )
 
 // String is the implementation of Stringer interface that returns the string representation of QueryType type.
@@ -52,6 +53,7 @@ func (o QueryType) String() string {
 		"term",
 		"range",
 		"geo",
+		"suggestion",
 	}[o]
 }
 
@@ -71,6 +73,8 @@ func (o *QueryType) UnmarshalJSON(bytes []byte) error {
 		*o = Range
 	case Geo.String():
 		*o = Geo
+	case Suggestion.String():
+		*o = Suggestion
 	default:
 		return fmt.Errorf("invalid queryType encountered: %v", queryType)
 	}
@@ -89,6 +93,8 @@ func (o QueryType) MarshalJSON() ([]byte, error) {
 		queryType = Range.String()
 	case Geo:
 		queryType = Geo.String()
+	case Suggestion:
+		queryType = Suggestion.String()
 	default:
 		return nil, fmt.Errorf("invalid queryType encountered: %v", o)
 	}
@@ -197,45 +203,55 @@ func (o QueryFormat) MarshalJSON() ([]byte, error) {
 
 // Query represents the query object
 type Query struct {
-	ID                  *string                  `json:"id,omitempty"` // component id
-	Type                QueryType                `json:"type,omitempty"`
-	React               *map[string]interface{}  `json:"react,omitempty"`
-	QueryFormat         *QueryFormat             `json:"queryFormat,omitempty"`
-	DataField           interface{}              `json:"dataField,omitempty"`
-	CategoryField       *string                  `json:"categoryField,omitempty"`
-	CategoryValue       *interface{}             `json:"categoryValue,omitempty"`
-	FieldWeights        []float64                `json:"fieldWeights,omitempty"`
-	NestedField         *string                  `json:"nestedField,omitempty"`
-	From                *int                     `json:"from,omitempty"`
-	Size                *int                     `json:"size,omitempty"`
-	AggregationSize     *int                     `json:"aggregationSize,omitempty"`
-	SortBy              *SortBy                  `json:"sortBy,omitempty"`
-	Value               *interface{}             `json:"value,omitempty"` // either string or Array of string
-	AggregationField    *string                  `json:"aggregationField,omitempty"`
-	After               *map[string]interface{}  `json:"after,omitempty"`
-	IncludeNullValues   *bool                    `json:"includeNullValues,omitempty"`
-	IncludeFields       *[]string                `json:"includeFields,omitempty"`
-	ExcludeFields       *[]string                `json:"excludeFields,omitempty"`
-	Fuzziness           interface{}              `json:"fuzziness,omitempty"` // string or int
-	SearchOperators     *bool                    `json:"searchOperators,omitempty"`
-	Highlight           *bool                    `json:"highlight,omitempty"`
-	HighlightField      []string                 `json:"highlightField,omitempty"`
-	CustomHighlight     *map[string]interface{}  `json:"customHighlight,omitempty"`
-	Interval            *int                     `json:"interval,omitempty"`
-	Aggregations        *[]string                `json:"aggregations,omitempty"`
-	MissingLabel        string                   `json:"missingLabel,omitempty"`
-	ShowMissing         bool                     `json:"showMissing,omitempty"`
-	DefaultQuery        *map[string]interface{}  `json:"defaultQuery,omitempty"`
-	CustomQuery         *map[string]interface{}  `json:"customQuery,omitempty"`
-	Execute             *bool                    `json:"execute,omitempty"`
-	EnableSynonyms      *bool                    `json:"enableSynonyms,omitempty"`
-	SelectAllLabel      *string                  `json:"selectAllLabel,omitempty"`
-	Pagination          *bool                    `json:"pagination,omitempty"`
-	QueryString         *bool                    `json:"queryString,omitempty"`
-	RankFeature         *map[string]RankFunction `json:"rankFeature,omitempty"`
-	DistinctField       *string                  `json:"distinctField,omitempty"`
-	DistinctFieldConfig *map[string]interface{}  `json:"distinctFieldConfig,omitempty"`
-	Index               *string                  `json:"index,omitempty"`
+	ID                          *string                    `json:"id,omitempty"` // component id
+	Type                        QueryType                  `json:"type,omitempty"`
+	React                       *map[string]interface{}    `json:"react,omitempty"`
+	QueryFormat                 *QueryFormat               `json:"queryFormat,omitempty"`
+	DataField                   interface{}                `json:"dataField,omitempty"`
+	CategoryField               *string                    `json:"categoryField,omitempty"`
+	CategoryValue               *interface{}               `json:"categoryValue,omitempty"`
+	FieldWeights                []float64                  `json:"fieldWeights,omitempty"`
+	NestedField                 *string                    `json:"nestedField,omitempty"`
+	From                        *int                       `json:"from,omitempty"`
+	Size                        *int                       `json:"size,omitempty"`
+	AggregationSize             *int                       `json:"aggregationSize,omitempty"`
+	SortBy                      *SortBy                    `json:"sortBy,omitempty"`
+	Value                       *interface{}               `json:"value,omitempty"` // either string or Array of string
+	AggregationField            *string                    `json:"aggregationField,omitempty"`
+	After                       *map[string]interface{}    `json:"after,omitempty"`
+	IncludeNullValues           *bool                      `json:"includeNullValues,omitempty"`
+	IncludeFields               *[]string                  `json:"includeFields,omitempty"`
+	ExcludeFields               *[]string                  `json:"excludeFields,omitempty"`
+	Fuzziness                   interface{}                `json:"fuzziness,omitempty"` // string or int
+	SearchOperators             *bool                      `json:"searchOperators,omitempty"`
+	Highlight                   *bool                      `json:"highlight,omitempty"`
+	HighlightField              []string                   `json:"highlightField,omitempty"`
+	CustomHighlight             *map[string]interface{}    `json:"customHighlight,omitempty"`
+	Interval                    *int                       `json:"interval,omitempty"`
+	Aggregations                *[]string                  `json:"aggregations,omitempty"`
+	MissingLabel                string                     `json:"missingLabel,omitempty"`
+	ShowMissing                 bool                       `json:"showMissing,omitempty"`
+	DefaultQuery                *map[string]interface{}    `json:"defaultQuery,omitempty"`
+	CustomQuery                 *map[string]interface{}    `json:"customQuery,omitempty"`
+	Execute                     *bool                      `json:"execute,omitempty"`
+	EnableSynonyms              *bool                      `json:"enableSynonyms,omitempty"`
+	SelectAllLabel              *string                    `json:"selectAllLabel,omitempty"`
+	Pagination                  *bool                      `json:"pagination,omitempty"`
+	QueryString                 *bool                      `json:"queryString,omitempty"`
+	RankFeature                 *map[string]RankFunction   `json:"rankFeature,omitempty"`
+	DistinctField               *string                    `json:"distinctField,omitempty"`
+	DistinctFieldConfig         *map[string]interface{}    `json:"distinctFieldConfig,omitempty"`
+	Index                       *string                    `json:"index,omitempty"`
+	EnableRecentSuggestions     *bool                      `json:"enableRecentSuggestions,omitempty"`
+	RecentSuggestionsConfig     *RecentSuggestionsOptions  `json:"recentSuggestionsConfig,omitempty"`
+	EnablePopularSuggestions    *bool                      `json:"enablePopularSuggestions,omitempty"`
+	PopularSuggestionsConfig    *PopularSuggestionsOptions `json:"popularSuggestionsConfig,omitempty"`
+	ShowDistinctSuggestions     *bool                      `json:"showDistinctSuggestions,omitempty"`
+	EnablePredictiveSuggestions *bool                      `json:"enablePredictiveSuggestions,omitempty"`
+	MaxPredictedWords           *int                       `json:"maxPredictedWords,omitempty"`
+	URLField                    *string                    `json:"urlField,omitempty"`
+	ApplyStopwords              *bool                      `json:"applyStopwords,omitempty"`
+	Stopwords                   *[]string                  `json:"stopwords,omitempty"`
 }
 
 type DataField struct {
@@ -276,7 +292,7 @@ func ExtractEnvsFromRequest(req RSQuery) QueryEnvs {
 	var termFilters []TermFilter
 	for _, query := range req.Query {
 		// Set query
-		if query.Type == Search && query.Value != nil {
+		if (query.Type == Search || query.Type == Suggestion) && query.Value != nil {
 			value := *query.Value
 			valueAsString, ok := value.(string)
 			if ok {
@@ -451,7 +467,7 @@ func (query *Query) getQuery(rsQuery RSQuery) (*interface{}, map[string]interfac
 			if defaultQuery["query"] != nil {
 				finalQuery = append(finalQuery, defaultQuery["query"])
 			}
-		} else if query.Type == Search {
+		} else if query.Type == Search || query.Type == Suggestion {
 			// Only apply query by `value` for search queries
 			queryByType, err := query.generateQueryByType()
 			if err != nil {
