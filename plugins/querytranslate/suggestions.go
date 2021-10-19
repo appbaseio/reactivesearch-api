@@ -3,12 +3,16 @@ package querytranslate
 import (
 	"encoding/json"
 	"fmt"
+	"math"
 	"regexp"
+	"sort"
 	"strconv"
 	"strings"
 	"unicode"
 
 	"github.com/appbaseio/reactivesearch-api/util"
+	"github.com/kljensen/snowball"
+	"github.com/lithammer/fuzzysearch/fuzzy"
 	"github.com/microcosm-cc/bluemonday"
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/text/transform"
@@ -80,16 +84,17 @@ func (o SuggestionType) MarshalJSON() ([]byte, error) {
 
 // SuggestionHIT represents the structure of the suggestion object in RS API response
 type SuggestionHIT struct {
-	Value    string         `json:"value"`
-	Label    string         `json:"label"`
-	URL      *string        `json:"url"`
-	Type     SuggestionType `json:"_suggestion_type"`
-	Category *string        `json:"_category"`
-	Count    *int           `json:"_count"`
+	Value        string         `json:"value"`
+	Label        string         `json:"label"`
+	URL          *string        `json:"url"`
+	Type         SuggestionType `json:"_suggestion_type"`
+	Category     *string        `json:"_category"`
+	Count        *int           `json:"_count"`
+	AppbaseScore float64        `json:"_appbase_score"`
 	// ES response properties
 	Id     interface{}            `json:"_id"`
 	Index  *string                `json:"_index"`
-	Score  *float64               `json:"_score"`
+	Score  float64                `json:"_score"`
 	Source map[string]interface{} `json:"_source"`
 }
 
@@ -135,7 +140,91 @@ type SuggestionsConfig struct {
 	ApplyStopwords              *bool
 	Stopwords                   *[]string
 	URLField                    *string
+	HighlightField              []string
 	CategoryField               *string
+}
+
+type RankField struct {
+	fieldValue string
+	userQuery  string
+	score      float64
+}
+
+func stemmedTokens(source string, language string) []string {
+	tokens := strings.Split(source, " ")
+	var stemmedTokens []string
+	for _, token := range tokens {
+		// stem the token
+		stemmedToken, _ := snowball.Stem(token, language, false)
+		stemmedTokens = append(stemmedTokens, stemmedToken)
+	}
+	return stemmedTokens
+}
+
+func removeStopwords(value string) string {
+	var words []string
+	for _, word := range strings.Split(strings.Trim(value, " "), " ") {
+		if stopwords[word] {
+			continue
+		}
+		words = append(words, word)
+	}
+	return strings.Join(words, " ")
+}
+func findMatch(fieldValueRaw string, userQueryRaw string, language string) RankField {
+	// remove stopwords from fieldValue and userQuery
+	fieldValue := removeStopwords(fieldValueRaw)
+	userQuery := removeStopwords(userQueryRaw)
+	var rankField = RankField{
+		fieldValue: fieldValue,
+		userQuery:  userQuery,
+		score:      0,
+	}
+	if language == "" {
+		language = "english"
+	}
+	stemmedFieldValues := stemmedTokens(fieldValue, language)
+	stemmeduserQuery := stemmedTokens(userQuery, language)
+	foundMatches := make([]bool, len(stemmeduserQuery))
+	for i, token := range stemmeduserQuery {
+
+		// eliminate single char tokens from consideration
+		if len(token) > 1 {
+			foundMatch := false
+			// start with the default distance of 1.0
+			bestDistance := 1.0
+			ranks := fuzzy.RankFindNormalizedFold(token, stemmedFieldValues)
+			var bestTarget string
+			for _, element := range ranks {
+				switch element.Distance {
+				case 0:
+					// Perfect match, we can skip iteration and just return
+					bestDistance = math.Min(0, bestDistance)
+					foundMatch = true
+					bestTarget = element.Target
+				case 1:
+					// 1 edit distance
+					bestDistance = math.Min(1.0, bestDistance)
+					foundMatch = true
+					if bestTarget == "" {
+						bestTarget = element.Target
+					}
+				}
+			}
+			foundMatches[i] = foundMatch
+			// token of user query matched one of the tokens of field values
+			if foundMatch {
+				rankField.score += 1.0 - (bestDistance / 2)
+				// add score for a consecutive match
+				if i > 0 {
+					if foundMatches[i] && foundMatches[i-1] {
+						rankField.score += 0.1
+					}
+				}
+			}
+		}
+	}
+	return rankField
 }
 
 const preTags = `<b class="highlight">`
@@ -172,8 +261,8 @@ func replaceDiacritics(query string) string {
 }
 
 type SuggestionInfo struct {
-	value         string
-	skipWordMatch bool
+	fieldValue    string
+	queryValue    string
 	source        map[string]interface{}
 	urlField      *string
 	categoryField *string
@@ -185,18 +274,7 @@ func populateSuggestionsList(
 	suggestionsList *[]SuggestionHIT,
 	suggestionsInfo SuggestionInfo,
 ) bool {
-
-	// check if the suggestion includes the current value
-	// and not already included in other suggestions
-	isWordMatch := suggestionsInfo.skipWordMatch
-	// find match
-	for _, value := range strings.Split(strings.Trim(suggestionsInfo.value, " "), " ") {
-		if strings.Contains(strings.ToLower(replaceDiacritics(suggestionsInfo.value)), replaceDiacritics(value)) {
-			isWordMatch = true
-			break
-		}
-	}
-	if isWordMatch && !util.Contains(*labelsList, suggestionsInfo.value) {
+	if !util.Contains(*labelsList, suggestionsInfo.fieldValue) {
 		var url *string
 		if suggestionsInfo.urlField != nil {
 			urlString, ok := suggestionsInfo.rawHit.Source[*suggestionsInfo.urlField].(string)
@@ -211,20 +289,25 @@ func populateSuggestionsList(
 				category = &categoryString
 			}
 		}
+		// calculate scores
+		fieldValue := getTextFromHTML(suggestionsInfo.fieldValue)
+		searchQuery := suggestionsInfo.queryValue
+		rankField := findMatch(searchQuery, fieldValue, "english")
 		suggestion := SuggestionHIT{
-			Value:    getTextFromHTML(suggestionsInfo.value),
-			Label:    suggestionsInfo.value,
-			URL:      url,
-			Type:     Index,
-			Category: category,
+			Value:        fieldValue,
+			Label:        suggestionsInfo.fieldValue,
+			URL:          url,
+			Type:         Index,
+			Category:     category,
+			AppbaseScore: rankField.score,
 			// ES response properties
 			Id:     &suggestionsInfo.rawHit.Id,
 			Index:  &suggestionsInfo.rawHit.Index,
 			Source: suggestionsInfo.rawHit.Source,
-			Score:  &suggestionsInfo.rawHit.Score,
+			Score:  suggestionsInfo.rawHit.Score,
 		}
 
-		*labelsList = append(*labelsList, suggestionsInfo.value)
+		*labelsList = append(*labelsList, suggestionsInfo.fieldValue)
 		*suggestionsList = append(*suggestionsList, suggestion)
 		return false
 	}
@@ -364,16 +447,21 @@ func getSuggestions(config SuggestionsConfig, rawHits []ESDoc) []SuggestionHIT {
 	// keep track of suggestions label, label must be unique
 	var labelsList = make([]string, 0)
 
-	traverseSuggestions(config, rawHits, false, &suggestionsList, &labelsList)
+	traverseSuggestions(config, rawHits, &suggestionsList, &labelsList)
 
-	if len(suggestionsList) < len(rawHits) && (config.EnableSynonyms == nil || *config.EnableSynonyms) {
-		// 	When we have synonym we set skipWordMatch to false as it may discard
-		// 	the suggestion if word doesnt match term.
-		// 	For eg: iphone, ios are synonyms and on searching iphone isWordMatch
-		// 	in  populateSuggestionList may discard ios source which decreases no.
-		// 	of items in suggestionsList
-		traverseSuggestions(config, rawHits, true, &suggestionsList, &labelsList)
-	}
+	// sort suggestions based on the rank
+	// First priority is given to the _score (ES)
+	// Second priority is given to the _appbase_score
+	sort.SliceStable(suggestionsList, func(i, j int) bool {
+		if suggestionsList[i].Score > suggestionsList[j].Score {
+			return true
+		}
+		if suggestionsList[i].Score == suggestionsList[j].Score {
+			return suggestionsList[i].AppbaseScore > suggestionsList[j].AppbaseScore
+		}
+		return false
+	})
+
 	if config.EnablePredictiveSuggestions != nil && *config.EnablePredictiveSuggestions {
 		suggestionsList = getPredictiveSuggestions(config, &suggestionsList)
 	}
@@ -425,7 +513,6 @@ func extractSuggestion(val interface{}) interface{} {
 func parseField(
 	source map[string]interface{},
 	field string,
-	skipWordMatch bool,
 	suggestionsList *[]SuggestionHIT,
 	labelsList *[]string,
 	rawHit ESDoc,
@@ -443,8 +530,8 @@ func parseField(
 		valAsString, ok := val.(string)
 		if ok && valAsString != "" {
 			suggestionInfo := SuggestionInfo{
-				value:         valAsString,
-				skipWordMatch: skipWordMatch,
+				fieldValue:    valAsString,
+				queryValue:    config.Value,
 				source:        source,
 				urlField:      config.URLField,
 				categoryField: config.CategoryField,
@@ -476,15 +563,15 @@ func parseField(
 			children := field[len(fieldNodes[0])+1:]
 			labelAsMap, ok := label.(map[string]interface{})
 			if ok {
-				parseField(labelAsMap, children, skipWordMatch, suggestionsList, labelsList, rawHit, config)
+				parseField(labelAsMap, children, suggestionsList, labelsList, rawHit, config)
 			}
 		} else {
 			val := extractSuggestion(label)
 			valAsString, ok := val.(string)
 			if ok {
 				suggestionInfo := SuggestionInfo{
-					value:         valAsString,
-					skipWordMatch: skipWordMatch,
+					fieldValue:    valAsString,
+					queryValue:    config.Value,
 					source:        source,
 					urlField:      config.URLField,
 					categoryField: config.CategoryField,
@@ -500,13 +587,12 @@ func parseField(
 func traverseSuggestions(
 	config SuggestionsConfig,
 	suggestions []ESDoc,
-	skipWordMatch bool,
 	suggestionsList *[]SuggestionHIT,
 	labelsList *[]string,
 ) {
 	for _, suggestion := range suggestions {
 		for _, field := range config.DataFields {
-			parseField(suggestion.ParsedSource, field, skipWordMatch, suggestionsList, labelsList, suggestion, config)
+			parseField(suggestion.ParsedSource, field, suggestionsList, labelsList, suggestion, config)
 		}
 	}
 }
@@ -643,11 +729,14 @@ func extractFieldsFromSource(source map[string]interface{}) []string {
 }
 
 func getFinalSuggestions(config SuggestionsConfig, rawHits []ESDoc) []SuggestionHIT {
-	// extract dataFields
-	if len(config.DataFields) == 0 && len(rawHits) > 0 {
+	// set priority to highlight fields if present
+	if len(config.HighlightField) != 0 {
+		config.DataFields = config.HighlightField
+	} else if len(config.DataFields) == 0 && len(rawHits) > 0 {
 		// extract fields from first hit source
 		config.DataFields = extractFieldsFromSource(rawHits[0].Source)
 	}
+
 	// parse hits
 	parsedHits := parseHits(rawHits)
 	// TODO: Restrict length by size
