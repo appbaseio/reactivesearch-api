@@ -251,7 +251,7 @@ type Query struct {
 	MaxPredictedWords           *int                       `json:"maxPredictedWords,omitempty"`
 	URLField                    *string                    `json:"urlField,omitempty"`
 	ApplyStopwords              *bool                      `json:"applyStopwords,omitempty"`
-	Stopwords                   *[]string                  `json:"stopwords,omitempty"`
+	Stopwords                   *[]string                  `json:"customStopwords,omitempty"`
 }
 
 type DataField struct {
