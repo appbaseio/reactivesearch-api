@@ -5,7 +5,7 @@ import (
 )
 
 // UserToPasswordCache represents a map of bcrypt validated users
-var UserToPasswordCache = make(map[string]interface{})
+var UserToPasswordCache = make(map[string]string)
 
 // CurrentProcessMutex to stop concurrent writes on map
 var CurrentProcessMutex = sync.RWMutex{}
