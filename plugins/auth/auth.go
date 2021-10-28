@@ -139,6 +139,13 @@ func (a *Auth) InitFunc() error {
 		a.jwtRoleKey = record.RoleKey
 	}
 
+	// Set plugin cache sync script
+	s := CacheSyncScript{
+		index: publicKeyIndex,
+		a:     a,
+	}
+	util.AddSyncScript(s)
+
 	return nil
 }
 
