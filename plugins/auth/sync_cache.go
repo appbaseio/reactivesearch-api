@@ -6,7 +6,7 @@ import (
 	"github.com/appbaseio/reactivesearch-api/util"
 	"github.com/dgrijalva/jwt-go"
 	"github.com/olivere/elastic/v7"
-	"github.com/prometheus/common/log"
+	log "github.com/sirupsen/logrus"
 )
 
 type CacheSyncScript struct {
@@ -23,23 +23,25 @@ func (s CacheSyncScript) PluginName() string {
 
 func (s CacheSyncScript) SetCache(response *elastic.SearchResult) error {
 
-	var publicKey *publicKey
+	var pubicKeyResponse *publicKey
 	publicKeys := util.GetHitsForIndex(response, s.index)
 
 	for _, hit := range publicKeys {
 		if hit.Id == publicKeyDocID {
-			err := json.Unmarshal(hit.Source, publicKey)
+			var publicKey publicKey
+			err := json.Unmarshal(hit.Source, &publicKey)
 			if err != nil {
 				log.Errorln(logTag, ":", err)
 				return err
 			}
+			pubicKeyResponse = &publicKey
 			break
 		}
 	}
 
-	if publicKey != nil {
+	if pubicKeyResponse != nil {
 		// update public key to cache if found
-		publicKeyBuf, err := util.DecodeBase64Key(publicKey.PublicKey)
+		publicKeyBuf, err := util.DecodeBase64Key(pubicKeyResponse.PublicKey)
 		if err != nil {
 			log.Errorln(logTag, ":error parsing public key record,", err)
 			return err
@@ -48,7 +50,7 @@ func (s CacheSyncScript) SetCache(response *elastic.SearchResult) error {
 		if err != nil {
 			log.Errorln(logTag, ":error parsing public key record,", err)
 		}
-		s.a.jwtRoleKey = publicKey.RoleKey
+		s.a.jwtRoleKey = pubicKeyResponse.RoleKey
 	}
 
 	return nil
