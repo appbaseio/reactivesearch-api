@@ -274,7 +274,7 @@ func populateSuggestionsList(
 	suggestionsList *[]SuggestionHIT,
 	suggestionsInfo SuggestionInfo,
 ) bool {
-	if !util.Contains(*labelsList, suggestionsInfo.fieldValue) {
+	if !util.Contains(*labelsList, ParseSuggestionLabel(suggestionsInfo.fieldValue)) {
 		var url *string
 		if suggestionsInfo.urlField != nil {
 			urlString, ok := suggestionsInfo.rawHit.Source[*suggestionsInfo.urlField].(string)
@@ -307,7 +307,7 @@ func populateSuggestionsList(
 			Score:  suggestionsInfo.rawHit.Score,
 		}
 
-		*labelsList = append(*labelsList, suggestionsInfo.fieldValue)
+		*labelsList = append(*labelsList, ParseSuggestionLabel(suggestionsInfo.fieldValue))
 		*suggestionsList = append(*suggestionsList, suggestion)
 		return false
 	}
@@ -741,4 +741,19 @@ func getFinalSuggestions(config SuggestionsConfig, rawHits []ESDoc) []Suggestion
 	parsedHits := parseHits(rawHits)
 	// TODO: Restrict length by size
 	return getSuggestions(config, parsedHits)
+}
+
+// Returns the parsed suggestion label to be compared for duplicate suggestions
+func ParseSuggestionLabel(label string) string {
+	// trim spaces
+	parsedLabel := strings.Trim(label, " ")
+	// remove stopwords
+	words := strings.Split(parsedLabel, " ")
+	parsedWords := []string{}
+	for _, word := range words {
+		if !stopwords[word] {
+			parsedWords = append(parsedWords, word)
+		}
+	}
+	return strings.Join(parsedWords, " ")
 }

@@ -215,7 +215,9 @@ func (query *Query) buildQueryOptions() (map[string]interface{}, error) {
 	}
 
 	// Apply category aggs
-	if query.CategoryField != nil && (query.Type == Search || query.Type == Suggestion) {
+	if query.CategoryField != nil &&
+		*query.CategoryField != "" &&
+		(query.Type == Search || query.Type == Suggestion) {
 		// Add aggregations for the category
 		aggs := make(map[string]interface{})
 		termsQuery := map[string]interface{}{

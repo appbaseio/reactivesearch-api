@@ -167,7 +167,7 @@ func (r *QueryTranslate) search() http.HandlerFunc {
 									return
 								}
 								// extract category suggestions
-								if query.CategoryField != nil {
+								if query.CategoryField != nil && *query.CategoryField != "" {
 									categories, dataType2, _, err2 := jsonparser.Get(value, "aggregations", *query.CategoryField, "buckets")
 									if err2 != nil {
 										log.Errorln(logTag, ":", err2)
