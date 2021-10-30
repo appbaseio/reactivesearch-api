@@ -207,9 +207,9 @@ func queryTranslate(h http.HandlerFunc) http.HandlerFunc {
 			// apply default highlight for suggestions
 			if query.Type == Suggestion &&
 				query.Highlight != nil && *query.Highlight &&
-				query.CustomHighlight == nil {
+				query.HighlightConfig == nil || query.CustomHighlight == nil {
 				defaultHighlight := getDefaultSuggestionsHighlight(query)
-				body.Query[i].CustomHighlight = &defaultHighlight
+				body.Query[i].HighlightConfig = &defaultHighlight
 			}
 		}
 

@@ -307,7 +307,9 @@ func (query *Query) applyNestedFieldQuery(originalQuery interface{}) interface{}
 func (query *Query) applyHighlightQuery(queryOptions *map[string]interface{}) {
 	clonedQuery := *queryOptions
 	if query.Highlight != nil && *query.Highlight {
-		if query.CustomHighlight != nil {
+		if query.HighlightConfig != nil {
+			clonedQuery["highlight"] = *query.HighlightConfig
+		} else if query.CustomHighlight != nil {
 			clonedQuery["highlight"] = *query.CustomHighlight
 		} else {
 			var fields = make(map[string]interface{})
