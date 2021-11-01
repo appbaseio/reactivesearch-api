@@ -141,6 +141,7 @@ type SuggestionsConfig struct {
 	Stopwords                   *[]string
 	URLField                    *string
 	HighlightField              []string
+	HighlightConfig             *map[string]interface{}
 	CategoryField               *string
 }
 
@@ -229,6 +230,61 @@ func findMatch(fieldValueRaw string, userQueryRaw string, language string) RankF
 
 const preTags = `<b class="highlight">`
 const postTags = `</b>`
+
+type Tags struct {
+	PreTags  string
+	PostTags string
+}
+
+func getPredictiveSuggestionsTags(highlightConfig *map[string]interface{}) Tags {
+	var preTags = `<b class="highlight">`
+	var postTags = `</b>`
+
+	if highlightConfig != nil {
+		config := *highlightConfig
+		if config["pre_tags"] != nil {
+			tagsAsString, ok := config["pre_tags"].(string)
+			if ok {
+				preTags = tagsAsString
+			} else {
+				tagsAsArray, ok := config["pre_tags"].([]interface{})
+				if ok {
+					tags := []string{}
+					for _, tag := range tagsAsArray {
+						tagsAsString, ok := tag.(string)
+						if ok {
+							tags = append(tags, tagsAsString)
+						}
+					}
+					preTags = strings.Join(tags, "")
+				}
+			}
+		}
+		if config["post_tags"] != nil {
+			tagsAsString, ok := config["post_tags"].(string)
+			if ok {
+				postTags = tagsAsString
+			} else {
+				tagsAsArray, ok := config["post_tags"].([]interface{})
+				if ok {
+					tags := []string{}
+					for _, tag := range tagsAsArray {
+						tagsAsString, ok := tag.(string)
+						if ok {
+							tags = append(tags, tagsAsString)
+						}
+					}
+					postTags = strings.Join(tags, "")
+				}
+			}
+		}
+	}
+
+	return Tags{
+		PreTags:  preTags,
+		PostTags: postTags,
+	}
+}
 
 func getDefaultSuggestionsHighlight(query Query) map[string]interface{} {
 	highlightFields := make(map[string]interface{})
@@ -329,6 +385,7 @@ func getPredictiveSuggestions(config SuggestionsConfig, suggestions *[]Suggestio
 	var suggestionsList = make([]SuggestionHIT, 0)
 	var suggestionsMap = make(map[string]bool)
 	if config.Value != "" {
+		tags := getPredictiveSuggestionsTags(config.HighlightConfig)
 		currentValueTrimmed := strings.Trim(config.Value, " ")
 		for _, suggestion := range *suggestions {
 			// to handle special strings with pattern <mark>xyz</mark>
@@ -385,7 +442,7 @@ func getPredictiveSuggestions(config SuggestionsConfig, suggestions *[]Suggestio
 										continue
 									}
 								}
-								suggestionPhrase := currentValueTrimmed + preTags + highlightedWord + postTags
+								suggestionPhrase := currentValueTrimmed + tags.PreTags + highlightedWord + tags.PostTags
 								suggestionValue := currentValueTrimmed + highlightedWord
 								matched = true
 								// to show unique results only
@@ -415,7 +472,7 @@ func getPredictiveSuggestions(config SuggestionsConfig, suggestions *[]Suggestio
 										continue
 									}
 								}
-								suggestionPhrase := preTags + highlightedWord + postTags + currentValueTrimmed
+								suggestionPhrase := tags.PreTags + highlightedWord + tags.PostTags + currentValueTrimmed
 								suggestionValue := highlightedWord + currentValueTrimmed
 								matched = true
 								// to show unique results only
