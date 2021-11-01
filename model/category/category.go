@@ -40,6 +40,7 @@ const (
 	Logs
 	Cache
 	StoredQuery
+	Sync
 )
 
 // String is an implementation of Stringer interface that returns the string representation of category.Categories.
@@ -67,6 +68,7 @@ func (c Category) String() string {
 		"logs",
 		"cache",
 		"storedquery",
+		"sync",
 	}[c]
 }
 
@@ -122,6 +124,8 @@ func (c *Category) UnmarshalJSON(bytes []byte) error {
 		*c = Cache
 	case StoredQuery.String():
 		*c = StoredQuery
+	case Sync.String():
+		*c = Sync
 	default:
 		return nil
 	}
@@ -176,6 +180,8 @@ func (c Category) MarshalJSON() ([]byte, error) {
 		category = Cache.String()
 	case StoredQuery:
 		category = StoredQuery.String()
+	case Sync:
+		category = Sync.String()
 	default:
 		return nil, nil
 	}
