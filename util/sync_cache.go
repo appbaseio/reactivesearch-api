@@ -19,17 +19,27 @@ var syncScripts []SyncPluginCache
 
 // Polling interval in seconds, accepted range in [10, 3600].
 // Defaults to 60 (i.e. 1 minute)
-var syncInterval = 60
+var syncInterval *int
 
 func GetSyncInterval() int {
-	return syncInterval
+	if syncInterval != nil {
+		return *syncInterval
+	}
+	if Billing == "true" {
+		// For Arc Enterprise plan
+		if GetTier() != nil && *GetTier() == ArcEnterprise {
+			return 60
+		}
+	}
+	// default range is 24h
+	return 24 * 60 * 60
 }
 
 func SetSyncInterval(interval int) error {
 	if interval < 10 || interval > 3600 {
 		return fmt.Errorf("interval must be in range of [10, 3600] seconds")
 	}
-	syncInterval = interval
+	syncInterval = &interval
 	return nil
 }
 
