@@ -418,34 +418,31 @@ func main() {
 
 func syncPluginCache() {
 	// Only run for self hosted arc using arc-enterprise plan
-	if util.Billing == "true" {
-		if util.GetTier() != nil && *util.GetTier() == util.ArcEnterprise {
-			indices := []string{}
-			for _, syncScript := range util.GetSyncScripts() {
-				// append index
-				indices = append(indices, syncScript.Index())
-			}
-			indexToSearch := strings.Join(indices, ",")
-			// TODO: Handle es6
-			// Fetch ES response
-			response, err := util.GetClient7().
-				Search(indexToSearch).
-				Size(10000).
-				Do(context.Background())
-			if err != nil {
-				log.Errorln(logTag, "Error while syncing plugin cache", err.Error())
-				return
-			}
-			if response.Error != nil {
-				log.Errorln(logTag, "Error while syncing plugin cache", response.Error)
-				return
-			}
-			for _, syncScript := range util.GetSyncScripts() {
-				err := syncScript.SetCache(response)
-				if err != nil {
-					log.Errorln(logTag, "Error syncing plugin "+syncScript.PluginName()+" ", response.Error)
-				}
-			}
+
+	indices := []string{}
+	for _, syncScript := range util.GetSyncScripts() {
+		// append index
+		indices = append(indices, syncScript.Index())
+	}
+	indexToSearch := strings.Join(indices, ",")
+	// TODO: Handle es6
+	// Fetch ES response
+	response, err := util.GetClient7().
+		Search(indexToSearch).
+		Size(10000).
+		Do(context.Background())
+	if err != nil {
+		log.Errorln(logTag, "Error while syncing plugin cache", err.Error())
+		return
+	}
+	if response.Error != nil {
+		log.Errorln(logTag, "Error while syncing plugin cache", response.Error)
+		return
+	}
+	for _, syncScript := range util.GetSyncScripts() {
+		err := syncScript.SetCache(response)
+		if err != nil {
+			log.Errorln(logTag, "Error syncing plugin "+syncScript.PluginName()+" ", response.Error)
 		}
 	}
 }
