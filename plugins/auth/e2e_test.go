@@ -36,6 +36,7 @@ var adminCategories = []category.Category{
 	category.Logs,
 	category.Cache,
 	category.StoredQuery,
+	category.Sync,
 }
 
 var adminOps = []op.Operation{
@@ -68,6 +69,7 @@ var defaultAdminLimits = permission.Limits{
 	SynonymsLimit:         30,
 	CacheLimit:            30,
 	StoredQueryLimit:      30,
+	SyncLimit:             30,
 }
 
 var createPermissionResponse = map[string]interface{}{
