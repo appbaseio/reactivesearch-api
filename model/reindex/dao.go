@@ -180,7 +180,14 @@ func Reindex(ctx context.Context, sourceIndex string, config *ReindexConfig, wai
 	// Create the new index.
 	err = createIndex(ctx, newIndexName, body)
 	if err != nil {
-		return nil, err
+		// index creation isn't required in the case where we're copying data
+		// all the other cases require index creation
+		dataExists := util.IsExists(Data.String(), config.Action)
+		mappingsExists := util.IsExists(Mappings.String(), config.Action)
+		settingsExists := util.IsExists(Settings.String(), config.Action)
+		if !(len(config.Action) != 0 && dataExists && !mappingsExists && !settingsExists) {
+			return nil, err
+		}
 	}
 
 	/* Copy search relevancy settings if
