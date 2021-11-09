@@ -122,7 +122,7 @@ func sources(h http.HandlerFunc) http.HandlerFunc {
 
 				if !validated {
 					msg := fmt.Sprintf(`username %s has an invalid IP. Detected IP = %s`,
-						reqUser.Username, reqIP, allowedSources)
+						reqUser.Username, reqIP)
 					w.Header().Set("www-authenticate", "Basic realm=\"Authentication Required\"")
 					telemetry.WriteBackErrorWithTelemetry(req, w, msg, http.StatusUnauthorized)
 					return
