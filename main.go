@@ -345,7 +345,8 @@ func main() {
 	for _, migration := range util.GetMigrationScripts() {
 		shouldExecute, err := migration.ConditionCheck()
 		if err != nil {
-			log.Fatal(err.Message+": ", err.Err)
+			// TODO: Report To Appbase
+			log.Errorln(err.Message+": ", err.Err)
 		}
 		if shouldExecute {
 			// Run the script
@@ -354,6 +355,7 @@ func main() {
 				go func() {
 					err := migration.Script()
 					if err != nil {
+						// TODO: Report To Appbase
 						log.Errorln(err.Message+": ", err.Err)
 					}
 				}()
@@ -361,7 +363,8 @@ func main() {
 				// Sync scripts will cause the fatal error on failure
 				err := migration.Script()
 				if err != nil {
-					log.Fatal(err.Message+": ", err.Err)
+					// TODO: Report To Appbase
+					log.Errorln(err.Message+": ", err.Err)
 				}
 			}
 		}
