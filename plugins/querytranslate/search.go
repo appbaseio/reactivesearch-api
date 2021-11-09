@@ -46,7 +46,8 @@ func (query *Query) generateSearchQuery() (*interface{}, error) {
 			}
 		}
 
-		if query.CategoryValue != nil && query.CategoryField != nil && *query.CategoryValue != "*" {
+		if query.CategoryValue != nil && query.CategoryField != nil &&
+			*query.CategoryField != "" && *query.CategoryValue != "*" {
 			searchQuery = map[string]interface{}{
 				"bool": map[string]interface{}{
 					"must": []interface{}{

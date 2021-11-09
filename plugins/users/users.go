@@ -6,6 +6,7 @@ import (
 
 	"github.com/appbaseio/reactivesearch-api/middleware"
 	"github.com/appbaseio/reactivesearch-api/plugins"
+	"github.com/appbaseio/reactivesearch-api/util"
 )
 
 const (
@@ -54,6 +55,12 @@ func (u *Users) InitFunc() error {
 	if err != nil {
 		return err
 	}
+
+	// Set plugin cache sync script
+	s := CacheSyncScript{
+		index: indexName,
+	}
+	util.AddSyncScript(s)
 
 	return nil
 }

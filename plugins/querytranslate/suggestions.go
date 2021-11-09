@@ -141,6 +141,7 @@ type SuggestionsConfig struct {
 	Stopwords                   *[]string
 	URLField                    *string
 	HighlightField              []string
+	HighlightConfig             *map[string]interface{}
 	CategoryField               *string
 }
 
@@ -230,6 +231,61 @@ func findMatch(fieldValueRaw string, userQueryRaw string, language string) RankF
 const preTags = `<b class="highlight">`
 const postTags = `</b>`
 
+type Tags struct {
+	PreTags  string
+	PostTags string
+}
+
+func getPredictiveSuggestionsTags(highlightConfig *map[string]interface{}) Tags {
+	var preTags = `<b class="highlight">`
+	var postTags = `</b>`
+
+	if highlightConfig != nil {
+		config := *highlightConfig
+		if config["pre_tags"] != nil {
+			tagsAsString, ok := config["pre_tags"].(string)
+			if ok {
+				preTags = tagsAsString
+			} else {
+				tagsAsArray, ok := config["pre_tags"].([]interface{})
+				if ok {
+					tags := []string{}
+					for _, tag := range tagsAsArray {
+						tagsAsString, ok := tag.(string)
+						if ok {
+							tags = append(tags, tagsAsString)
+						}
+					}
+					preTags = strings.Join(tags, "")
+				}
+			}
+		}
+		if config["post_tags"] != nil {
+			tagsAsString, ok := config["post_tags"].(string)
+			if ok {
+				postTags = tagsAsString
+			} else {
+				tagsAsArray, ok := config["post_tags"].([]interface{})
+				if ok {
+					tags := []string{}
+					for _, tag := range tagsAsArray {
+						tagsAsString, ok := tag.(string)
+						if ok {
+							tags = append(tags, tagsAsString)
+						}
+					}
+					postTags = strings.Join(tags, "")
+				}
+			}
+		}
+	}
+
+	return Tags{
+		PreTags:  preTags,
+		PostTags: postTags,
+	}
+}
+
 func getDefaultSuggestionsHighlight(query Query) map[string]interface{} {
 	highlightFields := make(map[string]interface{})
 	fields := query.HighlightField
@@ -274,7 +330,7 @@ func populateSuggestionsList(
 	suggestionsList *[]SuggestionHIT,
 	suggestionsInfo SuggestionInfo,
 ) bool {
-	if !util.Contains(*labelsList, suggestionsInfo.fieldValue) {
+	if !util.Contains(*labelsList, ParseSuggestionLabel(suggestionsInfo.fieldValue)) {
 		var url *string
 		if suggestionsInfo.urlField != nil {
 			urlString, ok := suggestionsInfo.rawHit.Source[*suggestionsInfo.urlField].(string)
@@ -307,7 +363,7 @@ func populateSuggestionsList(
 			Score:  suggestionsInfo.rawHit.Score,
 		}
 
-		*labelsList = append(*labelsList, suggestionsInfo.fieldValue)
+		*labelsList = append(*labelsList, ParseSuggestionLabel(suggestionsInfo.fieldValue))
 		*suggestionsList = append(*suggestionsList, suggestion)
 		return false
 	}
@@ -329,6 +385,7 @@ func getPredictiveSuggestions(config SuggestionsConfig, suggestions *[]Suggestio
 	var suggestionsList = make([]SuggestionHIT, 0)
 	var suggestionsMap = make(map[string]bool)
 	if config.Value != "" {
+		tags := getPredictiveSuggestionsTags(config.HighlightConfig)
 		currentValueTrimmed := strings.Trim(config.Value, " ")
 		for _, suggestion := range *suggestions {
 			// to handle special strings with pattern <mark>xyz</mark>
@@ -385,7 +442,7 @@ func getPredictiveSuggestions(config SuggestionsConfig, suggestions *[]Suggestio
 										continue
 									}
 								}
-								suggestionPhrase := currentValueTrimmed + preTags + highlightedWord + postTags
+								suggestionPhrase := currentValueTrimmed + tags.PreTags + highlightedWord + tags.PostTags
 								suggestionValue := currentValueTrimmed + highlightedWord
 								matched = true
 								// to show unique results only
@@ -415,7 +472,7 @@ func getPredictiveSuggestions(config SuggestionsConfig, suggestions *[]Suggestio
 										continue
 									}
 								}
-								suggestionPhrase := preTags + highlightedWord + postTags + currentValueTrimmed
+								suggestionPhrase := tags.PreTags + highlightedWord + tags.PostTags + currentValueTrimmed
 								suggestionValue := highlightedWord + currentValueTrimmed
 								matched = true
 								// to show unique results only
@@ -741,4 +798,19 @@ func getFinalSuggestions(config SuggestionsConfig, rawHits []ESDoc) []Suggestion
 	parsedHits := parseHits(rawHits)
 	// TODO: Restrict length by size
 	return getSuggestions(config, parsedHits)
+}
+
+// Returns the parsed suggestion label to be compared for duplicate suggestions
+func ParseSuggestionLabel(label string) string {
+	// trim spaces
+	parsedLabel := strings.Trim(label, " ")
+	// remove stopwords
+	words := strings.Split(parsedLabel, " ")
+	parsedWords := []string{}
+	for _, word := range words {
+		if !stopwords[word] {
+			parsedWords = append(parsedWords, word)
+		}
+	}
+	return strings.Join(parsedWords, " ")
 }

@@ -128,10 +128,6 @@ func SetDefaultIndexTemplate() error {
 					"type": "text",
 					"analyzer": "standard",
 					"index_phrases": true,
-					"index_prefixes": {
-						"min_chars": 1,
-						"max_chars": 12
-					},
 					"fields": {
 						"autosuggest": {
 							"type": "text",

@@ -283,6 +283,17 @@ func GetCachedCredential(username string) (credential.AuthCredential, bool) {
 	return nil, false
 }
 
+// GetCachedCredentials returns the cached credentials
+func GetCachedCredentials() []credential.AuthCredential {
+	CredentialCache.mu.Lock()
+	defer CredentialCache.mu.Unlock()
+	var credentials []credential.AuthCredential
+	for _, v := range CredentialCache.cache {
+		credentials = append(credentials, v)
+	}
+	return credentials
+}
+
 // RemoveCredentialFromCache removes the credential from the cache
 func RemoveCredentialFromCache(username string) {
 	CredentialCache.mu.Lock()

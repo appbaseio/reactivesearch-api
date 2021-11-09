@@ -227,6 +227,7 @@ type Query struct {
 	Highlight                   *bool                      `json:"highlight,omitempty"`
 	HighlightField              []string                   `json:"highlightField,omitempty"`
 	CustomHighlight             *map[string]interface{}    `json:"customHighlight,omitempty"`
+	HighlightConfig             *map[string]interface{}    `json:"highlightConfig,omitempty"`
 	Interval                    *int                       `json:"interval,omitempty"`
 	Aggregations                *[]string                  `json:"aggregations,omitempty"`
 	MissingLabel                string                     `json:"missingLabel,omitempty"`

@@ -207,7 +207,16 @@ func getArcInstance(arcID string) (ArcInstance, error) {
 	req.Header.Add("cache-control", "no-cache")
 
 	res, err := http.DefaultClient.Do(req)
-	if err != nil {
+	// If ACCAPI is down then set the plan
+	if (res != nil && res.StatusCode >= 500) || err != nil {
+		plan := GetTier()
+		// If plan is not set already (that would be the case at the time of initialization)
+		// then set the highest appbase.io plan
+		if plan == nil {
+			highestPlan := ArcEnterprise
+			plan = &highestPlan
+		}
+		SetTier(plan)
 		log.Errorln("error while sending request:", err)
 		return arcInstance, err
 	}
@@ -256,7 +265,16 @@ func getArcClusterInstance(clusterID string) (ArcInstance, error) {
 	req.Header.Add("cache-control", "no-cache")
 
 	res, err := http.DefaultClient.Do(req)
-	if err != nil {
+	// If ACCAPI is down then set the plan
+	if (res != nil && res.StatusCode >= 500) || err != nil {
+		plan := GetTier()
+		// If plan is not set already (that would be the case at the time of initialization)
+		// then set the highest appbase.io plan
+		if plan == nil {
+			highestPlan := HostedArcEnterprise2021
+			plan = &highestPlan
+		}
+		SetTier(plan)
 		log.Errorln("error while sending request:", err)
 		return arcInstance, err
 	}
