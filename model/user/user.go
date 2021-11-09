@@ -3,6 +3,7 @@ package user
 import (
 	"context"
 	"fmt"
+	"net"
 	"regexp"
 	"strings"
 	"time"
@@ -37,6 +38,7 @@ type User struct {
 	Email            string              `json:"email"`
 	Indices          []string            `json:"indices"`
 	CreatedAt        string              `json:"created_at"`
+	Sources          *[]string           `json:"sources"`
 }
 
 // Options is a function type used to define a user's properties.
@@ -74,6 +76,31 @@ func SetAllowedActions(actions []UserAction) Options {
 		}
 		return nil
 	}
+}
+
+// SetSources sets the sources from which the permission can make request from.
+// Sources are accepted and parsed in CIDR notation.
+func SetSources(sources []string) Options {
+	return func(u *User) error {
+		if sources == nil {
+			return errors.ErrNilSources
+		}
+		if err := validateSources(sources); err != nil {
+			return err
+		}
+		u.Sources = &sources
+		return nil
+	}
+}
+
+func validateSources(sources []string) error {
+	for _, source := range sources {
+		_, _, err := net.ParseCIDR(source)
+		if err != nil {
+			return fmt.Errorf(`source "%s" is not a valid CIDR notation: %v`, source, err)
+		}
+	}
+	return nil
 }
 
 // SetACLs sets the acls a user can have access to.
@@ -130,6 +157,7 @@ func New(username, password string, opts ...Options) (*User, error) {
 		IsAdmin:   &isAdminFalse, // pointer to bool
 		Indices:   []string{},
 		CreatedAt: time.Now().Format(time.RFC3339),
+		Sources:   &defaultSources,
 	}
 
 	// run the options on it
@@ -153,7 +181,6 @@ func NewAdmin(username, password string, opts ...Options) (*User, error) {
 	if username == "" {
 		return nil, fmt.Errorf("username cannot be an empty field")
 	}
-
 	// create an admin user
 	u := &User{
 		Username:       username,
@@ -162,6 +189,7 @@ func NewAdmin(username, password string, opts ...Options) (*User, error) {
 		Categories:     GetCategories(adminActions),
 		AllowedActions: &adminActions,
 		Indices:        []string{"*"},
+		Sources:        &defaultSources,
 		CreatedAt:      time.Now().Format(time.RFC3339),
 	}
 
@@ -304,6 +332,12 @@ func (u *User) GetPatch() (map[string]interface{}, error) {
 			patch["categories"] = categories
 			patch["acls"] = category.ACLsFor(categories...)
 		}
+	}
+	if u.Sources != nil {
+		if err := validateSources(*u.Sources); err != nil {
+			return nil, err
+		}
+		patch["sources"] = *u.Sources
 	}
 	if u.AllowedActions != nil {
 		categories := GetCategories(*u.AllowedActions)

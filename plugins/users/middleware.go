@@ -32,6 +32,7 @@ func list() []middleware.Middleware {
 		logs.Recorder(),
 		classify.Op(),
 		auth.BasicAuth(),
+		validate.Sources(),
 		validate.Operation(),
 		validate.Category(),
 		telemetry.Recorder(),

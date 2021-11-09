@@ -51,6 +51,7 @@ func list() []middleware.Middleware {
 		classify.Op(),
 		classify.Indices(),
 		auth.BasicAuth(),
+		validate.Sources(),
 		validate.Indices(),
 		validate.Operation(),
 		validate.Category(),

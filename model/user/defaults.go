@@ -13,6 +13,7 @@ var (
 		UIBuilder,
 		Speed,
 	}
+	defaultSources = []string{"0.0.0.0/0"}
 
 	// NOTE: we are storing the address of the isAdmin variable in the user
 	isAdminTrue  = true

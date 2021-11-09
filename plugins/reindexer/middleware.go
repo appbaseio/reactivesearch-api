@@ -28,6 +28,7 @@ func list() []middleware.Middleware {
 		classify.Indices(),
 		logs.Recorder(),
 		auth.BasicAuth(),
+		validate.Sources(),
 		validate.Indices(),
 		validate.Operation(),
 		validate.Category(),
