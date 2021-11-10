@@ -20,6 +20,7 @@ import (
 	"runtime"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/appbaseio/reactivesearch-api/middleware"
 	"github.com/appbaseio/reactivesearch-api/middleware/logger"
@@ -345,8 +346,13 @@ func main() {
 	for _, migration := range util.GetMigrationScripts() {
 		shouldExecute, err := migration.ConditionCheck()
 		if err != nil {
-			// TODO: Report To Appbase
 			log.Errorln(err.Message+": ", err.Err)
+			util.ReportErrorToAppbase(util.ReportArcError{
+				Type:         "migration",
+				TimeStamp:    time.Now().Unix(),
+				ErrorMessage: err.Message,
+				ErrorDetails: err.Err.Error(),
+			})
 		}
 		if shouldExecute {
 			// Run the script
@@ -355,16 +361,26 @@ func main() {
 				go func() {
 					err := migration.Script()
 					if err != nil {
-						// TODO: Report To Appbase
 						log.Errorln(err.Message+": ", err.Err)
+						util.ReportErrorToAppbase(util.ReportArcError{
+							Type:         "migration",
+							TimeStamp:    time.Now().Unix(),
+							ErrorMessage: err.Message,
+							ErrorDetails: err.Err.Error(),
+						})
 					}
 				}()
 			} else {
 				// Sync scripts will cause the fatal error on failure
 				err := migration.Script()
 				if err != nil {
-					// TODO: Report To Appbase
 					log.Errorln(err.Message+": ", err.Err)
+					util.ReportErrorToAppbase(util.ReportArcError{
+						Type:         "migration",
+						TimeStamp:    time.Now().Unix(),
+						ErrorMessage: err.Message,
+						ErrorDetails: err.Err.Error(),
+					})
 				}
 			}
 		}

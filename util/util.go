@@ -404,3 +404,42 @@ func ValidateIndex(pattern string, index string) (bool, error) {
 	}
 	return matched, nil
 }
+
+type ReportArcError struct {
+	// Type of error, for e.g analytics, migration etc.
+	Type string `json:"type"`
+	// unix timestamp
+	TimeStamp int64 `json:"timestamp"`
+	// ES status code, if present
+	ErrorCode int64 `json:"code"`
+	// Error message
+	ErrorMessage string `json:"message"`
+	// Detailed error log with line number
+	ErrorDetails string `json:"details"`
+}
+
+func ReportErrorToAppbase(errorBody ReportArcError) error {
+	// Call ACCAPI to trigger update for other nodes
+	arcID, err := GetArcID()
+	if err != nil {
+		return err
+	}
+	marshalledRequest, err := json.Marshal(errorBody)
+	if err != nil {
+		return err
+	}
+	req, err := http.NewRequest(http.MethodPost, ACCAPI+"arc/"+arcID+"/report_error", bytes.NewBuffer(marshalledRequest))
+	if err != nil {
+		return err
+	}
+	req.Header.Add("Content-Type", "application/json")
+	req.Header.Add("cache-control", "no-cache")
+	res, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return err
+	}
+	if res.StatusCode != http.StatusOK {
+		return nil
+	}
+	return nil
+}
