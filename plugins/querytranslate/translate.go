@@ -215,7 +215,9 @@ func (query *Query) buildQueryOptions() (map[string]interface{}, error) {
 	}
 
 	// Apply category aggs
-	if query.CategoryField != nil && (query.Type == Search || query.Type == Suggestion) {
+	if query.CategoryField != nil &&
+		*query.CategoryField != "" &&
+		(query.Type == Search || query.Type == Suggestion) {
 		// Add aggregations for the category
 		aggs := make(map[string]interface{})
 		termsQuery := map[string]interface{}{
@@ -305,8 +307,29 @@ func (query *Query) applyNestedFieldQuery(originalQuery interface{}) interface{}
 func (query *Query) applyHighlightQuery(queryOptions *map[string]interface{}) {
 	clonedQuery := *queryOptions
 	if query.Highlight != nil && *query.Highlight {
-		if query.CustomHighlight != nil {
-			clonedQuery["highlight"] = *query.CustomHighlight
+		if query.HighlightConfig != nil || query.CustomHighlight != nil {
+			var highlightConfig map[string]interface{}
+			if query.HighlightConfig != nil {
+				highlightConfig = *query.HighlightConfig
+			} else if query.CustomHighlight != nil {
+				highlightConfig = *query.CustomHighlight
+			}
+			if highlightConfig["fields"] == nil {
+				fields := make(map[string]interface{})
+				var highlightFields = query.HighlightField
+				if len(highlightFields) == 0 {
+					// use data fields as highlighted field
+					dataFields := NormalizedDataFields(query.DataField, []float64{})
+					for _, v := range dataFields {
+						highlightFields = append(highlightFields, v.Field)
+					}
+				}
+				for _, field := range highlightFields {
+					fields[field] = make(map[string]interface{})
+				}
+				highlightConfig["fields"] = fields
+			}
+			clonedQuery["highlight"] = highlightConfig
 		} else {
 			var fields = make(map[string]interface{})
 			var highlightField = query.HighlightField

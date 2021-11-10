@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"bytes"
+	"context"
 	"crypto/hmac"
 	"crypto/sha256"
 	"encoding/hex"
@@ -344,7 +345,8 @@ func main() {
 	for _, migration := range util.GetMigrationScripts() {
 		shouldExecute, err := migration.ConditionCheck()
 		if err != nil {
-			log.Fatal(err.Message+": ", err.Err)
+			// TODO: Report To Appbase
+			log.Errorln(err.Message+": ", err.Err)
 		}
 		if shouldExecute {
 			// Run the script
@@ -353,6 +355,7 @@ func main() {
 				go func() {
 					err := migration.Script()
 					if err != nil {
+						// TODO: Report To Appbase
 						log.Errorln(err.Message+": ", err.Err)
 					}
 				}()
@@ -360,11 +363,18 @@ func main() {
 				// Sync scripts will cause the fatal error on failure
 				err := migration.Script()
 				if err != nil {
-					log.Fatal(err.Message+": ", err.Err)
+					// TODO: Report To Appbase
+					log.Errorln(err.Message+": ", err.Err)
 				}
 			}
 		}
 	}
+
+	cronjob := cron.New()
+	syncInterval := "@every " + strconv.Itoa(util.GetSyncInterval()) + "s"
+	cronjob.AddFunc(syncInterval, syncPluginCache)
+	cronjob.Start()
+
 	// Set telemetry based on the user input
 	// Runtime flag gets the highest priority
 	telemetryEnvVar := os.Getenv("ENABLE_TELEMETRY")
@@ -406,6 +416,37 @@ func main() {
 		log.Fatal(http.ListenAndServeTLS(addr, httpsCert, httpsKey, handler))
 	} else {
 		log.Fatal(http.ListenAndServe(addr, handler))
+	}
+}
+
+func syncPluginCache() {
+	// Only run for self hosted arc using arc-enterprise plan
+
+	indices := []string{}
+	for _, syncScript := range util.GetSyncScripts() {
+		// append index
+		indices = append(indices, syncScript.Index())
+	}
+	indexToSearch := strings.Join(indices, ",")
+	// TODO: Handle es6
+	// Fetch ES response
+	response, err := util.GetClient7().
+		Search(indexToSearch).
+		Size(10000).
+		Do(context.Background())
+	if err != nil {
+		log.Errorln(logTag, "Error while syncing plugin cache", err.Error())
+		return
+	}
+	if response.Error != nil {
+		log.Errorln(logTag, "Error while syncing plugin cache", response.Error)
+		return
+	}
+	for _, syncScript := range util.GetSyncScripts() {
+		err := syncScript.SetCache(response)
+		if err != nil {
+			log.Errorln(logTag, "Error syncing plugin "+syncScript.PluginName()+" ", response.Error)
+		}
 	}
 }
 

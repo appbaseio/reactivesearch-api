@@ -111,6 +111,7 @@ var developCategories = []category.Category{
 	category.Misc,
 	category.Streams,
 	category.Logs,
+	category.Sync,
 }
 
 var searchRelevancyCategories = append([]category.Category{
