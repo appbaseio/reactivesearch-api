@@ -426,10 +426,7 @@ func GetAliasedIndices(ctx context.Context) ([]AliasedIndices, error) {
 	var indicesList []AliasedIndices
 	v := url.Values{}
 	v.Set("format", "json")
-
-	if util.GetSemanticVersion() >= "7.7.0" {
-		v.Add("expand_wildcards", "all")
-	}
+	v.Add("expand_wildcards", "all")
 
 	requestOptions := es7.PerformRequestOptions{
 		Method: "GET",
