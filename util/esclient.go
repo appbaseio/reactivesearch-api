@@ -101,8 +101,6 @@ func GetSemanticVersion() string {
 func HiddenIndexSettings() string {
 	esVersion, _ := v.NewVersion(GetSemanticVersion())
 	hiddenIndexVersion, _ := v.NewVersion("7.7.0")
-	// Golang allows using comparision operators with strings
-	// test: https://play.golang.org/p/2F36GFe3L0A
 	if esVersion.GreaterThanOrEqual(hiddenIndexVersion) {
 		return `"index.hidden": true,`
 	}
