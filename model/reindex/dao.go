@@ -16,6 +16,7 @@ import (
 
 	"github.com/appbaseio/reactivesearch-api/middleware/classify"
 	"github.com/appbaseio/reactivesearch-api/util"
+	"github.com/hashicorp/go-version"
 	es7 "github.com/olivere/elastic/v7"
 )
 
@@ -426,7 +427,12 @@ func GetAliasedIndices(ctx context.Context) ([]AliasedIndices, error) {
 	var indicesList []AliasedIndices
 	v := url.Values{}
 	v.Set("format", "json")
-	v.Add("expand_wildcards", "all")
+
+	esVersion, _ := version.NewVersion(util.GetSemanticVersion())
+	hiddenIndexVersion, _ := version.NewVersion("7.7.0")
+	if esVersion.GreaterThanOrEqual(hiddenIndexVersion) {
+		v.Add("expand_wildcards", "all")
+	}
 
 	requestOptions := es7.PerformRequestOptions{
 		Method: "GET",

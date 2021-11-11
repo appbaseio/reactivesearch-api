@@ -10,6 +10,7 @@ require (
 	github.com/golang/mock v1.2.0 // indirect
 	github.com/google/uuid v1.1.2
 	github.com/gorilla/mux v1.7.1
+	github.com/hashicorp/go-version v1.3.0 // indirect
 	github.com/kljensen/snowball v0.6.0 // indirect
 	github.com/lithammer/fuzzysearch v1.1.3 // indirect
 	github.com/mackerelio/go-osstat v0.2.0

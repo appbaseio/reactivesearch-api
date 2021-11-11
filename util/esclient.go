@@ -8,6 +8,7 @@ import (
 	"strings"
 	"sync"
 
+	v "github.com/hashicorp/go-version"
 	es7 "github.com/olivere/elastic/v7"
 	log "github.com/sirupsen/logrus"
 	es6 "gopkg.in/olivere/elastic.v6"
@@ -98,7 +99,15 @@ func GetSemanticVersion() string {
 
 // HiddenIndexSettings to set plugin indices as hidden index
 func HiddenIndexSettings() string {
-	return `"index.hidden": true,`
+	esVersion, _ := v.NewVersion(GetSemanticVersion())
+	hiddenIndexVersion, _ := v.NewVersion("7.7.0")
+	// Golang allows using comparision operators with strings
+	// test: https://play.golang.org/p/2F36GFe3L0A
+	if esVersion.GreaterThanOrEqual(hiddenIndexVersion) {
+		return `"index.hidden": true,`
+	}
+
+	return ""
 }
 
 func isSniffingEnabled() bool {
