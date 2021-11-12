@@ -442,7 +442,7 @@ func getPredictiveSuggestions(config SuggestionsConfig, suggestions *[]Suggestio
 								// a prefix shouldn't be a stopword
 								if config.ApplyStopwords != nil && *config.ApplyStopwords {
 									lastWord := strings.Trim(suffixWords[:i][len(suffixWords[:i])-1], " ")
-									if config.Stopwords != nil {
+									if len(customStopwords) > 0 {
 										if customStopwords[lastWord] {
 											continue
 										}
@@ -479,7 +479,7 @@ func getPredictiveSuggestions(config SuggestionsConfig, suggestions *[]Suggestio
 								// a prefix shouldn't be a stopword
 								if config.ApplyStopwords != nil && *config.ApplyStopwords {
 									firstWord := strings.Trim(prefixWords[i:][0], " ")
-									if config.Stopwords != nil {
+									if len(customStopwords) > 0 {
 										if customStopwords[firstWord] {
 											continue
 										}
