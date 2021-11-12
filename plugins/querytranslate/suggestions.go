@@ -11,6 +11,7 @@ import (
 	"unicode"
 
 	"github.com/appbaseio/reactivesearch-api/util"
+	"github.com/bbalet/stopwords"
 	"github.com/kljensen/snowball"
 	"github.com/lithammer/fuzzysearch/fuzzy"
 	"github.com/microcosm-cc/bluemonday"
@@ -143,6 +144,7 @@ type SuggestionsConfig struct {
 	HighlightField              []string
 	HighlightConfig             *map[string]interface{}
 	CategoryField               *string
+	Language                    *string
 }
 
 type RankField struct {
@@ -162,30 +164,31 @@ func stemmedTokens(source string, language string) []string {
 	return stemmedTokens
 }
 
-func removeStopwords(value string) string {
-	var words []string
-	for _, word := range strings.Split(strings.Trim(value, " "), " ") {
-		if stopwords[word] {
-			continue
-		}
-		words = append(words, word)
+func removeStopwords(value string, language *string) string {
+	ln := "en"
+	if language != nil && LanguagesToISOCode[*language] != "" {
+		ln = LanguagesToISOCode[*language]
 	}
-	return strings.Join(words, " ")
+	cleanContent := stopwords.CleanString(value, ln, true)
+	return cleanContent
 }
-func findMatch(fieldValueRaw string, userQueryRaw string, language string) RankField {
+func findMatch(fieldValueRaw string, userQueryRaw string, language *string) RankField {
 	// remove stopwords from fieldValue and userQuery
-	fieldValue := removeStopwords(fieldValueRaw)
-	userQuery := removeStopwords(userQueryRaw)
+	fieldValue := removeStopwords(fieldValueRaw, language)
+	userQuery := removeStopwords(userQueryRaw, language)
 	var rankField = RankField{
 		fieldValue: fieldValue,
 		userQuery:  userQuery,
 		score:      0,
 	}
-	if language == "" {
-		language = "english"
+	stemLanguage := "english"
+	if language != nil {
+		if util.Contains(StemLanguages, *language) {
+			stemLanguage = *language
+		}
 	}
-	stemmedFieldValues := stemmedTokens(fieldValue, language)
-	stemmeduserQuery := stemmedTokens(userQuery, language)
+	stemmedFieldValues := stemmedTokens(fieldValue, stemLanguage)
+	stemmeduserQuery := stemmedTokens(userQuery, stemLanguage)
 	foundMatches := make([]bool, len(stemmeduserQuery))
 	for i, token := range stemmeduserQuery {
 
@@ -322,6 +325,7 @@ type SuggestionInfo struct {
 	source        map[string]interface{}
 	urlField      *string
 	categoryField *string
+	language      *string
 	rawHit        ESDoc
 }
 
@@ -330,7 +334,7 @@ func populateSuggestionsList(
 	suggestionsList *[]SuggestionHIT,
 	suggestionsInfo SuggestionInfo,
 ) bool {
-	if !util.Contains(*labelsList, ParseSuggestionLabel(suggestionsInfo.fieldValue)) {
+	if !util.Contains(*labelsList, ParseSuggestionLabel(suggestionsInfo.fieldValue, suggestionsInfo.language)) {
 		var url *string
 		if suggestionsInfo.urlField != nil {
 			urlString, ok := suggestionsInfo.rawHit.Source[*suggestionsInfo.urlField].(string)
@@ -348,7 +352,7 @@ func populateSuggestionsList(
 		// calculate scores
 		fieldValue := getTextFromHTML(suggestionsInfo.fieldValue)
 		searchQuery := suggestionsInfo.queryValue
-		rankField := findMatch(searchQuery, fieldValue, "english")
+		rankField := findMatch(searchQuery, fieldValue, suggestionsInfo.language)
 		suggestion := SuggestionHIT{
 			Value:        fieldValue,
 			Label:        suggestionsInfo.fieldValue,
@@ -363,7 +367,7 @@ func populateSuggestionsList(
 			Score:  suggestionsInfo.rawHit.Score,
 		}
 
-		*labelsList = append(*labelsList, ParseSuggestionLabel(suggestionsInfo.fieldValue))
+		*labelsList = append(*labelsList, ParseSuggestionLabel(suggestionsInfo.fieldValue, suggestionsInfo.language))
 		*suggestionsList = append(*suggestionsList, suggestion)
 		return false
 	}
@@ -419,12 +423,12 @@ func getPredictiveSuggestions(config SuggestionsConfig, suggestions *[]Suggestio
 					maxPredictedWords = *config.MaxPredictedWords
 				}
 				matched := false
-				stopwordsToApply := stopwords
+				var customStopwords = make(map[string]bool)
 				// use custom stopwords if present
 				if config.Stopwords != nil {
-					stopwordsToApply = make(map[string]bool)
+					customStopwords = make(map[string]bool)
 					for _, v := range *config.Stopwords {
-						stopwordsToApply[v] = true
+						customStopwords[v] = true
 					}
 				}
 				// apply suffix match
@@ -438,8 +442,15 @@ func getPredictiveSuggestions(config SuggestionsConfig, suggestions *[]Suggestio
 								// a prefix shouldn't be a stopword
 								if config.ApplyStopwords != nil && *config.ApplyStopwords {
 									lastWord := strings.Trim(suffixWords[:i][len(suffixWords[:i])-1], " ")
-									if stopwordsToApply[lastWord] {
-										continue
+									if config.Stopwords != nil {
+										if customStopwords[lastWord] {
+											continue
+										}
+									} else {
+										cleanContent := removeStopwords(lastWord, config.Language)
+										if len(strings.Trim(cleanContent, " ")) == 0 {
+											continue
+										}
 									}
 								}
 								suggestionPhrase := currentValueTrimmed + tags.PreTags + highlightedWord + tags.PostTags
@@ -468,8 +479,15 @@ func getPredictiveSuggestions(config SuggestionsConfig, suggestions *[]Suggestio
 								// a prefix shouldn't be a stopword
 								if config.ApplyStopwords != nil && *config.ApplyStopwords {
 									firstWord := strings.Trim(prefixWords[i:][0], " ")
-									if stopwordsToApply[firstWord] {
-										continue
+									if config.Stopwords != nil {
+										if customStopwords[firstWord] {
+											continue
+										}
+									} else {
+										cleanContent := removeStopwords(firstWord, config.Language)
+										if len(strings.Trim(cleanContent, " ")) == 0 {
+											continue
+										}
 									}
 								}
 								suggestionPhrase := tags.PreTags + highlightedWord + tags.PostTags + currentValueTrimmed
@@ -593,6 +611,7 @@ func parseField(
 				urlField:      config.URLField,
 				categoryField: config.CategoryField,
 				rawHit:        rawHit,
+				language:      config.Language,
 			}
 			return populateSuggestionsList(labelsList, suggestionsList, suggestionInfo)
 		}
@@ -633,6 +652,7 @@ func parseField(
 					urlField:      config.URLField,
 					categoryField: config.CategoryField,
 					rawHit:        rawHit,
+					language:      config.Language,
 				}
 				return populateSuggestionsList(labelsList, suggestionsList, suggestionInfo)
 			}
@@ -801,16 +821,24 @@ func getFinalSuggestions(config SuggestionsConfig, rawHits []ESDoc) []Suggestion
 }
 
 // Returns the parsed suggestion label to be compared for duplicate suggestions
-func ParseSuggestionLabel(label string) string {
+func ParseSuggestionLabel(label string, language *string) string {
 	// trim spaces
 	parsedLabel := strings.Trim(label, " ")
-	// remove stopwords
-	words := strings.Split(parsedLabel, " ")
-	parsedWords := []string{}
-	for _, word := range words {
-		if !stopwords[word] {
-			parsedWords = append(parsedWords, word)
+	// convert to lower case
+	parsedLabel = strings.ToLower(parsedLabel)
+	stemLanguage := "english"
+	if language != nil {
+		if util.Contains(StemLanguages, *language) {
+			stemLanguage = *language
 		}
 	}
-	return strings.Join(parsedWords, " ")
+	// stem word
+	stemmed, err := snowball.Stem(parsedLabel, stemLanguage, true)
+	if err != nil {
+		log.Errorln(logTag, ":", err)
+	} else {
+		parsedLabel = stemmed
+	}
+	// remove stopwords
+	return strings.Trim(removeStopwords(parsedLabel, language), " ")
 }

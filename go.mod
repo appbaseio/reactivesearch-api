@@ -1,6 +1,7 @@
 module github.com/appbaseio/reactivesearch-api
 
 require (
+	github.com/bbalet/stopwords v1.0.0 // indirect
 	github.com/buger/jsonparser v1.1.1
 	github.com/denisbrodbeck/machineid v1.0.1
 	github.com/dgraph-io/badger/v3 v3.2103.1 // indirect
