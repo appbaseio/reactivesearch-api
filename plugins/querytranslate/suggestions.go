@@ -485,7 +485,7 @@ func getPredictiveSuggestions(config SuggestionsConfig, suggestions *[]Suggestio
 										}
 									} else {
 										cleanContent := removeStopwords(firstWord, config.Language)
-										if len(strings.Trim(cleanContent, " ")) == 0 {
+										if len(strings.TrimSpace(cleanContent)) == 0 {
 											continue
 										}
 									}
