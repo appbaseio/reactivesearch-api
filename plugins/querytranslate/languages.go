@@ -9,7 +9,7 @@ var StemLanguages = []string{
 	"norwegian",
 }
 
-// languages supported by stopword package
+// languages supported by stopwords package
 var LanguagesToISOCode = map[string]string{
 	"arabic":     "ar",
 	"bulgarian":  "bg",
