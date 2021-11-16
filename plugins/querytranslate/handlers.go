@@ -141,6 +141,7 @@ func (r *QueryTranslate) search() http.HandlerFunc {
 									CategoryField:               query.CategoryField,
 									HighlightField:              query.HighlightField,
 									HighlightConfig:             query.HighlightConfig,
+									Language:                    query.SearchLanguage,
 								}
 
 								var rawHits []ESDoc

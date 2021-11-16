@@ -314,9 +314,11 @@ func TestExtractFieldsFromSource(t *testing.T) {
 
 func TestParseSuggestionLabel(t *testing.T) {
 	Convey("with spaces", t, func() {
-		So(ParseSuggestionLabel(" title "), ShouldResemble, "title")
+		ln := "english"
+		So(ParseSuggestionLabel(" pizzas ", &ln), ShouldResemble, "pizza")
 	})
 	Convey("with spaces and stopwords", t, func() {
-		So(ParseSuggestionLabel("  batman and robin  "), ShouldResemble, "batman robin")
+		ln := "english"
+		So(ParseSuggestionLabel("  batman and robin  ", &ln), ShouldResemble, "batman robin")
 	})
 }
