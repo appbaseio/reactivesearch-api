@@ -20,6 +20,7 @@ import (
 	"runtime"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/appbaseio/reactivesearch-api/middleware"
 	"github.com/appbaseio/reactivesearch-api/middleware/logger"
@@ -27,12 +28,14 @@ import (
 	"github.com/appbaseio/reactivesearch-api/plugins"
 	"github.com/appbaseio/reactivesearch-api/util"
 	"github.com/denisbrodbeck/machineid"
+	"github.com/getsentry/sentry-go"
 	"github.com/gorilla/mux"
 	"github.com/mackerelio/go-osstat/memory"
 	"github.com/pkg/profile"
 	"github.com/robfig/cron"
 	"github.com/rs/cors"
 
+	"github.com/sirupsen/logrus"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -82,7 +85,40 @@ var (
 	FeatureCache string
 )
 
+// SentryErrorHook implements the logrus.Hooks interface to report errors to sentry
+type SentryErrorHook struct {
+}
+
+// Report error logs for logs above or equal to error level
+func (h *SentryErrorHook) Levels() []logrus.Level {
+	return []logrus.Level{logrus.ErrorLevel}
+}
+
+func (h *SentryErrorHook) Fire(e *logrus.Entry) error {
+	// send event to sentry
+	sentry.CaptureMessage(e.Message)
+	return nil
+}
+
 func init() {
+	err := sentry.Init(sentry.ClientOptions{
+		Dsn:              "https://3b9b4fcedbf4460c90844f51e8634229@o27644.ingest.sentry.io/6063525",
+		Release:          util.Version,
+		AttachStacktrace: true,
+		Debug:            true,
+	})
+	if err != nil {
+		log.Fatalf("sentry.Init: %s", err)
+	}
+
+	defer func() {
+		err := recover()
+		if err != nil {
+			sentry.CurrentHub().Recover(err)
+			sentry.Flush(time.Second * 10)
+		}
+	}()
+
 	flag.StringVar(&envFile, "env", ".env", "Path to file with environment variables to load in KEY=VALUE format")
 	flag.StringVar(&logMode, "log", "", "Define to change the default log mode(error), other options are: debug(most verbose) and info")
 	flag.BoolVar(&listPlugins, "plugins", false, "List currently registered plugins")
@@ -94,6 +130,7 @@ func init() {
 		portValue, _ := strconv.Atoi(envPort)
 		defaultPort = portValue
 	}
+
 	fmt.Println("=> port used", defaultPort)
 	flag.IntVar(&port, "port", defaultPort, "Port number")
 	flag.StringVar(&pluginDir, "pluginDir", "build/plugins", "Directory containing the compiled plugins")
@@ -103,6 +140,32 @@ func init() {
 }
 
 func main() {
+	flag.Parse()
+	// add cpu profilling
+	if cpuprofile {
+		defer profile.Start().Stop()
+	}
+
+	log.SetReportCaller(true)
+	log.SetFormatter(&log.TextFormatter{
+		FullTimestamp:          true,
+		TimestampFormat:        "2006/01/02 15:04:05",
+		DisableLevelTruncation: true,
+		CallerPrettyfier: func(f *runtime.Frame) (string, string) {
+			filename := path.Base(f.File)
+			return "", fmt.Sprintf(" %s:%d", filename, f.Line)
+		},
+	})
+	log.AddHook(&SentryErrorHook{})
+	switch logMode {
+	case "debug":
+		log.SetLevel(log.DebugLevel)
+	case "info":
+		log.SetLevel(log.InfoLevel)
+	default:
+		log.SetLevel(log.ErrorLevel)
+	}
+
 	isRunTimeDocker := false
 
 	// Summarizing how we're detecting a container runtime:
@@ -153,32 +216,6 @@ func main() {
 		log.Warnln(logTag, ":", memErr)
 	} else {
 		util.MemoryAllocated = memory.Total
-	}
-
-	flag.Parse()
-	log.SetReportCaller(true)
-	log.SetFormatter(&log.TextFormatter{
-		FullTimestamp:          true,
-		TimestampFormat:        "2006/01/02 15:04:05",
-		DisableLevelTruncation: true,
-		CallerPrettyfier: func(f *runtime.Frame) (string, string) {
-			filename := path.Base(f.File)
-			return "", fmt.Sprintf(" %s:%d", filename, f.Line)
-		},
-	})
-
-	// add cpu profilling
-	if cpuprofile {
-		defer profile.Start().Stop()
-	}
-
-	switch logMode {
-	case "debug":
-		log.SetLevel(log.DebugLevel)
-	case "info":
-		log.SetLevel(log.InfoLevel)
-	default:
-		log.SetLevel(log.ErrorLevel)
 	}
 
 	// Load all env vars from envFile
@@ -345,7 +382,6 @@ func main() {
 	for _, migration := range util.GetMigrationScripts() {
 		shouldExecute, err := migration.ConditionCheck()
 		if err != nil {
-			// TODO: Report To Appbase
 			log.Errorln(err.Message+": ", err.Err)
 		}
 		if shouldExecute {
@@ -355,7 +391,6 @@ func main() {
 				go func() {
 					err := migration.Script()
 					if err != nil {
-						// TODO: Report To Appbase
 						log.Errorln(err.Message+": ", err.Err)
 					}
 				}()
@@ -363,7 +398,6 @@ func main() {
 				// Sync scripts will cause the fatal error on failure
 				err := migration.Script()
 				if err != nil {
-					// TODO: Report To Appbase
 					log.Errorln(err.Message+": ", err.Err)
 				}
 			}
