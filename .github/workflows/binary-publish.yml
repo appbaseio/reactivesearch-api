@@ -3,7 +3,7 @@ on:
   push:
     branches: [feat/github-actions]
     # Publish semver tags as releases.
-    tags: ['*.*.*']
+    # tags: ['*.*.*']
 jobs:
   build:
     name: Build
