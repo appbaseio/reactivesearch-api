@@ -19,6 +19,8 @@ jobs:
           username: ${{ secrets.GCLOUD_BUILD_USERNAME }}
           key: ${{ secrets.GCLOUD_BUILD_KEY }}
           port: 22
+          timeout: 3600s
+          command_timeout: 3600s
           envs: VERSION
           script: |
             echo ${VERSION}
