@@ -21,7 +21,7 @@ jobs:
           envs: VERSION
           script: |
             echo ${VERSION}
-            sh build.sh
+            sh build.sh ${VERSION}
       - name: building binaries for ami
         uses: appleboy/ssh-action@master
         env:
@@ -34,4 +34,4 @@ jobs:
           envs: VERSION
           script: |
             echo ${VERSION}
-            sh build.sh
+            sh build.sh ${VERSION}
