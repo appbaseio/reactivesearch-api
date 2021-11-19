@@ -14,7 +14,7 @@ jobs:
       - name: building binaries for eaas deployments
         uses: appleboy/ssh-action@master
         env:
-          VERSION: ${VERSION}
+          VERSION: ${{VERSION}}
         with:
           host: ${{ secrets.GCLOUD_BUILD_HOST }}
           username: ${{ secrets.GCLOUD_BUILD_USERNAME }}
@@ -27,7 +27,7 @@ jobs:
       - name: building binaries for ami
         uses: appleboy/ssh-action@master
         env:
-          VERSION: ${VERSION}
+          VERSION: ${{VERSION}}
         with:
           host: ${{ secrets.AWS_BUILD_HOST }}
           username: ${{ secrets.AWS_BUILD_USERNAME }}
