@@ -23,7 +23,6 @@ jobs:
       #     port: 22
       #     envs: VERSION
       #     script: |
-      #       echo ${VERSION}
       #       sh build.sh ${VERSION}
 
       - name: Build AMI
@@ -35,7 +34,7 @@ jobs:
           PACKER_LOG: 1
           AWS_ACCESS_KEY: ${{ secrets.AWS_ACCESS_KEY }}
           AWS_SECRET_KEY: ${{ secrets.AWS_SECRET_KEY }}
-          VERSION: '7.52.0.temp'
+          VERSION: '7.52.0'
       - name: building binaries for eaas deployments
         uses: appleboy/ssh-action@master
         env:
@@ -49,5 +48,4 @@ jobs:
           command_timeout: 3600s
           envs: VERSION
           script: |
-            echo ${VERSION}
-            sh build.sh ${VERSION} > build.logs
+            sh build.sh ${VERSION} &
