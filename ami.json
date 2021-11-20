@@ -7,8 +7,8 @@
 	"builders": [
 		{
 			"type": "amazon-ebs",
-			"access_key": "{{user `AWS_ACCESS_KEY`}}",
-			"secret_key": "{{user `AWS_SECRET`}}",
+			"access_key": "{{env `AWS_ACCESS_KEY`}}",
+			"secret_key": "{{env `AWS_SECRET`}}",
 			"region": "us-east-1",
 			"instance_type": "t2.micro",
 			"ssh_username": "ec2-user",
