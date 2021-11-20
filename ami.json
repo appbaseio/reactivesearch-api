@@ -2,13 +2,13 @@
 	"variables": {
 		"VERSION": "{{env `VERSION`}}",
 		"AWS_ACCESS_KEY": "{{env `AWS_ACCESS_KEY`}}",
-		"AWS_SECRET": "{{env `AWS_SECRET`}}"
+		"AWS_SECRET_KEY": "{{env `AWS_SECRET_KEY`}}"
 	},
 	"builders": [
 		{
 			"type": "amazon-ebs",
-			"access_key": "{{env `AWS_ACCESS_KEY`}}",
-			"secret_key": "{{env `AWS_SECRET`}}",
+			"access_key": "{{user `AWS_ACCESS_KEY`}}",
+			"secret_key": "{{user `AWS_SECRET_KEY`}}",
 			"region": "us-east-1",
 			"instance_type": "t2.micro",
 			"ssh_username": "ec2-user",
