@@ -1,0 +1,26 @@
+{
+	"builders": [
+		{
+			"type": "amazon-ebs",
+			"access_key": "{{env `AWS_ACCESS_KEY`}}",
+			"secret_key": "{{env `AWS_SECRET_KEY`}}",
+			"region": "us-east-1",
+			"instance_type": "t2.micro",
+			"ssh_username": "ec2-user",
+			"source_ami": "ami-0a3af3aae9e1248fb",
+			"ami_name": "reactivesearch-api-temp-{{env `VERSION`}}",
+			"ssh_timeout": "10m",
+			"ami_regions": ["us-east-1"]
+		}
+	],
+	"provisioners": [
+		{
+			"type": "shell",
+			"inline": "sh upgrade.sh {{env `VERSION`}}"
+		},
+		{
+			"type": "shell",
+			"inline": "sudo -E ./setup.sh"
+		}
+	]
+}

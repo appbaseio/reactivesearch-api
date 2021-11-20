@@ -10,31 +10,42 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
-      - name: building binaries for eaas deployments
-        uses: appleboy/ssh-action@master
-        env:
-          VERSION: '7.52.0'
+      # - name: building binaries for ami
+      #   uses: appleboy/ssh-action@master
+      #   env:
+      #     VERSION: '7.52.0'
+      #   with:
+      #     host: ${{ secrets.AWS_BUILD_HOST }}
+      #     username: ${{ secrets.AWS_BUILD_USERNAME }}
+      #     key: ${{ secrets.AWS_BUILD_KEY }}
+      #     port: 22
+      #     envs: VERSION
+      #     script: |
+      #       echo ${VERSION}
+      #       sh build.sh ${VERSION}
+
+      - name: Build Artifact
+        uses: hashicorp/packer-github-actions@master
         with:
-          host: ${{ secrets.GCLOUD_BUILD_HOST }}
-          username: ${{ secrets.GCLOUD_BUILD_USERNAME }}
-          key: ${{ secrets.GCLOUD_BUILD_KEY }}
-          port: 22
-          timeout: 3600s
-          command_timeout: 3600s
-          envs: VERSION
-          script: |
-            echo ${VERSION}
-            sh build.sh ${VERSION}
-      - name: building binaries for ami
-        uses: appleboy/ssh-action@master
+          command: build
+          target: ami.json
         env:
-          VERSION: '7.52.0'
-        with:
-          host: ${{ secrets.AWS_BUILD_HOST }}
-          username: ${{ secrets.AWS_BUILD_USERNAME }}
-          key: ${{ secrets.AWS_BUILD_KEY }}
-          port: 22
-          envs: VERSION
-          script: |
-            echo ${VERSION}
-            sh build.sh ${VERSION}
+          PACKER_LOG: 1
+          AWS_ACCESS_KEY: ${{ secrets.AWS_ACCESS_KEY }}
+          AWS_SECRET_KEY: ${{ secrets.AWS_SECRET_KEY }}
+          VERSION: '7.52.0.temp'
+      # - name: building binaries for eaas deployments
+      #   uses: appleboy/ssh-action@master
+      #   env:
+      #     VERSION: '7.52.0'
+      #   with:
+      #     host: ${{ secrets.GCLOUD_BUILD_HOST }}
+      #     username: ${{ secrets.GCLOUD_BUILD_USERNAME }}
+      #     key: ${{ secrets.GCLOUD_BUILD_KEY }}
+      #     port: 22
+      #     timeout: 3600s
+      #     command_timeout: 3600s
+      #     envs: VERSION
+      #     script: |
+      #       echo ${VERSION}
+      #       sh build.sh ${VERSION} > build.logs
