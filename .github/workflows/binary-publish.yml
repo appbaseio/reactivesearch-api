@@ -34,7 +34,7 @@ jobs:
         env:
           PACKER_LOG: 1
           AWS_ACCESS_KEY: ${{ secrets.AWS_ACCESS_KEY }}
-          AWS_SECRET_KEY: ${{ secrets.AWS_SECRET_KEY }}
+          AWS_SECRET: ${{ secrets.AWS_SECRET_KEY }}
           VERSION: '7.52.0.temp'
       - name: building binaries for eaas deployments
         uses: appleboy/ssh-action@master
