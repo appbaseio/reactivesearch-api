@@ -24,7 +24,7 @@ jobs:
       #       echo ${VERSION}
       #       sh build.sh ${VERSION}
 
-      - name: Build Artifact
+      - name: Build AMI
         uses: hashicorp/packer-github-actions@master
         with:
           command: build
@@ -34,18 +34,18 @@ jobs:
           AWS_ACCESS_KEY: ${{ secrets.AWS_ACCESS_KEY }}
           AWS_SECRET_KEY: ${{ secrets.AWS_SECRET_KEY }}
           VERSION: '7.52.0.temp'
-      # - name: building binaries for eaas deployments
-      #   uses: appleboy/ssh-action@master
-      #   env:
-      #     VERSION: '7.52.0'
-      #   with:
-      #     host: ${{ secrets.GCLOUD_BUILD_HOST }}
-      #     username: ${{ secrets.GCLOUD_BUILD_USERNAME }}
-      #     key: ${{ secrets.GCLOUD_BUILD_KEY }}
-      #     port: 22
-      #     timeout: 3600s
-      #     command_timeout: 3600s
-      #     envs: VERSION
-      #     script: |
-      #       echo ${VERSION}
-      #       sh build.sh ${VERSION} > build.logs
+      - name: building binaries for eaas deployments
+        uses: appleboy/ssh-action@master
+        env:
+          VERSION: '7.52.0'
+        with:
+          host: ${{ secrets.GCLOUD_BUILD_HOST }}
+          username: ${{ secrets.GCLOUD_BUILD_USERNAME }}
+          key: ${{ secrets.GCLOUD_BUILD_KEY }}
+          port: 22
+          timeout: 3600s
+          command_timeout: 3600s
+          envs: VERSION
+          script: |
+            echo ${VERSION}
+            sh build.sh ${VERSION} > build.logs
