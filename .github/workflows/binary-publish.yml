@@ -25,10 +25,9 @@ jobs:
       #       sh build.sh ${VERSION}
 
       - name: Build AMI
-        uses: hashicorp/packer-github-actions@master
+        uses: riznob/packer-build-action@v1.5
         with:
-          command: build
-          target: ami.json
+          templateFile: ami.json
         env:
           PACKER_LOG: 1
           AWS_ACCESS_KEY: ${{ secrets.AWS_ACCESS_KEY }}
