@@ -27,11 +27,11 @@ jobs:
         with:
           command: build
           target: './ami.json'
-          arguments: '-var="VERSION=$(basename ${GITHUB_REF})"'
         env:
           PACKER_LOG: 1
           AWS_ACCESS_KEY: ${{ secrets.AWS_ACCESS_KEY }}
           AWS_SECRET_KEY: ${{ secrets.AWS_SECRET_KEY }}
+          VERSION: '$(basename ${GITHUB_REF})'
       - name: building binaries for eaas deployments
         uses: appleboy/ssh-action@master
         env:

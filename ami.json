@@ -12,7 +12,7 @@
 			"instance_type": "t2.micro",
 			"ssh_username": "ec2-user",
 			"source_ami": "ami-0a3af3aae9e1248fb",
-			"ami_name": "reactivesearch-api-{{user `VERSION`}}",
+			"ami_name": "reactivesearch-api-{{user `VERSION` | clean_resource_name}}",
 			"ssh_timeout": "10m",
 			"ami_regions": ["us-east-1"]
 		}
