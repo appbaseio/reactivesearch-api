@@ -1,8 +1,8 @@
 {
 	"variables": {
-		"VERSION": "{{env `VERSION`}}",
 		"AWS_ACCESS_KEY": "{{env `AWS_ACCESS_KEY`}}",
-		"AWS_SECRET_KEY": "{{env `AWS_SECRET_KEY`}}"
+		"AWS_SECRET_KEY": "{{env `AWS_SECRET_KEY`}}",
+		"VERSION": "{{env `VERSION`}}"
 	},
 	"builders": [
 		{

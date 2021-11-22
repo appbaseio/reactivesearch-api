@@ -1,7 +1,7 @@
 name: build binary
 on:
   release:
-    types: [created]
+    types: [published]
 jobs:
   build:
     name: Build
@@ -13,7 +13,7 @@ jobs:
       - name: building binaries for ami
         uses: appleboy/ssh-action@master
         env:
-          VERSION: '$(basename ${GITHUB_REF})'
+          VERSION: ${{ github.event.release.tag_name }}
         with:
           host: ${{ secrets.AWS_BUILD_HOST }}
           username: ${{ secrets.AWS_BUILD_USERNAME }}
@@ -31,11 +31,11 @@ jobs:
           PACKER_LOG: 1
           AWS_ACCESS_KEY: ${{ secrets.AWS_ACCESS_KEY }}
           AWS_SECRET_KEY: ${{ secrets.AWS_SECRET_KEY }}
-          VERSION: '$(basename ${GITHUB_REF})'
+          VERSION: ${{ github.event.release.tag_name }}
       - name: building binaries for eaas deployments
         uses: appleboy/ssh-action@master
         env:
-          VERSION: '$(basename ${GITHUB_REF})'
+          VERSION: ${{ github.event.release.tag_name }}
         with:
           host: ${{ secrets.GCLOUD_BUILD_HOST }}
           username: ${{ secrets.GCLOUD_BUILD_USERNAME }}
