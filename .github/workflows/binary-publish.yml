@@ -27,7 +27,7 @@ jobs:
         with:
           command: build
           target: './ami.json'
-          arguments: '-var "VERSION=$(basename ${GITHUB_REF})"'
+          arguments: '-var="VERSION=$(basename ${GITHUB_REF})"'
         env:
           PACKER_LOG: 1
           AWS_ACCESS_KEY: ${{ secrets.AWS_ACCESS_KEY }}
