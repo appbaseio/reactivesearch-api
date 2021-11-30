@@ -1,7 +1,9 @@
 name: build binary
 on:
-  release:
-    types: [published]
+  push:
+    branches: [dev]
+  # release:
+  #   types: [published]
 jobs:
   build:
     name: Build
@@ -10,32 +12,32 @@ jobs:
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v2
-      - name: building binaries for ami
-        uses: appleboy/ssh-action@master
-        env:
-          VERSION: ${{ github.event.release.tag_name }}
-        with:
-          host: ${{ secrets.AWS_BUILD_HOST }}
-          username: ${{ secrets.AWS_BUILD_USERNAME }}
-          key: ${{ secrets.AWS_BUILD_KEY }}
-          port: 22
-          envs: VERSION
-          script: |
-            sh build.sh ${VERSION}
-      - name: Build AMI
-        uses: hashicorp/packer-github-actions@master
-        with:
-          command: build
-          target: './ami.json'
-        env:
-          PACKER_LOG: 1
-          AWS_ACCESS_KEY: ${{ secrets.AWS_ACCESS_KEY }}
-          AWS_SECRET_KEY: ${{ secrets.AWS_SECRET_KEY }}
-          VERSION: ${{ github.event.release.tag_name }}
+      # - name: building binaries for ami
+      #   uses: appleboy/ssh-action@master
+      #   env:
+      #     VERSION: ${{ github.event.release.tag_name }}
+      #   with:
+      #     host: ${{ secrets.AWS_BUILD_HOST }}
+      #     username: ${{ secrets.AWS_BUILD_USERNAME }}
+      #     key: ${{ secrets.AWS_BUILD_KEY }}
+      #     port: 22
+      #     envs: VERSION
+      #     script: |
+      #       sh build.sh ${VERSION}
+      # - name: Build AMI
+      #   uses: hashicorp/packer-github-actions@master
+      #   with:
+      #     command: build
+      #     target: './ami.json'
+      #   env:
+      #     PACKER_LOG: 1
+      #     AWS_ACCESS_KEY: ${{ secrets.AWS_ACCESS_KEY }}
+      #     AWS_SECRET_KEY: ${{ secrets.AWS_SECRET_KEY }}
+      #     VERSION: ${{ github.event.release.tag_name }}
       - name: building binaries for eaas deployments
         uses: appleboy/ssh-action@master
         env:
-          VERSION: ${{ github.event.release.tag_name }}
+          VERSION: 7.52.0.test
         with:
           host: ${{ secrets.GCLOUD_BUILD_HOST }}
           username: ${{ secrets.GCLOUD_BUILD_USERNAME }}
@@ -45,4 +47,4 @@ jobs:
           command_timeout: 3600s
           envs: VERSION
           script: |
-            sh build.sh ${VERSION} dev &
+            sh build.sh ${VERSION} > /dev/null 2>&1 &
