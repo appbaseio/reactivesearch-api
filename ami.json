@@ -15,7 +15,9 @@
 			"source_ami": "ami-0a3af3aae9e1248fb",
 			"ami_name": "reactivesearch-api-{{user `VERSION` | clean_resource_name}}",
 			"ssh_timeout": "10m",
-			"ami_regions": ["us-east-1"]
+			"ami_regions": ["us-east-1"],
+			"force_deregister": true,
+			"force_delete_snapshot": true
 		}
 	],
 	"provisioners": [
