@@ -1,7 +1,7 @@
 name: build binary
 on:
   push:
-    branches: [dev]
+    branches: [fix/github-action]
   # release:
   #   types: [published]
 jobs:
