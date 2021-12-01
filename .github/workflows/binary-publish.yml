@@ -1,9 +1,9 @@
 name: build binary
 on:
-  push:
-    branches: [fix/github-action]
-  # release:
-  #   types: [published]
+  # push:
+  #   branches: [fix/github-action]
+  release:
+    types: [published]
 jobs:
   build:
     name: Build
@@ -37,7 +37,7 @@ jobs:
       - name: building binaries for eaas deployments
         uses: appleboy/ssh-action@master
         env:
-          VERSION: 7.52.0.test
+          VERSION: ${{ github.event.release.tag_name }}
         with:
           host: ${{ secrets.GCLOUD_BUILD_HOST }}
           username: ${{ secrets.GCLOUD_BUILD_USERNAME }}
