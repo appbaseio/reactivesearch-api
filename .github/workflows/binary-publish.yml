@@ -1,7 +1,5 @@
 name: build binary
 on:
-  # push:
-  #   branches: [fix/github-action]
   release:
     types: [published]
 jobs:
@@ -12,28 +10,28 @@ jobs:
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v2
-      # - name: building binaries for ami
-      #   uses: appleboy/ssh-action@master
-      #   env:
-      #     VERSION: ${{ github.event.release.tag_name }}
-      #   with:
-      #     host: ${{ secrets.AWS_BUILD_HOST }}
-      #     username: ${{ secrets.AWS_BUILD_USERNAME }}
-      #     key: ${{ secrets.AWS_BUILD_KEY }}
-      #     port: 22
-      #     envs: VERSION
-      #     script: |
-      #       sh build.sh ${VERSION}
-      # - name: Build AMI
-      #   uses: hashicorp/packer-github-actions@master
-      #   with:
-      #     command: build
-      #     target: './ami.json'
-      #   env:
-      #     PACKER_LOG: 1
-      #     AWS_ACCESS_KEY: ${{ secrets.AWS_ACCESS_KEY }}
-      #     AWS_SECRET_KEY: ${{ secrets.AWS_SECRET_KEY }}
-      #     VERSION: ${{ github.event.release.tag_name }}
+      - name: building binaries for ami
+        uses: appleboy/ssh-action@master
+        env:
+          VERSION: ${{ github.event.release.tag_name }}
+        with:
+          host: ${{ secrets.AWS_BUILD_HOST }}
+          username: ${{ secrets.AWS_BUILD_USERNAME }}
+          key: ${{ secrets.AWS_BUILD_KEY }}
+          port: 22
+          envs: VERSION
+          script: |
+            sh build.sh ${VERSION}
+      - name: Build AMI
+        uses: hashicorp/packer-github-actions@master
+        with:
+          command: build
+          target: './ami.json'
+        env:
+          PACKER_LOG: 1
+          AWS_ACCESS_KEY: ${{ secrets.AWS_ACCESS_KEY }}
+          AWS_SECRET_KEY: ${{ secrets.AWS_SECRET_KEY }}
+          VERSION: ${{ github.event.release.tag_name }}
       - name: building binaries for eaas deployments
         uses: appleboy/ssh-action@master
         env:
