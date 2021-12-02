@@ -253,6 +253,7 @@ type Query struct {
 	URLField                    *string                    `json:"urlField,omitempty"`
 	ApplyStopwords              *bool                      `json:"applyStopwords,omitempty"`
 	Stopwords                   *[]string                  `json:"customStopwords,omitempty"`
+	SearchLanguage              *string                    `json:"searchLanguage,omitempty"`
 }
 
 type DataField struct {
