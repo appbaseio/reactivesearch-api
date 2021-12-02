@@ -4,12 +4,13 @@ import (
 	"context"
 
 	"github.com/appbaseio/reactivesearch-api/errors"
-	"github.com/appbaseio/reactivesearch-api/model/request"
 )
 
 // ctxKey is a key against which rs api request will get stored in the context.
-// Note: key is similar to arc-oss so logs can read it
-const ctxKey = request.CtxKey
+type contextKey string
+
+// CtxKey is a key against which api request will get stored in the context.
+const ctxKey = contextKey("request")
 
 // NewContext returns a new context with the given request body.
 func NewContext(ctx context.Context, rsQuery RSQuery) context.Context {
