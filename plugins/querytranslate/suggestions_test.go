@@ -252,7 +252,7 @@ func TestIndexSuggestions(t *testing.T) {
 			{
 				Label:        "<b>Rabindranath Tagore Hall</b>",
 				Value:        "Rabindranath Tagore Hall",
-				Id:           &id,
+				Id:           id,
 				Index:        &index,
 				Score:        score,
 				AppbaseScore: 1,
