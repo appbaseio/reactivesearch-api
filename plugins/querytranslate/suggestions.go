@@ -93,7 +93,7 @@ type SuggestionHIT struct {
 	Count        *int           `json:"_count"`
 	AppbaseScore float64        `json:"_appbase_score"`
 	// ES response properties
-	Id     interface{}            `json:"_id"`
+	Id     string                 `json:"_id"`
 	Index  *string                `json:"_index"`
 	Score  float64                `json:"_score"`
 	Source map[string]interface{} `json:"_source"`
@@ -361,7 +361,7 @@ func populateSuggestionsList(
 			Category:     category,
 			AppbaseScore: rankField.score,
 			// ES response properties
-			Id:     &suggestionsInfo.rawHit.Id,
+			Id:     suggestionsInfo.rawHit.Id,
 			Index:  &suggestionsInfo.rawHit.Index,
 			Source: suggestionsInfo.rawHit.Source,
 			Score:  suggestionsInfo.rawHit.Score,
@@ -546,11 +546,9 @@ func getSuggestions(config SuggestionsConfig, rawHits []ESDoc) []SuggestionHIT {
 		var idMap = make(map[interface{}]bool)
 		filteredSuggestions := make([]SuggestionHIT, 0)
 		for _, suggestion := range suggestionsList {
-			if suggestion.Id != nil {
-				if !idMap[suggestion.Id] {
-					filteredSuggestions = append(filteredSuggestions, suggestion)
-					idMap[suggestion.Id] = true
-				}
+			if !idMap[suggestion.Id] {
+				filteredSuggestions = append(filteredSuggestions, suggestion)
+				idMap[suggestion.Id] = true
 			}
 		}
 		return filteredSuggestions
@@ -816,7 +814,6 @@ func getFinalSuggestions(config SuggestionsConfig, rawHits []ESDoc) []Suggestion
 
 	// parse hits
 	parsedHits := parseHits(rawHits)
-	// TODO: Restrict length by size
 	return getSuggestions(config, parsedHits)
 }
 
