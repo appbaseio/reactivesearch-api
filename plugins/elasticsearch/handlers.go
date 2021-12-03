@@ -54,9 +54,12 @@ func (es *elasticsearch) handler() http.HandlerFunc {
 		// Forward the request to elasticsearch
 		// remove content-type header from r.Headers as that is internally managed my oliver
 		// and can give following error if passed `{"error":{"code":500,"message":"elastic: Error 400 (Bad Request): java.lang.IllegalArgumentException: only one Content-Type header should be provided [type=content_type_header_exception]","status":"Internal Server Error"}}`
+		//
+		// Skip adding the Accept header since it is passed by default as */* and Elastic doesn't like that and ends up throwing
+		// Invalid media-type value on header [Accept] [type=media_type_header_exception]
 		headers := http.Header{}
 		for k := range r.Header {
-			if k == "Content-Type" || k == "Authorization" {
+			if k == "Content-Type" || k == "Authorization" || k == "Accept" {
 				continue
 			}
 			headers.Set(k, r.Header.Get(k))
