@@ -22,6 +22,12 @@ func (es *elasticsearch) getRawLogsES7(ctx context.Context, logsFilter logsFilte
 	} else if logsFilter.Filter == "suggestion" {
 		filters := es7.NewTermsQuery("category.keyword", []interface{}{"suggestion"}...)
 		query.Filter(filters)
+	} else if logsFilter.Filter == "index" {
+		filters := []es7.Query{
+			es7.NewTermsQuery("request.method.keyword", []interface{}{"POST", "PUT"}...),
+			es7.NewTermsQuery("category.keyword", []interface{}{"docs"}...),
+		}
+		query.Filter(filters...)
 	} else if logsFilter.Filter == "delete" {
 		filters := es7.NewMatchQuery("request.method.keyword", "DELETE")
 		query.Filter(filters)
