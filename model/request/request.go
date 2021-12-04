@@ -7,7 +7,7 @@ import (
 type contextKey string
 
 // CtxKey is a key against which api request will get stored in the context.
-const CtxKey = contextKey("request")
+const CtxKey = contextKey("original-request")
 
 // NewContext returns a new context with the given request body.
 func NewContext(ctx context.Context, request interface{}) context.Context {

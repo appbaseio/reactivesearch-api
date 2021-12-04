@@ -86,11 +86,11 @@ type Response struct {
 }
 
 type record struct {
-	Indices   []string          `json:"indices"`
-	Category  category.Category `json:"category"`
-	Request   Request           `json:"request"`
-	Response  Response          `json:"response"`
-	Timestamp time.Time         `json:"timestamp"`
+	Indices   []string  `json:"indices"`
+	Category  string    `json:"category"`
+	Request   Request   `json:"request"`
+	Response  Response  `json:"response"`
+	Timestamp time.Time `json:"timestamp"`
 }
 
 // Recorder records a log "record" for every request.
@@ -105,22 +105,12 @@ func (l *Logs) recorder(h http.HandlerFunc) http.HandlerFunc {
 			h(w, r)
 			return
 		}
-		ctx := r.Context()
-
-		reqCategory, err := category.FromContext(ctx)
+		dumpRequest, err := httputil.DumpRequest(r, true)
 		if err != nil {
-			log.Errorln(logTag, ":", err)
+			log.Errorln(logTag, ":", err.Error())
 			return
 		}
 
-		var dumpRequest []byte
-		if *reqCategory != category.ReactiveSearch {
-			dumpRequest, err = httputil.DumpRequest(r, true)
-			if err != nil {
-				log.Errorln(logTag, ":", err.Error())
-				return
-			}
-		}
 		// Serve using response recorder
 		respRecorder := httptest.NewRecorder()
 		h(respRecorder, r)
@@ -134,6 +124,13 @@ func (l *Logs) recorder(h http.HandlerFunc) http.HandlerFunc {
 
 		go l.recordResponse(respRecorder, r, dumpRequest)
 	}
+}
+
+type Query struct {
+	Type string `json:"type"`
+}
+type RSAPI struct {
+	Query []Query `json:"query"`
 }
 
 func (l *Logs) recordResponse(w *httptest.ResponseRecorder, r *http.Request, reqBody []byte) {
@@ -159,7 +156,38 @@ func (l *Logs) recordResponse(w *httptest.ResponseRecorder, r *http.Request, req
 
 	var rec record
 	rec.Indices = reqIndices
-	rec.Category = *reqCategory
+	rec.Category = reqCategory.String()
+	requestBody := strings.Split(string(reqBody), "\r\n\r\n")
+	var parsedBody []byte
+	if len(requestBody) > 1 {
+		parsedBody = []byte(requestBody[1])
+	}
+	// apply suggestion category
+	if *reqCategory == category.ReactiveSearch {
+		reqBody, err := request.FromContext(ctx)
+		if err != nil {
+			log.Errorln(logTag, "error encountered while reading request body:", err)
+		}
+		if reqBody != nil {
+			bodyInBytes, err := json.Marshal(*reqBody)
+			if err != nil {
+				log.Errorln(logTag, ":", err)
+			} else {
+				var query RSAPI
+				err2 := json.Unmarshal(bodyInBytes, &query)
+				if err2 != nil {
+					log.Errorln(logTag, ":", err2)
+				} else {
+					parsedBody = bodyInBytes
+					for _, query := range query.Query {
+						if query.Type == "suggestion" {
+							rec.Category = "suggestion"
+						}
+					}
+				}
+			}
+		}
+	}
 	rec.Timestamp = time.Now()
 
 	// record response
@@ -184,22 +212,12 @@ func (l *Logs) recordResponse(w *httptest.ResponseRecorder, r *http.Request, req
 			rec.Response.Took = &resBody.Took
 		}
 	}
+	requestBodyToStore := string(parsedBody[:util.Min(len(parsedBody), 1000000)])
 	if *reqCategory == category.ReactiveSearch {
-		// Read request body from context
-		rsRequestBody, err := request.FromContext(ctx)
-		// ignore error to record > 500 status code logs
-		if err != nil {
-			log.Errorln(logTag, "error encountered while reading request body:", err)
-		}
-		marshalled, err := json.Marshal(rsRequestBody)
-		if err != nil {
-			log.Errorln(logTag, "error encountered while marshalling request body:", err)
-			return
-		}
 		rec.Request = Request{
 			URI:     r.URL.Path,
 			Headers: headers,
-			Body:    string(marshalled[:util.Min(len(marshalled), 1000000)]),
+			Body:    requestBodyToStore,
 			Method:  r.Method,
 		}
 		// read success response from context
@@ -213,16 +231,11 @@ func (l *Logs) recordResponse(w *httptest.ResponseRecorder, r *http.Request, req
 		// read error response from response recorder body
 		rec.Response.Body = string(responseBody[:util.Min(len(responseBody), 1000000)])
 	} else {
-		requestBody := strings.Split(string(reqBody), "\r\n\r\n")
-		var parsedBody []byte
-		if len(requestBody) > 1 {
-			parsedBody = []byte(requestBody[1])
-		}
 		// record request
 		rec.Request = Request{
 			URI:     r.URL.Path,
 			Headers: headers,
-			Body:    string(parsedBody[:util.Min(len(parsedBody), 1000000)]),
+			Body:    requestBodyToStore,
 			Method:  r.Method,
 		}
 		rec.Response.Body = string(responseBody[:util.Min(len(responseBody), 1000000)])

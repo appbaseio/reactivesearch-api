@@ -19,8 +19,17 @@ func (es *elasticsearch) getRawLogsES6(ctx context.Context, logsFilter logsFilte
 	query := es6.NewBoolQuery().Filter(duration)
 	// apply category filter
 	if logsFilter.Filter == "search" {
-		filters := es6.NewTermsQuery("category.keyword", []interface{}{"search", category.ReactiveSearch.String()}...)
+		filters := es6.NewTermsQuery("category.keyword", []interface{}{"search", category.ReactiveSearch.String(), "suggestion"}...)
 		query.Filter(filters)
+	} else if logsFilter.Filter == "suggestion" {
+		filters := es6.NewTermsQuery("category.keyword", []interface{}{"suggestion"}...)
+		query.Filter(filters)
+	} else if logsFilter.Filter == "index" {
+		filters := []es6.Query{
+			es6.NewTermsQuery("request.method.keyword", []interface{}{"POST", "PUT"}...),
+			es6.NewTermsQuery("category.keyword", []interface{}{"docs"}...),
+		}
+		query.Filter(filters...)
 	} else if logsFilter.Filter == "delete" {
 		filters := es6.NewMatchQuery("request.method.keyword", "DELETE")
 		query.Filter(filters)

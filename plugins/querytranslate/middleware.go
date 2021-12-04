@@ -15,6 +15,7 @@ import (
 	"github.com/appbaseio/reactivesearch-api/model/category"
 	"github.com/appbaseio/reactivesearch-api/model/op"
 	"github.com/appbaseio/reactivesearch-api/model/permission"
+	"github.com/appbaseio/reactivesearch-api/model/request"
 	"github.com/appbaseio/reactivesearch-api/model/trackplugin"
 	"github.com/appbaseio/reactivesearch-api/plugins/auth"
 	"github.com/appbaseio/reactivesearch-api/plugins/logs"
@@ -85,6 +86,8 @@ func saveRequestToCtx(h http.HandlerFunc) http.HandlerFunc {
 		}
 		// Set request body as nil to avoid memory issues (storage duplication)
 		req.Body = nil
+		originalCtx := request.NewContext(req.Context(), body)
+		req = req.WithContext(originalCtx)
 		ctx := NewContext(req.Context(), body)
 		req = req.WithContext(ctx)
 		h(w, req)
