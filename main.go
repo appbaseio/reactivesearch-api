@@ -50,6 +50,7 @@ var (
 	pluginDir       string
 	https           bool
 	cpuprofile      bool
+	memprofile      bool
 	enableTelemetry string
 	// Version Reactivesearch version set during build
 	Version string
@@ -136,6 +137,7 @@ func init() {
 	flag.StringVar(&pluginDir, "pluginDir", "build/plugins", "Directory containing the compiled plugins")
 	flag.BoolVar(&https, "https", false, "Starts a https server instead of a http server if true")
 	flag.BoolVar(&cpuprofile, "cpuprofile", false, "write cpu profile to `file`")
+	flag.BoolVar(&memprofile, "memprofile", false, "write mem profile to `file`")
 	flag.StringVar(&enableTelemetry, "enable-telemetry", "", "Set as `false` to disable telemetry")
 }
 
@@ -144,6 +146,10 @@ func main() {
 	// add cpu profilling
 	if cpuprofile {
 		defer profile.Start().Stop()
+	}
+	// add mem profilling
+	if memprofile {
+		defer profile.Start(profile.MemProfile).Stop()
 	}
 
 	log.SetReportCaller(true)
