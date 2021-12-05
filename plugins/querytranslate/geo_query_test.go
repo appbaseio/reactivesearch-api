@@ -27,7 +27,7 @@ func TestGeoDropdownWithValue(t *testing.T) {
 		if err != nil {
 			t.Fatalf("Test Failed %v instead\n", err)
 		}
-		convey.So(transformedQuery, convey.ShouldResemble, `{"preference":"GeoDistanceDropdown"}
+		convey.So(transformedQuery, convey.ShouldResemble, `{"preference":"GeoDistanceDropdown_127.0.0.1"}
 {"_source":{"excludes":[],"includes":["*"]},"query":{"geo_distance":{"distance":"10mi","location":"51.5073509, -0.1277583"}},"size":100}
 `)
 	})
@@ -69,7 +69,7 @@ func TestGeoDistanceSliderWithValue(t *testing.T) {
 		if err != nil {
 			t.Fatalf("Test Failed %v instead\n", err)
 		}
-		convey.So(transformedQuery, convey.ShouldResemble, `{"preference":"GeoDistanceSlider"}
+		convey.So(transformedQuery, convey.ShouldResemble, `{"preference":"GeoDistanceSlider_127.0.0.1"}
 {"_source":{"excludes":[],"includes":["*"]},"query":{"geo_distance":{"distance":"10mi","location":"51.5073509, -0.1277583"}},"size":100}
 `)
 	})
@@ -97,7 +97,7 @@ func TestGeoDistanceSliderWithNestedField(t *testing.T) {
 		if err != nil {
 			t.Fatalf("Test Failed %v instead\n", err)
 		}
-		convey.So(transformedQuery, convey.ShouldResemble, `{"preference":"GeoDistanceSlider"}
+		convey.So(transformedQuery, convey.ShouldResemble, `{"preference":"GeoDistanceSlider_127.0.0.1"}
 {"_source":{"excludes":[],"includes":["*"]},"query":{"nested":{"path":"location.raw","query":{"geo_distance":{"distance":"10mi","location":"51.5073509, -0.1277583"}}}},"size":100}
 `)
 	})

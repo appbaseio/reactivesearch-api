@@ -23,7 +23,7 @@ func TestMultiListWithDefaultValue(t *testing.T) {
 		if err != nil {
 			t.Fatalf("Test Failed %v instead\n", err)
 		}
-		convey.So(transformedQuery, convey.ShouldResemble, `{"preference":"BookSensor"}
+		convey.So(transformedQuery, convey.ShouldResemble, `{"preference":"BookSensor_127.0.0.1"}
 {"_source":{"excludes":[],"includes":["*"]},"aggs":{"original_series.raw":{"terms":{"field":"original_series.raw","order":{"_count":"desc"},"size":100}}},"query":{"match_all":{}},"size":100}
 `)
 	})
@@ -83,9 +83,9 @@ func TestMultiDropdownList(t *testing.T) {
 		if err != nil {
 			t.Fatalf("Test Failed %v instead\n", err)
 		}
-		convey.So(transformedQuery, convey.ShouldResemble, `{"preference":"BookSensor"}
+		convey.So(transformedQuery, convey.ShouldResemble, `{"preference":"BookSensor_127.0.0.1"}
 {"_source":{"excludes":[],"includes":["*"]},"aggs":{"original_series.raw":{"terms":{"field":"original_series.raw","order":{"_count":"desc"}}}},"query":{"match_all":{}},"size":0}
-{"preference":"SearchResult"}
+{"preference":"SearchResult_127.0.0.1"}
 {"_source":{"excludes":[],"includes":["*"]},"query":{"bool":{"must":[{"bool":{"must":{"bool":{"must":[{"term":{"original_series.raw":"In Death"}},{"term":{"original_series.raw":"Discworld"}}]}}}}]}},"size":10}
 `)
 	})
@@ -115,9 +115,9 @@ func TestMultiDataList(t *testing.T) {
 		if err != nil {
 			t.Fatalf("Test Failed %v instead\n", err)
 		}
-		convey.So(transformedQuery, convey.ShouldResemble, `{"preference":"CitySensor"}
+		convey.So(transformedQuery, convey.ShouldResemble, `{"preference":"CitySensor_127.0.0.1"}
 {"_source":{"excludes":[],"includes":["*"]},"aggs":{"group.group_topics.topic_name_raw.raw":{"terms":{"field":"group.group_topics.topic_name_raw.raw","order":{"_count":"desc"}}}},"query":{"match_all":{}},"size":0}
-{"preference":"SearchResult"}
+{"preference":"SearchResult_127.0.0.1"}
 {"_source":{"excludes":[],"includes":["*"]},"query":{"bool":{"must":[{"bool":{"must":[{"bool":{"should":[{"terms":{"group.group_topics.topic_name_raw.raw":["Social","Adventure"]}}]}}]}}]}},"size":5}
 `)
 	})
@@ -147,9 +147,9 @@ func TestSingleDataList(t *testing.T) {
 		if err != nil {
 			t.Fatalf("Test Failed %v instead\n", err)
 		}
-		convey.So(transformedQuery, convey.ShouldResemble, `{"preference":"CitySensor"}
+		convey.So(transformedQuery, convey.ShouldResemble, `{"preference":"CitySensor_127.0.0.1"}
 {"_source":{"excludes":[],"includes":["*"]},"aggs":{"group.group_topics.topic_name_raw.raw":{"terms":{"field":"group.group_topics.topic_name_raw.raw","order":{"_count":"desc"}}}},"query":{"match_all":{}},"size":0}
-{"preference":"SearchResult"}
+{"preference":"SearchResult_127.0.0.1"}
 {"_source":{"excludes":[],"includes":["*"]},"query":{"bool":{"must":[{"bool":{"must":[{"term":{"group.group_topics.topic_name_raw.raw":"Social"}}]}}]}},"size":5}
 `)
 	})
@@ -179,9 +179,9 @@ func TestToggle(t *testing.T) {
 		if err != nil {
 			t.Fatalf("Test Failed %v instead\n", err)
 		}
-		convey.So(transformedQuery, convey.ShouldResemble, `{"preference":"CitySensor"}
+		convey.So(transformedQuery, convey.ShouldResemble, `{"preference":"CitySensor_127.0.0.1"}
 {"_source":{"excludes":[],"includes":["*"]},"aggs":{"group.group_topics.topic_name_raw.raw":{"terms":{"field":"group.group_topics.topic_name_raw.raw","order":{"_count":"desc"}}}},"query":{"match_all":{}},"size":0}
-{"preference":"SearchResult"}
+{"preference":"SearchResult_127.0.0.1"}
 {"_source":{"excludes":[],"includes":["*"]},"query":{"bool":{"must":[{"bool":{"must":[{"bool":{"should":[{"terms":{"group.group_topics.topic_name_raw.raw":["Social","Adventure"]}}]}}]}}]}},"size":5}
 `)
 	})
@@ -206,7 +206,7 @@ func TestMultiListWithMissingBucket(t *testing.T) {
 		if err != nil {
 			t.Fatalf("Test Failed %v instead\n", err)
 		}
-		convey.So(transformedQuery, convey.ShouldResemble, `{"preference":"BookSensor"}
+		convey.So(transformedQuery, convey.ShouldResemble, `{"preference":"BookSensor_127.0.0.1"}
 {"_source":{"excludes":[],"includes":["*"]},"aggs":{"original_series.raw":{"terms":{"field":"original_series.raw","missing":"N/A","order":{"_count":"desc"},"size":100}}},"query":{"match_all":{}},"size":100}
 `)
 	})
@@ -232,7 +232,7 @@ func TestMultiListWithAfterKey(t *testing.T) {
 		if err != nil {
 			t.Fatalf("Test Failed %v instead\n", err)
 		}
-		convey.So(transformedQuery, convey.ShouldResemble, `{"preference":"BookSensor"}
+		convey.So(transformedQuery, convey.ShouldResemble, `{"preference":"BookSensor_127.0.0.1"}
 {"_source":{"excludes":[],"includes":["*"]},"aggs":{"brand.keyword":{"composite":{"after":{"brand.keyword":"Chevrolet"},"size":10,"sources":[{"brand.keyword":{"terms":{"field":"brand.keyword"}}}]}}},"query":{"match_all":{}},"size":10}
 `)
 	})
@@ -262,7 +262,7 @@ func TestMultiListWithDefaultQuery(t *testing.T) {
 		if err != nil {
 			t.Fatalf("Test Failed %v instead\n", err)
 		}
-		convey.So(transformedQuery, convey.ShouldResemble, `{"preference":"SearchResult"}
+		convey.So(transformedQuery, convey.ShouldResemble, `{"preference":"SearchResult_127.0.0.1"}
 {"_source":{"excludes":[],"includes":["*"]},"aggs":{"original_series.raw":{"terms":{"field":"original_series.raw","order":{"_count":"desc"},"size":100}}},"query":{"terms":{"country":["India"]}},"size":100}
 `)
 	})
@@ -301,7 +301,7 @@ func TestMultiListWithCustomQuery(t *testing.T) {
 		if err != nil {
 			t.Fatalf("Test Failed %v instead\n", err)
 		}
-		convey.So(transformedQuery, convey.ShouldResemble, `{"preference":"SearchResult"}
+		convey.So(transformedQuery, convey.ShouldResemble, `{"preference":"SearchResult_127.0.0.1"}
 {"_source":{"excludes":[],"includes":["*"]},"query":{"bool":{"must":[{"bool":{"must":{"term":{"city":"San Fransisco"}}}}]}},"size":100}
 `)
 	})
@@ -328,7 +328,7 @@ func TestMultiListWithSortDesc(t *testing.T) {
 		if err != nil {
 			t.Fatalf("Test Failed %v instead\n", err)
 		}
-		convey.So(transformedQuery, convey.ShouldResemble, `{"preference":"BookSensor"}
+		convey.So(transformedQuery, convey.ShouldResemble, `{"preference":"BookSensor_127.0.0.1"}
 {"_source":{"excludes":[],"includes":["*"]},"aggs":{"brand.keyword":{"composite":{"after":{"brand.keyword":"Maybach"},"size":10,"sources":[{"brand.keyword":{"terms":{"field":"brand.keyword","order":"desc"}}}]}}},"query":{"match_all":{}},"size":10}
 `)
 	})
@@ -355,7 +355,7 @@ func TestMultiListWithSortByCount(t *testing.T) {
 		if err != nil {
 			t.Fatalf("Test Failed %v instead\n", err)
 		}
-		convey.So(transformedQuery, convey.ShouldResemble, `{"preference":"BookSensor"}
+		convey.So(transformedQuery, convey.ShouldResemble, `{"preference":"BookSensor_127.0.0.1"}
 {"_source":{"excludes":[],"includes":["*"]},"aggs":{"brand.keyword":{"composite":{"after":{"brand.keyword":"Chevrolet"},"size":10,"sources":[{"brand.keyword":{"terms":{"field":"brand.keyword"}}}]}}},"query":{"match_all":{}},"size":10}
 `)
 	})
