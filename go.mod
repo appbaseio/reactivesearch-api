@@ -1,6 +1,7 @@
 module github.com/appbaseio/reactivesearch-api
 
 require (
+	github.com/asaskevich/govalidator v0.0.0-20210307081110-f21760c49a8d // indirect
 	github.com/bbalet/stopwords v1.0.0
 	github.com/buger/jsonparser v1.1.1
 	github.com/denisbrodbeck/machineid v1.0.1
@@ -15,7 +16,7 @@ require (
 	github.com/kljensen/snowball v0.6.0
 	github.com/lithammer/fuzzysearch v1.1.3
 	github.com/mackerelio/go-osstat v0.2.0
-	github.com/microcosm-cc/bluemonday v1.0.15
+	github.com/microcosm-cc/bluemonday v1.0.16
 	github.com/natefinch/lumberjack v2.0.1-0.20190411184413-94d9e492cc53+incompatible
 	github.com/olivere/elastic v6.2.21+incompatible
 	github.com/olivere/elastic/v7 v7.0.24
