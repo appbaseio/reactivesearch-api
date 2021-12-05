@@ -18,7 +18,7 @@ func TestTranslateQuery(t *testing.T) {
 				},
 			},
 		}
-		_, err := translateQuery(rsQuery)
+		_, err := translateQuery(rsQuery, "127.0.0.1")
 		So(err, ShouldBeError)
 	})
 	Convey("with single dataField for geo", t, func() {
@@ -32,7 +32,7 @@ func TestTranslateQuery(t *testing.T) {
 				},
 			},
 		}
-		_, err := translateQuery(rsQuery)
+		_, err := translateQuery(rsQuery, "127.0.0.1")
 		So(err, ShouldBeNil)
 	})
 	Convey("with multiple dataFields for term", t, func() {
@@ -46,7 +46,7 @@ func TestTranslateQuery(t *testing.T) {
 				},
 			},
 		}
-		_, err := translateQuery(rsQuery)
+		_, err := translateQuery(rsQuery, "127.0.0.1")
 		So(err, ShouldBeError)
 	})
 	Convey("with single dataField for term", t, func() {
@@ -60,7 +60,7 @@ func TestTranslateQuery(t *testing.T) {
 				},
 			},
 		}
-		_, err := translateQuery(rsQuery)
+		_, err := translateQuery(rsQuery, "127.0.0.1")
 		So(err, ShouldBeNil)
 	})
 	Convey("with multiple dataFields for search", t, func() {
@@ -73,7 +73,7 @@ func TestTranslateQuery(t *testing.T) {
 				},
 			},
 		}
-		_, err := translateQuery(rsQuery)
+		_, err := translateQuery(rsQuery, "127.0.0.1")
 		So(err, ShouldBeNil)
 	})
 	Convey("without dataField", t, func() {
@@ -88,7 +88,7 @@ func TestTranslateQuery(t *testing.T) {
 				},
 			},
 		}
-		_, err := translateQuery(rsQuery)
+		_, err := translateQuery(rsQuery, "127.0.0.1")
 		So(err, ShouldNotBeNil)
 	})
 }
