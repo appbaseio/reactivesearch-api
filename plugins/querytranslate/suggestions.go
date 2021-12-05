@@ -93,7 +93,7 @@ type SuggestionHIT struct {
 	Count        *int           `json:"_count"`
 	AppbaseScore float64        `json:"_appbase_score"`
 	// ES response properties
-	Id     interface{}            `json:"_id"`
+	Id     string                 `json:"_id"`
 	Index  *string                `json:"_index"`
 	Score  float64                `json:"_score"`
 	Source map[string]interface{} `json:"_source"`
@@ -361,7 +361,7 @@ func populateSuggestionsList(
 			Category:     category,
 			AppbaseScore: rankField.score,
 			// ES response properties
-			Id:     &suggestionsInfo.rawHit.Id,
+			Id:     suggestionsInfo.rawHit.Id,
 			Index:  &suggestionsInfo.rawHit.Index,
 			Source: suggestionsInfo.rawHit.Source,
 			Score:  suggestionsInfo.rawHit.Score,
@@ -390,11 +390,11 @@ func getPredictiveSuggestions(config SuggestionsConfig, suggestions *[]Suggestio
 	var suggestionsMap = make(map[string]bool)
 	if config.Value != "" {
 		tags := getPredictiveSuggestionsTags(config.HighlightConfig)
-		currentValueTrimmed := strings.Trim(config.Value, " ")
+		currentValueTrimmed := SanitizeString(config.Value)
 		for _, suggestion := range *suggestions {
 			// to handle special strings with pattern <mark>xyz</mark>
 			// extract the raw text from the highlighted value
-			parsedContent := getTextFromHTML(suggestion.Label)
+			parsedContent := SanitizeString(getTextFromHTML(suggestion.Label))
 			// to match the partial start of word.
 			// example if searchTerm is `select` and string contains `selected`
 			regex, err := regexp.Compile("(?i)" + regexp.QuoteMeta(currentValueTrimmed))
@@ -403,8 +403,7 @@ func getPredictiveSuggestions(config SuggestionsConfig, suggestions *[]Suggestio
 				continue
 			}
 			matchIndex := regex.FindStringIndex(parsedContent)
-			// if not matchIndex not present then it means either there is no match or there are chances
-			// that exact word is present
+			// if not matchIndex not present then it means either there is no match or there are chances that the exact word is present
 			if matchIndex == nil {
 				// match with exact word
 				regex2, err2 := regexp.Compile("(?i)" + "^" + regexp.QuoteMeta(currentValueTrimmed))
@@ -437,18 +436,18 @@ func getPredictiveSuggestions(config SuggestionsConfig, suggestions *[]Suggestio
 						// find the longest match
 						if i <= len(suffixWords) && !matched {
 							highlightedWord := strip(strings.Join(suffixWords[:i], " "))
-							if strings.Trim(highlightedWord, "") != "" &&
+							if RemoveSpaces(highlightedWord) != "" &&
 								len(strings.Split(highlightedWord, " ")) <= maxPredictedWords+1 {
 								// a prefix shouldn't be a stopword
 								if config.ApplyStopwords != nil && *config.ApplyStopwords {
-									lastWord := strings.Trim(suffixWords[:i][len(suffixWords[:i])-1], " ")
+									lastWord := RemoveSpaces(suffixWords[:i][len(suffixWords[:i])-1])
 									if len(customStopwords) > 0 {
 										if customStopwords[lastWord] {
 											continue
 										}
 									} else {
 										cleanContent := removeStopwords(lastWord, config.Language)
-										if len(strings.Trim(cleanContent, " ")) == 0 {
+										if len(RemoveSpaces(cleanContent)) == 0 {
 											continue
 										}
 									}
@@ -475,17 +474,17 @@ func getPredictiveSuggestions(config SuggestionsConfig, suggestions *[]Suggestio
 						// find the shortest match
 						if i <= len(prefixWords) && !matched {
 							highlightedWord := strip(strings.Join(prefixWords[i:], " "))
-							if strings.Trim(highlightedWord, "") != "" && len(strings.Split(highlightedWord, " ")) <= maxPredictedWords+1 {
+							if RemoveSpaces(highlightedWord) != "" && len(strings.Split(highlightedWord, " ")) <= maxPredictedWords+1 {
 								// a prefix shouldn't be a stopword
 								if config.ApplyStopwords != nil && *config.ApplyStopwords {
-									firstWord := strings.Trim(prefixWords[i:][0], " ")
+									firstWord := RemoveSpaces(prefixWords[i:][0])
 									if len(customStopwords) > 0 {
 										if customStopwords[firstWord] {
 											continue
 										}
 									} else {
 										cleanContent := removeStopwords(firstWord, config.Language)
-										if len(strings.TrimSpace(cleanContent)) == 0 {
+										if len(RemoveSpaces(cleanContent)) == 0 {
 											continue
 										}
 									}
@@ -546,11 +545,9 @@ func getSuggestions(config SuggestionsConfig, rawHits []ESDoc) []SuggestionHIT {
 		var idMap = make(map[interface{}]bool)
 		filteredSuggestions := make([]SuggestionHIT, 0)
 		for _, suggestion := range suggestionsList {
-			if suggestion.Id != nil {
-				if !idMap[suggestion.Id] {
-					filteredSuggestions = append(filteredSuggestions, suggestion)
-					idMap[suggestion.Id] = true
-				}
+			if !idMap[suggestion.Id] {
+				filteredSuggestions = append(filteredSuggestions, suggestion)
+				idMap[suggestion.Id] = true
 			}
 		}
 		return filteredSuggestions
@@ -816,14 +813,29 @@ func getFinalSuggestions(config SuggestionsConfig, rawHits []ESDoc) []Suggestion
 
 	// parse hits
 	parsedHits := parseHits(rawHits)
-	// TODO: Restrict length by size
 	return getSuggestions(config, parsedHits)
+}
+
+// Removes the extra spaces from a string
+func RemoveSpaces(str string) string {
+	return strings.Join(strings.Fields(str), " ")
+}
+
+func SanitizeString(str string) string {
+	// remove extra spaces
+	s := str
+	specialChars := []string{"'", "/", "{", "(", "[", "-", "+", ".", "^", ":", ",", "]", ")", "}"}
+	// Remove special characters
+	for _, c := range specialChars {
+		s = strings.ReplaceAll(s, c, "")
+	}
+	return RemoveSpaces(s)
 }
 
 // Returns the parsed suggestion label to be compared for duplicate suggestions
 func ParseSuggestionLabel(label string, language *string) string {
 	// trim spaces
-	parsedLabel := strings.Trim(label, " ")
+	parsedLabel := RemoveSpaces(label)
 	// convert to lower case
 	parsedLabel = strings.ToLower(parsedLabel)
 	stemLanguage := "english"
@@ -840,5 +852,5 @@ func ParseSuggestionLabel(label string, language *string) string {
 		parsedLabel = stemmed
 	}
 	// remove stopwords
-	return strings.Trim(removeStopwords(parsedLabel, language), " ")
+	return RemoveSpaces(removeStopwords(parsedLabel, language))
 }

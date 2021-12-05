@@ -8,6 +8,8 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/appbaseio/reactivesearch-api/util/iplookup"
+
 	"github.com/appbaseio/reactivesearch-api/middleware"
 	"github.com/appbaseio/reactivesearch-api/middleware/classify"
 	"github.com/appbaseio/reactivesearch-api/middleware/ratelimiter"
@@ -217,7 +219,7 @@ func queryTranslate(h http.HandlerFunc) http.HandlerFunc {
 		}
 
 		// Translate query
-		msearchQuery, err := translateQuery(*body)
+		msearchQuery, err := translateQuery(*body, iplookup.FromRequest(req))
 		// log.Println("RS QUERY", msearchQuery)
 		if err != nil {
 			log.Errorln(logTag, ":", err)

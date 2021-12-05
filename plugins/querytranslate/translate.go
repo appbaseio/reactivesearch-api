@@ -10,7 +10,7 @@ import (
 )
 
 // transform the query
-func translateQuery(rsQuery RSQuery) (string, error) {
+func translateQuery(rsQuery RSQuery, userIP string) (string, error) {
 	// Validate custom events
 	if rsQuery.Settings != nil && rsQuery.Settings.CustomEvents != nil {
 		for k, v := range *rsQuery.Settings.CustomEvents {
@@ -98,13 +98,17 @@ func translateQuery(rsQuery RSQuery) (string, error) {
 				return mSearchQuery, err2
 			}
 			// Add preference
-			var preference = map[string]interface{}{
-				"preference": query.ID,
+			preferenceId := *query.ID + "_" + userIP
+			if rsQuery.Settings != nil && rsQuery.Settings.UserID != nil {
+				preferenceId = *query.ID + "_" + *rsQuery.Settings.UserID
+			}
+			var msearchConfig = map[string]interface{}{
+				"preference": preferenceId,
 			}
 			if query.Index != nil {
-				preference["index"] = *query.Index
+				msearchConfig["index"] = *query.Index
 			}
-			preferenceInBytes, err := json.Marshal(preference)
+			preferenceInBytes, err := json.Marshal(msearchConfig)
 			if err != nil {
 				return mSearchQuery, err
 			}
