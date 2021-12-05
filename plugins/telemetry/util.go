@@ -59,7 +59,7 @@ func getClientIP6(ip string) string {
 
 func setBadgerOptions(filePath string) badger.Options {
 	opts := badger.DefaultOptions(filePath)
-	opts.NumMemtables = 2 << 20
+	opts.NumMemtables = 2
 
 	// The NumLevelZeroTables and NumLevelZeroTableStall will not have any
 	// effect on the memory if `KeepL0InMemory` is set to false.
