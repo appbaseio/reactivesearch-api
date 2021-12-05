@@ -61,7 +61,8 @@ func (t *Telemetry) InitFunc() error {
 		filePath = defaultTelemetryFilePath
 	}
 	t.filePath = filePath
-	db, err := badger.Open(badger.DefaultOptions(filePath))
+
+	db, err := badger.Open(setBadgerOptions(filePath))
 	if err != nil {
 		log.Fatal(err)
 	}
