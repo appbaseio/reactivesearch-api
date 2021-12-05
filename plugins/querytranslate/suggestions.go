@@ -403,8 +403,7 @@ func getPredictiveSuggestions(config SuggestionsConfig, suggestions *[]Suggestio
 				continue
 			}
 			matchIndex := regex.FindStringIndex(parsedContent)
-			// if not matchIndex not present then it means either there is no match or there are chances
-			// that exact word is present
+			// if not matchIndex not present then it means either there is no match or there are chances that the exact word is present
 			if matchIndex == nil {
 				// match with exact word
 				regex2, err2 := regexp.Compile("(?i)" + "^" + regexp.QuoteMeta(currentValueTrimmed))
@@ -825,7 +824,7 @@ func RemoveSpaces(str string) string {
 func SanitizeString(str string) string {
 	// remove extra spaces
 	s := str
-	specialChars := []string{"[", "-", "+", ".", "^", ":", ",", "]"}
+	specialChars := []string{"'", "/", "{", "(", "[", "-", "+", ".", "^", ":", ",", "]", ")", "}"}
 	// Remove special characters
 	for _, c := range specialChars {
 		s = strings.ReplaceAll(s, c, "")

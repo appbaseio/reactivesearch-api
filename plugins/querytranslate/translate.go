@@ -10,7 +10,7 @@ import (
 )
 
 // transform the query
-func translateQuery(rsQuery RSQuery) (string, error) {
+func translateQuery(rsQuery RSQuery, userIP string) (string, error) {
 	// Validate custom events
 	if rsQuery.Settings != nil && rsQuery.Settings.CustomEvents != nil {
 		for k, v := range *rsQuery.Settings.CustomEvents {
@@ -98,7 +98,7 @@ func translateQuery(rsQuery RSQuery) (string, error) {
 				return mSearchQuery, err2
 			}
 			// Add preference
-			preferenceId := *query.ID
+			preferenceId := *query.ID + "_" + userIP
 			if rsQuery.Settings != nil && rsQuery.Settings.UserID != nil {
 				preferenceId = *query.ID + "_" + *rsQuery.Settings.UserID
 			}
