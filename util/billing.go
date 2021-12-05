@@ -61,7 +61,7 @@ func SetTimeValidity(time int64) {
 }
 
 // maxErrorTime before showing errors if invalid trial / plan in hours
-var maxErrorTime int64 = 72 // in hrs
+var maxErrorTime int64 = 120 // in hrs
 
 // NodeCount is the current node count, defaults to 1
 var NodeCount = 1
