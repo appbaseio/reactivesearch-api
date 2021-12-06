@@ -317,8 +317,4 @@ func TestParseSuggestionLabel(t *testing.T) {
 		ln := "english"
 		So(ParseSuggestionLabel(" pizzas ", &ln), ShouldResemble, "pizza")
 	})
-	Convey("with spaces and stopwords", t, func() {
-		ln := "english"
-		So(ParseSuggestionLabel("  batman and robin  ", &ln), ShouldResemble, "batman robin")
-	})
 }
