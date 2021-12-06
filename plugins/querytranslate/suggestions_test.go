@@ -242,7 +242,7 @@ func TestIndexSuggestions(t *testing.T) {
 				Index: index,
 			},
 		}
-		suggestions := getFinalSuggestions(SuggestionsConfig{
+		suggestions := getIndexSuggestions(SuggestionsConfig{
 			Value:      "tagore",
 			DataFields: []string{"title"},
 		}, rawHits)
@@ -250,12 +250,12 @@ func TestIndexSuggestions(t *testing.T) {
 		id := "1"
 		So(suggestions, ShouldResemble, []SuggestionHIT{
 			{
-				Label:        "<b>Rabindranath Tagore Hall</b>",
-				Value:        "Rabindranath Tagore Hall",
-				Id:           id,
-				Index:        &index,
-				Score:        score,
-				AppbaseScore: 1,
+				Label:   "<b>Rabindranath Tagore Hall</b>",
+				Value:   "Rabindranath Tagore Hall",
+				Id:      id,
+				Index:   &index,
+				Score:   score,
+				RSScore: 1,
 				Source: map[string]interface{}{
 					"title": "Rabindranath Tagore Hall",
 				},

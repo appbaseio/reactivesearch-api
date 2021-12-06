@@ -3,7 +3,6 @@ package querytranslate
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 	"strings"
 
 	"github.com/appbaseio/reactivesearch-api/util"
@@ -43,26 +42,9 @@ func translateQuery(rsQuery RSQuery, userIP string) (string, error) {
 			return "", errors.New("field 'dataField' can not have multiple fields for 'term' or 'geo' queries")
 		}
 
-		// Remove special chars from the query value for search and suggestion types
-		if (query.Type == Search || query.Type == Suggestion) && query.Value != nil {
-			value := fmt.Sprint(*query.Value)
-			// Trim the spaces and tokenize
-			tokenizedValue := strings.Split(strings.TrimSpace(value), " ")
-			var finalValue []string
-			for _, token := range tokenizedValue {
-				sT := SanitizeString(token)
-				if len(sT) > 0 {
-					finalValue = append(finalValue, sT)
-				}
-			}
-			nicerValue := strings.Join(finalValue, " ")
-			fmt.Println("nicer value is: ", nicerValue)
-		}
-
 		// Parse synonyms fields if `EnableSynonyms` is set to `false`
 		if (query.Type == Search || query.Type == Suggestion) && query.EnableSynonyms != nil && !*query.EnableSynonyms {
 			var normalizedDataFields = []string{}
-			fmt.Println("normalized fields are: ", normalizedFields)
 			for _, dataField := range normalizedFields {
 				if !strings.HasSuffix(dataField.Field, synonymsFieldKey) {
 					normalizedDataFields = append(normalizedDataFields, dataField.Field)

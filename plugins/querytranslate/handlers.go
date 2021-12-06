@@ -199,9 +199,10 @@ func (r *QueryTranslate) search() http.HandlerFunc {
 									}
 								}
 
-								suggestions = append(suggestions, getFinalSuggestions(suggestionsConfig, rawHits)...)
+								// extract index suggestions
+								suggestions = append(suggestions, getIndexSuggestions(suggestionsConfig, rawHits)...)
 								if query.Size != nil {
-									// trim extra suggestions
+									// fit suggestions to the max requested size
 									if len(suggestions) > *query.Size {
 										suggestions = suggestions[:*query.Size]
 									}

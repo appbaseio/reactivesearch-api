@@ -465,13 +465,11 @@ func (query *Query) getQuery(rsQuery RSQuery) (*interface{}, map[string]interfac
 	}
 	if len(finalQuery) != 0 {
 		if query.DefaultQuery != nil {
-			fmt.Println("suggestion type query: ", query.Type, query.Value)
 			defaultQuery := *query.DefaultQuery
 			if defaultQuery["query"] != nil {
 				finalQuery = append(finalQuery, defaultQuery["query"])
 			}
 		} else if query.Type == Search || query.Type == Suggestion {
-			fmt.Println("suggestion type query: ", query.Type, query.Value)
 			// Only apply query by `value` for search queries
 			queryByType, err := query.generateQueryByType()
 			if err != nil {
@@ -488,7 +486,6 @@ func (query *Query) getQuery(rsQuery RSQuery) (*interface{}, map[string]interfac
 			}}
 		return &boolQuery, finalOptions, false, nil
 	} else if query.DefaultQuery != nil {
-		fmt.Println("default query isn't nil: ", query.Type, query.Value)
 		defaultQuery := *query.DefaultQuery
 		if defaultQuery["query"] != nil {
 			var query interface{} = defaultQuery["query"]
@@ -762,4 +759,30 @@ func getSizeFromQuery(query *map[string]interface{}, key string) *interface{} {
 		}
 	}
 	return nil
+}
+
+// SliceIndex provides a generic way to get an index of a slice
+func sliceIndex(limit int, predicate func(i int) bool) int {
+	for i := 0; i < limit; i++ {
+		if predicate(i) {
+			return i
+		}
+	}
+	return -1
+}
+
+// a convenient min over integers
+func min(a, b int) int {
+	if a < b {
+		return a
+	}
+	return b
+}
+
+// a convenient max over integers
+func max(a, b int) int {
+	if a == min(a, b) {
+		return b
+	}
+	return a
 }
