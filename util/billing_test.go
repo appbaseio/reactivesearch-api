@@ -56,15 +56,15 @@ func TestBilling(t *testing.T) {
 			SetTimeValidity(int64(timeValidityMock))
 			So(true, ShouldEqual, validateTimeValidity())
 		})
-		Convey("Validate TimeValidity: Negative value greater than 120 hours", func() {
+		Convey("Validate TimeValidity: Negative value greater than 168 hours", func() {
 			// Set TimeValidity to a positive value
-			var timeValidityMock = -(3600*120 + 10)
+			var timeValidityMock = -(3600*168 + 10)
 			SetTimeValidity(int64(timeValidityMock))
 			So(false, ShouldEqual, validateTimeValidity())
 		})
-		Convey("Validate TimeValidity: Negative value less than 120 hours", func() {
+		Convey("Validate TimeValidity: Negative value less than 168 hours", func() {
 			// Set TimeValidity to a positive value
-			var timeValidityMock = -(3600*120 - 10)
+			var timeValidityMock = -(3600*168 - 10)
 			SetTimeValidity(int64(timeValidityMock))
 			So(true, ShouldEqual, validateTimeValidity())
 		})
