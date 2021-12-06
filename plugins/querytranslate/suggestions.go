@@ -203,13 +203,13 @@ func removeStopwords(value string, config SuggestionsConfig) string {
 		stopwords.LoadStopWordsFromString(strings.Join(userStopwords, " "), ln, " ")
 	}
 	cleanContent := stopwords.CleanString(value, ln, true)
-	return cleanContent
+	return NormalizeValue(cleanContent)
 }
 
-// NormalizeQueryValue changes a query's value to remove special chars and spaces
+// NormalizeValue changes a query's value to remove special chars and spaces
 // e.g. Android - Black would be "android black"
 // e.g. "Wendy's burger  " would be "wendy burger"
-func NormalizeQueryValue(value string) string {
+func NormalizeValue(value string) string {
 	// Trim the spaces and tokenize
 	tokenizedValue := strings.Split(strings.TrimSpace(value), " ")
 	var finalValue []string
@@ -402,7 +402,7 @@ func populateDefaultSuggestions(
 			}
 		}
 		// stores the normalized field value to match agains the normalized query value
-		fieldValue := NormalizeQueryValue(getTextFromHTML(docField.value))
+		fieldValue := NormalizeValue(getTextFromHTML(docField.value))
 		// TODO: This won't work on query synonyms, need to account for that
 		rankField := findMatch(fieldValue, config.Value, config)
 		// helpful for debugging
@@ -446,15 +446,15 @@ func getPredictiveSuggestions(config SuggestionsConfig, suggestions *[]Suggestio
 	if config.Value != "" {
 		tags := getPredictiveSuggestionsTags(config.HighlightConfig)
 		for _, suggestion := range *suggestions {
-			fieldValues := strings.Split(NormalizeQueryValue(suggestion.Label), " ")
+			fieldValues := strings.Split(NormalizeValue(suggestion.Label), " ")
 			fvl := len(fieldValues)
-			queryValues := strings.Split(config.Value, " ")
+			queryValues := strings.Split(NormalizeValue(config.Value), " ")
 			suffixStarts := 0
 			prefixEnds := max(fvl-1, 0)
 			// helpful for debugging
 			// fmt.Println("predictive suggestion: ", ", query is: ", config.Value, ", field value is: ", strings.Join(fieldValues, " "))
 			for _, qToken := range queryValues {
-				matchIndex := sliceIndex(fvl, func(i int) bool { return fieldValues[i] == qToken })
+				matchIndex := sliceIndex(fvl, func(i int) bool { return strings.Contains(fieldValues[i], qToken) })
 				if matchIndex != -1 {
 					prefixEnds = min(prefixEnds, matchIndex-1)
 					suffixStarts = max(suffixStarts, matchIndex+1)
@@ -483,8 +483,9 @@ func getPredictiveSuggestions(config SuggestionsConfig, suggestions *[]Suggestio
 					// helpful for debugging
 					// fmt.Println("in suffix: highlighted phrase is: ", highlightPhrase)
 					var matchQuery string
-					if suffixStarts-1 > 0 && sliceIndex(len(queryValues), func(i int) bool { return queryValues[i] == fieldValues[0] }) != -1 {
-						matchQuery = strings.Join(fieldValues[:suffixStarts], " ")
+					// case where we replace the matching field value query in place of the actual query
+					if sliceIndex(len(queryValues), func(i int) bool { return strings.Contains(fieldValues[prefixEnds+1], queryValues[i]) }) != -1 {
+						matchQuery = strings.Join(fieldValues[prefixEnds+1:suffixStarts], " ")
 					} else {
 						matchQuery = config.Value
 					}
@@ -502,8 +503,8 @@ func getPredictiveSuggestions(config SuggestionsConfig, suggestions *[]Suggestio
 					}
 				}
 			}
-			if prefixEnds > 0 && !matched {
-				highlightPhrase := getHighlightedPhrase(strings.Join(fieldValues[:prefixEnds], " "), max(maxPredictedWords, 1), config)
+			if prefixEnds >= 0 && !matched {
+				highlightPhrase := getHighlightedPhrase(strings.Join(fieldValues[:prefixEnds+1], " "), max(maxPredictedWords, 1), config)
 				// highlightPhrase can additionally not contain any matched tokens as they would duplicate
 				hltValues := strings.Split(highlightPhrase, " ")
 				ignore := false
@@ -516,8 +517,9 @@ func getPredictiveSuggestions(config SuggestionsConfig, suggestions *[]Suggestio
 				// fmt.Println("in prefix: highlighted phrase is: ", highlightPhrase)
 				if !ignore && len(highlightPhrase) > 1 {
 					var matchQuery string
-					if prefixEnds+1 < fvl-1 && sliceIndex(len(queryValues), func(i int) bool { return queryValues[i] == fieldValues[fvl-1] }) != -1 {
-						matchQuery = strings.Join(fieldValues[prefixEnds+1:], " ")
+					// case where we replace the matching field value query in place of the actual query
+					if suffixStarts > 0 && sliceIndex(len(queryValues), func(i int) bool { return strings.Contains(fieldValues[suffixStarts-1], queryValues[i]) }) != -1 {
+						matchQuery = strings.Join(fieldValues[prefixEnds+1:suffixStarts], " ")
 					} else {
 						matchQuery = config.Value
 					}
@@ -544,9 +546,14 @@ func getPredictiveSuggestions(config SuggestionsConfig, suggestions *[]Suggestio
 // getHighlightedPhrase takes a candidate phrase (prefix or suffix) of the field value based on the match found with the search query.
 // It returns up to maxTokens length of phrase ignoring for any stopwords in between
 func getHighlightedPhrase(candidateWord string, maxTokens int, config SuggestionsConfig) string {
-	wordsPhrase := strings.Split(removeStopwords(candidateWord, config), " ")
+	var wordsPhrase []string
+	if config.ApplyStopwords != nil && *config.ApplyStopwords {
+		wordsPhrase = strings.Split(removeStopwords(candidateWord, config), " ")
+	} else {
+		wordsPhrase = strings.Split(candidateWord, " ")
+	}
 	if len(wordsPhrase) > maxTokens {
-		return strings.Join(wordsPhrase[:maxTokens], " ")
+		return strings.TrimSpace(strings.Join(wordsPhrase[:maxTokens], " "))
 	}
 	return strings.TrimSpace(strings.Join(wordsPhrase, " "))
 }
@@ -763,7 +770,7 @@ func extractFieldsFromSource(source map[string]interface{}) []string {
 // getIndexSuggestions gets the index suggestions based on user query config and search engine response
 func getIndexSuggestions(config SuggestionsConfig, rawHits []ESDoc) []SuggestionHIT {
 	// before parsing any suggestions, normalize the query
-	config.Value = NormalizeQueryValue(config.Value)
+	config.Value = NormalizeValue(config.Value)
 	// set priority to highlight fields if present
 	if len(config.HighlightField) != 0 {
 		config.DataFields = config.HighlightField
