@@ -198,9 +198,10 @@ func (r *QueryTranslate) search() http.HandlerFunc {
 										}
 									}
 								}
-								// trim extra suggestions
+
 								suggestions = append(suggestions, getFinalSuggestions(suggestionsConfig, rawHits)...)
 								if query.Size != nil {
+									// trim extra suggestions
 									if len(suggestions) > *query.Size {
 										suggestions = suggestions[:*query.Size]
 									}

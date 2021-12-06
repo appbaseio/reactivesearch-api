@@ -2,6 +2,7 @@ package querytranslate
 
 import (
 	"errors"
+	"fmt"
 	"strconv"
 	"strings"
 )
@@ -12,6 +13,7 @@ func (query *Query) generateSearchQuery() (*interface{}, error) {
 	rankQuery := query.getRankFeatureQuery()
 
 	if query.Value != nil {
+		fmt.Println("search query value is: ", query.Value)
 		if query.QueryString != nil && *query.QueryString {
 			shouldQuery, err := query.generateShouldQuery()
 			if err != nil {

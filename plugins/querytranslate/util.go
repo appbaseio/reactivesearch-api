@@ -465,11 +465,13 @@ func (query *Query) getQuery(rsQuery RSQuery) (*interface{}, map[string]interfac
 	}
 	if len(finalQuery) != 0 {
 		if query.DefaultQuery != nil {
+			fmt.Println("suggestion type query: ", query.Type, query.Value)
 			defaultQuery := *query.DefaultQuery
 			if defaultQuery["query"] != nil {
 				finalQuery = append(finalQuery, defaultQuery["query"])
 			}
 		} else if query.Type == Search || query.Type == Suggestion {
+			fmt.Println("suggestion type query: ", query.Type, query.Value)
 			// Only apply query by `value` for search queries
 			queryByType, err := query.generateQueryByType()
 			if err != nil {
@@ -486,6 +488,7 @@ func (query *Query) getQuery(rsQuery RSQuery) (*interface{}, map[string]interfac
 			}}
 		return &boolQuery, finalOptions, false, nil
 	} else if query.DefaultQuery != nil {
+		fmt.Println("default query isn't nil: ", query.Type, query.Value)
 		defaultQuery := *query.DefaultQuery
 		if defaultQuery["query"] != nil {
 			var query interface{} = defaultQuery["query"]
