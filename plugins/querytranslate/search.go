@@ -87,7 +87,7 @@ func (query *Query) generateShouldQuery() (interface{}, error) {
 	var phrasePrefixFields []string
 	normalizedFields := NormalizedDataFields(query.DataField, query.FieldWeights)
 	if len(normalizedFields) < 1 {
-		return nil, errors.New("Field 'dataField' cannot be empty")
+		return nil, errors.New("field 'dataField' cannot be empty")
 	}
 	for _, dataField := range normalizedFields {
 		var fieldWeight string

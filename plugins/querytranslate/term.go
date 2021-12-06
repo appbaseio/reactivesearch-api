@@ -11,18 +11,18 @@ func (query *Query) generateTermQuery() (*interface{}, error) {
 	var termQuery interface{}
 	value := *query.Value
 	valueAsArray, isArray := value.([]interface{})
-	valueAsString, isString := value.(interface{})
-	if (isArray && len(valueAsArray) == 0) || (isString && valueAsString == "") {
+	valueAsString := value
+	if (isArray && len(valueAsArray) == 0) || (valueAsString == "") {
 		return nil, nil
 	}
 
 	normalizedFields := NormalizedDataFields(query.DataField, query.FieldWeights)
 	if len(normalizedFields) < 1 {
-		return nil, errors.New("Field 'dataField' cannot be empty")
+		return nil, errors.New("field 'dataField' cannot be empty")
 	}
 	dataField := normalizedFields[0].Field
 
-	if query.SelectAllLabel != nil && (isArray && contains(valueAsArray, *query.SelectAllLabel) || isString && valueAsString == *query.SelectAllLabel) {
+	if query.SelectAllLabel != nil && (isArray && contains(valueAsArray, *query.SelectAllLabel) || valueAsString == *query.SelectAllLabel) {
 		if query.ShowMissing {
 			termQuery = map[string]interface{}{
 				"match_all": map[string]interface{}{},
@@ -189,7 +189,7 @@ func (query *Query) applyTermsAggsQuery(queryOptions *map[string]interface{}) er
 	if queryOptions != nil {
 		normalizedFields := NormalizedDataFields(query.DataField, query.FieldWeights)
 		if len(normalizedFields) < 1 {
-			return errors.New("Field 'dataField' cannot be empty")
+			return errors.New("field 'dataField' cannot be empty")
 		}
 		dataField := normalizedFields[0].Field
 		clonedQuery := *queryOptions

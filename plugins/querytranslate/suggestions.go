@@ -111,6 +111,7 @@ type SuggestionESResponse struct {
 	Hits SuggestionHitResponse `json:"hits"`
 }
 
+// TODO: Add MinCount to recent suggestion
 // RecentSuggestionsOptions represents the options to configure recent suggestions
 type RecentSuggestionsOptions struct {
 	Size     *int    `json:"size,omitempty"`
@@ -172,6 +173,7 @@ func removeStopwords(value string, language *string) string {
 	cleanContent := stopwords.CleanString(value, ln, true)
 	return cleanContent
 }
+
 func findMatch(fieldValueRaw string, userQueryRaw string, language *string) RankField {
 	// remove stopwords from fieldValue and userQuery
 	fieldValue := removeStopwords(fieldValueRaw, language)

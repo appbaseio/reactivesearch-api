@@ -533,8 +533,7 @@ func createBoolQuery(operation string, query interface{}) *map[string]interface{
 	var resultQuery *map[string]interface{}
 
 	queryAsArray, isArray := query.([]interface{})
-	queryAsMap, isMap := query.(interface{})
-	if (isArray && len(queryAsArray) != 0) || (isMap && queryAsMap != nil) {
+	if (isArray && len(queryAsArray) != 0) || (query != nil) {
 		resultQuery = &map[string]interface{}{
 			"bool": map[string]interface{}{
 				operation: query,
