@@ -56,7 +56,7 @@ func (query *Query) getRangeQuery(value interface{}) (*map[string]interface{}, e
 
 	normalizedFields := NormalizedDataFields(query.DataField, query.FieldWeights)
 	if len(normalizedFields) < 1 {
-		return nil, errors.New("Field 'dataField' cannot be empty")
+		return nil, errors.New("field 'dataField' cannot be empty")
 	}
 	dataField := normalizedFields[0].Field
 

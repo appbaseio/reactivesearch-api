@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"math"
-	"regexp"
 	"sort"
 	"strconv"
 	"strings"
@@ -85,13 +84,14 @@ func (o SuggestionType) MarshalJSON() ([]byte, error) {
 
 // SuggestionHIT represents the structure of the suggestion object in RS API response
 type SuggestionHIT struct {
-	Value        string         `json:"value"`
-	Label        string         `json:"label"`
-	URL          *string        `json:"url"`
-	Type         SuggestionType `json:"_suggestion_type"`
-	Category     *string        `json:"_category"`
-	Count        *int           `json:"_count"`
-	AppbaseScore float64        `json:"_appbase_score"`
+	Value         string         `json:"value"`
+	Label         string         `json:"label"`
+	URL           *string        `json:"url"`
+	Type          SuggestionType `json:"_suggestion_type"`
+	Category      *string        `json:"_category"`
+	Count         *int           `json:"_count"`
+	RSScore       float64        `json:"_rs_score"`
+	MatchedTokens []string       `json:"_matched_tokens"`
 	// ES response properties
 	Id     string                 `json:"_id"`
 	Index  *string                `json:"_index"`
@@ -111,6 +111,7 @@ type SuggestionESResponse struct {
 	Hits SuggestionHitResponse `json:"hits"`
 }
 
+// TODO: Add MinCount to recent suggestion
 // RecentSuggestionsOptions represents the options to configure recent suggestions
 type RecentSuggestionsOptions struct {
 	Size     *int    `json:"size,omitempty"`
@@ -126,6 +127,31 @@ type PopularSuggestionsOptions struct {
 	ShowGlobal *bool   `json:"showGlobal,omitempty"`
 	MinChars   *int    `json:"minChars,omitempty"`
 	MinCount   *int    `json:"minCount,omitempty"`
+}
+
+// DocField contains properties of the field and the doc it belongs to
+type DocField struct {
+	value  string
+	rawHit ESDoc
+}
+
+// RankField contains info about a field's matching value to a user query
+type RankField struct {
+	fieldValue    string
+	userQuery     string
+	score         float64
+	matchedTokens []string
+}
+
+// ESDoc contains info about an ES document
+type ESDoc struct {
+	Index        string                 `json:"_index"`
+	Type         string                 `json:"type"`
+	Id           string                 `json:"_id"`
+	Score        float64                `json:"_score"`
+	Source       map[string]interface{} `json:"_source"`
+	Highlight    map[string]interface{} `json:"highlight"`
+	ParsedSource map[string]interface{}
 }
 
 type SuggestionsConfig struct {
@@ -147,12 +173,6 @@ type SuggestionsConfig struct {
 	Language                    *string
 }
 
-type RankField struct {
-	fieldValue string
-	userQuery  string
-	score      float64
-}
-
 func stemmedTokens(source string, language string) []string {
 	tokens := strings.Split(source, " ")
 	var stemmedTokens []string
@@ -164,29 +184,62 @@ func stemmedTokens(source string, language string) []string {
 	return stemmedTokens
 }
 
-func removeStopwords(value string, language *string) string {
+// removeStopwords removes stopwords including considering the suggestions config
+func removeStopwords(value string, config SuggestionsConfig) string {
 	ln := "en"
-	if language != nil && LanguagesToISOCode[*language] != "" {
-		ln = LanguagesToISOCode[*language]
+	if config.Language != nil && LanguagesToISOCode[*config.Language] != "" {
+		ln = LanguagesToISOCode[*config.Language]
 	}
-	cleanContent := stopwords.CleanString(value, ln, true)
-	return cleanContent
-}
-func findMatch(fieldValueRaw string, userQueryRaw string, language *string) RankField {
-	// remove stopwords from fieldValue and userQuery
-	fieldValue := removeStopwords(fieldValueRaw, language)
-	userQuery := removeStopwords(userQueryRaw, language)
-	var rankField = RankField{
-		fieldValue: fieldValue,
-		userQuery:  userQuery,
-		score:      0,
-	}
-	stemLanguage := "english"
-	if language != nil {
-		if util.Contains(StemLanguages, *language) {
-			stemLanguage = *language
+	var userStopwords []string
+	// load any custom stopwords the user has
+	// a highlighted phrase shouldn't be limited due to stopwords
+	if config.ApplyStopwords != nil && *config.ApplyStopwords {
+		// apply any custom stopwords
+		if config.Stopwords != nil {
+			userStopwords = *config.Stopwords
 		}
 	}
+	if len(userStopwords) > 0 {
+		stopwords.LoadStopWordsFromString(strings.Join(userStopwords, " "), ln, " ")
+	}
+	cleanContent := stopwords.CleanString(value, ln, true)
+	return NormalizeValue(cleanContent)
+}
+
+// NormalizeValue changes a query's value to remove special chars and spaces
+// e.g. Android - Black would be "android black"
+// e.g. "Wendy's burger  " would be "wendy burger"
+func NormalizeValue(value string) string {
+	// Trim the spaces and tokenize
+	tokenizedValue := strings.Split(strings.TrimSpace(value), " ")
+	var finalValue []string
+	for _, token := range tokenizedValue {
+		sT := SanitizeString(token)
+		if len(sT) > 0 {
+			finalValue = append(finalValue, strings.ToLower(sT))
+		}
+	}
+	return strings.ToLower(strings.TrimSpace(strings.Join(finalValue, " ")))
+}
+
+// findMatch matches the user query against the field value to return scores and matched tokens
+func findMatch(fieldValueRaw string, userQueryRaw string, config SuggestionsConfig) RankField {
+	// remove stopwords from fieldValue and userQuery
+	fieldValue := removeStopwords(fieldValueRaw, config)
+	userQuery := removeStopwords(userQueryRaw, config)
+	var rankField = RankField{
+		fieldValue:    fieldValue,
+		userQuery:     userQuery,
+		score:         0,
+		matchedTokens: nil,
+	}
+	stemLanguage := "english"
+	if config.Language != nil {
+		if util.Contains(StemLanguages, *config.Language) {
+			stemLanguage = *config.Language
+		}
+	}
+	fieldValues := strings.Split(fieldValue, " ")
 	stemmedFieldValues := stemmedTokens(fieldValue, stemLanguage)
 	stemmeduserQuery := stemmedTokens(userQuery, stemLanguage)
 	foundMatches := make([]bool, len(stemmeduserQuery))
@@ -214,6 +267,12 @@ func findMatch(fieldValueRaw string, userQueryRaw string, language *string) Rank
 						bestTarget = element.Target
 					}
 				}
+			}
+			matchIndex := sliceIndex(len(stemmedFieldValues), func(i int) bool {
+				return stemmedFieldValues[i] == bestTarget
+			})
+			if matchIndex != -1 {
+				rankField.matchedTokens = append(rankField.matchedTokens, fieldValues[matchIndex])
 			}
 			foundMatches[i] = foundMatch
 			// token of user query matched one of the tokens of field values
@@ -313,65 +372,59 @@ func isMn(r rune) bool {
 	return unicode.Is(unicode.Mn, r) // Mn: nonspacing marks
 }
 
+// replaces diacritics with their equivalent
 func replaceDiacritics(query string) string {
 	t := transform.Chain(norm.NFD, transform.RemoveFunc(isMn), norm.NFC)
 	queryKey, _, _ := transform.String(t, query)
 	return queryKey
 }
 
-type SuggestionInfo struct {
-	fieldValue    string
-	queryValue    string
-	source        map[string]interface{}
-	urlField      *string
-	categoryField *string
-	language      *string
-	rawHit        ESDoc
-}
-
-func populateSuggestionsList(
+// populateDefaultSuggestions populates the default (i.e. non-predictive) suggestions using field values of each doc
+func populateDefaultSuggestions(
 	labelsList *[]string,
 	suggestionsList *[]SuggestionHIT,
-	suggestionsInfo SuggestionInfo,
-) bool {
-	if !util.Contains(*labelsList, ParseSuggestionLabel(suggestionsInfo.fieldValue, suggestionsInfo.language)) {
+	docField DocField,
+	config SuggestionsConfig,
+) {
+	if !util.Contains(*labelsList, removeStopwords(ParseSuggestionLabel(docField.value, config.Language), config)) {
 		var url *string
-		if suggestionsInfo.urlField != nil {
-			urlString, ok := suggestionsInfo.rawHit.Source[*suggestionsInfo.urlField].(string)
+		if config.URLField != nil {
+			urlString, ok := docField.rawHit.Source[*config.URLField].(string)
 			if ok {
 				url = &urlString
 			}
 		}
 		var category *string
-		if suggestionsInfo.categoryField != nil {
-			categoryString, ok := suggestionsInfo.rawHit.Source[*suggestionsInfo.categoryField].(string)
+		if config.CategoryField != nil {
+			categoryString, ok := docField.rawHit.Source[*config.CategoryField].(string)
 			if ok {
 				category = &categoryString
 			}
 		}
-		// calculate scores
-		fieldValue := getTextFromHTML(suggestionsInfo.fieldValue)
-		searchQuery := suggestionsInfo.queryValue
-		rankField := findMatch(searchQuery, fieldValue, suggestionsInfo.language)
+		// stores the normalized field value to match agains the normalized query value
+		fieldValue := NormalizeValue(getTextFromHTML(docField.value))
+		// TODO: This won't work on query synonyms, need to account for that
+		rankField := findMatch(fieldValue, config.Value, config)
+		// helpful for debugging
+		// fmt.Println("query: ", config.Value, ", field value: ", fieldValue, ", match score: ", rankField.score, ", matched tokens: ", rankField.matchedTokens)
 		suggestion := SuggestionHIT{
-			Value:        fieldValue,
-			Label:        suggestionsInfo.fieldValue,
-			URL:          url,
-			Type:         Index,
-			Category:     category,
-			AppbaseScore: rankField.score,
+			Value:         fieldValue,
+			Label:         docField.value,
+			URL:           url,
+			Type:          Index,
+			Category:      category,
+			RSScore:       rankField.score,
+			MatchedTokens: rankField.matchedTokens,
 			// ES response properties
-			Id:     suggestionsInfo.rawHit.Id,
-			Index:  &suggestionsInfo.rawHit.Index,
-			Source: suggestionsInfo.rawHit.Source,
-			Score:  suggestionsInfo.rawHit.Score,
+			Id:     docField.rawHit.Id,
+			Index:  &docField.rawHit.Index,
+			Source: docField.rawHit.Source,
+			Score:  docField.rawHit.Score,
 		}
 
-		*labelsList = append(*labelsList, ParseSuggestionLabel(suggestionsInfo.fieldValue, suggestionsInfo.language))
+		*labelsList = append(*labelsList, removeStopwords(ParseSuggestionLabel(docField.value, config.Language), config))
 		*suggestionsList = append(*suggestionsList, suggestion)
-		return false
 	}
-	return false
 }
 
 // extracts the string from HTML tags
@@ -385,125 +438,103 @@ func getTextFromHTML(body string) string {
 	return html
 }
 
+// getPredictiveSuggestions creates predictive suggestions based on the default suggestions
+// What are predictive suggestions? Instead of displaying the entire field value as a suggestion (value may be too long to fit into the searchbox), they only display the next relevant words, preferrably as a suffix or as a prefix
 func getPredictiveSuggestions(config SuggestionsConfig, suggestions *[]SuggestionHIT) []SuggestionHIT {
 	var suggestionsList = make([]SuggestionHIT, 0)
 	var suggestionsMap = make(map[string]bool)
 	if config.Value != "" {
 		tags := getPredictiveSuggestionsTags(config.HighlightConfig)
-		currentValueTrimmed := SanitizeString(config.Value)
 		for _, suggestion := range *suggestions {
-			// to handle special strings with pattern <mark>xyz</mark>
-			// extract the raw text from the highlighted value
-			parsedContent := SanitizeString(getTextFromHTML(suggestion.Label))
-			// to match the partial start of word.
-			// example if searchTerm is `select` and string contains `selected`
-			regex, err := regexp.Compile("(?i)" + regexp.QuoteMeta(currentValueTrimmed))
-			if err != nil {
-				log.Warnln(logTag, ":", err.Error())
-				continue
+			fieldValues := strings.Split(NormalizeValue(suggestion.Label), " ")
+			fvl := len(fieldValues)
+			queryValues := strings.Split(NormalizeValue(config.Value), " ")
+			suffixStarts := 0
+			prefixEnds := max(fvl-1, 0)
+			// helpful for debugging
+			// fmt.Println("predictive suggestion: ", ", query is: ", config.Value, ", field value is: ", strings.Join(fieldValues, " "))
+			for _, qToken := range queryValues {
+				matchIndex := sliceIndex(fvl, func(i int) bool { return strings.Contains(fieldValues[i], qToken) })
+				if matchIndex != -1 {
+					prefixEnds = min(prefixEnds, matchIndex-1)
+					suffixStarts = max(suffixStarts, matchIndex+1)
+				}
 			}
-			matchIndex := regex.FindStringIndex(parsedContent)
-			// if not matchIndex not present then it means either there is no match or there are chances that the exact word is present
-			if matchIndex == nil {
-				// match with exact word
-				regex2, err2 := regexp.Compile("(?i)" + "^" + regexp.QuoteMeta(currentValueTrimmed))
-				if err2 != nil {
-					log.Warnln(logTag, ":", err2.Error())
-					continue
-				}
-				matchIndex = regex2.FindStringIndex(parsedContent)
+			var matched = false
+			maxPredictedWords := 2
+			if config.MaxPredictedWords != nil {
+				maxPredictedWords = *config.MaxPredictedWords
 			}
-			if matchIndex != nil && len(parsedContent) > matchIndex[0] {
-				matchedString := parsedContent[matchIndex[0]:]
-				suffixWords := strings.Split(matchedString[len(currentValueTrimmed):], " ")
-				prefixWords := strings.Split(parsedContent[:matchIndex[0]], " ")
-				maxPredictedWords := 2
-				if config.MaxPredictedWords != nil {
-					maxPredictedWords = *config.MaxPredictedWords
-				}
-				matched := false
-				var customStopwords = make(map[string]bool)
-				// use custom stopwords if present
-				if config.Stopwords != nil {
-					customStopwords = make(map[string]bool)
-					for _, v := range *config.Stopwords {
-						customStopwords[v] = true
-					}
-				}
-				// apply suffix match
-				if len(suffixWords) > 0 {
-					for i := maxPredictedWords + 1; i > 0; i-- {
-						// find the longest match
-						if i <= len(suffixWords) && !matched {
-							highlightedWord := strip(strings.Join(suffixWords[:i], " "))
-							if RemoveSpaces(highlightedWord) != "" &&
-								len(strings.Split(highlightedWord, " ")) <= maxPredictedWords+1 {
-								// a prefix shouldn't be a stopword
-								if config.ApplyStopwords != nil && *config.ApplyStopwords {
-									lastWord := RemoveSpaces(suffixWords[:i][len(suffixWords[:i])-1])
-									if len(customStopwords) > 0 {
-										if customStopwords[lastWord] {
-											continue
-										}
-									} else {
-										cleanContent := removeStopwords(lastWord, config.Language)
-										if len(RemoveSpaces(cleanContent)) == 0 {
-											continue
-										}
-									}
-								}
-								suggestionPhrase := currentValueTrimmed + tags.PreTags + highlightedWord + tags.PostTags
-								suggestionValue := currentValueTrimmed + highlightedWord
-								matched = true
-								// to show unique results only
-								if !suggestionsMap[suggestionPhrase] {
-									predictiveSuggestion := suggestion
-									predictiveSuggestion.Label = strings.ToLower(suggestionPhrase)
-									predictiveSuggestion.Value = strings.ToLower(suggestionValue)
-									suggestionsList = append(suggestionsList, predictiveSuggestion)
-									// update map
-									suggestionsMap[suggestionPhrase] = true
-								}
-							}
-						}
-					}
-				}
-				// apply prefix match
-				if !matched && len(prefixWords) > 0 {
-					for i := maxPredictedWords + 1; i >= 0; i-- {
-						// find the shortest match
-						if i <= len(prefixWords) && !matched {
-							highlightedWord := strip(strings.Join(prefixWords[i:], " "))
-							if RemoveSpaces(highlightedWord) != "" && len(strings.Split(highlightedWord, " ")) <= maxPredictedWords+1 {
-								// a prefix shouldn't be a stopword
-								if config.ApplyStopwords != nil && *config.ApplyStopwords {
-									firstWord := RemoveSpaces(prefixWords[i:][0])
-									if len(customStopwords) > 0 {
-										if customStopwords[firstWord] {
-											continue
-										}
-									} else {
-										cleanContent := removeStopwords(firstWord, config.Language)
-										if len(RemoveSpaces(cleanContent)) == 0 {
-											continue
-										}
-									}
-								}
-								suggestionPhrase := tags.PreTags + highlightedWord + tags.PostTags + currentValueTrimmed
-								suggestionValue := highlightedWord + currentValueTrimmed
-								matched = true
-								// to show unique results only
-								if !suggestionsMap[suggestionPhrase] {
-									predictiveSuggestion := suggestion
-									predictiveSuggestion.Label = strings.ToLower(suggestionPhrase)
-									predictiveSuggestion.Value = strings.ToLower(suggestionValue)
-									suggestionsList = append(suggestionsList, predictiveSuggestion)
-									// update map
-									suggestionsMap[suggestionPhrase] = true
-								}
-							}
+			// helpful for debugging
+			// fmt.Println("prefix ends: ", prefixEnds)
+			// fmt.Println("suffix starts: ", suffixStarts)
 
-						}
+			if suffixStarts > 0 {
+				highlightPhrase := getHighlightedPhrase(strings.Join(fieldValues[suffixStarts:], " "), max(maxPredictedWords, 1), config)
+				// highlightPhrase can additionally not contain any matched tokens as they would duplicate
+				hltValues := strings.Split(highlightPhrase, " ")
+				ignore := false
+				for _, qToken := range queryValues {
+					if sliceIndex(len(hltValues), func(i int) bool { return hltValues[i] == qToken }) != -1 {
+						ignore = true
+					}
+				}
+				if !ignore && len(highlightPhrase) > 1 {
+					// helpful for debugging
+					// fmt.Println("in suffix: highlighted phrase is: ", highlightPhrase)
+					var matchQuery string
+					// case where we replace the matching field value query in place of the actual query
+					if sliceIndex(len(queryValues), func(i int) bool { return strings.Contains(fieldValues[prefixEnds+1], queryValues[i]) }) != -1 {
+						matchQuery = strings.Join(fieldValues[prefixEnds+1:suffixStarts], " ")
+					} else {
+						matchQuery = config.Value
+					}
+					suggestionPhrase := matchQuery + " " + tags.PreTags + highlightPhrase + tags.PostTags
+					suggestionValue := matchQuery + " " + highlightPhrase
+					// transform diacritics chars when comparing for uniqueness of predictive suggestions
+					if !suggestionsMap[replaceDiacritics(suggestionValue)] {
+						predictiveSuggestion := suggestion
+						predictiveSuggestion.Label = suggestionPhrase
+						predictiveSuggestion.Value = suggestionValue
+						suggestionsList = append(suggestionsList, predictiveSuggestion)
+						// update map
+						suggestionsMap[replaceDiacritics(suggestionValue)] = true
+						matched = true
+					}
+				}
+			}
+			if prefixEnds >= 0 && !matched {
+				highlightPhrase := getHighlightedPhrase(strings.Join(fieldValues[:prefixEnds+1], " "), max(maxPredictedWords, 1), config)
+				// highlightPhrase can additionally not contain any matched tokens as they would duplicate
+				hltValues := strings.Split(highlightPhrase, " ")
+				ignore := false
+				for _, qToken := range queryValues {
+					if sliceIndex(len(hltValues), func(i int) bool { return hltValues[i] == qToken }) != -1 {
+						ignore = true
+					}
+				}
+				// helpful for debugging
+				// fmt.Println("in prefix: highlighted phrase is: ", highlightPhrase)
+				if !ignore && len(highlightPhrase) > 1 {
+					var matchQuery string
+					// case where we replace the matching field value query in place of the actual query
+					if suffixStarts > 0 && sliceIndex(len(queryValues), func(i int) bool { return strings.Contains(fieldValues[suffixStarts-1], queryValues[i]) }) != -1 {
+						matchQuery = strings.Join(fieldValues[prefixEnds+1:suffixStarts], " ")
+					} else {
+						matchQuery = config.Value
+					}
+					suggestionPhrase := tags.PreTags + highlightPhrase + tags.PostTags + " " + matchQuery
+					suggestionValue := highlightPhrase + " " + matchQuery
+					matched = true
+					// transform diacritics chars when comparing for uniqueness of predictive suggestions
+					if !suggestionsMap[replaceDiacritics(suggestionValue)] {
+						predictiveSuggestion := suggestion
+						predictiveSuggestion.Label = suggestionPhrase
+						predictiveSuggestion.Value = suggestionValue
+						suggestionsList = append(suggestionsList, predictiveSuggestion)
+						// update map
+						suggestionsMap[replaceDiacritics(suggestionValue)] = true
+						matched = true
 					}
 				}
 			}
@@ -512,173 +543,107 @@ func getPredictiveSuggestions(config SuggestionsConfig, suggestions *[]Suggestio
 	return suggestionsList
 }
 
-// Parse the index suggestions from the source object
-func getSuggestions(config SuggestionsConfig, rawHits []ESDoc) []SuggestionHIT {
-
-	// keep track of suggestions list
-	var suggestionsList = make([]SuggestionHIT, 0)
-
-	// keep track of suggestions label, label must be unique
-	var labelsList = make([]string, 0)
-
-	traverseSuggestions(config, rawHits, &suggestionsList, &labelsList)
-
-	// sort suggestions based on the rank
-	// First priority is given to the _score (ES)
-	// Second priority is given to the _appbase_score
-	sort.SliceStable(suggestionsList, func(i, j int) bool {
-		if suggestionsList[i].Score > suggestionsList[j].Score {
-			return true
-		}
-		if suggestionsList[i].Score == suggestionsList[j].Score {
-			return suggestionsList[i].AppbaseScore > suggestionsList[j].AppbaseScore
-		}
-		return false
-	})
-
-	if config.EnablePredictiveSuggestions != nil && *config.EnablePredictiveSuggestions {
-		suggestionsList = getPredictiveSuggestions(config, &suggestionsList)
-	}
-
-	if config.ShowDistinctSuggestions != nil && *config.ShowDistinctSuggestions {
-		// keep track of document ids for suggestions
-		var idMap = make(map[interface{}]bool)
-		filteredSuggestions := make([]SuggestionHIT, 0)
-		for _, suggestion := range suggestionsList {
-			if !idMap[suggestion.Id] {
-				filteredSuggestions = append(filteredSuggestions, suggestion)
-				idMap[suggestion.Id] = true
-			}
-		}
-		return filteredSuggestions
-	}
-	return suggestionsList
-}
-
-func flattenDeep(args []interface{}, v interface{}) []interface{} {
-	if s, ok := v.([]interface{}); ok {
-		for _, v := range s {
-			args = flattenDeep(args, v)
-		}
+// getHighlightedPhrase takes a candidate phrase (prefix or suffix) of the field value based on the match found with the search query.
+// It returns up to maxTokens length of phrase ignoring for any stopwords in between
+func getHighlightedPhrase(candidateWord string, maxTokens int, config SuggestionsConfig) string {
+	var wordsPhrase []string
+	if config.ApplyStopwords != nil && *config.ApplyStopwords {
+		wordsPhrase = strings.Split(removeStopwords(candidateWord, config), " ")
 	} else {
-		args = append(args, v)
+		wordsPhrase = strings.Split(candidateWord, " ")
 	}
-	return args
+	if len(wordsPhrase) > maxTokens {
+		return strings.TrimSpace(strings.Join(wordsPhrase[:maxTokens], " "))
+	}
+	return strings.TrimSpace(strings.Join(wordsPhrase, " "))
 }
 
-func extractSuggestion(val interface{}) interface{} {
-	valString, ok1 := val.(string)
-	if ok1 {
-		return valString
-	}
-	valArray, ok2 := val.([]interface{})
-	if ok2 {
-		return flattenDeep(nil, valArray)
-	}
-	_, ok3 := val.(map[string]interface{})
-	if ok3 {
-		return nil
-	}
-	return val
-}
-
-func parseField(
-	source map[string]interface{},
+// parseResponseTree parses the suggestions from a response tree
+// e.g. could be "a", or "a.b", or "a.b.c"
+// This function uses recursion to traverse the response tree
+func parseResponseTree(
+	responseTree map[string]interface{},
 	field string,
 	suggestionsList *[]SuggestionHIT,
 	labelsList *[]string,
 	rawHit ESDoc,
 	config SuggestionsConfig,
-) bool {
-	fieldNodes := strings.Split(field, ".")
-	label := source[fieldNodes[0]]
-	// To handle field names with dots
-	// For example, if source has a top level field name is `user.name`
-	// then it would extract the suggestion from parsed source
-
-	if source[field] != nil {
-		topLabel := source[field]
-		val := extractSuggestion(topLabel)
-		valAsString, ok := val.(string)
+) {
+	// if field path itself contains a string, then we're set
+	if responseTree[field] != nil {
+		responseSubTree := responseTree[field]
+		// val := extractSuggestion(topLabel)
+		valAsString, ok := responseSubTree.(string)
 		if ok && valAsString != "" {
-			suggestionInfo := SuggestionInfo{
-				fieldValue:    valAsString,
-				queryValue:    config.Value,
-				source:        source,
-				urlField:      config.URLField,
-				categoryField: config.CategoryField,
-				rawHit:        rawHit,
-				language:      config.Language,
+			docField := DocField{
+				value:  valAsString,
+				rawHit: rawHit,
 			}
-			return populateSuggestionsList(labelsList, suggestionsList, suggestionInfo)
+			populateDefaultSuggestions(labelsList, suggestionsList, docField, config)
 		}
 	}
+
+	// To handle field names with dots, e.g. "a.b.c", there's a recursive call to this function
+	fieldNodes := strings.Split(field, ".")
+	responseSubTree := responseTree[fieldNodes[0]]
+
 	// if the type of field is array of strings
 	// then we need to pick first matching value as the label
-	labelAsArray, ok := label.([]interface{})
-	if ok && len(labelAsArray) > 1 {
-		var matchedLabel []interface{}
-		for _, i := range labelAsArray {
+	rstAsArray, ok := responseSubTree.([]interface{})
+	if ok && len(rstAsArray) > 0 {
+		for _, i := range rstAsArray {
 			labelAsString, ok := i.(string)
 			// find the matching label
 			if ok && strings.Contains(strings.ToLower(labelAsString), strings.ToLower(config.Value)) {
-				matchedLabel = append(matchedLabel, labelAsString)
+				responseSubTree = labelAsString
+				break
 			}
-		}
-		if len(matchedLabel) > 0 {
-			label = matchedLabel[0]
+			// array can also contain objects
+			rssTree, ok := i.(map[string]interface{})
+			if ok {
+				// nested fields of the 'variants.title' variety
+				childField := field[len(fieldNodes[0])+1:]
+				parseResponseTree(rssTree, childField, suggestionsList, labelsList, rawHit, config)
+			}
 		}
 	}
 
-	if label != nil {
+	if responseSubTree != nil {
 		if len(fieldNodes) > 1 {
 			// nested fields of the 'foo.bar.zoo' variety
-			children := field[len(fieldNodes[0])+1:]
-			labelAsMap, ok := label.(map[string]interface{})
+			childField := field[len(fieldNodes[0])+1:]
+			responseSubTree, ok := responseSubTree.(map[string]interface{})
 			if ok {
-				parseField(labelAsMap, children, suggestionsList, labelsList, rawHit, config)
+				parseResponseTree(responseSubTree, childField, suggestionsList, labelsList, rawHit, config)
 			}
 		} else {
-			val := extractSuggestion(label)
-			valAsString, ok := val.(string)
+			valAsString, ok := responseSubTree.(string)
 			if ok {
-				suggestionInfo := SuggestionInfo{
-					fieldValue:    valAsString,
-					queryValue:    config.Value,
-					source:        source,
-					urlField:      config.URLField,
-					categoryField: config.CategoryField,
-					rawHit:        rawHit,
-					language:      config.Language,
+				docField := DocField{
+					value:  valAsString,
+					rawHit: rawHit,
 				}
-				return populateSuggestionsList(labelsList, suggestionsList, suggestionInfo)
+				populateDefaultSuggestions(labelsList, suggestionsList, docField, config)
 			}
 		}
 	}
-	return false
 }
 
-func traverseSuggestions(
+// getDefaultSuggestions traverses over ES docs and checks for a suggestion match against each field from the query
+// A suggestion is considered matching if
+func getDefaultSuggestions(
 	config SuggestionsConfig,
-	suggestions []ESDoc,
+	parsedHits []ESDoc,
 	suggestionsList *[]SuggestionHIT,
 	labelsList *[]string,
 ) {
-	for _, suggestion := range suggestions {
+	// iterate over ES docs
+	for _, hit := range parsedHits {
+		// iterate over fields
 		for _, field := range config.DataFields {
-			parseField(suggestion.ParsedSource, field, suggestionsList, labelsList, suggestion, config)
+			parseResponseTree(hit.ParsedSource, field, suggestionsList, labelsList, hit, config)
 		}
 	}
-}
-
-type ESDoc struct {
-	Index        string                 `json:"_index"`
-	Type         string                 `json:"type"`
-	Id           string                 `json:"_id"`
-	Score        float64                `json:"_score"`
-	Source       map[string]interface{} `json:"_source"`
-	Highlight    map[string]interface{} `json:"highlight"`
-	ParsedSource map[string]interface{}
 }
 
 // Highlights the fields by replacing the actual value with markup
@@ -802,7 +767,10 @@ func extractFieldsFromSource(source map[string]interface{}) []string {
 	return dataFields
 }
 
-func getFinalSuggestions(config SuggestionsConfig, rawHits []ESDoc) []SuggestionHIT {
+// getIndexSuggestions gets the index suggestions based on user query config and search engine response
+func getIndexSuggestions(config SuggestionsConfig, rawHits []ESDoc) []SuggestionHIT {
+	// before parsing any suggestions, normalize the query
+	config.Value = NormalizeValue(config.Value)
 	// set priority to highlight fields if present
 	if len(config.HighlightField) != 0 {
 		config.DataFields = config.HighlightField
@@ -813,7 +781,44 @@ func getFinalSuggestions(config SuggestionsConfig, rawHits []ESDoc) []Suggestion
 
 	// parse hits
 	parsedHits := parseHits(rawHits)
-	return getSuggestions(config, parsedHits)
+	// keep track of suggestions list
+	var suggestionsList = make([]SuggestionHIT, 0)
+
+	// keep track of suggestions label, label must be unique
+	var labelsList = make([]string, 0)
+
+	getDefaultSuggestions(config, parsedHits, &suggestionsList, &labelsList)
+
+	// sort suggestions based on the rank
+	// First priority is given to the _rs_score
+	// Second priority is given to the _score
+	sort.SliceStable(suggestionsList, func(i, j int) bool {
+		if suggestionsList[i].RSScore > suggestionsList[j].RSScore {
+			return true
+		}
+		if suggestionsList[i].RSScore == suggestionsList[j].RSScore {
+			return suggestionsList[i].Score > suggestionsList[j].Score
+		}
+		return false
+	})
+
+	if config.EnablePredictiveSuggestions != nil && *config.EnablePredictiveSuggestions {
+		suggestionsList = getPredictiveSuggestions(config, &suggestionsList)
+	}
+
+	if config.ShowDistinctSuggestions != nil && *config.ShowDistinctSuggestions {
+		// keep track of document ids for suggestions
+		var idMap = make(map[interface{}]bool)
+		filteredSuggestions := make([]SuggestionHIT, 0)
+		for _, suggestion := range suggestionsList {
+			if !idMap[suggestion.Id] {
+				filteredSuggestions = append(filteredSuggestions, suggestion)
+				idMap[suggestion.Id] = true
+			}
+		}
+		return filteredSuggestions
+	}
+	return suggestionsList
 }
 
 // Removes the extra spaces from a string
@@ -821,10 +826,12 @@ func RemoveSpaces(str string) string {
 	return strings.Join(strings.Fields(str), " ")
 }
 
+// SanitizeString removes special chars and spaces from a string
 func SanitizeString(str string) string {
 	// remove extra spaces
 	s := str
-	specialChars := []string{"'", "/", "{", "(", "[", "-", "+", ".", "^", ":", ",", "]", ")", "}"}
+	specialChars := []string{"'", "/", "{", "(", "[", "-", "+", ".", "^", ":", ",", "]", ")",
+		"}"}
 	// Remove special characters
 	for _, c := range specialChars {
 		s = strings.ReplaceAll(s, c, "")
@@ -852,5 +859,5 @@ func ParseSuggestionLabel(label string, language *string) string {
 		parsedLabel = stemmed
 	}
 	// remove stopwords
-	return RemoveSpaces(removeStopwords(parsedLabel, language))
+	return RemoveSpaces(parsedLabel)
 }

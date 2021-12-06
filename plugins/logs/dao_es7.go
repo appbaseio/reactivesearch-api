@@ -26,6 +26,7 @@ func (es *elasticsearch) getRawLogsES7(ctx context.Context, logsFilter logsFilte
 		filters := []es7.Query{
 			es7.NewTermsQuery("request.method.keyword", []interface{}{"POST", "PUT"}...),
 			es7.NewTermsQuery("category.keyword", []interface{}{"docs"}...),
+			es7.NewRangeQuery("response.code").Gte(200).Lte(299),
 		}
 		query.Filter(filters...)
 	} else if logsFilter.Filter == "delete" {

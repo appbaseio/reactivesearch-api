@@ -33,13 +33,13 @@ func translateQuery(rsQuery RSQuery, userIP string) (string, error) {
 	for queryIndex, query := range rsQuery.Query {
 		// Validate ID
 		if query.ID == nil {
-			return "", errors.New("Field 'id' can't be empty")
+			return "", errors.New("field 'id' can't be empty")
 		}
 		normalizedFields := NormalizedDataFields(query.DataField, query.FieldWeights)
 
 		// Validate multiple DataFields for term and geo queries
 		if (query.Type == Term || query.Type == Geo) && len(normalizedFields) > 1 {
-			return "", errors.New("Field 'dataField' can not have multiple fields for 'term' or 'geo' queries")
+			return "", errors.New("field 'dataField' can not have multiple fields for 'term' or 'geo' queries")
 		}
 
 		// Parse synonyms fields if `EnableSynonyms` is set to `false`
@@ -54,7 +54,7 @@ func translateQuery(rsQuery RSQuery, userIP string) (string, error) {
 				// Set the updated fields
 				rsQuery.Query[queryIndex].DataField = normalizedDataFields
 			} else {
-				return "", errors.New("You're using .synonyms suffix in all the fields defined in the 'dataField' property but 'enableSynonyms' property is set to `false` which is contradictory")
+				return "", errors.New("you're using .synonyms suffix fields in the 'dataField' property but 'enableSynonyms' property is set to `false`. We recommend removing these fields from the Search Settings UI / API or set enableSynonyms to true")
 			}
 		}
 	}
@@ -173,7 +173,7 @@ func (query *Query) buildQueryOptions() (map[string]interface{}, error) {
 	// Only apply sort on search queries
 	if query.SortBy != nil && query.Type == Search {
 		if len(normalizedFields) < 1 {
-			return nil, errors.New("Field 'dataField' must be present to apply 'sortBy' property")
+			return nil, errors.New("field 'dataField' must be present to apply 'sortBy' property")
 		}
 		dataField := normalizedFields[0].Field
 		queryWithOptions["sort"] = []map[string]interface{}{
@@ -207,7 +207,7 @@ func (query *Query) buildQueryOptions() (map[string]interface{}, error) {
 		// If pagination is true then use composite aggregations
 		if query.Pagination != nil && *query.Pagination {
 			if len(normalizedFields) < 1 {
-				return nil, errors.New("Field 'dataField' must be present to make 'pagination' work for 'term' type of queries")
+				return nil, errors.New("field 'dataField' must be present to make 'pagination' work for 'term' type of queries")
 			}
 			dataField := normalizedFields[0].Field
 			query.applyCompositeAggsQuery(&queryWithOptions, dataField)
@@ -246,7 +246,7 @@ func (query *Query) buildQueryOptions() (map[string]interface{}, error) {
 	// Apply aggs from aggregations field
 	if query.Aggregations != nil {
 		if len(normalizedFields) < 1 {
-			return nil, errors.New("Field 'dataField' must be present to make 'aggregations' property work")
+			return nil, errors.New("field 'dataField' must be present to make 'aggregations' property work")
 		}
 		if query.Type == Range {
 			dataField := normalizedFields[0].Field
@@ -294,8 +294,7 @@ func (query *Query) buildQueryOptions() (map[string]interface{}, error) {
 
 func (query *Query) applyNestedFieldQuery(originalQuery interface{}) interface{} {
 	if !isNilInterface(originalQuery) && query.NestedField != nil {
-		var nestedFieldQuery interface{}
-		nestedFieldQuery =
+		nestedFieldQuery :=
 			map[string]interface{}{
 				"nested": map[string]interface{}{
 					"path":  query.NestedField,

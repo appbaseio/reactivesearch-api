@@ -74,7 +74,7 @@ func TestPredictiveSuggestions(t *testing.T) {
 		}, &suggestions)
 		So(predictiveSuggestions, ShouldResemble, []SuggestionHIT{
 			{
-				Label: "tagore<b class=\"highlight\"> hall</b>",
+				Label: "tagore <b class=\"highlight\">hall</b>",
 				Value: "tagore hall",
 			},
 		})
@@ -98,7 +98,7 @@ func TestPredictiveSuggestions(t *testing.T) {
 		}, &suggestions)
 		So(predictiveSuggestions, ShouldResemble, []SuggestionHIT{
 			{
-				Label: "<b class=\"highlight\">rabindranath </b>tagore",
+				Label: "<b class=\"highlight\">rabindranath</b> tagore",
 				Value: "rabindranath tagore",
 			},
 		})
@@ -170,8 +170,8 @@ func TestPredictiveSuggestions(t *testing.T) {
 		}, &suggestions)
 		So(predictiveSuggestions, ShouldResemble, []SuggestionHIT{
 			{
-				Label: "<b class=\"highlight\">and </b>there",
-				Value: "and there",
+				Label: "<b class=\"highlight\">here and</b> there",
+				Value: "here and there",
 			},
 		})
 	})
@@ -196,8 +196,8 @@ func TestPredictiveSuggestions(t *testing.T) {
 		}, &suggestions)
 		So(predictiveSuggestions, ShouldResemble, []SuggestionHIT{
 			{
-				Value: "batman",
-				Label: "bat<b class=\"highlight\">man</b>",
+				Value: "batman sons",
+				Label: "batman <b class=\"highlight\">sons</b>",
 			},
 		})
 	})
@@ -219,8 +219,8 @@ func TestPredictiveSuggestions(t *testing.T) {
 		}, &suggestions)
 		So(predictiveSuggestions, ShouldResemble, []SuggestionHIT{
 			{
-				Value: "batman",
-				Label: "bat<b class=\"highlight\">man</b>",
+				Value: "batman sons",
+				Label: "batman <b class=\"highlight\">sons</b>",
 			},
 		})
 	})
@@ -242,7 +242,7 @@ func TestIndexSuggestions(t *testing.T) {
 				Index: index,
 			},
 		}
-		suggestions := getFinalSuggestions(SuggestionsConfig{
+		suggestions := getIndexSuggestions(SuggestionsConfig{
 			Value:      "tagore",
 			DataFields: []string{"title"},
 		}, rawHits)
@@ -250,12 +250,13 @@ func TestIndexSuggestions(t *testing.T) {
 		id := "1"
 		So(suggestions, ShouldResemble, []SuggestionHIT{
 			{
-				Label:        "<b>Rabindranath Tagore Hall</b>",
-				Value:        "Rabindranath Tagore Hall",
-				Id:           id,
-				Index:        &index,
-				Score:        score,
-				AppbaseScore: 1,
+				Label:         "<b>Rabindranath Tagore Hall</b>",
+				Value:         "rabindranath tagore hall",
+				Id:            id,
+				Index:         &index,
+				Score:         score,
+				RSScore:       1,
+				MatchedTokens: []string{"tagore"},
 				Source: map[string]interface{}{
 					"title": "Rabindranath Tagore Hall",
 				},
@@ -316,9 +317,5 @@ func TestParseSuggestionLabel(t *testing.T) {
 	Convey("with spaces", t, func() {
 		ln := "english"
 		So(ParseSuggestionLabel(" pizzas ", &ln), ShouldResemble, "pizza")
-	})
-	Convey("with spaces and stopwords", t, func() {
-		ln := "english"
-		So(ParseSuggestionLabel("  batman and robin  ", &ln), ShouldResemble, "batman robin")
 	})
 }

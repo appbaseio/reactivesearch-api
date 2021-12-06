@@ -533,8 +533,7 @@ func createBoolQuery(operation string, query interface{}) *map[string]interface{
 	var resultQuery *map[string]interface{}
 
 	queryAsArray, isArray := query.([]interface{})
-	queryAsMap, isMap := query.(interface{})
-	if (isArray && len(queryAsArray) != 0) || (isMap && queryAsMap != nil) {
+	if (isArray && len(queryAsArray) != 0) || (query != nil) {
 		resultQuery = &map[string]interface{}{
 			"bool": map[string]interface{}{
 				operation: query,
@@ -760,4 +759,30 @@ func getSizeFromQuery(query *map[string]interface{}, key string) *interface{} {
 		}
 	}
 	return nil
+}
+
+// SliceIndex provides a generic way to get an index of a slice
+func sliceIndex(limit int, predicate func(i int) bool) int {
+	for i := 0; i < limit; i++ {
+		if predicate(i) {
+			return i
+		}
+	}
+	return -1
+}
+
+// a convenient min over integers
+func min(a, b int) int {
+	if a < b {
+		return a
+	}
+	return b
+}
+
+// a convenient max over integers
+func max(a, b int) int {
+	if a == min(a, b) {
+		return b
+	}
+	return a
 }
