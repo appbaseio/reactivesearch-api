@@ -250,12 +250,13 @@ func TestIndexSuggestions(t *testing.T) {
 		id := "1"
 		So(suggestions, ShouldResemble, []SuggestionHIT{
 			{
-				Label:   "<b>Rabindranath Tagore Hall</b>",
-				Value:   "Rabindranath Tagore Hall",
-				Id:      id,
-				Index:   &index,
-				Score:   score,
-				RSScore: 1,
+				Label:         "<b>Rabindranath Tagore Hall</b>",
+				Value:         "rabindranath tagore hall",
+				Id:            id,
+				Index:         &index,
+				Score:         score,
+				RSScore:       1,
+				MatchedTokens: []string{"tagore"},
 				Source: map[string]interface{}{
 					"title": "Rabindranath Tagore Hall",
 				},
