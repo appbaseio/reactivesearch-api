@@ -181,7 +181,7 @@ func SetDefaultIndexTemplate() error {
 	}`
 
 	version := GetVersion()
-	if version == 7 {
+	if version == 7 || version == 8 {
 		defaultSetting := fmt.Sprintf(`{
 			"index_patterns": ["*"],
 			"settings": %s,
