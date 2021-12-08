@@ -1,5 +1,10 @@
 package util
 
+import (
+	"fmt"
+	"net/http"
+)
+
 type Error struct {
 	Message string
 	Err     error
@@ -26,4 +31,14 @@ func GetMigrationScripts() []Migration {
 // AddMigrationScript allows you to add a migration script
 func AddMigrationScript(migration Migration) {
 	migrationScripts = append(migrationScripts, migration)
+}
+
+// Fetch the index mapping manually using the following function
+// Make the request directly and return the response accordingly.
+func GetIndexMapping(indexName string) (resp *http.Response, err error) {
+	// Keep a constant variable to store the URL
+	MappingBaseURL := "/%s/_mapping"
+
+	response, err := http.Get(fmt.Sprintf(MappingBaseURL, indexName))
+	return response, err
 }
