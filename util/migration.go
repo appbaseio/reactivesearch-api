@@ -6,7 +6,6 @@ import (
 	"io/ioutil"
 	"net/http"
 
-	"github.com/appbaseio/reactivesearch-api/util"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -55,7 +54,7 @@ type IndexMappingResponse map[string]interface{}
 // expected to be handled by the calling function.
 func GetIndexMapping(indexName string) (resp IndexMappingResponse, err error) {
 	// Keep a constant variable to store the URL
-	MappingBaseURL := util.GetESURL() + "/%s/_mapping"
+	MappingBaseURL := GetESURL() + "/%s/_mapping"
 
 	// Declare the mapping response variable
 	var data IndexMappingResponse
