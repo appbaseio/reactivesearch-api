@@ -446,7 +446,7 @@ func getPredictiveSuggestions(config SuggestionsConfig, suggestions *[]Suggestio
 	if config.Value != "" {
 		tags := getPredictiveSuggestionsTags(config.HighlightConfig)
 		for _, suggestion := range *suggestions {
-			fieldValues := strings.Split(NormalizeValue(suggestion.Label), " ")
+			fieldValues := strings.Split(NormalizeValue(getTextFromHTML(suggestion.Label)), " ")
 			fvl := len(fieldValues)
 			queryValues := strings.Split(NormalizeValue(config.Value), " ")
 			suffixStarts := 0
@@ -489,7 +489,7 @@ func getPredictiveSuggestions(config SuggestionsConfig, suggestions *[]Suggestio
 					} else {
 						matchQuery = config.Value
 					}
-					suggestionPhrase := matchQuery + " " + tags.PreTags + highlightPhrase + tags.PostTags
+					suggestionPhrase := fmt.Sprintf("%s %s%s%s", matchQuery, tags.PreTags, highlightPhrase, tags.PostTags)
 					suggestionValue := matchQuery + " " + highlightPhrase
 					// transform diacritics chars when comparing for uniqueness of predictive suggestions
 					if !suggestionsMap[replaceDiacritics(suggestionValue)] {
@@ -673,21 +673,6 @@ func parseHits(hits []ESDoc) []ESDoc {
 		results = append(results, highlightResults(hit))
 	}
 	return results
-}
-
-// Removes the punctuation from a string
-func strip(s string) string {
-	var result strings.Builder
-	for i := 0; i < len(s); i++ {
-		b := s[i]
-		if ('a' <= b && b <= 'z') ||
-			('A' <= b && b <= 'Z') ||
-			('0' <= b && b <= '9') ||
-			b == ' ' {
-			result.WriteByte(b)
-		}
-	}
-	return result.String()
 }
 
 // Util method to extract the fields from elasticsearch source object
