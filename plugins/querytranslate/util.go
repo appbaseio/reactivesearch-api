@@ -13,6 +13,7 @@ import (
 
 	"github.com/appbaseio/reactivesearch-api/util"
 	"github.com/bbalet/stopwords"
+	pluralize "github.com/gertd/go-pluralize"
 	"github.com/kljensen/snowball"
 	"github.com/lithammer/fuzzysearch/fuzzy"
 	"github.com/microcosm-cc/bluemonday"
@@ -939,16 +940,22 @@ func removeSpaces(str string) string {
 	return strings.Join(strings.Fields(str), " ")
 }
 
-// SanitizeString removes special chars and spaces from a string
+// SanitizeString removes special chars and extra spaces from a string
+// e.g. "android - black" becomes "android black"
+// e.g. "android-black" doesn't change
 func sanitizeString(str string) string {
 	// remove extra spaces
 	s := str
+	tokenString := strings.Split(s, " ")
 	specialChars := []string{"'", "/", "{", "(", "[", "-", "+", ".", "^", ":", ",", "]", ")", "}"}
-	// Remove special characters
-	for _, c := range specialChars {
-		s = strings.ReplaceAll(s, c, "")
+	// Remove special characters when they're a token by themselves
+	for i, token := range tokenString {
+		if sliceIndex(len(specialChars), func(i int) bool { return token == specialChars[i] }) != -1 {
+			// replace with a space instead
+			tokenString[i] = " "
+		}
 	}
-	return removeSpaces(s)
+	return removeSpaces(strings.Join(tokenString, " "))
 }
 
 // Returns the parsed suggestion label to be compared for duplicate suggestions
@@ -993,10 +1000,23 @@ func getTextFromHTML(body string) string {
 	return html
 }
 
+// checks if a string is of type letter
+func isLetter(s string) bool {
+	for _, r := range s {
+		if (r < 'a' || r > 'z') && (r < 'A' || r > 'Z') {
+			return false
+		}
+	}
+	return true
+}
+
 // getPlural pluralizes a string passed as *interface type
 func getPlural(input *interface{}) *interface{} {
 	if input == nil {
-		return input
+		return nil
+	}
+	if rsPluralize == nil {
+		rsPluralize = pluralize.NewClient()
 	}
 	// translate interface into string first
 	valueAsInterface := *input
@@ -1004,9 +1024,9 @@ func getPlural(input *interface{}) *interface{} {
 
 	var valueTokens = strings.Split(valueAsString, " ")
 	var lastWord = valueTokens[len(valueTokens)-1]
-	var pluralString string
-	if _, err := strconv.Atoi(lastWord); err != nil {
-		// not a number, can pluralize
+	pluralString := valueAsString
+	if isLetter(lastWord) {
+		// is letter, can pluralize
 		pluralString = rsPluralize.Plural(valueAsString)
 	}
 	// returning the plural string as *interface
