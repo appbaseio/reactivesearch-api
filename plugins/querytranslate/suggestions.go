@@ -436,13 +436,13 @@ func getPredictiveSuggestions(config SuggestionsConfig, suggestions *[]Suggestio
 					suggestionPhrase := fmt.Sprintf("%s %s%s%s", matchQuery, tags.PreTags, highlightPhrase, tags.PostTags)
 					suggestionValue := matchQuery + " " + highlightPhrase
 					// transform diacritics chars when comparing for uniqueness of predictive suggestions
-					if !suggestionsMap[compressAndOrder(suggestionValue, config)] {
+					if !suggestionsMap[CompressAndOrder(suggestionValue, config)] {
 						predictiveSuggestion := suggestion
 						predictiveSuggestion.Label = suggestionPhrase
 						predictiveSuggestion.Value = suggestionValue
 						suggestionsList = append(suggestionsList, predictiveSuggestion)
 						// update map
-						suggestionsMap[compressAndOrder(suggestionValue, config)] = true
+						suggestionsMap[CompressAndOrder(suggestionValue, config)] = true
 						matched = true
 					}
 				}
@@ -464,13 +464,13 @@ func getPredictiveSuggestions(config SuggestionsConfig, suggestions *[]Suggestio
 					suggestionPhrase := tags.PreTags + highlightPhrase + tags.PostTags + " " + matchQuery
 					suggestionValue := highlightPhrase + " " + matchQuery
 					// transform diacritics chars when comparing for uniqueness of predictive suggestions
-					if !suggestionsMap[compressAndOrder(suggestionValue, config)] {
+					if !suggestionsMap[CompressAndOrder(suggestionValue, config)] {
 						predictiveSuggestion := suggestion
 						predictiveSuggestion.Label = suggestionPhrase
 						predictiveSuggestion.Value = suggestionValue
 						suggestionsList = append(suggestionsList, predictiveSuggestion)
 						// update map
-						suggestionsMap[compressAndOrder(suggestionValue, config)] = true
+						suggestionsMap[CompressAndOrder(suggestionValue, config)] = true
 						matched = true
 					}
 				}
