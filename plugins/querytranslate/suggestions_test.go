@@ -196,8 +196,8 @@ func TestPredictiveSuggestions(t *testing.T) {
 		}, &suggestions)
 		So(predictiveSuggestions, ShouldResemble, []SuggestionHIT{
 			{
-				Value: "batman sons",
-				Label: "batman <b class=\"highlight\">sons</b>",
+				Value: "bat sons",
+				Label: "bat <b class=\"highlight\">sons</b>",
 			},
 		})
 	})
@@ -219,8 +219,8 @@ func TestPredictiveSuggestions(t *testing.T) {
 		}, &suggestions)
 		So(predictiveSuggestions, ShouldResemble, []SuggestionHIT{
 			{
-				Value: "batman sons",
-				Label: "batman <b class=\"highlight\">sons</b>",
+				Value: "bat sons",
+				Label: "bat <b class=\"highlight\">sons</b>",
 			},
 		})
 	})

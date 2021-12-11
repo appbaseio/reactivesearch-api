@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"math"
 	"reflect"
+	"sort"
 	"strconv"
 	"strings"
 	"unicode"
@@ -854,27 +855,39 @@ func max(a, b int) int {
 	return a
 }
 
-// isSimilar compares strings by ignoring transposition and stopwords
-// e.g. "iphone 12 and apple" is similar to "apple iphone 12"
-func isSimilar(source string, target string, config SuggestionsConfig) bool {
-	sourceString := removeStopwords(source, config)
-	targetString := removeStopwords(target, config)
-	for _, token := range strings.Split(sourceString, " ") {
-		if !strings.Contains(targetString, token) {
-			return false
-		}
+// compressAndOrder compresses a string by removing stopwords, replacing diacritics, stemming and then orders its tokens in ascending
+// It can be used to compare uniqueness of suggestions: e.g. "apple and iphone 12" is the same as a "apple iphone 12"
+func compressAndOrder(source string, config SuggestionsConfig) string {
+	language := "english"
+	if config.Language != nil {
+		language = *config.Language
 	}
-	return true
+	target := stemmedTokens(replaceDiacritics(removeStopwords(source, config)), language)
+	sort.Strings(target)
+	return strings.Join(target, " ")
 }
 
 // stemmedTokens returns stemmed tokens of a string
+// based on the language. Includes language validation
 func stemmedTokens(source string, language string) []string {
 	tokens := strings.Split(source, " ")
+	languages := []string{"english", "russian", "spanish", "french", "swedish", "norwegian"}
+	index := sliceIndex(len(languages), func(i int) bool { return strings.Contains(languages[i], strings.ToLower(language)) })
+	if index == -1 {
+		language = "english"
+	} else {
+		language = languages[index]
+	}
 	var stemmedTokens []string
 	for _, token := range tokens {
 		// stem the token
-		stemmedToken, _ := snowball.Stem(token, language, false)
-		stemmedTokens = append(stemmedTokens, stemmedToken)
+		stemmedToken, err := snowball.Stem(token, language, false)
+		if err == nil {
+			stemmedTokens = append(stemmedTokens, stemmedToken)
+		} else {
+			// in case of an error, return the tokenized string
+			stemmedTokens = append(stemmedTokens, token)
+		}
 	}
 	return stemmedTokens
 }
@@ -897,6 +910,8 @@ func removeStopwords(value string, config SuggestionsConfig) string {
 	if len(userStopwords) > 0 {
 		stopwords.LoadStopWordsFromString(strings.Join(userStopwords, " "), ln, " ")
 	}
+	// we don't want to strip any numbers from the string
+	stopwords.DontStripDigits()
 	cleanContent := stopwords.CleanString(value, ln, true)
 	return normalizeValue(cleanContent)
 }
@@ -947,15 +962,9 @@ func parseSuggestionLabel(label string, config SuggestionsConfig) string {
 			stemLanguage = *config.Language
 		}
 	}
-	// stem word
-	stemmed, err := snowball.Stem(parsedLabel, stemLanguage, true)
-	if err != nil {
-		log.Errorln(logTag, ":", err)
-	} else {
-		parsedLabel = stemmed
-	}
+	stemmedTokens := stemmedTokens(parsedLabel, stemLanguage)
 	// remove stopwords
-	return removeSpaces(parsedLabel)
+	return removeSpaces(strings.Join(stemmedTokens, " "))
 }
 
 func isMn(r rune) bool {
