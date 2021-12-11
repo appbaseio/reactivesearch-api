@@ -143,7 +143,7 @@ func (query *Query) generateShouldQuery() (interface{}, error) {
 		var finalQuery = []map[string]interface{}{
 			{
 				"multi_match": map[string]interface{}{
-					"query":    query.Value,
+					"query":    getPlural(query.Value),
 					"fields":   fields,
 					"type":     "cross_fields",
 					"operator": And.String(),
@@ -215,7 +215,7 @@ func (query *Query) generateShouldQuery() (interface{}, error) {
 	var finalQuery = []map[string]interface{}{
 		{
 			"multi_match": map[string]interface{}{
-				"query":    query.Value,
+				"query":    getPlural(query.Value),
 				"fields":   fields,
 				"type":     "cross_fields",
 				"operator": Or.String(),

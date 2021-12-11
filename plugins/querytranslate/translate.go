@@ -42,6 +42,14 @@ func translateQuery(rsQuery RSQuery, userIP string) (string, error) {
 			return "", errors.New("field 'dataField' can not have multiple fields for 'term' or 'geo' queries")
 		}
 
+		// Normalize query value for search and suggestion types of queries
+		if query.Type == Search || query.Type == Suggestion {
+			if query.Value != nil {
+				// set the updated value
+				rsQuery.Query[queryIndex].Value = normalizeQueryValue(query.Value)
+			}
+		}
+
 		// Parse synonyms fields if `EnableSynonyms` is set to `false`
 		if (query.Type == Search || query.Type == Suggestion) && query.EnableSynonyms != nil && !*query.EnableSynonyms {
 			var normalizedDataFields = []string{}

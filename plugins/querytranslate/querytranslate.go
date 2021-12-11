@@ -5,6 +5,7 @@ import (
 
 	"github.com/appbaseio/reactivesearch-api/middleware"
 	"github.com/appbaseio/reactivesearch-api/plugins"
+	pluralize "github.com/gertd/go-pluralize"
 )
 
 const (
@@ -13,8 +14,9 @@ const (
 )
 
 var (
-	singleton *QueryTranslate
-	once      sync.Once
+	rsPluralize *pluralize.Client
+	singleton   *QueryTranslate
+	once        sync.Once
 )
 
 // QueryTranslate plugin deals with managing query translation.
@@ -24,7 +26,10 @@ type QueryTranslate struct{}
 // should be the only way (both within or outside the package) to fetch
 // the instance of the plugin, in order to avoid stateless duplicates.
 func Instance() *QueryTranslate {
-	once.Do(func() { singleton = &QueryTranslate{} })
+	once.Do(func() {
+		singleton = &QueryTranslate{}
+		rsPluralize = pluralize.NewClient()
+	})
 	return singleton
 }
 

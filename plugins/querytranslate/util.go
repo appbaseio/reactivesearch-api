@@ -919,7 +919,19 @@ func normalizeValue(value string) string {
 			finalValue = append(finalValue, strings.ToLower(sT))
 		}
 	}
-	return strings.ToLower(strings.TrimSpace(strings.Join(finalValue, " ")))
+	return strings.TrimSpace(strings.Join(finalValue, " "))
+}
+
+// A wrapper around normalizeValue to handle value transformation
+// for search, suggestion types of queries at query generation time
+func normalizeQueryValue(input *interface{}) *interface{} {
+	if input == nil {
+		return nil
+	}
+	valueAsInterface := *input
+	normalizedValue := sanitizeString(valueAsInterface.(string))
+	var outputValue interface{} = normalizedValue
+	return &outputValue
 }
 
 // Removes the extra spaces from a string
@@ -931,8 +943,7 @@ func removeSpaces(str string) string {
 func sanitizeString(str string) string {
 	// remove extra spaces
 	s := str
-	specialChars := []string{"'", "/", "{", "(", "[", "-", "+", ".", "^", ":", ",", "]", ")",
-		"}"}
+	specialChars := []string{"'", "/", "{", "(", "[", "-", "+", ".", "^", ":", ",", "]", ")", "}"}
 	// Remove special characters
 	for _, c := range specialChars {
 		s = strings.ReplaceAll(s, c, "")
@@ -980,6 +991,27 @@ func getTextFromHTML(body string) string {
 	)
 
 	return html
+}
+
+// getPlural pluralizes a string passed as *interface type
+func getPlural(input *interface{}) *interface{} {
+	if input == nil {
+		return input
+	}
+	// translate interface into string first
+	valueAsInterface := *input
+	valueAsString := sanitizeString(valueAsInterface.(string))
+
+	var valueTokens = strings.Split(valueAsString, " ")
+	var lastWord = valueTokens[len(valueTokens)-1]
+	var pluralString string
+	if _, err := strconv.Atoi(lastWord); err != nil {
+		// not a number, can pluralize
+		pluralString = rsPluralize.Plural(valueAsString)
+	}
+	// returning the plural string as *interface
+	var returnValue interface{} = pluralString
+	return &returnValue
 }
 
 // findMatch matches the user query against the field value to return scores and matched tokens
