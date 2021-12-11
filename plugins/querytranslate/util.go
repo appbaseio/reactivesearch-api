@@ -848,7 +848,7 @@ func max(a, b int) int {
 
 // compressAndOrder compresses a string by removing stopwords, replacing diacritics, stemming and then orders its tokens in ascending
 // It can be used to compare uniqueness of suggestions: e.g. "apple and iphone 12" is the same as a "apple iphone 12"
-func compressAndOrder(source string, config SuggestionsConfig) string {
+func CompressAndOrder(source string, config SuggestionsConfig) string {
 	language := "english"
 	if config.Language != nil {
 		language = *config.Language
