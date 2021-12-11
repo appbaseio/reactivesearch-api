@@ -425,7 +425,7 @@ func getPredictiveSuggestions(config SuggestionsConfig, suggestions *[]Suggestio
 				stemmedHighlightPhrase := strings.Join(stemmedTokens(highlightPhrase, language), " ")
 				ignore := false
 				for _, qToken := range stemmedQvls {
-					if strings.EqualFold(stemmedHighlightPhrase, qToken) {
+					if strings.Contains(stemmedHighlightPhrase, qToken) {
 						ignore = true
 					}
 				}
@@ -453,7 +453,7 @@ func getPredictiveSuggestions(config SuggestionsConfig, suggestions *[]Suggestio
 				stemmedHighlightPhrase := strings.Join(stemmedTokens(highlightPhrase, language), " ")
 				ignore := false
 				for _, qToken := range stemmedQvls {
-					if strings.EqualFold(stemmedHighlightPhrase, qToken) {
+					if strings.Contains(stemmedHighlightPhrase, qToken) {
 						ignore = true
 					}
 				}
