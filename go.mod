@@ -1,7 +1,6 @@
 module github.com/appbaseio/reactivesearch-api
 
 require (
-	github.com/asaskevich/govalidator v0.0.0-20210307081110-f21760c49a8d // indirect
 	github.com/bbalet/stopwords v1.0.0
 	github.com/buger/jsonparser v1.1.1
 	github.com/denisbrodbeck/machineid v1.0.1
