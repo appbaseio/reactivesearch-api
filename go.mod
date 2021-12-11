@@ -1,12 +1,12 @@
 module github.com/appbaseio/reactivesearch-api
 
 require (
-	github.com/asaskevich/govalidator v0.0.0-20210307081110-f21760c49a8d // indirect
 	github.com/bbalet/stopwords v1.0.0
 	github.com/buger/jsonparser v1.1.1
 	github.com/denisbrodbeck/machineid v1.0.1
 	github.com/dgraph-io/badger/v3 v3.2103.1
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
+	github.com/gertd/go-pluralize v0.1.7 // indirect
 	github.com/getsentry/sentry-go v0.11.0
 	github.com/gobuffalo/envy v1.6.15 // indirect
 	github.com/gobuffalo/packr v1.22.0

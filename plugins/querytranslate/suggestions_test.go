@@ -9,7 +9,7 @@ import (
 
 func TestHighlightResults(t *testing.T) {
 	Convey("highlight results: with highlight field", t, func() {
-		So(highlightResults(ESDoc{
+		So(addFieldHighlight(ESDoc{
 			Source: map[string]interface{}{
 				"title":       "Harry Potter Collection",
 				"description": "desc1",
@@ -36,7 +36,7 @@ func TestHighlightResults(t *testing.T) {
 		})
 	})
 	Convey("highlight results: without highlight field", t, func() {
-		So(highlightResults(ESDoc{
+		So(addFieldHighlight(ESDoc{
 			Source: map[string]interface{}{
 				"title":       "Harry Potter Collection",
 				"description": "desc1",
@@ -196,8 +196,8 @@ func TestPredictiveSuggestions(t *testing.T) {
 		}, &suggestions)
 		So(predictiveSuggestions, ShouldResemble, []SuggestionHIT{
 			{
-				Value: "batman sons",
-				Label: "batman <b class=\"highlight\">sons</b>",
+				Value: "bat sons",
+				Label: "bat <b class=\"highlight\">sons</b>",
 			},
 		})
 	})
@@ -219,8 +219,8 @@ func TestPredictiveSuggestions(t *testing.T) {
 		}, &suggestions)
 		So(predictiveSuggestions, ShouldResemble, []SuggestionHIT{
 			{
-				Value: "batman sons",
-				Label: "batman <b class=\"highlight\">sons</b>",
+				Value: "bat sons",
+				Label: "bat <b class=\"highlight\">sons</b>",
 			},
 		})
 	})
@@ -316,6 +316,8 @@ func TestExtractFieldsFromSource(t *testing.T) {
 func TestParseSuggestionLabel(t *testing.T) {
 	Convey("with spaces", t, func() {
 		ln := "english"
-		So(ParseSuggestionLabel(" pizzas ", &ln), ShouldResemble, "pizza")
+		So(parseSuggestionLabel(" pizzas ", SuggestionsConfig{
+			Language: &ln,
+		}), ShouldResemble, "pizza")
 	})
 }

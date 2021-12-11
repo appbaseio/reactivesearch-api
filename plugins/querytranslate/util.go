@@ -6,11 +6,21 @@ import (
 	"fmt"
 	"math"
 	"reflect"
+	"sort"
+	"strconv"
 	"strings"
+	"unicode"
 
 	"github.com/appbaseio/reactivesearch-api/util"
+	"github.com/bbalet/stopwords"
+	pluralize "github.com/gertd/go-pluralize"
+	"github.com/kljensen/snowball"
+	"github.com/lithammer/fuzzysearch/fuzzy"
+	"github.com/microcosm-cc/bluemonday"
 	es7 "github.com/olivere/elastic/v7"
 	log "github.com/sirupsen/logrus"
+	"golang.org/x/text/transform"
+	"golang.org/x/text/unicode/norm"
 )
 
 var RESERVED_KEYS_IN_RESPONSE = []string{"settings", "error"}
@@ -55,6 +65,65 @@ func (o QueryType) String() string {
 		"geo",
 		"suggestion",
 	}[o]
+}
+
+type SuggestionType int
+
+const (
+	Index SuggestionType = iota
+	Popular
+	Recent
+	Promoted
+)
+
+// String is the implementation of Stringer interface that returns the string representation of SuggestionType type.
+func (o SuggestionType) String() string {
+	return [...]string{
+		"index",
+		"popular",
+		"recent",
+		"promoted",
+	}[o]
+}
+
+// UnmarshalJSON is the implementation of the Unmarshaler interface for unmarshaling SuggestionType type.
+func (o *SuggestionType) UnmarshalJSON(bytes []byte) error {
+	var suggestionType string
+	err := json.Unmarshal(bytes, &suggestionType)
+	if err != nil {
+		return err
+	}
+	switch suggestionType {
+	case Index.String():
+		*o = Index
+	case Popular.String():
+		*o = Popular
+	case Recent.String():
+		*o = Recent
+	case Promoted.String():
+		*o = Promoted
+	default:
+		return fmt.Errorf("invalid suggestion type encountered: %v", suggestionType)
+	}
+	return nil
+}
+
+// MarshalJSON is the implementation of the Marshaler interface for marshaling SuggestionType type.
+func (o SuggestionType) MarshalJSON() ([]byte, error) {
+	var suggestionType string
+	switch o {
+	case Index:
+		suggestionType = Index.String()
+	case Popular:
+		suggestionType = Popular.String()
+	case Recent:
+		suggestionType = Recent.String()
+	case Promoted:
+		suggestionType = Promoted.String()
+	default:
+		return nil, fmt.Errorf("invalid suggestion type encountered: %v", o)
+	}
+	return json.Marshal(suggestionType)
 }
 
 // UnmarshalJSON is the implementation of the Unmarshaler interface for unmarshaling QueryType type.
@@ -500,7 +569,7 @@ func (query *Query) getQuery(rsQuery RSQuery) (*interface{}, map[string]interfac
 func getFilteredOptions(options map[string]interface{}) map[string]interface{} {
 	filteredOptions := make(map[string]interface{})
 	for k, v := range options {
-		if !isExist(EXCEPTION_KEYS_IN_QUERY, k) {
+		if !util.IsExists(k, EXCEPTION_KEYS_IN_QUERY) {
 			filteredOptions[k] = v
 		}
 	}
@@ -558,16 +627,6 @@ func createBoolQuery(operation string, query interface{}) *map[string]interface{
 
 // To check if an item is present in a slice
 func contains(s []interface{}, e string) bool {
-	for _, a := range s {
-		if a == e {
-			return true
-		}
-	}
-	return false
-}
-
-// To check if an item is present in a slice
-func isExist(s []string, e string) bool {
 	for _, a := range s {
 		if a == e {
 			return true
@@ -675,7 +734,7 @@ func ParseDataFieldToString(dataFieldAsMap map[string]interface{}) *DataField {
 // - Array of `DataField` struct
 // - Array of strings and `DataField` struct
 //
-// The following method normalizes the dataField input into a array of strings
+// The following function normalizes the dataField input into a array of strings
 // It also supports the fieldWeights in old format
 func NormalizedDataFields(dataField interface{}, fieldWeights []float64) []DataField {
 	dataFieldAsString, ok := dataField.(string)
@@ -785,4 +844,360 @@ func max(a, b int) int {
 		return b
 	}
 	return a
+}
+
+// compressAndOrder compresses a string by removing stopwords, replacing diacritics, stemming and then orders its tokens in ascending
+// It can be used to compare uniqueness of suggestions: e.g. "apple and iphone 12" is the same as a "apple iphone 12"
+func compressAndOrder(source string, config SuggestionsConfig) string {
+	language := "english"
+	if config.Language != nil {
+		language = *config.Language
+	}
+	target := stemmedTokens(replaceDiacritics(removeStopwords(source, config)), language)
+	sort.Strings(target)
+	return strings.Join(target, " ")
+}
+
+// stemmedTokens returns stemmed tokens of a string
+// based on the language. Includes language validation
+func stemmedTokens(source string, language string) []string {
+	tokens := strings.Split(source, " ")
+	languages := []string{"english", "russian", "spanish", "french", "swedish", "norwegian"}
+	index := sliceIndex(len(languages), func(i int) bool { return strings.Contains(languages[i], strings.ToLower(language)) })
+	if index == -1 {
+		language = "english"
+	} else {
+		language = languages[index]
+	}
+	var stemmedTokens []string
+	for _, token := range tokens {
+		// stem the token
+		stemmedToken, err := snowball.Stem(token, language, false)
+		if err == nil {
+			stemmedTokens = append(stemmedTokens, stemmedToken)
+		} else {
+			// in case of an error, return the tokenized string
+			stemmedTokens = append(stemmedTokens, token)
+		}
+	}
+	return stemmedTokens
+}
+
+// removeStopwords removes stopwords including considering the suggestions config
+func removeStopwords(value string, config SuggestionsConfig) string {
+	ln := "en"
+	if config.Language != nil && LanguagesToISOCode[*config.Language] != "" {
+		ln = LanguagesToISOCode[*config.Language]
+	}
+	var userStopwords []string
+	// load any custom stopwords the user has
+	// a highlighted phrase shouldn't be limited due to stopwords
+	if config.ApplyStopwords != nil && *config.ApplyStopwords {
+		// apply any custom stopwords
+		if config.Stopwords != nil {
+			userStopwords = *config.Stopwords
+		}
+	}
+	if len(userStopwords) > 0 {
+		stopwords.LoadStopWordsFromString(strings.Join(userStopwords, " "), ln, " ")
+	}
+	// we don't want to strip any numbers from the string
+	stopwords.DontStripDigits()
+	cleanContent := stopwords.CleanString(value, ln, true)
+	return normalizeValue(cleanContent)
+}
+
+// normalizeValue changes a query's value to remove special chars and spaces
+// e.g. Android - Black would be "android black"
+// e.g. "Wendy's burger  " would be "wendys burger"
+func normalizeValue(value string) string {
+	// Trim the spaces and tokenize
+	tokenizedValue := strings.Split(strings.TrimSpace(value), " ")
+	var finalValue []string
+	for _, token := range tokenizedValue {
+		sT := sanitizeString(token)
+		if len(sT) > 0 {
+			finalValue = append(finalValue, strings.ToLower(sT))
+		}
+	}
+	return strings.TrimSpace(strings.Join(finalValue, " "))
+}
+
+// A wrapper around normalizeValue to handle value transformation
+// for search, suggestion types of queries at query generation time
+func normalizeQueryValue(input *interface{}) *interface{} {
+	if input == nil {
+		return nil
+	}
+	valueAsInterface := *input
+	normalizedValue := sanitizeString(valueAsInterface.(string))
+	var outputValue interface{} = normalizedValue
+	return &outputValue
+}
+
+// Removes the extra spaces from a string
+func removeSpaces(str string) string {
+	return strings.Join(strings.Fields(str), " ")
+}
+
+// SanitizeString removes special chars and extra spaces from a string
+// e.g. "android - black" becomes "android black"
+// e.g. "android-black" doesn't change
+func sanitizeString(str string) string {
+	// remove extra spaces
+	s := str
+	tokenString := strings.Split(s, " ")
+	specialChars := []string{"'", "/", "{", "(", "[", "-", "+", ".", "^", ":", ",", "]", ")", "}"}
+	// Remove special characters when they're a token by themselves
+	for i, token := range tokenString {
+		if sliceIndex(len(specialChars), func(i int) bool { return token == specialChars[i] }) != -1 {
+			// replace with a space instead
+			tokenString[i] = " "
+		}
+	}
+	return removeSpaces(strings.Join(tokenString, " "))
+}
+
+// Returns the parsed suggestion label to be compared for duplicate suggestions
+func parseSuggestionLabel(label string, config SuggestionsConfig) string {
+	// trim spaces
+	parsedLabel := removeSpaces(label)
+	// convert to lower case
+	parsedLabel = removeStopwords(strings.ToLower(parsedLabel), config)
+	stemLanguage := "english"
+	if config.Language != nil {
+		if util.Contains(StemLanguages, *config.Language) {
+			stemLanguage = *config.Language
+		}
+	}
+	stemmedTokens := stemmedTokens(parsedLabel, stemLanguage)
+	// remove stopwords
+	return removeSpaces(strings.Join(stemmedTokens, " "))
+}
+
+func isMn(r rune) bool {
+	return unicode.Is(unicode.Mn, r) // Mn: nonspacing marks
+}
+
+// replaces diacritics with their equivalent
+func replaceDiacritics(query string) string {
+	t := transform.Chain(norm.NFD, transform.RemoveFunc(isMn), norm.NFC)
+	queryKey, _, _ := transform.String(t, query)
+	return queryKey
+}
+
+// Do this once for each unique policy, and use the policy for the life of the program
+// Policy creation/editing is not safe to use in multiple goroutines
+var p = bluemonday.StrictPolicy()
+
+// extracts the string from HTML tags
+func getTextFromHTML(body string) string {
+	// The policy can then be used to sanitize lots of input and it is safe to use the policy in multiple goroutines
+	html := p.Sanitize(
+		body,
+	)
+
+	return html
+}
+
+// checks if a string is of type letter
+func isLetter(s string) bool {
+	for _, r := range s {
+		if (r < 'a' || r > 'z') && (r < 'A' || r > 'Z') {
+			return false
+		}
+	}
+	return true
+}
+
+// getPlural pluralizes a string passed as *interface type
+func getPlural(input *interface{}) *interface{} {
+	if input == nil {
+		return nil
+	}
+	if rsPluralize == nil {
+		rsPluralize = pluralize.NewClient()
+	}
+	// translate interface into string first
+	valueAsInterface := *input
+	valueAsString := sanitizeString(valueAsInterface.(string))
+
+	var valueTokens = strings.Split(valueAsString, " ")
+	var lastWord = valueTokens[len(valueTokens)-1]
+	pluralString := valueAsString
+	if isLetter(lastWord) {
+		// is letter, can pluralize
+		pluralString = rsPluralize.Plural(valueAsString)
+	}
+	// returning the plural string as *interface
+	var returnValue interface{} = pluralString
+	return &returnValue
+}
+
+// findMatch matches the user query against the field value to return scores and matched tokens
+// This supports fuzzy matching in addition to normalized matching (i.e. after stopwords removal and stemming)
+func findMatch(fieldValueRaw string, userQueryRaw string, config SuggestionsConfig) RankField {
+	// remove stopwords from fieldValue and userQuery
+	fieldValue := removeStopwords(fieldValueRaw, config)
+	userQuery := removeStopwords(userQueryRaw, config)
+	var rankField = RankField{
+		fieldValue:    fieldValue,
+		userQuery:     userQuery,
+		score:         0,
+		matchedTokens: nil,
+	}
+	stemLanguage := "english"
+	if config.Language != nil {
+		if util.Contains(StemLanguages, *config.Language) {
+			stemLanguage = *config.Language
+		}
+	}
+	fieldValues := strings.Split(fieldValue, " ")
+	stemmedFieldValues := stemmedTokens(fieldValue, stemLanguage)
+	stemmeduserQuery := stemmedTokens(userQuery, stemLanguage)
+	foundMatches := make([]bool, len(stemmeduserQuery))
+
+	for i, token := range stemmeduserQuery {
+		// eliminate single char tokens from consideration
+		if len(token) > 1 {
+			foundMatch := false
+			// start with the default distance of 1.0
+			bestDistance := 1.0
+			ranks := fuzzy.RankFindNormalizedFold(token, stemmedFieldValues)
+			var bestTarget string
+			for _, element := range ranks {
+				switch element.Distance {
+				case 0:
+					// Perfect match, we can skip iteration and just return
+					bestDistance = math.Min(0, bestDistance)
+					foundMatch = true
+					bestTarget = element.Target
+				case 1:
+					// 1 edit distance
+					bestDistance = math.Min(1.0, bestDistance)
+					foundMatch = true
+					if bestTarget == "" {
+						bestTarget = element.Target
+					}
+				}
+			}
+			matchIndex := sliceIndex(len(stemmedFieldValues), func(i int) bool {
+				return stemmedFieldValues[i] == bestTarget
+			})
+			if matchIndex != -1 {
+				rankField.matchedTokens = append(rankField.matchedTokens, fieldValues[matchIndex])
+			}
+			foundMatches[i] = foundMatch
+			// token of user query matched one of the tokens of field values
+			if foundMatch {
+				rankField.score += 1.0 - (bestDistance / 2)
+				// add score for a consecutive match
+				if i > 0 {
+					if foundMatches[i] && foundMatches[i-1] {
+						rankField.score += 0.1
+					}
+				}
+			}
+		}
+	}
+	return rankField
+}
+
+// Util method to extract the fields from elasticsearch source object
+// It can handle nested objects and arrays too.
+// Example 1:
+// Input: { a: 1, b: { b_1: 2, b_2: 3}}
+// Output: ['a', 'b.b_1', 'b.b_2']
+// Example 2:
+// Input: { a: 1, b: [{c: 1}, {d: 2}, {c: 3}]}
+// Output: ['a', 'b.c', 'b.d']
+func extractFieldsFromSource(source map[string]interface{}) []string {
+	dataFields := []string{}
+	var sourceAsInterface interface{} = source
+	dataFieldsMap := getFields(sourceAsInterface, "")
+	for k := range dataFieldsMap {
+		dataFields = append(dataFields, k)
+	}
+	return dataFields
+}
+
+// getFields is used by extractFieldsFromSource to recursively extract
+// fields from the hit or a sub-part of the hit response tree
+func getFields(source interface{}, prefix string) map[string]interface{} {
+	dataFields := make(map[string]interface{})
+	sourceAsMap, ok := source.(map[string]interface{})
+	if ok {
+		for field := range sourceAsMap {
+			var key string
+			if prefix != "" {
+				key = prefix + "." + field
+			} else {
+				key = field
+			}
+			if sourceAsMap[field] != nil {
+				mapValue, ok := sourceAsMap[field].(map[string]interface{})
+				if ok {
+					mergeMaps(dataFields, getFields(mapValue, key))
+				} else {
+					mapValueAsArray, ok := sourceAsMap[field].([]interface{})
+					if ok {
+						mergeMaps(dataFields, getFields(mapValueAsArray, key))
+					} else {
+						mergeMaps(dataFields, map[string]interface{}{
+							key: true,
+						})
+					}
+				}
+			}
+		}
+	} else {
+		sourceAsArray, ok := source.([]interface{})
+		if ok {
+			for field := range sourceAsArray {
+				var key string
+				if prefix != "" {
+					key = prefix
+				} else {
+					key = strconv.Itoa(field)
+				}
+				if sourceAsArray[field] != nil {
+					mapValue, ok := sourceAsArray[field].(map[string]interface{})
+					if ok {
+						mergeMaps(dataFields, getFields(mapValue, key))
+					} else {
+						mapValueAsArray, ok := sourceAsArray[field].([]interface{})
+						if ok {
+							mergeMaps(dataFields, getFields(mapValueAsArray, key))
+						} else {
+							mergeMaps(dataFields, map[string]interface{}{
+								key: true,
+							})
+						}
+					}
+				}
+			}
+		}
+	}
+
+	return dataFields
+}
+
+// addFieldHighlight highlights the fields of the hit based on the highlight value in a new ParsedSource key
+func addFieldHighlight(source ESDoc) ESDoc {
+	source.ParsedSource = make(map[string]interface{})
+	// clone map
+	for k, v := range source.Source {
+		source.ParsedSource[k] = v
+	}
+
+	if source.Highlight != nil {
+		for highlightItem, highlightedValue := range source.Highlight {
+			highlightValueArray, ok := highlightedValue.([]interface{})
+			if ok && len(highlightValueArray) > 0 {
+				highlightValue := highlightValueArray[0]
+				source.ParsedSource[highlightItem] = highlightValue
+			}
+		}
+	}
+	return source
 }
