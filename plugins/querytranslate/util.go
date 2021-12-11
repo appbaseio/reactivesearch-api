@@ -568,7 +568,7 @@ func (query *Query) getQuery(rsQuery RSQuery) (*interface{}, map[string]interfac
 func getFilteredOptions(options map[string]interface{}) map[string]interface{} {
 	filteredOptions := make(map[string]interface{})
 	for k, v := range options {
-		if !isExist(EXCEPTION_KEYS_IN_QUERY, k) {
+		if !util.IsExists(k, EXCEPTION_KEYS_IN_QUERY) {
 			filteredOptions[k] = v
 		}
 	}
@@ -626,16 +626,6 @@ func createBoolQuery(operation string, query interface{}) *map[string]interface{
 
 // To check if an item is present in a slice
 func contains(s []interface{}, e string) bool {
-	for _, a := range s {
-		if a == e {
-			return true
-		}
-	}
-	return false
-}
-
-// To check if an item is present in a slice
-func isExist(s []string, e string) bool {
 	for _, a := range s {
 		if a == e {
 			return true
@@ -743,7 +733,7 @@ func ParseDataFieldToString(dataFieldAsMap map[string]interface{}) *DataField {
 // - Array of `DataField` struct
 // - Array of strings and `DataField` struct
 //
-// The following method normalizes the dataField input into a array of strings
+// The following function normalizes the dataField input into a array of strings
 // It also supports the fieldWeights in old format
 func NormalizedDataFields(dataField interface{}, fieldWeights []float64) []DataField {
 	dataFieldAsString, ok := dataField.(string)
@@ -993,6 +983,7 @@ func getTextFromHTML(body string) string {
 }
 
 // findMatch matches the user query against the field value to return scores and matched tokens
+// This supports fuzzy matching in addition to normalized matching (i.e. after stopwords removal and stemming)
 func findMatch(fieldValueRaw string, userQueryRaw string, config SuggestionsConfig) RankField {
 	// remove stopwords from fieldValue and userQuery
 	fieldValue := removeStopwords(fieldValueRaw, config)
@@ -1013,8 +1004,8 @@ func findMatch(fieldValueRaw string, userQueryRaw string, config SuggestionsConf
 	stemmedFieldValues := stemmedTokens(fieldValue, stemLanguage)
 	stemmeduserQuery := stemmedTokens(userQuery, stemLanguage)
 	foundMatches := make([]bool, len(stemmeduserQuery))
-	for i, token := range stemmeduserQuery {
 
+	for i, token := range stemmeduserQuery {
 		// eliminate single char tokens from consideration
 		if len(token) > 1 {
 			foundMatch := false
@@ -1079,7 +1070,7 @@ func extractFieldsFromSource(source map[string]interface{}) []string {
 }
 
 // getFields is used by extractFieldsFromSource to recursively extract
-// fields from
+// fields from the hit or a sub-part of the hit response tree
 func getFields(source interface{}, prefix string) map[string]interface{} {
 	dataFields := make(map[string]interface{})
 	sourceAsMap, ok := source.(map[string]interface{})
