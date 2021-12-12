@@ -6,6 +6,7 @@ require (
 	github.com/denisbrodbeck/machineid v1.0.1
 	github.com/dgraph-io/badger/v3 v3.2103.1
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
+	github.com/gdexlab/go-render v1.0.1 // indirect
 	github.com/gertd/go-pluralize v0.1.7 // indirect
 	github.com/getsentry/sentry-go v0.11.0
 	github.com/gobuffalo/envy v1.6.15 // indirect

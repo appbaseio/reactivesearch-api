@@ -13,6 +13,7 @@ import (
 	"github.com/appbaseio/reactivesearch-api/model/index"
 	"github.com/appbaseio/reactivesearch-api/util"
 	"github.com/buger/jsonparser"
+	"github.com/gdexlab/go-render/render"
 	"github.com/gorilla/mux"
 	es7 "github.com/olivere/elastic/v7"
 	log "github.com/sirupsen/logrus"
@@ -168,6 +169,13 @@ func (r *QueryTranslate) search() http.HandlerFunc {
 									util.WriteBackError(w, "error while parsing ES response to hits: "+err.Error(), http.StatusInternalServerError)
 									return
 								}
+
+								// TODO: Remove
+								fmt.Println("suggestions config: ", render.AsCode(suggestionsConfig))
+								fmt.Println("raw hits: ", rawHits)
+								fmt.Println("query size is: ", *query.Size)
+								fmt.Println("suggestions should be empty: ", render.AsCode(suggestions))
+
 								// extract category suggestions
 								if query.CategoryField != nil && *query.CategoryField != "" {
 									categories, dataType2, _, err2 := jsonparser.Get(value, "aggregations", *query.CategoryField, "buckets")
@@ -199,6 +207,7 @@ func (r *QueryTranslate) search() http.HandlerFunc {
 									}
 								}
 
+								fmt.Println("suggestions after category extraction: ", render.AsCode(suggestions))
 								// extract index suggestions
 								suggestions = append(suggestions, getIndexSuggestions(suggestionsConfig, rawHits)...)
 								if query.Size != nil {
@@ -207,10 +216,12 @@ func (r *QueryTranslate) search() http.HandlerFunc {
 										suggestions = suggestions[:*query.Size]
 									}
 								}
+								fmt.Println("suggestions after index extraction: ", render.AsCode(suggestions))
 							}
 						}
 					}
 				}
+				// modify meta keys in the response
 				if isSuggestionRequest {
 					responseInByte, err := json.Marshal(suggestions)
 					if err != nil {
