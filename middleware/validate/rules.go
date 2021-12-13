@@ -16,6 +16,15 @@ func IndexingRequest() middleware.Middleware {
 	return IsIndexingRequest
 }
 
+// Check if a request is of indexing type and accordingly
+// invoke a middleware.
+// We need to check if the request is of indexing type.
+// This is done by checking the category to be of type "docs"
+// and ACL's should be one of:
+// ['index', 'update', 'update_by_query', 'create', 'bulk', 'delete' 'delete_by_query']
+//
+// If it "is" an indexing request, then the proper method
+// will be called to invoke indexing rules.
 func IsIndexingRequest(h http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
 		// Check if the request being passed is an indexing
