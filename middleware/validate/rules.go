@@ -13,10 +13,10 @@ import (
 
 // Check if a request is of indexing type
 func IndexingRequest() middleware.Middleware {
-	return isIndexingRequest
+	return IsIndexingRequest
 }
 
-func isIndexingRequest(h http.Handler) http.HandlerFunc {
+func IsIndexingRequest(h http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
 		// Check if the request being passed is an indexing
 		// request.
@@ -37,5 +37,8 @@ func isIndexingRequest(h http.Handler) http.HandlerFunc {
 			return
 		}
 
+		println(reqCategory, reqCategory.String())
+
+		h(w, req)
 	}
 }
