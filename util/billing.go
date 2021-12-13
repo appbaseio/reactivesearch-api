@@ -341,7 +341,7 @@ func setMaxErrorTime(subscriptionDetails Subscripton) {
 	if strings.TrimSpace(subscriptionDetails.SubscriptionID) != "" {
 		if !subscriptionDetails.SubscriptonCanceled {
 			currentTime := time.Now().Unix()                                    // seconds
-			subscriptionDuration := subscriptionDetails.CreatedAt - currentTime // seconds
+			subscriptionDuration := currentTime - subscriptionDetails.CreatedAt // seconds
 			if subscriptionDuration > 2*30*24*60*60 {
 				maxErrorTime = 720 // in hrs (4 weeks)
 			}
