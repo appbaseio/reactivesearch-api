@@ -58,6 +58,7 @@ func IsIndexingRequest(h http.HandlerFunc) http.HandlerFunc {
 		if err != nil {
 			log.Errorln(logTag, ":", err)
 			telemetry.WriteBackErrorWithTelemetry(req, w, fmt.Sprintf(errMsg, "acl"), http.StatusInternalServerError)
+			h(w, req)
 			return
 		}
 
