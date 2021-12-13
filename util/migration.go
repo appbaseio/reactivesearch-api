@@ -57,7 +57,7 @@ type IndexMappingResponse map[string]interface{}
 // expected to be handled by the calling function.
 func GetIndexMapping(indexName string, ctx context.Context) (resp IndexMappingResponse, err error) {
 	// Keep a constant variable to store the URL
-	MappingBaseURL := GetESURL() + "/%s/_mapping"
+	MappingBaseURL := "/%s/_mapping"
 
 	// Create a perform request struct
 	requestOptions := es7.PerformRequestOptions{
