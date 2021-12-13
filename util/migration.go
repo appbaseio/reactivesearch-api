@@ -3,6 +3,7 @@ package util
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 
 	es7 "github.com/olivere/elastic/v7"
 )
@@ -61,7 +62,7 @@ func GetIndexMapping(indexName string, ctx context.Context) (resp IndexMappingRe
 	// Create a perform request struct
 	requestOptions := es7.PerformRequestOptions{
 		Method: "GET",
-		Path:   MappingBaseURL,
+		Path:   fmt.Sprintf(MappingBaseURL, indexName),
 	}
 
 	// Declare the mapping response variable
