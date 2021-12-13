@@ -1,12 +1,11 @@
 package util
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
-	"net/http"
 
-	log "github.com/sirupsen/logrus"
+	es7 "github.com/olivere/elastic/v7"
 )
 
 type Error struct {
@@ -41,7 +40,11 @@ func AddMigrationScript(migration Migration) {
 type IndexMappingResponse map[string]interface{}
 
 // Fetch the index mapping manually using the following function
-// Make the request directly and return the response accordingly.
+// Make the request using an es7 client method that allows direct
+// requests. Using that gives us the addition of automatic request
+// retries in case the first request fails (due to ES not being
+// available?)
+//
 // We will extract the unstructured JSON data from the endpoint
 // and parse it to a map so that it can be directly used.
 //
@@ -52,29 +55,26 @@ type IndexMappingResponse map[string]interface{}
 // occurs while extracting the JSON data. There will be no verbose
 // if the error occurs while hitting the endpoint. Those errors are
 // expected to be handled by the calling function.
-func GetIndexMapping(indexName string) (resp IndexMappingResponse, err error) {
+func GetIndexMapping(indexName string, ctx context.Context) (resp IndexMappingResponse, err error) {
 	// Keep a constant variable to store the URL
-	MappingBaseURL := GetESURL() + "/%s/_mapping"
+	MappingBaseURL := "/%s/_mapping"
+
+	// Create a perform request struct
+	requestOptions := es7.PerformRequestOptions{
+		Method: "GET",
+		Path:   fmt.Sprintf(MappingBaseURL, indexName),
+	}
 
 	// Declare the mapping response variable
 	var data IndexMappingResponse
 
-	response, err := http.Get(fmt.Sprintf(MappingBaseURL, indexName))
+	response, err := GetClient7().PerformRequest(ctx, requestOptions)
 
 	if err != nil {
 		return data, err
 	}
 
-	defer response.Body.Close()
-
-	// Read the body into bytes and try to unmarshall
-	// into JSON data.
-	body, err := ioutil.ReadAll(response.Body)
-	if err != nil {
-		log.Errorln("error while reading JSON data: ", err)
-		return data, err
-	}
-
-	json.Unmarshal(body, &data)
+	// Unmarshall the JSON data
+	err = json.Unmarshal(response.Body, &data)
 	return data, err
 }
