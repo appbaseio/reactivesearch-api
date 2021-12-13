@@ -33,6 +33,7 @@ func list() []middleware.Middleware {
 		validate.Operation(),
 		validate.Category(),
 		telemetry.Recorder(),
+		validate.IndexingRequest(),
 	}
 }
 
