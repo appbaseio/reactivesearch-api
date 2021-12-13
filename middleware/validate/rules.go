@@ -7,6 +7,7 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"github.com/appbaseio/reactivesearch-api/middleware"
+	"github.com/appbaseio/reactivesearch-api/model/acl"
 	"github.com/appbaseio/reactivesearch-api/model/category"
 	"github.com/appbaseio/reactivesearch-api/plugins/telemetry"
 )
@@ -46,12 +47,46 @@ func IsIndexingRequest(h http.HandlerFunc) http.HandlerFunc {
 			return
 		}
 
-		// Check if the category is of type docs and accordingly
-		// check the ACL's as well.
-		if *reqCategory == category.Docs {
-			println("Category is docs")
+		// If the category is not docs, just return
+		if *reqCategory != category.Docs {
+			h(w, req)
+			return
+		}
+
+		// Check if the ACL matches.
+		reqAcl, err := acl.FromContext(ctx)
+		if err != nil {
+			log.Errorln(logTag, ":", err)
+			telemetry.WriteBackErrorWithTelemetry(req, w, fmt.Sprintf(errMsg, "acl"), http.StatusInternalServerError)
+			return
+		}
+
+		// Check if the ACL is valid for indexing
+		if isValidACLForIndexing(reqAcl) {
+			println("Valid ACL for indexing passed", reqAcl.String())
 		}
 
 		h(w, req)
 	}
+}
+
+// Check if the passed ACL is a valid value from the list
+// of the possible ACL's for an indexing request.
+//
+// We will just check if the value passed is present
+// in a predefined list.
+func isValidACLForIndexing(reqACL *acl.ACL) bool {
+	reqACLValue := *reqACL
+	switch reqACLValue {
+	case
+		acl.Index,
+		acl.Update,
+		acl.UpdateByQuery,
+		acl.Create,
+		acl.Bulk,
+		acl.Delete,
+		acl.DeleteByQuery:
+		return true
+	}
+	return false
 }
