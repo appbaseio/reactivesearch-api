@@ -37,7 +37,11 @@ func IsIndexingRequest(h http.HandlerFunc) http.HandlerFunc {
 			return
 		}
 
-		println(reqCategory, reqCategory.String())
+		// Check if the category is of type docs and accordingly
+		// check the ACL's as well.
+		if *reqCategory == category.Docs {
+			println("Category is docs")
+		}
 
 		h(w, req)
 	}
