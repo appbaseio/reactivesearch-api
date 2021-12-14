@@ -19,13 +19,6 @@ func IndexingRequest() middleware.Middleware {
 
 // Check if a request is of indexing type and accordingly
 // invoke a middleware.
-// We need to check if the request is of indexing type.
-// This is done by checking the category to be of type "docs"
-// and ACL's should be one of:
-// ['index', 'update', 'update_by_query', 'create', 'bulk', 'delete' 'delete_by_query']
-//
-// If it "is" an indexing request, then the proper method
-// will be called to invoke indexing rules.
 func IsIndexingRequest(h http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
 		// Check if the request being passed is an indexing
@@ -69,6 +62,39 @@ func IsIndexingRequest(h http.HandlerFunc) http.HandlerFunc {
 
 		h(w, req)
 	}
+}
+
+// Check if the request is of indexing type.
+// This is done by checking the category to be of type "docs"
+// and ACL's should be one of:
+// ['index', 'update', 'update_by_query', 'create', 'bulk', 'delete' 'delete_by_query']
+func isIndexingRequest(req *http.Request) bool {
+	ctx := req.Context()
+
+	reqCategory, err := category.FromContext(ctx)
+	if err != nil {
+		log.Errorln(logTag, ":", err)
+		return false
+	}
+
+	// If the category is not docs, just return
+	if *reqCategory != category.Docs {
+		return false
+	}
+
+	// Check if the ACL matches.
+	reqAcl, err := acl.FromContext(ctx)
+	if err != nil {
+		log.Errorln(logTag, ":", err)
+		return false
+	}
+
+	// Check if the ACL is valid for indexing
+	if !isValidACLForIndexing(reqAcl) {
+		return false
+	}
+
+	return true
 }
 
 // Check if the passed ACL is a valid value from the list
