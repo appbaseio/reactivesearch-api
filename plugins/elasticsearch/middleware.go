@@ -60,7 +60,6 @@ func list() []middleware.Middleware {
 		validate.Operation(),
 		validate.PermissionExpiry(),
 		intercept,
-		validate.IndexingRequest(),
 	}
 }
 
