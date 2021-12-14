@@ -39,15 +39,15 @@ func (query *Query) generateTermQuery() (*interface{}, error) {
 
 	if len(valueAsArray) != 0 {
 		// Use default query format as or
-		queryFormat := Or
+		queryFormat := Or.String()
 		if query.QueryFormat != nil {
 			queryFormat = *query.QueryFormat
 		}
 		queryType := "term"
-		if queryFormat.String() == Or.String() {
+		if queryFormat == Or.String() {
 			queryType = "terms"
 		}
-		if queryFormat.String() == Or.String() {
+		if queryFormat == Or.String() {
 			var should = []map[string]interface{}{
 				{
 					queryType: map[string]interface{}{

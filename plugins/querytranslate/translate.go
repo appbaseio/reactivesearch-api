@@ -268,7 +268,33 @@ func (query *Query) buildQueryOptions() (map[string]interface{}, error) {
 				rangeAggs["max"] = map[string]interface{}{
 					"max": map[string]interface{}{"field": dataField}}
 			}
-			if util.Contains(tempAggs, "histogram") && query.Value != nil {
+
+			if util.Contains(tempAggs, "histogram") {
+				if query.CalendarInterval != nil {
+					// run date histogram query
+					rangeAggs[dataField] = map[string]interface{}{
+						"date_histogram": map[string]interface{}{
+							"field":             dataField,
+							"calendar_interval": *query.CalendarInterval,
+						},
+					}
+				} else if query.Value != nil {
+					rangeValue, err := query.getRangeValue(*query.Value)
+					if err != nil {
+						log.Errorln(logTag, ":", err)
+					} else if rangeValue != nil && rangeValue.Start != nil && rangeValue.End != nil {
+						rangeAggs[dataField] = map[string]interface{}{
+							"histogram": map[string]interface{}{
+								"field":    dataField,
+								"interval": getValidInterval(query.Interval, *rangeValue),
+								"offset":   rangeValue.Start,
+							},
+						}
+					}
+				}
+			}
+
+			if util.Contains(tempAggs, "date-histogram") && query.Value != nil {
 				rangeValue, err := query.getRangeValue(*query.Value)
 				if err != nil {
 					log.Errorln(logTag, ":", err)
@@ -282,6 +308,7 @@ func (query *Query) buildQueryOptions() (map[string]interface{}, error) {
 					}
 				}
 			}
+
 			if query.NestedField != nil {
 				tempNestedField := *query.NestedField
 				queryWithOptions["aggs"] = map[string]interface{}{

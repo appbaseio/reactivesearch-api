@@ -69,6 +69,12 @@ func (query *Query) getRangeQuery(value interface{}) (*map[string]interface{}, e
 	if rangeValue.End != nil {
 		tempRangeQuery["lte"] = rangeValue.End
 	}
+	// apply query format for date queries
+	if query.QueryFormat != nil &&
+		*query.QueryFormat != And.String() &&
+		*query.QueryFormat != Or.String() {
+		tempRangeQuery["format"] = *query.QueryFormat
+	}
 	if rangeValue.Boost != nil {
 		tempRangeQuery["boost"] = rangeValue.Boost
 	}
