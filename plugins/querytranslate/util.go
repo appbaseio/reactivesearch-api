@@ -275,7 +275,7 @@ type Query struct {
 	ID                          *string                    `json:"id,omitempty"` // component id
 	Type                        QueryType                  `json:"type,omitempty"`
 	React                       *map[string]interface{}    `json:"react,omitempty"`
-	QueryFormat                 *QueryFormat               `json:"queryFormat,omitempty"`
+	QueryFormat                 *string                    `json:"queryFormat,omitempty"`
 	DataField                   interface{}                `json:"dataField,omitempty"`
 	CategoryField               *string                    `json:"categoryField,omitempty"`
 	CategoryValue               *interface{}               `json:"categoryValue,omitempty"`
@@ -323,6 +323,7 @@ type Query struct {
 	ApplyStopwords              *bool                      `json:"applyStopwords,omitempty"`
 	Stopwords                   *[]string                  `json:"customStopwords,omitempty"`
 	SearchLanguage              *string                    `json:"searchLanguage,omitempty"`
+	CalendarInterval            *string                    `json:"calendarinterval,omitempty"`
 }
 
 type DataField struct {

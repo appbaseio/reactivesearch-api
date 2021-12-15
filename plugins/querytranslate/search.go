@@ -119,7 +119,7 @@ func (query *Query) generateShouldQuery() (interface{}, error) {
 	}
 
 	// Use default query format as or
-	queryFormat := Or
+	queryFormat := Or.String()
 	if query.QueryFormat != nil {
 		queryFormat = *query.QueryFormat
 	}
@@ -127,7 +127,7 @@ func (query *Query) generateShouldQuery() (interface{}, error) {
 	if query.QueryString != nil && *query.QueryString {
 		return map[string]interface{}{
 			"query":            query.Value,
-			"default_operator": queryFormat.String(),
+			"default_operator": queryFormat,
 		}, nil
 	}
 
@@ -135,11 +135,11 @@ func (query *Query) generateShouldQuery() (interface{}, error) {
 		return map[string]interface{}{
 			"query":            query.Value,
 			"fields":           fields,
-			"default_operator": queryFormat.String(),
+			"default_operator": queryFormat,
 		}, nil
 	}
 
-	if queryFormat.String() == And.String() {
+	if queryFormat == And.String() {
 		var finalQuery = []map[string]interface{}{
 			{
 				"multi_match": map[string]interface{}{
