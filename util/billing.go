@@ -85,7 +85,6 @@ type ClusterPlan struct {
 	FeatureCustomEvents    bool   `json:"feature_custom_events"`
 	FeatureSuggestions     bool   `json:"feature_suggestions"`
 	FeatureRules           bool   `json:"feature_rules"`
-	FeatureFunctions       bool   `json:"feature_functions"`
 	FeatureSearchRelevancy bool   `json:"feature_search_relevancy"`
 	FeatureSearchGrader    bool   `json:"feature_search_grader"`
 	FeatureEcommerce       bool   `json:"feature_ecommerce"`
@@ -142,7 +141,6 @@ type ArcInstanceDetails struct {
 	FeatureCustomEvents    bool                   `json:"feature_custom_events"`
 	FeatureSuggestions     bool                   `json:"feature_suggestions"`
 	FeatureRules           bool                   `json:"feature_rules"`
-	FeatureFunctions       bool                   `json:"feature_functions"`
 	FeatureSearchRelevancy bool                   `json:"feature_search_relevancy"`
 	FeatureSearchGrader    bool                   `json:"feature_search_grader"`
 	FeatureEcommerce       bool                   `json:"feature_ecommerce"`
@@ -246,7 +244,6 @@ func getArcInstance(arcID string) (ArcInstance, error) {
 		SetFeatureSuggestions(arcInstanceByID.FeatureSuggestions)
 		SetFeatureCustomEvents(arcInstanceByID.FeatureCustomEvents)
 		SetFeatureRules(arcInstanceByID.FeatureRules)
-		SetFeatureFunctions(arcInstanceByID.FeatureFunctions)
 		SetFeatureSearchRelevancy(arcInstanceByID.FeatureSearchRelevancy)
 		SetFeatureSearchGrader(arcInstanceByID.FeatureSearchGrader)
 		SetFeatureEcommerce(arcInstanceByID.FeatureEcommerce)
@@ -314,7 +311,6 @@ func getArcClusterInstance(clusterID string) (ArcInstance, error) {
 		SetFeatureSuggestions(arcInstanceDetails.FeatureSuggestions)
 		SetFeatureCustomEvents(arcInstanceDetails.FeatureCustomEvents)
 		SetFeatureRules(arcInstanceDetails.FeatureRules)
-		SetFeatureFunctions(arcInstanceDetails.FeatureFunctions)
 		SetFeatureSearchRelevancy(arcInstanceDetails.FeatureSearchRelevancy)
 		SetFeatureSearchGrader(arcInstanceDetails.FeatureSearchGrader)
 		SetFeatureEcommerce(arcInstanceDetails.FeatureEcommerce)
@@ -402,7 +398,6 @@ func getClusterPlan(clusterID string) (ClusterPlan, error) {
 	SetFeatureSuggestions(response.Plan.FeatureSuggestions)
 	SetFeatureCustomEvents(response.Plan.FeatureCustomEvents)
 	SetFeatureRules(response.Plan.FeatureRules)
-	SetFeatureFunctions(response.Plan.FeatureFunctions)
 	SetFeatureSearchRelevancy(response.Plan.FeatureSearchRelevancy)
 	SetFeatureSearchGrader(response.Plan.FeatureSearchGrader)
 	SetFeatureEcommerce(response.Plan.FeatureEcommerce)
