@@ -74,8 +74,6 @@ var (
 	FeatureSuggestions string
 	// FeatureRules for testing
 	FeatureRules string
-	// FeatureFunctions for testing
-	FeatureFunctions string
 	// FeatureSearchRelevancy for testing
 	FeatureSearchRelevancy string
 	// FeatureSearchGrader for testing
@@ -308,9 +306,6 @@ func main() {
 	}
 	if FeatureRules == "true" {
 		util.SetFeatureRules(true)
-	}
-	if FeatureFunctions == "true" {
-		util.SetFeatureFunctions(true)
 	}
 	if FeatureSearchRelevancy == "true" {
 		util.SetFeatureSearchRelevancy(true)

@@ -39,19 +39,6 @@ func SetFeatureRules(val bool) {
 	featureRules = val
 }
 
-// Feature functions
-var featureFunctions bool
-
-// GetFeatureFunctions returns the featureFunctions
-func GetFeatureFunctions() bool {
-	return featureFunctions
-}
-
-// SetFeatureFunctions sets the featureFunctions
-func SetFeatureFunctions(val bool) {
-	featureFunctions = val
-}
-
 // Feature search settings
 var featureSearchRelevancy bool
 
