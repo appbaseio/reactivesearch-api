@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"os"
 	"strings"
+	"time"
 
 	log "github.com/sirupsen/logrus"
 )
@@ -96,6 +97,8 @@ type ClusterPlan struct {
 	SubscriptionID         string `json:"subscription_id"`
 	ClusterID              string `json:"cluster_id"`
 	NumberOfMachines       int64  `json:"number_of_machines"`
+	SubscriptionCanceled   bool   `json:"subscription_canceled"`
+	CreatedAt              int64  `json:"created_at"`
 }
 
 // ArcUsageResponse stores the response from ACCAPI
@@ -234,6 +237,11 @@ func getArcInstance(arcID string) (ArcInstance, error) {
 		arcInstanceByID := response.ArcInstances[0]
 		arcInstance.SubscriptionID = arcInstanceByID.SubscriptionID
 		SetTimeValidity(arcInstanceByID.TimeValidity)
+		setMaxErrorTime(Subscripton{
+			SubscriptionID:      arcInstanceByID.SubscriptionID,
+			SubscriptonCanceled: arcInstanceByID.SubscriptionCanceled,
+			CreatedAt:           arcInstanceByID.CreatedAt,
+		})
 		SetTier(arcInstanceByID.Tier)
 		SetFeatureSuggestions(arcInstanceByID.FeatureSuggestions)
 		SetFeatureCustomEvents(arcInstanceByID.FeatureCustomEvents)
@@ -297,6 +305,11 @@ func getArcClusterInstance(clusterID string) (ArcInstance, error) {
 		arcInstanceDetails := response.ArcInstances[0]
 		arcInstance.SubscriptionID = arcInstanceDetails.SubscriptionID
 		SetTimeValidity(arcInstanceDetails.TimeValidity)
+		setMaxErrorTime(Subscripton{
+			SubscriptionID:      arcInstanceDetails.SubscriptionID,
+			SubscriptonCanceled: arcInstanceDetails.SubscriptionCanceled,
+			CreatedAt:           arcInstanceDetails.CreatedAt,
+		})
 		SetTier(arcInstanceDetails.Tier)
 		SetFeatureSuggestions(arcInstanceDetails.FeatureSuggestions)
 		SetFeatureCustomEvents(arcInstanceDetails.FeatureCustomEvents)
@@ -312,6 +325,28 @@ func getArcClusterInstance(clusterID string) (ArcInstance, error) {
 		return arcInstance, errors.New("no valid instance found for the provided CLUSTER_ID")
 	}
 	return arcInstance, nil
+}
+
+type Subscripton struct {
+	SubscriptonCanceled bool
+	SubscriptionID      string
+	CreatedAt           int64
+}
+
+func setMaxErrorTime(subscriptionDetails Subscripton) {
+	// if subscription id is present and
+	// subscription is not cancelled
+	// and subscription creation date is at least 2 months (60 days) from now
+	// then increase the error reporting time to 4 weeks
+	if strings.TrimSpace(subscriptionDetails.SubscriptionID) != "" {
+		if !subscriptionDetails.SubscriptonCanceled {
+			currentTime := time.Now().Unix()                                    // seconds
+			subscriptionDuration := currentTime - subscriptionDetails.CreatedAt // seconds
+			if subscriptionDuration > 2*30*24*60*60 {
+				maxErrorTime = 720 // in hrs (4 weeks)
+			}
+		}
+	}
 }
 
 // Fetches the cluster plan details for the encrypted cluster id
@@ -359,6 +394,11 @@ func getClusterPlan(clusterID string) (ClusterPlan, error) {
 	// Set the plan for clusters
 	SetTier(response.Plan.Tier)
 	SetTimeValidity(response.Plan.TimeValidity)
+	setMaxErrorTime(Subscripton{
+		SubscriptionID:      response.Plan.SubscriptionID,
+		SubscriptonCanceled: response.Plan.SubscriptionCanceled,
+		CreatedAt:           response.Plan.CreatedAt,
+	})
 	SetFeatureSuggestions(response.Plan.FeatureSuggestions)
 	SetFeatureCustomEvents(response.Plan.FeatureCustomEvents)
 	SetFeatureRules(response.Plan.FeatureRules)
