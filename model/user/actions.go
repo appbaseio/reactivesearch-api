@@ -117,7 +117,6 @@ var developCategories = []category.Category{
 var searchRelevancyCategories = append([]category.Category{
 	category.Rules,
 	category.Suggestions,
-	category.Functions,
 	category.ReactiveSearch,
 	category.SearchRelevancy,
 	category.Synonyms,

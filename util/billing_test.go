@@ -30,10 +30,6 @@ func TestBilling(t *testing.T) {
 			SetFeatureRules(true)
 			So(GetFeatureRules(), ShouldEqual, true)
 		})
-		Convey("Set FeatureFunctions", func() {
-			SetFeatureFunctions(true)
-			So(GetFeatureFunctions(), ShouldEqual, true)
-		})
 		Convey("Set FeatureSearchRelevancy", func() {
 			SetFeatureSearchRelevancy(true)
 			So(GetFeatureSearchRelevancy(), ShouldEqual, true)

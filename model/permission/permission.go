@@ -76,7 +76,6 @@ type Limits struct {
 	SuggestionsLimit      int64 `json:"suggestions_limit"`
 	StreamsLimit          int64 `json:"streams_limit"`
 	AuthLimit             int64 `json:"auth_limit"`
-	FunctionsLimit        int64 `json:"functions_limit"`
 	ReactiveSearchLimit   int64 `json:"reactivesearch_limit"`
 	SearchRelevancyLimit  int64 `json:"searchrelevancy_limit"`
 	SearchGraderLimit     int64 `json:"searchgrader_limit"`
@@ -264,7 +263,6 @@ func SetLimits(limits *Limits, isAdmin bool) Options {
 			SuggestionsLimit:      getNormalizedLimit(limits.SuggestionsLimit, defaults.SuggestionsLimit),
 			StreamsLimit:          getNormalizedLimit(limits.StreamsLimit, defaults.StreamsLimit),
 			AuthLimit:             getNormalizedLimit(limits.AuthLimit, defaults.AuthLimit),
-			FunctionsLimit:        getNormalizedLimit(limits.FunctionsLimit, defaults.FunctionsLimit),
 			ReactiveSearchLimit:   getNormalizedLimit(limits.ReactiveSearchLimit, defaults.ReactiveSearchLimit),
 			SearchRelevancyLimit:  getNormalizedLimit(limits.SearchRelevancyLimit, defaults.SearchRelevancyLimit),
 			SearchGraderLimit:     getNormalizedLimit(limits.SearchGraderLimit, defaults.SearchGraderLimit),
@@ -536,8 +534,6 @@ func (p *Permission) GetLimitFor(c category.Category) (int64, error) {
 		return p.Limits.AuthLimit, nil
 	case category.Streams:
 		return p.Limits.StreamsLimit, nil
-	case category.Functions:
-		return p.Limits.FunctionsLimit, nil
 	case category.ReactiveSearch:
 		return p.Limits.ReactiveSearchLimit, nil
 	case category.SearchRelevancy:
@@ -664,9 +660,6 @@ func (p *Permission) GetPatch(rolePatched bool) (map[string]interface{}, error) 
 		}
 		if p.Limits.AuthLimit != 0 {
 			limits["auth_limit"] = p.Limits.AuthLimit
-		}
-		if p.Limits.FunctionsLimit != 0 {
-			limits["functions_limit"] = p.Limits.FunctionsLimit
 		}
 		if p.Limits.ReactiveSearchLimit != 0 {
 			limits["reactivesearch_limit"] = p.Limits.ReactiveSearchLimit

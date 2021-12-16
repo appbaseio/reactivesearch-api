@@ -56,7 +56,6 @@ var defaultUser = map[string]interface{}{
 		"streams",
 		"rules",
 		"suggestions",
-		"functions",
 		"reactivesearch",
 		"searchrelevancy",
 		"auth",
