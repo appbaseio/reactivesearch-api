@@ -40,19 +40,21 @@ type SuggestionESResponse struct {
 // TODO: Add MinCount to recent suggestion
 // RecentSuggestionsOptions represents the options to configure recent suggestions
 type RecentSuggestionsOptions struct {
-	Size     *int    `json:"size,omitempty"`
-	Index    *string `json:"index,omitempty"`
-	MinHits  *int    `json:"minHits,omitempty"`
-	MinChars *int    `json:"minChars,omitempty"`
+	Size         *int              `json:"size,omitempty"`
+	Index        *string           `json:"index,omitempty"`
+	MinHits      *int              `json:"minHits,omitempty"`
+	MinChars     *int              `json:"minChars,omitempty"`
+	CustomEvents map[string]string `json:"customEvents,omitempty"`
 }
 
 // PopularSuggestionsOptions represents the options to configure popular suggestions
 type PopularSuggestionsOptions struct {
-	Size       *int    `json:"size,omitempty"`
-	Index      *string `json:"index,omitempty"`
-	ShowGlobal *bool   `json:"showGlobal,omitempty"`
-	MinChars   *int    `json:"minChars,omitempty"`
-	MinCount   *int    `json:"minCount,omitempty"`
+	Size         *int              `json:"size,omitempty"`
+	Index        *string           `json:"index,omitempty"`
+	ShowGlobal   *bool             `json:"showGlobal,omitempty"`
+	MinChars     *int              `json:"minChars,omitempty"`
+	MinCount     *int              `json:"minCount,omitempty"`
+	CustomEvents map[string]string `json:"customEvents,omitempty"`
 }
 
 // DocField contains properties of the field and the doc it belongs to
