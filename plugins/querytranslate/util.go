@@ -890,22 +890,30 @@ func removeStopwords(value string, config SuggestionsConfig) string {
 	if config.Language != nil && LanguagesToISOCode[*config.Language] != "" {
 		ln = LanguagesToISOCode[*config.Language]
 	}
-	var userStopwords []string
+	var userStopwords = make(map[string]string)
 	// load any custom stopwords the user has
 	// a highlighted phrase shouldn't be limited due to stopwords
 	if config.ApplyStopwords != nil && *config.ApplyStopwords {
 		// apply any custom stopwords
-		if config.Stopwords != nil {
-			userStopwords = *config.Stopwords
+		if config.Stopwords != nil && len(*config.Stopwords) > 0 {
+			for _, word := range *config.Stopwords {
+				userStopwords[word] = ""
+			}
 		}
 	}
-	if len(userStopwords) > 0 {
-		stopwords.LoadStopWordsFromString(strings.Join(userStopwords, " "), ln, " ")
-	}
+
 	// we don't want to strip any numbers from the string
 	stopwords.DontStripDigits()
-	cleanContent := stopwords.CleanString(value, ln, true)
-	return normalizeValue(cleanContent)
+	cleanContent := strings.Split(stopwords.CleanString(value, ln, true), " ")
+	if len(userStopwords) > 0 {
+		for i, token := range cleanContent {
+			if _, ok := userStopwords[token]; ok {
+				cleanContent[i] = " "
+			}
+		}
+	}
+
+	return normalizeValue(strings.Join(cleanContent, " "))
 }
 
 // normalizeValue changes a query's value to remove special chars and spaces
