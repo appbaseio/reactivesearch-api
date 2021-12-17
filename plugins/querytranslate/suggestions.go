@@ -394,8 +394,9 @@ func getPredictiveSuggestions(config SuggestionsConfig, suggestions *[]Suggestio
 			normQuery := normalizeValue(config.Value)
 			queryValues := strings.Split(normQuery, " ")
 			// remove stopwords as long as query itself isn't completely removed
-			if removeStopwords(normQuery, config) != "" {
-				queryValues = strings.Split(removeStopwords(normQuery, config), " ")
+			removedStopwords := removeStopwords(normQuery, config)
+			if removedStopwords != "" {
+				queryValues = strings.Split(removedStopwords, " ")
 			}
 			stemmedQvls := stemmedTokens(strings.Join(queryValues, " "), language)
 			suffixStarts := 0
