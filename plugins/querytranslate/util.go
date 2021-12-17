@@ -333,12 +333,13 @@ type DataField struct {
 
 // Settings represents the search settings
 type Settings struct {
-	RecordAnalytics  *bool                   `json:"recordAnalytics,omitempty"`
-	UserID           *string                 `json:"userId,omitempty"`
-	CustomEvents     *map[string]interface{} `json:"customEvents,omitempty"`
-	EnableQueryRules *bool                   `json:"enableQueryRules,omitempty"`
-	UseCache         *bool                   `json:"useCache,omitempty"`
-	QueryRule        *map[string]interface{} `json:"queryRule,omitempty"`
+	RecordAnalytics       *bool                   `json:"recordAnalytics,omitempty"`
+	UserID                *string                 `json:"userId,omitempty"`
+	CustomEvents          *map[string]interface{} `json:"customEvents,omitempty"`
+	EnableQueryRules      *bool                   `json:"enableQueryRules,omitempty"`
+	EnableSearchRelevancy *bool                   `json:"enableSearchRelevancy,omitempty"`
+	UseCache              *bool                   `json:"useCache,omitempty"`
+	QueryRule             *map[string]interface{} `json:"queryRule,omitempty"`
 }
 
 // RSQuery represents the request body
