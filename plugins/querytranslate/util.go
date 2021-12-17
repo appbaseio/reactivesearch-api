@@ -26,7 +26,7 @@ import (
 var RESERVED_KEYS_IN_RESPONSE = []string{"settings", "error"}
 
 // EXCEPTION_KEYS_IN_QUERY represents the keys which will not get copied while combining the queries using `react` prop
-var EXCEPTION_KEYS_IN_QUERY = []string{"size", "from", "aggs", "_source", "sort", "query"}
+var EXCEPTION_KEYS_IN_QUERY = []string{"size", "from", "aggs", "_source", "query"}
 
 type FunctionObject struct {
 	// works with Saturation
