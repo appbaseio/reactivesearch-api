@@ -82,6 +82,7 @@ func (es *elasticsearch) handler() http.HandlerFunc {
 
 		// convert body to string string as oliver Perform request can accept io.Reader, String, interface
 		body, err := ioutil.ReadAll(r.Body)
+		log.Debug(len(body), err)
 		if len(body) > 0 {
 			requestOptions.Body = string(body)
 		}
