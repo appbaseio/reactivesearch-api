@@ -109,8 +109,13 @@ type LicenseData struct {
 }
 
 func init() {
+	dsn := "https://3b9b4fcedbf4460c90844f51e8634229@o27644.ingest.sentry.io/6063525"
+	// Use prod dsn for customers
+	if Billing == "true" || ClusterBilling == "true" || HostedBilling == "true" {
+		dsn = "https://ecb33128f4514511b2ee7ecaf2e4e689@o27644.ingest.sentry.io/6125897"
+	}
 	err := sentry.Init(sentry.ClientOptions{
-		Dsn:              "https://3b9b4fcedbf4460c90844f51e8634229@o27644.ingest.sentry.io/6063525",
+		Dsn:              dsn,
 		Release:          util.Version,
 		AttachStacktrace: true,
 		Debug:            true,
