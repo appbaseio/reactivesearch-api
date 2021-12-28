@@ -10,9 +10,10 @@ require (
 	github.com/getsentry/sentry-go v0.11.0
 	github.com/gobuffalo/envy v1.6.15 // indirect
 	github.com/gobuffalo/packr v1.22.0
-	github.com/google/uuid v1.1.2
+	github.com/google/uuid v1.3.0
 	github.com/gorilla/mux v1.7.1
 	github.com/hashicorp/go-version v1.3.0
+	github.com/keygen-sh/keygen-go v1.11.0 // indirect
 	github.com/kljensen/snowball v0.6.0
 	github.com/lithammer/fuzzysearch v1.1.3
 	github.com/mackerelio/go-osstat v0.2.0
@@ -28,7 +29,7 @@ require (
 	github.com/sirupsen/logrus v1.4.2
 	github.com/smartystreets/goconvey v1.6.4
 	github.com/ulule/limiter v2.2.0+incompatible
-	golang.org/x/crypto v0.0.0-20200622213623-75b288015ac9
+	golang.org/x/crypto v0.0.0-20210813211128-0a44fdfbc16e
 	golang.org/x/net v0.0.0-20211007125505-59d4e928ea9d // indirect
 	golang.org/x/sys v0.0.0-20210630005230-0f9fa26af87c
 	golang.org/x/text v0.3.7

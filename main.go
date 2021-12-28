@@ -30,6 +30,7 @@ import (
 	"github.com/denisbrodbeck/machineid"
 	"github.com/getsentry/sentry-go"
 	"github.com/gorilla/mux"
+	"github.com/keygen-sh/keygen-go"
 	"github.com/mackerelio/go-osstat/memory"
 	"github.com/pkg/profile"
 	"github.com/robfig/cron"
@@ -97,6 +98,14 @@ func (h *SentryErrorHook) Fire(e *logrus.Entry) error {
 	// send event to sentry
 	sentry.CaptureMessage(e.Message)
 	return nil
+}
+
+type LicenseDetails struct {
+	Created string `json:"created"`
+	Expiry  string `json:"expiry"`
+}
+type LicenseData struct {
+	License LicenseDetails `json:"license"`
 }
 
 func init() {
@@ -246,37 +255,69 @@ func main() {
 	util.Opensource = Opensource
 	util.Version = Version
 
-	if Billing == "true" {
-		log.Println("You're running ReactiveSearch with billing module enabled.")
-		util.ReportUsage()
-		cronjob := cron.New()
-		cronjob.AddFunc(interval, util.ReportUsage)
-		cronjob.Start()
-		if IgnoreBillingMiddleware != "true" {
-			router.Use(util.BillingMiddleware)
+	// check for offline license key
+	licenseKey := os.Getenv("LICENSE_KEY")
+	if licenseKey != "" {
+		keygen.PublicKey = util.AppbasePublicKey
+		// validate offline license key
+		dataset, err := keygen.Genuine(licenseKey, keygen.SchemeCodeEd25519)
+		switch {
+		case err == keygen.ErrLicenseNotGenuine:
+			log.Fatalln("License key is not genuine, please contact support@appbase.io")
+			return
+		case err != nil:
+			log.Fatalln("License key validation failed, please contact support@appbase.io", err.Error())
+			return
 		}
-	} else if HostedBilling == "true" {
-		log.Println("You're running ReactiveSearch with hosted billing module enabled.")
-		util.ReportHostedArcUsage()
-		cronjob := cron.New()
-		cronjob.AddFunc(interval, util.ReportHostedArcUsage)
-		cronjob.Start()
-		if IgnoreBillingMiddleware != "true" {
-			router.Use(util.BillingMiddleware)
+		// Validate expiry date for genuine license
+		var licenseData LicenseData
+		err2 := json.Unmarshal(dataset, &licenseData)
+		if err2 != nil {
+			log.Fatalln(logTag, "Error encountered while reading the license details:", err2)
 		}
-	} else if ClusterBilling == "true" {
-		log.Println("You're running ReactiveSearch with cluster billing module enabled.")
-		util.SetClusterPlan()
-		// refresh plan
-		cronjob := cron.New()
-		cronjob.AddFunc(interval, util.SetClusterPlan)
-		cronjob.Start()
+		expiryTime, err := time.Parse(time.RFC3339, licenseData.License.Expiry)
+		if err != nil {
+			log.Fatalln(logTag, ":", err)
+		}
+		util.SetExpiryTime(expiryTime)
+		util.SetDefaultTier()
+		// use billing middleware
 		if IgnoreBillingMiddleware != "true" {
-			router.Use(util.BillingMiddleware)
+			router.Use(util.BillingMiddlewareOffline)
 		}
 	} else {
-		util.SetDefaultTier()
-		log.Println("You're running ReactiveSearch with billing module disabled.")
+		if Billing == "true" {
+			log.Println("You're running ReactiveSearch with billing module enabled.")
+			util.ReportUsage()
+			cronjob := cron.New()
+			cronjob.AddFunc(interval, util.ReportUsage)
+			cronjob.Start()
+			if IgnoreBillingMiddleware != "true" {
+				router.Use(util.BillingMiddleware)
+			}
+		} else if HostedBilling == "true" {
+			log.Println("You're running ReactiveSearch with hosted billing module enabled.")
+			util.ReportHostedArcUsage()
+			cronjob := cron.New()
+			cronjob.AddFunc(interval, util.ReportHostedArcUsage)
+			cronjob.Start()
+			if IgnoreBillingMiddleware != "true" {
+				router.Use(util.BillingMiddleware)
+			}
+		} else if ClusterBilling == "true" {
+			log.Println("You're running ReactiveSearch with cluster billing module enabled.")
+			util.SetClusterPlan()
+			// refresh plan
+			cronjob := cron.New()
+			cronjob.AddFunc(interval, util.SetClusterPlan)
+			cronjob.Start()
+			if IgnoreBillingMiddleware != "true" {
+				router.Use(util.BillingMiddleware)
+			}
+		} else {
+			util.SetDefaultTier()
+			log.Println("You're running ReactiveSearch with billing module disabled.")
+		}
 	}
 
 	// Testing Env: Set variables based on the build blags
