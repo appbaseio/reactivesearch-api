@@ -45,4 +45,4 @@ jobs:
           command_timeout: 3600s
           envs: VERSION
           script: |
-            sh build.sh ${VERSION} > /dev/null 2>&1 &
+            source ~/.bash_profile && sh build.sh ${VERSION} > /dev/null 2>&1 &
