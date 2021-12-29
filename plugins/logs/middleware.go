@@ -213,13 +213,16 @@ func (l *Logs) recordResponse(w *httptest.ResponseRecorder, r *http.Request, req
 		}
 	}
 	requestBodyToStore := string(parsedBody[:util.Min(len(parsedBody), 1000000)])
+	rec.Request = Request{
+		URI:     r.URL.Path,
+		Headers: headers,
+		Body:    requestBodyToStore,
+		Method:  r.Method,
+	}
+	rec.Response.Body = string(responseBody[:util.Min(len(responseBody), 1000000)])
+
+	// If category is RS, extract the time took for the request as well.
 	if *reqCategory == category.ReactiveSearch {
-		rec.Request = Request{
-			URI:     r.URL.Path,
-			Headers: headers,
-			Body:    requestBodyToStore,
-			Method:  r.Method,
-		}
 		// read success response from context
 		tookValue, err := jsonparser.GetFloat(w.Body.Bytes(), "settings", "took")
 		if err != nil {
@@ -228,18 +231,8 @@ func (l *Logs) recordResponse(w *httptest.ResponseRecorder, r *http.Request, req
 			// Set took value
 			rec.Response.Took = &tookValue
 		}
-		// read error response from response recorder body
-		rec.Response.Body = string(responseBody[:util.Min(len(responseBody), 1000000)])
-	} else {
-		// record request
-		rec.Request = Request{
-			URI:     r.URL.Path,
-			Headers: headers,
-			Body:    requestBodyToStore,
-			Method:  r.Method,
-		}
-		rec.Response.Body = string(responseBody[:util.Min(len(responseBody), 1000000)])
 	}
+
 	marshalledLog, err := json.Marshal(rec)
 	if err != nil {
 		log.Errorln(logTag, "error encountered while marshalling record :", err)
