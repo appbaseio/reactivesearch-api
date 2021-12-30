@@ -158,15 +158,15 @@ func (l *Logs) recordResponse(w *httptest.ResponseRecorder, r *http.Request, req
 	rec.Indices = reqIndices
 	rec.Category = reqCategory.String()
 	requestBody := strings.Split(string(reqBody), "\r\n\r\n")
-	var parsedBody []byte
+	parsedBody := []byte(requestBody[0])
 	if len(requestBody) > 1 {
 		parsedBody = []byte(requestBody[1])
-	} else {
-		parsedBody = []byte(requestBody[0])
 	}
 	// apply suggestion category
+	log.Debug(logTag, ": passed category is, ", reqCategory.String())
 	if *reqCategory == category.ReactiveSearch {
 		reqBody, err := request.FromContext(ctx)
+		log.Debug(logTag, ": reqBody is: ", reqBody)
 		if err != nil {
 			log.Errorln(logTag, "error encountered while reading request body:", err)
 		}
