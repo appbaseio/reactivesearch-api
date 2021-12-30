@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/appbaseio/reactivesearch-api/util/iplookup"
+	"github.com/gdexlab/go-render/render"
 
 	"github.com/appbaseio/reactivesearch-api/middleware"
 	"github.com/appbaseio/reactivesearch-api/middleware/classify"
@@ -86,6 +87,7 @@ func saveRequestToCtx(h http.HandlerFunc) http.HandlerFunc {
 			telemetry.WriteBackErrorWithTelemetry(req, w, fmt.Sprintf("Can't parse request body: %v", err), http.StatusBadRequest)
 			return
 		}
+		log.Debug(logTag, ": new request body is, ", render.AsCode(body))
 		// Set request body as nil to avoid memory issues (storage duplication)
 		req.Body = nil
 		originalCtx := request.NewContext(req.Context(), body)
