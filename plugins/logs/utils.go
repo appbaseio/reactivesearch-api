@@ -466,3 +466,16 @@ const LogsMappings = `{
       }
    }
 }`
+
+// Store the list of blacklisted paths
+var blacklistedPaths = [...]string{"/_cluster/health"}
+
+// Check if the passed path is blacklisted for logging or not.
+func isPathBlacklisted(path string) bool {
+	for _, blacklistedPath := range blacklistedPaths {
+		if blacklistedPath == path {
+			return true
+		}
+	}
+	return false
+}
