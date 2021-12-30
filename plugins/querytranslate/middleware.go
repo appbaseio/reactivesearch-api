@@ -86,18 +86,17 @@ func saveRequestToCtx(h http.HandlerFunc) http.HandlerFunc {
 			telemetry.WriteBackErrorWithTelemetry(req, w, fmt.Sprintf("Can't parse request body: %v", err), http.StatusBadRequest)
 			return
 		}
-
-		// Before continuing, call the internalRecorder so
-		// request is logged before any modifications are done.
-		logs.Instance().InternalRecorder(h, w, req)
-		log.Debug(logTag, ": logged the request through internal recorder, ", body)
-
 		// Set request body as nil to avoid memory issues (storage duplication)
 		req.Body = nil
 		originalCtx := request.NewContext(req.Context(), body)
 		req = req.WithContext(originalCtx)
 		ctx := NewContext(req.Context(), body)
 		req = req.WithContext(ctx)
+
+		// Before continuing, call the internalRecorder so
+		// request is logged before any modifications are done.
+		logs.Instance().InternalRecorder(h, w, req)
+		log.Debug(logTag, ": logged the request through internal recorder")
 
 		h(w, req)
 	}

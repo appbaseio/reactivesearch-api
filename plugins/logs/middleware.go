@@ -115,7 +115,6 @@ func (l *Logs) recorder(h http.HandlerFunc) http.HandlerFunc {
 // recorder did earlier.
 func (l *Logs) InternalRecorder(h http.HandlerFunc, w http.ResponseWriter, r *http.Request) {
 	dumpRequest, err := httputil.DumpRequest(r, true)
-	log.Debug(logTag, ": dumped request is, ", dumpRequest)
 	if err != nil {
 		log.Errorln(logTag, ":", err.Error())
 		return
