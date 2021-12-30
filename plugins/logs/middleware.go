@@ -105,25 +105,33 @@ func (l *Logs) recorder(h http.HandlerFunc) http.HandlerFunc {
 			h(w, r)
 			return
 		}
-		dumpRequest, err := httputil.DumpRequest(r, true)
-		if err != nil {
-			log.Errorln(logTag, ":", err.Error())
-			return
-		}
 
-		// Serve using response recorder
-		respRecorder := httptest.NewRecorder()
-		h(respRecorder, r)
-		// Copy the response to writer
-		for k, v := range respRecorder.Header() {
-			w.Header()[k] = v
-		}
-		w.WriteHeader(respRecorder.Code)
-		w.Write(respRecorder.Body.Bytes())
-		// Record the document
-
-		go l.recordResponse(respRecorder, r, dumpRequest)
+		// Run the internal recorder
+		l.InternalRecorder(h, w, r)
 	}
+}
+
+// Just an internal recorder that will do exactly what the
+// recorder did earlier.
+func (l *Logs) InternalRecorder(h http.HandlerFunc, w http.ResponseWriter, r *http.Request) {
+	dumpRequest, err := httputil.DumpRequest(r, true)
+	if err != nil {
+		log.Errorln(logTag, ":", err.Error())
+		return
+	}
+
+	// Serve using response recorder
+	respRecorder := httptest.NewRecorder()
+	h(respRecorder, r)
+	// Copy the response to writer
+	for k, v := range respRecorder.Header() {
+		w.Header()[k] = v
+	}
+	w.WriteHeader(respRecorder.Code)
+	w.Write(respRecorder.Body.Bytes())
+	// Record the document
+
+	go l.recordResponse(respRecorder, r, dumpRequest)
 }
 
 type Query struct {
