@@ -79,11 +79,6 @@ func classifyOp(h http.HandlerFunc) http.HandlerFunc {
 
 func saveRequestToCtx(h http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
-		// Before continuing, call the internalRecorder so
-		// request is logged before any modifications are done.
-		logs.Instance().InternalRecorder(h, w, req)
-		log.Debug(logTag, ": logged the request through internal recorder")
-
 		var body RSQuery
 		err := json.NewDecoder(req.Body).Decode(&body)
 		if err != nil {
@@ -91,6 +86,11 @@ func saveRequestToCtx(h http.HandlerFunc) http.HandlerFunc {
 			telemetry.WriteBackErrorWithTelemetry(req, w, fmt.Sprintf("Can't parse request body: %v", err), http.StatusBadRequest)
 			return
 		}
+
+		// Before continuing, call the internalRecorder so
+		// request is logged before any modifications are done.
+		logs.Instance().InternalRecorder(h, w, req)
+		log.Debug(logTag, ": logged the request through internal recorder, ", body)
 
 		// Set request body as nil to avoid memory issues (storage duplication)
 		req.Body = nil
