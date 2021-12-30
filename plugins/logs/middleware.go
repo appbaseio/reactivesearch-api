@@ -161,6 +161,8 @@ func (l *Logs) recordResponse(w *httptest.ResponseRecorder, r *http.Request, req
 	var parsedBody []byte
 	if len(requestBody) > 1 {
 		parsedBody = []byte(requestBody[1])
+	} else {
+		parsedBody = []byte(requestBody[0])
 	}
 	// apply suggestion category
 	if *reqCategory == category.ReactiveSearch {
