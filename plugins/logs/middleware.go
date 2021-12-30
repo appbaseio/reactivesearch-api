@@ -216,6 +216,7 @@ func (l *Logs) recordResponse(w *httptest.ResponseRecorder, r *http.Request, req
 		}
 	}
 	requestBodyToStore := string(parsedBody[:util.Min(len(parsedBody), 1000000)])
+	log.Debug(logTag, ": requestBody to store is: ", render.AsCode(requestBodyToStore))
 	rec.Request = Request{
 		URI:     r.URL.Path,
 		Headers: headers,
