@@ -43,7 +43,7 @@ func list() []middleware.Middleware {
 		classifyOp,
 		classify.Indices(),
 		saveRequestToCtx, // middleware to save the request body in context
-		//logs.Recorder(), // log the request from saveRequesttoCtx
+		logs.Recorder(),
 		auth.BasicAuth(),
 		ratelimiter.Limit(),
 		validate.Sources(),
@@ -92,12 +92,6 @@ func saveRequestToCtx(h http.HandlerFunc) http.HandlerFunc {
 		req = req.WithContext(originalCtx)
 		ctx := NewContext(req.Context(), body)
 		req = req.WithContext(ctx)
-
-		// Before continuing, call the internalRecorder so
-		// request is logged before any modifications are done.
-		logs.Instance().InternalRecorder(h, w, req)
-		log.Debug(logTag, ": logged the request through internal recorder")
-
 		h(w, req)
 	}
 }
