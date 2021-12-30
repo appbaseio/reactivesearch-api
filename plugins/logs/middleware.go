@@ -163,7 +163,7 @@ func (l *Logs) recordResponse(w *httptest.ResponseRecorder, r *http.Request, req
 		parsedBody = []byte(requestBody[1])
 	}
 	// apply suggestion category
-	if *reqCategory == category.ReactiveSearch && false {
+	if *reqCategory == category.ReactiveSearch {
 		reqBody, err := request.FromContext(ctx)
 		if err != nil {
 			log.Errorln(logTag, "error encountered while reading request body:", err)
