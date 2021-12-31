@@ -21,7 +21,7 @@ jobs:
           port: 22
           envs: VERSION
           script: |
-            scl enable devtoolset-7 bash && sh build.sh ${VERSION}
+            sh build.sh ${VERSION}
       - name: Build AMI
         uses: hashicorp/packer-github-actions@master
         with:
@@ -45,4 +45,4 @@ jobs:
           command_timeout: 3600s
           envs: VERSION
           script: |
-            sh build.sh ${VERSION} > /dev/null 2>&1 &
+            scl enable devtoolset-7 bash && sh build.sh ${VERSION} > /dev/null 2>&1 &
