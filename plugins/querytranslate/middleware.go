@@ -84,7 +84,7 @@ func classifyACL(h http.HandlerFunc) http.HandlerFunc {
 		requestACL := acl.Reactivesearch
 
 		// Set ACL to validate if the URL is to validate
-		if strings.Contains(req.RequestURI, "validate") {
+		if strings.Contains(req.RequestURI, "/validate") {
 			requestACL = acl.Validate
 		}
 		ctx := acl.NewContext(req.Context(), &requestACL)
