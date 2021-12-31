@@ -14,6 +14,7 @@ import (
 	"github.com/appbaseio/reactivesearch-api/middleware/classify"
 	"github.com/appbaseio/reactivesearch-api/middleware/ratelimiter"
 	"github.com/appbaseio/reactivesearch-api/middleware/validate"
+	"github.com/appbaseio/reactivesearch-api/model/acl"
 	"github.com/appbaseio/reactivesearch-api/model/category"
 	"github.com/appbaseio/reactivesearch-api/model/op"
 	"github.com/appbaseio/reactivesearch-api/model/permission"
@@ -40,6 +41,7 @@ func (c *chain) Wrap(mw []middleware.Middleware, h http.HandlerFunc) http.Handle
 func list() []middleware.Middleware {
 	return []middleware.Middleware{
 		classifyCategory,
+		classifyACL,
 		classifyOp,
 		classify.Indices(),
 		saveRequestToCtx, // middleware to save the request body in context
@@ -73,6 +75,21 @@ func classifyOp(h http.HandlerFunc) http.HandlerFunc {
 		operation := op.Read
 		ctx := op.NewContext(req.Context(), &operation)
 		req = req.WithContext(ctx)
+		h(w, req)
+	}
+}
+
+func classifyACL(h http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, req *http.Request) {
+		requestACL := acl.ReactiveSearch
+
+		// Set ACL to validate if the URL is to validate
+		if strings.Contains(req.RequestURI, "validate") {
+			requestACL = acl.Validate
+		}
+		ctx := acl.NewContext(req.Context(), &requestACL)
+		req = req.WithContext(ctx)
+
 		h(w, req)
 	}
 }
