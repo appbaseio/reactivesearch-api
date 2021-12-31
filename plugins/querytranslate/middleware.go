@@ -81,7 +81,7 @@ func classifyOp(h http.HandlerFunc) http.HandlerFunc {
 
 func classifyACL(h http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
-		requestACL := acl.ReactiveSearch
+		requestACL := acl.Reactivesearch
 
 		// Set ACL to validate if the URL is to validate
 		if strings.Contains(req.RequestURI, "validate") {

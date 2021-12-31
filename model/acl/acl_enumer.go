@@ -8,9 +8,9 @@ import (
 	"fmt"
 )
 
-const _ACLName = "catbulkclustersearchremotecreatecountscriptsdeletedocsourcefield_capscloseanalyzeexistsgettemplateexplainindicesaliasaliasesdelete_by_querycacheindexmappingflushforcemergeupgradesettingsopenrecoverymappingsrolloverrefreshsegmentsshrinksplitshard_storesstatsingestvalidatemsearchmgetnodesmtermvectorsreindexupdate_by_queryrenderrank_evalsearch_shardssnapshottaskstermvectorsupdatereactive_search"
+const _ACLName = "catbulkclustersearchremotecreatecountscriptsdeletedocsourcefield_capscloseanalyzeexistsgettemplateexplainindicesaliasaliasesdelete_by_querycacheindexmappingflushforcemergeupgradesettingsopenrecoverymappingsrolloverrefreshsegmentsshrinksplitshard_storesstatsingestvalidatemsearchmgetnodesmtermvectorsreindexupdate_by_queryrenderrank_evalsearch_shardssnapshottaskstermvectorsupdatereactivesearch"
 
-var _ACLIndex = [...]uint16{0, 3, 7, 14, 20, 26, 32, 37, 44, 50, 53, 59, 69, 74, 81, 87, 90, 98, 105, 112, 117, 124, 139, 144, 149, 156, 161, 171, 178, 186, 190, 198, 206, 214, 221, 229, 235, 240, 252, 257, 263, 271, 278, 282, 287, 299, 306, 321, 327, 336, 349, 357, 362, 373, 379, 394}
+var _ACLIndex = [...]uint16{0, 3, 7, 14, 20, 26, 32, 37, 44, 50, 53, 59, 69, 74, 81, 87, 90, 98, 105, 112, 117, 124, 139, 144, 149, 156, 161, 171, 178, 186, 190, 198, 206, 214, 221, 229, 235, 240, 252, 257, 263, 271, 278, 282, 287, 299, 306, 321, 327, 336, 349, 357, 362, 373, 379, 393}
 
 func (i ACL) String() string {
 	if i < 0 || i >= ACL(len(_ACLIndex)-1) {
@@ -76,10 +76,10 @@ var _ACLNameToValueMap = map[string]ACL{
 	_ACLName[357:362]: 51,
 	_ACLName[362:373]: 52,
 	_ACLName[373:379]: 53,
-	_ACLName[379:394]: 54,
+	_ACLName[379:393]: 54,
 }
 
-// ACLString retrieves an enum value from the enum constants string name.
+// FromString retrieves an enum value from the enum constants string name.
 // Throws an error if the param is not part of the enum.
 func FromString(s string) (ACL, error) {
 	if val, ok := _ACLNameToValueMap[s]; ok {
@@ -93,7 +93,7 @@ func Values() []ACL {
 	return _ACLValues
 }
 
-// IsAACL returns "true" if the value is listed in the enum definition. "false" otherwise
+// IsAnACL returns "true" if the value is listed in the enum definition. "false" otherwise
 func (i ACL) IsAnACL() bool {
 	for _, v := range _ACLValues {
 		if i == v {

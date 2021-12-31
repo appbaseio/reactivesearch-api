@@ -70,7 +70,7 @@ const (
 	Tasks
 	Termvectors
 	Update
-	ReactiveSearch
+	Reactivesearch
 )
 
 // NewContext returns a new context with the given ACL.

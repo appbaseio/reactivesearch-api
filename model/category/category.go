@@ -280,7 +280,7 @@ func (c Category) ACLs() []acl.ACL {
 		}
 	case ReactiveSearch:
 		return []acl.ACL{
-			acl.ReactiveSearch,
+			acl.Reactivesearch,
 			acl.Validate,
 		}
 	default:
