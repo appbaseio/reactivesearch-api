@@ -21,7 +21,7 @@ jobs:
           port: 22
           envs: VERSION
           script: |
-            sh build.sh ${VERSION}
+            export PATH=$PATH:/usr/local/go/bin && sh build.sh ${VERSION}
       - name: Build AMI
         uses: hashicorp/packer-github-actions@master
         with:
