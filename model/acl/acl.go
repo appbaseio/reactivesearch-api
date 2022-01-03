@@ -71,6 +71,7 @@ const (
 	Termvectors
 	Update
 	Reactivesearch
+	ReactivesearchValidate
 )
 
 // NewContext returns a new context with the given ACL.

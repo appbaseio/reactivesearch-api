@@ -8,9 +8,9 @@ import (
 	"fmt"
 )
 
-const _ACLName = "catbulkclustersearchremotecreatecountscriptsdeletedocsourcefield_capscloseanalyzeexistsgettemplateexplainindicesaliasaliasesdelete_by_querycacheindexmappingflushforcemergeupgradesettingsopenrecoverymappingsrolloverrefreshsegmentsshrinksplitshard_storesstatsingestvalidatemsearchmgetnodesmtermvectorsreindexupdate_by_queryrenderrank_evalsearch_shardssnapshottaskstermvectorsupdatereactivesearch"
+const _ACLName = "catbulkclustersearchremotecreatecountscriptsdeletedocsourcefield_capscloseanalyzeexistsgettemplateexplainindicesaliasaliasesdelete_by_querycacheindexmappingflushforcemergeupgradesettingsopenrecoverymappingsrolloverrefreshsegmentsshrinksplitshard_storesstatsingestvalidatemsearchmgetnodesmtermvectorsreindexupdate_by_queryrenderrank_evalsearch_shardssnapshottaskstermvectorsupdatereactivesearchreactivesearch_validate"
 
-var _ACLIndex = [...]uint16{0, 3, 7, 14, 20, 26, 32, 37, 44, 50, 53, 59, 69, 74, 81, 87, 90, 98, 105, 112, 117, 124, 139, 144, 149, 156, 161, 171, 178, 186, 190, 198, 206, 214, 221, 229, 235, 240, 252, 257, 263, 271, 278, 282, 287, 299, 306, 321, 327, 336, 349, 357, 362, 373, 379, 393}
+var _ACLIndex = [...]uint16{0, 3, 7, 14, 20, 26, 32, 37, 44, 50, 53, 59, 69, 74, 81, 87, 90, 98, 105, 112, 117, 124, 139, 144, 149, 156, 161, 171, 178, 186, 190, 198, 206, 214, 221, 229, 235, 240, 252, 257, 263, 271, 278, 282, 287, 299, 306, 321, 327, 336, 349, 357, 362, 373, 379, 393, 416}
 
 func (i ACL) String() string {
 	if i < 0 || i >= ACL(len(_ACLIndex)-1) {
@@ -19,7 +19,7 @@ func (i ACL) String() string {
 	return _ACLName[_ACLIndex[i]:_ACLIndex[i+1]]
 }
 
-var _ACLValues = []ACL{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54}
+var _ACLValues = []ACL{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55}
 
 var _ACLNameToValueMap = map[string]ACL{
 	_ACLName[0:3]:     0,
@@ -77,6 +77,7 @@ var _ACLNameToValueMap = map[string]ACL{
 	_ACLName[362:373]: 52,
 	_ACLName[373:379]: 53,
 	_ACLName[379:393]: 54,
+	_ACLName[393:416]: 55,
 }
 
 // FromString retrieves an enum value from the enum constants string name.
