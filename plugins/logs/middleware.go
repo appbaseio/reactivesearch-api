@@ -16,6 +16,7 @@ import (
 	"github.com/appbaseio/reactivesearch-api/model/index"
 	"github.com/appbaseio/reactivesearch-api/model/request"
 	"github.com/appbaseio/reactivesearch-api/plugins/auth"
+	"github.com/appbaseio/reactivesearch-api/plugins/querytranslate"
 	"github.com/appbaseio/reactivesearch-api/plugins/telemetry"
 	"github.com/appbaseio/reactivesearch-api/util"
 	"github.com/buger/jsonparser"
@@ -175,14 +176,16 @@ func (l *Logs) recordResponse(w *httptest.ResponseRecorder, r *http.Request, req
 				log.Errorln(logTag, ":", err)
 			} else {
 				var query RSAPI
+				var queryRS querytranslate.RSQuery
 				err2 := json.Unmarshal(bodyInBytes, &query)
-				if err2 != nil {
+				err3 := json.Unmarshal(bodyInBytes, &queryRS)
+				if err2 != nil || err3 != nil {
 					log.Errorln(logTag, ":", err2)
 				} else {
 					log.Debug(logTag, ": parsed body before update, ", parsedBody)
 					parsedBody = bodyInBytes
 					log.Debug(logTag, ": parsed body after update, ", parsedBody)
-					log.Debug(logTag, ": request body after parsing to RSAPI: ", query)
+					log.Debug(logTag, ": request body after parsing to RSAPI: ", queryRS)
 					for _, query := range query.Query {
 						if query.Type == "suggestion" {
 							rec.Category = "suggestion"
