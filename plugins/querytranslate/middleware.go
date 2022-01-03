@@ -1,6 +1,7 @@
 package querytranslate
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -86,8 +87,15 @@ func saveRequestToCtx(h http.HandlerFunc) http.HandlerFunc {
 			telemetry.WriteBackErrorWithTelemetry(req, w, fmt.Sprintf("Can't parse request body: %v", err), http.StatusBadRequest)
 			return
 		}
+		// Extract the body
+		buf := new(bytes.Buffer)
+
+		// Replace original body with the same body
+		// since it was emptied when we read it.
+		req.Body = ioutil.NopCloser(buf)
+
 		// Set request body as nil to avoid memory issues (storage duplication)
-		req.Body = nil
+		// req.Body = nil
 		originalCtx := request.NewContext(req.Context(), body)
 		req = req.WithContext(originalCtx)
 		ctx := NewContext(req.Context(), body)
