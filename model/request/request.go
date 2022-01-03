@@ -2,8 +2,6 @@ package request
 
 import (
 	"context"
-
-	"github.com/prometheus/common/log"
 )
 
 type contextKey string
@@ -13,13 +11,13 @@ const CtxKey = contextKey("original-request")
 
 // NewContext returns a new context with the given request body.
 func NewContext(ctx context.Context, request interface{}) context.Context {
-	log.Debug("Creating new context with original-request body: ", request)
+	println("Creating new context with original-request body: ", request)
 	return context.WithValue(ctx, CtxKey, request)
 }
 
 // FromContext retrieves the api request body stored against the request.ctxKey from the context.
 func FromContext(ctx context.Context) (*interface{}, error) {
 	ctxRequest := ctx.Value(CtxKey)
-	log.Debug("Getting original request from context: ", ctxRequest)
+	println("Getting original request from context: ", ctxRequest)
 	return &ctxRequest, nil
 }
