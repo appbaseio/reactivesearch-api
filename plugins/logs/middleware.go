@@ -257,14 +257,14 @@ func (l *Logs) recordResponse(w *httptest.ResponseRecorder, r *http.Request, req
 	// Extract the response changes from context
 	responseChanges, err := responsechange.FromContext(ctx)
 	if err != nil {
-		log.Errorln(logTag, "No response changes added.")
+		log.Warningln(logTag, "No response changes added.")
 	} else {
 		rec.ResponseChanges = *responseChanges
 	}
 
 	marshalledLog, err := json.Marshal(rec)
 	if err != nil {
-		log.Errorln(logTag, "error encountered while marshalling record :", err)
+		log.Warningln(logTag, "error encountered while marshalling record :", err)
 		return
 	}
 	n, err := l.lumberjack.Write(marshalledLog)
