@@ -178,8 +178,7 @@ func (l *Logs) recordResponse(w *httptest.ResponseRecorder, r *http.Request, req
 				if err2 != nil {
 					log.Errorln(logTag, ":", err2)
 				} else {
-					//parsedBody = bodyInBytes
-
+					parsedBody = bodyInBytes
 					for _, query := range query.Query {
 						if query.Type == "suggestion" {
 							rec.Category = "suggestion"
