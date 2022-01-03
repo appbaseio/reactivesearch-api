@@ -87,7 +87,7 @@ func saveRequestToCtx(h http.HandlerFunc) http.HandlerFunc {
 			return
 		}
 		// Set request body as nil to avoid memory issues (storage duplication)
-		req.Body = nil
+		// req.Body = nil
 		originalCtx := request.NewContext(req.Context(), body)
 		req = req.WithContext(originalCtx)
 		ctx := NewContext(req.Context(), body)
