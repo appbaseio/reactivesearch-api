@@ -179,7 +179,9 @@ func (l *Logs) recordResponse(w *httptest.ResponseRecorder, r *http.Request, req
 				if err2 != nil {
 					log.Errorln(logTag, ":", err2)
 				} else {
+					log.Debug(logTag, ": parsed body before update, ", parsedBody)
 					parsedBody = bodyInBytes
+					log.Debug(logTag, ": parsed body after update, ", parsedBody)
 					log.Debug(logTag, ": request body after parsing to RSAPI: ", query)
 					for _, query := range query.Query {
 						if query.Type == "suggestion" {
