@@ -13,8 +13,11 @@ import (
 	"github.com/appbaseio/reactivesearch-api/middleware/classify"
 	"github.com/appbaseio/reactivesearch-api/middleware/validate"
 	"github.com/appbaseio/reactivesearch-api/model/category"
+	"github.com/appbaseio/reactivesearch-api/model/difference"
 	"github.com/appbaseio/reactivesearch-api/model/index"
 	"github.com/appbaseio/reactivesearch-api/model/request"
+	"github.com/appbaseio/reactivesearch-api/model/requestchange"
+	"github.com/appbaseio/reactivesearch-api/model/responsechange"
 	"github.com/appbaseio/reactivesearch-api/plugins/auth"
 	"github.com/appbaseio/reactivesearch-api/plugins/telemetry"
 	"github.com/appbaseio/reactivesearch-api/util"
@@ -85,23 +88,14 @@ type Response struct {
 	Body    string   `json:"body"`
 }
 
-type Difference struct {
-	URI     string   `json:"uri"`
-	Headers string   `json:"headers"`
-	Body    string   `json:"body"`
-	Method  string   `json:"method"`
-	Stage   string   `json:"stage"`
-	Took    *float64 `json:"took,omitempty"`
-}
-
 type record struct {
-	Indices         []string     `json:"indices"`
-	Category        string       `json:"category"`
-	Request         Request      `json:"request"`
-	Response        Response     `json:"response"`
-	RequestChanges  []Difference `json:"requestChanges"`
-	ResponseChanges []Difference `json:"responseChanges"`
-	Timestamp       time.Time    `json:"timestamp"`
+	Indices         []string                `json:"indices"`
+	Category        string                  `json:"category"`
+	Request         Request                 `json:"request"`
+	Response        Response                `json:"response"`
+	RequestChanges  []difference.Difference `json:"requestChanges"`
+	ResponseChanges []difference.Difference `json:"responseChanges"`
+	Timestamp       time.Time               `json:"timestamp"`
 }
 
 // Recorder records a log "record" for every request.
@@ -251,6 +245,23 @@ func (l *Logs) recordResponse(w *httptest.ResponseRecorder, r *http.Request, req
 		}
 		rec.Response.Body = string(responseBody[:util.Min(len(responseBody), 1000000)])
 	}
+
+	// Extract the request changes from context
+	requestChanges, err := requestchange.FromContext(ctx)
+	if err != nil {
+		log.Errorln(logTag, "No request changes added.")
+	} else {
+		rec.RequestChanges = *requestChanges
+	}
+
+	// Extract the response changes from context
+	responseChanges, err := responsechange.FromContext(ctx)
+	if err != nil {
+		log.Errorln(logTag, "No response changes added.")
+	} else {
+		rec.ResponseChanges = *responseChanges
+	}
+
 	marshalledLog, err := json.Marshal(rec)
 	if err != nil {
 		log.Errorln(logTag, "error encountered while marshalling record :", err)
