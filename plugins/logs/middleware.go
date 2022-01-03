@@ -85,12 +85,23 @@ type Response struct {
 	Body    string   `json:"body"`
 }
 
+type Difference struct {
+	URI     string   `json:"uri"`
+	Headers string   `json:"headers"`
+	Body    string   `json:"body"`
+	Method  string   `json:"method"`
+	Stage   string   `json:"stage"`
+	Took    *float64 `json:"took,omitempty"`
+}
+
 type record struct {
-	Indices   []string  `json:"indices"`
-	Category  string    `json:"category"`
-	Request   Request   `json:"request"`
-	Response  Response  `json:"response"`
-	Timestamp time.Time `json:"timestamp"`
+	Indices         []string     `json:"indices"`
+	Category        string       `json:"category"`
+	Request         Request      `json:"request"`
+	Response        Response     `json:"response"`
+	RequestChanges  []Difference `json:"requestChanges"`
+	ResponseChanges []Difference `json:"responseChanges"`
+	Timestamp       time.Time    `json:"timestamp"`
 }
 
 // Recorder records a log "record" for every request.
