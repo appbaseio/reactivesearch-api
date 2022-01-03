@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/appbaseio/reactivesearch-api/util/iplookup"
+	"github.com/gdexlab/go-render/render"
 
 	"github.com/appbaseio/reactivesearch-api/middleware"
 	"github.com/appbaseio/reactivesearch-api/middleware/classify"
@@ -88,6 +89,9 @@ func saveRequestToCtx(h http.HandlerFunc) http.HandlerFunc {
 		}
 		// Set request body as nil to avoid memory issues (storage duplication)
 		req.Body = nil
+
+		log.Debug(logTag, ": body before setting to context, ", render.AsCode(body))
+
 		originalCtx := request.NewContext(req.Context(), body)
 		req = req.WithContext(originalCtx)
 		ctx := NewContext(req.Context(), body)
