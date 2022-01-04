@@ -67,7 +67,7 @@ func CalculateBodyDiff(originalReq *http.Request, modifiedReq *http.Request) str
 func CalculateUriDiff(originalReq *http.Request, modifiedReq *http.Request) string {
 	dmp := diffmatchpatch.New()
 	URIDiffs := dmp.DiffMain(originalReq.URL.Path, modifiedReq.URL.Path, false)
-	log.Debug(": URI diff calculated, ", dmp.DiffPrettyText(URIDiffs))
+	println(": URI diff calculated, ", dmp.DiffPrettyText(URIDiffs))
 	return dmp.DiffPrettyText(URIDiffs)
 }
 
@@ -93,6 +93,6 @@ func CalculateHeaderDiff(originalReq *http.Request, modifiedReq *http.Request) s
 	dmp := diffmatchpatch.New()
 	headerDiff := dmp.DiffMain(string(originalHeaders), string(modifiedHeaders), false)
 
-	log.Debug(": Header diff calculated, ", dmp.DiffPrettyText(headerDiff))
+	println(": Header diff calculated, ", dmp.DiffPrettyText(headerDiff))
 	return dmp.DiffPrettyText(headerDiff)
 }
