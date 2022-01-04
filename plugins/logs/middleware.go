@@ -249,7 +249,7 @@ func (l *Logs) recordResponse(w *httptest.ResponseRecorder, r *http.Request, req
 	// Extract the request changes from context
 	requestChanges, err := requestchange.FromContext(ctx)
 	if err != nil {
-		log.Errorln(logTag, "No request changes added with err: ", err)
+		log.Warnln(logTag, "No request changes added with err: ", err)
 	} else {
 		rec.RequestChanges = *requestChanges
 	}
@@ -257,7 +257,7 @@ func (l *Logs) recordResponse(w *httptest.ResponseRecorder, r *http.Request, req
 	// Extract the response changes from context
 	responseChanges, err := responsechange.FromContext(ctx)
 	if err != nil {
-		log.Warningln(logTag, "No response changes added with err: ", err)
+		log.Warnln(logTag, "No response changes added with err: ", err)
 	} else {
 		rec.ResponseChanges = *responseChanges
 	}
