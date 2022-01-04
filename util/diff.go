@@ -67,7 +67,7 @@ func CalculateBodyDiff(originalReq *http.Request, modifiedReq *http.Request) str
 func CalculateUriDiff(originalReq *http.Request, modifiedReq *http.Request) string {
 	dmp := diffmatchpatch.New()
 	URIDiffs := dmp.DiffMain(originalReq.URL.Path, modifiedReq.URL.Path, false)
-	println(": URI diff calculated, ", dmp.DiffPrettyText(URIDiffs))
+	println(": URI diff calculated, ", URIDiffs)
 	println("original: ", originalReq.URL.Path, ", modified: ", modifiedReq.URL.Path)
 	return dmp.DiffPrettyText(URIDiffs)
 }
