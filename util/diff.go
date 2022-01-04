@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"io/ioutil"
 	"net/http"
+	"strings"
 
 	"github.com/appbaseio/reactivesearch-api/model/difference"
 	"github.com/prometheus/common/log"
@@ -67,7 +68,13 @@ func CalculateBodyDiff(originalReq *http.Request, modifiedReq *http.Request) str
 func CalculateUriDiff(originalReq *http.Request, modifiedReq *http.Request) string {
 	dmp := diffmatchpatch.New()
 	URIDiffs := dmp.DiffMain(originalReq.URL.Path, modifiedReq.URL.Path, false)
-	println(": URI diff calculated, ", URIDiffs)
+
+	var diffStrings []string
+	for _, diff := range URIDiffs {
+		diffStrings = append(diffStrings, diff.Text)
+	}
+
+	println(": URI diff calculated, ", strings.Join(diffStrings[:], ","))
 	println("original: ", originalReq.URL.Path, ", modified: ", modifiedReq.URL.Path)
 	return dmp.DiffPrettyText(URIDiffs)
 }
