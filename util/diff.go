@@ -51,7 +51,7 @@ func DeepCloneResponse(res *httptest.ResponseRecorder) (*httptest.ResponseRecord
 // - headers
 // - URI
 // - method
-func CalculateDiff(originalReq *http.Request, modifiedReq *http.Request) *difference.Difference {
+func CalculateRequestDiff(originalReq *http.Request, modifiedReq *http.Request) *difference.Difference {
 	// Convert the requests to strings and then find the diff
 	bodyDiffStr := CalculateBodyDiff(originalReq, modifiedReq)
 	headerDiffStr := CalculateHeaderDiff(originalReq, modifiedReq)
