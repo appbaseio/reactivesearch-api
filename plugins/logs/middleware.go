@@ -140,6 +140,7 @@ type RSAPI struct {
 }
 
 func (l *Logs) recordResponse(w *httptest.ResponseRecorder, r *http.Request, reqBody []byte) {
+	log.Debug("Entering")
 	var headers = make(map[string][]string)
 
 	for key, values := range r.Header {
