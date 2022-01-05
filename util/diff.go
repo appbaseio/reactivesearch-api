@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"io/ioutil"
 	"net/http"
+	"net/http/httptest"
 
 	"github.com/appbaseio/reactivesearch-api/model/difference"
 	"github.com/prometheus/common/log"
@@ -24,6 +25,24 @@ func DeepCloneRequest(req *http.Request) (*http.Request, error) {
 	copiedRequest.Body = ioutil.NopCloser(bytes.NewReader(copiedBody))
 
 	return copiedRequest, nil
+}
+
+// Deep clone the response body by also reading the body and keeping the
+// body back in the original response.
+func DeepCloneResponse(res *httptest.ResponseRecorder) (*httptest.ResponseRecorder, error) {
+	// Since there is no clone method, we need to create a new recorder
+	// and copy all the fields there.
+	var copiedResponse *httptest.ResponseRecorder
+
+	buffer := new(bytes.Buffer)
+	_, err := buffer.ReadFrom(res.Body)
+	if err != nil {
+		log.Errorln(" error while reading body from response, ", err)
+	}
+	copiedResponse.Body = bytes.NewBufferString(buffer.String())
+	res.Body = bytes.NewBufferString(buffer.String())
+
+	return copiedResponse, nil
 }
 
 // Calculate the diff between the passed bodies.
