@@ -33,7 +33,7 @@ func DeepCloneRequest(req *http.Request) (*http.Request, error) {
 func DeepCloneResponse(res *httptest.ResponseRecorder) (*httptest.ResponseRecorder, error) {
 	// Since there is no clone method, we need to create a new recorder
 	// and copy all the fields there.
-	var copiedResponse *httptest.ResponseRecorder
+	copiedResponse := new(httptest.ResponseRecorder)
 
 	buffer := new(bytes.Buffer)
 	_, err := buffer.ReadFrom(res.Body)
