@@ -22,6 +22,7 @@ import (
 	"github.com/appbaseio/reactivesearch-api/plugins/telemetry"
 	"github.com/appbaseio/reactivesearch-api/util"
 	"github.com/buger/jsonparser"
+	"github.com/gdexlab/go-render/render"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -147,6 +148,7 @@ func (l *Logs) recordResponse(w *httptest.ResponseRecorder, r *http.Request, req
 
 	ctx := r.Context()
 	log.Debug(logTag, " req changes are: ", r.Context().Value("request-changes"))
+	log.Debug(logTag, " current ctx is: ", render.AsCode(r.Context()))
 
 	reqCategory, err := category.FromContext(ctx)
 	if err != nil {
