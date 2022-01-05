@@ -146,6 +146,7 @@ func (l *Logs) recordResponse(w *httptest.ResponseRecorder, r *http.Request, req
 	}
 
 	ctx := r.Context()
+	log.Debug(logTag, " req changes are: ", r.Context().Value("request-changes"))
 
 	reqCategory, err := category.FromContext(ctx)
 	if err != nil {
@@ -245,6 +246,8 @@ func (l *Logs) recordResponse(w *httptest.ResponseRecorder, r *http.Request, req
 		}
 		rec.Response.Body = string(responseBody[:util.Min(len(responseBody), 1000000)])
 	}
+
+	log.Debug(logTag, " req changes are: ", r.Context().Value("request-changes"))
 
 	// Extract the request changes from context
 	requestChanges, err := requestchange.FromContext(r.Context())
