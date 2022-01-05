@@ -3,6 +3,7 @@ package util
 import (
 	"bytes"
 	"encoding/json"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -53,7 +54,7 @@ func DeepCloneResponse(res *httptest.ResponseRecorder) (*httptest.ResponseRecord
 // - method
 func CalculateRequestDiff(originalReq *http.Request, modifiedReq *http.Request) *difference.Difference {
 	// Convert the requests to strings and then find the diff
-	bodyDiffStr := CalculateBodyDiff(originalReq, modifiedReq)
+	bodyDiffStr := CalculateBodyDiff(originalReq.Body, modifiedReq.Body)
 	headerDiffStr := CalculateHeaderDiff(originalReq, modifiedReq)
 	uriDiffStr := CalculateUriDiff(originalReq, modifiedReq)
 	methodDiffStr := CalculateMethodDiff(originalReq, modifiedReq)
@@ -66,13 +67,24 @@ func CalculateRequestDiff(originalReq *http.Request, modifiedReq *http.Request) 
 	}
 }
 
+// Calculate the diff between the passed bodies.
+// We will find the difference between
+// - body.
+func CalculateResponseDiff(originalRes *httptest.ResponseRecorder, modifiedRes *httptest.ResponseRecorder) *difference.Difference {
+	bodyDiffStr := CalculateBodyDiff(originalRes.Result().Body, modifiedRes.Result().Body)
+
+	return &difference.Difference{
+		Body: bodyDiffStr,
+	}
+}
+
 // Calculate the diff in the body
-func CalculateBodyDiff(originalReq *http.Request, modifiedReq *http.Request) string {
+func CalculateBodyDiff(originalReqBody io.ReadCloser, modifiedReqBody io.ReadCloser) string {
 	bodyReadBuffer := new(bytes.Buffer)
-	bodyReadBuffer.ReadFrom(originalReq.Body)
+	bodyReadBuffer.ReadFrom(originalReqBody)
 	originalBodyStr := bodyReadBuffer.String()
 
-	bodyReadBuffer.ReadFrom(modifiedReq.Body)
+	bodyReadBuffer.ReadFrom(modifiedReqBody)
 	modifiedBodyStr := bodyReadBuffer.String()
 
 	dmp := diffmatchpatch.New()
