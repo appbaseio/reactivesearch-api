@@ -45,4 +45,4 @@ jobs:
           command_timeout: 3600s
           envs: VERSION
           script: |
-            scl enable devtoolset-7 bash && sh build.sh ${VERSION} > /dev/null 2>&1 &
+            scl enable devtoolset-7 bash && sh build.sh ${VERSION} > build.log 2>&1 &
