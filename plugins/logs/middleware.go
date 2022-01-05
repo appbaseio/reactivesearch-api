@@ -22,7 +22,6 @@ import (
 	"github.com/appbaseio/reactivesearch-api/plugins/telemetry"
 	"github.com/appbaseio/reactivesearch-api/util"
 	"github.com/buger/jsonparser"
-	"github.com/gdexlab/go-render/render"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -117,6 +116,13 @@ func (l *Logs) recorder(h http.HandlerFunc) http.HandlerFunc {
 			return
 		}
 
+		// Extract the request changes from context
+		requestChanges, err := requestchange.FromContext(r.Context())
+		if err != nil {
+			log.Warnln(logTag, "No request changes added with err: ", err)
+			requestChanges = nil
+		}
+
 		// Serve using response recorder
 		respRecorder := httptest.NewRecorder()
 		h(respRecorder, r)
@@ -128,7 +134,7 @@ func (l *Logs) recorder(h http.HandlerFunc) http.HandlerFunc {
 		w.Write(respRecorder.Body.Bytes())
 		// Record the document
 
-		go l.recordResponse(respRecorder, r, dumpRequest)
+		go l.recordResponse(respRecorder, r, dumpRequest, *requestChanges)
 	}
 }
 
@@ -139,8 +145,8 @@ type RSAPI struct {
 	Query []Query `json:"query"`
 }
 
-func (l *Logs) recordResponse(w *httptest.ResponseRecorder, r *http.Request, reqBody []byte) {
-	log.Debug("Entering")
+func (l *Logs) recordResponse(w *httptest.ResponseRecorder, r *http.Request, reqBody []byte, reqChanges []difference.Difference) {
+	log.Debug("Entering response")
 	var headers = make(map[string][]string)
 
 	for key, values := range r.Header {
@@ -149,7 +155,6 @@ func (l *Logs) recordResponse(w *httptest.ResponseRecorder, r *http.Request, req
 
 	ctx := r.Context()
 	log.Debug(logTag, " req changes are: ", r.Context().Value("request-changes"))
-	log.Debug(logTag, " current ctx is: ", render.AsCode(r.Context()))
 
 	reqCategory, err := category.FromContext(ctx)
 	if err != nil {
@@ -251,14 +256,6 @@ func (l *Logs) recordResponse(w *httptest.ResponseRecorder, r *http.Request, req
 	}
 
 	log.Debug(logTag, " req changes are: ", r.Context().Value("request-changes"))
-
-	// Extract the request changes from context
-	requestChanges, err := requestchange.FromContext(r.Context())
-	if err != nil {
-		log.Warnln(logTag, "No request changes added with err: ", err)
-	} else {
-		rec.RequestChanges = *requestChanges
-	}
 
 	// Extract the response changes from context
 	responseChanges, err := responsechange.FromContext(r.Context())
