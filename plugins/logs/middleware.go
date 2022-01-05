@@ -223,7 +223,7 @@ func (l *Logs) recordResponse(w *httptest.ResponseRecorder, r *http.Request, req
 		// read success response from context
 		tookValue, err := jsonparser.GetFloat(w.Body.Bytes(), "settings", "took")
 		if err != nil {
-			log.Errorln(logTag, "error encountered while reading took key from response body:", err)
+			log.Warnln(logTag, "error encountered while reading took key from response body:", err)
 		} else {
 			// Set took value
 			rec.Response.Took = &tookValue
