@@ -116,6 +116,16 @@ func (l *Logs) recorder(h http.HandlerFunc) http.HandlerFunc {
 			return
 		}
 
+		// Init the request change context
+		reqDiff := make([]difference.Difference, 0)
+		reqDiffCtx := requestchange.NewContext(r.Context(), &reqDiff)
+		r = r.WithContext(reqDiffCtx)
+
+		// Init the response change context
+		resDiff := make([]difference.Difference, 0)
+		resDiffCtx := responsechange.NewContext(r.Context(), &resDiff)
+		r = r.WithContext(resDiffCtx)
+
 		// Serve using response recorder
 		respRecorder := httptest.NewRecorder()
 		h(respRecorder, r)
