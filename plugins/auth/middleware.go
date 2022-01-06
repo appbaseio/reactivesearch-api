@@ -146,7 +146,7 @@ func (a *Auth) basicAuth(h http.HandlerFunc) http.HandlerFunc {
 			obj, err = a.getCredential(ctx, username)
 			if err != nil || obj == nil {
 				msg := fmt.Sprintf("No API credentials match with provided username: %s", username)
-				log.Errorln(logTag, ":", err)
+				log.Warnln(logTag, ":", err)
 				w.Header().Set("www-authenticate", "Basic realm=\"Authentication Required\"")
 				telemetry.WriteBackErrorWithTelemetry(req, w, msg, http.StatusUnauthorized)
 				return

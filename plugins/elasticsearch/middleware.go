@@ -154,7 +154,7 @@ func intercept(h http.HandlerFunc) http.HandlerFunc {
 			// /_search/scroll is a special case that doesn't support source filtering
 			reqPermission, err := permission.FromContext(ctx)
 			if err != nil {
-				log.Errorln(logTag, ":", err)
+				log.Warnln(logTag, ":", err)
 			} else {
 				shouldApplyFilters := shouldApplyFilters(reqPermission)
 				if shouldApplyFilters {

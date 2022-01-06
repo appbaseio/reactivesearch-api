@@ -27,7 +27,7 @@ func initPlugin(alias, config string) (*elasticsearch, error) {
 	var es = &elasticsearch{alias}
 
 	// Check if alias exists instead of index and create first index if not exists with `${alias}-000001`
-	res, err := util.GetClient7().Aliases().Index("_all").Do(ctx)
+	res, err := util.GetClient7().Aliases().Do(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("error while checking if index already exists: %v", err)
 	}
