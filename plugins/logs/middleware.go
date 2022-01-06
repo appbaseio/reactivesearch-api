@@ -116,6 +116,11 @@ func (l *Logs) recorder(h http.HandlerFunc) http.HandlerFunc {
 			return
 		}
 
+		// Init the original request context
+		var origReq interface{}
+		origReqCtx := request.NewContext(r.Context(), &origReq)
+		r = r.WithContext(origReqCtx)
+
 		// Init the request change context
 		reqDiff := make([]difference.Difference, 0)
 		reqDiffCtx := requestchange.NewContext(r.Context(), &reqDiff)
