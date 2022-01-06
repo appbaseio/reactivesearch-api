@@ -1,5 +1,7 @@
 package logs
 
+import log "github.com/sirupsen/logrus"
+
 // LogsMappings mappings for .logs indices
 const LogsMappings = `{
    "dynamic":false,
@@ -466,3 +468,18 @@ const LogsMappings = `{
       }
    }
 }`
+
+var blacklistedPaths = []string{
+	0: "/_cluster/health",
+}
+
+// Check if the passed path is blacklisted
+func isPathBlacklisted(path string) bool {
+	for _, blacklistedPath := range blacklistedPaths {
+		if blacklistedPath == path {
+			log.Debugln(logTag, "ignoring blacklisted path:", path)
+			return true
+		}
+	}
+	return false
+}
