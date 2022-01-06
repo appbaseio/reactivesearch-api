@@ -43,6 +43,9 @@ func DeepCloneResponse(res *httptest.ResponseRecorder) (*httptest.ResponseRecord
 	copiedResponse.Body = bytes.NewBufferString(buffer.String())
 	res.Body = bytes.NewBufferString(buffer.String())
 
+	// Copy the headers as well
+	copiedResponse.Result().Header = res.Header().Clone()
+
 	return copiedResponse, nil
 }
 
@@ -55,7 +58,7 @@ func DeepCloneResponse(res *httptest.ResponseRecorder) (*httptest.ResponseRecord
 func CalculateRequestDiff(originalReq *http.Request, modifiedReq *http.Request) *difference.Difference {
 	// Convert the requests to strings and then find the diff
 	bodyDiffStr := CalculateBodyDiff(originalReq.Body, modifiedReq.Body)
-	headerDiffStr := CalculateHeaderDiff(originalReq, modifiedReq)
+	headerDiffStr := CalculateHeaderDiff(originalReq.Header, modifiedReq.Header)
 	uriDiffStr := CalculateUriDiff(originalReq, modifiedReq)
 	methodDiffStr := CalculateMethodDiff(originalReq, modifiedReq)
 
@@ -72,9 +75,11 @@ func CalculateRequestDiff(originalReq *http.Request, modifiedReq *http.Request) 
 // - body.
 func CalculateResponseDiff(originalRes *httptest.ResponseRecorder, modifiedRes *httptest.ResponseRecorder) *difference.Difference {
 	bodyDiffStr := CalculateBodyDiff(originalRes.Result().Body, modifiedRes.Result().Body)
+	headerDiffStr := CalculateHeaderDiff(originalRes.Result().Header, modifiedRes.Result().Header)
 
 	return &difference.Difference{
-		Body: bodyDiffStr,
+		Body:    bodyDiffStr,
+		Headers: headerDiffStr,
 	}
 }
 
@@ -108,14 +113,14 @@ func CalculateMethodDiff(originalReq *http.Request, modifiedReq *http.Request) s
 	return dmp.DiffToDelta(methodDiff)
 }
 
-func CalculateHeaderDiff(originalReq *http.Request, modifiedReq *http.Request) string {
-	originalHeaders, err := json.Marshal(originalReq.Header)
+func CalculateHeaderDiff(originalReqHeader http.Header, modifiedReqHeader http.Header) string {
+	originalHeaders, err := json.Marshal(originalReqHeader)
 	if err != nil {
 		log.Warnln(" could not marshal original request headers, ", err)
 	}
 
 	// Marshal the modified request headers
-	modifiedHeaders, err := json.Marshal(modifiedReq.Header)
+	modifiedHeaders, err := json.Marshal(modifiedReqHeader)
 	if err != nil {
 		log.Warnln(" could not marshal modified request headers, ", err)
 	}
