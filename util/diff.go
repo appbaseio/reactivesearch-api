@@ -89,7 +89,7 @@ func CalculateBodyDiff(originalReqBody io.ReadCloser, modifiedReqBody io.ReadClo
 
 	dmp := diffmatchpatch.New()
 	bodyDiffs := dmp.DiffMain(originalBodyStr, modifiedBodyStr, false)
-	bodyDiffStr := dmp.DiffPrettyText(bodyDiffs)
+	bodyDiffStr := dmp.DiffToDelta(bodyDiffs)
 
 	return bodyDiffStr
 }
@@ -98,14 +98,14 @@ func CalculateBodyDiff(originalReqBody io.ReadCloser, modifiedReqBody io.ReadClo
 func CalculateUriDiff(originalReq *http.Request, modifiedReq *http.Request) string {
 	dmp := diffmatchpatch.New()
 	URIDiffs := dmp.DiffMain(originalReq.URL.Path, modifiedReq.URL.Path, false)
-	return dmp.DiffPrettyText(URIDiffs)
+	return dmp.DiffToDelta(URIDiffs)
 }
 
 // Calculate method difference
 func CalculateMethodDiff(originalReq *http.Request, modifiedReq *http.Request) string {
 	dmp := diffmatchpatch.New()
 	methodDiff := dmp.DiffMain(originalReq.Method, modifiedReq.Method, false)
-	return dmp.DiffPrettyText(methodDiff)
+	return dmp.DiffToDelta(methodDiff)
 }
 
 func CalculateHeaderDiff(originalReq *http.Request, modifiedReq *http.Request) string {
@@ -122,5 +122,5 @@ func CalculateHeaderDiff(originalReq *http.Request, modifiedReq *http.Request) s
 
 	dmp := diffmatchpatch.New()
 	headerDiff := dmp.DiffMain(string(originalHeaders), string(modifiedHeaders), false)
-	return dmp.DiffPrettyText(headerDiff)
+	return dmp.DiffToDelta(headerDiff)
 }
