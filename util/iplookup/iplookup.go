@@ -8,7 +8,7 @@ import (
 	"sync"
 )
 
-const ipLookupURL = "https://extreme-ip-lookup.com/json/?key=demo"
+const ipLookupURL = "https://extreme-ip-lookup.com/json/"
 
 // Info is the information associated with an IP address provided by ip-lookup service.
 type Info int
@@ -91,12 +91,17 @@ func (info *IPInfo) Cache(ip string, ipLookup *IPLookup) {
 
 // Lookup fetches the ip information from the ip-lookup service. A request to
 // ip-lookup service is made only when the information is not available in the cache.
-func (info *IPInfo) Lookup(ip string) (*IPLookup, error) {
+func (info *IPInfo) Lookup(ip string, apiKey *string) (*IPLookup, error) {
 	if ip, ok := info.Cached(ip); ok {
 		return ip, nil
 	}
 
-	response, err := http.Get(ipLookupURL + ip)
+	key := "demo"
+	if apiKey != nil {
+		key = *apiKey
+	}
+
+	response, err := http.Get(ipLookupURL + ip + "?key=" + key)
 	if err != nil {
 		return nil, err
 	}
@@ -117,8 +122,8 @@ func (info *IPInfo) Lookup(ip string) (*IPLookup, error) {
 }
 
 // Get returns the specific field of information i.e. Info from IPLookup.
-func (info *IPInfo) Get(field Info, ip string) (string, error) {
-	ipLookup, err := info.Lookup(ip)
+func (info *IPInfo) Get(field Info, ip string, apiKey *string) (string, error) {
+	ipLookup, err := info.Lookup(ip, apiKey)
 	if err != nil {
 		return "", err
 	}
@@ -163,8 +168,8 @@ func (info *IPInfo) Get(field Info, ip string) (string, error) {
 
 // GetCoordinates returns the formatted coordinates (both latitude and longitude)
 // of the location fetched for IP.
-func (info *IPInfo) GetCoordinates(ip string) (string, error) {
-	ipLookup, err := info.Lookup(ip)
+func (info *IPInfo) GetCoordinates(ip string, apiKey *string) (string, error) {
+	ipLookup, err := info.Lookup(ip, apiKey)
 	if err != nil {
 		return "", err
 	}
