@@ -63,6 +63,11 @@ func (l *Logs) Name() string {
 	return logTag
 }
 
+// Get the Lumberjack logger
+func (l *Logs) Lumberjack() lumberjack.Logger {
+	return l.lumberjack
+}
+
 // InitFunc is a part of Plugin interface that gets executed only once, and initializes
 // the dao, i.e. elasticsearch before the plugin is operational.
 func (l *Logs) InitFunc() error {
