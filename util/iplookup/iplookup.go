@@ -8,7 +8,7 @@ import (
 	"sync"
 )
 
-const ipLookupURL = "http://extreme-ip-lookup.com/json/"
+const ipLookupURL = "https://extreme-ip-lookup.com/json/?key=demo"
 
 // Info is the information associated with an IP address provided by ip-lookup service.
 type Info int
