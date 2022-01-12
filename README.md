@@ -212,7 +212,7 @@ cluster. The dedicated endpoints to fetch the index/cluster logs can be found [h
 
 ## ReactiveSearch: UI Libraries
 
-The ReactiveSearch API is used by [ReactiveSearch](https://github.com/appbaseio/reactivesearch-api) and [Searchbox](https://github.com/appbaseio/searchbox) libraries. If you're building a search UI using React, Vue, Flutter, React Native or Vanilla JS, these libraries provide scaffolding and commonly used search components that can compress weeks of development time into days.
+The ReactiveSearch API is used by [ReactiveSearch](https://github.com/appbaseio/reactivesearch) and [Searchbox](https://github.com/appbaseio/searchbox) libraries. If you're building a search UI using React, Vue, Flutter, React Native or Vanilla JS, these libraries provide scaffolding and commonly used search components that can compress weeks of development time into days.
 
 
 
