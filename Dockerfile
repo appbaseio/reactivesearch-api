@@ -56,4 +56,4 @@ COPY --from=builder /reactivesearch /reactivesearch
 WORKDIR /reactivesearch
 
 EXPOSE 8000
-ENTRYPOINT ["build/reactivesearch", "--log", "stdout", "--plugins"]
+ENTRYPOINT ["build/reactivesearch","--license-key-file", "--log", "stdout", "--plugins"]
