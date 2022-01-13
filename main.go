@@ -11,6 +11,7 @@ import (
 	"flag"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"net/http"
 	"os"
 	"os/exec"
@@ -45,6 +46,7 @@ const logTag = "[cmd]"
 var (
 	envFile         string
 	logMode         string
+	licenseKeyPath  string
 	listPlugins     bool
 	address         string
 	port            int
@@ -134,6 +136,7 @@ func init() {
 
 	flag.StringVar(&envFile, "env", ".env", "Path to file with environment variables to load in KEY=VALUE format")
 	flag.StringVar(&logMode, "log", "", "Define to change the default log mode(error), other options are: debug(most verbose) and info")
+	flag.StringVar(&licenseKeyPath, "license-key-file", "", "Path to file with license key")
 	flag.BoolVar(&listPlugins, "plugins", false, "List currently registered plugins")
 	flag.StringVar(&address, "addr", "0.0.0.0", "Address to serve on")
 	// env port for deployments like heroku where port is dynamically assigned
@@ -260,8 +263,19 @@ func main() {
 	util.Opensource = Opensource
 	util.Version = Version
 
+	var licenseKey string
 	// check for offline license key
-	licenseKey := os.Getenv("LICENSE_KEY")
+	if licenseKeyPath != "" {
+		// read license key from file
+		content, err := ioutil.ReadFile(licenseKeyPath)
+		if err != nil {
+			log.Fatalln(logTag, "Unable to read license file", err.Error())
+		}
+		licenseKey = string(content)
+	} else {
+		// read from env file
+		licenseKey = os.Getenv("LICENSE_KEY")
+	}
 	if licenseKey != "" {
 		keygen.PublicKey = util.AppbasePublicKey
 		// validate offline license key
