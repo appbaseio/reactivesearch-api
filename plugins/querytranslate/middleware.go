@@ -1,6 +1,7 @@
 package querytranslate
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -80,18 +81,29 @@ func classifyOp(h http.HandlerFunc) http.HandlerFunc {
 func saveRequestToCtx(h http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
 		var body RSQuery
-		err := json.NewDecoder(req.Body).Decode(&body)
+		buf := new(bytes.Buffer)
+		_, err := buf.ReadFrom(req.Body)
 		if err != nil {
 			log.Errorln(logTag, ":", err)
 			telemetry.WriteBackErrorWithTelemetry(req, w, fmt.Sprintf("Can't parse request body: %v", err), http.StatusBadRequest)
 			return
 		}
-		// Set request body as nil to avoid memory issues (storage duplication)
-		req.Body = nil
+
+		err = json.Unmarshal(buf.Bytes(), &body)
+		if err != nil {
+			log.Errorln(logTag, "error while unmarshalling request body to save to context", err)
+			return
+		}
+
+		// Replace original body with the same body
+		// since it was emptied when we read it.
+		req.Body = ioutil.NopCloser(buf)
+
 		originalCtx := request.NewContext(req.Context(), body)
 		req = req.WithContext(originalCtx)
 		ctx := NewContext(req.Context(), body)
 		req = req.WithContext(ctx)
+
 		h(w, req)
 	}
 }
