@@ -19,9 +19,9 @@ const ClusterIDEnvName = "CLUSTER_ID"
 const AppbaseIDEnvName = "APPBASE_ID"
 
 // ACCAPI URL
-var ACCAPI = "https://accapi.appbase.io/"
+// var ACCAPI = "https://accapi.appbase.io/"
 
-// var ACCAPI = "http://localhost:3000/"
+var ACCAPI = "http://localhost:3000/"
 
 // Tier is the value of the user's plan
 var tier *Plan
@@ -628,4 +628,8 @@ func fetchNodeCount() (int, error) {
 		return 0, err
 	}
 	return nodes, nil
+}
+
+func IsBillingEnabled() bool {
+	return Billing == "true" || ClusterBilling == "true" || HostedBilling == "true"
 }

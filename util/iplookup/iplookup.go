@@ -6,6 +6,8 @@ import (
 	"io/ioutil"
 	"net/http"
 	"sync"
+
+	"github.com/appbaseio/reactivesearch-api/util"
 )
 
 const ipLookupURL = "https://extreme-ip-lookup.com/json/"
@@ -91,17 +93,21 @@ func (info *IPInfo) Cache(ip string, ipLookup *IPLookup) {
 
 // Lookup fetches the ip information from the ip-lookup service. A request to
 // ip-lookup service is made only when the information is not available in the cache.
-func (info *IPInfo) Lookup(ip string, apiKey *string) (*IPLookup, error) {
+func (info *IPInfo) Lookup(ip string) (*IPLookup, error) {
 	if ip, ok := info.Cached(ip); ok {
 		return ip, nil
 	}
 
 	key := "demo"
-	if apiKey != nil {
-		key = *apiKey
+	url := ipLookupURL + ip + "?key=" + key
+	if util.IsBillingEnabled() {
+		clusterID, err := util.GetArcID()
+		if err != nil {
+			return nil, err
+		}
+		url = util.ACCAPI + clusterID + "/" + ip
 	}
-
-	response, err := http.Get(ipLookupURL + ip + "?key=" + key)
+	response, err := http.Get(url)
 	if err != nil {
 		return nil, err
 	}
@@ -122,8 +128,8 @@ func (info *IPInfo) Lookup(ip string, apiKey *string) (*IPLookup, error) {
 }
 
 // Get returns the specific field of information i.e. Info from IPLookup.
-func (info *IPInfo) Get(field Info, ip string, apiKey *string) (string, error) {
-	ipLookup, err := info.Lookup(ip, apiKey)
+func (info *IPInfo) Get(field Info, ip string) (string, error) {
+	ipLookup, err := info.Lookup(ip)
 	if err != nil {
 		return "", err
 	}
@@ -168,8 +174,8 @@ func (info *IPInfo) Get(field Info, ip string, apiKey *string) (string, error) {
 
 // GetCoordinates returns the formatted coordinates (both latitude and longitude)
 // of the location fetched for IP.
-func (info *IPInfo) GetCoordinates(ip string, apiKey *string) (string, error) {
-	ipLookup, err := info.Lookup(ip, apiKey)
+func (info *IPInfo) GetCoordinates(ip string) (string, error) {
+	ipLookup, err := info.Lookup(ip)
 	if err != nil {
 		return "", err
 	}
