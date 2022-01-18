@@ -105,7 +105,7 @@ func (info *IPInfo) Lookup(ip string) (*IPLookup, error) {
 		if err != nil {
 			return nil, err
 		}
-		url = util.ACCAPI + clusterID + "/" + ip
+		url = util.ACCAPI + "arc/iplookup/" + clusterID + "/" + ip
 	}
 	response, err := http.Get(url)
 	if err != nil {
