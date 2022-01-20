@@ -629,3 +629,7 @@ func fetchNodeCount() (int, error) {
 	}
 	return nodes, nil
 }
+
+func IsBillingEnabled() bool {
+	return Billing == "true" || ClusterBilling == "true" || HostedBilling == "true"
+}
