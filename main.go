@@ -247,6 +247,7 @@ func main() {
 	router := mux.NewRouter().StrictSlash(true)
 
 	mainRouter := router.PathPrefix("").Subrouter()
+	pipelineRouter := router.PathPrefix("").Subrouter()
 
 	if PlanRefreshInterval == "" {
 		PlanRefreshInterval = "1"
@@ -430,6 +431,11 @@ func main() {
 			}
 			elasticSearchMiddleware = append(elasticSearchMiddleware, plugin.ESMiddleware()...)
 			reactiveSearchMiddleware = append(reactiveSearchMiddleware, plugin.RSMiddleware()...)
+
+			// Load pipeline specific router
+			if plugin.Name() == "pipeline" {
+				LoadPluginAlternateRoutes(pipelineRouter, plugin)
+			}
 		}
 	}
 	// Load ReactiveSearch plugin
@@ -664,4 +670,21 @@ func ParseEnvFile(envFile io.Reader) (map[string]string, error) {
 	}
 
 	return envMap, nil
+}
+
+// Load the plugin specific routes to the passed
+// router.
+func LoadPluginAlternateRoutes(router *mux.Router, p plugins.Plugin) error {
+	// Get the alternate routes
+	for _, r := range p.AlternateRoutes() {
+		err := router.Methods(r.Methods...).
+			Name(r.Name).
+			Path(r.Path).
+			HandlerFunc(r.HandlerFunc).
+			GetError()
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }

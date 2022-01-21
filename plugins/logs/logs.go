@@ -118,3 +118,8 @@ func (l *Logs) ESMiddleware() []middleware.Middleware {
 func (a *Logs) RSMiddleware() []middleware.Middleware {
 	return make([]middleware.Middleware, 0)
 }
+
+// Alternate routes
+func (a *Logs) AlternateRoutes() []plugins.Route {
+	return make([]plugins.Route, 0)
+}

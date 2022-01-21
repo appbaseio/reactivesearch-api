@@ -154,6 +154,11 @@ func (a *Auth) Routes() []plugins.Route {
 	return a.routes()
 }
 
+// Alternate routes
+func (a *Auth) AlternateRoutes() []plugins.Route {
+	return make([]plugins.Route, 0)
+}
+
 // Default empty middleware array function
 func (a *Auth) ESMiddleware() []middleware.Middleware {
 	return make([]middleware.Middleware, 0)
