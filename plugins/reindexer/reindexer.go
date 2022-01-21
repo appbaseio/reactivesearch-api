@@ -52,3 +52,8 @@ func (rx *reindexer) ESMiddleware() []middleware.Middleware {
 func (rx *reindexer) RSMiddleware() []middleware.Middleware {
 	return make([]middleware.Middleware, 0)
 }
+
+// Alternate routes
+func (a *reindexer) AlternateRoutes() []plugins.Route {
+	return make([]plugins.Route, 0)
+}

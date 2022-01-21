@@ -27,6 +27,10 @@ type nameRoutes interface {
 	// Routes returns the http routes that a plugin handles or is
 	// associated with.
 	Routes() []Route
+
+	// Alternate routes are supposed to be loaded into a separate
+	// plugin specific router.
+	AlternateRoutes() []Route
 }
 
 // Plugin is a type that holds information about the plugin.

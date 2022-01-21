@@ -246,6 +246,9 @@ func main() {
 
 	router := mux.NewRouter().StrictSlash(true)
 
+	mainRouter := router.PathPrefix("").Subrouter()
+	pipelineRouter := router.PathPrefix("").Subrouter()
+
 	if PlanRefreshInterval == "" {
 		PlanRefreshInterval = "1"
 	} else {
@@ -302,7 +305,7 @@ func main() {
 		util.SetDefaultTier()
 		// use billing middleware
 		if IgnoreBillingMiddleware != "true" {
-			router.Use(util.BillingMiddlewareOffline)
+			mainRouter.Use(util.BillingMiddlewareOffline)
 		}
 	} else {
 		if Billing == "true" {
@@ -312,7 +315,7 @@ func main() {
 			cronjob.AddFunc(interval, util.ReportUsage)
 			cronjob.Start()
 			if IgnoreBillingMiddleware != "true" {
-				router.Use(util.BillingMiddleware)
+				mainRouter.Use(util.BillingMiddleware)
 			}
 		} else if HostedBilling == "true" {
 			log.Println("You're running ReactiveSearch with hosted billing module enabled.")
@@ -321,7 +324,7 @@ func main() {
 			cronjob.AddFunc(interval, util.ReportHostedArcUsage)
 			cronjob.Start()
 			if IgnoreBillingMiddleware != "true" {
-				router.Use(util.BillingMiddleware)
+				mainRouter.Use(util.BillingMiddleware)
 			}
 		} else if ClusterBilling == "true" {
 			log.Println("You're running ReactiveSearch with cluster billing module enabled.")
@@ -331,7 +334,7 @@ func main() {
 			cronjob.AddFunc(interval, util.SetClusterPlan)
 			cronjob.Start()
 			if IgnoreBillingMiddleware != "true" {
-				router.Use(util.BillingMiddleware)
+				mainRouter.Use(util.BillingMiddleware)
 			}
 		} else {
 			util.SetDefaultTier()
@@ -403,7 +406,7 @@ func main() {
 				if util.IsExists(info.Name(), sequencedPlugins) {
 					sequencedPluginsByPath[info.Name()] = path
 				} else {
-					plugin, err1 := LoadPluginFromFile(router, path)
+					plugin, err1 := LoadPluginFromFile(mainRouter, path)
 					if err1 != nil {
 						return err1
 					}
@@ -422,19 +425,24 @@ func main() {
 	for _, pluginName := range sequencedPlugins {
 		path := sequencedPluginsByPath[pluginName]
 		if path != "" {
-			plugin, err := LoadPluginFromFile(router, path)
+			plugin, err := LoadPluginFromFile(mainRouter, path)
 			if err != nil {
 				log.Fatal("error loading plugins: ", err)
 			}
 			elasticSearchMiddleware = append(elasticSearchMiddleware, plugin.ESMiddleware()...)
 			reactiveSearchMiddleware = append(reactiveSearchMiddleware, plugin.RSMiddleware()...)
+
+			// Load pipeline specific router
+			if plugin.Name() == "pipeline" {
+				LoadPluginAlternateRoutes(pipelineRouter, plugin)
+			}
 		}
 	}
 	// Load ReactiveSearch plugin
 	if reactiveSearchPath != "" {
-		LoadRSPluginFromFile(router, reactiveSearchPath, reactiveSearchMiddleware)
+		LoadRSPluginFromFile(mainRouter, reactiveSearchPath, reactiveSearchMiddleware)
 	}
-	LoadESPluginFromFile(router, elasticSearchPath, elasticSearchMiddleware)
+	LoadESPluginFromFile(mainRouter, elasticSearchPath, elasticSearchMiddleware)
 	if err != nil {
 		log.Fatal("error loading plugins: ", err)
 	}
@@ -662,4 +670,21 @@ func ParseEnvFile(envFile io.Reader) (map[string]string, error) {
 	}
 
 	return envMap, nil
+}
+
+// Load the plugin specific routes to the passed
+// router.
+func LoadPluginAlternateRoutes(router *mux.Router, p plugins.Plugin) error {
+	// Get the alternate routes
+	for _, r := range p.AlternateRoutes() {
+		err := router.Methods(r.Methods...).
+			Name(r.Name).
+			Path(r.Path).
+			HandlerFunc(r.HandlerFunc).
+			GetError()
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }

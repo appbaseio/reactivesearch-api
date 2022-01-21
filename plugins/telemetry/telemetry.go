@@ -93,3 +93,8 @@ func (t *Telemetry) ESMiddleware() []middleware.Middleware {
 func (t *Telemetry) RSMiddleware() []middleware.Middleware {
 	return make([]middleware.Middleware, 0)
 }
+
+// Alternate routes
+func (a *Telemetry) AlternateRoutes() []plugins.Route {
+	return make([]plugins.Route, 0)
+}

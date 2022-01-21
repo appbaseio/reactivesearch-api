@@ -52,3 +52,8 @@ func (r *QueryTranslate) Routes() []plugins.Route {
 func (r *QueryTranslate) ESMiddleware() []middleware.Middleware {
 	return make([]middleware.Middleware, 0)
 }
+
+// Alternate routes
+func (a *QueryTranslate) AlternateRoutes() []plugins.Route {
+	return make([]plugins.Route, 0)
+}
