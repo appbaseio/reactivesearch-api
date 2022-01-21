@@ -246,6 +246,8 @@ func main() {
 
 	router := mux.NewRouter().StrictSlash(true)
 
+	mainRouter := router.PathPrefix("").Subrouter()
+
 	if PlanRefreshInterval == "" {
 		PlanRefreshInterval = "1"
 	} else {
@@ -302,7 +304,7 @@ func main() {
 		util.SetDefaultTier()
 		// use billing middleware
 		if IgnoreBillingMiddleware != "true" {
-			router.Use(util.BillingMiddlewareOffline)
+			mainRouter.Use(util.BillingMiddlewareOffline)
 		}
 	} else {
 		if Billing == "true" {
@@ -312,7 +314,7 @@ func main() {
 			cronjob.AddFunc(interval, util.ReportUsage)
 			cronjob.Start()
 			if IgnoreBillingMiddleware != "true" {
-				router.Use(util.BillingMiddleware)
+				mainRouter.Use(util.BillingMiddleware)
 			}
 		} else if HostedBilling == "true" {
 			log.Println("You're running ReactiveSearch with hosted billing module enabled.")
@@ -321,7 +323,7 @@ func main() {
 			cronjob.AddFunc(interval, util.ReportHostedArcUsage)
 			cronjob.Start()
 			if IgnoreBillingMiddleware != "true" {
-				router.Use(util.BillingMiddleware)
+				mainRouter.Use(util.BillingMiddleware)
 			}
 		} else if ClusterBilling == "true" {
 			log.Println("You're running ReactiveSearch with cluster billing module enabled.")
@@ -331,7 +333,7 @@ func main() {
 			cronjob.AddFunc(interval, util.SetClusterPlan)
 			cronjob.Start()
 			if IgnoreBillingMiddleware != "true" {
-				router.Use(util.BillingMiddleware)
+				mainRouter.Use(util.BillingMiddleware)
 			}
 		} else {
 			util.SetDefaultTier()
@@ -403,7 +405,7 @@ func main() {
 				if util.IsExists(info.Name(), sequencedPlugins) {
 					sequencedPluginsByPath[info.Name()] = path
 				} else {
-					plugin, err1 := LoadPluginFromFile(router, path)
+					plugin, err1 := LoadPluginFromFile(mainRouter, path)
 					if err1 != nil {
 						return err1
 					}
@@ -422,7 +424,7 @@ func main() {
 	for _, pluginName := range sequencedPlugins {
 		path := sequencedPluginsByPath[pluginName]
 		if path != "" {
-			plugin, err := LoadPluginFromFile(router, path)
+			plugin, err := LoadPluginFromFile(mainRouter, path)
 			if err != nil {
 				log.Fatal("error loading plugins: ", err)
 			}
@@ -432,9 +434,9 @@ func main() {
 	}
 	// Load ReactiveSearch plugin
 	if reactiveSearchPath != "" {
-		LoadRSPluginFromFile(router, reactiveSearchPath, reactiveSearchMiddleware)
+		LoadRSPluginFromFile(mainRouter, reactiveSearchPath, reactiveSearchMiddleware)
 	}
-	LoadESPluginFromFile(router, elasticSearchPath, elasticSearchMiddleware)
+	LoadESPluginFromFile(mainRouter, elasticSearchPath, elasticSearchMiddleware)
 	if err != nil {
 		log.Fatal("error loading plugins: ", err)
 	}
