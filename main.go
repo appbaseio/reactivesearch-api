@@ -676,7 +676,9 @@ func ParseEnvFile(envFile io.Reader) (map[string]string, error) {
 // router.
 func LoadPluginAlternateRoutes(router *mux.Router, p plugins.Plugin) error {
 	// Get the alternate routes
+	log.Infoln(logTag, "Loading plugin specific routes for: ", p.Name())
 	for _, r := range p.AlternateRoutes() {
+		log.Debug(logTag, "Loading route: ", r.Name, r.Path)
 		err := router.Methods(r.Methods...).
 			Name(r.Name).
 			Path(r.Path).
