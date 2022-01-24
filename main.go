@@ -433,7 +433,7 @@ func main() {
 			reactiveSearchMiddleware = append(reactiveSearchMiddleware, plugin.RSMiddleware()...)
 
 			// Load pipeline specific router
-			if plugin.Name() == "pipeline" {
+			if plugin.Name() == "[pipelines]" {
 				LoadPluginAlternateRoutes(pipelineRouter, plugin)
 			}
 		}
