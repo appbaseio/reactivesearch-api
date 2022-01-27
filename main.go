@@ -390,18 +390,20 @@ func main() {
 	util.SetDefaultIndexTemplate()
 	util.SetSystemIndexTemplate()
 	// map of specific plugins
-	// Pipelines should be at the end so it can override the default routes
-	sequencedPlugins := []string{"analytics.so", "searchrelevancy.so", "rules.so", "cache.so", "suggestions.so", "storedquery.so", "analyticsrequest.so", "applycache.so", "pipelines.so"}
+	sequencedPlugins := []string{"analytics.so", "searchrelevancy.so", "rules.so", "cache.so", "suggestions.so", "storedquery.so", "analyticsrequest.so", "applycache.so"}
 	sequencedPluginsByPath := make(map[string]string)
 
-	var elasticSearchPath, reactiveSearchPath string
+	var elasticSearchPath, reactiveSearchPath, pipelinesPath string
 	elasticSearchMiddleware := make([]middleware.Middleware, 0)
 	reactiveSearchMiddleware := make([]middleware.Middleware, 0)
 	err := filepath.Walk(pluginDir, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
-		if !info.IsDir() && filepath.Ext(info.Name()) == ".so" && info.Name() != "elasticsearch.so" {
+		if !info.IsDir() &&
+			filepath.Ext(info.Name()) == ".so" &&
+			info.Name() != "elasticsearch.so" &&
+			info.Name() != "pipelines.so" {
 			if info.Name() != "querytranslate.so" {
 				if util.IsExists(info.Name(), sequencedPlugins) {
 					sequencedPluginsByPath[info.Name()] = path
@@ -418,9 +420,14 @@ func main() {
 			}
 		} else if info.Name() == "elasticsearch.so" {
 			elasticSearchPath = path
+		} else if info.Name() == "pipelines.so" {
+			pipelinesPath = path
 		}
 		return nil
 	})
+	if err != nil {
+		log.Fatal("error loading plugins: ", err)
+	}
 	// load plugins in a sequence
 	for _, pluginName := range sequencedPlugins {
 		path := sequencedPluginsByPath[pluginName]
@@ -431,18 +438,26 @@ func main() {
 			}
 			elasticSearchMiddleware = append(elasticSearchMiddleware, plugin.ESMiddleware()...)
 			reactiveSearchMiddleware = append(reactiveSearchMiddleware, plugin.RSMiddleware()...)
-
 		}
 	}
 	// Load ReactiveSearch plugin
 	if reactiveSearchPath != "" {
-		LoadRSPluginFromFile(mainRouter, reactiveSearchPath, reactiveSearchMiddleware)
+		errRSPlugin := LoadRSPluginFromFile(mainRouter, reactiveSearchPath, reactiveSearchMiddleware)
+		if errRSPlugin != nil {
+			log.Fatal("error loading plugins: ", errRSPlugin)
+		}
 	}
-	LoadESPluginFromFile(mainRouter, elasticSearchPath, elasticSearchMiddleware)
-	if err != nil {
-		log.Fatal("error loading plugins: ", err)
+	errESPlugin := LoadESPluginFromFile(mainRouter, elasticSearchPath, elasticSearchMiddleware)
+	if errESPlugin != nil {
+		log.Fatal("error loading plugins: ", errESPlugin)
 	}
-
+	// Load pipeline plugin at the end to override the default routes
+	if pipelinesPath != "" {
+		_, errPipelinesPlugin := LoadPluginFromFile(mainRouter, pipelinesPath)
+		if errPipelinesPlugin != nil {
+			log.Fatal("error loading plugins: ", errPipelinesPlugin)
+		}
+	}
 	// Execute the migration scripts
 	for _, migration := range util.GetMigrationScripts() {
 		shouldExecute, err := migration.ConditionCheck()
