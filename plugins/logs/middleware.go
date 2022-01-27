@@ -127,6 +127,10 @@ func (l *Logs) recorder(h http.HandlerFunc) http.HandlerFunc {
 		resDiffCtx := responsechange.NewContext(r.Context(), &resDiff)
 		r = r.WithContext(resDiffCtx)
 
+		// Init the original request context
+		origBodyCtx := request.NewContext(r.Context(), nil)
+		r = r.WithContext(origBodyCtx)
+
 		// Serve using response recorder
 		respRecorder := httptest.NewRecorder()
 		h(respRecorder, r)
