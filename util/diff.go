@@ -9,8 +9,8 @@ import (
 	"net/http/httptest"
 
 	"github.com/appbaseio/reactivesearch-api/model/difference"
-	"github.com/prometheus/common/log"
 	"github.com/sergi/go-diff/diffmatchpatch"
+	log "github.com/sirupsen/logrus"
 )
 
 // Deep clone the request body by also reading the body and keeping
@@ -95,23 +95,39 @@ func CalculateBodyDiff(originalReqBody io.ReadCloser, modifiedReqBody io.ReadClo
 
 	dmp := diffmatchpatch.New()
 	bodyDiffs := dmp.DiffMain(originalBodyStr, modifiedBodyStr, false)
-	bodyDiffStr := dmp.DiffToDelta(bodyDiffs)
+	bodyDiffBytes, err := json.Marshal(bodyDiffs)
+	if err != nil {
+		log.Warnln("error while marshalling body diff")
+		return ""
+	}
 
-	return bodyDiffStr
+	return string(bodyDiffBytes)
 }
 
 // Calculate the difference in the URI
 func CalculateUriDiff(originalReq *http.Request, modifiedReq *http.Request) string {
 	dmp := diffmatchpatch.New()
 	URIDiffs := dmp.DiffMain(originalReq.URL.Path, modifiedReq.URL.Path, false)
-	return dmp.DiffToDelta(URIDiffs)
+	URIDiffBytes, err := json.Marshal(URIDiffs)
+	if err != nil {
+		log.Warnln("error while marshalling URI diff")
+		return ""
+	}
+
+	return string(URIDiffBytes)
 }
 
 // Calculate method difference
 func CalculateMethodDiff(originalReq *http.Request, modifiedReq *http.Request) string {
 	dmp := diffmatchpatch.New()
 	methodDiff := dmp.DiffMain(originalReq.Method, modifiedReq.Method, false)
-	return dmp.DiffToDelta(methodDiff)
+	methodDiffBytes, err := json.Marshal(methodDiff)
+	if err != nil {
+		log.Warnln("error while marshalling method diff")
+		return ""
+	}
+
+	return string(methodDiffBytes)
 }
 
 func CalculateHeaderDiff(originalReqHeader http.Header, modifiedReqHeader http.Header) string {
@@ -128,5 +144,11 @@ func CalculateHeaderDiff(originalReqHeader http.Header, modifiedReqHeader http.H
 
 	dmp := diffmatchpatch.New()
 	headerDiff := dmp.DiffMain(string(originalHeaders), string(modifiedHeaders), false)
-	return dmp.DiffToDelta(headerDiff)
+	headerDiffBytes, err := json.Marshal(headerDiff)
+	if err != nil {
+		log.Warnln("error while marshalling header diff")
+		return ""
+	}
+
+	return string(headerDiffBytes)
 }
