@@ -107,8 +107,8 @@ func saveRequestToCtx(h http.HandlerFunc) http.HandlerFunc {
 		// since the first modification happens there.
 		// NOTE: Set the original request if searchrelevancy is not available, i:e oss
 		originalReq, err := request.FromContext(req.Context())
-		log.Debug(logTag, "original req: ", originalReq)
-		if originalReq == nil {
+		log.Debug(logTag, "original req: ", *originalReq)
+		if *originalReq == nil {
 			log.Warnln(logTag, "Setting original request body since nil was found: ", originalReq)
 			originalCtx := request.NewContext(req.Context(), body)
 			req = req.WithContext(originalCtx)
