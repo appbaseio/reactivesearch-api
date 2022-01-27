@@ -148,12 +148,23 @@ func queryTranslate(h http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
 		start := time.Now()
 
+		shouldLogDiff := true
+
 		body, err := FromContext(req.Context())
 		if err != nil {
 			log.Errorln(logTag, ":", err)
 			telemetry.WriteBackErrorWithTelemetry(req, w, "error encountered while retrieving request from context", http.StatusInternalServerError)
 			return
 		}
+
+		// Marshal the body and save it as the one before modification
+		marshalledBody, err := json.Marshal(body)
+		if err != nil {
+			log.Warnln(logTag, "couldn't marshal body to run log diff on it, ", err)
+			shouldLogDiff = false
+		}
+
+		reqBodyBeforeModification := ioutil.NopCloser(strings.NewReader(string(marshalledBody)))
 
 		// validate request by permission
 		reqPermission, err := permission.FromContext(req.Context())
@@ -245,37 +256,39 @@ func queryTranslate(h http.HandlerFunc) http.HandlerFunc {
 			return
 		}
 
-		reqBeforeModification, err := util.DeepCloneRequest(req)
-		if err != nil {
-			log.Warnln(logTag, "error while cloning request for logging")
-		}
-
 		// Update the request body to the parsed query
 		req.Body = ioutil.NopCloser(strings.NewReader(msearchQuery))
 
-		reqAfterModification, err := util.DeepCloneRequest(req)
-		if err != nil {
-			log.Warningln(logTag, " error occurred while getting the request body after modification, ", err)
+		if shouldLogDiff {
+			reqBodyAfterModification := ioutil.NopCloser(strings.NewReader(string(msearchQuery)))
+
+			bodyDiffStr := util.CalculateBodyDiff(reqBodyBeforeModification, reqBodyAfterModification)
+
+			DiffCalculated := &difference.Difference{
+				Body:    bodyDiffStr,
+				Headers: util.CalculateHeaderDiff(req.Header, req.Header),
+				URI:     util.CalculateUriDiff(req, req),
+				Method:  util.CalculateMethodDiff(req, req),
+			}
+
+			timeTaken := float64(time.Since(start).Milliseconds())
+			DiffCalculated.Took = &timeTaken
+			DiffCalculated.Stage = "querytranslate"
+
+			// Save the diff to context
+			// Get all the diffs first, then append and update the context
+			currentDiffs, err := requestchange.FromContext(req.Context())
+			if err != nil {
+				log.Warnln(logTag, ": error while getting diff, creating new diff. Err: ", err)
+				madeDiffs := make([]difference.Difference, 0)
+				currentDiffs = &madeDiffs
+			}
+			*currentDiffs = append(*currentDiffs, *DiffCalculated)
+
+			// Save the value to the context
+			diffCtx := requestchange.NewContext(req.Context(), currentDiffs)
+			req = req.WithContext(diffCtx)
 		}
-
-		DiffCalculated := util.CalculateRequestDiff(reqBeforeModification, reqAfterModification)
-		timeTaken := float64(time.Since(start).Milliseconds())
-		DiffCalculated.Took = &timeTaken
-		DiffCalculated.Stage = "querytranslate"
-
-		// Save the diff to context
-		// Get all the diffs first, then append and update the context
-		currentDiffs, err := requestchange.FromContext(req.Context())
-		if err != nil {
-			log.Warnln(logTag, ": error while getting diff, creating new diff. Err: ", err)
-			madeDiffs := make([]difference.Difference, 0)
-			currentDiffs = &madeDiffs
-		}
-		*currentDiffs = append(*currentDiffs, *DiffCalculated)
-
-		// Save the value to the context
-		diffCtx := requestchange.NewContext(req.Context(), currentDiffs)
-		req = req.WithContext(diffCtx)
 
 		// Track plugin
 		ctxTrackPlugin := trackplugin.TrackPlugin(req.Context(), "qt")
