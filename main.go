@@ -396,6 +396,7 @@ func main() {
 	var elasticSearchPath, reactiveSearchPath, pipelinesPath string
 	elasticSearchMiddleware := make([]middleware.Middleware, 0)
 	reactiveSearchMiddleware := make([]middleware.Middleware, 0)
+	pluginsByPath := make(map[string]string)
 	err := filepath.Walk(pluginDir, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
@@ -408,12 +409,7 @@ func main() {
 				if util.IsExists(info.Name(), sequencedPlugins) {
 					sequencedPluginsByPath[info.Name()] = path
 				} else {
-					plugin, err1 := LoadPluginFromFile(mainRouter, path)
-					if err1 != nil {
-						return err1
-					}
-					reactiveSearchMiddleware = append(reactiveSearchMiddleware, plugin.RSMiddleware()...)
-					elasticSearchMiddleware = append(elasticSearchMiddleware, plugin.ESMiddleware()...)
+					pluginsByPath[info.Name()] = path
 				}
 			} else {
 				reactiveSearchPath = path
@@ -427,6 +423,21 @@ func main() {
 	})
 	if err != nil {
 		log.Fatal("error loading plugins: ", err)
+	}
+	// Load pipeline plugin at the begining to set the priority to stage routes
+	if pipelinesPath != "" {
+		_, errPipelinesPlugin := LoadPluginFromFile(mainRouter, pipelinesPath)
+		if errPipelinesPlugin != nil {
+			log.Fatal("error loading plugins: ", errPipelinesPlugin)
+		}
+	}
+	for _, pluginPath := range pluginsByPath {
+		plugin, err1 := LoadPluginFromFile(mainRouter, pluginPath)
+		if err1 != nil {
+			log.Fatal("error loading plugins: ", err1)
+		}
+		reactiveSearchMiddleware = append(reactiveSearchMiddleware, plugin.RSMiddleware()...)
+		elasticSearchMiddleware = append(elasticSearchMiddleware, plugin.ESMiddleware()...)
 	}
 	// load plugins in a sequence
 	for _, pluginName := range sequencedPlugins {
@@ -450,13 +461,6 @@ func main() {
 	errESPlugin := LoadESPluginFromFile(mainRouter, elasticSearchPath, elasticSearchMiddleware)
 	if errESPlugin != nil {
 		log.Fatal("error loading plugins: ", errESPlugin)
-	}
-	// Load pipeline plugin at the end to override the default routes
-	if pipelinesPath != "" {
-		_, errPipelinesPlugin := LoadPluginFromFile(mainRouter, pipelinesPath)
-		if errPipelinesPlugin != nil {
-			log.Fatal("error loading plugins: ", errPipelinesPlugin)
-		}
 	}
 	// Execute the migration scripts
 	for _, migration := range util.GetMigrationScripts() {
