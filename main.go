@@ -111,29 +111,7 @@ type LicenseData struct {
 }
 
 func init() {
-	dsn := "https://3b9b4fcedbf4460c90844f51e8634229@o27644.ingest.sentry.io/6063525"
-	// Use prod dsn for customers
-	if Billing == "true" || ClusterBilling == "true" || HostedBilling == "true" {
-		dsn = "https://ecb33128f4514511b2ee7ecaf2e4e689@o27644.ingest.sentry.io/6125897"
-	}
-	err := sentry.Init(sentry.ClientOptions{
-		Dsn:              dsn,
-		Release:          util.Version,
-		AttachStacktrace: true,
-		Debug:            true,
-	})
-	if err != nil {
-		log.Fatalf("sentry.Init: %s", err)
-	}
-
-	defer func() {
-		err := recover()
-		if err != nil {
-			sentry.CurrentHub().Recover(err)
-			sentry.Flush(time.Second * 10)
-		}
-	}()
-
+	flag.StringVar(&enableTelemetry, "enable-telemetry", "", "Set as `false` to disable telemetry")
 	flag.StringVar(&envFile, "env", ".env", "Path to file with environment variables to load in KEY=VALUE format")
 	flag.StringVar(&logMode, "log", "", "Define to change the default log mode(error), other options are: debug(most verbose) and info")
 	flag.StringVar(&licenseKeyPath, "license-key-file", "", "Path to file with license key")
@@ -153,11 +131,53 @@ func init() {
 	flag.BoolVar(&https, "https", false, "Starts a https server instead of a http server if true")
 	flag.BoolVar(&cpuprofile, "cpuprofile", false, "write cpu profile to `file`")
 	flag.BoolVar(&memprofile, "memprofile", false, "write mem profile to `file`")
-	flag.StringVar(&enableTelemetry, "enable-telemetry", "", "Set as `false` to disable telemetry")
+	flag.Parse()
+	// Set telemetry based on the user input
+	// Runtime flag gets the highest priority
+	telemetryEnvVar := os.Getenv("ENABLE_TELEMETRY")
+	if enableTelemetry != "" {
+		b, err := strconv.ParseBool(enableTelemetry)
+		if err != nil {
+			log.Fatal(logTag, ": runtime flag `enable-telemetry` must be boolean: ", err)
+		}
+		util.IsTelemetryEnabled = b
+	} else if telemetryEnvVar != "" {
+		b, err := strconv.ParseBool(telemetryEnvVar)
+		if err != nil {
+			log.Fatal(logTag, ": environment value `ENABLE_TELEMETRY` must be boolean: ", err)
+		}
+		util.IsTelemetryEnabled = b
+	}
+
+	if util.IsTelemetryEnabled {
+		log.Println("Appbase Telemetry is enabled. You can disable it by setting the `enable-telemetry` runtime flag as `false`")
+		// configure sentry
+		dsn := "https://3b9b4fcedbf4460c90844f51e8634229@o27644.ingest.sentry.io/6063525"
+		// Use prod dsn for customers
+		if Billing == "true" || ClusterBilling == "true" || HostedBilling == "true" {
+			dsn = "https://ecb33128f4514511b2ee7ecaf2e4e689@o27644.ingest.sentry.io/6125897"
+		}
+		err := sentry.Init(sentry.ClientOptions{
+			Dsn:              dsn,
+			Release:          util.Version,
+			AttachStacktrace: true,
+			Debug:            true,
+		})
+		if err != nil {
+			log.Fatalf("sentry.Init: %s", err)
+		}
+
+		defer func() {
+			err := recover()
+			if err != nil {
+				sentry.CurrentHub().Recover(err)
+				sentry.Flush(time.Second * 10)
+			}
+		}()
+	}
 }
 
 func main() {
-	flag.Parse()
 	// add cpu profilling
 	if cpuprofile {
 		defer profile.Start().Stop()
@@ -177,7 +197,9 @@ func main() {
 			return "", fmt.Sprintf(" %s:%d", filename, f.Line)
 		},
 	})
-	log.AddHook(&SentryErrorHook{})
+	if util.IsTelemetryEnabled {
+		log.AddHook(&SentryErrorHook{})
+	}
 	switch logMode {
 	case "debug":
 		log.SetLevel(log.DebugLevel)
@@ -470,25 +492,6 @@ func main() {
 	cronjob.AddFunc(syncInterval, syncPluginCache)
 	cronjob.Start()
 
-	// Set telemetry based on the user input
-	// Runtime flag gets the highest priority
-	telemetryEnvVar := os.Getenv("ENABLE_TELEMETRY")
-	if enableTelemetry != "" {
-		b, err := strconv.ParseBool(enableTelemetry)
-		if err != nil {
-			log.Fatal(logTag, ": runtime flag `enable-telemetry` must be boolean: ", err)
-		}
-		util.IsTelemetryEnabled = b
-	} else if telemetryEnvVar != "" {
-		b, err := strconv.ParseBool(telemetryEnvVar)
-		if err != nil {
-			log.Fatal(logTag, ": environment value `ENABLE_TELEMETRY` must be boolean: ", err)
-		}
-		util.IsTelemetryEnabled = b
-	}
-	if util.IsTelemetryEnabled {
-		log.Println("Appbase Telemetry is enabled. You can disable it by setting the `enable-telemetry` runtime flag as `false`")
-	}
 	// CORS policy
 	c := cors.New(cors.Options{
 		AllowedOrigins: []string{"*"},
