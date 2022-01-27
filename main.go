@@ -247,7 +247,6 @@ func main() {
 	router := mux.NewRouter().StrictSlash(true)
 
 	mainRouter := router.PathPrefix("").Subrouter()
-	pipelineRouter := router.PathPrefix("").Subrouter()
 
 	if PlanRefreshInterval == "" {
 		PlanRefreshInterval = "1"
@@ -391,7 +390,8 @@ func main() {
 	util.SetDefaultIndexTemplate()
 	util.SetSystemIndexTemplate()
 	// map of specific plugins
-	sequencedPlugins := []string{"analytics.so", "searchrelevancy.so", "pipelines.so", "rules.so", "cache.so", "suggestions.so", "storedquery.so", "analyticsrequest.so", "applycache.so"}
+	// Pipelines should be at the end so it can override the default routes
+	sequencedPlugins := []string{"analytics.so", "searchrelevancy.so", "rules.so", "cache.so", "suggestions.so", "storedquery.so", "analyticsrequest.so", "applycache.so", "pipelines.so"}
 	sequencedPluginsByPath := make(map[string]string)
 
 	var elasticSearchPath, reactiveSearchPath string
@@ -432,10 +432,6 @@ func main() {
 			elasticSearchMiddleware = append(elasticSearchMiddleware, plugin.ESMiddleware()...)
 			reactiveSearchMiddleware = append(reactiveSearchMiddleware, plugin.RSMiddleware()...)
 
-			// Load pipeline specific router
-			if plugin.Name() == "[pipelines]" {
-				LoadPluginAlternateRoutes(pipelineRouter, plugin)
-			}
 		}
 	}
 	// Load ReactiveSearch plugin
@@ -670,23 +666,4 @@ func ParseEnvFile(envFile io.Reader) (map[string]string, error) {
 	}
 
 	return envMap, nil
-}
-
-// Load the plugin specific routes to the passed
-// router.
-func LoadPluginAlternateRoutes(router *mux.Router, p plugins.Plugin) error {
-	// Get the alternate routes
-	log.Infoln(logTag, "Loading plugin specific routes for: ", p.Name())
-	for _, r := range p.AlternateRoutes() {
-		log.Debug(logTag, "Loading route: ", r.Name, r.Path)
-		err := router.Methods(r.Methods...).
-			Name(r.Name).
-			Path(r.Path).
-			HandlerFunc(r.HandlerFunc).
-			GetError()
-		if err != nil {
-			return err
-		}
-	}
-	return nil
 }
