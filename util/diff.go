@@ -9,8 +9,8 @@ import (
 	"net/http/httptest"
 
 	"github.com/appbaseio/reactivesearch-api/model/difference"
-	"github.com/prometheus/common/log"
 	"github.com/sergi/go-diff/diffmatchpatch"
+	log "github.com/sirupsen/logrus"
 )
 
 // Deep clone the request body by also reading the body and keeping
@@ -96,6 +96,16 @@ func CalculateBodyDiff(originalReqBody io.ReadCloser, modifiedReqBody io.ReadClo
 	dmp := diffmatchpatch.New()
 	bodyDiffs := dmp.DiffMain(originalBodyStr, modifiedBodyStr, false)
 	bodyDiffStr := dmp.DiffToDelta(bodyDiffs)
+
+	// Make an integrity check to make sure the delta
+	// is not compromised
+	if log.GetLevel() == log.DebugLevel {
+		_, err := dmp.DiffFromDelta(originalBodyStr, bodyDiffStr)
+		if err != nil {
+			log.Warnln("Integrity check failed for body, couldn't build diffs from delta")
+			return ""
+		}
+	}
 
 	return bodyDiffStr
 }
