@@ -91,6 +91,10 @@ func CalculateBodyDiff(originalReqBody io.ReadCloser, modifiedReqBody io.ReadClo
 	bodyReadBuffer.ReadFrom(originalReqBody)
 	originalBodyStr := bodyReadBuffer.String()
 
+	// Reset the buffer else the data will be appended
+	// which will create weird side effects
+	bodyReadBuffer.Reset()
+
 	bodyReadBuffer.ReadFrom(modifiedReqBody)
 	modifiedBodyStr := bodyReadBuffer.String()
 
