@@ -22,6 +22,7 @@ import (
 	"github.com/appbaseio/reactivesearch-api/plugins/telemetry"
 	"github.com/appbaseio/reactivesearch-api/util"
 	"github.com/buger/jsonparser"
+	"github.com/gdexlab/go-render/render"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -179,8 +180,9 @@ func (l *Logs) recordResponse(w *httptest.ResponseRecorder, r *http.Request, req
 	}
 	// apply suggestion category
 	if *reqCategory == category.ReactiveSearch {
-		log.Debug(logTag, "Recording response for RS")
 		reqBody, err := request.FromContext(ctx)
+
+		log.Debug(logTag, "Recording response for RS", render.AsCode(reqBody))
 		if err != nil {
 			log.Errorln(logTag, "error encountered while reading request body:", err)
 		}
