@@ -9,8 +9,8 @@ import (
 	"net/http/httptest"
 
 	"github.com/appbaseio/reactivesearch-api/model/difference"
-	"github.com/prometheus/common/log"
 	"github.com/sergi/go-diff/diffmatchpatch"
+	log "github.com/sirupsen/logrus"
 )
 
 // Deep clone the request body by also reading the body and keeping
@@ -85,7 +85,7 @@ func CalculateResponseDiff(originalRes *httptest.ResponseRecorder, modifiedRes *
 }
 
 // Calculate the diff in the body
-func CalculateBodyDiff(originalReqBody io.ReadCloser, modifiedReqBody io.ReadCloser) string {
+func CalculateBodyDiff(originalReqBody io.ReadCloser, modifiedReqBody io.ReadCloser) []diffmatchpatch.Diff {
 	bodyReadBuffer := new(bytes.Buffer)
 	bodyReadBuffer.ReadFrom(originalReqBody)
 	originalBodyStr := bodyReadBuffer.String()
@@ -95,26 +95,27 @@ func CalculateBodyDiff(originalReqBody io.ReadCloser, modifiedReqBody io.ReadClo
 
 	dmp := diffmatchpatch.New()
 	bodyDiffs := dmp.DiffMain(originalBodyStr, modifiedBodyStr, false)
-	bodyDiffStr := dmp.DiffToDelta(bodyDiffs)
 
-	return bodyDiffStr
+	return bodyDiffs
 }
 
 // Calculate the difference in the URI
-func CalculateUriDiff(originalReq *http.Request, modifiedReq *http.Request) string {
+func CalculateUriDiff(originalReq *http.Request, modifiedReq *http.Request) []diffmatchpatch.Diff {
 	dmp := diffmatchpatch.New()
 	URIDiffs := dmp.DiffMain(originalReq.URL.Path, modifiedReq.URL.Path, false)
-	return dmp.DiffToDelta(URIDiffs)
+
+	return URIDiffs
 }
 
 // Calculate method difference
-func CalculateMethodDiff(originalReq *http.Request, modifiedReq *http.Request) string {
+func CalculateMethodDiff(originalReq *http.Request, modifiedReq *http.Request) []diffmatchpatch.Diff {
 	dmp := diffmatchpatch.New()
 	methodDiff := dmp.DiffMain(originalReq.Method, modifiedReq.Method, false)
-	return dmp.DiffToDelta(methodDiff)
+
+	return methodDiff
 }
 
-func CalculateHeaderDiff(originalReqHeader http.Header, modifiedReqHeader http.Header) string {
+func CalculateHeaderDiff(originalReqHeader http.Header, modifiedReqHeader http.Header) []diffmatchpatch.Diff {
 	originalHeaders, err := json.Marshal(originalReqHeader)
 	if err != nil {
 		log.Warnln(" could not marshal original request headers, ", err)
@@ -128,5 +129,6 @@ func CalculateHeaderDiff(originalReqHeader http.Header, modifiedReqHeader http.H
 
 	dmp := diffmatchpatch.New()
 	headerDiff := dmp.DiffMain(string(originalHeaders), string(modifiedHeaders), false)
-	return dmp.DiffToDelta(headerDiff)
+
+	return headerDiff
 }
