@@ -9,7 +9,6 @@ import (
 	"net/http/httptest"
 
 	"github.com/appbaseio/reactivesearch-api/model/difference"
-	"github.com/gdexlab/go-render/render"
 	"github.com/sergi/go-diff/diffmatchpatch"
 	log "github.com/sirupsen/logrus"
 )
@@ -97,8 +96,6 @@ func CalculateBodyDiff(originalReqBody io.ReadCloser, modifiedReqBody io.ReadClo
 
 	bodyReadBuffer.ReadFrom(modifiedReqBody)
 	modifiedBodyStr := bodyReadBuffer.String()
-
-	log.Debug("Comparing: ", render.AsCode(originalBodyStr), " with: ", render.AsCode(modifiedBodyStr))
 
 	dmp := diffmatchpatch.New()
 	bodyDiffs := dmp.DiffMain(originalBodyStr, modifiedBodyStr, false)
