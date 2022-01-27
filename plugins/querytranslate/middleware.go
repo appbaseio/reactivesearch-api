@@ -8,7 +8,9 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 
+	"github.com/appbaseio/reactivesearch-api/util"
 	"github.com/appbaseio/reactivesearch-api/util/iplookup"
 
 	"github.com/appbaseio/reactivesearch-api/middleware"
@@ -16,9 +18,11 @@ import (
 	"github.com/appbaseio/reactivesearch-api/middleware/ratelimiter"
 	"github.com/appbaseio/reactivesearch-api/middleware/validate"
 	"github.com/appbaseio/reactivesearch-api/model/category"
+	"github.com/appbaseio/reactivesearch-api/model/difference"
 	"github.com/appbaseio/reactivesearch-api/model/op"
 	"github.com/appbaseio/reactivesearch-api/model/permission"
 	"github.com/appbaseio/reactivesearch-api/model/request"
+	"github.com/appbaseio/reactivesearch-api/model/requestchange"
 	"github.com/appbaseio/reactivesearch-api/model/trackplugin"
 	"github.com/appbaseio/reactivesearch-api/plugins/auth"
 	"github.com/appbaseio/reactivesearch-api/plugins/logs"
@@ -142,6 +146,8 @@ func applySourceFiltering(h http.HandlerFunc) http.HandlerFunc {
 // Translates the query to `_msearch` request
 func queryTranslate(h http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
+		start := time.Now()
+
 		body, err := FromContext(req.Context())
 		if err != nil {
 			log.Errorln(logTag, ":", err)
@@ -238,8 +244,38 @@ func queryTranslate(h http.HandlerFunc) http.HandlerFunc {
 			telemetry.WriteBackErrorWithTelemetry(req, w, err.Error(), http.StatusBadRequest)
 			return
 		}
+
+		reqBeforeModification, err := util.DeepCloneRequest(req)
+		if err != nil {
+			log.Warnln(logTag, "error while cloning request for logging")
+		}
+
 		// Update the request body to the parsed query
 		req.Body = ioutil.NopCloser(strings.NewReader(msearchQuery))
+
+		reqAfterModification, err := util.DeepCloneRequest(req)
+		if err != nil {
+			log.Warningln(logTag, " error occurred while getting the request body after modification, ", err)
+		}
+
+		DiffCalculated := util.CalculateRequestDiff(reqBeforeModification, reqAfterModification)
+		timeTaken := float64(time.Since(start).Milliseconds())
+		DiffCalculated.Took = &timeTaken
+		DiffCalculated.Stage = "querytranslate"
+
+		// Save the diff to context
+		// Get all the diffs first, then append and update the context
+		currentDiffs, err := requestchange.FromContext(req.Context())
+		if err != nil {
+			log.Warnln(logTag, ": error while getting diff, creating new diff. Err: ", err)
+			madeDiffs := make([]difference.Difference, 0)
+			currentDiffs = &madeDiffs
+		}
+		*currentDiffs = append(*currentDiffs, *DiffCalculated)
+
+		// Save the value to the context
+		diffCtx := requestchange.NewContext(req.Context(), currentDiffs)
+		req = req.WithContext(diffCtx)
 
 		// Track plugin
 		ctxTrackPlugin := trackplugin.TrackPlugin(req.Context(), "qt")
