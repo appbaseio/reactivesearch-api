@@ -21,6 +21,7 @@ import (
 	"github.com/appbaseio/reactivesearch-api/model/difference"
 	"github.com/appbaseio/reactivesearch-api/model/op"
 	"github.com/appbaseio/reactivesearch-api/model/permission"
+	"github.com/appbaseio/reactivesearch-api/model/request"
 	"github.com/appbaseio/reactivesearch-api/model/requestchange"
 	"github.com/appbaseio/reactivesearch-api/model/trackplugin"
 	"github.com/appbaseio/reactivesearch-api/plugins/auth"
@@ -104,8 +105,15 @@ func saveRequestToCtx(h http.HandlerFunc) http.HandlerFunc {
 
 		// No need to write original body, it will be written by search relevancy
 		// since the first modification happens there.
-		// originalCtx := request.NewContext(req.Context(), body)
-		// req = req.WithContext(originalCtx)
+		// NOTE: Set the original request if searchrelevancy is not available, i:e oss
+		originalReq, err := request.FromContext(req.Context())
+		log.Debug(logTag, "original req: ", originalReq)
+		if originalReq == nil {
+			log.Warnln(logTag, "Setting original request body since nil was found: ", originalReq)
+			originalCtx := request.NewContext(req.Context(), body)
+			req = req.WithContext(originalCtx)
+		}
+
 		ctx := NewContext(req.Context(), body)
 		req = req.WithContext(ctx)
 
