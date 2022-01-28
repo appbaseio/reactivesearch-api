@@ -218,14 +218,6 @@ func (l *Logs) recordResponse(w *httptest.ResponseRecorder, r *http.Request, req
 	rec.Response.Status = http.StatusText(response.StatusCode)
 	rec.Response.Headers = response.Header
 
-	// Extract the console logs
-	consoleStr, err := console.FromContext(r.Context())
-	if err != nil {
-		log.Warnln(logTag, "couldn't extract console logs, ", err)
-	} else {
-		rec.Response.Console = *consoleStr
-	}
-
 	responseBody, err := ioutil.ReadAll(response.Body)
 	if err != nil {
 		log.Errorln(logTag, "can't read response body: ", err)
@@ -285,6 +277,14 @@ func (l *Logs) recordResponse(w *httptest.ResponseRecorder, r *http.Request, req
 		log.Warnln(logTag, "No response changes added with err: ", err)
 	} else {
 		rec.ResponseChanges = *responseChanges
+	}
+
+	// Extract the console logs
+	consoleStr, err := console.FromContext(ctx)
+	if err != nil {
+		log.Warnln(logTag, "couldn't extract console logs, ", err)
+	} else {
+		rec.Response.Console = *consoleStr
 	}
 
 	marshalledLog, err := json.Marshal(rec)
