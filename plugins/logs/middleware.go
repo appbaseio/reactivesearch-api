@@ -219,7 +219,7 @@ func (l *Logs) recordResponse(w *httptest.ResponseRecorder, r *http.Request, req
 	rec.Response.Headers = response.Header
 
 	// Extract the console logs
-	consoleStr, err := console.FromContext(r.Context())
+	consoleStr, err := console.FromContext(ctx)
 	if err != nil {
 		log.Warnln(logTag, "couldn't extract console logs, ", err)
 	} else {
