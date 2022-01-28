@@ -129,8 +129,8 @@ func (l *Logs) recorder(h http.HandlerFunc) http.HandlerFunc {
 		r = r.WithContext(resDiffCtx)
 
 		// Init the console logs in the context
-		consoleLogs := new(string)
-		consoleLogsCtx := console.NewContext(r.Context(), consoleLogs)
+		consoleLogs := ""
+		consoleLogsCtx := console.NewContext(r.Context(), &consoleLogs)
 		r = r.WithContext(consoleLogsCtx)
 
 		// Serve using response recorder
@@ -223,10 +223,7 @@ func (l *Logs) recordResponse(w *httptest.ResponseRecorder, r *http.Request, req
 	if err != nil {
 		log.Warnln(logTag, "couldn't extract console logs, ", err)
 	} else {
-		// Limit the size of the console logs to 10KB for one execution
-		consoleStrValue := *consoleStr
-		consoleStr := string(consoleStrValue[:util.Min(len(consoleStrValue), 1000000)])
-		rec.Response.Console = strings.Split(consoleStr, "\n")
+		rec.Response.Console = *consoleStr
 	}
 
 	responseBody, err := ioutil.ReadAll(response.Body)
