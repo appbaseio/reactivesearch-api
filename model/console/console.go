@@ -13,17 +13,17 @@ const CtxKey = contextKey("console-logs")
 
 // NewContext returns a context with the passed value stored against the
 // context key.
-func NewContext(ctx context.Context, request *[]string) context.Context {
+func NewContext(ctx context.Context, request *string) context.Context {
 	return context.WithValue(ctx, CtxKey, request)
 }
 
-// FromContext retrieves the array of logs saved in the context.
-func FromContext(ctx context.Context) (*[]string, error) {
+// FromContext retrieves the logs saved in the context.
+func FromContext(ctx context.Context) (*string, error) {
 	ctxRequest := ctx.Value(CtxKey)
 	if ctxRequest == nil {
 		return nil, errors.NewNotFoundInContextError("Console Logs")
 	}
-	changes, ok := ctxRequest.(*[]string)
+	changes, ok := ctxRequest.(*string)
 	if !ok {
 		return nil, errors.NewInvalidCastError("ctxRequest", "Console Logs")
 	}
