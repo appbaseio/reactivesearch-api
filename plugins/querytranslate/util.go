@@ -3,6 +3,7 @@ package querytranslate
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"math"
 	"reflect"
@@ -935,14 +936,21 @@ func normalizeValue(value string) string {
 
 // A wrapper around normalizeValue to handle value transformation
 // for search, suggestion types of queries at query generation time
-func normalizeQueryValue(input *interface{}) *interface{} {
+func normalizeQueryValue(input *interface{}) (*interface{}, error) {
 	if input == nil {
-		return nil
+		return nil, nil
 	}
 	valueAsInterface := *input
-	normalizedValue := sanitizeString(valueAsInterface.(string))
+	valueAsString, ok := valueAsInterface.(string)
+	if !ok {
+		// Return the error
+		errMsg := "Expected query.value as string but got a non string type"
+		return nil, errors.New(errMsg)
+	}
+
+	normalizedValue := sanitizeString(valueAsString)
 	var outputValue interface{} = normalizedValue
-	return &outputValue
+	return &outputValue, nil
 }
 
 // Removes the extra spaces from a string

@@ -46,7 +46,11 @@ func translateQuery(rsQuery RSQuery, userIP string) (string, error) {
 		if query.Type == Search || query.Type == Suggestion {
 			if query.Value != nil {
 				// set the updated value
-				rsQuery.Query[queryIndex].Value = normalizeQueryValue(query.Value)
+				var err error
+				rsQuery.Query[queryIndex].Value, err = normalizeQueryValue(query.Value)
+				if err != nil {
+					return "", err
+				}
 			}
 		}
 
