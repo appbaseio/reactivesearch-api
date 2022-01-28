@@ -86,6 +86,7 @@ type Response struct {
 	Headers map[string][]string
 	Took    *float64 `json:"took,omitempty"`
 	Body    string   `json:"body"`
+	Console []string `json:"console,omitempty"`
 }
 
 type record struct {
