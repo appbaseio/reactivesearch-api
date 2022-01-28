@@ -2,9 +2,9 @@ package console
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/appbaseio/reactivesearch-api/errors"
+	"github.com/appbaseio/reactivesearch-api/util"
 )
 
 type contextKey string
@@ -25,9 +25,14 @@ func FromContext(ctx context.Context) (*[]string, error) {
 		return nil, errors.NewNotFoundInContextError("Console Logs")
 	}
 	consoleLogs, ok := ctxRequest.(*[]string)
-	fmt.Println("changes: ", consoleLogs)
 	if !ok {
 		return nil, errors.NewInvalidCastError("ctxRequest", "Console Logs")
 	}
 	return consoleLogs, nil
+}
+
+// LimitConsoleString truncates the data if the string is more than
+// 10KB and returns a new string
+func LimitConsoleString(console string) string {
+	return string(console[:util.Min(len(console), 1000000)])
 }
