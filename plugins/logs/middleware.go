@@ -13,6 +13,7 @@ import (
 	"github.com/appbaseio/reactivesearch-api/middleware/classify"
 	"github.com/appbaseio/reactivesearch-api/middleware/validate"
 	"github.com/appbaseio/reactivesearch-api/model/category"
+	"github.com/appbaseio/reactivesearch-api/model/console"
 	"github.com/appbaseio/reactivesearch-api/model/difference"
 	"github.com/appbaseio/reactivesearch-api/model/index"
 	"github.com/appbaseio/reactivesearch-api/model/request"
@@ -127,6 +128,11 @@ func (l *Logs) recorder(h http.HandlerFunc) http.HandlerFunc {
 		resDiffCtx := responsechange.NewContext(r.Context(), &resDiff)
 		r = r.WithContext(resDiffCtx)
 
+		// Init the console logs in the context
+		consoleLogs := make([]string, 0)
+		consoleLogsCtx := console.NewContext(r.Context(), &consoleLogs)
+		r = r.WithContext(consoleLogsCtx)
+
 		// Serve using response recorder
 		respRecorder := httptest.NewRecorder()
 		h(respRecorder, r)
@@ -211,6 +217,17 @@ func (l *Logs) recordResponse(w *httptest.ResponseRecorder, r *http.Request, req
 	rec.Response.Code = response.StatusCode
 	rec.Response.Status = http.StatusText(response.StatusCode)
 	rec.Response.Headers = response.Header
+
+	// Extract the console logs
+	consoleLogs, err := console.FromContext(r.Context())
+	if err != nil {
+		log.Warnln(logTag, "couldn't extract console logs, ", err)
+	} else {
+		// Store the logs only if the length is more than 0
+		if len(*consoleLogs) > 0 {
+			rec.Response.Console = *consoleLogs
+		}
+	}
 
 	responseBody, err := ioutil.ReadAll(response.Body)
 	if err != nil {
