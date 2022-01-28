@@ -20,7 +20,7 @@ func NewContext(ctx context.Context, consoleStr *string) context.Context {
 	consoleStrValue := *consoleStr
 	consoleStrValue = string(consoleStrValue[:util.Min(len(consoleStrValue), 1000000)])
 	consoleLogs := strings.Split(consoleStrValue, "\n")
-	return context.WithValue(ctx, CtxKey, consoleLogs)
+	return context.WithValue(ctx, CtxKey, &consoleLogs)
 }
 
 // FromContext retrieves the logs saved in the context.
