@@ -944,7 +944,7 @@ func normalizeQueryValue(input *interface{}) (*interface{}, error) {
 	valueAsString, ok := valueAsInterface.(string)
 	if !ok {
 		// Return the error
-		errMsg := "Expected query.value as string but got a non string type"
+		errMsg := "Expected query.value to be of type string, but got a different type"
 		return nil, errors.New(errMsg)
 	}
 
