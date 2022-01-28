@@ -128,10 +128,10 @@ func (l *Logs) recorder(h http.HandlerFunc) http.HandlerFunc {
 		resDiffCtx := responsechange.NewContext(r.Context(), &resDiff)
 		r = r.WithContext(resDiffCtx)
 
-		// Init the console logs in the context
-		consoleLogs := ""
-		consoleLogsCtx := console.NewContext(r.Context(), &consoleLogs)
-		r = r.WithContext(consoleLogsCtx)
+		// // Init the console logs in the context
+		// consoleLogs := ""
+		// consoleLogsCtx := console.NewContext(r.Context(), &consoleLogs)
+		// r = r.WithContext(consoleLogsCtx)
 
 		// Serve using response recorder
 		respRecorder := httptest.NewRecorder()
