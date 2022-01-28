@@ -129,7 +129,7 @@ func (l *Logs) recorder(h http.HandlerFunc) http.HandlerFunc {
 		r = r.WithContext(resDiffCtx)
 
 		// Init the console logs in the context
-		consoleLogs := ""
+		consoleLogs := make([]string, 0)
 		consoleLogsCtx := console.NewContext(r.Context(), &consoleLogs)
 		r = r.WithContext(consoleLogsCtx)
 
