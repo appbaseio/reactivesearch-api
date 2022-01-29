@@ -247,7 +247,6 @@ func main() {
 	router := mux.NewRouter().StrictSlash(true)
 
 	mainRouter := router.PathPrefix("").Subrouter()
-	pipelineRouter := router.PathPrefix("").Subrouter()
 
 	if PlanRefreshInterval == "" {
 		PlanRefreshInterval = "1"
@@ -391,36 +390,55 @@ func main() {
 	util.SetDefaultIndexTemplate()
 	util.SetSystemIndexTemplate()
 	// map of specific plugins
-	sequencedPlugins := []string{"analytics.so", "searchrelevancy.so", "pipelines.so", "rules.so", "cache.so", "suggestions.so", "storedquery.so", "analyticsrequest.so", "applycache.so"}
+	sequencedPlugins := []string{"analytics.so", "searchrelevancy.so", "rules.so", "cache.so", "suggestions.so", "storedquery.so", "analyticsrequest.so", "applycache.so"}
 	sequencedPluginsByPath := make(map[string]string)
 
-	var elasticSearchPath, reactiveSearchPath string
+	var elasticSearchPath, reactiveSearchPath, pipelinesPath string
 	elasticSearchMiddleware := make([]middleware.Middleware, 0)
 	reactiveSearchMiddleware := make([]middleware.Middleware, 0)
+	pluginsByPath := make(map[string]string)
 	err := filepath.Walk(pluginDir, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
-		if !info.IsDir() && filepath.Ext(info.Name()) == ".so" && info.Name() != "elasticsearch.so" {
+		if !info.IsDir() &&
+			filepath.Ext(info.Name()) == ".so" &&
+			info.Name() != "elasticsearch.so" &&
+			info.Name() != "pipelines.so" {
 			if info.Name() != "querytranslate.so" {
 				if util.IsExists(info.Name(), sequencedPlugins) {
 					sequencedPluginsByPath[info.Name()] = path
 				} else {
-					plugin, err1 := LoadPluginFromFile(mainRouter, path)
-					if err1 != nil {
-						return err1
-					}
-					reactiveSearchMiddleware = append(reactiveSearchMiddleware, plugin.RSMiddleware()...)
-					elasticSearchMiddleware = append(elasticSearchMiddleware, plugin.ESMiddleware()...)
+					pluginsByPath[info.Name()] = path
 				}
 			} else {
 				reactiveSearchPath = path
 			}
 		} else if info.Name() == "elasticsearch.so" {
 			elasticSearchPath = path
+		} else if info.Name() == "pipelines.so" {
+			pipelinesPath = path
 		}
 		return nil
 	})
+	if err != nil {
+		log.Fatal("error loading plugins: ", err)
+	}
+	// Load pipeline plugin at the begining to set the priority to stage routes
+	if pipelinesPath != "" {
+		_, errPipelinesPlugin := LoadPluginFromFile(mainRouter, pipelinesPath)
+		if errPipelinesPlugin != nil {
+			log.Fatal("error loading plugins: ", errPipelinesPlugin)
+		}
+	}
+	for _, pluginPath := range pluginsByPath {
+		plugin, err1 := LoadPluginFromFile(mainRouter, pluginPath)
+		if err1 != nil {
+			log.Fatal("error loading plugins: ", err1)
+		}
+		reactiveSearchMiddleware = append(reactiveSearchMiddleware, plugin.RSMiddleware()...)
+		elasticSearchMiddleware = append(elasticSearchMiddleware, plugin.ESMiddleware()...)
+	}
 	// load plugins in a sequence
 	for _, pluginName := range sequencedPlugins {
 		path := sequencedPluginsByPath[pluginName]
@@ -431,22 +449,19 @@ func main() {
 			}
 			elasticSearchMiddleware = append(elasticSearchMiddleware, plugin.ESMiddleware()...)
 			reactiveSearchMiddleware = append(reactiveSearchMiddleware, plugin.RSMiddleware()...)
-
-			// Load pipeline specific router
-			if plugin.Name() == "[pipelines]" {
-				LoadPluginAlternateRoutes(pipelineRouter, plugin)
-			}
 		}
 	}
 	// Load ReactiveSearch plugin
 	if reactiveSearchPath != "" {
-		LoadRSPluginFromFile(mainRouter, reactiveSearchPath, reactiveSearchMiddleware)
+		errRSPlugin := LoadRSPluginFromFile(mainRouter, reactiveSearchPath, reactiveSearchMiddleware)
+		if errRSPlugin != nil {
+			log.Fatal("error loading plugins: ", errRSPlugin)
+		}
 	}
-	LoadESPluginFromFile(mainRouter, elasticSearchPath, elasticSearchMiddleware)
-	if err != nil {
-		log.Fatal("error loading plugins: ", err)
+	errESPlugin := LoadESPluginFromFile(mainRouter, elasticSearchPath, elasticSearchMiddleware)
+	if errESPlugin != nil {
+		log.Fatal("error loading plugins: ", errESPlugin)
 	}
-
 	// Execute the migration scripts
 	for _, migration := range util.GetMigrationScripts() {
 		shouldExecute, err := migration.ConditionCheck()
@@ -670,23 +685,4 @@ func ParseEnvFile(envFile io.Reader) (map[string]string, error) {
 	}
 
 	return envMap, nil
-}
-
-// Load the plugin specific routes to the passed
-// router.
-func LoadPluginAlternateRoutes(router *mux.Router, p plugins.Plugin) error {
-	// Get the alternate routes
-	log.Infoln(logTag, "Loading plugin specific routes for: ", p.Name())
-	for _, r := range p.AlternateRoutes() {
-		log.Debug(logTag, "Loading route: ", r.Name, r.Path)
-		err := router.Methods(r.Methods...).
-			Name(r.Name).
-			Path(r.Path).
-			HandlerFunc(r.HandlerFunc).
-			GetError()
-		if err != nil {
-			return err
-		}
-	}
-	return nil
 }
