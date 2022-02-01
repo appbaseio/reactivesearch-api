@@ -79,8 +79,3 @@ func (u *Users) ESMiddleware() []middleware.Middleware {
 func (u *Users) RSMiddleware() []middleware.Middleware {
 	return make([]middleware.Middleware, 0)
 }
-
-// Alternate routes
-func (a *Users) AlternateRoutes() []plugins.Route {
-	return make([]plugins.Route, 0)
-}

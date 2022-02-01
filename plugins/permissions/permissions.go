@@ -77,8 +77,3 @@ func (p *permissions) ESMiddleware() []middleware.Middleware {
 func (p *permissions) RSMiddleware() []middleware.Middleware {
 	return make([]middleware.Middleware, 0)
 }
-
-// Alternate routes
-func (a *permissions) AlternateRoutes() []plugins.Route {
-	return make([]plugins.Route, 0)
-}

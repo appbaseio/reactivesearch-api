@@ -35,11 +35,6 @@ func (es *elasticsearch) Routes() []plugins.Route {
 	return es.routes()
 }
 
-// Alternate routes
-func (a *elasticsearch) AlternateRoutes() []plugins.Route {
-	return make([]plugins.Route, 0)
-}
-
 // Default empty middleware array function
 func (es *elasticsearch) ESMiddleware() []middleware.Middleware {
 	return make([]middleware.Middleware, 0)
