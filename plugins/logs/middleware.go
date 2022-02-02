@@ -13,6 +13,7 @@ import (
 	"github.com/appbaseio/reactivesearch-api/middleware/classify"
 	"github.com/appbaseio/reactivesearch-api/middleware/validate"
 	"github.com/appbaseio/reactivesearch-api/model/category"
+	"github.com/appbaseio/reactivesearch-api/model/console"
 	"github.com/appbaseio/reactivesearch-api/model/difference"
 	"github.com/appbaseio/reactivesearch-api/model/index"
 	"github.com/appbaseio/reactivesearch-api/model/request"
@@ -86,6 +87,7 @@ type Response struct {
 	Headers map[string][]string
 	Took    *float64 `json:"took,omitempty"`
 	Body    string   `json:"body"`
+	Console []string `json:"console,omitempty"`
 }
 
 type record struct {
@@ -125,6 +127,11 @@ func (l *Logs) recorder(h http.HandlerFunc) http.HandlerFunc {
 		resDiff := make([]difference.Difference, 0)
 		resDiffCtx := responsechange.NewContext(r.Context(), &resDiff)
 		r = r.WithContext(resDiffCtx)
+
+		// Init the console logs in the context
+		consoleLogs := make([]string, 0)
+		consoleLogsCtx := console.NewContext(r.Context(), &consoleLogs)
+		r = r.WithContext(consoleLogsCtx)
 
 		// Serve using response recorder
 		respRecorder := httptest.NewRecorder()
@@ -270,6 +277,14 @@ func (l *Logs) recordResponse(w *httptest.ResponseRecorder, r *http.Request, req
 		log.Warnln(logTag, "No response changes added with err: ", err)
 	} else {
 		rec.ResponseChanges = *responseChanges
+	}
+
+	// Extract the console logs
+	consoleStr, err := console.FromContext(ctx)
+	if err != nil {
+		log.Warnln(logTag, "couldn't extract console logs, ", err)
+	} else {
+		rec.Response.Console = *consoleStr
 	}
 
 	marshalledLog, err := json.Marshal(rec)
