@@ -131,6 +131,11 @@ func translateQuery(rsQuery RSQuery, userIP string) (string, error) {
 	return mSearchQuery, nil
 }
 
+// global function to transform the RS API query to _msearch equivalent query
+func TranslateQuery(rsQuery RSQuery, userIP string) (string, error) {
+	return translateQuery(rsQuery, userIP)
+}
+
 // Generate the queryDSL without options for a particular query type
 func (query *Query) generateQueryByType() (*interface{}, error) {
 	var translatedQuery interface{}
