@@ -52,8 +52,8 @@ func BillingMiddlewareOffline(next http.Handler) http.Handler {
 					remainingHoursFromGracePeriod := OfflineGracePeriod*24 - remainingHours
 					days := int64(remainingHoursFromGracePeriod / 24)
 					hours := int64(remainingHoursFromGracePeriod) % 24
-					debugMsg := fmt.Sprintf("Your license key will expire in %d days, %d hours.", days, hours)
-					log.Debugln(debugMsg)
+					licenseMsg := fmt.Sprintf("Your license key will expire in %d days, %d hours.", days, hours)
+					log.Infoln(licenseMsg)
 					next.ServeHTTP(w, r)
 				} else {
 					log.Errorln("Your license key has expired, please contact support@appbase.io")
