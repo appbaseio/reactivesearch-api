@@ -299,6 +299,7 @@ func main() {
 		licenseKey = os.Getenv("LICENSE_KEY")
 	}
 	if licenseKey != "" {
+		util.OfflineBilling = true
 		keygen.PublicKey = util.AppbasePublicKey
 		// validate offline license key
 		dataset, err := keygen.Genuine(licenseKey, keygen.SchemeCodeEd25519)
