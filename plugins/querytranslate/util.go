@@ -673,7 +673,7 @@ func getValidInterval(interval *int, rangeValue RangeValue) int {
 	return normalizedInterval
 }
 
-func getQueryIds(rsQuery RSQuery) []string {
+func GetQueryIds(rsQuery RSQuery) []string {
 	var queryIds []string
 	for _, query := range rsQuery.Query {
 		if query.Execute == nil || *query.Execute {

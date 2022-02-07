@@ -58,7 +58,7 @@ func (r *QueryTranslate) search() http.HandlerFunc {
 			return
 		}
 
-		queryIds := getQueryIds(*rsAPIRequest)
+		queryIds := GetQueryIds(*rsAPIRequest)
 
 		rsResponse := []byte(`{}`)
 
