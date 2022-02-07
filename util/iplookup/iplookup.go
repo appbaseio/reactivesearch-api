@@ -100,7 +100,7 @@ func (info *IPInfo) Lookup(ip string) (*IPLookup, error) {
 
 	key := "demo"
 	url := ipLookupURL + ip + "?key=" + key
-	if util.IsBillingEnabled() {
+	if util.IsBillingEnabled() && !util.OfflineBilling {
 		clusterID, err := util.GetArcID()
 		if err != nil {
 			return nil, err
