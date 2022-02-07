@@ -48,6 +48,13 @@ func BillingMiddlewareOffline(next http.Handler) http.Handler {
 					// throw error so sentry can log
 					log.Errorln(errorMsg)
 					next.ServeHTTP(w, r)
+				} else if remainingHours >= OfflineGracePeriod*24 {
+					remainingHoursFromGracePeriod := OfflineGracePeriod*24 - remainingHours
+					days := int64(remainingHoursFromGracePeriod / 24)
+					hours := int64(remainingHoursFromGracePeriod) % 24
+					licenseMsg := fmt.Sprintf("Your license key will expire in %d days, %d hours.", days, hours)
+					log.Infoln(licenseMsg)
+					next.ServeHTTP(w, r)
 				} else {
 					log.Errorln("Your license key has expired, please contact support@appbase.io")
 					// Write an error and stop the handler chain
@@ -55,7 +62,6 @@ func BillingMiddlewareOffline(next http.Handler) http.Handler {
 					return
 				}
 			}
-			next.ServeHTTP(w, r)
 		}
 	})
 }

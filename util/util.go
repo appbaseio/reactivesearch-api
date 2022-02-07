@@ -33,6 +33,9 @@ var HostedBilling string
 // ClusterBilling is a build time variable
 var ClusterBilling string
 
+// OfflineBilling is true when license key is defined
+var OfflineBilling bool
+
 // Opensource is a build time variable
 var Opensource string
 
@@ -359,6 +362,10 @@ func ShouldProxyToACCAPI() bool {
 }
 
 func ProxyACCAPI(proxyConfig ProxyConfig) (*http.Response, error) {
+	// Avoid call to ACCAPI for offline billing
+	if OfflineBilling {
+		return nil, nil
+	}
 	// Call ACCAPI to trigger update for other nodes
 	arcID, err := GetArcID()
 	if err != nil {
