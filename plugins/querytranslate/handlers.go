@@ -159,145 +159,147 @@ func TransformESResponse(response []byte, rsAPIRequest *RSQuery) ([]byte, error)
 		var parsingError error
 		// Set `responses` by query ID
 		jsonparser.ArrayEach(responses, func(value []byte, dataType jsonparser.ValueType, offset int, err error) {
-			queryID := queryIds[index]
-			var isSuggestionRequest bool
-			var suggestions = make([]SuggestionHIT, 0)
-			// parse suggestions if query is of type `suggestion`
-			for _, query := range rsAPIRequest.Query {
-				if *query.ID == queryID && query.Type == Suggestion {
-					isSuggestionRequest = true
-					// Index suggestions are not meant for empty query
-					if query.Value != nil {
-						valueAsString, ok := (*query.Value).(string)
-						if ok {
-							var normalizedDataFields = []string{}
-							normalizedFields := NormalizedDataFields(query.DataField, query.FieldWeights)
-							for _, dataField := range normalizedFields {
-								normalizedDataFields = append(normalizedDataFields, dataField.Field)
-							}
-							suggestionsConfig := SuggestionsConfig{
-								// Fields to extract suggestions
-								DataFields: normalizedDataFields,
-								// Query value
-								Value:                       valueAsString,
-								ShowDistinctSuggestions:     query.ShowDistinctSuggestions,
-								EnablePredictiveSuggestions: query.EnablePredictiveSuggestions,
-								MaxPredictedWords:           query.MaxPredictedWords,
-								EnableSynonyms:              query.EnableSynonyms,
-								ApplyStopwords:              query.ApplyStopwords,
-								Stopwords:                   query.Stopwords,
-								URLField:                    query.URLField,
-								CategoryField:               query.CategoryField,
-								HighlightField:              query.HighlightField,
-								HighlightConfig:             query.HighlightConfig,
-								Language:                    query.SearchLanguage,
-							}
-
-							var rawHits []ESDoc
-							hits, dataType, _, err1 := jsonparser.Get(value, "hits", "hits")
-							if dataType == jsonparser.NotExist {
-								// write raw response
-								rsResponseWithSearchResponse, err := jsonparser.Set(rsResponse, value, queryID)
-								if err != nil {
-									log.Errorln(logTag, ":", err)
-									parsingError = errors.New("can't add search response to final response")
-									return
+			if index < len(queryIds) {
+				queryID := queryIds[index]
+				var isSuggestionRequest bool
+				var suggestions = make([]SuggestionHIT, 0)
+				// parse suggestions if query is of type `suggestion`
+				for _, query := range rsAPIRequest.Query {
+					if *query.ID == queryID && query.Type == Suggestion {
+						isSuggestionRequest = true
+						// Index suggestions are not meant for empty query
+						if query.Value != nil {
+							valueAsString, ok := (*query.Value).(string)
+							if ok {
+								var normalizedDataFields = []string{}
+								normalizedFields := NormalizedDataFields(query.DataField, query.FieldWeights)
+								for _, dataField := range normalizedFields {
+									normalizedDataFields = append(normalizedDataFields, dataField.Field)
 								}
-								rsResponse = rsResponseWithSearchResponse
-								continue
-							}
-							if err1 != nil {
-								log.Errorln(logTag, ":", err1)
-								parsingError = errors.New("error while retriving hits: " + err1.Error())
-								return
-
-							}
-							err := json.Unmarshal(hits, &rawHits)
-							if err != nil {
-								log.Errorln(logTag, ":", err)
-								parsingError = errors.New("error while parsing ES response to hits: " + err.Error())
-								return
-							}
-							// extract category suggestions
-							if query.CategoryField != nil && *query.CategoryField != "" {
-								categories, dataType2, _, err2 := jsonparser.Get(value, "aggregations", *query.CategoryField, "buckets")
-								if err2 != nil {
-									log.Errorln(logTag, ":", err2)
-									parsingError = errors.New("error while retriving aggregations: " + err2.Error())
-									return
+								suggestionsConfig := SuggestionsConfig{
+									// Fields to extract suggestions
+									DataFields: normalizedDataFields,
+									// Query value
+									Value:                       valueAsString,
+									ShowDistinctSuggestions:     query.ShowDistinctSuggestions,
+									EnablePredictiveSuggestions: query.EnablePredictiveSuggestions,
+									MaxPredictedWords:           query.MaxPredictedWords,
+									EnableSynonyms:              query.EnableSynonyms,
+									ApplyStopwords:              query.ApplyStopwords,
+									Stopwords:                   query.Stopwords,
+									URLField:                    query.URLField,
+									CategoryField:               query.CategoryField,
+									HighlightField:              query.HighlightField,
+									HighlightConfig:             query.HighlightConfig,
+									Language:                    query.SearchLanguage,
 								}
-								if dataType2 != jsonparser.NotExist {
-									var buckets []es7.AggregationBucketKeyItem
-									err := json.Unmarshal(categories, &buckets)
+
+								var rawHits []ESDoc
+								hits, dataType, _, err1 := jsonparser.Get(value, "hits", "hits")
+								if dataType == jsonparser.NotExist {
+									// write raw response
+									rsResponseWithSearchResponse, err := jsonparser.Set(rsResponse, value, queryID)
 									if err != nil {
 										log.Errorln(logTag, ":", err)
-										parsingError = errors.New("error while parsing ES aggregations to suggestions: " + err.Error())
+										parsingError = errors.New("can't add search response to final response")
 										return
 									}
-									for _, v := range buckets {
-										key, ok := v.Key.(string)
-										if ok {
-											count := int(v.DocCount)
-											suggestions = append(suggestions, SuggestionHIT{
-												Label:    valueAsString + " in " + key,
-												Value:    valueAsString,
-												Count:    &count,
-												Category: &key,
-											})
+									rsResponse = rsResponseWithSearchResponse
+									continue
+								}
+								if err1 != nil {
+									log.Errorln(logTag, ":", err1)
+									parsingError = errors.New("error while retriving hits: " + err1.Error())
+									return
+
+								}
+								err := json.Unmarshal(hits, &rawHits)
+								if err != nil {
+									log.Errorln(logTag, ":", err)
+									parsingError = errors.New("error while parsing ES response to hits: " + err.Error())
+									return
+								}
+								// extract category suggestions
+								if query.CategoryField != nil && *query.CategoryField != "" {
+									categories, dataType2, _, err2 := jsonparser.Get(value, "aggregations", *query.CategoryField, "buckets")
+									if err2 != nil {
+										log.Errorln(logTag, ":", err2)
+										parsingError = errors.New("error while retriving aggregations: " + err2.Error())
+										return
+									}
+									if dataType2 != jsonparser.NotExist {
+										var buckets []es7.AggregationBucketKeyItem
+										err := json.Unmarshal(categories, &buckets)
+										if err != nil {
+											log.Errorln(logTag, ":", err)
+											parsingError = errors.New("error while parsing ES aggregations to suggestions: " + err.Error())
+											return
+										}
+										for _, v := range buckets {
+											key, ok := v.Key.(string)
+											if ok {
+												count := int(v.DocCount)
+												suggestions = append(suggestions, SuggestionHIT{
+													Label:    valueAsString + " in " + key,
+													Value:    valueAsString,
+													Count:    &count,
+													Category: &key,
+												})
+											}
 										}
 									}
 								}
-							}
 
-							// extract index suggestions
-							suggestions = append(suggestions, getIndexSuggestions(suggestionsConfig, rawHits)...)
-							if query.Size != nil {
-								// fit suggestions to the max requested size
-								if len(suggestions) > *query.Size {
-									suggestions = suggestions[:*query.Size]
+								// extract index suggestions
+								suggestions = append(suggestions, getIndexSuggestions(suggestionsConfig, rawHits)...)
+								if query.Size != nil {
+									// fit suggestions to the max requested size
+									if len(suggestions) > *query.Size {
+										suggestions = suggestions[:*query.Size]
+									}
 								}
 							}
 						}
 					}
 				}
+				if isSuggestionRequest {
+					responseInByte, err := json.Marshal(suggestions)
+					if err != nil {
+						log.Errorln(logTag, ":", err)
+						parsingError = errors.New("error while parsing suggestions:" + err.Error())
+						return
+					}
+					rsResponseWithSuggestions, err := jsonparser.Set(value, responseInByte, "hits", "hits")
+					if err != nil {
+						log.Errorln(logTag, ":", err)
+						parsingError = errors.New("can't add suggestions to final response" + err.Error())
+						return
+					}
+					rsResponseWithSearchResponse, err := jsonparser.Set(rsResponse, rsResponseWithSuggestions, queryID)
+					if err != nil {
+						log.Errorln(logTag, ":", err)
+						parsingError = errors.New("can't add search response to final response" + err.Error())
+						return
+					}
+					// Modify total suggestions value
+					rsResponseWithSearchResponse, err2 := jsonparser.Set(rsResponseWithSearchResponse, []byte(strconv.Itoa(len(suggestions))), queryID, "hits", "total", "value")
+					if err2 != nil {
+						log.Errorln(logTag, ":", err2)
+						parsingError = errors.New("can't apply total value for hits" + err2.Error())
+						return
+					}
+					rsResponse = rsResponseWithSearchResponse
+				} else {
+					rsResponseWithSearchResponse, err := jsonparser.Set(rsResponse, value, queryID)
+					if err != nil {
+						log.Errorln(logTag, ":", err)
+						parsingError = errors.New("can't add search response to final response" + err.Error())
+						return
+					}
+					rsResponse = rsResponseWithSearchResponse
+				}
+				index++
 			}
-			if isSuggestionRequest {
-				responseInByte, err := json.Marshal(suggestions)
-				if err != nil {
-					log.Errorln(logTag, ":", err)
-					parsingError = errors.New("error while parsing suggestions:" + err.Error())
-					return
-				}
-				rsResponseWithSuggestions, err := jsonparser.Set(value, responseInByte, "hits", "hits")
-				if err != nil {
-					log.Errorln(logTag, ":", err)
-					parsingError = errors.New("can't add suggestions to final response" + err.Error())
-					return
-				}
-				rsResponseWithSearchResponse, err := jsonparser.Set(rsResponse, rsResponseWithSuggestions, queryID)
-				if err != nil {
-					log.Errorln(logTag, ":", err)
-					parsingError = errors.New("can't add search response to final response" + err.Error())
-					return
-				}
-				// Modify total suggestions value
-				rsResponseWithSearchResponse, err2 := jsonparser.Set(rsResponseWithSearchResponse, []byte(strconv.Itoa(len(suggestions))), queryID, "hits", "total", "value")
-				if err2 != nil {
-					log.Errorln(logTag, ":", err2)
-					parsingError = errors.New("can't apply total value for hits" + err2.Error())
-					return
-				}
-				rsResponse = rsResponseWithSearchResponse
-			} else {
-				rsResponseWithSearchResponse, err := jsonparser.Set(rsResponse, value, queryID)
-				if err != nil {
-					log.Errorln(logTag, ":", err)
-					parsingError = errors.New("can't add search response to final response" + err.Error())
-					return
-				}
-				rsResponse = rsResponseWithSearchResponse
-			}
-			index++
 		})
 		if parsingError != nil {
 			return nil, parsingError
