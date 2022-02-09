@@ -109,6 +109,9 @@ func LoadRSPlugin(router *mux.Router, p RSPlugin, mw []middleware.Middleware) er
 // loadRoutes registers the routes to the router that are associated with
 // that plugin.
 func loadRoutes(router *mux.Router, p nameRoutes) error {
+	// Put all the routes in the RouterSwapper Instance as well
+	routerSwapper := RouterSwapperInstance()
+
 	for _, r := range p.Routes() {
 		err := router.Methods(r.Methods...).
 			Name(r.Name).
@@ -118,6 +121,8 @@ func loadRoutes(router *mux.Router, p nameRoutes) error {
 		if err != nil {
 			return err
 		}
+
+		routerSwapper.Routes = append(routerSwapper.Routes, r)
 	}
 	return nil
 }

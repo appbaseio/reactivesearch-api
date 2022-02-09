@@ -40,6 +40,10 @@ type Route struct {
 
 	// Description about this route.
 	Description string
+
+	// Indicate whether the current route is a special pipeline router
+	// or not
+	IsPipeline bool
 }
 
 // By is the type of a "less" function that defines the ordering of routes.
@@ -83,6 +87,7 @@ func (rs *routeSorter) Less(i, j int) bool {
 type RouterSwapper struct {
 	mu     sync.Mutex
 	router *mux.Router
+	Routes []Route
 }
 
 var (
