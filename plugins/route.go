@@ -3,6 +3,9 @@ package plugins
 import (
 	"net/http"
 	"sort"
+	"sync"
+
+	"github.com/gorilla/mux"
 )
 
 // Route is a type that contains information about a route.
@@ -74,4 +77,35 @@ func (rs *routeSorter) Swap(i, j int) {
 // the "by" closure in the sorter.
 func (rs *routeSorter) Less(i, j int) bool {
 	return rs.by(rs.routes[i], rs.routes[j])
+}
+
+// routerSwapper lets routers to be swapper
+type RouterSwapper struct {
+	mu     sync.Mutex
+	router *mux.Router
+}
+
+var (
+	singleton *RouterSwapper
+	once      sync.Once
+)
+
+// RouterSwapperInstance returns one instance and should be the
+// only way swapper is accessed
+// Pipelines plugin deals with managing user defined pipelines.
+func RouterSwapperInstance() *RouterSwapper {
+	once.Do(func() { singleton = &RouterSwapper{} })
+	return singleton
+}
+
+// Router exposes the router from the RouterSwapper instance
+func (rs *RouterSwapper) Router() *mux.Router {
+	return rs.router
+}
+
+// Swap swaps the passed router with the older one
+func (rs *RouterSwapper) Swap(newRouter *mux.Router) {
+	rs.mu.Lock()
+	rs.router = newRouter
+	rs.mu.Unlock()
 }

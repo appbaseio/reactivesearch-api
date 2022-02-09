@@ -523,7 +523,13 @@ func main() {
 		AllowedHeaders: []string{"*"},
 		ExposedHeaders: []string{"*"},
 	})
-	handler := c.Handler(router)
+
+	// Set the router in the swapper
+	routerSwapper := plugins.RouterSwapperInstance()
+	routerSwapper.Swap(router)
+
+	handler := c.Handler(routerSwapper.Router())
+
 	// Add time tracker middleware
 	handler = tracktime.Track(handler)
 	// Add logger middleware
