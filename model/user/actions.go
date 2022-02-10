@@ -20,6 +20,7 @@ const (
 	DowntimeAlerts
 	UIBuilder
 	Speed
+	Pipelines
 )
 
 // String is the implementation of Stringer interface that returns the string representation of UserAction type.
@@ -35,6 +36,7 @@ func (o UserAction) String() string {
 		"downtime-alerts",
 		"uibuilder",
 		"speed",
+		"pipelines",
 	}[o]
 }
 
@@ -66,6 +68,8 @@ func (o *UserAction) UnmarshalJSON(bytes []byte) error {
 		*o = UIBuilder
 	case Speed.String():
 		*o = Speed
+	case Pipelines.String():
+		*o = Pipelines
 	default:
 		return fmt.Errorf("invalid user action encountered: %v", userAction)
 	}
@@ -96,6 +100,8 @@ func (o UserAction) MarshalJSON() ([]byte, error) {
 		userAction = UIBuilder.String()
 	case Speed:
 		userAction = Speed.String()
+	case Pipelines:
+		userAction = Pipelines.String()
 	default:
 		return nil, fmt.Errorf("invalid user action encountered: %v", o)
 	}
@@ -122,7 +128,6 @@ var searchRelevancyCategories = append([]category.Category{
 	category.Synonyms,
 	category.SearchGrader,
 	category.StoredQuery,
-	category.Pipelines,
 }, developCategories...)
 
 var ActionToCategories = map[UserAction][]category.Category{
@@ -133,6 +138,7 @@ var ActionToCategories = map[UserAction][]category.Category{
 		category.Cat,
 	},
 	CuratedInsights: {},
+	Pipelines:       searchRelevancyCategories,
 	SearchRelevancy: searchRelevancyCategories,
 	AccessControl: {
 		category.Auth,

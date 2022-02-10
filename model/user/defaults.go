@@ -12,6 +12,7 @@ var (
 		DowntimeAlerts,
 		UIBuilder,
 		Speed,
+		Pipelines,
 	}
 	defaultSources = []string{"0.0.0.0/0"}
 
