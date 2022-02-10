@@ -138,7 +138,7 @@ var ActionToCategories = map[UserAction][]category.Category{
 		category.Cat,
 	},
 	CuratedInsights: {},
-	Pipelines:       searchRelevancyCategories,
+	Pipelines:       append([]category.Category{category.Pipelines}, searchRelevancyCategories...),
 	SearchRelevancy: searchRelevancyCategories,
 	AccessControl: {
 		category.Auth,
