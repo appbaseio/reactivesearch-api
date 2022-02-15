@@ -81,3 +81,8 @@ func (rs *routeSorter) Swap(i, j int) {
 func (rs *routeSorter) Less(i, j int) bool {
 	return rs.by(rs.routes[i], rs.routes[j])
 }
+
+// Expose the router to be used in other plugins
+type ExposedRouter struct {
+	Router *mux.Router
+}
