@@ -118,6 +118,18 @@ func loadRoutes(router *mux.Router, p nameRoutes) error {
 		if err != nil {
 			return err
 		}
+
+		log.Debug(logTag, "matcher passed: ", r.Matcher)
+
+		// Try to add the matcher function
+		if r.Matcher == nil {
+			continue
+		}
+
+		err = router.MatcherFunc(r.Matcher).GetError()
+		if err != nil {
+			return err
+		}
 	}
 	return nil
 }

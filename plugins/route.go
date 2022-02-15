@@ -3,6 +3,8 @@ package plugins
 import (
 	"net/http"
 	"sort"
+
+	"github.com/gorilla/mux"
 )
 
 // Route is a type that contains information about a route.
@@ -37,6 +39,10 @@ type Route struct {
 
 	// Description about this route.
 	Description string
+
+	// Matcher function to match for the route. This field might not be provided
+	// in which case we need to ignore it
+	Matcher mux.MatcherFunc
 }
 
 // By is the type of a "less" function that defines the ordering of routes.
