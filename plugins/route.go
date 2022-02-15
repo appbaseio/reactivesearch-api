@@ -3,6 +3,7 @@ package plugins
 import (
 	"net/http"
 	"sort"
+	"sync"
 
 	"github.com/gorilla/mux"
 )
@@ -85,4 +86,17 @@ func (rs *routeSorter) Less(i, j int) bool {
 // Expose the router to be used in other plugins
 type ExposedRouter struct {
 	Router *mux.Router
+}
+
+var (
+	singleton *ExposedRouter
+	once      sync.Once
+)
+
+// Instance returns the singleton instance of the router. Instance
+// should be the only way (both within or outside the package) to fetch
+// the instance of the plugin, in order to avoid stateless duplicates.
+func RouterInstance() *ExposedRouter {
+	once.Do(func() { singleton = &ExposedRouter{} })
+	return singleton
 }
