@@ -21,6 +21,7 @@ import (
 	"runtime"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/appbaseio/reactivesearch-api/middleware"
@@ -42,6 +43,24 @@ import (
 )
 
 const logTag = "[cmd]"
+
+type routerSwapper struct {
+	mu   sync.Mutex
+	root *mux.Router
+}
+
+func (rs *routerSwapper) Swap(newRouter *mux.Router) {
+	rs.mu.Lock()
+	rs.root = newRouter
+	rs.mu.Unlock()
+}
+
+func (rs *routerSwapper) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	rs.mu.Lock()
+	root := rs.root
+	rs.mu.Unlock()
+	root.ServeHTTP(w, r)
+}
 
 var (
 	envFile         string
@@ -267,6 +286,45 @@ func main() {
 	}
 
 	router := mux.NewRouter().StrictSlash(true)
+
+	newRouterSwapper := routerSwapper{
+		root: router,
+	}
+
+	router.Methods(http.MethodGet).Path("/_swap").Name("swapper").HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		newRouter := mux.NewRouter()
+		newRouter.Methods(http.MethodGet).Path("/_swap").Name("swapper").HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			util.WriteBackMessage(w, "Swap is done 2", http.StatusOK)
+		})
+		newRouterSwapper.Swap(newRouter)
+		// CORS policy
+		c := cors.New(cors.Options{
+			AllowedOrigins: []string{"*"},
+			AllowedMethods: []string{"HEAD", "GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
+			AllowedHeaders: []string{"*"},
+			ExposedHeaders: []string{"*"},
+		})
+		handler := c.Handler(newRouterSwapper.root)
+		// Add time tracker middleware
+		handler = tracktime.Track(handler)
+		// Add logger middleware
+		handler = logger.Log(handler)
+
+		// Listen and serve ...
+		addr := fmt.Sprintf("%s:%d", address, port)
+		log.Println(logTag, ":listening on", addr)
+		if https {
+			httpsCert := os.Getenv("HTTPS_CERT")
+			httpsKey := os.Getenv("HTTPS_KEY")
+			log.Fatal(http.ListenAndServeTLS(addr, httpsCert, httpsKey, handler))
+		} else {
+			log.Fatal(http.ListenAndServe(addr, handler))
+		}
+		log.Println("SWAP HAPPENNED", newRouterSwapper.root)
+		util.WriteBackMessage(w, "Swap is done 1", http.StatusOK)
+	})
+
+	// Keep adding pipline routes the end
 
 	mainRouter := router.PathPrefix("").Subrouter()
 
@@ -523,7 +581,8 @@ func main() {
 		AllowedHeaders: []string{"*"},
 		ExposedHeaders: []string{"*"},
 	})
-	handler := c.Handler(router)
+
+	handler := c.Handler(newRouterSwapper.root)
 	// Add time tracker middleware
 	handler = tracktime.Track(handler)
 	// Add logger middleware
