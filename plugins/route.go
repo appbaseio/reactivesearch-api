@@ -157,6 +157,9 @@ func (rs *RouterSwapper) StartServer() {
 	addr := fmt.Sprintf("%s:%d", *rs.address, *rs.port)
 	log.Println(logTag, ":listening on", addr)
 
+	// Create a new server
+	rs.server = new(http.Server)
+
 	idleConnsClosed := make(chan struct{})
 	go func() {
 		sigint := make(chan os.Signal, 1)
