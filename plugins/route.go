@@ -197,6 +197,7 @@ func (rs *RouterSwapper) StartServer() {
 // It is useful when a router swap happens
 func (rs *RouterSwapper) RestartServer() {
 	// Access the server and shut it down
+	log.Debug(logTag, ": Shutting down the current server")
 	err := rs.server.Shutdown(context.Background())
 	if err != nil {
 		log.Errorln("Something went wrong while shutting down server: ", err)
@@ -204,6 +205,7 @@ func (rs *RouterSwapper) RestartServer() {
 	}
 
 	// Create a new server
+	log.Debug(logTag, ": Updating the server since variable")
 	var newServer http.Server
 	rs.server = newServer
 
