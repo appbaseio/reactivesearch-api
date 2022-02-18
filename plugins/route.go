@@ -98,7 +98,7 @@ type RouterSwapper struct {
 	port    *int
 	address *string
 	isHttps *bool
-	server  *http.Server
+	server  http.Server
 	Routes  []Route
 }
 
@@ -156,9 +156,6 @@ func (rs *RouterSwapper) StartServer() {
 	// Listen and serve ...
 	addr := fmt.Sprintf("%s:%d", *rs.address, *rs.port)
 	log.Println(logTag, ":listening on", addr)
-
-	// Create a new server
-	rs.server = new(http.Server)
 
 	idleConnsClosed := make(chan struct{})
 	go func() {
