@@ -176,12 +176,15 @@ func (rs *RouterSwapper) StartServer() {
 
 	var serverError error
 
+	rs.server.Addr = addr
+	rs.server.Handler = handler
+
 	if *rs.isHttps {
 		httpsCert := os.Getenv("HTTPS_CERT")
 		httpsKey := os.Getenv("HTTPS_KEY")
-		serverError = http.ListenAndServeTLS(addr, httpsCert, httpsKey, handler)
+		serverError = rs.server.ListenAndServeTLS(httpsCert, httpsKey)
 	} else {
-		serverError = http.ListenAndServe(addr, handler)
+		serverError = rs.server.ListenAndServe()
 	}
 
 	if serverError != http.ErrServerClosed {
