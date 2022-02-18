@@ -203,6 +203,10 @@ func (rs *RouterSwapper) RestartServer() {
 		return
 	}
 
+	// Create a new server
+	var newServer http.Server
+	rs.server = newServer
+
 	// If shutdown was succesfull, start again.
 	rs.StartServer()
 }
