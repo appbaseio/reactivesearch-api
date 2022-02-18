@@ -1,10 +1,12 @@
 package plugins
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"net/http"
 	"os"
+	"os/signal"
 	"sort"
 	"sync"
 
@@ -96,6 +98,7 @@ type RouterSwapper struct {
 	port    *int
 	address *string
 	isHttps *bool
+	server  *http.Server
 	Routes  []Route
 }
 
@@ -153,11 +156,35 @@ func (rs *RouterSwapper) StartServer() {
 	// Listen and serve ...
 	addr := fmt.Sprintf("%s:%d", *rs.address, *rs.port)
 	log.Println(logTag, ":listening on", addr)
+
+	idleConnsClosed := make(chan struct{})
+	go func() {
+		sigint := make(chan os.Signal, 1)
+		signal.Notify(sigint, os.Interrupt)
+		<-sigint
+
+		// We received an interrupt signal, shut down.
+		if err := rs.server.Shutdown(context.Background()); err != nil {
+			// Error from closing listeners, or context timeout:
+			log.Printf("HTTP server Shutdown: %v", err)
+		}
+		close(idleConnsClosed)
+	}()
+
+	var serverError error
+
 	if *rs.isHttps {
 		httpsCert := os.Getenv("HTTPS_CERT")
 		httpsKey := os.Getenv("HTTPS_KEY")
-		log.Fatal(http.ListenAndServeTLS(addr, httpsCert, httpsKey, handler))
+		serverError = http.ListenAndServeTLS(addr, httpsCert, httpsKey, handler)
 	} else {
-		log.Fatal(http.ListenAndServe(addr, handler))
+		serverError = http.ListenAndServe(addr, handler)
 	}
+
+	if serverError != http.ErrServerClosed {
+		// Error starting or closing listener:
+		log.Fatalf("HTTP server ListenAndServe: %v", serverError)
+	}
+
+	<-idleConnsClosed
 }
