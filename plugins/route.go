@@ -3,7 +3,6 @@ package plugins
 import (
 	"context"
 	"fmt"
-	"log"
 	"net/http"
 	"os"
 	"os/signal"
@@ -14,6 +13,7 @@ import (
 	"github.com/appbaseio/reactivesearch-api/model/tracktime"
 	"github.com/gorilla/mux"
 	"github.com/rs/cors"
+	log "github.com/sirupsen/logrus"
 )
 
 // Route is a type that contains information about a route.
@@ -190,4 +190,19 @@ func (rs *RouterSwapper) StartServer() {
 	}
 
 	<-idleConnsClosed
+}
+
+// RestartServer shuts down the current server and starts it again
+//
+// It is useful when a router swap happens
+func (rs *RouterSwapper) RestartServer() {
+	// Access the server and shut it down
+	err := rs.server.Shutdown(context.Background())
+	if err != nil {
+		log.Errorln("Something went wrong while shutting down server: ", err)
+		return
+	}
+
+	// If shutdown was succesfull, start again.
+	rs.StartServer()
 }
