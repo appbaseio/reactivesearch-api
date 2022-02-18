@@ -12,7 +12,6 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"net/http"
 	"os"
 	"os/exec"
 	"path"
@@ -24,8 +23,6 @@ import (
 	"time"
 
 	"github.com/appbaseio/reactivesearch-api/middleware"
-	"github.com/appbaseio/reactivesearch-api/middleware/logger"
-	"github.com/appbaseio/reactivesearch-api/model/tracktime"
 	"github.com/appbaseio/reactivesearch-api/plugins"
 	"github.com/appbaseio/reactivesearch-api/util"
 	"github.com/denisbrodbeck/machineid"
@@ -35,7 +32,6 @@ import (
 	"github.com/mackerelio/go-osstat/memory"
 	"github.com/pkg/profile"
 	"github.com/robfig/cron"
-	"github.com/rs/cors"
 
 	"github.com/sirupsen/logrus"
 	log "github.com/sirupsen/logrus"
@@ -516,35 +512,13 @@ func main() {
 	cronjob.AddFunc(syncInterval, syncPluginCache)
 	cronjob.Start()
 
-	// CORS policy
-	c := cors.New(cors.Options{
-		AllowedOrigins: []string{"*"},
-		AllowedMethods: []string{"HEAD", "GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
-		AllowedHeaders: []string{"*"},
-		ExposedHeaders: []string{"*"},
-	})
-
 	// Set the router in the swapper
 	routerSwapper := plugins.RouterSwapperInstance()
 	routerSwapper.Swap(router)
+	routerSwapper.SetRouterAttrs(address, port, https)
 
-	handler := c.Handler(routerSwapper.Router())
-
-	// Add time tracker middleware
-	handler = tracktime.Track(handler)
-	// Add logger middleware
-	handler = logger.Log(handler)
-
-	// Listen and serve ...
-	addr := fmt.Sprintf("%s:%d", address, port)
-	log.Println(logTag, ":listening on", addr)
-	if https {
-		httpsCert := os.Getenv("HTTPS_CERT")
-		httpsKey := os.Getenv("HTTPS_KEY")
-		log.Fatal(http.ListenAndServeTLS(addr, httpsCert, httpsKey, handler))
-	} else {
-		log.Fatal(http.ListenAndServe(addr, handler))
-	}
+	// Finally start the server
+	routerSwapper.StartServer()
 }
 
 func syncPluginCache() {

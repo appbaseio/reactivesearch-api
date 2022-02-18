@@ -1,11 +1,17 @@
 package plugins
 
 import (
+	"fmt"
+	"log"
 	"net/http"
+	"os"
 	"sort"
 	"sync"
 
+	"github.com/appbaseio/reactivesearch-api/middleware/logger"
+	"github.com/appbaseio/reactivesearch-api/model/tracktime"
 	"github.com/gorilla/mux"
+	"github.com/rs/cors"
 )
 
 // Route is a type that contains information about a route.
@@ -85,9 +91,12 @@ func (rs *routeSorter) Less(i, j int) bool {
 
 // routerSwapper lets routers to be swapper
 type RouterSwapper struct {
-	mu     sync.Mutex
-	router *mux.Router
-	Routes []Route
+	mu      sync.Mutex
+	router  *mux.Router
+	port    *int
+	address *string
+	isHttps *bool
+	Routes  []Route
 }
 
 var (
@@ -113,4 +122,42 @@ func (rs *RouterSwapper) Swap(newRouter *mux.Router) {
 	rs.mu.Lock()
 	rs.router = newRouter
 	rs.mu.Unlock()
+}
+
+// SetRouterAttrs sets the router attributes to the current
+// instance of RouterSwapper
+func (rs *RouterSwapper) SetRouterAttrs(address string, port int, isHttps bool) {
+	rs.address = &address
+	rs.port = &port
+	rs.isHttps = &isHttps
+}
+
+// StartServer starts the server by using the latest routerswapper
+// interface router, creating a handler and listening
+func (rs *RouterSwapper) StartServer() {
+	// CORS policy
+	c := cors.New(cors.Options{
+		AllowedOrigins: []string{"*"},
+		AllowedMethods: []string{"HEAD", "GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
+		AllowedHeaders: []string{"*"},
+		ExposedHeaders: []string{"*"},
+	})
+
+	handler := c.Handler(rs.Router())
+
+	// Add time tracker middleware
+	handler = tracktime.Track(handler)
+	// Add logger middleware
+	handler = logger.Log(handler)
+
+	// Listen and serve ...
+	addr := fmt.Sprintf("%s:%d", *rs.address, *rs.port)
+	log.Println(logTag, ":listening on", addr)
+	if *rs.isHttps {
+		httpsCert := os.Getenv("HTTPS_CERT")
+		httpsKey := os.Getenv("HTTPS_KEY")
+		log.Fatal(http.ListenAndServeTLS(addr, httpsCert, httpsKey, handler))
+	} else {
+		log.Fatal(http.ListenAndServe(addr, handler))
+	}
 }
