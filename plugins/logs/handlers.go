@@ -83,6 +83,14 @@ func rangeQueryParams(values url.Values) NormalizedQueryParams {
 	}
 }
 
+// RangeQueryParams returns the common query params that every analytics endpoint expects,
+// - "start_date": start of the duration in consideration
+// - "end_date"  : end of the duration in consideration
+// - "size": no. of response entries
+func RangeQueryParams(values url.Values) NormalizedQueryParams {
+	return rangeQueryParams(values)
+}
+
 func (l *Logs) logsHandler(w http.ResponseWriter, req *http.Request, isSearchLogs bool) {
 	indices := util.IndicesFromRequest(req)
 
