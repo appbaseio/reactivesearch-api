@@ -87,7 +87,6 @@ type Response struct {
 	Headers map[string][]string
 	Took    *float64 `json:"took,omitempty"`
 	Body    string   `json:"body"`
-	Console []string `json:"console,omitempty"`
 }
 
 type record struct {
@@ -98,6 +97,7 @@ type record struct {
 	RequestChanges  []difference.Difference `json:"requestChanges"`
 	ResponseChanges []difference.Difference `json:"responseChanges"`
 	Timestamp       time.Time               `json:"timestamp"`
+	Console         []string                `json:"console_logs"`
 }
 
 // Recorder records a log "record" for every request.
@@ -284,7 +284,7 @@ func (l *Logs) recordResponse(w *httptest.ResponseRecorder, r *http.Request, req
 	if err != nil {
 		log.Warnln(logTag, "couldn't extract console logs, ", err)
 	} else {
-		rec.Response.Console = *consoleStr
+		rec.Console = *consoleStr
 	}
 
 	marshalledLog, err := json.Marshal(rec)
