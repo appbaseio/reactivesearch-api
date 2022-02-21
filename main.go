@@ -270,6 +270,9 @@ func main() {
 
 	mainRouter := router.PathPrefix("").Subrouter()
 
+	exposedRouter := plugins.RouterInstance()
+	exposedRouter.Router = router
+
 	if PlanRefreshInterval == "" {
 		PlanRefreshInterval = "1"
 	} else {
@@ -523,7 +526,7 @@ func main() {
 		AllowedHeaders: []string{"*"},
 		ExposedHeaders: []string{"*"},
 	})
-	handler := c.Handler(router)
+	handler := c.Handler(exposedRouter.Router)
 	// Add time tracker middleware
 	handler = tracktime.Track(handler)
 	// Add logger middleware

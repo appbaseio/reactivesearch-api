@@ -3,6 +3,9 @@ package plugins
 import (
 	"net/http"
 	"sort"
+	"sync"
+
+	"github.com/gorilla/mux"
 )
 
 // Route is a type that contains information about a route.
@@ -37,6 +40,10 @@ type Route struct {
 
 	// Description about this route.
 	Description string
+
+	// Matcher function to match for the route. This field might not be provided
+	// in which case we need to ignore it
+	Matcher mux.MatcherFunc
 }
 
 // By is the type of a "less" function that defines the ordering of routes.
@@ -74,4 +81,22 @@ func (rs *routeSorter) Swap(i, j int) {
 // the "by" closure in the sorter.
 func (rs *routeSorter) Less(i, j int) bool {
 	return rs.by(rs.routes[i], rs.routes[j])
+}
+
+// Expose the router to be used in other plugins
+type ExposedRouter struct {
+	Router *mux.Router
+}
+
+var (
+	singleton *ExposedRouter
+	once      sync.Once
+)
+
+// Instance returns the singleton instance of the router. Instance
+// should be the only way (both within or outside the package) to fetch
+// the instance of the plugin, in order to avoid stateless duplicates.
+func RouterInstance() *ExposedRouter {
+	once.Do(func() { singleton = &ExposedRouter{} })
+	return singleton
 }
