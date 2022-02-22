@@ -89,6 +89,7 @@ type ClusterPlan struct {
 	FeatureSearchGrader    bool   `json:"feature_search_grader"`
 	FeatureEcommerce       bool   `json:"feature_ecommerce"`
 	FeatureCache           bool   `json:"feature_cache"`
+	FeaturePipelines       bool   `json:"feature_pipelines"`
 	Trial                  bool   `json:"trial"`
 	TrialValidity          int64  `json:"trial_validity"`
 	TierValidity           int64  `json:"tier_validity"`
@@ -145,6 +146,7 @@ type ArcInstanceDetails struct {
 	FeatureSearchGrader    bool                   `json:"feature_search_grader"`
 	FeatureEcommerce       bool                   `json:"feature_ecommerce"`
 	FeatureCache           bool                   `json:"feature_cache"`
+	FeaturePipelines       bool                   `json:"feature_pipelines"`
 	ClusterID              string                 `json:"cluster_id"`
 	NumberOfMachines       int64                  `json:"number_of_machines"`
 }
@@ -248,6 +250,7 @@ func getArcInstance(arcID string) (ArcInstance, error) {
 		SetFeatureSearchGrader(arcInstanceByID.FeatureSearchGrader)
 		SetFeatureEcommerce(arcInstanceByID.FeatureEcommerce)
 		SetFeatureCache(arcInstanceByID.FeatureCache)
+		SetFeaturePipelines(arcInstanceByID.FeaturePipelines)
 		setNumberOfMachines(arcInstanceByID.NumberOfMachines)
 		ClusterID = arcInstanceByID.ClusterID
 	} else {
@@ -315,6 +318,7 @@ func getArcClusterInstance(clusterID string) (ArcInstance, error) {
 		SetFeatureSearchGrader(arcInstanceDetails.FeatureSearchGrader)
 		SetFeatureEcommerce(arcInstanceDetails.FeatureEcommerce)
 		SetFeatureCache(arcInstanceDetails.FeatureCache)
+		SetFeaturePipelines(arcInstanceDetails.FeaturePipelines)
 		setNumberOfMachines(arcInstanceDetails.NumberOfMachines)
 		ClusterID = arcInstanceDetails.ClusterID
 	} else {
@@ -402,6 +406,7 @@ func getClusterPlan(clusterID string) (ClusterPlan, error) {
 	SetFeatureSearchGrader(response.Plan.FeatureSearchGrader)
 	SetFeatureEcommerce(response.Plan.FeatureEcommerce)
 	SetFeatureCache(response.Plan.FeatureCache)
+	SetFeaturePipelines(response.Plan.FeaturePipelines)
 	setNumberOfMachines(response.Plan.NumberOfMachines)
 	ClusterID = response.Plan.ClusterID
 	return clusterPlan, nil
