@@ -52,6 +52,9 @@ type Route struct {
 	// Indicate whether the current route is a special pipeline router
 	// or not
 	IsPipeline bool
+	// Matcher function to match for the route. This field might not be provided
+	// in which case we need to ignore it
+	Matcher mux.MatcherFunc
 }
 
 // By is the type of a "less" function that defines the ordering of routes.

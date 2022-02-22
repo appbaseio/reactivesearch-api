@@ -46,6 +46,10 @@ func TestBilling(t *testing.T) {
 			SetFeatureCache(true)
 			So(GetFeatureCache(), ShouldEqual, true)
 		})
+		Convey("Set FeaturePipelines", func() {
+			SetFeaturePipelines(true)
+			So(GetFeaturePipelines(), ShouldEqual, true)
+		})
 		Convey("Validate TimeValidity: Positive Value", func() {
 			// Set TimeValidity to a positive value
 			var timeValidityMock = 1200000

@@ -81,6 +81,8 @@ var (
 	FeatureEcommerce string
 	// FeatureCache for testing
 	FeatureCache string
+	// FeaturePipelines for testing
+	FeaturePipelines string
 )
 
 // SentryErrorHook implements the logrus.Hooks interface to report errors to sentry
@@ -266,6 +268,9 @@ func main() {
 
 	mainRouter := router.PathPrefix("").Subrouter()
 
+	exposedRouter := plugins.RouterInstance()
+	exposedRouter.Router = router
+
 	if PlanRefreshInterval == "" {
 		PlanRefreshInterval = "1"
 	} else {
@@ -399,6 +404,9 @@ func main() {
 	}
 	if FeatureCache == "true" {
 		util.SetFeatureCache(true)
+	}
+	if FeaturePipelines == "true" {
+		util.SetFeaturePipelines(true)
 	}
 	// Set port variable
 	util.Port = port
