@@ -84,6 +84,7 @@ type Limits struct {
 	SynonymsLimit         int64 `json:"synonyms_limit"`
 	CacheLimit            int64 `json:"cache_limit"`
 	StoredQueryLimit      int64 `json:"storedquery_limit"`
+	PipelinesLimit        int64 `json:"pipelines_limit"`
 	SyncLimit             int64 `json:"sync_limit"`
 }
 
@@ -272,6 +273,7 @@ func SetLimits(limits *Limits, isAdmin bool) Options {
 			CacheLimit:            getNormalizedLimit(limits.CacheLimit, defaults.CacheLimit),
 			StoredQueryLimit:      getNormalizedLimit(limits.StoredQueryLimit, defaults.StoredQueryLimit),
 			SyncLimit:             getNormalizedLimit(limits.SyncLimit, defaults.SyncLimit),
+			PipelinesLimit:        getNormalizedLimit(limits.PipelinesLimit, defaults.PipelinesLimit),
 		}
 		return nil
 	}
@@ -550,6 +552,8 @@ func (p *Permission) GetLimitFor(c category.Category) (int64, error) {
 		return p.Limits.CacheLimit, nil
 	case category.StoredQuery:
 		return p.Limits.StoredQueryLimit, nil
+	case category.Pipelines:
+		return p.Limits.PipelinesLimit, nil
 	case category.Sync:
 		return p.Limits.SyncLimit, nil
 	default:
@@ -687,6 +691,9 @@ func (p *Permission) GetPatch(rolePatched bool) (map[string]interface{}, error) 
 		}
 		if p.Limits.SyncLimit != 0 {
 			limits["sync_limit"] = p.Limits.SyncLimit
+		}
+		if p.Limits.PipelinesLimit != 0 {
+			limits["pipelines_limit"] = p.Limits.PipelinesLimit
 		}
 
 		patch["limits"] = limits

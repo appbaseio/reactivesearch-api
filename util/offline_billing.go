@@ -61,6 +61,8 @@ func BillingMiddlewareOffline(next http.Handler) http.Handler {
 					WriteBackError(w, "Your license key has expired, please contact support@appbase.io", http.StatusPaymentRequired)
 					return
 				}
+			} else {
+				next.ServeHTTP(w, r)
 			}
 		}
 	})

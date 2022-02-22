@@ -35,6 +35,7 @@ var (
 		category.Cache,
 		category.StoredQuery,
 		category.Sync,
+		category.Pipelines,
 	}
 
 	defaultOps = []op.Operation{
@@ -71,6 +72,7 @@ var (
 		CacheLimit:            10,
 		StoredQueryLimit:      10,
 		SyncLimit:             10,
+		PipelinesLimit:        10,
 	}
 
 	defaultAdminLimits = Limits{
@@ -97,5 +99,6 @@ var (
 		CacheLimit:            30,
 		StoredQueryLimit:      30,
 		SyncLimit:             30,
+		PipelinesLimit:        30,
 	}
 )
