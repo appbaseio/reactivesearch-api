@@ -90,3 +90,16 @@ func GetFeatureCache() bool {
 func SetFeatureCache(val bool) {
 	featureCache = val
 }
+
+// Feature pipelines
+var featurePipelines bool
+
+// GetFeatureCache returns the featurePipelines
+func GetFeaturePipelines() bool {
+	return featurePipelines
+}
+
+// SetFeatureEcommerce sets the featurePipelines
+func SetFeaturePipelines(val bool) {
+	featurePipelines = val
+}
