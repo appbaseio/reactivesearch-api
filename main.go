@@ -268,9 +268,6 @@ func main() {
 
 	mainRouter := router.PathPrefix("").Subrouter()
 
-	exposedRouter := plugins.RouterInstance()
-	exposedRouter.Router = router
-
 	if PlanRefreshInterval == "" {
 		PlanRefreshInterval = "1"
 	} else {
