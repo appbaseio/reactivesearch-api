@@ -1,6 +1,7 @@
 package plugins
 
 import (
+	"net/http"
 	"sort"
 	"strconv"
 
@@ -109,15 +110,27 @@ func LoadRSPlugin(router *mux.Router, p RSPlugin, mw []middleware.Middleware) er
 // loadRoutes registers the routes to the router that are associated with
 // that plugin.
 func loadRoutes(router *mux.Router, p nameRoutes) error {
+	// Put all the routes in the RouterSwapper Instance as well
+	routerSwapper := RouterSwapperInstance()
+
 	for _, r := range p.Routes() {
+		// If matcher is not defined, define a dummy one that returns
+		// true
+		if r.Matcher == nil {
+			r.Matcher = func(r *http.Request, rm *mux.RouteMatch) bool { return true }
+		}
+
 		err := router.Methods(r.Methods...).
 			Name(r.Name).
 			Path(r.Path).
 			HandlerFunc(r.HandlerFunc).
+			MatcherFunc(r.Matcher).
 			GetError()
 		if err != nil {
 			return err
 		}
+
+		routerSwapper.Routes = append(routerSwapper.Routes, r)
 	}
 	return nil
 }

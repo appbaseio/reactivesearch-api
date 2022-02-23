@@ -12,7 +12,6 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"net/http"
 	"os"
 	"os/exec"
 	"path"
@@ -24,8 +23,6 @@ import (
 	"time"
 
 	"github.com/appbaseio/reactivesearch-api/middleware"
-	"github.com/appbaseio/reactivesearch-api/middleware/logger"
-	"github.com/appbaseio/reactivesearch-api/model/tracktime"
 	"github.com/appbaseio/reactivesearch-api/plugins"
 	"github.com/appbaseio/reactivesearch-api/util"
 	"github.com/denisbrodbeck/machineid"
@@ -35,7 +32,6 @@ import (
 	"github.com/mackerelio/go-osstat/memory"
 	"github.com/pkg/profile"
 	"github.com/robfig/cron"
-	"github.com/rs/cors"
 
 	"github.com/sirupsen/logrus"
 	log "github.com/sirupsen/logrus"
@@ -85,6 +81,8 @@ var (
 	FeatureEcommerce string
 	// FeatureCache for testing
 	FeatureCache string
+	// FeaturePipelines for testing
+	FeaturePipelines string
 )
 
 // SentryErrorHook implements the logrus.Hooks interface to report errors to sentry
@@ -268,6 +266,8 @@ func main() {
 
 	router := mux.NewRouter().StrictSlash(true)
 
+	mainRouter := router.PathPrefix("").Subrouter()
+
 	if PlanRefreshInterval == "" {
 		PlanRefreshInterval = "1"
 	} else {
@@ -325,7 +325,7 @@ func main() {
 		util.SetDefaultTier()
 		// use billing middleware
 		if IgnoreBillingMiddleware != "true" {
-			router.Use(util.BillingMiddlewareOffline)
+			mainRouter.Use(util.BillingMiddlewareOffline)
 		}
 	} else {
 		if Billing == "true" {
@@ -335,7 +335,7 @@ func main() {
 			cronjob.AddFunc(interval, util.ReportUsage)
 			cronjob.Start()
 			if IgnoreBillingMiddleware != "true" {
-				router.Use(util.BillingMiddleware)
+				mainRouter.Use(util.BillingMiddleware)
 			}
 		} else if HostedBilling == "true" {
 			log.Println("You're running ReactiveSearch with hosted billing module enabled.")
@@ -344,7 +344,7 @@ func main() {
 			cronjob.AddFunc(interval, util.ReportHostedArcUsage)
 			cronjob.Start()
 			if IgnoreBillingMiddleware != "true" {
-				router.Use(util.BillingMiddleware)
+				mainRouter.Use(util.BillingMiddleware)
 			}
 		} else if ClusterBilling == "true" {
 			log.Println("You're running ReactiveSearch with cluster billing module enabled.")
@@ -354,7 +354,7 @@ func main() {
 			cronjob.AddFunc(interval, util.SetClusterPlan)
 			cronjob.Start()
 			if IgnoreBillingMiddleware != "true" {
-				router.Use(util.BillingMiddleware)
+				mainRouter.Use(util.BillingMiddleware)
 			}
 		} else {
 			util.SetDefaultTier()
@@ -402,6 +402,9 @@ func main() {
 	if FeatureCache == "true" {
 		util.SetFeatureCache(true)
 	}
+	if FeaturePipelines == "true" {
+		util.SetFeaturePipelines(true)
+	}
 	// Set port variable
 	util.Port = port
 
@@ -414,38 +417,57 @@ func main() {
 	sequencedPlugins := []string{"analytics.so", "searchrelevancy.so", "rules.so", "cache.so", "suggestions.so", "storedquery.so", "analyticsrequest.so", "applycache.so"}
 	sequencedPluginsByPath := make(map[string]string)
 
-	var elasticSearchPath, reactiveSearchPath string
+	var elasticSearchPath, reactiveSearchPath, pipelinesPath string
 	elasticSearchMiddleware := make([]middleware.Middleware, 0)
 	reactiveSearchMiddleware := make([]middleware.Middleware, 0)
+	pluginsByPath := make(map[string]string)
 	err := filepath.Walk(pluginDir, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
-		if !info.IsDir() && filepath.Ext(info.Name()) == ".so" && info.Name() != "elasticsearch.so" {
+		if !info.IsDir() &&
+			filepath.Ext(info.Name()) == ".so" &&
+			info.Name() != "elasticsearch.so" &&
+			info.Name() != "pipelines.so" {
 			if info.Name() != "querytranslate.so" {
 				if util.IsExists(info.Name(), sequencedPlugins) {
 					sequencedPluginsByPath[info.Name()] = path
 				} else {
-					plugin, err1 := LoadPluginFromFile(router, path)
-					if err1 != nil {
-						return err1
-					}
-					reactiveSearchMiddleware = append(reactiveSearchMiddleware, plugin.RSMiddleware()...)
-					elasticSearchMiddleware = append(elasticSearchMiddleware, plugin.ESMiddleware()...)
+					pluginsByPath[info.Name()] = path
 				}
 			} else {
 				reactiveSearchPath = path
 			}
 		} else if info.Name() == "elasticsearch.so" {
 			elasticSearchPath = path
+		} else if info.Name() == "pipelines.so" {
+			pipelinesPath = path
 		}
 		return nil
 	})
+	if err != nil {
+		log.Fatal("error loading plugins: ", err)
+	}
+	// Load pipeline plugin at the begining to set the priority to stage routes
+	if pipelinesPath != "" {
+		_, errPipelinesPlugin := LoadPluginFromFile(mainRouter, pipelinesPath)
+		if errPipelinesPlugin != nil {
+			log.Fatal("error loading plugins: ", errPipelinesPlugin)
+		}
+	}
+	for _, pluginPath := range pluginsByPath {
+		plugin, err1 := LoadPluginFromFile(mainRouter, pluginPath)
+		if err1 != nil {
+			log.Fatal("error loading plugins: ", err1)
+		}
+		reactiveSearchMiddleware = append(reactiveSearchMiddleware, plugin.RSMiddleware()...)
+		elasticSearchMiddleware = append(elasticSearchMiddleware, plugin.ESMiddleware()...)
+	}
 	// load plugins in a sequence
 	for _, pluginName := range sequencedPlugins {
 		path := sequencedPluginsByPath[pluginName]
 		if path != "" {
-			plugin, err := LoadPluginFromFile(router, path)
+			plugin, err := LoadPluginFromFile(mainRouter, path)
 			if err != nil {
 				log.Fatal("error loading plugins: ", err)
 			}
@@ -455,13 +477,15 @@ func main() {
 	}
 	// Load ReactiveSearch plugin
 	if reactiveSearchPath != "" {
-		LoadRSPluginFromFile(router, reactiveSearchPath, reactiveSearchMiddleware)
+		errRSPlugin := LoadRSPluginFromFile(mainRouter, reactiveSearchPath, reactiveSearchMiddleware)
+		if errRSPlugin != nil {
+			log.Fatal("error loading plugins: ", errRSPlugin)
+		}
 	}
-	LoadESPluginFromFile(router, elasticSearchPath, elasticSearchMiddleware)
-	if err != nil {
-		log.Fatal("error loading plugins: ", err)
+	errESPlugin := LoadESPluginFromFile(mainRouter, elasticSearchPath, elasticSearchMiddleware)
+	if errESPlugin != nil {
+		log.Fatal("error loading plugins: ", errESPlugin)
 	}
-
 	// Execute the migration scripts
 	for _, migration := range util.GetMigrationScripts() {
 		shouldExecute, err := migration.ConditionCheck()
@@ -493,29 +517,13 @@ func main() {
 	cronjob.AddFunc(syncInterval, syncPluginCache)
 	cronjob.Start()
 
-	// CORS policy
-	c := cors.New(cors.Options{
-		AllowedOrigins: []string{"*"},
-		AllowedMethods: []string{"HEAD", "GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
-		AllowedHeaders: []string{"*"},
-		ExposedHeaders: []string{"*"},
-	})
-	handler := c.Handler(router)
-	// Add time tracker middleware
-	handler = tracktime.Track(handler)
-	// Add logger middleware
-	handler = logger.Log(handler)
+	// Set the router in the swapper
+	routerSwapper := plugins.RouterSwapperInstance()
+	routerSwapper.Swap(router)
+	routerSwapper.SetRouterAttrs(address, port, https)
 
-	// Listen and serve ...
-	addr := fmt.Sprintf("%s:%d", address, port)
-	log.Println(logTag, ":listening on", addr)
-	if https {
-		httpsCert := os.Getenv("HTTPS_CERT")
-		httpsKey := os.Getenv("HTTPS_KEY")
-		log.Fatal(http.ListenAndServeTLS(addr, httpsCert, httpsKey, handler))
-	} else {
-		log.Fatal(http.ListenAndServe(addr, handler))
-	}
+	// Finally start the server
+	routerSwapper.StartServer()
 }
 
 func syncPluginCache() {
