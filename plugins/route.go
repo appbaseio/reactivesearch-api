@@ -1,11 +1,19 @@
 package plugins
 
 import (
+	"context"
+	"fmt"
 	"net/http"
+	"os"
+	"os/signal"
 	"sort"
 	"sync"
 
+	"github.com/appbaseio/reactivesearch-api/middleware/logger"
+	"github.com/appbaseio/reactivesearch-api/model/tracktime"
 	"github.com/gorilla/mux"
+	"github.com/rs/cors"
+	log "github.com/sirupsen/logrus"
 )
 
 // Route is a type that contains information about a route.
@@ -41,6 +49,9 @@ type Route struct {
 	// Description about this route.
 	Description string
 
+	// Indicate whether the current route is a special pipeline router
+	// or not
+	IsPipeline bool
 	// Matcher function to match for the route. This field might not be provided
 	// in which case we need to ignore it
 	Matcher mux.MatcherFunc
@@ -83,20 +94,124 @@ func (rs *routeSorter) Less(i, j int) bool {
 	return rs.by(rs.routes[i], rs.routes[j])
 }
 
-// Expose the router to be used in other plugins
-type ExposedRouter struct {
-	Router *mux.Router
+// routerSwapper lets routers to be swapper
+type RouterSwapper struct {
+	mu      sync.Mutex
+	router  *mux.Router
+	port    *int
+	address *string
+	isHttps *bool
+	server  http.Server
+	Routes  []Route
 }
 
 var (
-	singleton *ExposedRouter
+	singleton *RouterSwapper
 	once      sync.Once
 )
 
-// Instance returns the singleton instance of the router. Instance
-// should be the only way (both within or outside the package) to fetch
-// the instance of the plugin, in order to avoid stateless duplicates.
-func RouterInstance() *ExposedRouter {
-	once.Do(func() { singleton = &ExposedRouter{} })
+// RouterSwapperInstance returns one instance and should be the
+// only way swapper is accessed
+// Pipelines plugin deals with managing user defined pipelines.
+func RouterSwapperInstance() *RouterSwapper {
+	once.Do(func() { singleton = &RouterSwapper{} })
 	return singleton
+}
+
+// Router exposes the router from the RouterSwapper instance
+func (rs *RouterSwapper) Router() *mux.Router {
+	return rs.router
+}
+
+// Swap swaps the passed router with the older one
+func (rs *RouterSwapper) Swap(newRouter *mux.Router) {
+	rs.mu.Lock()
+	rs.router = newRouter
+	rs.mu.Unlock()
+}
+
+// SetRouterAttrs sets the router attributes to the current
+// instance of RouterSwapper
+func (rs *RouterSwapper) SetRouterAttrs(address string, port int, isHttps bool) {
+	rs.address = &address
+	rs.port = &port
+	rs.isHttps = &isHttps
+}
+
+// StartServer starts the server by using the latest routerswapper
+// interface router, creating a handler and listening
+func (rs *RouterSwapper) StartServer() {
+	// CORS policy
+	c := cors.New(cors.Options{
+		AllowedOrigins: []string{"*"},
+		AllowedMethods: []string{"HEAD", "GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
+		AllowedHeaders: []string{"*"},
+		ExposedHeaders: []string{"*"},
+	})
+
+	handler := c.Handler(rs.Router())
+
+	// Add time tracker middleware
+	handler = tracktime.Track(handler)
+	// Add logger middleware
+	handler = logger.Log(handler)
+
+	// Listen and serve ...
+	addr := fmt.Sprintf("%s:%d", *rs.address, *rs.port)
+	log.Println(logTag, ":listening on", addr)
+
+	idleConnsClosed := make(chan struct{})
+	go func() {
+		sigint := make(chan os.Signal, 1)
+		signal.Notify(sigint, os.Interrupt)
+		<-sigint
+
+		// We received an interrupt signal, shut down.
+		if err := rs.server.Shutdown(context.Background()); err != nil {
+			// Error from closing listeners, or context timeout:
+			log.Printf("HTTP server Shutdown: %v", err)
+		}
+		close(idleConnsClosed)
+	}()
+
+	var serverError error
+
+	rs.server.Addr = addr
+	rs.server.Handler = handler
+
+	if *rs.isHttps {
+		httpsCert := os.Getenv("HTTPS_CERT")
+		httpsKey := os.Getenv("HTTPS_KEY")
+		serverError = rs.server.ListenAndServeTLS(httpsCert, httpsKey)
+	} else {
+		serverError = rs.server.ListenAndServe()
+	}
+
+	if serverError != http.ErrServerClosed {
+		// Error starting or closing listener:
+		log.Fatalf("HTTP server ListenAndServe: %v", serverError)
+	}
+
+	<-idleConnsClosed
+}
+
+// RestartServer shuts down the current server and starts it again
+//
+// It is useful when a router swap happens
+func (rs *RouterSwapper) RestartServer() {
+	// Access the server and shut it down
+	log.Debug(logTag, ": Shutting down the current server")
+	err := rs.server.Shutdown(context.Background())
+	if err != nil {
+		log.Errorln("Something went wrong while shutting down server: ", err)
+		return
+	}
+
+	// Create a new server
+	log.Debug(logTag, ": Updating the server since variable")
+	var newServer http.Server
+	rs.server = newServer
+
+	// If shutdown was succesfull, start again.
+	rs.StartServer()
 }
