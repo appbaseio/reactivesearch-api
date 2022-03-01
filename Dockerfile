@@ -1,4 +1,4 @@
-FROM golang:1.16.4-alpine3.13 as builder
+FROM golang:1.16.11 as builder
 
 # Default value
 # Run `--build-arg BILLING=true` to enable billing
@@ -27,7 +27,8 @@ ENV PLAN_REFRESH_INTERVAL="${PLAN_REFRESH_INTERVAL}"
 
 # Install tools required for project
 # Run `docker build --no-cache .` to update dependencies
-RUN apk add --no-cache build-base git
+RUN apt-get update
+RUN apt-get -y install build-essential git
 WORKDIR /reactivesearch
 
 # List project dependencies with go.mod and go.sum
@@ -42,11 +43,7 @@ COPY . .
 RUN make
 
 # Final stage: Create the running container
-FROM alpine:3.13 AS final
-
-# Get ca certs, for making api calls
-RUN apk add --no-cache ca-certificates
-
+FROM debian:bullseye AS final
 
 # Create env folder
 RUN mkdir /reactivesearch-data && touch /reactivesearch-data/.env && chmod 777 /reactivesearch-data/.env
@@ -56,4 +53,4 @@ COPY --from=builder /reactivesearch /reactivesearch
 WORKDIR /reactivesearch
 
 EXPOSE 8000
-ENTRYPOINT ["build/reactivesearch","--license-key-file", "--log", "stdout", "--plugins"]
+ENTRYPOINT ["build/reactivesearch", "--log", "stdout", "--plugins"]
