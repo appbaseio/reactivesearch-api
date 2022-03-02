@@ -43,8 +43,8 @@ func cleanSenstiveData(vars *[]interface{}) {
 		}
 
 		// If it is an URL, clean it up
-		cleanerRe := regexp.MustCompile(`//.+:.+@`)
-		cleanedVar := cleanerRe.ReplaceAllString(stringedVar, "//***:***@")
+		cleanerRe := regexp.MustCompile(`\/\/(?P<username>.+):.+@`)
+		cleanedVar := cleanerRe.ReplaceAllString(stringedVar, "//${username}:***@")
 
 		(*vars)[index] = cleanedVar
 	}
