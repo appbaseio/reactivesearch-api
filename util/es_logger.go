@@ -39,7 +39,7 @@ func DebugDeprecationWarns(formattedStr string) bool {
 	isDeprecated, _ := regexp.MatchString(`.*deprecation.*`, strings.ToLower(formattedStr))
 
 	if isDeprecated {
-		log.Debug("[ElasticSearch: Trace] => ", formattedStr)
+		log.Debugln("[ElasticSearch: Trace] => ", formattedStr)
 		return true
 	}
 
