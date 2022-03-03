@@ -7,8 +7,10 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/gorilla/mux"
 	log "github.com/sirupsen/logrus"
 
+	"github.com/appbaseio/reactivesearch-api/plugins/telemetry"
 	"github.com/appbaseio/reactivesearch-api/util"
 )
 
@@ -180,5 +182,21 @@ func (l *Logs) getLogs() http.HandlerFunc {
 func (l *Logs) getSearchLogs() http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
 		l.logsHandler(w, req, true)
+	}
+}
+
+func (l *Logs) getLogById() http.HandlerFunc {
+	return func(rw http.ResponseWriter, req *http.Request) {
+		vars := mux.Vars(req)
+		logID := vars["id"]
+
+		raw, err := l.es.getRawLog(req.Context(), logID)
+		if err != nil {
+			log.Warnln(logTag, err.Error.Error())
+			telemetry.WriteBackErrorWithTelemetry(req, rw, err.Error.Error(), err.Code)
+			return
+		}
+
+		util.WriteBackRaw(rw, raw, http.StatusOK)
 	}
 }
