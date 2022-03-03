@@ -75,14 +75,18 @@ func (es *elasticsearch) getRawLogsES7(ctx context.Context, logsFilter logsFilte
 		return nil, err
 	}
 
-	hits := []json.RawMessage{}
+	hits := make([]map[string]interface{}, 0)
 	for _, hit := range response.Hits.Hits {
 		var source map[string]interface{}
 		err := json.Unmarshal(hit.Source, &source)
 		if err != nil {
 			return nil, err
 		}
-		hits = append(hits, hit.Source)
+
+		// Extract the log ID
+		source["id"] = hit.Id
+
+		hits = append(hits, source)
 	}
 
 	logs := make(map[string]interface{})
