@@ -112,7 +112,7 @@ func (es *elasticsearch) getRawLogES7(ctx context.Context, ID string) ([]byte, *
 
 	response, err := util.GetClient7().Search(es.indexName).
 		Query(query).
-		Size(0).Do(ctx)
+		Size(1).Do(ctx)
 
 	if err != nil {
 		log.Errorln(logTag, ": error while running query on ID")
