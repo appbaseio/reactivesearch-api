@@ -19,7 +19,7 @@ func (l *Logs) routes() []plugins.Route {
 		{
 			Name:        "Get log for passed ID",
 			Methods:     []string{http.MethodGet},
-			Path:        "/log/{id}",
+			Path:        "/_log/{id}",
 			HandlerFunc: middleware(l.getLogById()),
 			Description: "Returns the logs for the passed ID, if present",
 		},
