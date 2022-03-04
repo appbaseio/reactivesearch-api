@@ -3,10 +3,14 @@ package logs
 import (
 	"context"
 	"encoding/json"
+	"errors"
+	"fmt"
+	"net/http"
 
 	"github.com/appbaseio/reactivesearch-api/model/category"
 	"github.com/appbaseio/reactivesearch-api/util"
 	es7 "github.com/olivere/elastic/v7"
+	"github.com/prometheus/common/log"
 )
 
 func (es *elasticsearch) getRawLogsES7(ctx context.Context, logsFilter logsFilter) ([]byte, error) {
@@ -75,14 +79,18 @@ func (es *elasticsearch) getRawLogsES7(ctx context.Context, logsFilter logsFilte
 		return nil, err
 	}
 
-	hits := []json.RawMessage{}
+	hits := make([]map[string]interface{}, 0)
 	for _, hit := range response.Hits.Hits {
 		var source map[string]interface{}
 		err := json.Unmarshal(hit.Source, &source)
 		if err != nil {
 			return nil, err
 		}
-		hits = append(hits, hit.Source)
+
+		// Extract the log ID
+		source["id"] = hit.Id
+
+		hits = append(hits, source)
 	}
 
 	logs := make(map[string]interface{})
@@ -95,4 +103,56 @@ func (es *elasticsearch) getRawLogsES7(ctx context.Context, logsFilter logsFilte
 		return nil, err
 	}
 	return raw, nil
+}
+
+// getRawLogES7 will get the raw log for the log with passed ID.
+// If we don't find a match, we will raise a 404 error.
+func (es *elasticsearch) getRawLogES7(ctx context.Context, ID string) ([]byte, *LogError) {
+	query := es7.NewTermQuery("_id", ID)
+
+	response, err := util.GetClient7().Search(es.indexName).
+		Query(query).
+		Size(1).Do(ctx)
+
+	if err != nil {
+		log.Errorln(logTag, ": error while running query on ID")
+	}
+
+	if len(response.Hits.Hits) == 0 {
+		return nil, &LogError{
+			Error: errors.New(fmt.Sprintf("Log not found with ID: %s", ID)),
+			Code:  http.StatusNotFound,
+		}
+	}
+
+	log := make(map[string]interface{})
+	logMatched := response.Hits.Hits[0]
+
+	err = json.Unmarshal(logMatched.Source, &log)
+	if err != nil {
+		return nil, &LogError{
+			Error: errors.New("Error occurred while unmarshalling log hit"),
+			Code:  http.StatusInternalServerError,
+		}
+	}
+
+	// Add the ID
+	log["id"] = logMatched.Id
+
+	// Marshal and return
+	rawLog, err := json.Marshal(log)
+	if err != nil {
+		return nil, &LogError{
+			Error: errors.New("error occurred while marshalling log body"),
+			Code:  http.StatusInternalServerError,
+		}
+	}
+
+	return rawLog, nil
+
+}
+
+type LogError struct {
+	Error error
+	Code  int
 }
