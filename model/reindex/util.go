@@ -21,6 +21,7 @@ type ReindexConfig struct {
 	Exclude                 []string                `json:"exclude_fields"`
 	Types                   []string                `json:"types"`
 	Action                  []string                `json:"action,omitempty"`
+	Script                  string                  `json:"script"`
 }
 
 // AliasedIndices struct

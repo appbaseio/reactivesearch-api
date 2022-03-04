@@ -12,6 +12,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/olivere/elastic/v7"
 	log "github.com/sirupsen/logrus"
 
 	"github.com/appbaseio/reactivesearch-api/middleware/classify"
@@ -165,6 +166,7 @@ func Reindex(ctx context.Context, sourceIndex string, config *ReindexConfig, wai
 	if config.Settings != nil {
 		body["settings"] = config.Settings
 	}
+
 	newIndexName := destinationIndex
 	operation := ReIndexWithDelete
 	if destinationIndex != "" {
@@ -230,11 +232,17 @@ func Reindex(ctx context.Context, sourceIndex string, config *ReindexConfig, wai
 	dest := es7.NewReindexDestination().
 		Index(newIndexName)
 
-	// Reindex action.
+	// Reindex action
 	reindex := util.GetClient7().Reindex().
 		Source(src).
 		Destination(dest).
 		WaitForCompletion(waitForCompletion)
+
+	// Set the script source when passed
+	if config.Script != "" {
+		script := elastic.NewScript(config.Script)
+		reindex.Script(script)
+	}
 
 	if waitForCompletion {
 		response, err := reindex.Do(ctx)
