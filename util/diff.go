@@ -121,6 +121,14 @@ func CalculateUriDiff(originalReq *http.Request, modifiedReq *http.Request) stri
 	return dmp.DiffToDelta(URIDiffs)
 }
 
+// CalculateStringDiff calculates the delta diff between the passed
+// strings
+func CalculateStringDiff(text1 string, text2 string) string {
+	dmp := diffmatchpatch.New()
+	diffs := dmp.DiffMain(text1, text2, false)
+	return dmp.DiffToDelta(diffs)
+}
+
 // Calculate method difference
 func CalculateMethodDiff(originalReq *http.Request, modifiedReq *http.Request) string {
 	dmp := diffmatchpatch.New()

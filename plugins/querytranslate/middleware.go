@@ -12,6 +12,7 @@ import (
 
 	"github.com/appbaseio/reactivesearch-api/util"
 	"github.com/appbaseio/reactivesearch-api/util/iplookup"
+	"github.com/gorilla/mux"
 
 	"github.com/appbaseio/reactivesearch-api/middleware"
 	"github.com/appbaseio/reactivesearch-api/middleware/classify"
@@ -156,6 +157,9 @@ func queryTranslate(h http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
 		start := time.Now()
 
+		// Extract the index from the vars
+		vars := mux.Vars(req)
+
 		shouldLogDiff := true
 
 		body, err := FromContext(req.Context())
@@ -272,10 +276,13 @@ func queryTranslate(h http.HandlerFunc) http.HandlerFunc {
 
 			bodyDiffStr := util.CalculateBodyDiff(reqBodyBeforeModification, reqBodyAfterModification)
 
+			// Diff the URI manually for this stage
+			esURL := "/" + vars["index"] + "/_msearch"
+
 			DiffCalculated := &difference.Difference{
 				Body:    bodyDiffStr,
 				Headers: util.CalculateHeaderDiff(req.Header, req.Header),
-				URI:     util.CalculateUriDiff(req, req),
+				URI:     util.CalculateStringDiff(req.URL.Path, esURL),
 				Method:  util.CalculateMethodDiff(req, req),
 			}
 
