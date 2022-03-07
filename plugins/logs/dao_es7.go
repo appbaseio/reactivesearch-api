@@ -4,8 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"net/http"
+	"regexp"
 
 	"github.com/appbaseio/reactivesearch-api/model/category"
 	"github.com/appbaseio/reactivesearch-api/util"
@@ -108,43 +108,43 @@ func (es *elasticsearch) getRawLogsES7(ctx context.Context, logsFilter logsFilte
 // getRawLogES7 will get the raw log for the log with passed ID.
 // If we don't find a match, we will raise a 404 error.
 func (es *elasticsearch) getRawLogES7(ctx context.Context, ID string) ([]byte, *LogError) {
-	query := es7.NewTermQuery("_id", ID)
-
-	response, err := util.GetClient7().Search(es.indexName).
-		Query(query).
-		Size(1).Do(ctx)
+	response, err := util.GetClient7().Get().Index(es.indexName).Id(ID).Do(ctx)
 
 	if err != nil {
-		log.Errorln(logTag, ": error while running query on ID")
-	}
+		errCode := http.StatusInternalServerError
 
-	if len(response.Hits.Hits) == 0 {
+		// Check if 404 using the err message
+		// and change err code depending on that.
+		isNotFound, _ := regexp.MatchString(`.*404.*`, err.Error())
+		if isNotFound {
+			errCode = http.StatusNotFound
+		}
+
+		log.Errorln(logTag, ": error while getting log by ID")
 		return nil, &LogError{
-			Error: errors.New(fmt.Sprintf("Log not found with ID: %s", ID)),
-			Code:  http.StatusNotFound,
+			Err:  err,
+			Code: errCode,
 		}
 	}
 
 	log := make(map[string]interface{})
-	logMatched := response.Hits.Hits[0]
-
-	err = json.Unmarshal(logMatched.Source, &log)
+	err = json.Unmarshal(response.Source, &log)
 	if err != nil {
 		return nil, &LogError{
-			Error: errors.New("Error occurred while unmarshalling log hit"),
-			Code:  http.StatusInternalServerError,
+			Err:  errors.New("Error occurred while unmarshalling log hit"),
+			Code: http.StatusInternalServerError,
 		}
 	}
 
 	// Add the ID
-	log["id"] = logMatched.Id
+	log["id"] = response.Id
 
 	// Marshal and return
 	rawLog, err := json.Marshal(log)
 	if err != nil {
 		return nil, &LogError{
-			Error: errors.New("error occurred while marshalling log body"),
-			Code:  http.StatusInternalServerError,
+			Err:  errors.New("error occurred while marshalling log body"),
+			Code: http.StatusInternalServerError,
 		}
 	}
 
@@ -153,6 +153,6 @@ func (es *elasticsearch) getRawLogES7(ctx context.Context, ID string) ([]byte, *
 }
 
 type LogError struct {
-	Error error
-	Code  int
+	Err  error
+	Code int
 }
