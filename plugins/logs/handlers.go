@@ -192,8 +192,8 @@ func (l *Logs) getLogById() http.HandlerFunc {
 
 		raw, err := l.es.getRawLog(req.Context(), logID)
 		if err != nil {
-			log.Warnln(logTag, err.Error.Error())
-			telemetry.WriteBackErrorWithTelemetry(req, rw, err.Error.Error(), err.Code)
+			log.Warnln(logTag, err.Err.Error())
+			telemetry.WriteBackErrorWithTelemetry(req, rw, err.Err.Error(), err.Code)
 			return
 		}
 
