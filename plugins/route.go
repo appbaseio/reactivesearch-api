@@ -109,6 +109,7 @@ var (
 	singleton            *RouterSwapper
 	singletonHealthCheck *RouterHealthCheck
 	once                 sync.Once
+	healthCheckOnce      sync.Once
 )
 
 // RouterSwapperInstance returns one instance and should be the
@@ -222,16 +223,15 @@ func (rs *RouterSwapper) RestartServer() {
 type RouterHealthCheck struct {
 	// CheckDetails can contain maximum 3 elements.
 	CheckedDetails []bool
-
-	port    int
-	address string
-	isHttps bool
+	port           *int
+	address        *string
+	isHttps        *bool
 }
 
 // RouterHealthCheckInstance returns one instance and should be the
 // only way health check is accessed
 func RouterHealthCheckInstance() *RouterHealthCheck {
-	once.Do(func() { singletonHealthCheck = &RouterHealthCheck{} })
+	healthCheckOnce.Do(func() { singletonHealthCheck = &RouterHealthCheck{} })
 	return singletonHealthCheck
 }
 
@@ -260,11 +260,11 @@ func (h *RouterHealthCheck) Check() {
 
 	// Build the URL to hit
 	ssl := "http"
-	if h.isHttps {
+	if *h.isHttps {
 		ssl = "https"
 	}
 
-	urlToHit := fmt.Sprintf("%s://%s:%d%s", ssl, h.address, h.port, endpoint)
+	urlToHit := fmt.Sprintf("%s://%s:%d%s", ssl, *h.address, *h.port, endpoint)
 	log.Debug(logTag, ": Hitting ", urlToHit, " for health check")
 
 	status := true
@@ -303,7 +303,7 @@ func (h *RouterHealthCheck) Check() {
 // SetAttrs sets the router related attributes in the HealthCheck
 // struct.
 func (h *RouterHealthCheck) SetAttrs(port int, address string, isHttps bool) {
-	h.port = port
-	h.address = address
-	h.isHttps = isHttps
+	h.port = &port
+	h.address = &address
+	h.isHttps = &isHttps
 }
