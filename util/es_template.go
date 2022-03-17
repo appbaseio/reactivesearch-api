@@ -265,7 +265,7 @@ func SetSystemIndexTemplate() error {
 	version := GetVersion()
 	if version == 7 || version == 8 {
 		defaultSetting := fmt.Sprintf(`{
-			"index_patterns": [".*", "metricbeat-*"],
+			"index_patterns": [".*"],
 			"settings": %s,
 			"mappings": %s,
 			"order": 20
