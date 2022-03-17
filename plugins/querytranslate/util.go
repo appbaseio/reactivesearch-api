@@ -301,7 +301,7 @@ type Query struct {
 	Interval                    *int                       `json:"interval,omitempty"`
 	Aggregations                *[]string                  `json:"aggregations,omitempty"`
 	MissingLabel                string                     `json:"missingLabel,omitempty"`
-	ShowMissing                 bool                       `json:"showMissing,omitempty"`
+	ShowMissing                 *bool                      `json:"showMissing,omitempty"`
 	DefaultQuery                *map[string]interface{}    `json:"defaultQuery,omitempty"`
 	CustomQuery                 *map[string]interface{}    `json:"customQuery,omitempty"`
 	Execute                     *bool                      `json:"execute,omitempty"`
