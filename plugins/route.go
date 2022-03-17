@@ -106,8 +106,9 @@ type RouterSwapper struct {
 }
 
 var (
-	singleton *RouterSwapper
-	once      sync.Once
+	singleton            *RouterSwapper
+	singletonHealthCheck *RouterHealthCheck
+	once                 sync.Once
 )
 
 // RouterSwapperInstance returns one instance and should be the
@@ -225,6 +226,13 @@ type RouterHealthCheck struct {
 	port    int
 	address string
 	isHttps bool
+}
+
+// RouterHealthCheckInstance returns one instance and should be the
+// only way health check is accessed
+func RouterHealthCheckInstance() *RouterHealthCheck {
+	once.Do(func() { singletonHealthCheck = &RouterHealthCheck{} })
+	return singletonHealthCheck
 }
 
 // Append will append the newly added detail to the HealthCheck
