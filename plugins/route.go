@@ -215,3 +215,34 @@ func (rs *RouterSwapper) RestartServer() {
 	// If shutdown was succesfull, start again.
 	rs.StartServer()
 }
+
+// RouterHealthCheck will handle checking the routers
+// health.
+type RouterHealthCheck struct {
+	// CheckDetails can contain maximum 3 elements.
+	CheckedDetails []bool
+}
+
+// Append will append the newly added detail to the HealthCheck
+// array making sure that it is of length 3.
+func (h *RouterHealthCheck) Append(status bool) {
+	// We do not need to check the length of the array.
+	// We can add an element at the end and store the
+	// last 3 elements.
+	h.CheckedDetails = append(h.CheckedDetails, status)
+
+	checkDetailsLength := len(h.CheckedDetails)
+
+	// If length is more than 3, keep the last 3
+	if checkDetailsLength > 3 {
+		h.CheckedDetails = h.CheckedDetails[checkDetailsLength-3:]
+	}
+}
+
+// Check will check the routers health by
+// hitting the dry health check endpoint.
+//
+// This function should be run with a cron job to be effective.
+func (h *RouterHealthCheck) Check() {
+
+}
