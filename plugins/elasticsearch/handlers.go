@@ -3,6 +3,7 @@ package elasticsearch
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -126,5 +127,23 @@ func (es *elasticsearch) healthCheck() http.HandlerFunc {
 			return
 		}
 		util.WriteBackRaw(w, []byte{}, code)
+	}
+}
+
+// dryHealthCheck will return a dummy response everytime it's
+// called. This method can be used to check if the server is stuck
+// and whether or not a restart is necessary.
+func dryHealthCheck() http.HandlerFunc {
+	return func(w http.ResponseWriter, req *http.Request) {
+		response := map[string]interface{}{
+			"health": "ok",
+		}
+
+		// Marshal the response
+		//
+		// NOTE: No need to check error since response is manually created
+		// in the above lines
+		responseInBytes, _ := json.Marshal(response)
+		util.WriteBackRaw(w, responseInBytes, http.StatusOK)
 	}
 }
