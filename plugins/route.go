@@ -265,6 +265,7 @@ func (h *RouterHealthCheck) Check() {
 	}
 
 	urlToHit := fmt.Sprintf("%s://%s:%d%s", ssl, h.address, h.port, endpoint)
+	log.Debug(logTag, ": Hitting ", urlToHit, " for health check")
 
 	status := true
 
@@ -276,6 +277,7 @@ func (h *RouterHealthCheck) Check() {
 	if err != nil {
 		status = false
 	}
+	log.Debug(logTag, ": health check status: ", status)
 
 	h.Append(status)
 
