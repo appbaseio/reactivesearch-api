@@ -181,7 +181,7 @@ func SetDefaultIndexTemplate() error {
 	}`
 
 	version := GetVersion()
-	if version == 7 || version == 8 {
+	if version == 7 || version == 8 || version == 1 {
 		defaultSetting := fmt.Sprintf(`{
 			"index_patterns": ["*"],
 			"settings": %s,
@@ -263,7 +263,7 @@ func SetSystemIndexTemplate() error {
 	}`
 
 	version := GetVersion()
-	if version == 7 {
+	if version == 7 || version == 8 || version == 1 {
 		defaultSetting := fmt.Sprintf(`{
 			"index_patterns": [".*"],
 			"settings": %s,
