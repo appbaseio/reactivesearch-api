@@ -221,6 +221,10 @@ func (rs *RouterSwapper) RestartServer() {
 type RouterHealthCheck struct {
 	// CheckDetails can contain maximum 3 elements.
 	CheckedDetails []bool
+
+	port    int
+	address string
+	isHttps bool
 }
 
 // Append will append the newly added detail to the HealthCheck
@@ -244,5 +248,45 @@ func (h *RouterHealthCheck) Append(status bool) {
 //
 // This function should be run with a cron job to be effective.
 func (h *RouterHealthCheck) Check() {
+	endpoint := "/arc/_health"
+
+	// Build the URL to hit
+	ssl := "http"
+	if h.isHttps {
+		ssl = "https"
+	}
+
+	urlToHit := fmt.Sprintf("%s://%s:%d%s", ssl, h.address, h.port, endpoint)
+
+	status := true
+
+	// Hit the URL now
+	//
+	// We don't need the response, just need
+	// to check if there was an error and accordingly set the status.
+	_, err := http.Get(urlToHit)
+	if err != nil {
+		status = false
+	}
+
+	h.Append(status)
+
+	// Check if last 3 were false and if so
+	// raise a log.Fatal
+	//
+	// NOTE: If the status is not of length 3, just ignore the error
+	if !status && len(h.CheckedDetails) > 2 {
+		failCount := 0
+		for _, status := range h.CheckedDetails {
+			if !status {
+				failCount += 1
+			}
+		}
+
+		if failCount >= 3 {
+			// Make the server exit
+			log.Fatalln("reactivesearch-api server has stopped accepting requests. Restarting server")
+		}
+	}
 
 }
