@@ -211,7 +211,7 @@ func (query *Query) applyTermsAggsQuery(queryOptions *map[string]interface{}) er
 			}
 		} else {
 			termsQuery["order"] = map[string]interface{}{
-				"_term": &query.SortBy,
+				"_key": &query.SortBy,
 			}
 		}
 
