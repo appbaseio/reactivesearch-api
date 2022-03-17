@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 
+	"github.com/alecthomas/jsonschema"
 	"github.com/appbaseio/reactivesearch-api/errors"
 	"github.com/appbaseio/reactivesearch-api/model/acl"
 )
@@ -186,6 +187,37 @@ func (c Category) MarshalJSON() ([]byte, error) {
 		return nil, nil
 	}
 	return json.Marshal(category)
+}
+
+func (c Category) JSONSchemaType() *jsonschema.Type {
+	return &jsonschema.Type{
+		Type: "string",
+		Enum: []interface{}{
+			Docs.String(),
+			Search.String(),
+			Indices.String(),
+			Cat.String(),
+			Clusters.String(),
+			Misc.String(),
+			User.String(),
+			Permission.String(),
+			Analytics.String(),
+			Streams.String(),
+			Rules.String(),
+			Suggestions.String(),
+			Auth.String(),
+			ReactiveSearch.String(),
+			SearchRelevancy.String(),
+			Synonyms.String(),
+			SearchGrader.String(),
+			UIBuilder.String(),
+			Logs.String(),
+			Cache.String(),
+			StoredQuery.String(),
+			Sync.String(),
+			Pipelines.String(),
+		},
+	}
 }
 
 // IsFromES checks whether the category is one of the elasticsearch category, i.e.

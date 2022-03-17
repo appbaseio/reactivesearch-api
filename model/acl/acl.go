@@ -3,6 +3,7 @@ package acl
 import (
 	"context"
 
+	"github.com/alecthomas/jsonschema"
 	"github.com/appbaseio/reactivesearch-api/errors"
 )
 
@@ -71,6 +72,17 @@ const (
 	Termvectors
 	Update
 )
+
+func (a ACL) JSONSchemaType() *jsonschema.Type {
+	values := []interface{}{}
+	for _, acl := range Values() {
+		values = append(values, acl.String())
+	}
+	return &jsonschema.Type{
+		Type: "string",
+		Enum: values,
+	}
+}
 
 // NewContext returns a new context with the given ACL.
 func NewContext(ctx context.Context, acl *ACL) context.Context {
