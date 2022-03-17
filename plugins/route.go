@@ -273,8 +273,8 @@ func (h *RouterHealthCheck) Check() {
 	//
 	// We don't need the response, just need
 	// to check if there was an error and accordingly set the status.
-	_, err := http.Get(urlToHit)
-	if err != nil {
+	res, err := http.Get(urlToHit)
+	if err != nil || res.StatusCode != http.StatusOK {
 		status = false
 	}
 	log.Debug(logTag, ": health check status: ", status)
@@ -295,7 +295,7 @@ func (h *RouterHealthCheck) Check() {
 
 		if failCount >= 3 {
 			// Make the server exit
-			log.Fatalln("reactivesearch-api server has stopped accepting requests. Restarting server")
+			log.Fatalln("reactivesearch-api server has stopped accepting requests. Restarting server...!")
 		}
 	}
 }

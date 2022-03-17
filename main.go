@@ -528,7 +528,7 @@ func main() {
 	// server starts.
 	// In other words, the server should start withing 10 seconds
 	// of running the below code.
-	log.Infoln(logTag, ": setting up router health check")
+	log.Info(logTag, ": setting up router health check")
 	routerHealthCheck := plugins.RouterHealthCheckInstance()
 	routerHealthCheck.SetAttrs(port, address, https)
 	routerHealthCronJob := cron.New()
