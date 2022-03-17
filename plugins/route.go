@@ -288,5 +288,12 @@ func (h *RouterHealthCheck) Check() {
 			log.Fatalln("reactivesearch-api server has stopped accepting requests. Restarting server")
 		}
 	}
+}
 
+// SetAttrs sets the router related attributes in the HealthCheck
+// struct.
+func (h *RouterHealthCheck) SetAttrs(port int, address string, isHttps bool) {
+	h.port = port
+	h.address = address
+	h.isHttps = isHttps
 }
