@@ -106,8 +106,10 @@ type RouterSwapper struct {
 }
 
 var (
-	singleton *RouterSwapper
-	once      sync.Once
+	singleton            *RouterSwapper
+	singletonHealthCheck *RouterHealthCheck
+	once                 sync.Once
+	healthCheckOnce      sync.Once
 )
 
 // RouterSwapperInstance returns one instance and should be the
@@ -212,6 +214,96 @@ func (rs *RouterSwapper) RestartServer() {
 	var newServer http.Server
 	rs.server = newServer
 
-	// If shutdown was succesfull, start again.
+	// If shutdown was successful, start again.
 	rs.StartServer()
+}
+
+// RouterHealthCheck will handle checking the routers
+// health.
+type RouterHealthCheck struct {
+	// CheckDetails can contain maximum 3 elements.
+	CheckedDetails []bool
+	port           *int
+	address        *string
+	isHttps        *bool
+}
+
+// RouterHealthCheckInstance returns one instance and should be the
+// only way health check is accessed
+func RouterHealthCheckInstance() *RouterHealthCheck {
+	healthCheckOnce.Do(func() { singletonHealthCheck = &RouterHealthCheck{} })
+	return singletonHealthCheck
+}
+
+// Append will append the newly added detail to the HealthCheck
+// array making sure that it is of length 3.
+func (h *RouterHealthCheck) Append(status bool) {
+	// We do not need to check the length of the array.
+	// We can add an element at the end and store the
+	// last 3 elements.
+	h.CheckedDetails = append(h.CheckedDetails, status)
+
+	checkDetailsLength := len(h.CheckedDetails)
+
+	// If length is more than 3, keep the last 3
+	if checkDetailsLength > 3 {
+		h.CheckedDetails = h.CheckedDetails[checkDetailsLength-3:]
+	}
+}
+
+// Check will check the routers health by
+// hitting the dry health check endpoint.
+//
+// This function should be run with a cron job to be effective.
+func (h *RouterHealthCheck) Check() {
+	endpoint := "/arc/_health"
+
+	// Build the URL to hit
+	ssl := "http"
+	if *h.isHttps {
+		ssl = "https"
+	}
+
+	urlToHit := fmt.Sprintf("%s://%s:%d%s", ssl, *h.address, *h.port, endpoint)
+	log.Debug(logTag, ": Hitting ", urlToHit, " for health check")
+
+	status := true
+
+	// Hit the URL now
+	//
+	// We don't need the response, just need
+	// to check if there was an error and accordingly set the status.
+	res, err := http.Get(urlToHit)
+	if err != nil || res.StatusCode != http.StatusOK {
+		status = false
+	}
+	log.Debug(logTag, ": health check status: ", status)
+
+	h.Append(status)
+
+	// Check if last 3 were false and if so
+	// raise a log.Fatal
+	//
+	// NOTE: If the status is not of length 3, just ignore the error
+	if !status && len(h.CheckedDetails) > 2 {
+		failCount := 0
+		for _, status := range h.CheckedDetails {
+			if !status {
+				failCount += 1
+			}
+		}
+
+		if failCount >= 3 {
+			// Make the server exit
+			log.Fatalln("reactivesearch-api server has stopped accepting requests. Restarting server...!")
+		}
+	}
+}
+
+// SetAttrs sets the router related attributes in the HealthCheck
+// struct.
+func (h *RouterHealthCheck) SetAttrs(port int, address string, isHttps bool) {
+	h.port = &port
+	h.address = &address
+	h.isHttps = &isHttps
 }
