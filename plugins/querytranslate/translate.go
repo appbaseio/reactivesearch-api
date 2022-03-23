@@ -121,6 +121,10 @@ func translateQuery(rsQuery RSQuery, userIP string) (string, error) {
 
 				switch *rsQuery.Settings.Backend {
 				case "elasticsearch":
+					if query.Script == nil {
+						defaultScript := GetDefaultScript(*rsQuery.Settings.Backend)
+						query.Script = &defaultScript
+					}
 					finalQuery = applyElasticSearchKnn(finalQuery)
 				}
 			}
@@ -165,6 +169,16 @@ func shouldApplyKnn(query Query) bool {
 func applyElasticSearchKnn(query map[string]interface{}) map[string]interface{} {
 
 	return query
+}
+
+// GetDefaultScript returns the default script for the passed backend
+func GetDefaultScript(backend string) string {
+	switch backend {
+	case "elasticsearch":
+		return "cosineSimilarity(params.queryVector, params.dataField) + 1.0"
+	case "opensearch":
+		return "cosinesimil"
+	}
 }
 
 // global function to transform the RS API query to _msearch equivalent query
