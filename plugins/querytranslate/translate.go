@@ -113,6 +113,12 @@ func translateQuery(rsQuery RSQuery, userIP string) (string, error) {
 					rsQuery.Settings.Backend = &defaultBackend
 				}
 
+				// Apply default candidate number if nothing is passed
+				if query.Candidates == nil {
+					defaultCandidates := 10
+					query.Candidates = &defaultCandidates
+				}
+
 				switch *rsQuery.Settings.Backend {
 				case "elasticsearch":
 					finalQuery = applyElasticSearchKnn(finalQuery)
