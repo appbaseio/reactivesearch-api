@@ -325,6 +325,10 @@ type Query struct {
 	Stopwords                   *[]string                  `json:"customStopwords,omitempty"`
 	SearchLanguage              *string                    `json:"searchLanguage,omitempty"`
 	CalendarInterval            *string                    `json:"calendarinterval,omitempty"`
+	Script                      *string                    `json:"script,omitempty"`
+	QueryVector                 *[]float64                 `json:"queryVector,omitempty"`
+	VectorDataField             *string                    `json:"vectorDataField,omitempty"`
+	Candidates                  *int                       `json:"candidates,omitempty"`
 }
 
 type DataField struct {
