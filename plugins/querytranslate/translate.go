@@ -126,7 +126,7 @@ func translateQuery(rsQuery RSQuery, userIP string) (string, error) {
 						defaultScript := GetDefaultScript(*rsQuery.Settings.Backend)
 						query.Script = &defaultScript
 					}
-					finalQuery = applyElasticSearchKnn(finalQuery)
+					finalQuery = applyElasticSearchKnn(finalQuery, query)
 				}
 			}
 
@@ -167,9 +167,26 @@ func shouldApplyKnn(query Query) bool {
 
 // applyElasticSearchKnn applies the knn query for elasticsearch
 // backend
-func applyElasticSearchKnn(query map[string]interface{}) map[string]interface{} {
+func applyElasticSearchKnn(queryMap map[string]interface{}, queryItem Query) map[string]interface{} {
+	// TODO: Set the size field
 
-	return query
+	// Replace the query field
+	currentQuery := queryMap["query"]
+	updatedQuery := map[string]interface{}{
+		"script_score": currentQuery,
+		"script": map[string]interface{}{
+			"source": *queryItem.Script,
+			"params": map[string]interface{}{
+				"queryVector": *queryItem.QueryVector,
+				"dataField":   *queryItem.VectorDataField,
+			},
+		},
+	}
+
+	// Update the queryMap
+	queryMap["query"] = updatedQuery
+
+	return queryMap
 }
 
 // GetDefaultScript returns the default script for the passed backend
