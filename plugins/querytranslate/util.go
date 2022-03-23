@@ -345,6 +345,7 @@ type Settings struct {
 	EnableSearchRelevancy *bool                   `json:"enableSearchRelevancy,omitempty"`
 	UseCache              *bool                   `json:"useCache,omitempty"`
 	QueryRule             *map[string]interface{} `json:"queryRule,omitempty"`
+	Backend               *string                 `json:"backend,omitempty"`
 }
 
 // RSQuery represents the request body
