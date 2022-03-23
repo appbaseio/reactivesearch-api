@@ -72,9 +72,9 @@ func translateQuery(rsQuery RSQuery, userIP string) (string, error) {
 	}
 
 	// If no backend is passed for kNN, set it as `elasticsearch`
-	if rsQuery.Settings.Backend == nil {
-		defaultBackend := "elasticsearch"
-		rsQuery.Settings.Backend = &defaultBackend
+	backendPassed := "elasticsearch"
+	if rsQuery.Settings != nil && rsQuery.Settings.Backend != nil {
+		backendPassed = *rsQuery.Settings.Backend
 	}
 
 	for _, query := range rsQuery.Query {
@@ -120,10 +120,10 @@ func translateQuery(rsQuery RSQuery, userIP string) (string, error) {
 					query.Candidates = &defaultCandidates
 				}
 
-				switch *rsQuery.Settings.Backend {
+				switch backendPassed {
 				case "elasticsearch":
 					if query.Script == nil {
-						defaultScript := GetDefaultScript(*rsQuery.Settings.Backend)
+						defaultScript := GetDefaultScript(backendPassed)
 						query.Script = &defaultScript
 					}
 					finalQuery = applyElasticSearchKnn(finalQuery, query)
