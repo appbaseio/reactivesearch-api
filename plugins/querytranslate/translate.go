@@ -71,6 +71,12 @@ func translateQuery(rsQuery RSQuery, userIP string) (string, error) {
 		}
 	}
 
+	// If no backend is passed for kNN, set it as `elasticsearch`
+	if rsQuery.Settings.Backend == nil {
+		defaultBackend := "elasticsearch"
+		rsQuery.Settings.Backend = &defaultBackend
+	}
+
 	for _, query := range rsQuery.Query {
 		if query.Execute == nil || *query.Execute {
 			translatedQuery, queryOptions, isGeneratedByValue, translateError := query.getQuery(rsQuery)
@@ -108,11 +114,6 @@ func translateQuery(rsQuery RSQuery, userIP string) (string, error) {
 
 			// If knn fields are passed, apply knn fields to the final query
 			if shouldApplyKnn(query) {
-				if rsQuery.Settings.Backend == nil {
-					defaultBackend := "elasticsearch"
-					rsQuery.Settings.Backend = &defaultBackend
-				}
-
 				// Apply default candidate number if nothing is passed
 				if query.Candidates == nil {
 					defaultCandidates := 10
@@ -179,6 +180,8 @@ func GetDefaultScript(backend string) string {
 	case "opensearch":
 		return "cosinesimil"
 	}
+
+	return ""
 }
 
 // global function to transform the RS API query to _msearch equivalent query
