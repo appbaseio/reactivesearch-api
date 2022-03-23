@@ -105,6 +105,20 @@ func translateQuery(rsQuery RSQuery, userIP string) (string, error) {
 				}
 				finalQuery = mergeMaps(finalQuery, defaultQueryClone)
 			}
+
+			// If knn fields are passed, apply knn fields to the final query
+			if shouldApplyKnn(query) {
+				if rsQuery.Settings.Backend == nil {
+					defaultBackend := "elasticsearch"
+					rsQuery.Settings.Backend = &defaultBackend
+				}
+
+				switch *rsQuery.Settings.Backend {
+				case "elasticsearch":
+					finalQuery = applyElasticSearchKnn(finalQuery)
+				}
+			}
+
 			queryInBytes, err2 := json.Marshal(finalQuery)
 			if err2 != nil {
 				return mSearchQuery, err2
@@ -133,6 +147,18 @@ func translateQuery(rsQuery RSQuery, userIP string) (string, error) {
 	}
 
 	return mSearchQuery, nil
+}
+
+// shouldApplyKnn determines whether or not to apply KNN stage
+func shouldApplyKnn(query Query) bool {
+	return query.QueryVector != nil && query.VectorDataField != nil
+}
+
+// applyElasticSearchKnn applies the knn query for elasticsearch
+// backend
+func applyElasticSearchKnn(query map[string]interface{}) map[string]interface{} {
+
+	return query
 }
 
 // global function to transform the RS API query to _msearch equivalent query
