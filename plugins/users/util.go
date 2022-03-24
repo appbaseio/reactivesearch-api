@@ -24,7 +24,7 @@ func subscribeToDowntimeAlert(email string) error {
 		req.Header.Add("Content-Type", "application/json")
 		req.Header.Add("cache-control", "no-cache")
 
-		res, err := http.DefaultClient.Do(req)
+		res, err := util.HTTPClient().Do(req)
 		if err != nil {
 			log.Errorln("error while subscribing to downtime alerts:", err)
 			return err
@@ -49,7 +49,7 @@ func unsubscribeToDowntimeAlert(email string) error {
 		req.Header.Add("Content-Type", "application/json")
 		req.Header.Add("cache-control", "no-cache")
 
-		res, err := http.DefaultClient.Do(req)
+		res, err := util.HTTPClient().Do(req)
 		if err != nil {
 			log.Errorln("error while un-subscribing to downtime alerts:", err)
 			return err

@@ -87,7 +87,7 @@ func MakeHttpRequest(method string, url string, requestBody interface{}) (interf
 	req.Header.Add("Content-Type", "application/json")
 	req.Header.Add("cache-control", "no-cache")
 
-	res, err := http.DefaultClient.Do(req)
+	res, err := HTTPClient().Do(req)
 	if err != nil {
 		log.Errorln("error while sending request:", err)
 		return nil, err, nil
