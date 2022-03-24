@@ -152,3 +152,21 @@ func CalculateHeaderDiff(originalReqHeader http.Header, modifiedReqHeader http.H
 	headerDiff := dmp.DiffMain(string(originalHeaders), string(modifiedHeaders), false)
 	return dmp.DiffToDelta(headerDiff)
 }
+
+// ApplyDelta applies the delta to the passed text1 and returns
+// the text2.
+func ApplyDelta(text string, delta string) (string, error) {
+	dmp := diffmatchpatch.New()
+	diffsFromDelta, err := dmp.DiffFromDelta(text, delta)
+	if err != nil {
+		return "", err
+	}
+
+	// Generate patches from the diff
+	patchesFromDiff := dmp.PatchMake(diffsFromDelta)
+
+	// Apply the patches
+	finalText, _ := dmp.PatchApply(patchesFromDiff, text)
+
+	return finalText, nil
+}
