@@ -125,13 +125,18 @@ func translateQuery(rsQuery RSQuery, userIP string) (string, error) {
 					query.Size = &defaultSize
 				}
 
+				minSize := *query.Candidates
+				if minSize > *query.Size {
+					minSize = *query.Size
+				}
+
 				switch backendPassed {
 				case "elasticsearch":
 					if query.Script == nil {
 						defaultScript := GetDefaultScript(backendPassed)
 						query.Script = &defaultScript
 					}
-					finalQuery = applyElasticSearchKnn(finalQuery, query)
+					finalQuery = applyElasticSearchKnn(finalQuery, query, minSize)
 				}
 			}
 
@@ -172,13 +177,7 @@ func shouldApplyKnn(query Query) bool {
 
 // applyElasticSearchKnn applies the knn query for elasticsearch
 // backend
-func applyElasticSearchKnn(queryMap map[string]interface{}, queryItem Query) map[string]interface{} {
-	// Set the size field
-	minSize := *queryItem.Candidates
-	if minSize > *queryItem.Size {
-		minSize = *queryItem.Size
-	}
-
+func applyElasticSearchKnn(queryMap map[string]interface{}, queryItem Query, size int) map[string]interface{} {
 	// Replace the query field
 	currentQuery := queryMap["query"]
 	updatedQuery := map[string]interface{}{
@@ -198,7 +197,36 @@ func applyElasticSearchKnn(queryMap map[string]interface{}, queryItem Query) map
 	queryMap["query"] = updatedQuery
 
 	// Set the size
-	queryMap["size"] = minSize
+	queryMap["size"] = size
+
+	return queryMap
+}
+
+// applyOpenSearchKnn applies the knn query for opensearch backend
+//
+// The structure is just a bit different to how it's applied for ES
+func applyOpenSearchKnn(queryMap map[string]interface{}, queryItem Query, size int) map[string]interface{} {
+	// Replace the query field
+	currentQuery := queryMap["query"]
+	updatedQuery := map[string]interface{}{
+		"script_score": map[string]interface{}{
+			"query": currentQuery,
+			"script": map[string]interface{}{
+				"source": "knn_score",
+				"params": map[string]interface{}{
+					"query_value": *queryItem.QueryVector,
+					"field":       *queryItem.VectorDataField,
+					"space_type":  *queryItem.Script,
+				},
+			},
+		},
+	}
+
+	// Update the queryMap
+	queryMap["query"] = updatedQuery
+
+	// Set the size
+	queryMap["size"] = size
 
 	return queryMap
 }
