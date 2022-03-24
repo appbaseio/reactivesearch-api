@@ -130,13 +130,18 @@ func translateQuery(rsQuery RSQuery, userIP string) (string, error) {
 					minSize = *query.Size
 				}
 
+				// Set default script for the backend if none
+				// is passed
+				if query.Script == nil {
+					defaultScript := GetDefaultScript(backendPassed)
+					query.Script = &defaultScript
+				}
+
 				switch backendPassed {
 				case "elasticsearch":
-					if query.Script == nil {
-						defaultScript := GetDefaultScript(backendPassed)
-						query.Script = &defaultScript
-					}
 					finalQuery = applyElasticSearchKnn(finalQuery, query, minSize)
+				case "opensearch":
+					finalQuery = applyOpenSearchKnn(finalQuery, query, minSize)
 				}
 			}
 
