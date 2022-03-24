@@ -12,6 +12,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"net/http"
 	"os"
 	"os/exec"
 	"path"
@@ -413,6 +414,14 @@ func main() {
 	util.NewClient()
 	util.SetDefaultIndexTemplate()
 	util.SetSystemIndexTemplate()
+
+	/*
+	   Safety net for 'too many open files' issue on legacy code.
+	   Set a sane timeout duration for the http.DefaultClient, to ensure idle connections are terminated.
+	   Reference: https://stackoverflow.com/questions/37454236/net-http-server-too-many-open-files-error
+	*/
+	http.DefaultClient.Timeout = time.Minute * 2
+
 	// map of specific plugins
 	sequencedPlugins := []string{"analytics.so", "searchrelevancy.so", "rules.so", "cache.so", "suggestions.so", "storedquery.so", "analyticsrequest.so", "applycache.so"}
 	sequencedPluginsByPath := make(map[string]string)
