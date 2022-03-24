@@ -120,6 +120,11 @@ func translateQuery(rsQuery RSQuery, userIP string) (string, error) {
 					query.Candidates = &defaultCandidates
 				}
 
+				if query.Size == nil {
+					defaultSize := 10
+					query.Size = &defaultSize
+				}
+
 				switch backendPassed {
 				case "elasticsearch":
 					if query.Script == nil {
@@ -168,7 +173,11 @@ func shouldApplyKnn(query Query) bool {
 // applyElasticSearchKnn applies the knn query for elasticsearch
 // backend
 func applyElasticSearchKnn(queryMap map[string]interface{}, queryItem Query) map[string]interface{} {
-	// TODO: Set the size field
+	// Set the size field
+	minSize := *queryItem.Candidates
+	if minSize > *queryItem.Size {
+		minSize = *queryItem.Size
+	}
 
 	// Replace the query field
 	currentQuery := queryMap["query"]
@@ -187,6 +196,9 @@ func applyElasticSearchKnn(queryMap map[string]interface{}, queryItem Query) map
 
 	// Update the queryMap
 	queryMap["query"] = updatedQuery
+
+	// Set the size
+	queryMap["size"] = minSize
 
 	return queryMap
 }
