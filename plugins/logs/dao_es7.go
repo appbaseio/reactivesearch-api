@@ -107,7 +107,7 @@ func (es *elasticsearch) getRawLogsES7(ctx context.Context, logsFilter logsFilte
 
 // getRawLogES7 will get the raw log for the log with passed ID.
 // If we don't find a match, we will raise a 404 error.
-func (es *elasticsearch) getRawLogES7(ctx context.Context, ID string) ([]byte, *LogError) {
+func (es *elasticsearch) getRawLogES7(ctx context.Context, ID string, parseDiffs bool) ([]byte, *LogError) {
 	response, err := util.GetClient7().Get().Index(es.indexName).Id(ID).Do(ctx)
 
 	if err != nil {
