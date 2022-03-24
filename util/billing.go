@@ -209,7 +209,7 @@ func getArcInstance(arcID string) (ArcInstance, error) {
 	req.Header.Add("Content-Type", "application/json")
 	req.Header.Add("cache-control", "no-cache")
 
-	res, err := http.DefaultClient.Do(req)
+	res, err := HTTPClient().Do(req)
 	// If ACCAPI is down then set the plan
 	if (res != nil && res.StatusCode >= 500) || err != nil {
 		plan := GetTier()
@@ -272,7 +272,7 @@ func getArcClusterInstance(clusterID string) (ArcInstance, error) {
 	req.Header.Add("Content-Type", "application/json")
 	req.Header.Add("cache-control", "no-cache")
 
-	res, err := http.DefaultClient.Do(req)
+	res, err := HTTPClient().Do(req)
 	// If ACCAPI is down then set the plan
 	if (res != nil && res.StatusCode >= 500) || err != nil {
 		plan := GetTier()
@@ -358,7 +358,7 @@ func getClusterPlan(clusterID string) (ClusterPlan, error) {
 	req.Header.Add("Content-Type", "application/json")
 	req.Header.Add("cache-control", "no-cache")
 
-	res, err := http.DefaultClient.Do(req)
+	res, err := HTTPClient().Do(req)
 	// If ACCAPI is down then set the plan
 	if (res != nil && res.StatusCode >= 500) || err != nil {
 		plan := GetTier()
@@ -440,7 +440,7 @@ func reportUsageRequest(arcUsage ArcUsage) (ArcUsageResponse, error) {
 	req.Header.Add("Content-Type", "application/json")
 	req.Header.Add("cache-control", "no-cache")
 
-	res, err := http.DefaultClient.Do(req)
+	res, err := HTTPClient().Do(req)
 	// If ACCAPI is down then set the plan
 	if (res != nil && res.StatusCode >= 500) || err != nil {
 		plan := GetTier()
@@ -481,7 +481,7 @@ func reportClusterUsageRequest(arcUsage ArcUsage) (ArcUsageResponse, error) {
 	req.Header.Add("Content-Type", "application/json")
 	req.Header.Add("cache-control", "no-cache")
 
-	res, err := http.DefaultClient.Do(req)
+	res, err := HTTPClient().Do(req)
 	// If ACCAPI is down then set the plan
 	if (res != nil && res.StatusCode >= 500) || err != nil {
 		plan := GetTier()

@@ -21,7 +21,7 @@ func postTelemetryToACCAPI(record interface{}) error {
 	req.Header.Add("Content-Type", "application/json")
 	req.Header.Add("cache-control", "no-cache")
 
-	res, err := http.DefaultClient.Do(req)
+	res, err := util.HTTPClient().Do(req)
 	if err != nil {
 		log.Errorln("error while recording telemetry:", err)
 		return err

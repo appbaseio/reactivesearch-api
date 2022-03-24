@@ -282,7 +282,7 @@ func MakeRequest(url, method string, reqBody []byte) ([]byte, *http.Response, er
 		log.Errorln("Error while creating request object: ", err)
 		return nil, nil, err
 	}
-	response, err := http.DefaultClient.Do(request)
+	response, err := HTTPClient().Do(request)
 	if err != nil {
 		log.Errorln("Error while making request: ", err)
 		return nil, nil, err
@@ -381,7 +381,7 @@ func ProxyACCAPI(proxyConfig ProxyConfig) (*http.Response, error) {
 	}
 	req.Header.Add("Content-Type", "application/json")
 	req.Header.Add("cache-control", "no-cache")
-	res, err := http.DefaultClient.Do(req)
+	res, err := HTTPClient().Do(req)
 	if err != nil {
 		return nil, err
 	}
