@@ -173,12 +173,14 @@ func applyElasticSearchKnn(queryMap map[string]interface{}, queryItem Query) map
 	// Replace the query field
 	currentQuery := queryMap["query"]
 	updatedQuery := map[string]interface{}{
-		"script_score": currentQuery,
-		"script": map[string]interface{}{
-			"source": *queryItem.Script,
-			"params": map[string]interface{}{
-				"queryVector": *queryItem.QueryVector,
-				"dataField":   *queryItem.VectorDataField,
+		"script_score": map[string]interface{}{
+			"query": currentQuery,
+			"script": map[string]interface{}{
+				"source": *queryItem.Script,
+				"params": map[string]interface{}{
+					"queryVector": *queryItem.QueryVector,
+					"dataField":   *queryItem.VectorDataField,
+				},
 			},
 		},
 	}
