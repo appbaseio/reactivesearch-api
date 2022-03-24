@@ -218,6 +218,7 @@ func applyOpenSearchKnn(queryMap map[string]interface{}, queryItem Query, size i
 			"query": currentQuery,
 			"script": map[string]interface{}{
 				"source": "knn_score",
+				"lang":   "knn",
 				"params": map[string]interface{}{
 					"query_value": *queryItem.QueryVector,
 					"field":       *queryItem.VectorDataField,
