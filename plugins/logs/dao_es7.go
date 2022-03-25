@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"regexp"
 
@@ -148,8 +149,71 @@ func (es *elasticsearch) getRawLogES7(ctx context.Context, ID string, parseDiffs
 		}
 	}
 
+	if parseDiffs {
+		rawLog, err = parseStageDiffs(rawLog)
+		if err != nil {
+			return nil, &LogError{
+				Err:  errors.New(fmt.Sprint("error while parsing stage diffs: ", err)),
+				Code: http.StatusInternalServerError,
+			}
+		}
+	}
+
 	return rawLog, nil
 
+}
+
+// parseStageDiffs parses the context diffs and returns the contexts
+// for each stage.
+func parseStageDiffs(logPassed []byte) ([]byte, error) {
+	// Parse the log to a pipelineLog object
+	var logRecord record
+
+	err := json.Unmarshal(logPassed, &logRecord)
+	if err != nil {
+		errMsg := fmt.Sprint("error occurred while parsing log to PipelineLog, ", err)
+		log.Warn(logTag, ": ", errMsg)
+		return logPassed, errors.New(errMsg)
+	}
+
+	// Parse the requestChanges
+	request := logRecord.Request
+
+	for changeIndex, change := range logRecord.RequestChanges {
+		bodyText1 := request.Body
+		if change.Body != "" {
+			bodyText2, err := util.ApplyDelta(bodyText1, change.Body)
+			if err != nil {
+				errMsg := fmt.Sprint("error while applying body delta for stage number: ", err)
+				return logPassed, errors.New(errMsg)
+			}
+
+			logRecord.RequestChanges[changeIndex].Body = bodyText2
+		}
+
+		if change.Headers != "" {
+			headerText1, err := json.Marshal(request.Headers)
+			if err != nil {
+				errMsg := fmt.Sprint("error while marshalling headers for stage number: ", err)
+				return logPassed, errors.New(errMsg)
+			}
+			headerText2, err := util.ApplyDelta(string(headerText1), change.Headers)
+			if err != nil {
+				errMsg := fmt.Sprint("error while applying header delta for stage number: ", err)
+				return logPassed, errors.New(errMsg)
+			}
+
+			logRecord.RequestChanges[changeIndex].Headers = headerText2
+		}
+	}
+
+	updatedLogInBytes, err := json.Marshal(logRecord)
+	if err != nil {
+		errMsg := fmt.Sprint("error while marshalling updated log, ", err)
+		return logPassed, errors.New(errMsg)
+	}
+
+	return updatedLogInBytes, nil
 }
 
 type LogError struct {
