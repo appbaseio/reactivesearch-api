@@ -191,7 +191,7 @@ func (l *Logs) getLogById() http.HandlerFunc {
 		logID := vars["id"]
 
 		// ParseDiff flag
-		parseDiffs := req.URL.Query().Get("parseDiffs")
+		parseDiffs := req.URL.Query().Get("verbose")
 		parseDiffBool := true
 		if parseDiffs == "false" {
 			parseDiffBool = false
