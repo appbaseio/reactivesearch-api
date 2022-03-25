@@ -205,6 +205,17 @@ func parseStageDiffs(logPassed []byte) ([]byte, error) {
 
 			logRecord.RequestChanges[changeIndex].Headers = headerText2
 		}
+
+		if change.URI != "" {
+			URIText1 := request.URI
+			URIText2, err := util.ApplyDelta(URIText1, change.URI)
+			if err != nil {
+				errMsg := fmt.Sprintf("error while apply delta for URI in stage %d, %s", changeIndex, err)
+				return logPassed, errors.New(errMsg)
+			}
+
+			logRecord.RequestChanges[changeIndex].URI = URIText2
+		}
 	}
 
 	updatedLogInBytes, err := json.Marshal(logRecord)
