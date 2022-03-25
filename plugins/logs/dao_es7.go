@@ -184,7 +184,7 @@ func parseStageDiffs(logPassed []byte) ([]byte, error) {
 		if change.Body != "" {
 			bodyText2, err := util.ApplyDelta(bodyText1, change.Body)
 			if err != nil {
-				errMsg := fmt.Sprint("error while applying body delta for stage number: ", err)
+				errMsg := fmt.Sprintf("error while applying body delta for stage number %d, %s ", changeIndex, err)
 				return logPassed, errors.New(errMsg)
 			}
 
@@ -194,7 +194,7 @@ func parseStageDiffs(logPassed []byte) ([]byte, error) {
 		if change.Headers != "" {
 			headerText1, err := json.Marshal(request.Headers)
 			if err != nil {
-				errMsg := fmt.Sprint("error while marshalling headers for stage number: ", err)
+				errMsg := fmt.Sprintf("error while marshalling headers for stage number %d, %s ", changeIndex, err)
 				return logPassed, errors.New(errMsg)
 			}
 			headerText2, err := util.ApplyDelta(string(headerText1), change.Headers)
