@@ -242,7 +242,12 @@ func parseStageDiffs(logPassed []byte) ([]byte, error) {
 		return logPassed, errors.New(errMsg)
 	}
 
-	for changeIndex, change := range logRecord.ResponseChanges {
+	// Iterate response changes in reverse order since we get the final response
+	// in the root log.
+	//
+	// We also need to keep updating the body and header
+	for changeIndex := len(logRecord.ResponseChanges) - 1; changeIndex >= 0; changeIndex-- {
+		change := logRecord.ResponseChanges[changeIndex]
 		if change.Body != "" {
 			bodyText2, err := util.ApplyDelta(responseBodyText1, change.Body)
 			if err != nil {
