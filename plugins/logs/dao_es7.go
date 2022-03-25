@@ -229,6 +229,37 @@ func parseStageDiffs(logPassed []byte) ([]byte, error) {
 		}
 	}
 
+	// Parse the response changes
+	response := logRecord.Response
+
+	for changeIndex, change := range logRecord.ResponseChanges {
+		bodyText1 := response.Body
+		if change.Body != "" {
+			bodyText2, err := util.ApplyDelta(bodyText1, change.Body)
+			if err != nil {
+				errMsg := fmt.Sprintf("error while applying body delta to response for stage number %d,  %s", changeIndex, err)
+				return logPassed, errors.New(errMsg)
+			}
+
+			logRecord.ResponseChanges[changeIndex].Body = bodyText2
+		}
+
+		if change.Headers != "" {
+			headerText1, err := json.Marshal(response.Headers)
+			if err != nil {
+				errMsg := fmt.Sprintf("error while marshalling response headers for stage number %d, %s ", changeIndex, err)
+				return logPassed, errors.New(errMsg)
+			}
+			headerText2, err := util.ApplyDelta(string(headerText1), change.Headers)
+			if err != nil {
+				errMsg := fmt.Sprintf("error while applying response header delta for stage number %d, %s ", changeIndex, err)
+				return logPassed, errors.New(errMsg)
+			}
+
+			logRecord.ResponseChanges[changeIndex].Headers = headerText2
+		}
+	}
+
 	updatedLogInBytes, err := json.Marshal(logRecord)
 	if err != nil {
 		errMsg := fmt.Sprint("error while marshalling updated log, ", err)
