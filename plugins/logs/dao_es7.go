@@ -277,7 +277,60 @@ func parseStageDiffs(logPassed []byte) ([]byte, error) {
 		return logPassed, errors.New(errMsg)
 	}
 
+	// Parse the context to interface instead of keeping them as string
+	logMap := make(map[string]interface{})
+	unmarshallLogErr := json.Unmarshal(updatedLogInBytes, &logMap)
+	if unmarshallLogErr != nil {
+		errMsg := fmt.Sprint("error while unmarshalling log to parse context to interface, ", unmarshallLogErr)
+		return updatedLogInBytes, errors.New(errMsg)
+	}
+
+	logMap["requestChanges"], err = parseStringToMap(logMap["requestChanges"])
+	if err != nil {
+		return updatedLogInBytes, err
+	}
+
+	logMap["responseChanges"], err = parseStringToMap(logMap["responseChanges"])
+	if err != nil {
+		return updatedLogInBytes, err
+	}
+
 	return updatedLogInBytes, nil
+}
+
+// parseStringToMap Parses JSON for the passed map
+func parseStringToMap(changes interface{}) (interface{}, error) {
+	requestChanges, ok := changes.([]interface{})
+	if !ok {
+		errMsg := fmt.Sprint("error while converting request changes to interface array")
+		return requestChanges, errors.New(errMsg)
+	}
+
+	for changeIndex, change := range requestChanges {
+		changeAsMap, ok := change.(map[string]interface{})
+		if !ok {
+			errMsg := fmt.Sprint("error while converting stage to map from interface")
+			return requestChanges, errors.New(errMsg)
+		}
+
+		if changeAsMap["body"] == "" {
+			continue
+		}
+
+		// Convert the string to map
+		bodyAsString := changeAsMap["body"].(string)
+		bodyAsMap := make(map[string]interface{})
+		err := json.Unmarshal([]byte(bodyAsString), &bodyAsMap)
+		if err != nil {
+			errMsg := fmt.Sprint("error while parsing body to map from string, ", err)
+			return requestChanges, errors.New(errMsg)
+		}
+
+		changeAsMap["body"] = bodyAsMap
+		requestChanges[changeIndex] = changeAsMap
+	}
+
+	return requestChanges, nil
 }
 
 type LogError struct {
