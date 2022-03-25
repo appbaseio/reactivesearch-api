@@ -295,7 +295,14 @@ func parseStageDiffs(logPassed []byte) ([]byte, error) {
 		return updatedLogInBytes, err
 	}
 
-	return updatedLogInBytes, nil
+	finalLogInBytes, err := json.Marshal(logMap)
+	if err != nil {
+		errMsg := fmt.Sprint("error while marshaling the final log, ", err)
+		log.Warnln(logTag, ": ", errMsg)
+		return updatedLogInBytes, errors.New(errMsg)
+	}
+
+	return finalLogInBytes, nil
 }
 
 // parseStringToMap Parses JSON for the passed map
