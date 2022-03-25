@@ -210,11 +210,22 @@ func parseStageDiffs(logPassed []byte) ([]byte, error) {
 			URIText1 := request.URI
 			URIText2, err := util.ApplyDelta(URIText1, change.URI)
 			if err != nil {
-				errMsg := fmt.Sprintf("error while apply delta for URI in stage %d, %s", changeIndex, err)
+				errMsg := fmt.Sprintf("error while applying delta for URI in stage %d, %s", changeIndex, err)
 				return logPassed, errors.New(errMsg)
 			}
 
 			logRecord.RequestChanges[changeIndex].URI = URIText2
+		}
+
+		if change.Method != "" {
+			MethodText1 := request.Method
+			MethodText2, err := util.ApplyDelta(MethodText1, change.Method)
+			if err != nil {
+				errMsg := fmt.Sprintf("error while applying delta for URI in stage %d, %s", changeIndex, err)
+				return logPassed, errors.New(errMsg)
+			}
+
+			logRecord.RequestChanges[changeIndex].Method = MethodText2
 		}
 	}
 
