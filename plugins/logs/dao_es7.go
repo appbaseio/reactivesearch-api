@@ -178,9 +178,16 @@ func parseStageDiffs(logPassed []byte) ([]byte, error) {
 
 	// Parse the requestChanges
 	request := logRecord.Request
+	bodyText1 := request.Body
+	headerText1, err := json.Marshal(request.Headers)
+	if err != nil {
+		errMsg := fmt.Sprintf("error while marshalling request headers, %s", err)
+		return logPassed, errors.New(errMsg)
+	}
+	URIText1 := request.URI
+	MethodText1 := request.Method
 
 	for changeIndex, change := range logRecord.RequestChanges {
-		bodyText1 := request.Body
 		if change.Body != "" {
 			bodyText2, err := util.ApplyDelta(bodyText1, change.Body)
 			if err != nil {
@@ -189,14 +196,10 @@ func parseStageDiffs(logPassed []byte) ([]byte, error) {
 			}
 
 			logRecord.RequestChanges[changeIndex].Body = bodyText2
+			bodyText1 = bodyText2
 		}
 
 		if change.Headers != "" {
-			headerText1, err := json.Marshal(request.Headers)
-			if err != nil {
-				errMsg := fmt.Sprintf("error while marshalling headers for stage number %d, %s ", changeIndex, err)
-				return logPassed, errors.New(errMsg)
-			}
 			headerText2, err := util.ApplyDelta(string(headerText1), change.Headers)
 			if err != nil {
 				errMsg := fmt.Sprint("error while applying header delta for stage number: ", err)
@@ -204,10 +207,10 @@ func parseStageDiffs(logPassed []byte) ([]byte, error) {
 			}
 
 			logRecord.RequestChanges[changeIndex].Headers = headerText2
+			headerText1 = []byte(headerText2)
 		}
 
 		if change.URI != "" {
-			URIText1 := request.URI
 			URIText2, err := util.ApplyDelta(URIText1, change.URI)
 			if err != nil {
 				errMsg := fmt.Sprintf("error while applying delta for URI in stage %d, %s", changeIndex, err)
@@ -215,10 +218,10 @@ func parseStageDiffs(logPassed []byte) ([]byte, error) {
 			}
 
 			logRecord.RequestChanges[changeIndex].URI = URIText2
+			URIText1 = URIText2
 		}
 
 		if change.Method != "" {
-			MethodText1 := request.Method
 			MethodText2, err := util.ApplyDelta(MethodText1, change.Method)
 			if err != nil {
 				errMsg := fmt.Sprintf("error while applying delta for URI in stage %d, %s", changeIndex, err)
@@ -226,37 +229,40 @@ func parseStageDiffs(logPassed []byte) ([]byte, error) {
 			}
 
 			logRecord.RequestChanges[changeIndex].Method = MethodText2
+			MethodText1 = MethodText2
 		}
 	}
 
 	// Parse the response changes
 	response := logRecord.Response
+	responseBodyText1 := response.Body
+	responseHeaderText1, err := json.Marshal(response.Headers)
+	if err != nil {
+		errMsg := fmt.Sprintf("error while marshalling response headers, %s", err)
+		return logPassed, errors.New(errMsg)
+	}
 
 	for changeIndex, change := range logRecord.ResponseChanges {
-		bodyText1 := response.Body
 		if change.Body != "" {
-			bodyText2, err := util.ApplyDelta(bodyText1, change.Body)
+			bodyText2, err := util.ApplyDelta(responseBodyText1, change.Body)
 			if err != nil {
 				errMsg := fmt.Sprintf("error while applying body delta to response for stage number %d,  %s", changeIndex, err)
 				return logPassed, errors.New(errMsg)
 			}
 
 			logRecord.ResponseChanges[changeIndex].Body = bodyText2
+			responseBodyText1 = bodyText2
 		}
 
 		if change.Headers != "" {
-			headerText1, err := json.Marshal(response.Headers)
-			if err != nil {
-				errMsg := fmt.Sprintf("error while marshalling response headers for stage number %d, %s ", changeIndex, err)
-				return logPassed, errors.New(errMsg)
-			}
-			headerText2, err := util.ApplyDelta(string(headerText1), change.Headers)
+			headerText2, err := util.ApplyDelta(string(responseHeaderText1), change.Headers)
 			if err != nil {
 				errMsg := fmt.Sprintf("error while applying response header delta for stage number %d, %s ", changeIndex, err)
 				return logPassed, errors.New(errMsg)
 			}
 
 			logRecord.ResponseChanges[changeIndex].Headers = headerText2
+			responseHeaderText1 = headerText1
 		}
 	}
 
