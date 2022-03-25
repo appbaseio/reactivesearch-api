@@ -11,7 +11,7 @@ import (
 	"github.com/appbaseio/reactivesearch-api/model/category"
 	"github.com/appbaseio/reactivesearch-api/util"
 	es7 "github.com/olivere/elastic/v7"
-	"github.com/prometheus/common/log"
+	log "github.com/sirupsen/logrus"
 )
 
 func (es *elasticsearch) getRawLogsES7(ctx context.Context, logsFilter logsFilter) ([]byte, error) {
@@ -285,16 +285,6 @@ func parseStageDiffs(logPassed []byte) ([]byte, error) {
 		return updatedLogInBytes, errors.New(errMsg)
 	}
 
-	logMap["requestChanges"], err = parseStringToMap(logMap["requestChanges"])
-	if err != nil {
-		return updatedLogInBytes, err
-	}
-
-	logMap["responseChanges"], err = parseStringToMap(logMap["responseChanges"])
-	if err != nil {
-		return updatedLogInBytes, err
-	}
-
 	finalLogInBytes, err := json.Marshal(logMap)
 	if err != nil {
 		errMsg := fmt.Sprint("error while marshaling the final log, ", err)
@@ -320,12 +310,13 @@ func parseStringToMap(changes interface{}) (interface{}, error) {
 			return requestChanges, errors.New(errMsg)
 		}
 
-		if changeAsMap["body"] == "" {
+		// Convert the string to map
+		bodyAsString := changeAsMap["body"].(string)
+
+		if bodyAsString == "" {
 			continue
 		}
 
-		// Convert the string to map
-		bodyAsString := changeAsMap["body"].(string)
 		bodyAsMap := make(map[string]interface{})
 		err := json.Unmarshal([]byte(bodyAsString), &bodyAsMap)
 		if err != nil {
