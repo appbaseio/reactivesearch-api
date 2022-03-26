@@ -333,11 +333,14 @@ func parseStringToMap(changes interface{}) (interface{}, error) {
 		bodyAsMap := make(map[string]interface{})
 		err := json.Unmarshal([]byte(bodyAsString), &bodyAsMap)
 		if err != nil {
+			// It's possible that the body is nd-json in which case, we will
+			// not raise an error and return the body as string.
 			errMsg := fmt.Sprint("error while parsing body to map from string, ", err)
-			return requestChanges, errors.New(errMsg)
+			log.Warnln(logTag, ": ", errMsg, " Returning as string.")
+		} else {
+			changeAsMap["body"] = bodyAsMap
 		}
 
-		changeAsMap["body"] = bodyAsMap
 		requestChanges[changeIndex] = changeAsMap
 	}
 
