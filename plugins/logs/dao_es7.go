@@ -285,6 +285,19 @@ func parseStageDiffs(logPassed []byte) ([]byte, error) {
 		return updatedLogInBytes, errors.New(errMsg)
 	}
 
+	// Parse the strings to JSON
+	logMap["requestChanges"], err = parseStringToMap(logMap["requestChanges"])
+	if err != nil {
+		errMsg := fmt.Sprint("error while parsing request changes, ", err)
+		return nil, errors.New(errMsg)
+	}
+
+	logMap["responseChanges"], err = parseStringToMap(logMap["responseChanges"])
+	if err != nil {
+		errMsg := fmt.Sprint("error while parsing response changes, ", err)
+		return nil, errors.New(errMsg)
+	}
+
 	finalLogInBytes, err := json.Marshal(logMap)
 	if err != nil {
 		errMsg := fmt.Sprint("error while marshaling the final log, ", err)
