@@ -326,19 +326,20 @@ func parseStringToMap(changes interface{}) (interface{}, error) {
 		// Convert the string to map
 		bodyAsString := changeAsMap["body"].(string)
 
-		if bodyAsString == "" {
-			continue
-		}
-
-		bodyAsMap := make(map[string]interface{})
-		err := json.Unmarshal([]byte(bodyAsString), &bodyAsMap)
-		if err != nil {
-			// It's possible that the body is nd-json in which case, we will
-			// not raise an error and return the body as string.
-			errMsg := fmt.Sprint("error while parsing body to map from string, ", err)
-			log.Warnln(logTag, ": ", errMsg, " Returning as string.")
-		} else {
-			changeAsMap["body"] = bodyAsMap
+		// NOTE: Cannot do the opposite check and make the iteration
+		// skipped using continue because we will be parsing
+		// headers as well.
+		if bodyAsString != "" {
+			bodyAsMap := make(map[string]interface{})
+			err := json.Unmarshal([]byte(bodyAsString), &bodyAsMap)
+			if err != nil {
+				// It's possible that the body is nd-json in which case, we will
+				// not raise an error and return the body as string.
+				errMsg := fmt.Sprint("error while parsing body to map from string, ", err)
+				log.Warnln(logTag, ": ", errMsg, " Returning as string.")
+			} else {
+				changeAsMap["body"] = bodyAsMap
+			}
 		}
 
 		requestChanges[changeIndex] = changeAsMap
