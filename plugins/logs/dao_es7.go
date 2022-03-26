@@ -342,6 +342,25 @@ func parseStringToMap(changes interface{}) (interface{}, error) {
 			}
 		}
 
+		// Convert the headers to map
+		headersAsString := changeAsMap["headers"].(string)
+
+		// NOTE: Since there are no following actions, we can skip the iteration
+		// if headers is empty,
+		if headersAsString == "" {
+			continue
+		}
+
+		headersAsMap := make(map[string]interface{})
+		err := json.Unmarshal([]byte(headersAsString), &headersAsMap)
+		if err != nil {
+			// If headers failed, throw error since this should always be a map.
+			errMsg := fmt.Sprintf("error while parsing headers for stage %d with err: %s", changeIndex+1, err)
+			return nil, errors.New(errMsg)
+		}
+
+		changeAsMap["headers"] = headersAsMap
+
 		requestChanges[changeIndex] = changeAsMap
 	}
 
