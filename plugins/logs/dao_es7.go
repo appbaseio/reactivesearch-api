@@ -191,7 +191,7 @@ func parseStageDiffs(logPassed []byte) ([]byte, error) {
 		if change.Body != "" {
 			bodyText2, err := util.ApplyDelta(bodyText1, change.Body)
 			if err != nil {
-				errMsg := fmt.Sprintf("error while applying body delta for stage number %d, %s ", changeIndex, err)
+				errMsg := fmt.Sprintf("error while applying body delta for stage number %d, %s ", changeIndex+1, err)
 				return logPassed, errors.New(errMsg)
 			}
 
@@ -213,7 +213,7 @@ func parseStageDiffs(logPassed []byte) ([]byte, error) {
 		if change.URI != "" {
 			URIText2, err := util.ApplyDelta(URIText1, change.URI)
 			if err != nil {
-				errMsg := fmt.Sprintf("error while applying delta for URI in stage %d, %s", changeIndex, err)
+				errMsg := fmt.Sprintf("error while applying delta for URI in stage %d, %s", changeIndex+1, err)
 				return logPassed, errors.New(errMsg)
 			}
 
@@ -224,7 +224,7 @@ func parseStageDiffs(logPassed []byte) ([]byte, error) {
 		if change.Method != "" {
 			MethodText2, err := util.ApplyDelta(MethodText1, change.Method)
 			if err != nil {
-				errMsg := fmt.Sprintf("error while applying delta for URI in stage %d, %s", changeIndex, err)
+				errMsg := fmt.Sprintf("error while applying delta for URI in stage %d, %s", changeIndex+1, err)
 				return logPassed, errors.New(errMsg)
 			}
 
@@ -251,7 +251,7 @@ func parseStageDiffs(logPassed []byte) ([]byte, error) {
 		if change.Body != "" {
 			bodyText2, err := util.ApplyDelta(responseBodyText1, change.Body)
 			if err != nil {
-				errMsg := fmt.Sprintf("error while applying body delta to response for stage number %d,  %s", changeIndex, err)
+				errMsg := fmt.Sprintf("error while applying body delta to response for stage number %d,  %s", changeIndex+1, err)
 				return logPassed, errors.New(errMsg)
 			}
 
@@ -262,7 +262,7 @@ func parseStageDiffs(logPassed []byte) ([]byte, error) {
 		if change.Headers != "" {
 			headerText2, err := util.ApplyDelta(string(responseHeaderText1), change.Headers)
 			if err != nil {
-				errMsg := fmt.Sprintf("error while applying response header delta for stage number %d, %s ", changeIndex, err)
+				errMsg := fmt.Sprintf("error while applying response header delta for stage number %d, %s ", changeIndex+1, err)
 				return logPassed, errors.New(errMsg)
 			}
 
@@ -335,7 +335,7 @@ func parseStringToMap(changes interface{}) (interface{}, error) {
 			if err != nil {
 				// It's possible that the body is nd-json in which case, we will
 				// not raise an error and return the body as string.
-				errMsg := fmt.Sprint("error while parsing body to map from string, ", err)
+				errMsg := fmt.Sprintf("error while parsing body to map from string for stage %d with err: %s", changeIndex+1, err)
 				log.Warnln(logTag, ": ", errMsg, " Returning as string.")
 			} else {
 				changeAsMap["body"] = bodyAsMap
