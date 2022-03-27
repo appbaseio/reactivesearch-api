@@ -1,6 +1,7 @@
 module github.com/appbaseio/reactivesearch-api
 
 require (
+	github.com/alecthomas/jsonschema v0.0.0-20220216202328-9eeeec9d044b // indirect
 	github.com/bbalet/stopwords v1.0.0
 	github.com/buger/jsonparser v1.1.1
 	github.com/denisbrodbeck/machineid v1.0.1

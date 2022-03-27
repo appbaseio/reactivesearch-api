@@ -23,7 +23,7 @@ func (query *Query) generateTermQuery() (*interface{}, error) {
 	dataField := normalizedFields[0].Field
 
 	if query.SelectAllLabel != nil && (isArray && contains(valueAsArray, *query.SelectAllLabel) || valueAsString == *query.SelectAllLabel) {
-		if query.ShowMissing {
+		if query.ShowMissing != nil && *query.ShowMissing {
 			termQuery = map[string]interface{}{
 				"match_all": map[string]interface{}{},
 			}
@@ -55,7 +55,7 @@ func (query *Query) generateTermQuery() (*interface{}, error) {
 					},
 				},
 			}
-			if query.ShowMissing {
+			if query.ShowMissing != nil && *query.ShowMissing {
 				hasMissingTerm := contains(valueAsArray, query.MissingLabel)
 				if hasMissingTerm {
 					should = append(should, map[string]interface{}{
@@ -92,7 +92,7 @@ func (query *Query) generateTermQuery() (*interface{}, error) {
 		}
 	} else if valueAsString != "" {
 		// Handle value as string, for singleList components
-		if query.ShowMissing && query.MissingLabel == valueAsString {
+		if query.ShowMissing != nil && *query.ShowMissing && query.MissingLabel == valueAsString {
 			termQuery = map[string]interface{}{
 				"bool": map[string]interface{}{
 					"must_not": map[string]interface{}{
@@ -134,7 +134,7 @@ func (query *Query) applyCompositeAggsQuery(queryOptions *map[string]interface{}
 			"field": aggsField,
 		}
 
-		if query.ShowMissing {
+		if query.ShowMissing != nil && *query.ShowMissing {
 			termsQuery["missing_bucket"] = true
 		}
 
@@ -216,7 +216,7 @@ func (query *Query) applyTermsAggsQuery(queryOptions *map[string]interface{}) er
 		}
 
 		// Apply missing label
-		if query.ShowMissing {
+		if query.ShowMissing != nil && *query.ShowMissing {
 			if query.MissingLabel != "" {
 				termsQuery["missing"] = query.MissingLabel
 			} else {
