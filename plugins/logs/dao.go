@@ -146,8 +146,8 @@ func (es *elasticsearch) getRawLogs(ctx context.Context, logsFilter logsFilter) 
 	}
 }
 
-func (es *elasticsearch) getRawLog(ctx context.Context, ID string) ([]byte, *LogError) {
-	return es.getRawLogES7(ctx, ID)
+func (es *elasticsearch) getRawLog(ctx context.Context, ID string, parseDiffs bool) ([]byte, *LogError) {
+	return es.getRawLogES7(ctx, ID, parseDiffs)
 }
 
 func (es *elasticsearch) rolloverIndexJob(alias string) {

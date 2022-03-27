@@ -4,13 +4,14 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"regexp"
 
 	"github.com/appbaseio/reactivesearch-api/model/category"
 	"github.com/appbaseio/reactivesearch-api/util"
 	es7 "github.com/olivere/elastic/v7"
-	"github.com/prometheus/common/log"
+	log "github.com/sirupsen/logrus"
 )
 
 func (es *elasticsearch) getRawLogsES7(ctx context.Context, logsFilter logsFilter) ([]byte, error) {
@@ -107,7 +108,7 @@ func (es *elasticsearch) getRawLogsES7(ctx context.Context, logsFilter logsFilte
 
 // getRawLogES7 will get the raw log for the log with passed ID.
 // If we don't find a match, we will raise a 404 error.
-func (es *elasticsearch) getRawLogES7(ctx context.Context, ID string) ([]byte, *LogError) {
+func (es *elasticsearch) getRawLogES7(ctx context.Context, ID string, parseDiffs bool) ([]byte, *LogError) {
 	response, err := util.GetClient7().Get().Index(es.indexName).Id(ID).Do(ctx)
 
 	if err != nil {
@@ -148,8 +149,222 @@ func (es *elasticsearch) getRawLogES7(ctx context.Context, ID string) ([]byte, *
 		}
 	}
 
+	if parseDiffs {
+		rawLog, err = parseStageDiffs(rawLog)
+		if err != nil {
+			return nil, &LogError{
+				Err:  errors.New(fmt.Sprint("error while parsing stage diffs: ", err)),
+				Code: http.StatusInternalServerError,
+			}
+		}
+	}
+
 	return rawLog, nil
 
+}
+
+// parseStageDiffs parses the context diffs and returns the contexts
+// for each stage.
+func parseStageDiffs(logPassed []byte) ([]byte, error) {
+	// Parse the log to a pipelineLog object
+	var logRecord record
+
+	err := json.Unmarshal(logPassed, &logRecord)
+	if err != nil {
+		errMsg := fmt.Sprint("error occurred while parsing log to PipelineLog, ", err)
+		log.Warn(logTag, ": ", errMsg)
+		return logPassed, errors.New(errMsg)
+	}
+
+	// Parse the requestChanges
+	request := logRecord.Request
+	bodyText1 := request.Body
+	headerText1, err := json.Marshal(request.Headers)
+	if err != nil {
+		errMsg := fmt.Sprintf("error while marshalling request headers, %s", err)
+		return logPassed, errors.New(errMsg)
+	}
+	URIText1 := request.URI
+	MethodText1 := request.Method
+
+	for changeIndex, change := range logRecord.RequestChanges {
+		if change.Body != "" {
+			bodyText2, err := util.ApplyDelta(bodyText1, change.Body)
+			if err != nil {
+				errMsg := fmt.Sprintf("error while applying body delta for stage number %d, %s ", changeIndex+1, err)
+				return logPassed, errors.New(errMsg)
+			}
+
+			logRecord.RequestChanges[changeIndex].Body = bodyText2
+			bodyText1 = bodyText2
+		}
+
+		if change.Headers != "" {
+			headerText2, err := util.ApplyDelta(string(headerText1), change.Headers)
+			if err != nil {
+				errMsg := fmt.Sprint("error while applying header delta for stage number: ", err)
+				return logPassed, errors.New(errMsg)
+			}
+
+			logRecord.RequestChanges[changeIndex].Headers = headerText2
+			headerText1 = []byte(headerText2)
+		}
+
+		if change.URI != "" {
+			URIText2, err := util.ApplyDelta(URIText1, change.URI)
+			if err != nil {
+				errMsg := fmt.Sprintf("error while applying delta for URI in stage %d, %s", changeIndex+1, err)
+				return logPassed, errors.New(errMsg)
+			}
+
+			logRecord.RequestChanges[changeIndex].URI = URIText2
+			URIText1 = URIText2
+		}
+
+		if change.Method != "" {
+			MethodText2, err := util.ApplyDelta(MethodText1, change.Method)
+			if err != nil {
+				errMsg := fmt.Sprintf("error while applying delta for URI in stage %d, %s", changeIndex+1, err)
+				return logPassed, errors.New(errMsg)
+			}
+
+			logRecord.RequestChanges[changeIndex].Method = MethodText2
+			MethodText1 = MethodText2
+		}
+	}
+
+	// Parse the response changes
+	response := logRecord.Response
+	responseBodyText1 := response.Body
+	responseHeaderText1, err := json.Marshal(response.Headers)
+	if err != nil {
+		errMsg := fmt.Sprintf("error while marshalling response headers, %s", err)
+		return logPassed, errors.New(errMsg)
+	}
+
+	// Iterate response changes in reverse order since we get the final response
+	// in the root log.
+	//
+	// We also need to keep updating the body and header
+	for changeIndex := len(logRecord.ResponseChanges) - 1; changeIndex >= 0; changeIndex-- {
+		change := logRecord.ResponseChanges[changeIndex]
+		if change.Body != "" {
+			bodyText2, err := util.ApplyDelta(responseBodyText1, change.Body)
+			if err != nil {
+				errMsg := fmt.Sprintf("error while applying body delta to response for stage number %d,  %s", changeIndex+1, err)
+				return logPassed, errors.New(errMsg)
+			}
+
+			logRecord.ResponseChanges[changeIndex].Body = bodyText2
+			responseBodyText1 = bodyText2
+		}
+
+		if change.Headers != "" {
+			headerText2, err := util.ApplyDelta(string(responseHeaderText1), change.Headers)
+			if err != nil {
+				errMsg := fmt.Sprintf("error while applying response header delta for stage number %d, %s ", changeIndex+1, err)
+				return logPassed, errors.New(errMsg)
+			}
+
+			logRecord.ResponseChanges[changeIndex].Headers = headerText2
+			responseHeaderText1 = headerText1
+		}
+	}
+
+	updatedLogInBytes, err := json.Marshal(logRecord)
+	if err != nil {
+		errMsg := fmt.Sprint("error while marshalling updated log, ", err)
+		return logPassed, errors.New(errMsg)
+	}
+
+	// Parse the context to interface instead of keeping them as string
+	logMap := make(map[string]interface{})
+	unmarshallLogErr := json.Unmarshal(updatedLogInBytes, &logMap)
+	if unmarshallLogErr != nil {
+		errMsg := fmt.Sprint("error while unmarshalling log to parse context to interface, ", unmarshallLogErr)
+		return updatedLogInBytes, errors.New(errMsg)
+	}
+
+	// Parse the strings to JSON
+	logMap["requestChanges"], err = parseStringToMap(logMap["requestChanges"])
+	if err != nil {
+		errMsg := fmt.Sprint("error while parsing request changes, ", err)
+		return nil, errors.New(errMsg)
+	}
+
+	logMap["responseChanges"], err = parseStringToMap(logMap["responseChanges"])
+	if err != nil {
+		errMsg := fmt.Sprint("error while parsing response changes, ", err)
+		return nil, errors.New(errMsg)
+	}
+
+	finalLogInBytes, err := json.Marshal(logMap)
+	if err != nil {
+		errMsg := fmt.Sprint("error while marshaling the final log, ", err)
+		log.Warnln(logTag, ": ", errMsg)
+		return updatedLogInBytes, errors.New(errMsg)
+	}
+
+	return finalLogInBytes, nil
+}
+
+// parseStringToMap Parses JSON for the passed map
+func parseStringToMap(changes interface{}) (interface{}, error) {
+	requestChanges, ok := changes.([]interface{})
+	if !ok {
+		errMsg := fmt.Sprint("error while converting request changes to interface array")
+		return requestChanges, errors.New(errMsg)
+	}
+
+	for changeIndex, change := range requestChanges {
+		changeAsMap, ok := change.(map[string]interface{})
+		if !ok {
+			errMsg := fmt.Sprint("error while converting stage to map from interface")
+			return requestChanges, errors.New(errMsg)
+		}
+
+		// Convert the string to map
+		bodyAsString := changeAsMap["body"].(string)
+
+		// NOTE: Cannot do the opposite check and make the iteration
+		// skipped using continue because we will be parsing
+		// headers as well.
+		if bodyAsString != "" {
+			bodyAsMap := make(map[string]interface{})
+			err := json.Unmarshal([]byte(bodyAsString), &bodyAsMap)
+			if err != nil {
+				// It's possible that the body is nd-json in which case, we will
+				// not raise an error and return the body as string.
+				errMsg := fmt.Sprintf("error while parsing body to map from string for stage %d with err: %s", changeIndex+1, err)
+				log.Warnln(logTag, ": ", errMsg, " Returning as string.")
+			} else {
+				changeAsMap["body"] = bodyAsMap
+			}
+		}
+
+		// Convert the headers to map
+		headersAsString := changeAsMap["headers"].(string)
+
+		// NOTE: Since there are no following actions, we can skip the iteration
+		// if headers is empty,
+		if headersAsString == "" {
+			continue
+		}
+
+		headersAsMap := make(map[string]interface{})
+		err := json.Unmarshal([]byte(headersAsString), &headersAsMap)
+		if err != nil {
+			// If headers failed, throw error since this should always be a map.
+			errMsg := fmt.Sprintf("error while parsing headers for stage %d with err: %s", changeIndex+1, err)
+			return nil, errors.New(errMsg)
+		}
+
+		changeAsMap["headers"] = headersAsMap
+
+		requestChanges[changeIndex] = changeAsMap
+	}
+
+	return requestChanges, nil
 }
 
 type LogError struct {

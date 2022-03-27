@@ -190,7 +190,14 @@ func (l *Logs) getLogById() http.HandlerFunc {
 		vars := mux.Vars(req)
 		logID := vars["id"]
 
-		raw, err := l.es.getRawLog(req.Context(), logID)
+		// ParseDiff flag
+		parseDiffs := req.URL.Query().Get("verbose")
+		parseDiffBool := true
+		if parseDiffs == "false" {
+			parseDiffBool = false
+		}
+
+		raw, err := l.es.getRawLog(req.Context(), logID, parseDiffBool)
 		if err != nil {
 			log.Warnln(logTag, err.Err.Error())
 			telemetry.WriteBackErrorWithTelemetry(req, rw, err.Err.Error(), err.Code)
