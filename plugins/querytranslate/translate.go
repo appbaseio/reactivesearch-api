@@ -71,6 +71,12 @@ func translateQuery(rsQuery RSQuery, userIP string) (string, error) {
 		}
 	}
 
+	// If no backend is passed for kNN, set it as `elasticsearch`
+	backendPassed := ElasticSearch
+	if rsQuery.Settings != nil && rsQuery.Settings.Backend != nil {
+		backendPassed = *rsQuery.Settings.Backend
+	}
+
 	for _, query := range rsQuery.Query {
 		if query.Execute == nil || *query.Execute {
 			translatedQuery, queryOptions, isGeneratedByValue, translateError := query.getQuery(rsQuery)
@@ -105,6 +111,40 @@ func translateQuery(rsQuery RSQuery, userIP string) (string, error) {
 				}
 				finalQuery = mergeMaps(finalQuery, defaultQueryClone)
 			}
+
+			// If knn fields are passed, apply knn fields to the final query
+			if shouldApplyKnn(query) {
+				// Apply default candidate number if nothing is passed
+				if query.Candidates == nil {
+					defaultCandidates := 10
+					query.Candidates = &defaultCandidates
+				}
+
+				if query.Size == nil {
+					defaultSize := 10
+					query.Size = &defaultSize
+				}
+
+				minSize := *query.Candidates
+				if minSize > *query.Size {
+					minSize = *query.Size
+				}
+
+				// Set default script for the backend if none
+				// is passed
+				if query.Script == nil {
+					defaultScript := GetDefaultScript(backendPassed)
+					query.Script = &defaultScript
+				}
+
+				switch backendPassed {
+				case ElasticSearch:
+					finalQuery = applyElasticSearchKnn(finalQuery, query, minSize)
+				case OpenSearch:
+					finalQuery = applyOpenSearchKnn(finalQuery, query, minSize)
+				}
+			}
+
 			queryInBytes, err2 := json.Marshal(finalQuery)
 			if err2 != nil {
 				return mSearchQuery, err2
@@ -133,6 +173,80 @@ func translateQuery(rsQuery RSQuery, userIP string) (string, error) {
 	}
 
 	return mSearchQuery, nil
+}
+
+// shouldApplyKnn determines whether or not to apply KNN stage
+func shouldApplyKnn(query Query) bool {
+	return query.QueryVector != nil && query.VectorDataField != nil
+}
+
+// applyElasticSearchKnn applies the knn query for elasticsearch
+// backend
+func applyElasticSearchKnn(queryMap map[string]interface{}, queryItem Query, size int) map[string]interface{} {
+	// Replace the query field
+	currentQuery := queryMap["query"]
+	updatedQuery := map[string]interface{}{
+		"script_score": map[string]interface{}{
+			"query": currentQuery,
+			"script": map[string]interface{}{
+				"source": *queryItem.Script,
+				"params": map[string]interface{}{
+					"queryVector": *queryItem.QueryVector,
+					"dataField":   *queryItem.VectorDataField,
+				},
+			},
+		},
+	}
+
+	// Update the queryMap
+	queryMap["query"] = updatedQuery
+
+	// Set the size
+	queryMap["size"] = size
+
+	return queryMap
+}
+
+// applyOpenSearchKnn applies the knn query for opensearch backend
+//
+// The structure is just a bit different to how it's applied for ES
+func applyOpenSearchKnn(queryMap map[string]interface{}, queryItem Query, size int) map[string]interface{} {
+	// Replace the query field
+	currentQuery := queryMap["query"]
+	updatedQuery := map[string]interface{}{
+		"script_score": map[string]interface{}{
+			"query": currentQuery,
+			"script": map[string]interface{}{
+				"source": "knn_score",
+				"lang":   "knn",
+				"params": map[string]interface{}{
+					"query_value": *queryItem.QueryVector,
+					"field":       *queryItem.VectorDataField,
+					"space_type":  *queryItem.Script,
+				},
+			},
+		},
+	}
+
+	// Update the queryMap
+	queryMap["query"] = updatedQuery
+
+	// Set the size
+	queryMap["size"] = size
+
+	return queryMap
+}
+
+// GetDefaultScript returns the default script for the passed backend
+func GetDefaultScript(backend Backend) string {
+	switch backend {
+	case ElasticSearch:
+		return "cosineSimilarity(params.queryVector, params.dataField) + 1.0"
+	case OpenSearch:
+		return "cosinesimil"
+	}
+
+	return ""
 }
 
 // global function to transform the RS API query to _msearch equivalent query
