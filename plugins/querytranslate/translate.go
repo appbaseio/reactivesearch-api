@@ -72,7 +72,7 @@ func translateQuery(rsQuery RSQuery, userIP string) (string, error) {
 	}
 
 	// If no backend is passed for kNN, set it as `elasticsearch`
-	backendPassed := "elasticsearch"
+	backendPassed := ElasticSearch
 	if rsQuery.Settings != nil && rsQuery.Settings.Backend != nil {
 		backendPassed = *rsQuery.Settings.Backend
 	}
@@ -138,9 +138,9 @@ func translateQuery(rsQuery RSQuery, userIP string) (string, error) {
 				}
 
 				switch backendPassed {
-				case "elasticsearch":
+				case ElasticSearch:
 					finalQuery = applyElasticSearchKnn(finalQuery, query, minSize)
-				case "opensearch":
+				case OpenSearch:
 					finalQuery = applyOpenSearchKnn(finalQuery, query, minSize)
 				}
 			}
@@ -238,11 +238,11 @@ func applyOpenSearchKnn(queryMap map[string]interface{}, queryItem Query, size i
 }
 
 // GetDefaultScript returns the default script for the passed backend
-func GetDefaultScript(backend string) string {
+func GetDefaultScript(backend Backend) string {
 	switch backend {
-	case "elasticsearch":
+	case ElasticSearch:
 		return "cosineSimilarity(params.queryVector, params.dataField) + 1.0"
-	case "opensearch":
+	case OpenSearch:
 		return "cosinesimil"
 	}
 

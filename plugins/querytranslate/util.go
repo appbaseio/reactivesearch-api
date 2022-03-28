@@ -271,6 +271,59 @@ func (o QueryFormat) MarshalJSON() ([]byte, error) {
 	return json.Marshal(queryFormat)
 }
 
+// Backend will be the backend to be used for the knn
+// response stage changes.
+type Backend int
+
+const (
+	ElasticSearch Backend = iota
+	OpenSearch
+)
+
+// String returns the string representation
+// of the Backend
+func (b Backend) String() string {
+	switch b {
+	case ElasticSearch:
+		return "elasticsearch"
+	case OpenSearch:
+		return "opensearch"
+	}
+	return ""
+}
+
+// UnmarshalJSON is the implementation of Unmarshaler interface to unmarshal the Backend
+func (b *Backend) UnmarshalJSON(bytes []byte) error {
+	var knnBackend string
+	err := json.Unmarshal(bytes, &knnBackend)
+	if err != nil {
+		return err
+	}
+
+	switch knnBackend {
+	case OpenSearch.String():
+		*b = OpenSearch
+	case ElasticSearch.String():
+		*b = ElasticSearch
+	default:
+		return fmt.Errorf("invalid kNN backend passed: %s", knnBackend)
+	}
+
+	return nil
+}
+
+// MarshalJSON is the implementation of the Marshaler interface to marshal the Backend
+func (b Backend) MarshalJSON() ([]byte, error) {
+	var knnBackend string
+	knnBackend = b.String()
+
+	if knnBackend == "" {
+		return nil, fmt.Errorf("invalid kNN backend passed: %s", knnBackend)
+	}
+
+	return json.Marshal(knnBackend)
+}
+
 // Query represents the query object
 type Query struct {
 	ID                          *string                    `json:"id,omitempty"` // component id
@@ -345,7 +398,7 @@ type Settings struct {
 	EnableSearchRelevancy *bool                   `json:"enableSearchRelevancy,omitempty"`
 	UseCache              *bool                   `json:"useCache,omitempty"`
 	QueryRule             *map[string]interface{} `json:"queryRule,omitempty"`
-	Backend               *string                 `json:"backend,omitempty"`
+	Backend               *Backend                `json:"backend,omitempty"`
 }
 
 // RSQuery represents the request body
