@@ -130,6 +130,23 @@ func (es *elasticsearch) healthCheck() http.HandlerFunc {
 	}
 }
 
+func (es *elasticsearch) pingES() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		result, code, err := util.GetClient7().Ping(util.GetESURL()).Do(context.Background())
+		if err != nil {
+			log.Errorln(logTag, ": error fetching ES cluster health", err)
+			telemetry.WriteBackErrorWithTelemetry(r, w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		responseInBytes, err := json.Marshal(result)
+		if err != nil {
+			log.Errorln(logTag, ": error while marshalling the ping result", err)
+			util.WriteBackError(w, err.Error(), http.StatusInternalServerError)
+		}
+		util.WriteBackRaw(w, responseInBytes, code)
+	}
+}
+
 // dryHealthCheck will return a dummy response everytime it's
 // called. This method can be used to check if the server is stuck
 // and whether or not a restart is necessary.

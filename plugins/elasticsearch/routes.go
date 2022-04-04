@@ -106,7 +106,7 @@ func (es *elasticsearch) preprocess(mw []middleware.Middleware) error {
 		Name:        "ping",
 		Methods:     []string{http.MethodGet, http.MethodHead},
 		Path:        "/",
-		HandlerFunc: middlewareFunction(mw, es.handler()),
+		HandlerFunc: es.pingES(),
 		Description: "You know, for search",
 	}
 	healthCheckRoute := plugins.Route{
