@@ -231,6 +231,8 @@ func HTTPClient() *http.Client {
 			DialContext: (&net.Dialer{
 				Timeout: 10 * time.Second,
 			}).DialContext,
+			MaxIdleConnsPerHost: 100,
+			MaxConnsPerHost:     100,
 			TLSHandshakeTimeout: 10 * time.Second,
 			TLSClientConfig:     &tls.Config{InsecureSkipVerify: true},
 		}
