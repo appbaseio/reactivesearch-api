@@ -16,6 +16,7 @@ import (
 	"github.com/appbaseio/reactivesearch-api/model/category"
 	"github.com/appbaseio/reactivesearch-api/model/op"
 	"github.com/appbaseio/reactivesearch-api/plugins"
+	"github.com/appbaseio/reactivesearch-api/plugins/auth"
 	"github.com/appbaseio/reactivesearch-api/util"
 	"github.com/gobuffalo/packr"
 )
@@ -106,7 +107,7 @@ func (es *elasticsearch) preprocess(mw []middleware.Middleware) error {
 		Name:        "ping",
 		Methods:     []string{http.MethodGet, http.MethodHead},
 		Path:        "/",
-		HandlerFunc: es.pingES(),
+		HandlerFunc: (&chain{}).Adapt(es.pingES(), classifyCategory, classifyOp, auth.BasicAuth()),
 		Description: "You know, for search",
 	}
 	healthCheckRoute := plugins.Route{
