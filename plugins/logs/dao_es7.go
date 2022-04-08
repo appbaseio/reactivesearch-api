@@ -8,6 +8,7 @@ import (
 	"net/http"
 
 	"github.com/appbaseio/reactivesearch-api/model/category"
+	"github.com/appbaseio/reactivesearch-api/model/difference"
 	"github.com/appbaseio/reactivesearch-api/util"
 	es7 "github.com/olivere/elastic/v7"
 	log "github.com/sirupsen/logrus"
@@ -190,12 +191,18 @@ func parseStageDiffs(logPassed []byte) ([]byte, error) {
 	URIText1 := request.URI
 	MethodText1 := request.Method
 
+	// Set parse error for request and response changes to
+	// nil by default.
+	var requestParseError, responseParseError *string
+
 	for changeIndex, change := range logRecord.RequestChanges {
 		if change.Body != "" {
 			bodyText2, err := util.ApplyDelta(bodyText1, change.Body)
 			if err != nil {
 				errMsg := fmt.Sprintf("error while applying body delta for stage number %d, %s ", changeIndex+1, err)
-				return logPassed, errors.New(errMsg)
+				log.Warnln(logTag, errMsg)
+				requestParseError = &errMsg
+				break
 			}
 
 			logRecord.RequestChanges[changeIndex].Body = bodyText2
@@ -206,7 +213,9 @@ func parseStageDiffs(logPassed []byte) ([]byte, error) {
 			headerText2, err := util.ApplyDelta(string(headerText1), change.Headers)
 			if err != nil {
 				errMsg := fmt.Sprint("error while applying header delta for stage number: ", err)
-				return logPassed, errors.New(errMsg)
+				log.Warnln(logTag, errMsg)
+				requestParseError = &errMsg
+				break
 			}
 
 			logRecord.RequestChanges[changeIndex].Headers = headerText2
@@ -217,7 +226,9 @@ func parseStageDiffs(logPassed []byte) ([]byte, error) {
 			URIText2, err := util.ApplyDelta(URIText1, change.URI)
 			if err != nil {
 				errMsg := fmt.Sprintf("error while applying delta for URI in stage %d, %s", changeIndex+1, err)
-				return logPassed, errors.New(errMsg)
+				log.Warnln(logTag, errMsg)
+				requestParseError = &errMsg
+				break
 			}
 
 			logRecord.RequestChanges[changeIndex].URI = URIText2
@@ -228,12 +239,20 @@ func parseStageDiffs(logPassed []byte) ([]byte, error) {
 			MethodText2, err := util.ApplyDelta(MethodText1, change.Method)
 			if err != nil {
 				errMsg := fmt.Sprintf("error while applying delta for URI in stage %d, %s", changeIndex+1, err)
-				return logPassed, errors.New(errMsg)
+				log.Warnln(logTag, errMsg)
+				requestParseError = &errMsg
+				break
 			}
 
 			logRecord.RequestChanges[changeIndex].Method = MethodText2
 			MethodText1 = MethodText2
 		}
+	}
+
+	// If there is an error with the request, set the changes to an
+	// empty array
+	if requestParseError != nil {
+		logRecord.RequestChanges = make([]difference.Difference, 0)
 	}
 
 	// Parse the response changes
@@ -255,7 +274,8 @@ func parseStageDiffs(logPassed []byte) ([]byte, error) {
 			bodyText2, err := util.ApplyDelta(responseBodyText1, change.Body)
 			if err != nil {
 				errMsg := fmt.Sprintf("error while applying body delta to response for stage number %d,  %s", changeIndex+1, err)
-				return logPassed, errors.New(errMsg)
+				log.Warnln(logTag, errMsg)
+				responseParseError = &errMsg
 			}
 
 			logRecord.ResponseChanges[changeIndex].Body = bodyText2
@@ -266,12 +286,18 @@ func parseStageDiffs(logPassed []byte) ([]byte, error) {
 			headerText2, err := util.ApplyDelta(string(responseHeaderText1), change.Headers)
 			if err != nil {
 				errMsg := fmt.Sprintf("error while applying response header delta for stage number %d, %s ", changeIndex+1, err)
-				return logPassed, errors.New(errMsg)
+				log.Warnln(logTag, errMsg)
+				responseParseError = &errMsg
 			}
 
 			logRecord.ResponseChanges[changeIndex].Headers = headerText2
 			responseHeaderText1 = headerText1
 		}
+	}
+
+	// If response parsing has error, set the changes as empty array.
+	if responseParseError != nil {
+		logRecord.ResponseChanges = make([]difference.Difference, 0)
 	}
 
 	updatedLogInBytes, err := json.Marshal(logRecord)
@@ -287,6 +313,10 @@ func parseStageDiffs(logPassed []byte) ([]byte, error) {
 		errMsg := fmt.Sprint("error while unmarshalling log to parse context to interface, ", unmarshallLogErr)
 		return updatedLogInBytes, errors.New(errMsg)
 	}
+
+	// Set the request and response parse errors.
+	logMap["requestParseError"] = requestParseError
+	logMap["responseParseError"] = responseParseError
 
 	// Parse the strings to JSON
 	logMap["requestChanges"], err = parseStringToMap(logMap["requestChanges"])
