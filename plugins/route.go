@@ -108,8 +108,10 @@ type RouterSwapper struct {
 var (
 	singleton            *RouterSwapper
 	singletonHealthCheck *RouterHealthCheck
+	singletonRSUtil      *RSUtil
 	once                 sync.Once
 	healthCheckOnce      sync.Once
+	rsUtilOnce           sync.Once
 )
 
 // RouterSwapperInstance returns one instance and should be the
