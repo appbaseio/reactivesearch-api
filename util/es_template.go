@@ -258,6 +258,15 @@ func SetSystemIndexTemplate() error {
 					"type": "long"
 				}
 			}
+		},
+		{
+			"geo": {
+				"match_mapping_type": "object",
+				"match": "*location",
+				"mapping": {
+				  "type": "geo_point"
+				}
+			}
 		}],
 		"dynamic": true
 	}`
