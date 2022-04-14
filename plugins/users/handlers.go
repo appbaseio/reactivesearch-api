@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"time"
 
 	log "github.com/sirupsen/logrus"
 
@@ -218,6 +219,10 @@ func (u *Users) patchUser() http.HandlerFunc {
 			}
 			patch["password"] = string(hashedPassword)
 		}
+
+		// Set the updated_at field
+		patch["updated_at"] = time.Now().Format(time.RFC3339)
+
 		_, err2 := u.es.patchUser(req.Context(), username, patch)
 		if err2 == nil {
 			// Only update local state when proxy API has not been called
@@ -337,6 +342,9 @@ func (u *Users) patchUserWithUsername() http.HandlerFunc {
 			}
 			patch["password"] = string(hashedPassword)
 		}
+
+		// Set the updated_at
+		patch["updated_at"] = time.Now().Format(time.RFC3339)
 
 		_, err2 := u.es.patchUser(req.Context(), username, patch)
 		if err2 == nil {

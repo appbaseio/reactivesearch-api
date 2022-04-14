@@ -58,6 +58,7 @@ type Permission struct {
 	Excludes             []string              `json:"exclude_fields"`
 	Expired              bool                  `json:"expired"`
 	ReactiveSearchConfig *ReactiveSearchConfig `json:"reactivesearchConfig,omitempty"`
+	UpdatedAt            string                `json:"updated_at"`
 }
 
 // Limits defines the rate limits for each category.
@@ -324,6 +325,7 @@ func New(creator string, opts ...Options) (*Permission, error) {
 		Sources:    []string{"0.0.0.0/0"},
 		Referers:   []string{"*"},
 		CreatedAt:  time.Now().Format(time.RFC3339),
+		UpdatedAt:  time.Now().Format(time.RFC3339),
 		TTL:        -1,
 		Limits:     &defaultLimits,
 	}
@@ -363,6 +365,7 @@ func NewAdmin(creator string, opts ...Options) (*Permission, error) {
 		Sources:    []string{"0.0.0.0/0"},
 		Referers:   []string{"*"},
 		CreatedAt:  time.Now().Format(time.RFC3339),
+		UpdatedAt:  time.Now().Format(time.RFC3339),
 		TTL:        -1,
 		Limits:     &defaultAdminLimits,
 	}

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"time"
 
 	log "github.com/sirupsen/logrus"
 
@@ -246,6 +247,9 @@ func (p *permissions) patchPermission() http.HandlerFunc {
 				return
 			}
 		}
+
+		// Set the updated_at for the permission
+		patch["updated_at"] = time.Now().Format(time.RFC3339)
 
 		_, err2 := p.es.patchPermission(req.Context(), username, patch)
 		if err2 == nil {
