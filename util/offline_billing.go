@@ -32,38 +32,41 @@ func SetExpiryTime(time time.Time) {
 // BillingMiddlewareOffline function to be called for each request when offline billing is used
 func BillingMiddlewareOffline(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// Blacklist subscription routes
-		if strings.HasPrefix(r.RequestURI, "/arc/subscription") || strings.HasPrefix(r.RequestURI, "/arc/plan") {
-			next.ServeHTTP(w, r)
-		} else {
-			remainingHours := int(time.Since(GetExpiryTime()).Hours())
-			// Positive duration represents that the plan is expired
-			if remainingHours > 0 {
-				// For an expired license, allow grace period
-				if remainingHours < OfflineGracePeriod*24 {
-					remainingHoursFromGracePeriod := OfflineGracePeriod*24 - remainingHours
-					days := int64(remainingHoursFromGracePeriod / 24)
-					hours := int64(remainingHoursFromGracePeriod) % 24
-					errorMsg := fmt.Sprintf("Your license key has expired, please contact support@appbase.io - your server will stop processing API requests in %d days, %d hours.", days, hours)
-					// throw error so sentry can log
-					log.Errorln(errorMsg)
-					next.ServeHTTP(w, r)
-				} else if remainingHours >= OfflineGracePeriod*24 {
-					remainingHoursFromGracePeriod := OfflineGracePeriod*24 - remainingHours
-					days := int64(remainingHoursFromGracePeriod / 24)
-					hours := int64(remainingHoursFromGracePeriod) % 24
-					licenseMsg := fmt.Sprintf("Your license key will expire in %d days, %d hours.", days, hours)
-					log.Infoln(licenseMsg)
-					next.ServeHTTP(w, r)
-				} else {
-					log.Errorln("Your license key has expired, please contact support@appbase.io")
-					// Write an error and stop the handler chain
-					WriteBackError(w, "Your license key has expired, please contact support@appbase.io", http.StatusPaymentRequired)
-					return
-				}
-			} else {
+		// Check if routes are blacklisted
+		requestURI := r.RequestURI
+		for _, route := range BillingBlacklistedPaths() {
+			if strings.HasPrefix(requestURI, route) {
 				next.ServeHTTP(w, r)
 			}
+		}
+
+		remainingHours := int(time.Since(GetExpiryTime()).Hours())
+		// Positive duration represents that the plan is expired
+		if remainingHours > 0 {
+			// For an expired license, allow grace period
+			if remainingHours < OfflineGracePeriod*24 {
+				remainingHoursFromGracePeriod := OfflineGracePeriod*24 - remainingHours
+				days := int64(remainingHoursFromGracePeriod / 24)
+				hours := int64(remainingHoursFromGracePeriod) % 24
+				errorMsg := fmt.Sprintf("Your license key has expired, please contact support@appbase.io - your server will stop processing API requests in %d days, %d hours.", days, hours)
+				// throw error so sentry can log
+				log.Errorln(errorMsg)
+				next.ServeHTTP(w, r)
+			} else if remainingHours >= OfflineGracePeriod*24 {
+				remainingHoursFromGracePeriod := OfflineGracePeriod*24 - remainingHours
+				days := int64(remainingHoursFromGracePeriod / 24)
+				hours := int64(remainingHoursFromGracePeriod) % 24
+				licenseMsg := fmt.Sprintf("Your license key will expire in %d days, %d hours.", days, hours)
+				log.Infoln(licenseMsg)
+				next.ServeHTTP(w, r)
+			} else {
+				log.Errorln("Your license key has expired, please contact support@appbase.io")
+				// Write an error and stop the handler chain
+				WriteBackError(w, "Your license key has expired, please contact support@appbase.io", http.StatusPaymentRequired)
+				return
+			}
+		} else {
+			next.ServeHTTP(w, r)
 		}
 	})
 }
