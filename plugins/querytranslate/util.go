@@ -12,6 +12,7 @@ import (
 	"strings"
 	"unicode"
 
+	"github.com/alecthomas/jsonschema"
 	"github.com/appbaseio/reactivesearch-api/util"
 	"github.com/bbalet/stopwords"
 	pluralize "github.com/gertd/go-pluralize"
@@ -278,6 +279,7 @@ type Backend int
 const (
 	ElasticSearch Backend = iota
 	OpenSearch
+	MongoDB
 )
 
 // String returns the string representation
@@ -288,6 +290,8 @@ func (b Backend) String() string {
 		return "elasticsearch"
 	case OpenSearch:
 		return "opensearch"
+	case MongoDB:
+		return "mongodb"
 	}
 	return ""
 }
@@ -305,6 +309,8 @@ func (b *Backend) UnmarshalJSON(bytes []byte) error {
 		*b = OpenSearch
 	case ElasticSearch.String():
 		*b = ElasticSearch
+	case MongoDB.String():
+		*b = MongoDB
 	default:
 		return fmt.Errorf("invalid kNN backend passed: %s", knnBackend)
 	}
@@ -314,14 +320,24 @@ func (b *Backend) UnmarshalJSON(bytes []byte) error {
 
 // MarshalJSON is the implementation of the Marshaler interface to marshal the Backend
 func (b Backend) MarshalJSON() ([]byte, error) {
-	var knnBackend string
-	knnBackend = b.String()
+	knnBackend := b.String()
 
 	if knnBackend == "" {
 		return nil, fmt.Errorf("invalid kNN backend passed: %s", knnBackend)
 	}
 
 	return json.Marshal(knnBackend)
+}
+
+func (b Backend) JSONSchemaType() *jsonschema.Type {
+	return &jsonschema.Type{
+		Type: "string",
+		Enum: []interface{}{
+			ElasticSearch.String(),
+			OpenSearch.String(),
+			MongoDB.String(),
+		},
+	}
 }
 
 // Query represents the query object
