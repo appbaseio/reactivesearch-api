@@ -343,6 +343,9 @@ func (u *Users) patchUserWithUsername() http.HandlerFunc {
 			patch["password"] = string(hashedPassword)
 		}
 
+		// Set the updated_at
+		patch["updated_at"] = time.Now().Format(time.RFC3339)
+
 		_, err2 := u.es.patchUser(req.Context(), username, patch)
 		if err2 == nil {
 			// Only update local state when proxy API has not been called
