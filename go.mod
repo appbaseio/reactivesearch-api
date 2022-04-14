@@ -4,7 +4,6 @@ require (
 	github.com/alecthomas/jsonschema v0.0.0-20220216202328-9eeeec9d044b
 	github.com/bbalet/stopwords v1.0.0
 	github.com/buger/jsonparser v1.1.1
-	github.com/cespare/xxhash v1.1.0 // indirect
 	github.com/denisbrodbeck/machineid v1.0.1
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/gertd/go-pluralize v0.1.7
@@ -33,7 +32,6 @@ require (
 	github.com/sergi/go-diff v1.2.0
 	github.com/sirupsen/logrus v1.4.2
 	github.com/smartystreets/goconvey v1.6.4
-	github.com/spaolacci/murmur3 v1.1.0 // indirect
 	github.com/ulule/limiter v2.2.0+incompatible
 	golang.org/x/crypto v0.0.0-20210813211128-0a44fdfbc16e
 	golang.org/x/net v0.0.0-20211007125505-59d4e928ea9d // indirect
