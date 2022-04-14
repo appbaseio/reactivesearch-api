@@ -6,7 +6,7 @@ import (
 	"net/http"
 
 	"github.com/appbaseio/reactivesearch-api/util"
-	badger "github.com/dgraph-io/badger/v3"
+	badger "github.com/outcaste-io/badger/v3"
 	log "github.com/sirupsen/logrus"
 )
 

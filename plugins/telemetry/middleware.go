@@ -19,7 +19,7 @@ import (
 	"github.com/appbaseio/reactivesearch-api/util"
 	"github.com/appbaseio/reactivesearch-api/util/iplookup"
 	"github.com/buger/jsonparser"
-	badger "github.com/dgraph-io/badger/v3"
+	badger "github.com/outcaste-io/badger/v3"
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/sys/unix"
 )
