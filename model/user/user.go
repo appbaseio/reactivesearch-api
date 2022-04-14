@@ -38,6 +38,7 @@ type User struct {
 	Email            string              `json:"email"`
 	Indices          []string            `json:"indices"`
 	CreatedAt        string              `json:"created_at"`
+	UpdatedAt        string              `json:"updated_at"`
 	Sources          *[]string           `json:"sources"`
 }
 
@@ -157,6 +158,7 @@ func New(username, password string, opts ...Options) (*User, error) {
 		IsAdmin:   &isAdminFalse, // pointer to bool
 		Indices:   []string{},
 		CreatedAt: time.Now().Format(time.RFC3339),
+		UpdatedAt: time.Now().Format(time.RFC3339),
 		Sources:   &defaultSources,
 	}
 
@@ -191,6 +193,7 @@ func NewAdmin(username, password string, opts ...Options) (*User, error) {
 		Indices:        []string{"*"},
 		Sources:        &defaultSources,
 		CreatedAt:      time.Now().Format(time.RFC3339),
+		UpdatedAt:      time.Now().Format(time.RFC3339),
 	}
 
 	// run the options on it
