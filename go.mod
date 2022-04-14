@@ -4,6 +4,7 @@ require (
 	github.com/alecthomas/jsonschema v0.0.0-20220216202328-9eeeec9d044b
 	github.com/bbalet/stopwords v1.0.0
 	github.com/buger/jsonparser v1.1.1
+	github.com/cespare/xxhash v1.1.0 // indirect
 	github.com/denisbrodbeck/machineid v1.0.1
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/gertd/go-pluralize v0.1.7
@@ -22,7 +23,8 @@ require (
 	github.com/natefinch/lumberjack v2.0.1-0.20190411184413-94d9e492cc53+incompatible
 	github.com/olivere/elastic v6.2.21+incompatible
 	github.com/olivere/elastic/v7 v7.0.24
-	github.com/outcaste-io/badger/v3 v3.2202.0
+	github.com/outcaste-io/badger/v3 v3.2202.1-0.20220409155652-232f5040a908
+	github.com/outcaste-io/ristretto v0.2.0 // indirect
 	github.com/pkg/profile v1.5.0
 	github.com/prometheus/common v0.2.0
 	github.com/robfig/cron v1.1.0
@@ -31,6 +33,7 @@ require (
 	github.com/sergi/go-diff v1.2.0
 	github.com/sirupsen/logrus v1.4.2
 	github.com/smartystreets/goconvey v1.6.4
+	github.com/spaolacci/murmur3 v1.1.0 // indirect
 	github.com/ulule/limiter v2.2.0+incompatible
 	golang.org/x/crypto v0.0.0-20210813211128-0a44fdfbc16e
 	golang.org/x/net v0.0.0-20211007125505-59d4e928ea9d // indirect
