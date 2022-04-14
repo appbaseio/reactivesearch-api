@@ -1,4 +1,4 @@
-FROM golang:1.18.0 as builder
+FROM golang:1.18.1 as builder
 
 # Default value
 # Run `--build-arg BILLING=true` to enable billing
@@ -27,7 +27,7 @@ ENV PLAN_REFRESH_INTERVAL="${PLAN_REFRESH_INTERVAL}"
 
 # Install tools required for project
 # Run `docker build --no-cache .` to update dependencies
-RUN apt-get update
+RUN apt-get clean && apt-get update
 RUN apt-get -y install build-essential git
 WORKDIR /reactivesearch
 
