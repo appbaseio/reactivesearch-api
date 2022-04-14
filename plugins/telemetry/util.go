@@ -5,7 +5,7 @@ import (
 	"strings"
 
 	"github.com/appbaseio/reactivesearch-api/util"
-	badger "github.com/dgraph-io/badger/v3"
+	badger "github.com/outcaste-io/badger/v3"
 )
 
 // Returns the server mode based on the billing type

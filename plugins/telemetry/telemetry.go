@@ -7,7 +7,7 @@ import (
 
 	"github.com/appbaseio/reactivesearch-api/middleware"
 	"github.com/appbaseio/reactivesearch-api/plugins"
-	badger "github.com/dgraph-io/badger/v3"
+	badger "github.com/outcaste-io/badger/v3"
 	"github.com/robfig/cron"
 	log "github.com/sirupsen/logrus"
 )
