@@ -188,10 +188,18 @@ func BillingMiddleware(next http.Handler) http.Handler {
 			WriteBackError(w, "Please make sure that you're using a valid APPBASE_ID. If the issue persists please contact support@appbase.io with your APPBASE_ID or registered e-mail address.", http.StatusBadRequest)
 			return
 		}
-		// Blacklist subscription routes
-		if strings.HasPrefix(r.RequestURI, "/arc/subscription") || strings.HasPrefix(r.RequestURI, "/arc/plan") {
-			next.ServeHTTP(w, r)
-		} else if validateTimeValidity() {
+
+		// Check if routes are blacklisted
+		requestURI := r.RequestURI
+		for _, route := range BillingBlacklistedPaths() {
+			if strings.HasPrefix(requestURI, route) {
+				next.ServeHTTP(w, r)
+			}
+		}
+
+		// Routes are not blacklisted, verify the payment
+
+		if validateTimeValidity() {
 			next.ServeHTTP(w, r)
 		} else {
 			// Write an error and stop the handler chain
@@ -637,4 +645,15 @@ func fetchNodeCount() (int, error) {
 
 func IsBillingEnabled() bool {
 	return Billing == "true" || ClusterBilling == "true" || HostedBilling == "true"
+}
+
+// BillingBlacklistedPaths will return an array of paths
+// that should not be affected if billing is enabled.
+func BillingBlacklistedPaths() []string {
+	return []string{
+		"/arc/subscription",
+		"/arc/plan",
+		"/arc/health",
+		"/arc/_health",
+	}
 }
