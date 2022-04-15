@@ -194,6 +194,7 @@ func BillingMiddleware(next http.Handler) http.Handler {
 		for _, route := range BillingBlacklistedPaths() {
 			if strings.HasPrefix(requestURI, route) {
 				next.ServeHTTP(w, r)
+				return
 			}
 		}
 
