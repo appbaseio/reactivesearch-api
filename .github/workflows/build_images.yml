@@ -1,0 +1,17 @@
+name: Send Build Image Event
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  send_event:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send Repo Dispatch Event
+        uses: peter-evans/repository-dispatch@v2
+        with:
+          token: ${{ secrets.REPO_ACCESS_TOKEN }}
+          repository: appbaseio-confidential/elasticsearch-packer-build
+          event-type: new_release
+          
