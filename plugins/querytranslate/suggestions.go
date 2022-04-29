@@ -1,6 +1,7 @@
 package querytranslate
 
 import (
+	"encoding/json"
 	"fmt"
 	"sort"
 	"strings"
@@ -8,11 +9,65 @@ import (
 	"github.com/appbaseio/reactivesearch-api/util"
 )
 
+type ActionType int
+
+const (
+	Navigate ActionType = iota
+	Function
+)
+
+// String is the implementation of Stringer interface that returns the string representation of ActionType type.
+func (o ActionType) String() string {
+	return [...]string{
+		"navigate",
+		"function",
+	}[o]
+}
+
+// UnmarshalJSON is the implementation of the Unmarshaler interface for unmarshaling ActionType type.
+func (o *ActionType) UnmarshalJSON(bytes []byte) error {
+	var sectionType string
+	err := json.Unmarshal(bytes, &sectionType)
+	if err != nil {
+		return err
+	}
+	switch sectionType {
+	case Navigate.String():
+		*o = Navigate
+	case Function.String():
+		*o = Function
+	default:
+		return fmt.Errorf("invalid suggestion type encountered: %v", sectionType)
+	}
+	return nil
+}
+
+// MarshalJSON is the implementation of the Marshaler interface for marshaling ActionType type.
+func (o ActionType) MarshalJSON() ([]byte, error) {
+	var sectionType string
+	switch o {
+	case Navigate:
+		sectionType = Navigate.String()
+	case Function:
+		sectionType = Function.String()
+	default:
+		return nil, fmt.Errorf("invalid suggestion type encountered: %v", o)
+	}
+	return json.Marshal(sectionType)
+}
+
 // SuggestionHIT represents the structure of the suggestion object in RS API response
 type SuggestionHIT struct {
-	Value         string         `json:"value"`
-	Label         string         `json:"label"`
-	URL           *string        `json:"url"`
+	Value string  `json:"value"`
+	Label string  `json:"label"`
+	URL   *string `json:"url"`
+	// Default Suggestions properties
+	Section       *string        `json:"section"`
+	SectionId     *string        `json:"sectionId"`
+	Action        *ActionType    `json:"action"`
+	SubAction     *string        `json:"subAction"`
+	Icon          *string        `json:"icon"`
+	IconURL       *string        `json:"iconURL"`
 	Type          SuggestionType `json:"_suggestion_type"`
 	Category      *string        `json:"_category"`
 	Count         *int           `json:"_count"`
@@ -55,6 +110,14 @@ type PopularSuggestionsOptions struct {
 	MinChars     *int                   `json:"minChars,omitempty"`
 	MinCount     *int                   `json:"minCount,omitempty"`
 	CustomEvents map[string]interface{} `json:"customEvents,omitempty"`
+}
+
+// DefaultSuggestionsOptions represents the options to configure default suggestions
+type DefaultSuggestionsOptions struct {
+	DefaultSuggestionsGroupId    *string   `json:"defaultSuggestionsGroupId,omitempty"`
+	VisibleSuggestionsPerSection *int      `json:"visibleSuggestionsPerSection,omitempty"`
+	MaxSuggestionsPerSection     *int      `json:"maxSuggestionsPerSection,omitempty"`
+	SectionsOrder                *[]string `json:"sectionsOrder,omitempty"`
 }
 
 // DocField contains properties of the field and the doc it belongs to

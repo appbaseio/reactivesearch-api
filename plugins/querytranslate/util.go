@@ -398,6 +398,9 @@ type Query struct {
 	QueryVector                 *[]float64                 `json:"queryVector,omitempty"`
 	VectorDataField             *string                    `json:"vectorDataField,omitempty"`
 	Candidates                  *int                       `json:"candidates,omitempty"`
+	EnableDefaultSuggestions    *bool                      `json:"enableDefaultSuggestions,omitempty"`
+	DefaultSuggestionsConfig    *DefaultSuggestionsOptions `json:"defaultSuggestionsConfig,omitempty"`
+	EnableIndexSuggestions      *bool                      `json:"enableIndexSuggestions,omitempty"`
 }
 
 type DataField struct {
