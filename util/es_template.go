@@ -193,7 +193,7 @@ func SetDefaultIndexTemplate() error {
 			"index_patterns": [".*"],
 			"template": {
 				"settings": %s,
-				"mappings": %s,
+				"mappings": %s
 			},
 			"priority": 1
 		}`, settings, mappings)
@@ -301,7 +301,7 @@ func SetSystemIndexTemplate() error {
 			"index_patterns": [".*"],
 			"template": {
 				"settings": %s,
-				"mappings": %s,
+				"mappings": %s
 			},
 			"priority": 2
 		}`, settings, mappings)
