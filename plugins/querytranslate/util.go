@@ -76,6 +76,7 @@ const (
 	Popular
 	Recent
 	Promoted
+	Featured
 )
 
 // String is the implementation of Stringer interface that returns the string representation of SuggestionType type.
@@ -85,6 +86,7 @@ func (o SuggestionType) String() string {
 		"popular",
 		"recent",
 		"promoted",
+		"featured",
 	}[o]
 }
 
@@ -104,6 +106,8 @@ func (o *SuggestionType) UnmarshalJSON(bytes []byte) error {
 		*o = Recent
 	case Promoted.String():
 		*o = Promoted
+	case Featured.String():
+		*o = Featured
 	default:
 		return fmt.Errorf("invalid suggestion type encountered: %v", suggestionType)
 	}
@@ -122,6 +126,8 @@ func (o SuggestionType) MarshalJSON() ([]byte, error) {
 		suggestionType = Recent.String()
 	case Promoted:
 		suggestionType = Promoted.String()
+	case Featured:
+		suggestionType = Featured.String()
 	default:
 		return nil, fmt.Errorf("invalid suggestion type encountered: %v", o)
 	}
@@ -342,65 +348,65 @@ func (b Backend) JSONSchemaType() *jsonschema.Type {
 
 // Query represents the query object
 type Query struct {
-	ID                          *string                    `json:"id,omitempty"` // component id
-	Type                        QueryType                  `json:"type,omitempty"`
-	React                       *map[string]interface{}    `json:"react,omitempty"`
-	QueryFormat                 *string                    `json:"queryFormat,omitempty"`
-	DataField                   interface{}                `json:"dataField,omitempty"`
-	CategoryField               *string                    `json:"categoryField,omitempty"`
-	CategoryValue               *interface{}               `json:"categoryValue,omitempty"`
-	FieldWeights                []float64                  `json:"fieldWeights,omitempty"`
-	NestedField                 *string                    `json:"nestedField,omitempty"`
-	From                        *int                       `json:"from,omitempty"`
-	Size                        *int                       `json:"size,omitempty"`
-	AggregationSize             *int                       `json:"aggregationSize,omitempty"`
-	SortBy                      *SortBy                    `json:"sortBy,omitempty"`
-	Value                       *interface{}               `json:"value,omitempty"` // either string or Array of string
-	AggregationField            *string                    `json:"aggregationField,omitempty"`
-	After                       *map[string]interface{}    `json:"after,omitempty"`
-	IncludeNullValues           *bool                      `json:"includeNullValues,omitempty"`
-	IncludeFields               *[]string                  `json:"includeFields,omitempty"`
-	ExcludeFields               *[]string                  `json:"excludeFields,omitempty"`
-	Fuzziness                   interface{}                `json:"fuzziness,omitempty"` // string or int
-	SearchOperators             *bool                      `json:"searchOperators,omitempty"`
-	Highlight                   *bool                      `json:"highlight,omitempty"`
-	HighlightField              []string                   `json:"highlightField,omitempty"`
-	CustomHighlight             *map[string]interface{}    `json:"customHighlight,omitempty"`
-	HighlightConfig             *map[string]interface{}    `json:"highlightConfig,omitempty"`
-	Interval                    *int                       `json:"interval,omitempty"`
-	Aggregations                *[]string                  `json:"aggregations,omitempty"`
-	MissingLabel                string                     `json:"missingLabel,omitempty"`
-	ShowMissing                 *bool                      `json:"showMissing,omitempty"`
-	DefaultQuery                *map[string]interface{}    `json:"defaultQuery,omitempty"`
-	CustomQuery                 *map[string]interface{}    `json:"customQuery,omitempty"`
-	Execute                     *bool                      `json:"execute,omitempty"`
-	EnableSynonyms              *bool                      `json:"enableSynonyms,omitempty"`
-	SelectAllLabel              *string                    `json:"selectAllLabel,omitempty"`
-	Pagination                  *bool                      `json:"pagination,omitempty"`
-	QueryString                 *bool                      `json:"queryString,omitempty"`
-	RankFeature                 *map[string]RankFunction   `json:"rankFeature,omitempty"`
-	DistinctField               *string                    `json:"distinctField,omitempty"`
-	DistinctFieldConfig         *map[string]interface{}    `json:"distinctFieldConfig,omitempty"`
-	Index                       *string                    `json:"index,omitempty"`
-	EnableRecentSuggestions     *bool                      `json:"enableRecentSuggestions,omitempty"`
-	RecentSuggestionsConfig     *RecentSuggestionsOptions  `json:"recentSuggestionsConfig,omitempty"`
-	EnablePopularSuggestions    *bool                      `json:"enablePopularSuggestions,omitempty"`
-	PopularSuggestionsConfig    *PopularSuggestionsOptions `json:"popularSuggestionsConfig,omitempty"`
-	ShowDistinctSuggestions     *bool                      `json:"showDistinctSuggestions,omitempty"`
-	EnablePredictiveSuggestions *bool                      `json:"enablePredictiveSuggestions,omitempty"`
-	MaxPredictedWords           *int                       `json:"maxPredictedWords,omitempty"`
-	URLField                    *string                    `json:"urlField,omitempty"`
-	ApplyStopwords              *bool                      `json:"applyStopwords,omitempty"`
-	Stopwords                   *[]string                  `json:"customStopwords,omitempty"`
-	SearchLanguage              *string                    `json:"searchLanguage,omitempty"`
-	CalendarInterval            *string                    `json:"calendarinterval,omitempty"`
-	Script                      *string                    `json:"script,omitempty"`
-	QueryVector                 *[]float64                 `json:"queryVector,omitempty"`
-	VectorDataField             *string                    `json:"vectorDataField,omitempty"`
-	Candidates                  *int                       `json:"candidates,omitempty"`
-	EnableDefaultSuggestions    *bool                      `json:"enableDefaultSuggestions,omitempty"`
-	DefaultSuggestionsConfig    *DefaultSuggestionsOptions `json:"defaultSuggestionsConfig,omitempty"`
-	EnableIndexSuggestions      *bool                      `json:"enableIndexSuggestions,omitempty"`
+	ID                          *string                     `json:"id,omitempty"` // component id
+	Type                        QueryType                   `json:"type,omitempty"`
+	React                       *map[string]interface{}     `json:"react,omitempty"`
+	QueryFormat                 *string                     `json:"queryFormat,omitempty"`
+	DataField                   interface{}                 `json:"dataField,omitempty"`
+	CategoryField               *string                     `json:"categoryField,omitempty"`
+	CategoryValue               *interface{}                `json:"categoryValue,omitempty"`
+	FieldWeights                []float64                   `json:"fieldWeights,omitempty"`
+	NestedField                 *string                     `json:"nestedField,omitempty"`
+	From                        *int                        `json:"from,omitempty"`
+	Size                        *int                        `json:"size,omitempty"`
+	AggregationSize             *int                        `json:"aggregationSize,omitempty"`
+	SortBy                      *SortBy                     `json:"sortBy,omitempty"`
+	Value                       *interface{}                `json:"value,omitempty"` // either string or Array of string
+	AggregationField            *string                     `json:"aggregationField,omitempty"`
+	After                       *map[string]interface{}     `json:"after,omitempty"`
+	IncludeNullValues           *bool                       `json:"includeNullValues,omitempty"`
+	IncludeFields               *[]string                   `json:"includeFields,omitempty"`
+	ExcludeFields               *[]string                   `json:"excludeFields,omitempty"`
+	Fuzziness                   interface{}                 `json:"fuzziness,omitempty"` // string or int
+	SearchOperators             *bool                       `json:"searchOperators,omitempty"`
+	Highlight                   *bool                       `json:"highlight,omitempty"`
+	HighlightField              []string                    `json:"highlightField,omitempty"`
+	CustomHighlight             *map[string]interface{}     `json:"customHighlight,omitempty"`
+	HighlightConfig             *map[string]interface{}     `json:"highlightConfig,omitempty"`
+	Interval                    *int                        `json:"interval,omitempty"`
+	Aggregations                *[]string                   `json:"aggregations,omitempty"`
+	MissingLabel                string                      `json:"missingLabel,omitempty"`
+	ShowMissing                 *bool                       `json:"showMissing,omitempty"`
+	DefaultQuery                *map[string]interface{}     `json:"defaultQuery,omitempty"`
+	CustomQuery                 *map[string]interface{}     `json:"customQuery,omitempty"`
+	Execute                     *bool                       `json:"execute,omitempty"`
+	EnableSynonyms              *bool                       `json:"enableSynonyms,omitempty"`
+	SelectAllLabel              *string                     `json:"selectAllLabel,omitempty"`
+	Pagination                  *bool                       `json:"pagination,omitempty"`
+	QueryString                 *bool                       `json:"queryString,omitempty"`
+	RankFeature                 *map[string]RankFunction    `json:"rankFeature,omitempty"`
+	DistinctField               *string                     `json:"distinctField,omitempty"`
+	DistinctFieldConfig         *map[string]interface{}     `json:"distinctFieldConfig,omitempty"`
+	Index                       *string                     `json:"index,omitempty"`
+	EnableRecentSuggestions     *bool                       `json:"enableRecentSuggestions,omitempty"`
+	RecentSuggestionsConfig     *RecentSuggestionsOptions   `json:"recentSuggestionsConfig,omitempty"`
+	EnablePopularSuggestions    *bool                       `json:"enablePopularSuggestions,omitempty"`
+	PopularSuggestionsConfig    *PopularSuggestionsOptions  `json:"popularSuggestionsConfig,omitempty"`
+	ShowDistinctSuggestions     *bool                       `json:"showDistinctSuggestions,omitempty"`
+	EnablePredictiveSuggestions *bool                       `json:"enablePredictiveSuggestions,omitempty"`
+	MaxPredictedWords           *int                        `json:"maxPredictedWords,omitempty"`
+	URLField                    *string                     `json:"urlField,omitempty"`
+	ApplyStopwords              *bool                       `json:"applyStopwords,omitempty"`
+	Stopwords                   *[]string                   `json:"customStopwords,omitempty"`
+	SearchLanguage              *string                     `json:"searchLanguage,omitempty"`
+	CalendarInterval            *string                     `json:"calendarinterval,omitempty"`
+	Script                      *string                     `json:"script,omitempty"`
+	QueryVector                 *[]float64                  `json:"queryVector,omitempty"`
+	VectorDataField             *string                     `json:"vectorDataField,omitempty"`
+	Candidates                  *int                        `json:"candidates,omitempty"`
+	EnableDefaultSuggestions    *bool                       `json:"enableDefaultSuggestions,omitempty"`
+	DefaultSuggestionsConfig    *FeaturedSuggestionsOptions `json:"featuredSuggestionsConfig,omitempty"`
+	EnableIndexSuggestions      *bool                       `json:"enableIndexSuggestions,omitempty"`
 }
 
 type DataField struct {

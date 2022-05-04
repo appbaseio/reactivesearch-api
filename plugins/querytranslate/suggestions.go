@@ -62,8 +62,9 @@ type SuggestionHIT struct {
 	Label string  `json:"label"`
 	URL   *string `json:"url"`
 	// Default Suggestions properties
-	Section       *string        `json:"section"`
+	SectionLabel  *string        `json:"sectionLabel"`
 	SectionId     *string        `json:"sectionId"`
+	Description   *string        `json:"description"`
 	Action        *ActionType    `json:"action"`
 	SubAction     *string        `json:"subAction"`
 	Icon          *string        `json:"icon"`
@@ -113,8 +114,8 @@ type PopularSuggestionsOptions struct {
 }
 
 // DefaultSuggestionsOptions represents the options to configure default suggestions
-type DefaultSuggestionsOptions struct {
-	DefaultSuggestionsGroupId    *string   `json:"defaultSuggestionsGroupId,omitempty"`
+type FeaturedSuggestionsOptions struct {
+	FeaturedSuggestionsGroupId   *string   `json:"featuredSuggestionsGroupId,omitempty"`
 	VisibleSuggestionsPerSection *int      `json:"visibleSuggestionsPerSection,omitempty"`
 	MaxSuggestionsPerSection     *int      `json:"maxSuggestionsPerSection,omitempty"`
 	SectionsOrder                *[]string `json:"sectionsOrder,omitempty"`
