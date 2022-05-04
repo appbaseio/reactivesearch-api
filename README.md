@@ -39,7 +39,11 @@ In order to run `reactivesearch-api`, you'll require an Elasticsearch node. Ther
 
 2. Start a single node Elasticsearch cluster locally
 
-        docker run -d --rm --name elasticsearch -p 9200:9200 -p 9300:9300 --net=reactivesearch -e "discovery.type=single-node" docker.elastic.co/elasticsearch/elasticsearch-oss:7.10.2
+```sh
+docker run -d --rm --name elasticsearch -p 9200:9200 -p 9300:9300 --net=reactivesearch -e "discovery.type=single-node" -e "xpack.security.enabled=false" docker.elastic.co/elasticsearch/elasticsearch:8.1.2
+```
+
+> NOTE: It is advised to use `-e "xpack.security.enabled=false"` for local runs of ElasticSearch since otherwise ES is not available on :9200.
 
 3. Start ReactiveSearch locally
 
