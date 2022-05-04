@@ -279,10 +279,17 @@ func SetSystemIndexTemplate() error {
 			"mappings": %s,
 			"order": 20
 		}`, settings, mappings)
-		_, err := GetClient7().IndexPutTemplate("system_index_template_v1").BodyString(defaultSetting).Do(context.Background())
-		if err != nil {
-			log.Errorln("[SET SYSTEM INDEX TEMPLATE ERROR V7]", ": ", err)
-			return err
+		_, indexTemplateErr := GetClient7().IndexPutIndexTemplate("system_index_template_v1").BodyString(defaultSetting).Do(context.Background())
+		if indexTemplateErr != nil {
+			// Try to create the template using IndexPutTemplate since Index template is
+			// supported from v7.9
+			log.Debug(fmt.Sprintf("Creating Index Template failed with error: %s, trying to create legacy template", indexTemplateErr))
+			_, err := GetClient7().IndexPutTemplate("system_index_template_v1").BodyString(defaultSetting).Do(context.Background())
+
+			if err != nil {
+				log.Errorln("[SET SYSTEM INDEX TEMPLATE ERROR V7]", ": ", err)
+				return err
+			}
 		}
 	}
 
