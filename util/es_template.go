@@ -195,7 +195,7 @@ func SetDefaultIndexTemplate() error {
 				"settings": %s,
 				"mappings": %s,
 			},
-			"priority": 2
+			"priority": 1
 		}`, settings, mappings)
 
 		_, indexTemplateErr := GetClient7().IndexPutIndexTemplate("arc_index_template_v1").BodyString(defaultSettingIndex).Do(context.Background())
