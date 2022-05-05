@@ -78,7 +78,7 @@ func translateQuery(rsQuery RSQuery, userIP string) (string, error) {
 	}
 
 	for _, query := range rsQuery.Query {
-		if query.Execute == nil || *query.Execute {
+		if query.shouldExecuteQuery() {
 			translatedQuery, queryOptions, isGeneratedByValue, translateError := query.getQuery(rsQuery)
 			if translateError != nil {
 				return mSearchQuery, translateError

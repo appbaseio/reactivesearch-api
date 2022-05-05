@@ -404,8 +404,8 @@ type Query struct {
 	QueryVector                 *[]float64                  `json:"queryVector,omitempty"`
 	VectorDataField             *string                     `json:"vectorDataField,omitempty"`
 	Candidates                  *int                        `json:"candidates,omitempty"`
-	EnableDefaultSuggestions    *bool                       `json:"enableDefaultSuggestions,omitempty"`
-	DefaultSuggestionsConfig    *FeaturedSuggestionsOptions `json:"featuredSuggestionsConfig,omitempty"`
+	EnableFeaturedSuggestions   *bool                       `json:"enableFeaturedSuggestions,omitempty"`
+	FeaturedSuggestionsConfig   *FeaturedSuggestionsOptions `json:"featuredSuggestionsConfig,omitempty"`
 	EnableIndexSuggestions      *bool                       `json:"enableIndexSuggestions,omitempty"`
 }
 
@@ -757,10 +757,23 @@ func getValidInterval(interval *int, rangeValue RangeValue) int {
 	return normalizedInterval
 }
 
+func (query *Query) shouldExecuteQuery() bool {
+	// don't execute query if index suggestions are disabled
+	if query.Type == Suggestion &&
+		query.EnableIndexSuggestions != nil &&
+		!*query.EnableIndexSuggestions {
+		return false
+	}
+	if query.Execute != nil {
+		return *query.Execute
+	}
+	return true
+}
+
 func GetQueryIds(rsQuery RSQuery) []string {
 	var queryIds []string
 	for _, query := range rsQuery.Query {
-		if query.Execute == nil || *query.Execute {
+		if query.shouldExecuteQuery() {
 			queryIds = append(queryIds, *query.ID)
 		}
 	}
