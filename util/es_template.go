@@ -190,12 +190,12 @@ func SetDefaultIndexTemplate() error {
 		}`, settings, mappings)
 
 		defaultSettingIndex := fmt.Sprintf(`{
-			"index_patterns": [".*"],
+			"index_patterns": ["*"],
 			"template": {
 				"settings": %s,
 				"mappings": %s
 			},
-			"priority": 1
+			"priority": 10
 		}`, settings, mappings)
 
 		_, indexTemplateErr := GetClient7().IndexPutIndexTemplate("arc_index_template_v1").BodyString(defaultSettingIndex).Do(context.Background())
@@ -298,12 +298,12 @@ func SetSystemIndexTemplate() error {
 		}`, settings, mappings)
 
 		defaultSettingIndex := fmt.Sprintf(`{
-			"index_patterns": [".*"],
+			"index_patterns": [".actionableinsights*", ".analytics*", ".cache*", ".publickey*", ".pipelines*", ".pipeline_vars*", ".pipeline_logs*", ".pipeline_invocations*", ".permissions*", ".logs*", ".rules*", ".searchgrader*", ".searchrelevancy*", ".storedquery*", ".suggestions*", ".suggestions_preferences*", ".sync_preferences*", ".synonyms*", ".uibuilder_preferences*", ".user_sessions*", ".users*"],
 			"template": {
 				"settings": %s,
 				"mappings": %s
 			},
-			"priority": 2
+			"priority": 100
 		}`, settings, mappings)
 
 		_, indexTemplateErr := GetClient7().IndexPutIndexTemplate("system_index_template_v1").BodyString(defaultSettingIndex).Do(context.Background())
