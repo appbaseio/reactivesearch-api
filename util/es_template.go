@@ -182,16 +182,33 @@ func SetDefaultIndexTemplate() error {
 
 	version := GetVersion()
 	if version == 7 || version == 8 || version == 1 {
-		defaultSetting := fmt.Sprintf(`{
+		defaultSettingLegacy := fmt.Sprintf(`{
 			"index_patterns": ["*"],
 			"settings": %s,
 			"mappings": %s,
 			"order": 10
 		}`, settings, mappings)
-		_, err := GetClient7().IndexPutTemplate("arc_index_template_v1").BodyString(defaultSetting).Do(context.Background())
-		if err != nil {
-			log.Errorln("[SET USER INDEX TEMPLATE ERROR V7]", ": ", err)
-			return err
+
+		defaultSettingIndex := fmt.Sprintf(`{
+			"index_patterns": ["*"],
+			"template": {
+				"settings": %s,
+				"mappings": %s
+			},
+			"priority": 10
+		}`, settings, mappings)
+
+		_, indexTemplateErr := GetClient7().IndexPutIndexTemplate("rs_api_user_template_v2").BodyString(defaultSettingIndex).Do(context.Background())
+		if indexTemplateErr != nil {
+			// Try to create the template using IndexPutTemplate since Index template is
+			// supported from v7.8
+			log.Debug(fmt.Sprintf("Creating Index Template failed with error: %s, trying to create legacy template", indexTemplateErr))
+			_, err := GetClient7().IndexPutTemplate("rs_api_user_template_v2").BodyString(defaultSettingLegacy).Do(context.Background())
+
+			if err != nil {
+				log.Errorln("[SET USER INDEX TEMPLATE ERROR V7]", ": ", err)
+				return err
+			}
 		}
 	}
 
@@ -204,7 +221,7 @@ func SetDefaultIndexTemplate() error {
 			},
 			"order": 10
 		}`, settings, mappings)
-		_, err := GetClient6().IndexPutTemplate("arc_index_template_v1").BodyString(defaultSetting).Do(context.Background())
+		_, err := GetClient6().IndexPutTemplate("rs_api_user_template_v2").BodyString(defaultSetting).Do(context.Background())
 		if err != nil {
 			log.Errorln("[SET USER INDEX TEMPLATE ERROR V6]", ": ", err)
 			return err
@@ -273,16 +290,33 @@ func SetSystemIndexTemplate() error {
 
 	version := GetVersion()
 	if version == 7 || version == 8 || version == 1 {
-		defaultSetting := fmt.Sprintf(`{
+		defaultSettingLegacy := fmt.Sprintf(`{
 			"index_patterns": [".*"],
 			"settings": %s,
 			"mappings": %s,
 			"order": 20
 		}`, settings, mappings)
-		_, err := GetClient7().IndexPutTemplate("system_index_template_v1").BodyString(defaultSetting).Do(context.Background())
-		if err != nil {
-			log.Errorln("[SET SYSTEM INDEX TEMPLATE ERROR V7]", ": ", err)
-			return err
+
+		defaultSettingIndex := fmt.Sprintf(`{
+			"index_patterns": [".actionableinsights*", ".analytics*", ".cache*", ".publickey*", ".pipelines*", ".pipeline_vars*", ".pipeline_logs*", ".pipeline_invocations*", ".permissions*", ".logs*", ".rules*", ".searchgrader*", ".searchrelevancy*", ".storedquery*", ".suggestions*", ".suggestions_preferences*", ".sync_preferences*", ".synonyms*", ".uibuilder_preferences*", ".user_sessions*", ".users*"],
+			"template": {
+				"settings": %s,
+				"mappings": %s
+			},
+			"priority": 100
+		}`, settings, mappings)
+
+		_, indexTemplateErr := GetClient7().IndexPutIndexTemplate("rs_api_system_template_v2").BodyString(defaultSettingIndex).Do(context.Background())
+		if indexTemplateErr != nil {
+			// Try to create the template using IndexPutTemplate since Index template is
+			// supported from v7.8
+			log.Debug(fmt.Sprintf("Creating Index Template failed with error: %s, trying to create legacy template", indexTemplateErr))
+			_, err := GetClient7().IndexPutTemplate("rs_api_system_template_v2").BodyString(defaultSettingLegacy).Do(context.Background())
+
+			if err != nil {
+				log.Errorln("[SET SYSTEM INDEX TEMPLATE ERROR V7]", ": ", err)
+				return err
+			}
 		}
 	}
 
@@ -295,7 +329,7 @@ func SetSystemIndexTemplate() error {
 			},
 			"order": 10
 		}`, settings, mappings)
-		_, err := GetClient6().IndexPutTemplate("system_index_template_v1").BodyString(defaultSetting).Do(context.Background())
+		_, err := GetClient6().IndexPutTemplate("rs_api_system_template_v2").BodyString(defaultSetting).Do(context.Background())
 		if err != nil {
 			log.Errorln("[SET SYSTEM INDEX TEMPLATE ERROR V6]", ": ", err)
 			return err
