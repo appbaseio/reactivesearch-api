@@ -42,7 +42,7 @@ docker network create reactivesearch
 2. Start a single node Elasticsearch cluster locally
 
 ```sh
-docker run -d --rm --name elasticsearch -p 9200:9200 -p 9300:9300 --net=reactivesearch -e "discovery.type=single-node" -e "xpack.security.enabled=false" docker.elastic.co/elasticsearch/elasticsearch:8.1.2
+docker run -d --rm --name elasticsearch -p 9200:9200 -p 9300:9300 --net=reactivesearch -e "discovery.type=single-node" -e "xpack.security.enabled=false" docker.elastic.co/elasticsearch/elasticsearch:8.2.0
 ```
 
 > NOTE: It is advised to use `-e "xpack.security.enabled=false"` for local runs of ElasticSearch since otherwise ES is not available on :9200.
