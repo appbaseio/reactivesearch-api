@@ -71,12 +71,7 @@ func (r *QueryTranslate) search() http.HandlerFunc {
 			emptyResponses := make([]map[string]interface{}, 0)
 			queryIds := GetQueryIds(*rsAPIRequest)
 			for range queryIds {
-				emptyResponses = append(emptyResponses, map[string]interface{}{
-					"took": 0,
-					"hits": map[string]interface{}{
-						"hits": make([]interface{}, 0),
-					},
-				})
+				emptyResponses = append(emptyResponses, ES_MOCKED_RESPONSE)
 			}
 			// mock es response
 			marshalledRes, _ := json.Marshal(map[string]interface{}{
@@ -141,19 +136,14 @@ func TransformESResponse(response []byte, rsAPIRequest *RSQuery) ([]byte, error)
 
 	rsResponse := []byte(`{}`)
 
-	mockedRSResponse, _ := json.Marshal(map[string]interface{}{
-		"took": 0,
-		"hits": map[string]interface{}{
-			"hits": make([]interface{}, 0),
-		},
-	})
+	mockedRSResponse, _ := json.Marshal(ES_MOCKED_RESPONSE)
 	for _, query := range rsAPIRequest.Query {
 		if query.Type == Suggestion &&
 			query.EnableIndexSuggestions != nil &&
-			*query.EnableIndexSuggestions {
-			// mock empty response for suggestions
+			!*query.EnableIndexSuggestions {
+			// mock empty response for suggestions when index suggestions are disabled
 			rsResponseMocked, err := jsonparser.Set(rsResponse, []byte(mockedRSResponse), *query.ID)
-			response = rsResponseMocked
+			rsResponse = rsResponseMocked
 			if err != nil {
 				log.Errorln(logTag, ":", err)
 				return nil, errors.New("error updating response :" + err.Error())

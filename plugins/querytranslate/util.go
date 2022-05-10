@@ -25,6 +25,26 @@ import (
 	"golang.org/x/text/unicode/norm"
 )
 
+var ES_MOCKED_RESPONSE = map[string]interface{}{
+	"took":      0,
+	"timed_out": false,
+	"_shards": map[string]interface{}{
+		"total":      1,
+		"successful": 1,
+		"skipped":    0,
+		"failed":     0,
+	},
+	"hits": map[string]interface{}{
+		"total": map[string]interface{}{
+			"value":    0,
+			"relation": "eq",
+		},
+		"max_score": nil,
+		"hits":      make([]interface{}, 0),
+	},
+	"status": 200,
+}
+
 var RESERVED_KEYS_IN_RESPONSE = []string{"settings", "error"}
 
 // EXCEPTION_KEYS_IN_QUERY represents the keys which will not get copied while combining the queries using `react` prop
