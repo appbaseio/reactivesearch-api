@@ -280,6 +280,7 @@ const (
 	ElasticSearch Backend = iota
 	OpenSearch
 	MongoDB
+	Solr
 )
 
 // String returns the string representation
@@ -292,6 +293,8 @@ func (b Backend) String() string {
 		return "opensearch"
 	case MongoDB:
 		return "mongodb"
+	case Solr:
+		return "solr"
 	}
 	return ""
 }
@@ -311,6 +314,8 @@ func (b *Backend) UnmarshalJSON(bytes []byte) error {
 		*b = ElasticSearch
 	case MongoDB.String():
 		*b = MongoDB
+	case Solr.String():
+		*b = Solr
 	default:
 		return fmt.Errorf("invalid kNN backend passed: %s", knnBackend)
 	}
@@ -336,6 +341,7 @@ func (b Backend) JSONSchemaType() *jsonschema.Type {
 			ElasticSearch.String(),
 			OpenSearch.String(),
 			MongoDB.String(),
+			Solr.String(),
 		},
 	}
 }
