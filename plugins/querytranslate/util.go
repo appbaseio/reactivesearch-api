@@ -172,6 +172,11 @@ func (o QueryType) MarshalJSON() ([]byte, error) {
 	return json.Marshal(queryType)
 }
 
+type Err struct {
+	err  error
+	code int
+}
+
 type SortBy int
 
 const (

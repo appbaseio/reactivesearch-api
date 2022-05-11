@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net/http"
 
 	log "github.com/sirupsen/logrus"
 )
@@ -25,7 +26,7 @@ var RSToSolr = map[string]ConvertFunc{
 //
 // It is important to note that this method should only
 // be invoked if the backend is set to Solr.
-func validateRSToSolrKey(rsBody *[]Query) error {
+func validateRSToSolrKey(rsBody *[]Query) *Err {
 	// If there is any non empty key in the rsBody that
 	// is not present in RSToSolr map then we will have
 	// to throw an error to let the user know that the
@@ -38,7 +39,10 @@ func validateRSToSolrKey(rsBody *[]Query) error {
 		if marshalErr != nil {
 			errMsg := fmt.Sprint("error occurred while marshalling query to map to validate keys for solr conversion: ", marshalErr)
 			log.Errorln(logTag, ": ", errMsg)
-			return errors.New(errMsg)
+			return &Err{
+				err:  errors.New(errMsg),
+				code: http.StatusInternalServerError,
+			}
 		}
 
 		var queryAsMap map[string]interface{}
@@ -47,7 +51,10 @@ func validateRSToSolrKey(rsBody *[]Query) error {
 		if unmarshallErr != nil {
 			errMsg := fmt.Sprint("error while unmarshalling query to map to validate conversion of RS to Solr: ", unmarshallErr)
 			log.Errorln(logTag, ": ", errMsg)
-			return errors.New(errMsg)
+			return &Err{
+				err:  errors.New(errMsg),
+				code: http.StatusInternalServerError,
+			}
 		}
 
 		for key, _ := range queryAsMap {
@@ -57,7 +64,10 @@ func validateRSToSolrKey(rsBody *[]Query) error {
 				// We cannot allow this, so just raise an error.
 				errMsg := fmt.Sprintf("%s: key is not allowed since it is not supported by Solr", key)
 				log.Warnln(logTag, ": ", errMsg)
-				return errors.New(errMsg)
+				return &Err{
+					err:  errors.New(errMsg),
+					code: http.StatusBadRequest,
+				}
 			}
 		}
 

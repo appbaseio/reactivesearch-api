@@ -272,7 +272,7 @@ func queryTranslate(h http.HandlerFunc) http.HandlerFunc {
 			solrValidateErr := validateRSToSolrKey(&body.Query)
 			if solrValidateErr != nil {
 				log.Warnln(logTag, ": ", solrValidateErr)
-				telemetry.WriteBackErrorWithTelemetry(req, w, solrValidateErr.Error(), http.StatusBadRequest)
+				telemetry.WriteBackErrorWithTelemetry(req, w, solrValidateErr.err.Error(), solrValidateErr.code)
 				return
 			}
 		} else {
