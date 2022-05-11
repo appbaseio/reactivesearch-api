@@ -7,7 +7,9 @@ type ConvertFunc func(interface{}) string
 // RSToSolr contains a map of functions that will
 // convert the passed RS Query value to it's equivalent
 // Solr query.
-var RSToSolr = map[string]ConvertFunc{}
+var RSToSolr = map[string]ConvertFunc{
+	"id": func(id interface{}) string { return id.(string) },
+}
 
 // validateRSToSolrKey will make sure that all the
 // keys present in the reactivesearch request body
