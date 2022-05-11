@@ -260,9 +260,27 @@ func queryTranslate(h http.HandlerFunc) http.HandlerFunc {
 		}
 
 		// Translate query
-		msearchQuery, err := translateQuery(*body, iplookup.FromRequest(req))
+		//
+		// If the query is of type solr, it will be translated in a different way.
+		// else use the legacy way to parse the query.
+		var translateErr error
+		var msearchQuery string
+
+		if body.Settings != nil && body.Settings.Backend != nil && *body.Settings.Backend == Solr {
+			// If the backend is Solr, make sure only allowed keys are being
+			// passed in the request body.
+			solrValidateErr := validateRSToSolrKey(&body.Query)
+			if solrValidateErr != nil {
+				log.Warnln(logTag, ": ", solrValidateErr)
+				telemetry.WriteBackErrorWithTelemetry(req, w, solrValidateErr.Error(), http.StatusBadRequest)
+				return
+			}
+		} else {
+			msearchQuery, translateErr = translateQuery(*body, iplookup.FromRequest(req))
+		}
+
 		// log.Println("RS QUERY", msearchQuery)
-		if err != nil {
+		if translateErr != nil {
 			log.Errorln(logTag, ":", err)
 			telemetry.WriteBackErrorWithTelemetry(req, w, err.Error(), http.StatusBadRequest)
 			return
