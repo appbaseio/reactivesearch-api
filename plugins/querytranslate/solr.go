@@ -57,7 +57,7 @@ func validateRSToSolrKey(rsBody *[]Query) *Err {
 			}
 		}
 
-		for key, _ := range queryAsMap {
+		for key := range queryAsMap {
 			_, ok := RSToSolr[key]
 			if !ok {
 				// Key does not exist in RSToSolr but is passed
