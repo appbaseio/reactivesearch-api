@@ -101,6 +101,7 @@ type RecentSuggestionsOptions struct {
 	MinHits      *int                   `json:"minHits,omitempty"`
 	MinChars     *int                   `json:"minChars,omitempty"`
 	CustomEvents map[string]interface{} `json:"customEvents,omitempty"`
+	SectionLabel *string                `json:"sectionLabel,omitempty"`
 }
 
 // PopularSuggestionsOptions represents the options to configure popular suggestions
@@ -111,6 +112,7 @@ type PopularSuggestionsOptions struct {
 	MinChars     *int                   `json:"minChars,omitempty"`
 	MinCount     *int                   `json:"minCount,omitempty"`
 	CustomEvents map[string]interface{} `json:"customEvents,omitempty"`
+	SectionLabel *string                `json:"sectionLabel,omitempty"`
 }
 
 // DefaultSuggestionsOptions represents the options to configure default suggestions
@@ -334,7 +336,7 @@ func populateDefaultSuggestions(
 			}
 		}
 		// stores the normalized field value to match agains the normalized query value
-		fieldValue := normalizeValue(getTextFromHTML(docField.value))
+		fieldValue := normalizeValue(GetTextFromHTML(docField.value))
 		// TODO: This won't work on query synonyms, need to account for that
 		rankField := FindMatch(fieldValue, config.Value, config)
 		// helpful for debugging
@@ -454,7 +456,7 @@ func getPredictiveSuggestions(config SuggestionsConfig, suggestions *[]Suggestio
 	if config.Value != "" {
 		tags := getPredictiveSuggestionsTags(config.HighlightConfig)
 		for _, suggestion := range *suggestions {
-			fieldValues := strings.Split(normalizeValue(getTextFromHTML(suggestion.Label)), " ")
+			fieldValues := strings.Split(normalizeValue(GetTextFromHTML(suggestion.Label)), " ")
 			stemmedFvls := stemmedTokens(strings.Join(fieldValues, " "), language)
 			fvl := len(fieldValues)
 			normQuery := normalizeValue(config.Value)

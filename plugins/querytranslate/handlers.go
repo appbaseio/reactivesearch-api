@@ -288,8 +288,11 @@ func TransformESResponse(response []byte, rsAPIRequest *RSQuery) ([]byte, error)
 
 								// extract index suggestions
 								suggestions = append(suggestions, getIndexSuggestions(suggestionsConfig, rawHits)...)
-								if query.Size != nil {
+								if query.Size != nil &&
+									!(query.FeaturedSuggestionsConfig != nil &&
+										query.FeaturedSuggestionsConfig.FeaturedSuggestionsGroupId != nil) {
 									// fit suggestions to the max requested size
+									// Avoid for featured suggestions
 									if len(suggestions) > *query.Size {
 										suggestions = suggestions[:*query.Size]
 									}

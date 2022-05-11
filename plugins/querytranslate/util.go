@@ -1125,7 +1125,7 @@ func replaceDiacritics(query string) string {
 var p = bluemonday.StrictPolicy()
 
 // extracts the string from HTML tags
-func getTextFromHTML(body string) string {
+func GetTextFromHTML(body string) string {
 	// The policy can then be used to sanitize lots of input and it is safe to use the policy in multiple goroutines
 	html := p.Sanitize(
 		body,
