@@ -1170,7 +1170,7 @@ func getPlural(input *interface{}) *interface{} {
 
 // findMatch matches the user query against the field value to return scores and matched tokens
 // This supports fuzzy matching in addition to normalized matching (i.e. after stopwords removal and stemming)
-func findMatch(fieldValueRaw string, userQueryRaw string, config SuggestionsConfig) RankField {
+func FindMatch(fieldValueRaw string, userQueryRaw string, config SuggestionsConfig) RankField {
 	// remove stopwords from fieldValue and userQuery
 	fieldValue := removeStopwords(fieldValueRaw, config)
 	userQuery := removeStopwords(userQueryRaw, config)

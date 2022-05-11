@@ -336,7 +336,7 @@ func populateDefaultSuggestions(
 		// stores the normalized field value to match agains the normalized query value
 		fieldValue := normalizeValue(getTextFromHTML(docField.value))
 		// TODO: This won't work on query synonyms, need to account for that
-		rankField := findMatch(fieldValue, config.Value, config)
+		rankField := FindMatch(fieldValue, config.Value, config)
 		// helpful for debugging
 		// fmt.Println("query: ", config.Value, ", field value: ", fieldValue, ", match score: ", rankField.score, ", matched tokens: ", rankField.matchedTokens)
 		suggestion := SuggestionHIT{
