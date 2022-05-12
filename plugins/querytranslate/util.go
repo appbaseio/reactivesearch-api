@@ -1033,6 +1033,13 @@ func normalizeQueryValue(input *interface{}) (*interface{}, error) {
 	return &outputValue, nil
 }
 
+// NormalizeQueryValue is A wrapper around normalizeValue to handle
+// value transformation for search, suggestion types of queries
+// at query generation time
+func NormalizeQueryValue(input *interface{}) (*interface{}, error) {
+	return normalizeQueryValue(input)
+}
+
 // Removes the extra spaces from a string
 func removeSpaces(str string) string {
 	return strings.Join(strings.Fields(str), " ")
