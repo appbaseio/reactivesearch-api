@@ -40,8 +40,8 @@ func ValidateRSToSolrKey(rsBody *[]Query) *Err {
 			errMsg := fmt.Sprint("error occurred while marshalling query to map to validate keys for solr conversion: ", marshalErr)
 			log.Errorln(logTag, ": ", errMsg)
 			return &Err{
-				err:  errors.New(errMsg),
-				code: http.StatusInternalServerError,
+				Err:  errors.New(errMsg),
+				Code: http.StatusInternalServerError,
 			}
 		}
 
@@ -65,8 +65,8 @@ func ValidateRSToSolrKey(rsBody *[]Query) *Err {
 				errMsg := fmt.Sprintf("%s: key is not allowed since it is not supported by Solr", key)
 				log.Warnln(logTag, ": ", errMsg)
 				return &Err{
-					err:  errors.New(errMsg),
-					code: http.StatusBadRequest,
+					Err:  errors.New(errMsg),
+					Code: http.StatusBadRequest,
 				}
 			}
 		}

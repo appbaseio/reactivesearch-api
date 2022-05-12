@@ -173,8 +173,8 @@ func (o QueryType) MarshalJSON() ([]byte, error) {
 }
 
 type Err struct {
-	err  error
-	code int
+	Err  error
+	Code int
 }
 
 type SortBy int
