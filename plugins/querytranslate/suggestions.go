@@ -115,12 +115,17 @@ type PopularSuggestionsOptions struct {
 	SectionLabel *string                `json:"sectionLabel,omitempty"`
 }
 
-// DefaultSuggestionsOptions represents the options to configure default suggestions
+// FeaturedSuggestionsOptions represents the options to configure default suggestions
 type FeaturedSuggestionsOptions struct {
 	FeaturedSuggestionsGroupId   *string   `json:"featuredSuggestionsGroupId,omitempty"`
 	VisibleSuggestionsPerSection *int      `json:"visibleSuggestionsPerSection,omitempty"`
 	MaxSuggestionsPerSection     *int      `json:"maxSuggestionsPerSection,omitempty"`
 	SectionsOrder                *[]string `json:"sectionsOrder,omitempty"`
+}
+
+// IndexSuggestionsOptions represents the options to configure index suggestions
+type IndexSuggestionsOptions struct {
+	SectionLabel *string `json:"sectionLabel,omitempty"`
 }
 
 // DocField contains properties of the field and the doc it belongs to
@@ -165,6 +170,7 @@ type SuggestionsConfig struct {
 	HighlightConfig             *map[string]interface{}
 	CategoryField               *string
 	Language                    *string
+	IndexSuggestionsConfig      *IndexSuggestionsOptions
 }
 
 // getIndexSuggestions gets the index suggestions based on user query config and search engine response
@@ -339,6 +345,12 @@ func populateDefaultSuggestions(
 		fieldValue := normalizeValue(GetTextFromHTML(docField.value))
 		// TODO: This won't work on query synonyms, need to account for that
 		rankField := FindMatch(fieldValue, config.Value, config)
+
+		sectionId := "index"
+		var sectionLabel *string
+		if config.IndexSuggestionsConfig != nil {
+			sectionLabel = config.IndexSuggestionsConfig.SectionLabel
+		}
 		// helpful for debugging
 		// fmt.Println("query: ", config.Value, ", field value: ", fieldValue, ", match score: ", rankField.score, ", matched tokens: ", rankField.matchedTokens)
 		suggestion := SuggestionHIT{
@@ -350,10 +362,12 @@ func populateDefaultSuggestions(
 			RSScore:       rankField.score,
 			MatchedTokens: rankField.matchedTokens,
 			// ES response properties
-			Id:     docField.rawHit.Id,
-			Index:  &docField.rawHit.Index,
-			Source: docField.rawHit.Source,
-			Score:  docField.rawHit.Score,
+			Id:           docField.rawHit.Id,
+			Index:        &docField.rawHit.Index,
+			Source:       docField.rawHit.Source,
+			Score:        docField.rawHit.Score,
+			SectionId:    &sectionId,
+			SectionLabel: sectionLabel,
 		}
 
 		*labelsList = append(*labelsList, parseSuggestionLabel(docField.value, config))

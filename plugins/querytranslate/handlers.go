@@ -30,7 +30,6 @@ func (r *QueryTranslate) search() http.HandlerFunc {
 			return
 		}
 		defer req.Body.Close()
-		log.Println("REQUEST BODY", reqBody)
 		rsAPIRequest, err := FromContext(req.Context())
 		if err != nil {
 			msg := "error occurred while retrieving request body from context"
@@ -64,22 +63,7 @@ func (r *QueryTranslate) search() http.HandlerFunc {
 			}
 			esResponseBody = httpRes.Body
 			responseStatusCode = httpRes.StatusCode
-		} else {
-			// mock ES response for empty requests
-			// for example, suggestion type of requests can disable index suggestions
-			// endpoint should retrun mocked response so middlewares can work to apply featured suggestions
-			emptyResponses := make([]map[string]interface{}, 0)
-			queryIds := GetQueryIds(*rsAPIRequest)
-			for range queryIds {
-				emptyResponses = append(emptyResponses, ES_MOCKED_RESPONSE)
-			}
-			// mock es response
-			marshalledRes, _ := json.Marshal(map[string]interface{}{
-				"responses": emptyResponses,
-			})
-			esResponseBody = marshalledRes
 		}
-
 		rsResponse, err := TransformESResponse(esResponseBody, rsAPIRequest)
 		if err != nil {
 			util.WriteBackError(w, err.Error(), http.StatusInternalServerError)
@@ -228,6 +212,7 @@ func TransformESResponse(response []byte, rsAPIRequest *RSQuery) ([]byte, error)
 									HighlightField:              query.HighlightField,
 									HighlightConfig:             query.HighlightConfig,
 									Language:                    query.SearchLanguage,
+									IndexSuggestionsConfig:      query.IndexSuggestionsConfig,
 								}
 
 								var rawHits []ESDoc
@@ -275,11 +260,18 @@ func TransformESResponse(response []byte, rsAPIRequest *RSQuery) ([]byte, error)
 											key, ok := v.Key.(string)
 											if ok {
 												count := int(v.DocCount)
+												sectionId := "index"
+												var sectionLabel *string
+												if query.IndexSuggestionsConfig != nil {
+													sectionLabel = query.IndexSuggestionsConfig.SectionLabel
+												}
 												suggestions = append(suggestions, SuggestionHIT{
-													Label:    valueAsString + " in " + key,
-													Value:    valueAsString,
-													Count:    &count,
-													Category: &key,
+													Label:        valueAsString + " in " + key,
+													Value:        valueAsString,
+													Count:        &count,
+													Category:     &key,
+													SectionId:    &sectionId,
+													SectionLabel: sectionLabel,
 												})
 											}
 										}

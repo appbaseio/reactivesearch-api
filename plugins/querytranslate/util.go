@@ -427,6 +427,7 @@ type Query struct {
 	EnableFeaturedSuggestions   *bool                       `json:"enableFeaturedSuggestions,omitempty"`
 	FeaturedSuggestionsConfig   *FeaturedSuggestionsOptions `json:"featuredSuggestionsConfig,omitempty"`
 	EnableIndexSuggestions      *bool                       `json:"enableIndexSuggestions,omitempty"`
+	IndexSuggestionsConfig      *IndexSuggestionsOptions    `json:"indexSuggestionsConfig,omitempty"`
 }
 
 type DataField struct {
