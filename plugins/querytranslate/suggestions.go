@@ -1,6 +1,7 @@
 package querytranslate
 
 import (
+	"encoding/json"
 	"fmt"
 	"sort"
 	"strings"
@@ -8,11 +9,66 @@ import (
 	"github.com/appbaseio/reactivesearch-api/util"
 )
 
+type ActionType int
+
+const (
+	Navigate ActionType = iota
+	Function
+)
+
+// String is the implementation of Stringer interface that returns the string representation of ActionType type.
+func (o ActionType) String() string {
+	return [...]string{
+		"navigate",
+		"function",
+	}[o]
+}
+
+// UnmarshalJSON is the implementation of the Unmarshaler interface for unmarshaling ActionType type.
+func (o *ActionType) UnmarshalJSON(bytes []byte) error {
+	var sectionType string
+	err := json.Unmarshal(bytes, &sectionType)
+	if err != nil {
+		return err
+	}
+	switch sectionType {
+	case Navigate.String():
+		*o = Navigate
+	case Function.String():
+		*o = Function
+	default:
+		return fmt.Errorf("invalid suggestion type encountered: %v", sectionType)
+	}
+	return nil
+}
+
+// MarshalJSON is the implementation of the Marshaler interface for marshaling ActionType type.
+func (o ActionType) MarshalJSON() ([]byte, error) {
+	var sectionType string
+	switch o {
+	case Navigate:
+		sectionType = Navigate.String()
+	case Function:
+		sectionType = Function.String()
+	default:
+		return nil, fmt.Errorf("invalid suggestion type encountered: %v", o)
+	}
+	return json.Marshal(sectionType)
+}
+
 // SuggestionHIT represents the structure of the suggestion object in RS API response
 type SuggestionHIT struct {
-	Value         string         `json:"value"`
-	Label         string         `json:"label"`
-	URL           *string        `json:"url"`
+	Value string  `json:"value"`
+	Label string  `json:"label"`
+	URL   *string `json:"url"`
+	// Default Suggestions properties
+	SectionLabel  *string        `json:"sectionLabel"`
+	SectionId     *string        `json:"sectionId"`
+	Description   *string        `json:"description"`
+	Action        *ActionType    `json:"action"`
+	SubAction     *string        `json:"subAction"`
+	Icon          *string        `json:"icon"`
+	IconURL       *string        `json:"iconURL"`
 	Type          SuggestionType `json:"_suggestion_type"`
 	Category      *string        `json:"_category"`
 	Count         *int           `json:"_count"`
@@ -45,6 +101,7 @@ type RecentSuggestionsOptions struct {
 	MinHits      *int                   `json:"minHits,omitempty"`
 	MinChars     *int                   `json:"minChars,omitempty"`
 	CustomEvents map[string]interface{} `json:"customEvents,omitempty"`
+	SectionLabel *string                `json:"sectionLabel,omitempty"`
 }
 
 // PopularSuggestionsOptions represents the options to configure popular suggestions
@@ -55,6 +112,20 @@ type PopularSuggestionsOptions struct {
 	MinChars     *int                   `json:"minChars,omitempty"`
 	MinCount     *int                   `json:"minCount,omitempty"`
 	CustomEvents map[string]interface{} `json:"customEvents,omitempty"`
+	SectionLabel *string                `json:"sectionLabel,omitempty"`
+}
+
+// FeaturedSuggestionsOptions represents the options to configure default suggestions
+type FeaturedSuggestionsOptions struct {
+	FeaturedSuggestionsGroupId   *string   `json:"featuredSuggestionsGroupId,omitempty"`
+	VisibleSuggestionsPerSection *int      `json:"visibleSuggestionsPerSection,omitempty"`
+	MaxSuggestionsPerSection     *int      `json:"maxSuggestionsPerSection,omitempty"`
+	SectionsOrder                *[]string `json:"sectionsOrder,omitempty"`
+}
+
+// IndexSuggestionsOptions represents the options to configure index suggestions
+type IndexSuggestionsOptions struct {
+	SectionLabel *string `json:"sectionLabel,omitempty"`
 }
 
 // DocField contains properties of the field and the doc it belongs to
@@ -99,6 +170,7 @@ type SuggestionsConfig struct {
 	HighlightConfig             *map[string]interface{}
 	CategoryField               *string
 	Language                    *string
+	IndexSuggestionsConfig      *IndexSuggestionsOptions
 }
 
 // getIndexSuggestions gets the index suggestions based on user query config and search engine response
@@ -270,9 +342,15 @@ func populateDefaultSuggestions(
 			}
 		}
 		// stores the normalized field value to match agains the normalized query value
-		fieldValue := normalizeValue(getTextFromHTML(docField.value))
+		fieldValue := normalizeValue(GetTextFromHTML(docField.value))
 		// TODO: This won't work on query synonyms, need to account for that
-		rankField := findMatch(fieldValue, config.Value, config)
+		rankField := FindMatch(fieldValue, config.Value, config)
+
+		sectionId := "index"
+		var sectionLabel *string
+		if config.IndexSuggestionsConfig != nil {
+			sectionLabel = config.IndexSuggestionsConfig.SectionLabel
+		}
 		// helpful for debugging
 		// fmt.Println("query: ", config.Value, ", field value: ", fieldValue, ", match score: ", rankField.score, ", matched tokens: ", rankField.matchedTokens)
 		suggestion := SuggestionHIT{
@@ -284,10 +362,12 @@ func populateDefaultSuggestions(
 			RSScore:       rankField.score,
 			MatchedTokens: rankField.matchedTokens,
 			// ES response properties
-			Id:     docField.rawHit.Id,
-			Index:  &docField.rawHit.Index,
-			Source: docField.rawHit.Source,
-			Score:  docField.rawHit.Score,
+			Id:           docField.rawHit.Id,
+			Index:        &docField.rawHit.Index,
+			Source:       docField.rawHit.Source,
+			Score:        docField.rawHit.Score,
+			SectionId:    &sectionId,
+			SectionLabel: sectionLabel,
 		}
 
 		*labelsList = append(*labelsList, parseSuggestionLabel(docField.value, config))
@@ -390,7 +470,7 @@ func getPredictiveSuggestions(config SuggestionsConfig, suggestions *[]Suggestio
 	if config.Value != "" {
 		tags := getPredictiveSuggestionsTags(config.HighlightConfig)
 		for _, suggestion := range *suggestions {
-			fieldValues := strings.Split(normalizeValue(getTextFromHTML(suggestion.Label)), " ")
+			fieldValues := strings.Split(normalizeValue(GetTextFromHTML(suggestion.Label)), " ")
 			stemmedFvls := stemmedTokens(strings.Join(fieldValues, " "), language)
 			fvl := len(fieldValues)
 			normQuery := normalizeValue(config.Value)
