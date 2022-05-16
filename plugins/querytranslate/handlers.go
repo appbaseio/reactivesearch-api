@@ -120,6 +120,10 @@ func TransformESResponse(response []byte, rsAPIRequest *RSQuery) ([]byte, error)
 
 	rsResponse := []byte(`{}`)
 
+	if response == nil {
+		response = []byte(`{ "took": 0 }`)
+	}
+
 	mockedRSResponse, _ := json.Marshal(ES_MOCKED_RESPONSE)
 	for _, query := range rsAPIRequest.Query {
 		if query.Type == Suggestion &&
