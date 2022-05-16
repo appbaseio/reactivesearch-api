@@ -126,7 +126,7 @@ func TransformESResponse(response []byte, rsAPIRequest *RSQuery) ([]byte, error)
 			query.EnableIndexSuggestions != nil &&
 			!*query.EnableIndexSuggestions {
 			// mock empty response for suggestions when index suggestions are disabled
-			rsResponseMocked, err := jsonparser.Set(rsResponse, []byte(mockedRSResponse), *query.ID)
+			rsResponseMocked, err := jsonparser.Set(rsResponse, mockedRSResponse, *query.ID)
 			rsResponse = rsResponseMocked
 			if err != nil {
 				log.Errorln(logTag, ":", err)
