@@ -120,13 +120,17 @@ func TransformESResponse(response []byte, rsAPIRequest *RSQuery) ([]byte, error)
 
 	rsResponse := []byte(`{}`)
 
+	if response == nil {
+		response = []byte(`{ "took": 0 }`)
+	}
+
 	mockedRSResponse, _ := json.Marshal(ES_MOCKED_RESPONSE)
 	for _, query := range rsAPIRequest.Query {
 		if query.Type == Suggestion &&
 			query.EnableIndexSuggestions != nil &&
 			!*query.EnableIndexSuggestions {
 			// mock empty response for suggestions when index suggestions are disabled
-			rsResponseMocked, err := jsonparser.Set(rsResponse, []byte(mockedRSResponse), *query.ID)
+			rsResponseMocked, err := jsonparser.Set(rsResponse, mockedRSResponse, *query.ID)
 			rsResponse = rsResponseMocked
 			if err != nil {
 				log.Errorln(logTag, ":", err)
