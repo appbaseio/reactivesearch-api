@@ -39,6 +39,12 @@ func (query *Query) getRangeValue(value interface{}) (*RangeValue, error) {
 	return &rangeValue, nil
 }
 
+// GetRangeValue is a wrapper on top of getRangeValue to extract
+// the value in a rangeValue type.
+func (query *Query) GetRangeValue(value interface{}) (*RangeValue, error) {
+	return query.getRangeValue(value)
+}
+
 func (query *Query) getRangeQuery(value interface{}) (*map[string]interface{}, error) {
 	rangeValue, err := query.getRangeValue(value)
 
