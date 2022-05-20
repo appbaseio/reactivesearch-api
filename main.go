@@ -41,17 +41,18 @@ import (
 const logTag = "[cmd]"
 
 var (
-	envFile         string
-	logMode         string
-	licenseKeyPath  string
-	listPlugins     bool
-	address         string
-	port            int
-	pluginDir       string
-	https           bool
-	cpuprofile      bool
-	memprofile      bool
-	enableTelemetry string
+	envFile            string
+	logMode            string
+	licenseKeyPath     string
+	listPlugins        bool
+	disableHealthCheck bool
+	address            string
+	port               int
+	pluginDir          string
+	https              bool
+	cpuprofile         bool
+	memprofile         bool
+	enableTelemetry    string
 	// Version Reactivesearch version set during build
 	Version string
 	// PlanRefreshInterval can be used to define the custom interval to refresh the plan
@@ -110,6 +111,7 @@ type LicenseData struct {
 }
 
 func init() {
+	flag.BoolVar(&disableHealthCheck, "disable-health-check", false, "Disable health check cron job")
 	flag.StringVar(&enableTelemetry, "enable-telemetry", "", "Set as `false` to disable telemetry")
 	flag.StringVar(&envFile, "env", ".env", "Path to file with environment variables to load in KEY=VALUE format")
 	flag.StringVar(&logMode, "log", "", "Define to change the default log mode(error), other options are: debug(most verbose) and info")
@@ -537,12 +539,14 @@ func main() {
 	// server starts.
 	// In other words, the server should start withing 10 seconds
 	// of running the below code.
-	log.Info(logTag, ": setting up router health check")
-	routerHealthCheck := plugins.RouterHealthCheckInstance()
-	routerHealthCheck.SetAttrs(port, address, https)
-	routerHealthCronJob := cron.New()
-	routerHealthCronJob.AddFunc("@every 10s", routerHealthCheck.Check)
-	routerHealthCronJob.Start()
+	if !disableHealthCheck {
+		log.Info(logTag, ": setting up router health check")
+		routerHealthCheck := plugins.RouterHealthCheckInstance()
+		routerHealthCheck.SetAttrs(port, address, https)
+		routerHealthCronJob := cron.New()
+		routerHealthCronJob.AddFunc("@every 10s", routerHealthCheck.Check)
+		routerHealthCronJob.Start()
+	}
 
 	// Finally start the server
 	routerSwapper.StartServer()
