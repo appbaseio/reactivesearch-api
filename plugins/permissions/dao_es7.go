@@ -44,7 +44,7 @@ func (es *elasticsearch) getRawOwnerPermissionsEs7(ctx context.Context, owner st
 	resp, err := util.GetClient7().Search().
 		Index(es.indexName).
 		Query(es7.NewTermQuery("owner.keyword", owner)).
-		Size(10000).
+		Size(1000).
 		Do(ctx)
 	if err != nil {
 		return nil, err
@@ -73,7 +73,7 @@ func (es *elasticsearch) getPermissionsEs7(ctx context.Context, indices []string
 	resp, err := util.GetClient7().Search().
 		Index(es.indexName).
 		Query(query).
-		Size(10000).
+		Size(1000).
 		Do(ctx)
 	if err != nil {
 		return nil, err

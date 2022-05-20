@@ -47,14 +47,6 @@ docker run -d --rm --name elasticsearch -p 9200:9200 -p 9300:9300 --net=reactive
 
 > NOTE: It is advised to use `-e "xpack.security.enabled=false"` for local runs of ElasticSearch since otherwise ES is not available on :9200.
 
-OR
-
-Alternative to using Elasticsearch, you can also start a single node OpenSearch cluster locally
-
-```sh
-docker run --name opensearch --rm -d -p 9200:9200 -e http.port=9200 -e discovery.type=single-node -e http.max_content_length=10MB -e http.cors.enabled=true -e http.cors.allow-origin=\* -e http.cors.allow-headers=X-Requested-With,X-Auth-Token,Content-Type,Content-Length,Authorization -e http.cors.allow-credentials=true --net=reactivesearch opensearchproject/opensearch:1.3.2
-```
-
 3. Start ReactiveSearch locally
 
 ```sh

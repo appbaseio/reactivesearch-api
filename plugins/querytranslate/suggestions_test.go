@@ -248,7 +248,6 @@ func TestIndexSuggestions(t *testing.T) {
 		}, rawHits)
 		score := float64(0)
 		id := "1"
-		sectionId := "index"
 		So(suggestions, ShouldResemble, []SuggestionHIT{
 			{
 				Label:         "<b>Rabindranath Tagore Hall</b>",
@@ -261,7 +260,6 @@ func TestIndexSuggestions(t *testing.T) {
 				Source: map[string]interface{}{
 					"title": "Rabindranath Tagore Hall",
 				},
-				SectionId: &sectionId,
 			},
 		})
 	})

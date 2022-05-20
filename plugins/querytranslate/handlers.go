@@ -30,6 +30,27 @@ func (r *QueryTranslate) search() http.HandlerFunc {
 			return
 		}
 		defer req.Body.Close()
+		reqURL := "/" + vars["index"] + "/_msearch"
+		start := time.Now()
+		httpRes, err := makeESRequest(ctx, reqURL, http.MethodPost, reqBody)
+		if err != nil {
+			msg := err.Error()
+			log.Errorln(logTag, ":", err)
+			// Response can be nil sometimes
+			if httpRes != nil {
+				util.WriteBackError(w, msg, httpRes.StatusCode)
+				return
+			}
+			util.WriteBackError(w, msg, http.StatusInternalServerError)
+			return
+		}
+		log.Println("TIME TAKEN BY ES:", time.Since(start))
+		if httpRes.StatusCode > 500 {
+			msg := "unable to connect to the upstream Elasticsearch cluster"
+			log.Errorln(logTag, ":", msg)
+			util.WriteBackError(w, msg, httpRes.StatusCode)
+			return
+		}
 		rsAPIRequest, err := FromContext(req.Context())
 		if err != nil {
 			msg := "error occurred while retrieving request body from context"
@@ -37,34 +58,8 @@ func (r *QueryTranslate) search() http.HandlerFunc {
 			util.WriteBackError(w, msg, http.StatusInternalServerError)
 			return
 		}
-		var esResponseBody []byte
-		responseStatusCode := http.StatusOK
-		if len(reqBody) != 0 {
-			reqURL := "/" + vars["index"] + "/_msearch"
-			start := time.Now()
-			httpRes, err := makeESRequest(ctx, reqURL, http.MethodPost, reqBody)
-			if err != nil {
-				msg := err.Error()
-				log.Errorln(logTag, ":", err)
-				// Response can be nil sometimes
-				if httpRes != nil {
-					util.WriteBackError(w, msg, httpRes.StatusCode)
-					return
-				}
-				util.WriteBackError(w, msg, http.StatusInternalServerError)
-				return
-			}
-			log.Println("TIME TAKEN BY ES:", time.Since(start))
-			if httpRes.StatusCode > 500 {
-				msg := "unable to connect to the upstream Elasticsearch cluster"
-				log.Errorln(logTag, ":", msg)
-				util.WriteBackError(w, msg, httpRes.StatusCode)
-				return
-			}
-			esResponseBody = httpRes.Body
-			responseStatusCode = httpRes.StatusCode
-		}
-		rsResponse, err := TransformESResponse(esResponseBody, rsAPIRequest)
+
+		rsResponse, err := TransformESResponse(httpRes.Body, rsAPIRequest)
 		if err != nil {
 			util.WriteBackError(w, err.Error(), http.StatusInternalServerError)
 			return
@@ -92,10 +87,10 @@ func (r *QueryTranslate) search() http.HandlerFunc {
 		}
 		// if status code is not 200 write rsResponse otherwise return raw response from ES
 		// avoid copy for performance reasons
-		if responseStatusCode == http.StatusOK {
-			util.WriteBackRaw(w, rsResponse, responseStatusCode)
+		if httpRes.StatusCode == http.StatusOK {
+			util.WriteBackRaw(w, rsResponse, httpRes.StatusCode)
 		} else {
-			util.WriteBackRaw(w, esResponseBody, responseStatusCode)
+			util.WriteBackRaw(w, httpRes.Body, httpRes.StatusCode)
 		}
 	}
 }
@@ -119,25 +114,6 @@ func TransformESResponse(response []byte, rsAPIRequest *RSQuery) ([]byte, error)
 	queryIds := GetQueryIds(*rsAPIRequest)
 
 	rsResponse := []byte(`{}`)
-
-	if response == nil {
-		response = []byte(`{ "took": 0 }`)
-	}
-
-	mockedRSResponse, _ := json.Marshal(ES_MOCKED_RESPONSE)
-	for _, query := range rsAPIRequest.Query {
-		if query.Type == Suggestion &&
-			query.EnableIndexSuggestions != nil &&
-			!*query.EnableIndexSuggestions {
-			// mock empty response for suggestions when index suggestions are disabled
-			rsResponseMocked, err := jsonparser.Set(rsResponse, mockedRSResponse, *query.ID)
-			rsResponse = rsResponseMocked
-			if err != nil {
-				log.Errorln(logTag, ":", err)
-				return nil, errors.New("error updating response :" + err.Error())
-			}
-		}
-	}
 
 	took, valueType1, _, err := jsonparser.Get(response, "took")
 	// ignore not exist error
@@ -216,7 +192,6 @@ func TransformESResponse(response []byte, rsAPIRequest *RSQuery) ([]byte, error)
 									HighlightField:              query.HighlightField,
 									HighlightConfig:             query.HighlightConfig,
 									Language:                    query.SearchLanguage,
-									IndexSuggestionsConfig:      query.IndexSuggestionsConfig,
 								}
 
 								var rawHits []ESDoc
@@ -264,18 +239,11 @@ func TransformESResponse(response []byte, rsAPIRequest *RSQuery) ([]byte, error)
 											key, ok := v.Key.(string)
 											if ok {
 												count := int(v.DocCount)
-												sectionId := "index"
-												var sectionLabel *string
-												if query.IndexSuggestionsConfig != nil {
-													sectionLabel = query.IndexSuggestionsConfig.SectionLabel
-												}
 												suggestions = append(suggestions, SuggestionHIT{
-													Label:        valueAsString + " in " + key,
-													Value:        valueAsString,
-													Count:        &count,
-													Category:     &key,
-													SectionId:    &sectionId,
-													SectionLabel: sectionLabel,
+													Label:    valueAsString + " in " + key,
+													Value:    valueAsString,
+													Count:    &count,
+													Category: &key,
 												})
 											}
 										}
@@ -284,11 +252,8 @@ func TransformESResponse(response []byte, rsAPIRequest *RSQuery) ([]byte, error)
 
 								// extract index suggestions
 								suggestions = append(suggestions, getIndexSuggestions(suggestionsConfig, rawHits)...)
-								if query.Size != nil &&
-									!(query.FeaturedSuggestionsConfig != nil &&
-										query.FeaturedSuggestionsConfig.FeaturedSuggestionsGroupId != nil) {
+								if query.Size != nil {
 									// fit suggestions to the max requested size
-									// Avoid for featured suggestions
 									if len(suggestions) > *query.Size {
 										suggestions = suggestions[:*query.Size]
 									}
