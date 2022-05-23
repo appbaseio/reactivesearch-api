@@ -539,12 +539,14 @@ func main() {
 	// server starts.
 	// In other words, the server should start withing 10 seconds
 	// of running the below code.
-	log.Info(logTag, ": setting up router health check")
-	routerHealthCheck := plugins.RouterHealthCheckInstance()
-	routerHealthCheck.SetAttrs(port, address, https)
-	routerHealthCronJob := cron.New()
-	routerHealthCronJob.AddFunc("@every 10s", routerHealthCheck.Check)
-	routerHealthCronJob.Start()
+	if !disableHealthCheck {
+		log.Info(logTag, ": setting up router health check")
+		routerHealthCheck := plugins.RouterHealthCheckInstance()
+		routerHealthCheck.SetAttrs(port, address, https)
+		routerHealthCronJob := cron.New()
+		routerHealthCronJob.AddFunc("@every 10s", routerHealthCheck.Check)
+		routerHealthCronJob.Start()
+	}
 
 	// Finally start the server
 	routerSwapper.StartServer()
