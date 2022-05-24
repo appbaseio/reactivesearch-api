@@ -69,6 +69,7 @@ func translateQuery(rsQuery RSQuery, userIP string) (string, error) {
 				return "", errors.New("you're using .synonyms suffix fields in the 'dataField' property but 'enableSynonyms' property is set to `false`. We recommend removing these fields from the Search Settings UI / API or set enableSynonyms to true")
 			}
 		}
+
 	}
 
 	// If no backend is passed for kNN, set it as `elasticsearch`
@@ -78,7 +79,7 @@ func translateQuery(rsQuery RSQuery, userIP string) (string, error) {
 	}
 
 	for _, query := range rsQuery.Query {
-		if query.Execute == nil || *query.Execute {
+		if query.shouldExecuteQuery() {
 			translatedQuery, queryOptions, isGeneratedByValue, translateError := query.getQuery(rsQuery)
 			if translateError != nil {
 				return mSearchQuery, translateError
