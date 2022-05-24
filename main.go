@@ -213,7 +213,8 @@ func main() {
 	// Summarizing how we're detecting a container runtime:
 	// For Docker runtime, we check for the presence of `lxc` or `docker` or `kubepods` string in the output of /proc/1/cgroup, https://stackoverflow.com/a/23558932/1221677
 	// For Podman (OCI) runtime, we check for the presence of /run/.containerenv, http://docs.podman.io/en/latest/markdown/podman-run.1.html
-	cmdToDetectRunTime := exec.Command("/bin/sh", "-c", "if [[ -f /.dockerenv ]] || [[ -f /run/.containerenv ]] || grep -Eq '(lxc|docker|kubepods)' /proc/1/cgroup; then echo True; else echo False; fi")
+	// For Docker on Mac and several other non-linux runtimes, we check for INODE count > 2: https://stackoverflow.com/a/51688023/1221677
+	cmdToDetectRunTime := exec.Command("/bin/sh", "-c", "if [[ -f /.dockerenv ]] || [[ -f /run/.containerenv ]] || [ `ls -ali / | sed '2!d' | awk {'print $1'}` != '2' ] || grep -Eq '(lxc|docker|kubepods)' /proc/1/cgroup; then echo True; else echo False; fi")
 	var output bytes.Buffer
 	cmdToDetectRunTime.Stdout = &output
 	runtimeDetectErr := cmdToDetectRunTime.Run()
@@ -225,7 +226,6 @@ func main() {
 	if parsedOutput == "True" {
 		isRunTimeDocker = true
 	}
-
 	if isRunTimeDocker {
 		log.Println(logTag, "Runtime detected as docker or OCI container ...")
 		cmd := exec.Command("/bin/sh", "-c", "head -1 /proc/self/cgroup|cut -d/ -f3")
@@ -235,9 +235,6 @@ func main() {
 		id := out.String()
 		if err != nil {
 			log.Fatal(logTag, ": runtime detected as docker or OCI container: ", err)
-		}
-		if id == "" {
-			log.Fatal(logTag, ": runtime detected as docker or OCI container: machineid can not be empty")
 		}
 		h := hmac.New(sha256.New, []byte(strings.TrimSuffix(id, "\n")))
 		h.Write([]byte("reactivesearch"))
