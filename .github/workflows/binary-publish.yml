@@ -46,7 +46,7 @@ jobs:
           command_timeout: 3600s
           envs: VERSION
           script: |
-            sh build.sh ${VERSION} > build.log 2>&1 &
+            sh build.sh ${VERSION}
   
   send-packer-event:
     name: Send Packer Event
