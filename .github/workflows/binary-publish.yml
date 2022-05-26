@@ -2,6 +2,7 @@ name: build binary
 on:
   release:
     types: [published]
+
 jobs:
   build:
     name: Build
@@ -46,3 +47,11 @@ jobs:
           envs: VERSION
           script: |
             sh build.sh ${VERSION} > build.log 2>&1 &
+  
+  send-packer-event:
+    name: Send Packer Event
+    runs-on: ubuntu-latest
+    needs: build
+    uses: ./.github/workflows/build_images.yml
+    with:
+      ref: ${{ github.ref }}
