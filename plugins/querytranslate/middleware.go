@@ -260,9 +260,13 @@ func queryTranslate(h http.HandlerFunc) http.HandlerFunc {
 		}
 
 		// Translate query
-		msearchQuery, err := translateQuery(*body, iplookup.FromRequest(req))
+		var translateErr error
+		var msearchQuery string
+
+		msearchQuery, translateErr = translateQuery(*body, iplookup.FromRequest(req))
+
 		// log.Println("RS QUERY", msearchQuery)
-		if err != nil {
+		if translateErr != nil {
 			log.Errorln(logTag, ":", err)
 			telemetry.WriteBackErrorWithTelemetry(req, w, err.Error(), http.StatusBadRequest)
 			return
