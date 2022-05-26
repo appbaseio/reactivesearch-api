@@ -306,6 +306,7 @@ const (
 	ElasticSearch Backend = iota
 	OpenSearch
 	MongoDB
+	Solr
 )
 
 // String returns the string representation
@@ -318,6 +319,8 @@ func (b Backend) String() string {
 		return "opensearch"
 	case MongoDB:
 		return "mongodb"
+	case Solr:
+		return "solr"
 	}
 	return ""
 }
@@ -337,6 +340,8 @@ func (b *Backend) UnmarshalJSON(bytes []byte) error {
 		*b = ElasticSearch
 	case MongoDB.String():
 		*b = MongoDB
+	case Solr.String():
+		*b = Solr
 	default:
 		return fmt.Errorf("invalid kNN backend passed: %s", knnBackend)
 	}
@@ -362,6 +367,7 @@ func (b Backend) JSONSchemaType() *jsonschema.Type {
 			ElasticSearch.String(),
 			OpenSearch.String(),
 			MongoDB.String(),
+			Solr.String(),
 		},
 	}
 }
@@ -1068,6 +1074,13 @@ func normalizeQueryValue(input *interface{}) (*interface{}, error) {
 	normalizedValue := sanitizeString(valueAsString)
 	var outputValue interface{} = normalizedValue
 	return &outputValue, nil
+}
+
+// NormalizeQueryValue is A wrapper around normalizeValue to handle
+// value transformation for search, suggestion types of queries
+// at query generation time
+func NormalizeQueryValue(input *interface{}) (*interface{}, error) {
+	return normalizeQueryValue(input)
 }
 
 // Removes the extra spaces from a string
