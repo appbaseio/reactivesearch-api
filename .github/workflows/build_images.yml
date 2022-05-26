@@ -1,8 +1,11 @@
 name: Send Build Image Event
 
 on:
-  release:
-    types: [published]
+  workflow_call:
+    inputs:
+      ref:
+        required: true
+        type: string
 
 jobs:
   determine_whether_to_run:
@@ -13,7 +16,7 @@ jobs:
     steps:
       - name: Check if event should be sent
         id: check-send-event
-        run: (echo "${{ github.ref }}" | grep -Eq  '^refs\/tags\/[0-9]+\.[0-9]+\.[0-9]+$') && echo "::set-output name=run_jobs::true" || echo "::set-output name=run_jobs::false"
+        run: (echo "${{ inputs.ref }}" | grep -Eq  '^refs\/tags\/[0-9]+\.[0-9]+\.[0-9]+$') && echo "::set-output name=run_jobs::true" || echo "::set-output name=run_jobs::false"
 
   send_event:
     needs: determine_whether_to_run
