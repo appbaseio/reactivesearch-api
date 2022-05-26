@@ -21,7 +21,7 @@ const (
 	syncInterval             = 10  // interval in minutes to sync telemetry records
 	deltaInterval            = 100 // in ms
 	totalEventsPerRequest    = 2000
-	defaultTelemetryFilePath = "/var/log/arc/telemetry"
+	defaultTelemetryFilePath = "log/arc/telemetry"
 	envTelemetryFilePath     = "TELEMETRY_FILE_PATH" // Just for local testing
 )
 

@@ -16,7 +16,7 @@ const (
 	defaultLogsEsIndex = ".logs"
 	envEsURL           = "ES_CLUSTER_URL"
 	envLogsEsIndex     = "LOGS_ES_INDEX"
-	defaultLogFilePath = "/var/log/arc/es.json"
+	defaultLogFilePath = "log/arc/es.json"
 	envLogFilePath     = "LOG_FILE_PATH"
 	config             = `
 	{
