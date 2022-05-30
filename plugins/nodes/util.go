@@ -26,3 +26,9 @@ func (n *nodes) PingESWithTime() {
 		log.Errorln(logTag, ": error occurred while pinging ES to update time, ", err)
 	}
 }
+
+// DeleteOutdated will delete all the docs in the index
+// that are older than 7 days.
+func (n *nodes) DeleteOutdated() {
+
+}

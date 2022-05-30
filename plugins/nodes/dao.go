@@ -49,3 +49,8 @@ func initPlugin(indexName, mapping string) (*elasticsearch, error) {
 func (es *elasticsearch) pingES(ctx context.Context, machineID string) error {
 	return es.pingES7(ctx, machineID)
 }
+
+// deleteOlderRecords will delete all records older than 7 days
+func (es *elasticsearch) deleteOlderRecords(ctx context.Context) error {
+	return es.deleteOlderRecords7(ctx)
+}

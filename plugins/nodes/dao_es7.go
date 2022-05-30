@@ -44,7 +44,7 @@ func (es *elasticsearch) pingES7(ctx context.Context, machineID string) error {
 //
 // We don't need to keep docs older than 7 days since we only need the node
 // count of the last 10 mins and the last 7 days.
-func (es *elasticsearch) deleteOlderRecords(ctx context.Context, machineID string) error {
+func (es *elasticsearch) deleteOlderRecords7(ctx context.Context) error {
 	// Get the minimum time allowed.
 	// We will get the current time - 7 days
 	minTime := time.Now().AddDate(0, 0, -7).Unix()
