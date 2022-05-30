@@ -2,8 +2,10 @@ package nodes
 
 import (
 	"context"
+	"time"
 
 	"github.com/appbaseio/reactivesearch-api/util"
+	"github.com/prometheus/common/log"
 )
 
 // pingES7 will ping ElasticSearch based on the passed machine ID
@@ -13,29 +15,25 @@ import (
 // be created or updated based on the machineID being present
 // or not being present in ES.
 func (es *elasticsearch) pingES7(ctx context.Context, machineID string) error {
-	// Check if the ID already exists
-	idExists, err := es.machineExists(ctx, machineID)
+	// Get the current time
+	currentTime := time.Now().Unix()
+	pingDoc := ESNode{
+		PingTime: &currentTime,
+	}
+
+	// Just sending an index request will suffice. If the ID will be present,
+	// this request will update the doc or create one.
+	_, err := util.GetClient7().
+		Index().
+		Index(es.indexName).
+		BodyJson(pingDoc).
+		Refresh("wait_for").
+		Id(machineID).
+		Do(ctx)
+
 	if err != nil {
+		log.Errorln(logTag, ": error indexing ping time:", err)
 		return err
 	}
-
-	if idExists {
-		// Update the ping time
-	} else {
-		// Create a new doc with ping time
-	}
-
 	return nil
-}
-
-// machineExists will check if the machineID exists in the index
-// using the exists query provided by elasticsearch
-func (es *elasticsearch) machineExists(ctx context.Context, machineID string) (bool, error) {
-	response, err := util.GetClient7().Get().Index(es.indexName).Id(machineID).Do(ctx)
-
-	if err != nil {
-		return false, err
-	}
-
-	return response != nil, nil
 }
