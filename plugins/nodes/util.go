@@ -23,6 +23,6 @@ func (n *nodes) PingESWithTime() {
 	err := n.es.pingES(context.Background(), machineID)
 
 	if err != nil {
-		log.Warnln(logTag, ": error occurred while pinging ES to update time, ", err)
+		log.Errorln(logTag, ": error occurred while pinging ES to update time, ", err)
 	}
 }
