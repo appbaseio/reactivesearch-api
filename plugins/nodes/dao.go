@@ -46,6 +46,6 @@ func initPlugin(indexName, mapping string) (*elasticsearch, error) {
 }
 
 // pingES will ping ElasticSearch with the machine ID and the current time
-func (es *elasticsearch) pingES(machineID string) error {
-	return es.pingES7(machineID)
+func (es *elasticsearch) pingES(ctx context.Context, machineID string) error {
+	return es.pingES7(ctx, machineID)
 }
