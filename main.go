@@ -546,7 +546,7 @@ func main() {
 	log.Info(logTag, ": setting up active node ping job")
 	nodeInstance := nodes.Instance()
 	pingESJob := cron.New()
-	pingESJob.AddFunc("@every 10s", nodeInstance.PingESWithTime)
+	pingESJob.AddFunc("@every 1m", nodeInstance.PingESWithTime)
 	pingESJob.Start()
 
 	// Finally start the server
