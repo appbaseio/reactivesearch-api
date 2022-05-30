@@ -30,5 +30,9 @@ func (n *nodes) PingESWithTime() {
 // DeleteOutdated will delete all the docs in the index
 // that are older than 7 days.
 func (n *nodes) DeleteOutdated() {
+	err := n.es.deleteOlderRecords(context.Background())
 
+	if err != nil {
+		log.Errorln(logTag, ": error while deleting outdated records, ", err)
+	}
 }
