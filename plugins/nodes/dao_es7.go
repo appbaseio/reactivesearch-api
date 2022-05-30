@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/appbaseio/reactivesearch-api/util"
-	"github.com/prometheus/common/log"
+	log "github.com/sirupsen/logrus"
 )
 
 // pingES7 will ping ElasticSearch based on the passed machine ID
