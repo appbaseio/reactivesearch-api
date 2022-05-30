@@ -543,11 +543,9 @@ func main() {
 	routerHealthCronJob.Start()
 
 	// Start the job to keep pinging ES to mark as live node
-	log.Info(logTag, ": setting up active node ping job")
+	log.Info(logTag, ": setting up active node ping jobs")
 	nodeInstance := nodes.Instance()
-	pingESJob := cron.New()
-	pingESJob.AddFunc("@every 1m", nodeInstance.PingESWithTime)
-	pingESJob.Start()
+	nodeInstance.StartAutomatedJobs()
 
 	// Finally start the server
 	routerSwapper.StartServer()

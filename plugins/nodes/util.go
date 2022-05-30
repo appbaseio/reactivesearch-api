@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/appbaseio/reactivesearch-api/util"
+	"github.com/robfig/cron"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -35,4 +36,23 @@ func (n *nodes) DeleteOutdated() {
 	if err != nil {
 		log.Errorln(logTag, ": error while deleting outdated records, ", err)
 	}
+}
+
+// StartAutomatedJobs will start all jobs related to nodes
+// syncinc and deleting.
+//
+// This method will start the following jobs in the given
+// interval
+// - ping job: every 1m
+// - delete job: every 7d
+func (n *nodes) StartAutomatedJobs() {
+	// Start the ping job
+	pingESJob := cron.New()
+	pingESJob.AddFunc("@every 1m", n.PingESWithTime)
+	pingESJob.Start()
+
+	// Start the delete job
+	deleteNodeJob := cron.New()
+	deleteNodeJob.AddFunc("@every 7d", n.DeleteOutdated)
+	deleteNodeJob.Start()
 }
