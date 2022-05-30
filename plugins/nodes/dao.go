@@ -44,3 +44,8 @@ func initPlugin(indexName, mapping string) (*elasticsearch, error) {
 	log.Println(logTag, ": successfully created index named", indexName)
 	return es, nil
 }
+
+// pingES will ping ElasticSearch with the machine ID and the current time
+func (es *elasticsearch) pingES(machineID string) error {
+	return es.pingES7(machineID)
+}
