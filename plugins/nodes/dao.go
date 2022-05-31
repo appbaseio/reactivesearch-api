@@ -60,3 +60,9 @@ func (es *elasticsearch) deleteOlderRecords(ctx context.Context) error {
 func (es *elasticsearch) activeNodesInTenMins(ctx context.Context) (int64, error) {
 	return es.activeNodesInTenMins7(ctx)
 }
+
+// activeNodesInSevenDays will get the number of active nodes in the last
+// 7 days.
+func (es *elasticsearch) activeNodesInSevenDays(ctx context.Context) (int64, error) {
+	return es.activeNodesInSevenDays7(ctx)
+}
