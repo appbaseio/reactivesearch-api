@@ -54,3 +54,9 @@ func (es *elasticsearch) pingES(ctx context.Context, machineID string) error {
 func (es *elasticsearch) deleteOlderRecords(ctx context.Context) error {
 	return es.deleteOlderRecords7(ctx)
 }
+
+// activeNodesInTenMins will get the number of active nodes in the last
+// 10 mins.
+func (es *elasticsearch) activeNodesInTenMins(ctx context.Context) (int64, error) {
+	return es.activeNodesInTenMins7(ctx)
+}
