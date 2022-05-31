@@ -12,6 +12,12 @@ type ESNode struct {
 	PingTime *int64 `json:"ping_time"`
 }
 
+type ArcHealthResponse struct {
+	Health         string `json:"health"`
+	NodeCount      int64  `json:"node_count"`
+	NodeCountSeven int64  `json:"node_count_7d"`
+}
+
 // PingESWithTime will ping ES with the timestamp
 // and the machine ID of the current node.
 //

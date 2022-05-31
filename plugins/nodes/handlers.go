@@ -16,6 +16,8 @@ func healtCheckNodes() http.HandlerFunc {
 			"health": "ok",
 		}
 
+		// TODO: Add the node counts after fetching it from ES
+
 		// Marshal the response
 		//
 		// NOTE: No need to check error since response is manually created
