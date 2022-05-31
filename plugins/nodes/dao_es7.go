@@ -59,3 +59,23 @@ func (es *elasticsearch) deleteOlderRecords7(ctx context.Context) error {
 
 	return nil
 }
+
+// activeNodesInTenMins will return the number of active nodes in the last
+// 10 mins using the current time stamp and making a query against the
+// nodes index.
+//
+// All docs that have `ping_time` set as greater than the last 10 mins will
+// be fetched using this function and counted.
+func (es *elasticsearch) activeNodesInTenMins7(ctx context.Context) (int64, error) {
+	minTime := time.Now().Add(time.Minute * -10)
+
+	rangeQuery := es7.NewRangeQuery("ping_time").Gte(minTime)
+
+	resp, err := util.GetClient7().Count().Index(es.indexName).Query(rangeQuery).Do(ctx)
+	if err != nil {
+		log.Errorln(logTag, ": error while getting number of active nodes in the last 10 mins, ", err)
+		return 0, err
+	}
+
+	return resp, nil
+}
