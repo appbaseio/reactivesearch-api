@@ -79,3 +79,22 @@ func (es *elasticsearch) activeNodesInTenMins7(ctx context.Context) (int64, erro
 
 	return resp, nil
 }
+
+// activeNodesInSevenDays will return the number of active nodes in the last
+// 7 days using the current time stamp and making a query against the nodes index.
+//
+// All docs that have `ping_time` set as greater than the last 7 days will be
+// fetched using this function and counted.
+func (es *elasticsearch) activeNodesInSevenDays(ctx context.Context) (int64, error) {
+	minTime := time.Now().AddDate(0, 0, -7).Unix()
+
+	rangeQuery := es7.NewRangeQuery("ping_time").Gte(minTime)
+
+	nodeCount, err := util.GetClient7().Count().Index(es.indexName).Query(rangeQuery).Do(ctx)
+	if err != nil {
+		log.Errorln(logTag, ": error while getting the number of active nodes in the last 7 days, ", err)
+		return 0, err
+	}
+
+	return nodeCount, err
+}
