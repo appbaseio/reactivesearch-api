@@ -67,7 +67,7 @@ func (es *elasticsearch) deleteOlderRecords7(ctx context.Context) error {
 // All docs that have `ping_time` set as greater than the last 10 mins will
 // be fetched using this function and counted.
 func (es *elasticsearch) activeNodesInTenMins7(ctx context.Context) (int64, error) {
-	minTime := time.Now().Add(time.Minute * -10)
+	minTime := time.Now().Add(time.Minute * -10).Unix()
 
 	rangeQuery := es7.NewRangeQuery("ping_time").Gte(minTime)
 
