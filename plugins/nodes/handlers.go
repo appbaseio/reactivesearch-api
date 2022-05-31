@@ -8,10 +8,10 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-// healtCheckNodes will return the health status of the node
+// healthCheckNodes will return the health status of the node
 // along with the number of active nodes in the last 10 mins
 // and the last 7 days.
-func (n *nodes) healtCheckNodes() http.HandlerFunc {
+func (n *nodes) healthCheckNodes() http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
 		response := ArcHealthResponse{
 			Health: "ok",
