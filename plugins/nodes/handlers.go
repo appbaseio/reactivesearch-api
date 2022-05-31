@@ -17,7 +17,7 @@ func (n *nodes) healtCheckNodes() http.HandlerFunc {
 			Health: "ok",
 		}
 
-		// TODO: Add the node counts after fetching it from ES
+		// Add the node counts after fetching it from ES
 		activeTenMins, err := n.es.activeNodesInTenMins(req.Context())
 		if err != nil {
 			log.Warnln(logTag, ": error while getting the active node count for ten mins, ", err)
@@ -25,6 +25,15 @@ func (n *nodes) healtCheckNodes() http.HandlerFunc {
 		}
 
 		response.NodeCount = activeTenMins
+
+		// Add the node count for last 7 days from ES
+		activeSevenDays, err := n.es.activeNodesInSevenDays(req.Context())
+		if err != nil {
+			log.Warnln(logTag, ": error while getting the active node count for seven days, ", err)
+			activeSevenDays = 0
+		}
+
+		response.NodeCountSeven = activeSevenDays
 
 		// Marshal the response
 		//
