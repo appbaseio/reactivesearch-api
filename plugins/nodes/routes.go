@@ -12,7 +12,7 @@ func (n *nodes) routes() []plugins.Route {
 			Name:        "Arc Health Check",
 			Methods:     []string{http.MethodGet, http.MethodHead, http.MethodPost},
 			Path:        "/arc/_health",
-			HandlerFunc: healtCheckNodes(),
+			HandlerFunc: n.healtCheckNodes(),
 			Description: "Return detail about the current node as well as active nodes",
 		},
 	}
