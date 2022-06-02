@@ -231,6 +231,11 @@ func getIndexSuggestions(config SuggestionsConfig, rawHits []ESDoc) []Suggestion
 	return suggestionsList
 }
 
+// GetIndexSuggestions gets the index suggestions based on user query config and search engine response
+func GetIndexSuggestions(config SuggestionsConfig, rawHits []ESDoc) []SuggestionHIT {
+	return getIndexSuggestions(config, rawHits)
+}
+
 // getDefaultSuggestions traverses over ES docs and checks for a suggestion match against each field from the query
 // A suggestion is considered matching if
 func getDefaultSuggestions(
