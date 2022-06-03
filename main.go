@@ -25,6 +25,7 @@ import (
 
 	"github.com/appbaseio/reactivesearch-api/middleware"
 	"github.com/appbaseio/reactivesearch-api/plugins"
+	"github.com/appbaseio/reactivesearch-api/plugins/nodes"
 	"github.com/appbaseio/reactivesearch-api/util"
 	"github.com/denisbrodbeck/machineid"
 	"github.com/getsentry/sentry-go"
@@ -544,6 +545,11 @@ func main() {
 		routerHealthCronJob.AddFunc("@every 10s", routerHealthCheck.Check)
 		routerHealthCronJob.Start()
 	}
+
+	// Start the job to keep pinging ES to mark as live node
+	log.Info(logTag, ": setting up active node ping jobs")
+	nodeInstance := nodes.Instance()
+	nodeInstance.StartAutomatedJobs()
 
 	// Finally start the server
 	routerSwapper.StartServer()

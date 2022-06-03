@@ -117,14 +117,7 @@ func (es *elasticsearch) preprocess(mw []middleware.Middleware) error {
 		HandlerFunc: es.healthCheck(),
 		Description: "Retrieve the cluster health, both appbase.io and Elasticsearch",
 	}
-	dryHealthCheckRoute := plugins.Route{
-		Name:        "Dry Health Check",
-		Methods:     []string{http.MethodGet, http.MethodHead, http.MethodPost},
-		Path:        "/arc/_health",
-		HandlerFunc: dryHealthCheck(),
-		Description: "Return a dummy response to indicate routers are working",
-	}
-	routes = append(routes, indexRoute, healthCheckRoute, dryHealthCheckRoute)
+	routes = append(routes, indexRoute, healthCheckRoute)
 	return nil
 }
 
