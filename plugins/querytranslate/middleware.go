@@ -267,8 +267,8 @@ func queryTranslate(h http.HandlerFunc) http.HandlerFunc {
 
 		// log.Println("RS QUERY", msearchQuery)
 		if translateErr != nil {
-			log.Errorln(logTag, ":", err)
-			telemetry.WriteBackErrorWithTelemetry(req, w, err.Error(), http.StatusBadRequest)
+			log.Errorln(logTag, ":", translateErr)
+			telemetry.WriteBackErrorWithTelemetry(req, w, translateErr.Error(), http.StatusBadRequest)
 			return
 		}
 
