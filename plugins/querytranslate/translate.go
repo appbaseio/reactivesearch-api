@@ -42,6 +42,11 @@ func translateQuery(rsQuery RSQuery, userIP string) (string, error) {
 			return "", errors.New("field 'dataField' can not have multiple fields for 'term' or 'geo' queries")
 		}
 
+		// Validate highlight and highlightConfig
+		if query.HighlightConfig != nil && (query.Highlight == nil || !*query.Highlight) {
+			return "", errors.New("`highlightConfig` will be ignored when `highlight` is not passed or set to `false`")
+		}
+
 		// Normalize query value for search and suggestion types of queries
 		if query.Type == Search || query.Type == Suggestion {
 			if query.Value != nil {
