@@ -455,8 +455,9 @@ type Settings struct {
 
 // RSQuery represents the request body
 type RSQuery struct {
-	Query    []Query   `json:"query,omitempty"`
-	Settings *Settings `json:"settings,omitempty"`
+	Query    []Query                 `json:"query,omitempty"`
+	Settings *Settings               `json:"settings,omitempty"`
+	Metadata *map[string]interface{} `json:"metadata,omitempty"`
 }
 
 type TermFilter struct {
