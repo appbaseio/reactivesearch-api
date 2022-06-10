@@ -6,6 +6,7 @@ on:
       ref:
         required: true
         type: string
+    secrets:
       token:
         required: true
         type: string
@@ -30,6 +31,6 @@ jobs:
       - name: Send Repo Dispatch Event
         uses: peter-evans/repository-dispatch@v2
         with:
-          token: ${{ inputs.token }}
+          token: ${{ secrets.token }}
           repository: appbaseio-confidential/elasticsearch-packer-build
           event-type: new_release
