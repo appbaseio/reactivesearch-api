@@ -54,4 +54,5 @@ jobs:
     uses: ./.github/workflows/build_images.yml
     with:
       ref: ${{ github.ref }}
+    secrets:
       token: ${{ secrets.REPO_ACCESS_TOKEN }}
