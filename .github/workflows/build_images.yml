@@ -9,7 +9,6 @@ on:
     secrets:
       token:
         required: true
-        type: string
 
 jobs:
   determine_whether_to_run:
