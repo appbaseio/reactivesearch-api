@@ -1,6 +1,7 @@
 package util
 
 import (
+	"encoding/base64"
 	"fmt"
 	"os"
 	"strings"
@@ -52,4 +53,32 @@ func GetZincData() (string, string, string) {
 
 	}
 	return zincURL, username, password
+}
+
+// GetZincClient will return the zinc client and only
+// init it once.
+func GetZincClient() *ZincClient {
+	// initialize the client if not present
+	if zincClient == nil {
+		initZincClient()
+	}
+	return zincClient
+}
+
+// initZincClient will initiate the zinc client
+// by extracting the details from the env file.
+func initZincClient() {
+	zincURL, username, password := GetZincData()
+	authHeader := ""
+
+	if username != "" && password != "" {
+		authHeader = base64.StdEncoding.EncodeToString([]byte(fmt.Sprintf("%s:%s", username, password)))
+	}
+
+	zincClient = &ZincClient{
+		URL:        zincURL,
+		Username:   username,
+		Password:   password,
+		AuthHeader: authHeader,
+	}
 }
