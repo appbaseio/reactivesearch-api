@@ -18,8 +18,8 @@ type ZincClient struct {
 }
 
 var (
-	clientInit *sync.Once
-	zincClient *ZincClient
+	zincClientInit *sync.Once
+	zincClient     *ZincClient
 )
 
 // GetZincData will return the zinc data from the
@@ -81,4 +81,14 @@ func initZincClient() {
 		Password:   password,
 		AuthHeader: authHeader,
 	}
+}
+
+// NewClient instantiates the Zinc Client
+func NewZincClient() {
+	zincClientInit.Do(func() {
+		// Initialize the zinc client
+		initZincClient()
+
+		log.Println("zinc client instantiated")
+	})
 }
