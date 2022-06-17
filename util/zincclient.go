@@ -1,8 +1,10 @@
 package util
 
 import (
+	"bytes"
 	"encoding/base64"
 	"fmt"
+	"net/http"
 	"os"
 	"strings"
 	"sync"
@@ -81,6 +83,36 @@ func initZincClient() {
 		Password:   password,
 		AuthHeader: authHeader,
 	}
+}
+
+// MakeRequest will allow making a request to zinc index.
+func (zc *ZincClient) MakeRequest(endpoint string, method string, body []byte, headers *http.Header) (*http.Response, error) {
+	urlToHit := fmt.Sprintf("%s/%s", zc.URL, endpoint)
+
+	if headers == nil {
+		headers = new(http.Header)
+	}
+
+	// Create the request
+	request, requestCreateErr := http.NewRequest(method, urlToHit, bytes.NewReader(body))
+	if requestCreateErr != nil {
+		// TODO: Handle the error
+	}
+
+	// If authHeader is not empty, set it as basic auth
+	if zc.AuthHeader != "" {
+		(*headers)["Authorization"] = []string{fmt.Sprintf("Basic %s", zc.AuthHeader)}
+	}
+
+	// Set the headers
+	for key, value := range *headers {
+		request.Header.Set(key, strings.Join(value, ", "))
+	}
+
+	// Send the request now
+	response, responseErr := HTTPClient().Do(request)
+
+	return response, responseErr
 }
 
 // NewClient instantiates the Zinc Client
