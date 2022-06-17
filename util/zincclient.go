@@ -96,7 +96,9 @@ func (zc *ZincClient) MakeRequest(endpoint string, method string, body []byte, h
 	// Create the request
 	request, requestCreateErr := http.NewRequest(method, urlToHit, bytes.NewReader(body))
 	if requestCreateErr != nil {
-		// TODO: Handle the error
+		// Handle the error
+		log.Warnln(": error while creating request to send Zinc, ", requestCreateErr)
+		return nil, requestCreateErr
 	}
 
 	// If authHeader is not empty, set it as basic auth
