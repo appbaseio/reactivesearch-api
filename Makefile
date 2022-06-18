@@ -4,7 +4,7 @@ GT=go test
 BUILD_DIR=build
 PLUGIN_FLAGS=--buildmode=plugin
 PLUGIN_BUILD_DIR=$(BUILD_DIR)/plugins
-DEFAULT_VERSION=8.2.0
+DEFAULT_VERSION=8.3.0
 VERSION := $(or $(VERSION),$(DEFAULT_VERSION))
  
 PLUGINS=$(shell ls -l plugins | grep ^d | awk '{ print $$9 }')
