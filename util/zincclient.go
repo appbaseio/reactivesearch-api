@@ -90,7 +90,8 @@ func (zc *ZincClient) MakeRequest(endpoint string, method string, body []byte, h
 	urlToHit := fmt.Sprintf("%s/%s", zc.URL, endpoint)
 
 	if headers == nil {
-		headers = new(http.Header)
+		defaultHeader := make(http.Header)
+		headers = &defaultHeader
 	}
 
 	// Create the request
