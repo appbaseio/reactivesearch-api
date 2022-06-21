@@ -103,7 +103,7 @@ func (zc *ZincClient) MakeRequest(endpoint string, method string, body []byte, h
 
 	// If authHeader is not empty, set it as basic auth
 	if zc.AuthHeader != "" {
-		(*headers)["Authorization"] = []string{fmt.Sprintf("Basic %s", zc.AuthHeader)}
+		headers.Set("Authorization", fmt.Sprintf("Basic %s", zc.AuthHeader))
 	}
 
 	// Set the headers
