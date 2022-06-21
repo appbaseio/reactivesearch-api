@@ -20,7 +20,7 @@ type ZincClient struct {
 }
 
 var (
-	zincClientInit *sync.Once
+	zincClientInit sync.Once
 	zincClient     *ZincClient
 )
 
