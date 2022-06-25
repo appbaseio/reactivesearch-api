@@ -2,6 +2,7 @@ package util
 
 import (
 	"fmt"
+	"net/http"
 	"net/url"
 	"os"
 	"strconv"
@@ -148,11 +149,19 @@ func initClient7() {
 	wrappedLoggerDebug := &WrapKitLoggerDebug{*loggerT}
 	wrappedLoggerError := &WrapKitLoggerError{*loggerT}
 
+	esHttpClient := HTTPClient()
+
+	// TODO: Change the following check to make it opposite
+	if ExternalElasticsearch != "true" {
+		customESTransport := &CustomESTransport{}
+		esHttpClient = &http.Client{Transport: customESTransport}
+	}
+
 	client7, err = es7.NewClient(
 		es7.SetURL(GetESURL()),
 		es7.SetRetrier(NewRetrier()),
 		es7.SetSniff(isSniffingEnabled()),
-		es7.SetHttpClient(HTTPClient()),
+		es7.SetHttpClient(esHttpClient),
 		es7.SetErrorLog(wrappedLoggerError),
 		es7.SetInfoLog(wrappedLoggerDebug),
 		es7.SetTraceLog(wrappedLoggerDebug),
