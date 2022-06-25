@@ -2,7 +2,6 @@ package util
 
 import (
 	"fmt"
-	"net/http"
 	"net/url"
 	"os"
 	"strconv"
@@ -128,8 +127,7 @@ func initClient6() {
 	esHttpClient := HTTPClient()
 
 	if ExternalElasticsearch != "true" {
-		customESTransport := &CustomESTransport{}
-		esHttpClient = &http.Client{Transport: customESTransport}
+		esHttpClient.Transport = &CustomESTransport{originalTransport: esHttpClient.Transport}
 	}
 
 	// Initialize the ES v6 client
@@ -159,8 +157,7 @@ func initClient7() {
 	esHttpClient := HTTPClient()
 
 	if ExternalElasticsearch != "true" {
-		customESTransport := &CustomESTransport{}
-		esHttpClient = &http.Client{Transport: customESTransport}
+		esHttpClient.Transport = &CustomESTransport{originalTransport: esHttpClient.Transport}
 	}
 
 	client7, err = es7.NewClient(

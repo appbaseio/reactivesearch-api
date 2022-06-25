@@ -8,7 +8,7 @@ import (
 
 // CustomESTransport will be passed to olivere/elasticsearch
 type CustomESTransport struct {
-	http.RoundTripper
+	originalTransport http.RoundTripper
 }
 
 // RoundTrip will add a header to every ES request.
@@ -19,5 +19,5 @@ func (ct *CustomESTransport) RoundTrip(req *http.Request) (*http.Response, error
 		return http.DefaultTransport.RoundTrip(req)
 	}
 	req.Header.Add("X-Appbase-ID", arcId)
-	return ct.RoundTripper.RoundTrip(req)
+	return ct.originalTransport.RoundTrip(req)
 }
