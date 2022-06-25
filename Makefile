@@ -6,6 +6,7 @@ PLUGIN_FLAGS=--buildmode=plugin
 PLUGIN_BUILD_DIR=$(BUILD_DIR)/plugins
 DEFAULT_VERSION=8.3.0
 VERSION := $(or $(VERSION),$(DEFAULT_VERSION))
+EXTERNAL_ELASTICSEARCH=true
  
 PLUGINS=$(shell ls -l plugins | grep ^d | awk '{ print $$9 }')
 PLUGIN_MAIN_LOC_FUNC=plugins/$(1)/main/$(1).$(2)
