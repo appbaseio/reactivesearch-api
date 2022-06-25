@@ -66,6 +66,10 @@ var (
 	ClusterBilling string
 	// Opensource is a build time flag
 	Opensource string
+	// ExternalElasticsearch is a build time flag that
+	// indicates whether external Elasticsearch instance
+	// is being used.
+	ExternalElasticsearch string
 	// IgnoreBillingMiddleware ignores the billing middleware
 	IgnoreBillingMiddleware string
 	// Tier for testing
@@ -280,11 +284,14 @@ func main() {
 
 	interval := "@every " + PlanRefreshInterval + "h"
 
+	log.Infoln(logTag, ": external elasticsearch => ", ExternalElasticsearch)
+
 	util.Billing = Billing
 	util.HostedBilling = HostedBilling
 	util.ClusterBilling = ClusterBilling
 	util.Opensource = Opensource
 	util.Version = Version
+	util.ExternalElasticsearch = ExternalElasticsearch
 
 	var licenseKey string
 	// check for offline license key
