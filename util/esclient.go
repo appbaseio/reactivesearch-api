@@ -175,3 +175,11 @@ func NewClient() {
 		log.Println("clients instantiated, elastic search version is", version)
 	})
 }
+
+// CreateCustomTransport will create a custom transport
+// that will append a new header to all ES requests.
+//
+// This should only be used if External ES is false.
+func CreateCustomTransport() {
+
+}
