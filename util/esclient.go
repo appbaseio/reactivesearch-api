@@ -125,12 +125,19 @@ func initClient6() {
 	wrappedLoggerDebug := &WrapKitLoggerDebug{*loggerT}
 	wrappedLoggerError := &WrapKitLoggerError{*loggerT}
 
+	esHttpClient := HTTPClient()
+
+	if ExternalElasticsearch != "true" {
+		customESTransport := &CustomESTransport{}
+		esHttpClient = &http.Client{Transport: customESTransport}
+	}
+
 	// Initialize the ES v6 client
 	client6, err = es6.NewClient(
 		es6.SetURL(GetESURL()),
 		es6.SetRetrier(NewRetrier()),
 		es6.SetSniff(isSniffingEnabled()),
-		es6.SetHttpClient(HTTPClient()),
+		es6.SetHttpClient(esHttpClient),
 		es6.SetErrorLog(wrappedLoggerError),
 		es6.SetInfoLog(wrappedLoggerDebug),
 		es6.SetTraceLog(wrappedLoggerDebug),
@@ -151,7 +158,6 @@ func initClient7() {
 
 	esHttpClient := HTTPClient()
 
-	// TODO: Change the following check to make it opposite
 	if ExternalElasticsearch != "true" {
 		customESTransport := &CustomESTransport{}
 		esHttpClient = &http.Client{Transport: customESTransport}
