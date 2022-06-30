@@ -27,12 +27,13 @@ func (es *elasticsearch) getRawUsersEs7(ctx context.Context) ([]byte, error) {
 }
 
 func (es *elasticsearch) patchUserEs7(ctx context.Context, username string, patch map[string]interface{}) ([]byte, error) {
-	response, err := util.GetClient7().Update().
+	updateRequest := util.GetClient7().Update().
 		Refresh("wait_for").
 		Index(es.indexName).
 		Id(username).
-		Doc(patch).
-		Do(ctx)
+		Doc(patch)
+
+	response, err := util.UpdateRequestDo(updateRequest, patch, ctx)
 	if err != nil {
 		return nil, err
 	}
