@@ -41,30 +41,13 @@ func IndexRequestDo(requestAsService *es7.IndexService, originalBody interface{}
 		return requestAsService.BodyJson(originalBody).Do(ctx)
 	}
 
-	// Modify the originalBody and add it before sending
-	// the request.
-	//
-	// NOTE: Assumption is that the body will be a map of string to
-	// interface and a new string will be added `tenant_id`
-	bodyAsMap, asMapOk := originalBody.(map[string]interface{})
-
-	if !asMapOk {
-		errMsg := "error while converting original request body to add `tenant_id`"
-		log.Warnln(": ", errMsg)
-		return nil, errors.New(errMsg)
+	bodyWithTenant, bodyWithTenantErr := addTenantId(originalBody)
+	if bodyWithTenantErr != nil {
+		return nil, bodyWithTenantErr
 	}
-
-	tenantId, tenantIdErr := GetTenantID()
-	if tenantIdErr != nil {
-		errToReturn := fmt.Errorf("error while getting tenant ID: %s", tenantIdErr)
-		log.Warnln(": ", errToReturn.Error())
-		return nil, errToReturn
-	}
-
-	bodyAsMap["tenant_id"] = tenantId
 
 	// Finally make the request
-	esResponse, esResponseErr := requestAsService.BodyJson(bodyAsMap).Do(ctx)
+	esResponse, esResponseErr := requestAsService.BodyJson(bodyWithTenant).Do(ctx)
 
 	// Index response doesn't return the source body so the response
 	// can be returned directly without need for checking
@@ -207,4 +190,61 @@ func DeleteRequestDo(requestAsService interface{}, ctx context.Context, id inter
 	deleteByQuery = deleteByQuery.Query(tenantIdFilter)
 
 	return deleteByQuery.Do(ctx)
+}
+
+// UpdateRequestDo will handle update request to be made
+// to ES through Olivere/Elastcisearch and the request and response modifications.
+//
+// This method will modify the ES request to add tenant_id
+// before sending the request to all documents.
+//
+// This method should be called whenever an update request is made
+// to ES through olivere/elasticsearch library.
+func UpdateRequestDo(requestAsService *es7.UpdateService, updateBody interface{}, ctx context.Context) (*es7.UpdateResponse, error) {
+	// There is no need to add tenant ID if the request is being
+	// made to an external ES so we can just do a normal
+	// update Do and return the response.
+	if ExternalElasticsearch == "true" {
+		return requestAsService.Doc(updateBody).Do(ctx)
+	}
+
+	// We need to add the tenant_id if not an external search.
+	// Get the tenant ID
+	bodyWithTenant, bodyWithTenantErr := addTenantId(updateBody)
+	if bodyWithTenantErr != nil {
+		return nil, bodyWithTenantErr
+	}
+
+	return requestAsService.Doc(bodyWithTenant).Do(ctx)
+}
+
+// addTenantId will add the tenant_id field to the passed doc.
+// The doc is expected to be of type map though it will be passed
+// as an interface.
+//
+// An error will be raised if parsing to map fails or any other
+// part of adding the tenant fails.
+func addTenantId(originalBody interface{}) (interface{}, error) {
+	// Modify the originalBody
+	//
+	// NOTE: Assumption is that the body will be a map of string to
+	// interface and a new string will be added `tenant_id`
+	bodyAsMap, asMapOk := originalBody.(map[string]interface{})
+
+	if !asMapOk {
+		errMsg := "error while converting original request body to add `tenant_id`"
+		log.Warnln(": ", errMsg)
+		return nil, errors.New(errMsg)
+	}
+
+	tenantId, tenantIdErr := GetTenantID()
+	if tenantIdErr != nil {
+		errToReturn := fmt.Errorf("error while getting tenant ID: %s", tenantIdErr)
+		log.Warnln(": ", errToReturn.Error())
+		return nil, errToReturn
+	}
+
+	bodyAsMap["tenant_id"] = tenantId
+
+	return bodyAsMap, nil
 }
