@@ -142,9 +142,69 @@ func SearchRequestDo(requestAsService *es7.SearchService, ctx context.Context) (
 // ES through olivere/elasticsearch and the request and response
 // modification if any is required.
 //
+// Only one of `DeleteService` or `DeleteByQueryService` is accepted
+// as input.
+//
 // This method will modify the DeleteService to DeleteByQueryService
 // and add the `tenant_id` as a filter.
+// The above will only be done if the ExternalElasticsearch flag is not
+// `true`.
+//
+// The response is an interface and can be converted to one of following:
+// - DeleteService -> DeleteResponse
+// - DeleteByQueryService -> BulkIndexByScrollResponse
 //
 // This method should be called whenever a delete request is
 // made to ES and tenant related methods were used to index.
-func DeleteRequestDo(requestAsService interface{}, ctx context.Context) {}
+func DeleteRequestDo(requestAsService interface{}, ctx context.Context, id interface{}, index string) (interface{}, error) {
+
+	// Define a variable of DeleteByQueryService to use finally
+	var deleteByQuery *es7.DeleteByQueryService
+
+	// The `requestAsService` will only support either
+	// DeleteByQueryService or DeleteService.
+	switch requestType := requestAsService.(type) {
+	case *es7.DeleteByQueryService:
+		requestAsType := requestAsService.(*es7.DeleteByQueryService)
+		if ExternalElasticsearch == "true" {
+			return requestAsType.Do(ctx)
+		}
+
+		// Else pass it as is to deleteByQuery
+		deleteByQuery = requestAsType
+	case *es7.DeleteService:
+		requestAsType := requestAsService.(*es7.DeleteService)
+		if ExternalElasticsearch == "true" {
+			return requestAsType.Do(ctx)
+		}
+
+		// If type is deleteService then id and index should not be
+		// nil or empty.
+		if id == nil || index == "" {
+			return nil, fmt.Errorf("`id` and `index` are required parameters for DeleteByService type")
+		}
+
+		// Else convert it to DeleteByQueryService
+		// Create a filter query based on the ID
+		filterByIdQuery := es7.NewMatchQuery("_id", id)
+
+		deleteByQuery = GetClient7().DeleteByQuery().Index(index).Query(filterByIdQuery)
+	default:
+		return nil, fmt.Errorf("invalid type passed for DeleteRequestDo: %v", requestType)
+	}
+
+	// Get the tenant ID
+	tenantId, tenantIdErr := GetTenantID()
+	if tenantIdErr != nil {
+		errToReturn := fmt.Errorf("error while getting tenant ID: %s", tenantIdErr)
+		log.Warnln(": ", errToReturn.Error())
+		return nil, errToReturn
+	}
+
+	// Finally add the `tenant_id` filter to the delete query
+	tenantIdFilter := es7.NewMatchQuery("tenant_id", tenantId)
+
+	deleteByQuery = deleteByQuery.Query(tenantIdFilter)
+
+	return deleteByQuery.Do(ctx)
+}
