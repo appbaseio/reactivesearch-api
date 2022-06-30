@@ -73,7 +73,8 @@ func (es *elasticsearch) activeNodesInTenMins7(ctx context.Context) (int64, erro
 
 	rangeQuery := es7.NewRangeQuery("ping_time").Gte(minTime)
 
-	resp, err := util.GetClient7().Count().Index(es.indexName).Query(rangeQuery).Do(ctx)
+	resp, err := util.CountRequestDo(util.GetClient7().Count().Index(es.indexName).Query(rangeQuery), ctx)
+
 	if err != nil {
 		log.Errorln(logTag, ": error while getting number of active nodes in the last 10 mins, ", err)
 		return 0, err
@@ -92,7 +93,8 @@ func (es *elasticsearch) activeNodesInSevenDays7(ctx context.Context) (int64, er
 
 	rangeQuery := es7.NewRangeQuery("ping_time").Gte(minTime)
 
-	nodeCount, err := util.GetClient7().Count().Index(es.indexName).Query(rangeQuery).Do(ctx)
+	nodeCount, err := util.CountRequestDo(util.GetClient7().Count().Index(es.indexName).Query(rangeQuery), ctx)
+
 	if err != nil {
 		log.Errorln(logTag, ": error while getting the number of active nodes in the last 7 days, ", err)
 		return 0, err
