@@ -137,3 +137,14 @@ func SearchRequestDo(requestAsService *es7.SearchService, ctx context.Context) (
 	// Finally return the response
 	return esResponse, esResponseErr
 }
+
+// DeleteRequestDo will handle delete requests to be made to
+// ES through olivere/elasticsearch and the request and response
+// modification if any is required.
+//
+// This method will modify the DeleteService to DeleteByQueryService
+// and add the `tenant_id` as a filter.
+//
+// This method should be called whenever a delete request is
+// made to ES and tenant related methods were used to index.
+func DeleteRequestDo(requestAsService interface{}, ctx context.Context) {}
