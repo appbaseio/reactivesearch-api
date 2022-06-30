@@ -2,6 +2,7 @@ package util
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 
@@ -68,5 +69,71 @@ func IndexRequestDo(requestAsService *es7.IndexService, originalBody interface{}
 	// Index response doesn't return the source body so the response
 	// can be returned directly without need for checking
 	// or modifying anything.
+	return esResponse, esResponseErr
+}
+
+// SearchRequestDo will handle search request to be made
+// to ES through Olivere/Elastcisearch and the request and response modifications.
+//
+// This method will modify the ES request to add tenant_id
+// before sending the request to all documents as well as remove
+// the tenant_id field before returning the response
+//
+// This method should be called whenever a search request is made
+// to ES through olivere/elasticsearch library.
+func SearchRequestDo(requestAsService *es7.SearchService, ctx context.Context) (*es7.SearchResult, error) {
+	// There is no need to add tenant ID if the request is being
+	// made to an external ES so we can just do a normal
+	// search Do and return the response.
+	if ExternalElasticsearch == "true" {
+		return requestAsService.Do(ctx)
+	}
+
+	tenantId, tenantIdErr := GetTenantID()
+	if tenantIdErr != nil {
+		errToReturn := fmt.Errorf("error while getting tenant ID: %s", tenantIdErr)
+		log.Warnln(": ", errToReturn.Error())
+		return nil, errToReturn
+	}
+
+	termQueryTenantId := es7.NewTermQuery("tenant_id", tenantId)
+	tenantIdFilterQuery := es7.NewBoolQuery().Filter(termQueryTenantId)
+
+	esResponse, esResponseErr := requestAsService.Query(tenantIdFilterQuery).Do(ctx)
+
+	if esResponseErr != nil {
+		return esResponse, esResponseErr
+	}
+
+	// Modify the response before returning it and remove
+	// `tenant_id` field from all docs.
+	for hitIndex, hit := range esResponse.Hits.Hits {
+		// Extract the source, remove the `tenant_id` and replace it.
+		originalSource := make(map[string]interface{})
+		originalSrcErr := json.Unmarshal(hit.Source, &originalSource)
+
+		if originalSrcErr != nil {
+			errMsg := fmt.Errorf("error while unmarshalling original source for index %d with error: %s", hitIndex, originalSrcErr)
+			log.Warnln(": ", errMsg.Error())
+			return esResponse, errMsg
+		}
+
+		// Once the unmarshal is done, remove the `tenant_id` key from the
+		// JSON.
+		delete(originalSource, "tenant_id")
+
+		// Marshal the updated map back to bytes
+		updatedSource, marshalErr := json.Marshal(originalSource)
+		if marshalErr != nil {
+			errToReturn := fmt.Errorf("error while marshalling updated source back to bytes: %s", marshalErr)
+			log.Warnln(": ", errToReturn.Error())
+			return esResponse, errToReturn
+		}
+
+		// Update the hit source.
+		esResponse.Hits.Hits[hitIndex].Source = updatedSource
+	}
+
+	// Finally return the response
 	return esResponse, esResponseErr
 }
