@@ -2,8 +2,11 @@ package util
 
 import (
 	"context"
+	"errors"
+	"fmt"
 
 	es7 "github.com/olivere/elastic/v7"
+	log "github.com/sirupsen/logrus"
 )
 
 // GetTenantID will return the tenant ID that
@@ -29,11 +32,41 @@ func GetTenantID() (string, error) {
 //
 // This method should be called whenever an index request is made
 // to ES through olivere/elasticsearch library.
-func IndexRequestDo(requestAsService *es7.IndexService, ctx context.Context) (*es7.IndexResponse, error) {
+func IndexRequestDo(requestAsService *es7.IndexService, originalBody interface{}, ctx context.Context) (*es7.IndexResponse, error) {
 	// There is no need to add tenant ID if the request is being
 	// made to an external ES so we can just do a normal
 	// index Do and return the response.
 	if ExternalElasticsearch == "true" {
-		return requestAsService.Do(ctx)
+		return requestAsService.BodyJson(originalBody).Do(ctx)
 	}
+
+	// Modify the originalBody and add it before sending
+	// the request.
+	//
+	// NOTE: Assumption is that the body will be a map of string to
+	// interface and a new string will be added `tenant_id`
+	bodyAsMap, asMapOk := originalBody.(map[string]interface{})
+
+	if !asMapOk {
+		errMsg := "error while converting original request body to add `tenant_id`"
+		log.Warnln(": ", errMsg)
+		return nil, errors.New(errMsg)
+	}
+
+	tenantId, tenantIdErr := GetTenantID()
+	if tenantIdErr != nil {
+		errToReturn := fmt.Errorf("error while getting tenant ID: %s", tenantIdErr)
+		log.Warnln(": ", errToReturn.Error())
+		return nil, errToReturn
+	}
+
+	bodyAsMap["tenant_id"] = tenantId
+
+	// Finally make the request
+	esResponse, esResponseErr := requestAsService.BodyJson(bodyAsMap).Do(ctx)
+
+	// Index response doesn't return the source body so the response
+	// can be returned directly without need for checking
+	// or modifying anything.
+	return esResponse, esResponseErr
 }
