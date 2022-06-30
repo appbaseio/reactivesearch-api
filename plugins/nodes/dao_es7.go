@@ -51,7 +51,9 @@ func (es *elasticsearch) deleteOlderRecords7(ctx context.Context) error {
 
 	rangeQuery := es7.NewRangeQuery("ping_time").Lt(maxTime)
 
-	_, err := util.GetClient7().DeleteByQuery().Index(es.indexName).Query(rangeQuery).Do(ctx)
+	deleteQuery := util.GetClient7().DeleteByQuery().Index(es.indexName).Query(rangeQuery)
+
+	_, err := util.DeleteRequestDo(deleteQuery, ctx, nil, "")
 	if err != nil {
 		log.Errorln(logTag, ": error while deleting records older than 7 days, ", err)
 		return err
