@@ -149,21 +149,11 @@ func (es *elasticsearch) getUser(ctx context.Context, username string) (*user.Us
 }
 
 func (es *elasticsearch) getRawUsers(ctx context.Context) ([]byte, error) {
-	switch util.GetVersion() {
-	case 6:
-		return es.getRawUsersEs6(ctx)
-	default:
-		return es.getRawUsersEs7(ctx)
-	}
+	return es.getRawUsersEs7(ctx)
 }
 
 func (es *elasticsearch) getRawUser(ctx context.Context, username string) ([]byte, error) {
-	switch util.GetVersion() {
-	case 6:
-		return es.getRawUserEs6(ctx, username)
-	default:
-		return es.getRawUserEs7(ctx, username)
-	}
+	return es.getRawUserEs7(ctx, username)
 }
 
 func (es *elasticsearch) postUser(ctx context.Context, u user.User) (bool, error) {
@@ -181,12 +171,7 @@ func (es *elasticsearch) postUser(ctx context.Context, u user.User) (bool, error
 }
 
 func (es *elasticsearch) patchUser(ctx context.Context, username string, patch map[string]interface{}) ([]byte, error) {
-	switch util.GetVersion() {
-	case 6:
-		return es.patchUserEs6(ctx, username, patch)
-	default:
-		return es.patchUserEs7(ctx, username, patch)
-	}
+	return es.patchUserEs7(ctx, username, patch)
 }
 
 func (es *elasticsearch) deleteUser(ctx context.Context, username string) (bool, error) {
