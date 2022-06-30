@@ -218,6 +218,36 @@ func UpdateRequestDo(requestAsService *es7.UpdateService, updateBody interface{}
 	return requestAsService.Doc(bodyWithTenant).Do(ctx)
 }
 
+// CountRequestDo will handle count requests to be made to ES
+// through olivere/elasticsearch and the request and response
+// modification.
+//
+// For count request, a match query will be added that will
+// contain the tenant_id so that results only for the particular
+// tenant are returned.
+//
+// This method should be called whenever a CountService operation
+// is to be done in a tenant_id present environment.
+func CountRequestDo(requestAsService *es7.CountService, ctx context.Context) (int64, error) {
+	// If ExternalElasticSearch is being done, just `Do` as is.
+	if ExternalElasticsearch == "true" {
+		return requestAsService.Do(ctx)
+	}
+
+	// Else add the `tenant_id` as a match query.
+	tenantId, tenantIdErr := GetTenantID()
+	if tenantIdErr != nil {
+		errToReturn := fmt.Errorf("error while getting tenant ID: %s", tenantIdErr)
+		log.Warnln(": ", errToReturn.Error())
+		return 0, errToReturn
+	}
+
+	termQueryTenantId := es7.NewTermQuery("tenant_id", tenantId)
+	tenantIdFilterQuery := es7.NewBoolQuery().Filter(termQueryTenantId)
+
+	return requestAsService.Query(tenantIdFilterQuery).Do(ctx)
+}
+
 // addTenantId will add the tenant_id field to the passed doc.
 // The doc is expected to be of type map though it will be passed
 // as an interface.
