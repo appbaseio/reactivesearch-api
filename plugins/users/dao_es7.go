@@ -8,10 +8,11 @@ import (
 )
 
 func (es *elasticsearch) getRawUsersEs7(ctx context.Context) ([]byte, error) {
-	response, err := util.GetClient7().Search().
+	searchRequest := util.GetClient7().Search().
 		Index(es.indexName).
-		Size(1000).
-		Do(ctx)
+		Size(1000)
+
+	response, err := util.SearchRequestDo(searchRequest, ctx)
 
 	if err != nil {
 		return nil, err
@@ -62,11 +63,12 @@ func (es *elasticsearch) getRawUserEs7(ctx context.Context, username string) ([]
 }
 
 func (es *elasticsearch) deleteUserEs7(ctx context.Context, username string) (bool, error) {
-	_, err := util.GetClient7().Delete().
+	deleteRequest := util.GetClient7().Delete().
 		Index(es.indexName).
 		Refresh("wait_for").
-		Id(username).
-		Do(ctx)
+		Id(username)
+
+	_, err := util.DeleteRequestDo(deleteRequest, ctx, username, es.indexName)
 	if err != nil {
 		return false, err
 	}
