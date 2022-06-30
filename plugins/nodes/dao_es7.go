@@ -24,13 +24,13 @@ func (es *elasticsearch) pingES7(ctx context.Context, machineID string) error {
 
 	// Just sending an index request will suffice. If the ID will be present,
 	// this request will update the doc or create one.
-	_, err := util.GetClient7().
+	indexRequest := util.GetClient7().
 		Index().
 		Index(es.indexName).
-		BodyJson(pingDoc).
 		Refresh("wait_for").
-		Id(machineID).
-		Do(ctx)
+		Id(machineID)
+
+	_, err := util.IndexRequestDo(indexRequest, pingDoc, ctx)
 
 	if err != nil {
 		log.Errorln(logTag, ": error indexing ping time:", err)
