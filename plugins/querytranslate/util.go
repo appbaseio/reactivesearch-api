@@ -374,6 +374,11 @@ func (b Backend) JSONSchemaType() *jsonschema.Type {
 
 // DeepPaginationConfig Struct
 type DeepPaginationConfig struct {
+	// The `cursor` value will map according to the
+	// backend.
+	//
+	// - ES: `search_after` ([$cursor])
+	// - Solr: `cursorMark` $cursor
 	Cursor *string `json:"cursor,omitempty"`
 }
 
