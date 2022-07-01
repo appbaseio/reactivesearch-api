@@ -100,6 +100,29 @@ func translateQuery(rsQuery RSQuery, userIP string) (string, error) {
 			finalQuery := queryOptions
 			finalQuery["query"] = translatedQuery
 
+			// Handle DeepPagination
+			// NOTE: Following code should be before `from` is added to the final
+			// query because deepPagination might modify the from value.
+			if query.DeepPagination == nil {
+				defaultDeepPagination := false
+				query.DeepPagination = &defaultDeepPagination
+			}
+
+			// If deep pagination is enabled, set it to search_after
+			// since this translation is happening for ES.
+			if *query.DeepPagination &&
+				query.DeepPaginationConfig != nil &&
+				query.DeepPaginationConfig.Cursor != nil &&
+				*query.DeepPaginationConfig.Cursor != "" {
+				// Set the from value of the request to 0
+				fromForSearchAfter := 0
+				query.From = &fromForSearchAfter
+
+				// Add the search_after field.
+				searchAfterValue := []string{*query.DeepPaginationConfig.Cursor}
+				finalQuery["search_after"] = searchAfterValue
+			}
+
 			// Apply query options
 			buildQueryOptions, err := query.buildQueryOptions()
 			if err != nil {
