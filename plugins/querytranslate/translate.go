@@ -332,13 +332,23 @@ func (query *Query) buildQueryOptions() (map[string]interface{}, error) {
 
 	// Only apply sort on search queries
 	if query.SortBy != nil && query.Type == Search {
-		if len(normalizedFields) < 1 {
-			return nil, errors.New("field 'dataField' must be present to apply 'sortBy' property")
+		// If both sortField and dataFields are not present
+		// then raise an error.
+		if len(normalizedFields) < 1 && query.SortField == nil {
+			return nil, errors.New("field 'dataField' or `sortField` must be present to apply 'sortBy' property")
 		}
-		dataField := normalizedFields[0].Field
+
+		// sortField get's priority
+		// if not present and normalized field is present
+		// then it is assigned.
+		if query.SortField == nil {
+			dataField := normalizedFields[0].Field
+			query.SortField = &dataField
+		}
+
 		queryWithOptions["sort"] = []map[string]interface{}{
 			{
-				dataField: map[string]interface{}{
+				*query.SortField: map[string]interface{}{
 					"order": *query.SortBy,
 				},
 			},
