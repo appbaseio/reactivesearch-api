@@ -407,17 +407,40 @@ func (query *Query) buildQueryOptions() (map[string]interface{}, error) {
 							"calendar_interval": *query.CalendarInterval,
 						},
 					}
-				} else if query.Value != nil {
-					rangeValue, err := query.getRangeValue(*query.Value)
+				} else {
+					// rangeHistogram can work without range value as well
+					// so it being nil should not have an effect.
+
+					// If range value is not present, just create a dummy one.
+					var dummyStartEndValue interface{} = 0
+					rangeValue := &RangeValue{
+						Start: &dummyStartEndValue,
+						End:   &dummyStartEndValue,
+					}
+
+					var err error
+
+					useStartValue := false
+
+					if query.Value != nil {
+						rangeValue, err = query.getRangeValue(*query.Value)
+						useStartValue = true
+					}
+
 					if err != nil {
 						log.Errorln(logTag, ":", err)
 					} else if rangeValue != nil && rangeValue.Start != nil && rangeValue.End != nil {
+						histogramMap := map[string]interface{}{
+							"field":    dataField,
+							"interval": getValidInterval(query.Interval, *rangeValue),
+						}
+
+						if useStartValue {
+							histogramMap["offset"] = rangeValue.Start
+						}
+
 						rangeAggs[dataField] = map[string]interface{}{
-							"histogram": map[string]interface{}{
-								"field":    dataField,
-								"interval": getValidInterval(query.Interval, *rangeValue),
-								"offset":   rangeValue.Start,
-							},
+							"histogram": histogramMap,
 						}
 					}
 				}

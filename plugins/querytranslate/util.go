@@ -759,7 +759,7 @@ func mergeMaps(x map[string]interface{}, y map[string]interface{}) map[string]in
 }
 
 func getValidInterval(interval *int, rangeValue RangeValue) int {
-	normalizedInterval := 0
+	normalizedInterval := 1
 	if interval != nil {
 		normalizedInterval = *interval
 	}
@@ -777,7 +777,7 @@ func getValidInterval(interval *int, rangeValue RangeValue) int {
 	if min == 0 {
 		min = 1
 	}
-	if normalizedInterval == 0 {
+	if normalizedInterval == 1 {
 		return int(min)
 	} else if normalizedInterval < int(min) {
 		return int(min)
