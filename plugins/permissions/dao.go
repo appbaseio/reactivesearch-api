@@ -79,12 +79,7 @@ func (es *elasticsearch) getPermission(ctx context.Context, username string) (*p
 }
 
 func (es *elasticsearch) getRawPermission(ctx context.Context, username string) ([]byte, error) {
-	switch util.GetVersion() {
-	case 6:
-		return es.getRawPermissionEs6(ctx, username)
-	default:
-		return es.getRawPermissionEs7(ctx, username)
-	}
+	return es.getRawPermissionEs7(ctx, username)
 }
 
 func (es *elasticsearch) postPermission(ctx context.Context, p permission.Permission) (bool, error) {
@@ -102,12 +97,7 @@ func (es *elasticsearch) postPermission(ctx context.Context, p permission.Permis
 }
 
 func (es *elasticsearch) patchPermission(ctx context.Context, username string, patch map[string]interface{}) ([]byte, error) {
-	switch util.GetVersion() {
-	case 6:
-		return es.patchPermissionEs6(ctx, username, patch)
-	default:
-		return es.patchPermissionEs7(ctx, username, patch)
-	}
+	return es.patchPermissionEs7(ctx, username, patch)
 }
 
 func (es *elasticsearch) deletePermission(ctx context.Context, username string) (bool, error) {
@@ -124,37 +114,17 @@ func (es *elasticsearch) deletePermission(ctx context.Context, username string) 
 }
 
 func (es *elasticsearch) getRawOwnerPermissions(ctx context.Context, owner string) ([]byte, error) {
-	switch util.GetVersion() {
-	case 6:
-		return es.getRawOwnerPermissionsEs6(ctx, owner)
-	default:
-		return es.getRawOwnerPermissionsEs7(ctx, owner)
-	}
+	return es.getRawOwnerPermissionsEs7(ctx, owner)
 }
 
 func (es *elasticsearch) getPermissions(ctx context.Context, indices []string) ([]byte, error) {
-	switch util.GetVersion() {
-	case 6:
-		return es.getPermissionsEs6(ctx, indices)
-	default:
-		return es.getPermissionsEs7(ctx, indices)
-	}
+	return es.getPermissionsEs7(ctx, indices)
 }
 
 func (es *elasticsearch) checkRoleExists(ctx context.Context, role string) (bool, error) {
-	switch util.GetVersion() {
-	case 6:
-		return es.checkRoleExistsEs6(ctx, role)
-	default:
-		return es.checkRoleExistsEs7(ctx, role)
-	}
+	return es.checkRoleExistsEs7(ctx, role)
 }
 
 func (es *elasticsearch) getRawRolePermission(ctx context.Context, role string) ([]byte, error) {
-	switch util.GetVersion() {
-	case 6:
-		return es.getRawRolePermissionEs6(ctx, role)
-	default:
-		return es.getRawRolePermissionEs7(ctx, role)
-	}
+	return es.getRawRolePermissionEs7(ctx, role)
 }
