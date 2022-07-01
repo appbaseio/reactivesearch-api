@@ -397,6 +397,7 @@ type Query struct {
 	Size                        *int                        `json:"size,omitempty"`
 	AggregationSize             *int                        `json:"aggregationSize,omitempty"`
 	SortBy                      *SortBy                     `json:"sortBy,omitempty"`
+	SortField                   *string                     `json:"sortField,omitempty"`
 	Value                       *interface{}                `json:"value,omitempty"` // either string or Array of string
 	AggregationField            *string                     `json:"aggregationField,omitempty"`
 	After                       *map[string]interface{}     `json:"after,omitempty"`
