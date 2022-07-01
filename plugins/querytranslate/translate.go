@@ -331,7 +331,7 @@ func (query *Query) buildQueryOptions() (map[string]interface{}, error) {
 	normalizedFields := NormalizedDataFields(query.DataField, query.FieldWeights)
 
 	// Only apply sort on search queries
-	if query.SortBy != nil && query.Type == Search {
+	if (query.SortBy != nil || query.SortField != nil) && query.Type == Search {
 		// If both sortField and dataFields are not present
 		// then raise an error.
 		if len(normalizedFields) < 1 && query.SortField == nil {
@@ -344,6 +344,12 @@ func (query *Query) buildQueryOptions() (map[string]interface{}, error) {
 		if query.SortField == nil {
 			dataField := normalizedFields[0].Field
 			query.SortField = &dataField
+		}
+
+		// If sortBy is nil, set it to Desc
+		if query.SortBy == nil {
+			defaultSortBy := Desc
+			query.SortBy = &defaultSortBy
 		}
 
 		queryWithOptions["sort"] = []map[string]interface{}{
