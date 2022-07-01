@@ -372,6 +372,11 @@ func (b Backend) JSONSchemaType() *jsonschema.Type {
 	}
 }
 
+// DeepPaginationConfig Struct
+type DeepPaginationConfig struct {
+	Cursor *string `json:"cursor,omitempty"`
+}
+
 // Query represents the query object
 type Query struct {
 	ID                          *string                     `json:"id,omitempty"` // component id
@@ -434,6 +439,8 @@ type Query struct {
 	FeaturedSuggestionsConfig   *FeaturedSuggestionsOptions `json:"featuredSuggestionsConfig,omitempty"`
 	EnableIndexSuggestions      *bool                       `json:"enableIndexSuggestions,omitempty"`
 	IndexSuggestionsConfig      *IndexSuggestionsOptions    `json:"indexSuggestionsConfig,omitempty"`
+	DeepPagination              *bool                       `json:"deepPagination,omitempty"`
+	DeepPaginationConfig        *DeepPaginationConfig       `json:"deepPaginationConfig,omitempty"`
 }
 
 type DataField struct {
