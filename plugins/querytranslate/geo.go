@@ -88,6 +88,11 @@ func (query *Query) getGeoValue() (*GeoValue, error) {
 	return &geoValue, nil
 }
 
+// GetGeoValue extracts the value into a GeoValue object
+func (query *Query) GetGeoValue() (*GeoValue, error) {
+	return query.getGeoValue()
+}
+
 func (query *Query) generateGeoQuery() (*interface{}, error) {
 	geoValue, err := query.getGeoValue()
 
