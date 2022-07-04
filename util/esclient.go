@@ -18,9 +18,10 @@ var version int
 var semanticVersion string
 
 var (
-	clientInit sync.Once
-	client7    *es7.Client
-	client6    *es6.Client
+	clientInit      sync.Once
+	client7         *es7.Client
+	internalClient7 *es7.Client
+	client6         *es6.Client
 )
 
 // GetClient7 returns the es7 client
@@ -30,6 +31,15 @@ func GetClient7() *es7.Client {
 		initClient7()
 	}
 	return client7
+}
+
+// GetInternalClient7 returns the es7 client
+func GetInternalClient7() *es7.Client {
+	// initialize the client if not present
+	if internalClient7 == nil {
+		initClient7()
+	}
+	return internalClient7
 }
 
 // GetClient6 returns the es6 client
@@ -43,14 +53,7 @@ func GetClient6() *es6.Client {
 
 // GetESURL returns elasticsearch url with escaped auth
 func GetESURL() string {
-	esURL := ""
-
-	if ExternalElasticsearch != "true" {
-		esURL = fmt.Sprint(ACCAPI, "es")
-		return esURL
-	}
-
-	esURL = os.Getenv("ES_CLUSTER_URL")
+	esURL := os.Getenv("ES_CLUSTER_URL")
 
 	if esURL == "" {
 		log.Fatal("Error encountered: ", fmt.Errorf("ES_CLUSTER_URL must be set in the environment variables"))
@@ -68,6 +71,18 @@ func GetESURL() string {
 		password := credentials[credentialSeparator+1:]
 		esURL = protocol + "://" + url.PathEscape(username) + ":" + url.PathEscape(password) + "@" + host
 	}
+	return esURL
+}
+
+// GetInternalESURL returns elasticsearch url for internal use
+func GetInternalESURL() string {
+	esURL := ""
+
+	if ExternalElasticsearch != "true" {
+		esURL = fmt.Sprint(ACCAPI, "es")
+		return esURL
+	}
+
 	return esURL
 }
 
@@ -164,7 +179,21 @@ func initClient7() {
 	esHttpClient := HTTPClient()
 
 	if ExternalElasticsearch != "true" {
-		esHttpClient.Transport = &CustomESTransport{originalTransport: esHttpClient.Transport}
+		internalEsHttpClient := HTTPClient()
+		internalEsHttpClient.Transport = &CustomESTransport{originalTransport: internalEsHttpClient.Transport}
+		internalClient7, err = es7.NewClient(
+			es7.SetURL(GetInternalESURL()),
+			es7.SetRetrier(NewRetrier()),
+			es7.SetSniff(isSniffingEnabled()),
+			es7.SetHttpClient(internalEsHttpClient),
+			es7.SetErrorLog(wrappedLoggerError),
+			es7.SetInfoLog(wrappedLoggerDebug),
+			es7.SetTraceLog(wrappedLoggerDebug),
+		)
+
+		if err != nil {
+			log.Fatal("Error encountered while initializing internal ES client: ", err)
+		}
 	}
 
 	client7, err = es7.NewClient(
