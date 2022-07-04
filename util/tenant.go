@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strings"
 
 	es7 "github.com/olivere/elastic/v7"
 	log "github.com/sirupsen/logrus"
@@ -35,6 +36,18 @@ func AppendTenantID(appendTo string) (string, error) {
 	}
 
 	return fmt.Sprintf("%s_%s", appendTo, tenantId), nil
+}
+
+// RemoveTenantID will remove the `tenant_id` from the string
+// passed.
+func RemoveTenantID(removeFrom string) (string, error) {
+	tenantId, tenantIdErr := GetArcID()
+
+	if tenantIdErr != nil {
+		return removeFrom, tenantIdErr
+	}
+
+	return strings.Replace(removeFrom, fmt.Sprint("_", tenantId), "", -1), nil
 }
 
 // IndexRequestDo will handle index request to be made
