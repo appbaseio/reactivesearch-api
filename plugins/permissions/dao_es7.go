@@ -10,7 +10,7 @@ import (
 )
 
 func (es *elasticsearch) checkRoleExistsEs7(ctx context.Context, role string) (bool, error) {
-	searchRequest := util.GetClient7().Search().
+	searchRequest := util.GetInternalClient7().Search().
 		Index(es.indexName).
 		Query(es7.NewTermQuery("role", role))
 
@@ -23,7 +23,7 @@ func (es *elasticsearch) checkRoleExistsEs7(ctx context.Context, role string) (b
 }
 
 func (es *elasticsearch) getRawRolePermissionEs7(ctx context.Context, role string) ([]byte, error) {
-	searchRequest := util.GetClient7().Search().
+	searchRequest := util.GetInternalClient7().Search().
 		Index(es.indexName).
 		Query(es7.NewTermQuery("role", role)).
 		Size(1).
@@ -43,7 +43,7 @@ func (es *elasticsearch) getRawRolePermissionEs7(ctx context.Context, role strin
 }
 
 func (es *elasticsearch) getRawOwnerPermissionsEs7(ctx context.Context, owner string) ([]byte, error) {
-	searchRequest := util.GetClient7().Search().
+	searchRequest := util.GetInternalClient7().Search().
 		Index(es.indexName).
 		Query(es7.NewTermQuery("owner.keyword", owner)).
 		Size(10000)
@@ -73,7 +73,7 @@ func (es *elasticsearch) getRawOwnerPermissionsEs7(ctx context.Context, owner st
 func (es *elasticsearch) getPermissionsEs7(ctx context.Context, indices []string) ([]byte, error) {
 	query := es7.NewBoolQuery()
 	util.GetIndexFilterQueryEs7(query, indices...)
-	searchRequest := util.GetClient7().Search().
+	searchRequest := util.GetInternalClient7().Search().
 		Index(es.indexName).
 		Query(query).
 		Size(10000)
@@ -107,7 +107,7 @@ func (es *elasticsearch) getRawPermissionEs7(ctx context.Context, username strin
 	// remove the field accordingly so getting the user through search
 	// is a better idea.
 	usernameTermQuery := es7.NewTermQuery("_id", username)
-	searchRequest := util.GetClient7().Search().Index(es.indexName).Query(usernameTermQuery).FetchSource(true).Size(1)
+	searchRequest := util.GetInternalClient7().Search().Index(es.indexName).Query(usernameTermQuery).FetchSource(true).Size(1)
 
 	response, err := util.SearchRequestDo(searchRequest, ctx)
 
@@ -130,7 +130,7 @@ func (es *elasticsearch) getRawPermissionEs7(ctx context.Context, username strin
 }
 
 func (es *elasticsearch) patchPermissionEs7(ctx context.Context, username string, patch map[string]interface{}) ([]byte, error) {
-	updateRequest := util.GetClient7().Update().
+	updateRequest := util.GetInternalClient7().Update().
 		Refresh("wait_for").
 		Index(es.indexName).
 		Id(username).

@@ -24,7 +24,7 @@ func (es *elasticsearch) pingES7(ctx context.Context, machineID string) error {
 
 	// Just sending an index request will suffice. If the ID will be present,
 	// this request will update the doc or create one.
-	indexRequest := util.GetClient7().
+	indexRequest := util.GetInternalClient7().
 		Index().
 		Index(es.indexName).
 		Refresh("wait_for").
@@ -51,7 +51,7 @@ func (es *elasticsearch) deleteOlderRecords7(ctx context.Context) error {
 
 	rangeQuery := es7.NewRangeQuery("ping_time").Lt(maxTime)
 
-	deleteQuery := util.GetClient7().DeleteByQuery().Index(es.indexName).Query(rangeQuery)
+	deleteQuery := util.GetInternalClient7().DeleteByQuery().Index(es.indexName).Query(rangeQuery)
 
 	_, err := util.DeleteRequestDo(deleteQuery, ctx, nil, "")
 	if err != nil {
@@ -73,7 +73,7 @@ func (es *elasticsearch) activeNodesInTenMins7(ctx context.Context) (int64, erro
 
 	rangeQuery := es7.NewRangeQuery("ping_time").Gte(minTime)
 
-	resp, err := util.CountRequestDo(util.GetClient7().Count().Index(es.indexName).Query(rangeQuery), ctx)
+	resp, err := util.CountRequestDo(util.GetInternalClient7().Count().Index(es.indexName).Query(rangeQuery), ctx)
 
 	if err != nil {
 		log.Errorln(logTag, ": error while getting number of active nodes in the last 10 mins, ", err)
@@ -93,7 +93,7 @@ func (es *elasticsearch) activeNodesInSevenDays7(ctx context.Context) (int64, er
 
 	rangeQuery := es7.NewRangeQuery("ping_time").Gte(minTime)
 
-	nodeCount, err := util.CountRequestDo(util.GetClient7().Count().Index(es.indexName).Query(rangeQuery), ctx)
+	nodeCount, err := util.CountRequestDo(util.GetInternalClient7().Count().Index(es.indexName).Query(rangeQuery), ctx)
 
 	if err != nil {
 		log.Errorln(logTag, ": error while getting the number of active nodes in the last 7 days, ", err)
