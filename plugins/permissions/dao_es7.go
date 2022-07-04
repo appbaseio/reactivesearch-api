@@ -106,7 +106,7 @@ func (es *elasticsearch) getRawPermissionEs7(ctx context.Context, username strin
 	// but we want to be able to filter based on tenant_id and also
 	// remove the field accordingly so getting the user through search
 	// is a better idea.
-	usernameTermQuery := es7.NewTermQuery("username", username)
+	usernameTermQuery := es7.NewTermQuery("_id", username)
 	searchRequest := util.GetClient7().Search().Index(es.indexName).Query(usernameTermQuery).FetchSource(true).Size(1)
 
 	response, err := util.SearchRequestDo(searchRequest, ctx)
