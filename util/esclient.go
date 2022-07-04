@@ -43,7 +43,14 @@ func GetClient6() *es6.Client {
 
 // GetESURL returns elasticsearch url with escaped auth
 func GetESURL() string {
-	esURL := os.Getenv("ES_CLUSTER_URL")
+	esURL := ""
+
+	if ExternalElasticsearch != "true" {
+		esURL = fmt.Sprint(ACCAPI, "es")
+		return esURL
+	}
+
+	esURL = os.Getenv("ES_CLUSTER_URL")
 
 	if esURL == "" {
 		log.Fatal("Error encountered: ", fmt.Errorf("ES_CLUSTER_URL must be set in the environment variables"))
