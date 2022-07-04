@@ -102,16 +102,27 @@ func (es *elasticsearch) getPermissionsEs7(ctx context.Context, indices []string
 }
 
 func (es *elasticsearch) getRawPermissionEs7(ctx context.Context, username string) ([]byte, error) {
-	response, err := util.GetClient7().Get().
-		Index(es.indexName).
-		Id(username).
-		FetchSource(true).
-		Do(ctx)
+	// NOTE: Adding `tenant_id` to a get doc request is not possible
+	// but we want to be able to filter based on tenant_id and also
+	// remove the field accordingly so getting the user through search
+	// is a better idea.
+	usernameTermQuery := es7.NewTermQuery("username", username)
+	searchRequest := util.GetClient7().Search().Index(es.indexName).Query(usernameTermQuery).FetchSource(true).Size(1)
+
+	response, err := util.SearchRequestDo(searchRequest, ctx)
+
 	if err != nil {
 		return nil, err
 	}
 
-	src, err := applyExpiredField(response.Source)
+	// Make sure the length of response is at least 1
+	if len(response.Hits.Hits) < 1 {
+		return nil, fmt.Errorf("no user found with username: `%s`", username)
+	}
+
+	responseToUse := response.Hits.Hits[0]
+
+	src, err := applyExpiredField(responseToUse.Source)
 	if err != nil {
 		return nil, err
 	}
