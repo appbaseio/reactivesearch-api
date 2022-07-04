@@ -25,6 +25,18 @@ func GetTenantID() (string, error) {
 	return tenantId, tenantIdErr
 }
 
+// AppendTenantID will append the `tenant_id` to the string
+// passed.
+func AppendTenantID(appendTo string) (string, error) {
+	tenantId, tenantIdErr := GetArcID()
+
+	if tenantIdErr != nil {
+		return appendTo, tenantIdErr
+	}
+
+	return fmt.Sprintf("%s_%s", appendTo, tenantId), nil
+}
+
 // IndexRequestDo will handle index request to be made
 // to ES through Olivere/Elastcisearch and the request and response modifications.
 //
