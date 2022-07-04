@@ -36,6 +36,12 @@ func GetClient7() *es7.Client {
 // GetInternalClient7 returns the es7 client
 func GetInternalClient7() *es7.Client {
 	// initialize the client if not present
+
+	// If external then return user client instead
+	if ExternalElasticsearch == "true" {
+		return client7
+	}
+
 	if internalClient7 == nil {
 		initClient7()
 	}
