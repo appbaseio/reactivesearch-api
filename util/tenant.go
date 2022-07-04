@@ -259,10 +259,20 @@ func addTenantId(originalBody interface{}) (interface{}, error) {
 	//
 	// NOTE: Assumption is that the body will be a map of string to
 	// interface and a new string will be added `tenant_id`
-	bodyAsMap, asMapOk := originalBody.(map[string]interface{})
 
-	if !asMapOk {
-		errMsg := "error while converting original request body to add `tenant_id`"
+	marshalledBody, marshalErr := json.Marshal(originalBody)
+	if marshalErr != nil {
+		errMsg := fmt.Sprint("error while unmarshalling original request body to add `tenant_id`: ", marshalErr)
+		log.Warnln(": ", errMsg)
+		return nil, errors.New(errMsg)
+	}
+
+	bodyAsMap := make(map[string]interface{})
+
+	asMapErr := json.Unmarshal(marshalledBody, &bodyAsMap)
+
+	if asMapErr != nil {
+		errMsg := fmt.Sprint("error while converting original request body to add `tenant_id`: ", asMapErr)
 		log.Warnln(": ", errMsg)
 		return nil, errors.New(errMsg)
 	}
