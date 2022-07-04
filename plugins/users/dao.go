@@ -30,7 +30,7 @@ func initPlugin(indexName, mapping string) (*elasticsearch, error) {
 	}()
 
 	// Check if the meta index already exists
-	exists, err := util.GetClient7().IndexExists(indexName).
+	exists, err := util.GetInternalClient7().IndexExists(indexName).
 		Do(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("%s: error while checking if index already exists: %v",
@@ -50,7 +50,7 @@ func initPlugin(indexName, mapping string) (*elasticsearch, error) {
 	replicas := util.GetReplicas()
 	settings := fmt.Sprintf(mapping, util.HiddenIndexSettings(), replicas)
 	// Meta index does not exists, create a new one
-	_, err = util.GetClient7().CreateIndex(indexName).
+	_, err = util.GetInternalClient7().CreateIndex(indexName).
 		Body(settings).
 		Do(ctx)
 	if err != nil {
@@ -157,7 +157,7 @@ func (es *elasticsearch) getRawUser(ctx context.Context, username string) ([]byt
 }
 
 func (es *elasticsearch) postUser(ctx context.Context, u user.User) (bool, error) {
-	indexRequest := util.GetClient7().Index().
+	indexRequest := util.GetInternalClient7().Index().
 		Refresh("wait_for").
 		Index(es.indexName).
 		Id(u.Username).
@@ -177,7 +177,7 @@ func (es *elasticsearch) patchUser(ctx context.Context, username string, patch m
 }
 
 func (es *elasticsearch) deleteUser(ctx context.Context, username string) (bool, error) {
-	deleteRequest := util.GetClient7().Delete().
+	deleteRequest := util.GetInternalClient7().Delete().
 		Refresh("wait_for").
 		Index(es.indexName).
 		Id(username)

@@ -10,7 +10,7 @@ import (
 )
 
 func (es *elasticsearch) getRawUsersEs7(ctx context.Context) ([]byte, error) {
-	searchRequest := util.GetClient7().Search().
+	searchRequest := util.GetInternalClient7().Search().
 		Index(es.indexName).
 		Size(1000)
 
@@ -29,7 +29,7 @@ func (es *elasticsearch) getRawUsersEs7(ctx context.Context) ([]byte, error) {
 }
 
 func (es *elasticsearch) patchUserEs7(ctx context.Context, username string, patch map[string]interface{}) ([]byte, error) {
-	updateRequest := util.GetClient7().Update().
+	updateRequest := util.GetInternalClient7().Update().
 		Refresh("wait_for").
 		Index(es.indexName).
 		Id(username).
@@ -54,7 +54,7 @@ func (es *elasticsearch) getRawUserEs7(ctx context.Context, username string) ([]
 	// is a better idea.
 	usernameTermQuery := es7.NewTermQuery("username", username)
 
-	searchRequest := util.GetClient7().Search().Index(es.indexName).Query(usernameTermQuery).FetchSource(true).Size(1)
+	searchRequest := util.GetInternalClient7().Search().Index(es.indexName).Query(usernameTermQuery).FetchSource(true).Size(1)
 
 	response, err := util.SearchRequestDo(searchRequest, ctx)
 
@@ -82,7 +82,7 @@ func (es *elasticsearch) getRawUserEs7(ctx context.Context, username string) ([]
 }
 
 func (es *elasticsearch) deleteUserEs7(ctx context.Context, username string) (bool, error) {
-	deleteRequest := util.GetClient7().Delete().
+	deleteRequest := util.GetInternalClient7().Delete().
 		Index(es.indexName).
 		Refresh("wait_for").
 		Id(username)
