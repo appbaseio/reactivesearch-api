@@ -382,6 +382,14 @@ type DeepPaginationConfig struct {
 	Cursor *string `json:"cursor,omitempty"`
 }
 
+// Endpoint struct
+type Endpoint struct {
+	URL     *string                 `json:"url,omitempty"`
+	Method  *string                 `json:"method,omitempty"`
+	Headers *map[string]interface{} `json:"headers,omitempty"`
+	Body    *interface{}            `json:"body,omitempty"`
+}
+
 // Query represents the query object
 type Query struct {
 	ID                          *string                     `json:"id,omitempty"` // component id
@@ -447,6 +455,7 @@ type Query struct {
 	IndexSuggestionsConfig      *IndexSuggestionsOptions    `json:"indexSuggestionsConfig,omitempty"`
 	DeepPagination              *bool                       `json:"deepPagination,omitempty"`
 	DeepPaginationConfig        *DeepPaginationConfig       `json:"deepPaginationConfig,omitempty"`
+	Endpoint                    *Endpoint                   `json:"endpoint,omitempty"`
 }
 
 type DataField struct {
