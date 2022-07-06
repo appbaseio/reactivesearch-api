@@ -268,8 +268,14 @@ func buildIndependentRequests(rsQuery RSQuery) ([]map[string]interface{}, error)
 
 			delete(queryAsMap, "endpoint")
 
+			bodyToSend := map[string]interface{}{
+				"query": []map[string]interface{}{
+					queryAsMap,
+				},
+			}
+
 			query.Endpoint.Body = new(interface{})
-			*query.Endpoint.Body = queryAsMap
+			*query.Endpoint.Body = bodyToSend
 
 		}
 
