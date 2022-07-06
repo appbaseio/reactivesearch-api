@@ -281,14 +281,16 @@ func buildIndependentRequests(rsQuery RSQuery) ([]map[string]interface{}, error)
 
 		// Unmarshal the built query into a map
 		queryAsMap := make(map[string]interface{})
+		endpointAsMap := make(map[string]interface{})
 
-		unmarshalErr := json.Unmarshal(builtQuery, &queryAsMap)
+		unmarshalErr := json.Unmarshal(builtQuery, &endpointAsMap)
 		if unmarshalErr != nil {
 			log.Warnln(logTag, ": error while unmarshalling query for hitting independently, ", unmarshalErr)
 			return independentQueryArr, unmarshalErr
 		}
 
 		queryAsMap["id"] = *query.ID
+		queryAsMap["endpoint"] = endpointAsMap
 
 		independentQueryArr = append(independentQueryArr, queryAsMap)
 	}
