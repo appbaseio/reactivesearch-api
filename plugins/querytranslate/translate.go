@@ -263,7 +263,7 @@ func BuildIndependentRequest(query Query, rsQuery RSQuery) (map[string]interface
 
 	// If body is not passed, pass the current body without
 	// the endpoint property.
-	if query.Endpoint.Body == nil {
+	if query.Endpoint.Body == nil && *query.Endpoint.Method == http.MethodPost {
 		// Generate the body without the endpoint part
 		queryAsMap := make(map[string]interface{})
 

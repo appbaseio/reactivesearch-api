@@ -210,8 +210,12 @@ func ExecuteIndependentQuery(independentReq map[string]interface{}) ([]byte, *ht
 	bodyToUse, bodyOk := endpointAsMap["body"].(interface{})
 	if !bodyOk {
 		errMsg := fmt.Sprint("error while extracting body from independent request built for: ", requestId)
-		return nil, nil, fmt.Errorf(errMsg)
+		log.Warnln(logTag, ": ", errMsg)
+		// No need to return, instead set the body as empty
+		defaultBody := make([]byte, 0)
+		bodyToUse = defaultBody
 	}
+
 	// Marshal the body
 	bodyInBytes, marshalErr := json.Marshal(bodyToUse)
 	if marshalErr != nil {
