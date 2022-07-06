@@ -234,81 +234,91 @@ func buildIndependentRequests(rsQuery RSQuery) ([]map[string]interface{}, error)
 			continue
 		}
 
-		DEFAULT_METHOD := http.MethodGet
-		DEFAULT_HEADERS := make(map[string]string)
-
-		if query.Endpoint.Method == nil || *query.Endpoint.Method == "" {
-			// Set to default endpoint
-			query.Endpoint.Method = &DEFAULT_METHOD
+		queryAsMap, queryBuildErr := BuildIndependentRequest(query, rsQuery)
+		if queryBuildErr != nil {
+			return independentQueryArr, queryBuildErr
 		}
-
-		// If headers are not passed, set it as empty headers
-		if query.Endpoint.Headers == nil {
-			query.Endpoint.Headers = &DEFAULT_HEADERS
-		}
-
-		// If body is not passed, pass the current body without
-		// the endpoint property.
-		if query.Endpoint.Body == nil {
-			// Generate the body without the endpoint part
-			queryAsMap := make(map[string]interface{})
-
-			queryAsBytes, marshalErr := json.Marshal(query)
-			if marshalErr != nil {
-				log.Warnln(logTag, ": error while marshalling body without the endpoint property, ", marshalErr)
-				return independentQueryArr, marshalErr
-			}
-
-			unmarshalErr := json.Unmarshal(queryAsBytes, &queryAsMap)
-			if unmarshalErr != nil {
-				errMsg := fmt.Sprint("error while unmarshalling body without endpoint property into a map, ", unmarshalErr)
-				log.Warnln(logTag, ": ", errMsg)
-				return independentQueryArr, fmt.Errorf(errMsg)
-			}
-
-			delete(queryAsMap, "endpoint")
-
-			bodyToSend := map[string]interface{}{
-				"query": []map[string]interface{}{
-					queryAsMap,
-				},
-			}
-
-			if rsQuery.Settings != nil {
-				bodyToSend["settings"] = *rsQuery.Settings
-			}
-			if rsQuery.Metadata != nil {
-				bodyToSend["metadata"] = *rsQuery.Metadata
-			}
-
-			query.Endpoint.Body = new(interface{})
-			*query.Endpoint.Body = bodyToSend
-
-		}
-
-		builtQuery, marshalErr := json.Marshal(*query.Endpoint)
-		if marshalErr != nil {
-			log.Warnln(logTag, ": error while marshalling query for hitting independently, ", marshalErr)
-			return independentQueryArr, marshalErr
-		}
-
-		// Unmarshal the built query into a map
-		queryAsMap := make(map[string]interface{})
-		endpointAsMap := make(map[string]interface{})
-
-		unmarshalErr := json.Unmarshal(builtQuery, &endpointAsMap)
-		if unmarshalErr != nil {
-			log.Warnln(logTag, ": error while unmarshalling query for hitting independently, ", unmarshalErr)
-			return independentQueryArr, unmarshalErr
-		}
-
-		queryAsMap["id"] = *query.ID
-		queryAsMap["endpoint"] = endpointAsMap
 
 		independentQueryArr = append(independentQueryArr, queryAsMap)
 	}
 
 	return independentQueryArr, nil
+}
+
+// BuildIndependentRequest will build the independent request based on the passed
+// details and return a map to be used during execution of the request.
+func BuildIndependentRequest(query Query, rsQuery RSQuery) (map[string]interface{}, error) {
+	DEFAULT_METHOD := http.MethodGet
+	DEFAULT_HEADERS := make(map[string]string)
+
+	if query.Endpoint.Method == nil || *query.Endpoint.Method == "" {
+		// Set to default endpoint
+		query.Endpoint.Method = &DEFAULT_METHOD
+	}
+
+	// If headers are not passed, set it as empty headers
+	if query.Endpoint.Headers == nil {
+		query.Endpoint.Headers = &DEFAULT_HEADERS
+	}
+
+	// If body is not passed, pass the current body without
+	// the endpoint property.
+	if query.Endpoint.Body == nil {
+		// Generate the body without the endpoint part
+		queryAsMap := make(map[string]interface{})
+
+		queryAsBytes, marshalErr := json.Marshal(query)
+		if marshalErr != nil {
+			log.Warnln(logTag, ": error while marshalling body without the endpoint property, ", marshalErr)
+			return nil, marshalErr
+		}
+
+		unmarshalErr := json.Unmarshal(queryAsBytes, &queryAsMap)
+		if unmarshalErr != nil {
+			errMsg := fmt.Sprint("error while unmarshalling body without endpoint property into a map, ", unmarshalErr)
+			log.Warnln(logTag, ": ", errMsg)
+			return nil, fmt.Errorf(errMsg)
+		}
+
+		delete(queryAsMap, "endpoint")
+
+		bodyToSend := map[string]interface{}{
+			"query": []map[string]interface{}{
+				queryAsMap,
+			},
+		}
+
+		if rsQuery.Settings != nil {
+			bodyToSend["settings"] = *rsQuery.Settings
+		}
+		if rsQuery.Metadata != nil {
+			bodyToSend["metadata"] = *rsQuery.Metadata
+		}
+
+		query.Endpoint.Body = new(interface{})
+		*query.Endpoint.Body = bodyToSend
+	}
+
+	builtQuery, marshalErr := json.Marshal(*query.Endpoint)
+	if marshalErr != nil {
+		log.Warnln(logTag, ": error while marshalling query for hitting independently, ", marshalErr)
+		return nil, marshalErr
+	}
+
+	// Unmarshal the built query into a map
+	queryAsMap := make(map[string]interface{})
+	endpointAsMap := make(map[string]interface{})
+
+	unmarshalErr := json.Unmarshal(builtQuery, &endpointAsMap)
+	if unmarshalErr != nil {
+		log.Warnln(logTag, ": error while unmarshalling query for hitting independently, ", unmarshalErr)
+		return nil, unmarshalErr
+	}
+
+	queryAsMap["id"] = *query.ID
+	queryAsMap["endpoint"] = endpointAsMap
+
+	return queryAsMap, nil
 }
 
 // shouldApplyKnn determines whether or not to apply KNN stage
