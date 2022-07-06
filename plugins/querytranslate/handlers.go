@@ -8,6 +8,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/appbaseio/reactivesearch-api/middleware/classify"
@@ -109,6 +110,65 @@ func (r *QueryTranslate) validate() http.HandlerFunc {
 			return
 		}
 
+		// Request body is nd-json so we need to convert it into an
+		// array of strings by splitting on \n
+		reqBodySplitted := strings.Split(string(reqBody), "\n")
+
+		// Marshall the reqBodySplitted into bytes
+		splittedInBytes, splittedMarshalErr := json.Marshal(reqBodySplitted)
+		if splittedMarshalErr != nil {
+			errMsg := fmt.Sprint("error while marshalling splitted body to work on it, ", splittedMarshalErr)
+			log.Errorln(logTag, ": ", errMsg)
+			util.WriteBackError(w, errMsg, http.StatusInternalServerError)
+			return
+		}
+
+		// Extract the reqBody into the required format that shows based on ID.
+
+		// Extract some request details that might be required later
+		defaultURL := fmt.Sprint(req.Host, req.URL.Path)
+		methodUsed := req.Method
+
+		reqBodyAsMap := make([]map[string]interface{}, 0)
+
+		// Parse the request into an array of map[string]interface
+		unmarshalErr := json.Unmarshal(splittedInBytes, &reqBodyAsMap)
+		if unmarshalErr != nil {
+			errMsg := fmt.Sprint("error while unmarshalling body to map array: ", unmarshalErr)
+			log.Warnln(logTag, ":", errMsg)
+			util.WriteBackError(w, errMsg, http.StatusInternalServerError)
+			return
+		}
+
+		validateMapToShow := make([]map[string]interface{}, 0)
+
+		// The first item in the array will be the map that will contain the
+		// preference.
+		// Second object will be the body for that request.
+		for reqIndex, reqPref := range reqBodyAsMap {
+			// We will skip all odd values since those will be worked
+			// on during even values.
+			if reqIndex%2 != 0 {
+				continue
+			}
+
+			requestBody := reqBodyAsMap[reqIndex+1]
+
+			// Extract the preference string
+			preferenceAsString := reqPref["preference"].(string)
+			requestID := extractIDFromPreference(preferenceAsString)
+
+			validateMapToShow = append(validateMapToShow, map[string]interface{}{
+				"id": requestID,
+				"endpoint": map[string]interface{}{
+					"url":     defaultURL,
+					"method":  methodUsed,
+					"headers": map[string]interface{}{},
+					"body":    requestBody,
+				},
+			})
+		}
+
 		independentReqBody, independentErr := FromIndependentRequestContext(req.Context())
 		if independentErr != nil {
 			log.Errorln(logTag, ": ", err)
@@ -116,12 +176,24 @@ func (r *QueryTranslate) validate() http.HandlerFunc {
 			return
 		}
 
-		log.Debugln(logTag, ": independent requests: ", *independentReqBody)
+		// Add the independent requests to the validate body to return
+		for _, independentReq := range *independentReqBody {
+			validateMapToShow = append(validateMapToShow, independentReq)
+		}
 
-		w.Header().Add("Content-Type", "application/x-ndjson")
+		// Marshal the validate response
+		marshalledResponse, marshalErr := json.Marshal(validateMapToShow)
+		if marshalErr != nil {
+			errMsg := fmt.Sprint("error while marshalling response, ", marshalErr)
+			log.Warnln(logTag, ": ", errMsg)
+			util.WriteBackError(w, errMsg, http.StatusInternalServerError)
+			return
+		}
+
+		w.Header().Add("Content-Type", "application/json")
 		w.Header().Set("X-Content-Type-Options", "nosniff")
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(string(reqBody)))
+		w.Write([]byte(string(marshalledResponse)))
 	}
 }
 

@@ -1372,3 +1372,16 @@ func addFieldHighlight(source ESDoc) ESDoc {
 	}
 	return source
 }
+
+// extractIDFromPreference will extract the query ID from the preference
+// string passed.
+//
+// Idea is to split it based on underscore `_` and remove the last element
+// and join it back using underscore `_`
+func extractIDFromPreference(preference string) string {
+	textSplitted := strings.Split(preference, "_")
+
+	textSplitted = textSplitted[:len(textSplitted)-1]
+
+	return strings.Join(textSplitted, "_")
+}
