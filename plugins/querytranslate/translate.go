@@ -225,8 +225,8 @@ func translateQuery(rsQuery RSQuery, userIP string) (string, error) {
 // buildIndependentRequests will build the requests that have the endpoint
 // property passed and will accordingly generate an array of objects
 // that will be hit one by one during searching.
-func buildIndependentRequests(rsQuery RSQuery) ([][]byte, error) {
-	independentQueryArr := make([][]byte, 0)
+func buildIndependentRequests(rsQuery RSQuery) ([]map[string]interface{}, error) {
+	independentQueryArr := make([]map[string]interface{}, 0)
 
 	for _, query := range rsQuery.Query {
 		if query.Endpoint == nil {
@@ -258,7 +258,16 @@ func buildIndependentRequests(rsQuery RSQuery) ([][]byte, error) {
 			return independentQueryArr, marshalErr
 		}
 
-		independentQueryArr = append(independentQueryArr, builtQuery)
+		// Unmarshal the built query into a map
+		queryAsMap := make(map[string]interface{})
+
+		unmarshalErr := json.Unmarshal(builtQuery, &queryAsMap)
+		if unmarshalErr != nil {
+			log.Warnln(logTag, ": error while unmarshalling query for hitting independently, ", unmarshalErr)
+			return independentQueryArr, unmarshalErr
+		}
+
+		independentQueryArr = append(independentQueryArr, queryAsMap)
 	}
 
 	return independentQueryArr, nil
