@@ -79,7 +79,7 @@ func (r *QueryTranslate) search() http.HandlerFunc {
 			return
 		}
 
-		independentResponse := make([][]byte, 0)
+		independentResponse := make(map[string]interface{})
 
 		for _, independentReq := range *independentReqBody {
 			// Make the request with the passed details.
@@ -135,7 +135,7 @@ func (r *QueryTranslate) search() http.HandlerFunc {
 
 			respBody, _, reqErr := util.MakeRequestWithHeader(urlToHit, methodToUse, bodyInBytes, *headerToSend)
 			if reqErr != nil {
-				errMsg := fmt.Sprint("error while sending independent request for ID: `%s` with err: `%v`", requestId, reqErr)
+				errMsg := fmt.Sprintf("error while sending independent request for ID: `%s` with err: `%v`", requestId, reqErr)
 				log.Errorln(logTag, ": ", errMsg)
 				util.WriteBackError(w, errMsg, http.StatusBadRequest)
 				return
@@ -143,7 +143,47 @@ func (r *QueryTranslate) search() http.HandlerFunc {
 
 			// TODO: Decide whether to map the response to the ID or extract the body
 			// for the ID from RS response and use that instead?
-			independentResponse = append(independentResponse, respBody)
+
+			responseAsInterface := new(map[string]interface{})
+			unmarshalIndependentResponseErr := json.Unmarshal(respBody, &responseAsInterface)
+			if unmarshalIndependentResponseErr != nil {
+				errMsg := fmt.Sprintf("error while unmarshalling received response for independent request with ID: `%s` and err: `%v`", requestId, unmarshalIndependentResponseErr)
+				log.Errorln(logTag, ": ", errMsg)
+				util.WriteBackError(w, errMsg, http.StatusInternalServerError)
+				return
+			}
+
+			independentResponse[requestId] = responseAsInterface
+		}
+
+		if len(independentResponse) > 0 {
+			// Unmarshal the stage 1 response into a map and merge the independent
+			// responses as well
+			rsResponseAsMap := make(map[string]interface{})
+			rsResponseAsMapErr := json.Unmarshal(rsResponse, &rsResponseAsMap)
+			if rsResponseAsMapErr != nil {
+				errMsg := fmt.Sprint("error while unmarshalling RS response into a map to modify it: ", rsResponseAsMapErr)
+				log.Errorln(logTag, ": ", errMsg)
+				util.WriteBackError(w, errMsg, http.StatusInternalServerError)
+				return
+			}
+
+			// Merge the independent responses into the final response
+			for id, response := range independentResponse {
+				rsResponseAsMap[id] = response
+			}
+
+			// Marshal the map back into bytes with the updated
+			// content.
+			var marshalErr error
+			rsResponse, marshalErr = json.Marshal(rsResponseAsMap)
+
+			if marshalErr != nil {
+				errMsg := fmt.Sprint("error while marshalling rs response back into bytes from modified map: ", marshalErr)
+				log.Errorln(logTag, ": ", errMsg)
+				util.WriteBackError(w, errMsg, http.StatusInternalServerError)
+				return
+			}
 		}
 
 		indices, err := index.FromContext(req.Context())
