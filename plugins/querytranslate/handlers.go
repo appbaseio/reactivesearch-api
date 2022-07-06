@@ -107,7 +107,7 @@ func (r *QueryTranslate) search() http.HandlerFunc {
 				return
 			}
 
-			headersToUse, headerOk := endpointAsMap["headers"].(map[string]string)
+			headersToUse, headerOk := endpointAsMap["headers"].(map[string]interface{})
 			if !headerOk {
 				errMsg := fmt.Sprint("error while extracting headers from independent request built for: ", requestId)
 				util.WriteBackError(w, errMsg, http.StatusInternalServerError)
@@ -115,7 +115,14 @@ func (r *QueryTranslate) search() http.HandlerFunc {
 			}
 			headerToSend := new(http.Header)
 			for key, value := range headersToUse {
-				headerToSend.Set(key, value)
+				valueAsString, valueAsStrOk := value.(string)
+				if !valueAsStrOk {
+					errMsg := fmt.Sprintf("error while converting header value to string for key `%s` and request: `%s`", key, requestId)
+					log.Warnln(logTag, ": ", errMsg)
+					util.WriteBackError(w, errMsg, http.StatusBadRequest)
+					return
+				}
+				headerToSend.Set(key, valueAsString)
 			}
 
 			bodyToUse, bodyOk := endpointAsMap["body"].(interface{})
