@@ -34,18 +34,18 @@ func FromContext(ctx context.Context) (*RSQuery, error) {
 
 // NewIndependentRequestContext returns a new context with the
 // given independent request body.
-func NewIndependentRequestContext(ctx context.Context, rsQuery RSQuery) context.Context {
-	return context.WithValue(ctx, independentReqCtxKey, rsQuery)
+func NewIndependentRequestContext(ctx context.Context, independentRequests []map[string]interface{}) context.Context {
+	return context.WithValue(ctx, independentReqCtxKey, independentRequests)
 }
 
 // FromIndependentRequestContext retrieves the rs ap request stored
 // against the querytranslate.ctxKey from the context.
-func FromIndependentRequestContext(ctx context.Context) (*RSQuery, error) {
+func FromIndependentRequestContext(ctx context.Context) (*[]map[string]interface{}, error) {
 	ctxRequest := ctx.Value(independentReqCtxKey)
 	if ctxRequest == nil {
 		return nil, errors.NewNotFoundInContextError("Independent RSQuery")
 	}
-	reqQuery, ok := ctxRequest.(RSQuery)
+	reqQuery, ok := ctxRequest.([]map[string]interface{})
 	if !ok {
 		return nil, errors.NewInvalidCastError("ctxRequest", "Independent RSQuery")
 	}

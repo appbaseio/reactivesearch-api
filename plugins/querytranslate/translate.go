@@ -288,6 +288,8 @@ func buildIndependentRequests(rsQuery RSQuery) ([]map[string]interface{}, error)
 			return independentQueryArr, unmarshalErr
 		}
 
+		queryAsMap["id"] = *query.ID
+
 		independentQueryArr = append(independentQueryArr, queryAsMap)
 	}
 
