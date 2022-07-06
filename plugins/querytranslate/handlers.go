@@ -71,6 +71,20 @@ func (r *QueryTranslate) search() http.HandlerFunc {
 			return
 		}
 
+		// This is where the independent requests will be done.
+		independentReqBody, independentErr := FromIndependentRequestContext(req.Context())
+		if independentErr != nil {
+			log.Errorln(logTag, ": ", err)
+			util.WriteBackError(w, "Can't read independent requests built", http.StatusBadRequest)
+			return
+		}
+
+		independentResponse := make([][]map[string]interface{}, 0)
+
+		for _, independentReq := range *independentReqBody {
+			// Make the request with the passed details.
+		}
+
 		indices, err := index.FromContext(req.Context())
 		if err != nil {
 			msg := "error getting the index names from context"
