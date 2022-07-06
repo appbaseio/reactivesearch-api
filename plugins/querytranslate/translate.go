@@ -274,6 +274,13 @@ func buildIndependentRequests(rsQuery RSQuery) ([]map[string]interface{}, error)
 				},
 			}
 
+			if rsQuery.Settings != nil {
+				bodyToSend["settings"] = *rsQuery.Settings
+			}
+			if rsQuery.Metadata != nil {
+				bodyToSend["metadata"] = *rsQuery.Metadata
+			}
+
 			query.Endpoint.Body = new(interface{})
 			*query.Endpoint.Body = bodyToSend
 
