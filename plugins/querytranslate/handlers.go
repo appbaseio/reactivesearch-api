@@ -114,13 +114,9 @@ func (r *QueryTranslate) validate() http.HandlerFunc {
 		// array of strings by splitting on \n
 		reqBodySplitted := strings.Split(string(reqBody), "\n")
 
-		// Marshall the reqBodySplitted into bytes
-		splittedInBytes, splittedMarshalErr := json.Marshal(reqBodySplitted)
-		if splittedMarshalErr != nil {
-			errMsg := fmt.Sprint("error while marshalling splitted body to work on it, ", splittedMarshalErr)
-			log.Errorln(logTag, ": ", errMsg)
-			util.WriteBackError(w, errMsg, http.StatusInternalServerError)
-			return
+		// Remove the last item since it's empty
+		if len(reqBodySplitted) > 0 {
+			reqBodySplitted = reqBodySplitted[:len(reqBodySplitted)-1]
 		}
 
 		// Extract the reqBody into the required format that shows based on ID.
@@ -129,33 +125,42 @@ func (r *QueryTranslate) validate() http.HandlerFunc {
 		defaultURL := fmt.Sprint(req.Host, req.URL.Path)
 		methodUsed := req.Method
 
-		reqBodyAsMap := make([]map[string]interface{}, 0)
-
-		// Parse the request into an array of map[string]interface
-		unmarshalErr := json.Unmarshal(splittedInBytes, &reqBodyAsMap)
-		if unmarshalErr != nil {
-			errMsg := fmt.Sprint("error while unmarshalling body to map array: ", unmarshalErr)
-			log.Warnln(logTag, ":", errMsg)
-			util.WriteBackError(w, errMsg, http.StatusInternalServerError)
-			return
-		}
-
 		validateMapToShow := make([]map[string]interface{}, 0)
 
 		// The first item in the array will be the map that will contain the
 		// preference.
 		// Second object will be the body for that request.
-		for reqIndex, reqPref := range reqBodyAsMap {
+		for reqIndex, reqPref := range reqBodySplitted {
 			// We will skip all odd values since those will be worked
 			// on during even values.
 			if reqIndex%2 != 0 {
 				continue
 			}
 
-			requestBody := reqBodyAsMap[reqIndex+1]
+			requestBody := reqBodySplitted[reqIndex+1]
+
+			// Unmarshal into map
+			prefAsMap := make(map[string]interface{})
+			bodyAsMap := make(map[string]interface{})
+
+			prefUnmarshalErr := json.Unmarshal([]byte(reqPref), &prefAsMap)
+			if prefUnmarshalErr != nil {
+				errMsg := fmt.Sprintf("error while unmarshalling preferences at index `%d` with err: %v", reqIndex, prefUnmarshalErr)
+				log.Errorln(logTag, ": ", errMsg)
+				util.WriteBackError(w, errMsg, http.StatusInternalServerError)
+				return
+			}
+
+			reqUnmarshalErr := json.Unmarshal([]byte(requestBody), &bodyAsMap)
+			if reqUnmarshalErr != nil {
+				errMsg := fmt.Sprintf("error while unmarshalling request at index `%d` with err: %v", reqIndex+1, reqUnmarshalErr)
+				log.Errorln(logTag, ": ", errMsg)
+				util.WriteBackError(w, errMsg, http.StatusInternalServerError)
+				return
+			}
 
 			// Extract the preference string
-			preferenceAsString := reqPref["preference"].(string)
+			preferenceAsString := prefAsMap["preference"].(string)
 			requestID := extractIDFromPreference(preferenceAsString)
 
 			validateMapToShow = append(validateMapToShow, map[string]interface{}{
@@ -164,7 +169,7 @@ func (r *QueryTranslate) validate() http.HandlerFunc {
 					"url":     defaultURL,
 					"method":  methodUsed,
 					"headers": map[string]interface{}{},
-					"body":    requestBody,
+					"body":    bodyAsMap,
 				},
 			})
 		}
