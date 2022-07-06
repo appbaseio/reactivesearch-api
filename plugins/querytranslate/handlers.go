@@ -83,68 +83,13 @@ func (r *QueryTranslate) search() http.HandlerFunc {
 
 		for _, independentReq := range *independentReqBody {
 			// Make the request with the passed details.
-
 			requestId := independentReq["id"].(string)
 
-			endpointAsMap, endpointAsMapOk := independentReq["endpoint"].(map[string]interface{})
-			if !endpointAsMapOk {
-				errMsg := fmt.Sprint("error while converting endpoint to map for independent request with ID: ", requestId)
-				util.WriteBackError(w, errMsg, http.StatusInternalServerError)
-				return
-			}
+			respBody, _, reqErr := ExecuteIndependentQuery(independentReq)
 
-			urlToHit, urlOk := endpointAsMap["url"].(string)
-			if !urlOk {
-				errMsg := fmt.Sprint("error while extracting URL from independent request built for: ", requestId)
-				util.WriteBackError(w, errMsg, http.StatusInternalServerError)
-				return
-			}
-
-			methodToUse, methodOk := endpointAsMap["method"].(string)
-			if !methodOk {
-				errMsg := fmt.Sprint("error while extracting method from independent request built for: ", requestId)
-				util.WriteBackError(w, errMsg, http.StatusInternalServerError)
-				return
-			}
-
-			headersToUse, headerOk := endpointAsMap["headers"].(map[string]interface{})
-			if !headerOk {
-				errMsg := fmt.Sprint("error while extracting headers from independent request built for: ", requestId)
-				util.WriteBackError(w, errMsg, http.StatusInternalServerError)
-				return
-			}
-			headerToSend := new(http.Header)
-			for key, value := range headersToUse {
-				valueAsString, valueAsStrOk := value.(string)
-				if !valueAsStrOk {
-					errMsg := fmt.Sprintf("error while converting header value to string for key `%s` and request: `%s`", key, requestId)
-					log.Warnln(logTag, ": ", errMsg)
-					util.WriteBackError(w, errMsg, http.StatusBadRequest)
-					return
-				}
-				headerToSend.Set(key, valueAsString)
-			}
-
-			bodyToUse, bodyOk := endpointAsMap["body"].(interface{})
-			if !bodyOk {
-				errMsg := fmt.Sprint("error while extracting body from independent request built for: ", requestId)
-				util.WriteBackError(w, errMsg, http.StatusInternalServerError)
-				return
-			}
-			// Marshal the body
-			bodyInBytes, marshalErr := json.Marshal(bodyToUse)
-			if marshalErr != nil {
-				errMsg := fmt.Sprintf("error while marshalling body to send it for independent request for request `%s` with err: %v", requestId, marshalErr)
-				log.Errorln(logTag, ": ", errMsg)
-				util.WriteBackError(w, errMsg, http.StatusInternalServerError)
-				return
-			}
-
-			respBody, _, reqErr := util.MakeRequestWithHeader(urlToHit, methodToUse, bodyInBytes, *headerToSend)
 			if reqErr != nil {
-				errMsg := fmt.Sprintf("error while sending independent request for ID: `%s` with err: `%v`", requestId, reqErr)
-				log.Errorln(logTag, ": ", errMsg)
-				util.WriteBackError(w, errMsg, http.StatusBadRequest)
+				log.Warnln(logTag, ": ", reqErr)
+				util.WriteBackError(w, reqErr.Error(), http.StatusInternalServerError)
 				return
 			}
 
@@ -221,6 +166,68 @@ func (r *QueryTranslate) search() http.HandlerFunc {
 			util.WriteBackRaw(w, esResponseBody, responseStatusCode)
 		}
 	}
+}
+
+// ExecuteIndependentQuery will execute the passed independent query and return
+// the response in bytes, HTTP response and error (if any).
+func ExecuteIndependentQuery(independentReq map[string]interface{}) ([]byte, *http.Response, error) {
+	requestId := independentReq["id"].(string)
+
+	endpointAsMap, endpointAsMapOk := independentReq["endpoint"].(map[string]interface{})
+	if !endpointAsMapOk {
+		errMsg := fmt.Sprint("error while converting endpoint to map for independent request with ID: ", requestId)
+		return nil, nil, fmt.Errorf(errMsg)
+	}
+
+	urlToHit, urlOk := endpointAsMap["url"].(string)
+	if !urlOk {
+		errMsg := fmt.Sprint("error while extracting URL from independent request built for: ", requestId)
+		return nil, nil, fmt.Errorf(errMsg)
+	}
+
+	methodToUse, methodOk := endpointAsMap["method"].(string)
+	if !methodOk {
+		errMsg := fmt.Sprint("error while extracting method from independent request built for: ", requestId)
+		return nil, nil, fmt.Errorf(errMsg)
+	}
+
+	headersToUse, headerOk := endpointAsMap["headers"].(map[string]interface{})
+	if !headerOk {
+		errMsg := fmt.Sprint("error while extracting headers from independent request built for: ", requestId)
+		return nil, nil, fmt.Errorf(errMsg)
+	}
+	headerToSend := new(http.Header)
+	for key, value := range headersToUse {
+		valueAsString, valueAsStrOk := value.(string)
+		if !valueAsStrOk {
+			errMsg := fmt.Sprintf("error while converting header value to string for key `%s` and request: `%s`", key, requestId)
+			log.Warnln(logTag, ": ", errMsg)
+			return nil, nil, fmt.Errorf(errMsg)
+		}
+		headerToSend.Set(key, valueAsString)
+	}
+
+	bodyToUse, bodyOk := endpointAsMap["body"].(interface{})
+	if !bodyOk {
+		errMsg := fmt.Sprint("error while extracting body from independent request built for: ", requestId)
+		return nil, nil, fmt.Errorf(errMsg)
+	}
+	// Marshal the body
+	bodyInBytes, marshalErr := json.Marshal(bodyToUse)
+	if marshalErr != nil {
+		errMsg := fmt.Sprintf("error while marshalling body to send it for independent request for request `%s` with err: %v", requestId, marshalErr)
+		log.Errorln(logTag, ": ", errMsg)
+		return nil, nil, fmt.Errorf(errMsg)
+	}
+
+	respBody, res, reqErr := util.MakeRequestWithHeader(urlToHit, methodToUse, bodyInBytes, *headerToSend)
+	if reqErr != nil {
+		errMsg := fmt.Sprintf("error while sending independent request for ID: `%s` with err: `%v`", requestId, reqErr)
+		log.Errorln(logTag, ": ", errMsg)
+		return nil, nil, fmt.Errorf(errMsg)
+	}
+
+	return respBody, res, reqErr
 }
 
 func (r *QueryTranslate) validate() http.HandlerFunc {
