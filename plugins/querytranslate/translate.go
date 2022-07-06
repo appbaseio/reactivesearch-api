@@ -3,6 +3,7 @@ package querytranslate
 import (
 	"encoding/json"
 	"errors"
+	"net/http"
 	"strings"
 
 	"github.com/appbaseio/reactivesearch-api/util"
@@ -72,6 +73,20 @@ func translateQuery(rsQuery RSQuery, userIP string) (string, error) {
 				rsQuery.Query[queryIndex].DataField = normalizedDataFields
 			} else {
 				return "", errors.New("you're using .synonyms suffix fields in the 'dataField' property but 'enableSynonyms' property is set to `false`. We recommend removing these fields from the Search Settings UI / API or set enableSynonyms to true")
+			}
+		}
+
+		// Validate the endpoint property
+		if query.Endpoint != nil {
+			if query.Endpoint.URL == nil || *query.Endpoint.URL == "" {
+				return "", errors.New("`endpoint.url` is a required property when `endpoint` is passed. Remove the `endpoint` property if it's not used.")
+			}
+
+			DEFAULT_METHOD := http.MethodGet
+
+			if query.Endpoint.Method == nil || *query.Endpoint.Method == "" {
+				// Set to default endpoint
+				query.Endpoint.Method = &DEFAULT_METHOD
 			}
 		}
 
