@@ -99,6 +99,13 @@ func translateQuery(rsQuery RSQuery, userIP string) (string, error) {
 	}
 
 	for _, query := range rsQuery.Query {
+
+		// If the endpoint property is passed, set the query execute as false
+		if query.Endpoint != nil {
+			executeValue := false
+			query.Execute = &executeValue
+		}
+
 		if query.shouldExecuteQuery() {
 			translatedQuery, queryOptions, isGeneratedByValue, translateError := query.getQuery(rsQuery)
 			if translateError != nil {
