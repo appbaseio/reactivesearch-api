@@ -3,6 +3,7 @@ package querytranslate
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"strings"
 
@@ -249,7 +250,27 @@ func buildIndependentRequests(rsQuery RSQuery) ([]map[string]interface{}, error)
 		// If body is not passed, pass the current body without
 		// the endpoint property.
 		if query.Endpoint.Body == nil {
-			// TODO: Generate the body without the endpoint part
+			// Generate the body without the endpoint part
+			queryAsMap := make(map[string]interface{})
+
+			queryAsBytes, marshalErr := json.Marshal(query)
+			if marshalErr != nil {
+				log.Warnln(logTag, ": error while marshalling body without the endpoint property, ", marshalErr)
+				return independentQueryArr, marshalErr
+			}
+
+			unmarshalErr := json.Unmarshal(queryAsBytes, &queryAsMap)
+			if unmarshalErr != nil {
+				errMsg := fmt.Sprint("error while unmarshalling body without endpoint property into a map, ", unmarshalErr)
+				log.Warnln(logTag, ": ", errMsg)
+				return independentQueryArr, fmt.Errorf(errMsg)
+			}
+
+			delete(queryAsMap, "endpoint")
+
+			query.Endpoint.Body = new(interface{})
+			*query.Endpoint.Body = queryAsMap
+
 		}
 
 		builtQuery, marshalErr := json.Marshal(*query.Endpoint)
