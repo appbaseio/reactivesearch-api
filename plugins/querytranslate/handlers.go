@@ -107,7 +107,7 @@ func (r *QueryTranslate) search() http.HandlerFunc {
 				return
 			}
 
-			headersToUse, headerOk := endpointAsMap["headers"].(map[string]interface{})
+			headersToUse, headerOk := endpointAsMap["headers"].(map[string]string)
 			if !headerOk {
 				errMsg := fmt.Sprint("error while extracting headers from independent request built for: ", requestId)
 				util.WriteBackError(w, errMsg, http.StatusInternalServerError)
@@ -133,7 +133,7 @@ func (r *QueryTranslate) search() http.HandlerFunc {
 				return
 			}
 
-			respBody, res, reqErr := util.MakeRequestWithHeader(urlToHit, methodToUse, bodyInBytes, *headerToSend)
+			respBody, _, reqErr := util.MakeRequestWithHeader(urlToHit, methodToUse, bodyInBytes, *headerToSend)
 			if reqErr != nil {
 				errMsg := fmt.Sprint("error while sending independent request for ID: `%s` with err: `%v`", requestId, reqErr)
 				log.Errorln(logTag, ": ", errMsg)

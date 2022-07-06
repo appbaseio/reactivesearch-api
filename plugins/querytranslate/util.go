@@ -384,10 +384,10 @@ type DeepPaginationConfig struct {
 
 // Endpoint struct
 type Endpoint struct {
-	URL     *string                 `json:"url,omitempty"`
-	Method  *string                 `json:"method,omitempty"`
-	Headers *map[string]interface{} `json:"headers,omitempty"`
-	Body    *interface{}            `json:"body,omitempty"`
+	URL     *string            `json:"url,omitempty"`
+	Method  *string            `json:"method,omitempty"`
+	Headers *map[string]string `json:"headers,omitempty"`
+	Body    *interface{}       `json:"body,omitempty"`
 }
 
 // Query represents the query object

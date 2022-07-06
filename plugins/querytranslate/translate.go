@@ -235,7 +235,7 @@ func buildIndependentRequests(rsQuery RSQuery) ([]map[string]interface{}, error)
 		}
 
 		DEFAULT_METHOD := http.MethodGet
-		DEFAULT_HEADERS := make(map[string]interface{})
+		DEFAULT_HEADERS := make(map[string]string)
 
 		if query.Endpoint.Method == nil || *query.Endpoint.Method == "" {
 			// Set to default endpoint
