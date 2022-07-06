@@ -82,12 +82,8 @@ func translateQuery(rsQuery RSQuery, userIP string) (string, error) {
 				return "", errors.New("`endpoint.url` is a required property when `endpoint` is passed. Remove the `endpoint` property if it's not used.")
 			}
 
-			DEFAULT_METHOD := http.MethodGet
-
-			if query.Endpoint.Method == nil || *query.Endpoint.Method == "" {
-				// Set to default endpoint
-				query.Endpoint.Method = &DEFAULT_METHOD
-			}
+			// Setting the default method etc will be done during
+			// sending the independent queries and not in this part of the code.
 		}
 
 	}
@@ -224,6 +220,48 @@ func translateQuery(rsQuery RSQuery, userIP string) (string, error) {
 	}
 
 	return mSearchQuery, nil
+}
+
+// buildIndependentRequests will build the requests that have the endpoint
+// property passed and will accordingly generate an array of objects
+// that will be hit one by one during searching.
+func buildIndependentRequests(rsQuery RSQuery) ([][]byte, error) {
+	independentQueryArr := make([][]byte, 0)
+
+	for _, query := range rsQuery.Query {
+		if query.Endpoint == nil {
+			continue
+		}
+
+		DEFAULT_METHOD := http.MethodGet
+		DEFAULT_HEADERS := make(map[string]interface{})
+
+		if query.Endpoint.Method == nil || *query.Endpoint.Method == "" {
+			// Set to default endpoint
+			query.Endpoint.Method = &DEFAULT_METHOD
+		}
+
+		// If headers are not passed, set it as empty headers
+		if query.Endpoint.Headers == nil {
+			query.Endpoint.Headers = &DEFAULT_HEADERS
+		}
+
+		// If body is not passed, pass the current body without
+		// the endpoint property.
+		if query.Endpoint.Body == nil {
+			// TODO: Generate the body without the endpoint part
+		}
+
+		builtQuery, marshalErr := json.Marshal(*query.Endpoint)
+		if marshalErr != nil {
+			log.Warnln(logTag, ": error while marshalling query for hitting independently, ", marshalErr)
+			return independentQueryArr, marshalErr
+		}
+
+		independentQueryArr = append(independentQueryArr, builtQuery)
+	}
+
+	return independentQueryArr, nil
 }
 
 // shouldApplyKnn determines whether or not to apply KNN stage
