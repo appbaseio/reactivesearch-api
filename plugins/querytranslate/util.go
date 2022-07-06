@@ -823,7 +823,8 @@ func (query *Query) shouldExecuteQuery() bool {
 func GetQueryIds(rsQuery RSQuery) []string {
 	var queryIds []string
 	for _, query := range rsQuery.Query {
-		if query.shouldExecuteQuery() {
+		// If endpoint is passed, execute is set as False
+		if query.shouldExecuteQuery() && query.Endpoint == nil {
 			queryIds = append(queryIds, *query.ID)
 		}
 	}
