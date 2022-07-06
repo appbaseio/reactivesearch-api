@@ -79,10 +79,71 @@ func (r *QueryTranslate) search() http.HandlerFunc {
 			return
 		}
 
-		independentResponse := make([][]map[string]interface{}, 0)
+		independentResponse := make([][]byte, 0)
 
 		for _, independentReq := range *independentReqBody {
 			// Make the request with the passed details.
+
+			requestId := independentReq["id"].(string)
+
+			endpointAsMap, endpointAsMapOk := independentReq["endpoint"].(map[string]interface{})
+			if !endpointAsMapOk {
+				errMsg := fmt.Sprint("error while converting endpoint to map for independent request with ID: ", requestId)
+				util.WriteBackError(w, errMsg, http.StatusInternalServerError)
+				return
+			}
+
+			urlToHit, urlOk := endpointAsMap["url"].(string)
+			if !urlOk {
+				errMsg := fmt.Sprint("error while extracting URL from independent request built for: ", requestId)
+				util.WriteBackError(w, errMsg, http.StatusInternalServerError)
+				return
+			}
+
+			methodToUse, methodOk := endpointAsMap["method"].(string)
+			if !methodOk {
+				errMsg := fmt.Sprint("error while extracting method from independent request built for: ", requestId)
+				util.WriteBackError(w, errMsg, http.StatusInternalServerError)
+				return
+			}
+
+			headersToUse, headerOk := endpointAsMap["headers"].(map[string]interface{})
+			if !headerOk {
+				errMsg := fmt.Sprint("error while extracting headers from independent request built for: ", requestId)
+				util.WriteBackError(w, errMsg, http.StatusInternalServerError)
+				return
+			}
+			headerToSend := new(http.Header)
+			for key, value := range headersToUse {
+				headerToSend.Set(key, value)
+			}
+
+			bodyToUse, bodyOk := endpointAsMap["body"].(interface{})
+			if !bodyOk {
+				errMsg := fmt.Sprint("error while extracting body from independent request built for: ", requestId)
+				util.WriteBackError(w, errMsg, http.StatusInternalServerError)
+				return
+			}
+			// Marshal the body
+			bodyInBytes, marshalErr := json.Marshal(bodyToUse)
+			if marshalErr != nil {
+				errMsg := fmt.Sprintf("error while marshalling body to send it for independent request for request `%s` with err: %v", requestId, marshalErr)
+				log.Errorln(logTag, ": ", errMsg)
+				util.WriteBackError(w, errMsg, http.StatusInternalServerError)
+				return
+			}
+
+			respBody, res, reqErr := util.MakeRequestWithHeader(urlToHit, methodToUse, bodyInBytes, *headerToSend)
+			if reqErr != nil {
+				errMsg := fmt.Sprint("error while sending independent request for ID: `%s` with err: `%v`", requestId, reqErr)
+				log.Errorln(logTag, ": ", errMsg)
+				util.WriteBackError(w, errMsg, http.StatusBadRequest)
+				return
+			}
+
+			// TODO: Decide whether to map the response to the ID or extract the body
+			// for the ID from RS response and use that instead?
+			independentResponse = append(independentResponse, respBody)
 		}
 
 		indices, err := index.FromContext(req.Context())
