@@ -108,6 +108,16 @@ func (r *QueryTranslate) validate() http.HandlerFunc {
 			util.WriteBackError(w, "Can't read request body", http.StatusBadRequest)
 			return
 		}
+
+		independentReqBody, independentErr := FromIndependentRequestContext(req.Context())
+		if independentErr != nil {
+			log.Errorln(logTag, ": ", err)
+			util.WriteBackError(w, "Can't read independent requests built", http.StatusBadRequest)
+			return
+		}
+
+		log.Debugln(logTag, ": independent requests: ", *independentReqBody)
+
 		w.Header().Add("Content-Type", "application/x-ndjson")
 		w.Header().Set("X-Content-Type-Options", "nosniff")
 		w.WriteHeader(http.StatusOK)
