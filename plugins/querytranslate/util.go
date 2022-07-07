@@ -492,15 +492,42 @@ func ExtractEnvsFromRequest(req RSQuery) QueryEnvs {
 	var termFilters []TermFilter
 	for _, query := range req.Query {
 		// Set query
-		if (query.Type == Search || query.Type == Suggestion) && query.Value != nil {
-			value := *query.Value
-			valueAsString, ok := value.(string)
-			if ok {
-				// Use query in lower case
-				queryLowerCase := strings.ToLower(valueAsString)
-				queryEnvs.Query = &queryLowerCase
+		if query.Value != nil {
+			if query.Type == Search {
+				value := *query.Value
+				valueAsString, ok := value.(string)
+				if ok {
+					// Use query in lower case
+					queryLowerCase := strings.ToLower(valueAsString)
+					queryEnvs.Query = &queryLowerCase
+				} else {
+					valueAsArray, ok := value.([]interface{})
+					if ok {
+						var valueAsArrayString []string
+						for _, v := range valueAsArray {
+							valAsString, ok := v.(string)
+							if ok {
+								valueAsArrayString = append(valueAsArrayString, valAsString)
+							}
+						}
+						if len(valueAsArrayString) != 0 {
+							queryLowerCase := strings.ToLower(strings.Join(valueAsArrayString, ","))
+							queryEnvs.Query = &queryLowerCase
+						}
+
+					}
+				}
+			} else if query.Type == Suggestion {
+				value := *query.Value
+				valueAsString, ok := value.(string)
+				if ok {
+					// Use query in lower case
+					queryLowerCase := strings.ToLower(valueAsString)
+					queryEnvs.Query = &queryLowerCase
+				}
 			}
 		}
+
 		// Set term filters
 		normalizedFields := NormalizedDataFields(query.DataField, query.FieldWeights)
 		if query.Type == Term && query.Value != nil && len(normalizedFields) > 0 {
