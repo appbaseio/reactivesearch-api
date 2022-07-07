@@ -447,6 +447,8 @@ type Query struct {
 	IndexSuggestionsConfig      *IndexSuggestionsOptions    `json:"indexSuggestionsConfig,omitempty"`
 	DeepPagination              *bool                       `json:"deepPagination,omitempty"`
 	DeepPaginationConfig        *DeepPaginationConfig       `json:"deepPaginationConfig,omitempty"`
+	IncludeValues               *[]string                   `json:"includeValues,omitempty"`
+	ExcludeValues               *[]string                   `json:"excludeValues,omitempty"`
 }
 
 type DataField struct {
