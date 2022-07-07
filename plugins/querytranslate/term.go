@@ -198,6 +198,13 @@ func (query *Query) applyTermsAggsQuery(queryOptions *map[string]interface{}) er
 			"field": dataField,
 		}
 
+		if query.IncludeValues != nil {
+			termsQuery["include"] = *query.IncludeValues
+		}
+		if query.ExcludeValues != nil {
+			termsQuery["exclude"] = *query.ExcludeValues
+		}
+
 		if query.AggregationSize != nil {
 			termsQuery["size"] = query.AggregationSize
 		} else if query.Size != nil {
