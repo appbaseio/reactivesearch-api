@@ -403,6 +403,14 @@ func (query *Query) buildQueryOptions() (map[string]interface{}, error) {
 		termsQuery := map[string]interface{}{
 			"field": query.CategoryField,
 		}
+
+		if query.IncludeValues != nil {
+			termsQuery["include"] = *query.IncludeValues
+		}
+		if query.ExcludeValues != nil {
+			termsQuery["exclude"] = *query.ExcludeValues
+		}
+
 		// apply size for categories
 		if query.AggregationSize != nil {
 			termsQuery["size"] = query.AggregationSize
