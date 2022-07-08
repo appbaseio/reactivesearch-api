@@ -119,34 +119,13 @@ func (query *Query) getSearchQuery() (interface{}, error) {
 	if len(queryValue) == 0 {
 		return nil, nil
 	}
+	var isMultiSearch = false
 	if len(queryValue) > 1 {
-		finalQuery := make([]map[string]interface{}, 0)
-		// generate multi-search query
-		for _, v := range queryValue {
-			searchTermQuery, err := query.generateShouldQueryByValue(v, true)
-			if err != nil {
-				return nil, err
-			}
-			if searchTermQuery != nil {
-				searchTermQueryAsMap, ok := searchTermQuery.(map[string]interface{})
-				if ok {
-					finalQuery = append(finalQuery, searchTermQueryAsMap)
-				} else {
-					searchTermQueryAsArray, ok := searchTermQuery.([]map[string]interface{})
-					if ok {
-						finalQuery = append(finalQuery, searchTermQueryAsArray...)
-					}
-				}
-			}
-		}
-		if len(finalQuery) == 0 {
-			return nil, nil
-		}
-		return finalQuery, nil
-	} else {
-		// generate single-search query
-		return query.generateShouldQueryByValue(queryValue[0], false)
+		isMultiSearch = true
 	}
+	// search query is a join of multiple values with space
+	searchQuery := strings.Join(queryValue, " ")
+	return query.generateShouldQueryByValue(searchQuery, isMultiSearch)
 }
 
 func (query *Query) generateShouldQueryByValue(value string, isMultiSearch bool) (interface{}, error) {
@@ -226,6 +205,7 @@ func (query *Query) generateShouldQueryByValue(value string, isMultiSearch bool)
 				},
 			},
 		}
+		// Don't apply `phrase_prefix` query for multi-value search
 		if len(phrasePrefixFields) > 0 && !isMultiSearch {
 			finalQuery = append(finalQuery, map[string]interface{}{
 				"multi_match": map[string]interface{}{
