@@ -36,8 +36,6 @@ func GetZincData() (string, string, string) {
 
 	if zincURL == "" {
 		log.Warnln("Error encountered: ", fmt.Errorf("ZINC_CLUSTER_URL must be set in the environment variables"))
-	} else {
-		// default zinc URL
 		zincURL = "http://admin:Complexpass#123@localhost:4080"
 	}
 
