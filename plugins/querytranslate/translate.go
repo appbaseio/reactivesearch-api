@@ -100,6 +100,29 @@ func translateQuery(rsQuery RSQuery, userIP string) (string, error) {
 			finalQuery := queryOptions
 			finalQuery["query"] = translatedQuery
 
+			// Handle DeepPagination
+			// NOTE: Following code should be before `from` is added to the final
+			// query because deepPagination might modify the from value.
+			if query.DeepPagination == nil {
+				defaultDeepPagination := false
+				query.DeepPagination = &defaultDeepPagination
+			}
+
+			// If deep pagination is enabled, set it to search_after
+			// since this translation is happening for ES.
+			if *query.DeepPagination &&
+				query.DeepPaginationConfig != nil &&
+				query.DeepPaginationConfig.Cursor != nil &&
+				*query.DeepPaginationConfig.Cursor != "" {
+				// Set the from value of the request to 0
+				fromForSearchAfter := 0
+				query.From = &fromForSearchAfter
+
+				// Add the search_after field.
+				searchAfterValue := []string{*query.DeepPaginationConfig.Cursor}
+				finalQuery["search_after"] = searchAfterValue
+			}
+
 			// Apply query options
 			buildQueryOptions, err := query.buildQueryOptions()
 			if err != nil {
@@ -308,14 +331,30 @@ func (query *Query) buildQueryOptions() (map[string]interface{}, error) {
 	normalizedFields := NormalizedDataFields(query.DataField, query.FieldWeights)
 
 	// Only apply sort on search queries
-	if query.SortBy != nil && query.Type == Search {
-		if len(normalizedFields) < 1 {
-			return nil, errors.New("field 'dataField' must be present to apply 'sortBy' property")
+	if (query.SortBy != nil || query.SortField != nil) && query.Type == Search {
+		// If both sortField and dataFields are not present
+		// then raise an error.
+		if len(normalizedFields) < 1 && query.SortField == nil {
+			return nil, errors.New("field 'dataField' or `sortField` must be present to apply 'sortBy' property")
 		}
-		dataField := normalizedFields[0].Field
+
+		// sortField get's priority
+		// if not present and normalized field is present
+		// then it is assigned.
+		if query.SortField == nil {
+			dataField := normalizedFields[0].Field
+			query.SortField = &dataField
+		}
+
+		// If sortBy is nil, set it to Desc
+		if query.SortBy == nil {
+			defaultSortBy := Desc
+			query.SortBy = &defaultSortBy
+		}
+
 		queryWithOptions["sort"] = []map[string]interface{}{
 			{
-				dataField: map[string]interface{}{
+				*query.SortField: map[string]interface{}{
 					"order": *query.SortBy,
 				},
 			},
@@ -364,6 +403,14 @@ func (query *Query) buildQueryOptions() (map[string]interface{}, error) {
 		termsQuery := map[string]interface{}{
 			"field": query.CategoryField,
 		}
+
+		if query.IncludeValues != nil {
+			termsQuery["include"] = *query.IncludeValues
+		}
+		if query.ExcludeValues != nil {
+			termsQuery["exclude"] = *query.ExcludeValues
+		}
+
 		// apply size for categories
 		if query.AggregationSize != nil {
 			termsQuery["size"] = query.AggregationSize
@@ -407,17 +454,40 @@ func (query *Query) buildQueryOptions() (map[string]interface{}, error) {
 							"calendar_interval": *query.CalendarInterval,
 						},
 					}
-				} else if query.Value != nil {
-					rangeValue, err := query.getRangeValue(*query.Value)
+				} else {
+					// rangeHistogram can work without range value as well
+					// so it being nil should not have an effect.
+
+					// If range value is not present, just create a dummy one.
+					var dummyStartEndValue interface{} = 0
+					rangeValue := &RangeValue{
+						Start: &dummyStartEndValue,
+						End:   &dummyStartEndValue,
+					}
+
+					var err error
+
+					useStartValue := false
+
+					if query.Value != nil {
+						rangeValue, err = query.getRangeValue(*query.Value)
+						useStartValue = true
+					}
+
 					if err != nil {
 						log.Errorln(logTag, ":", err)
 					} else if rangeValue != nil && rangeValue.Start != nil && rangeValue.End != nil {
+						histogramMap := map[string]interface{}{
+							"field":    dataField,
+							"interval": getValidInterval(query.Interval, *rangeValue),
+						}
+
+						if useStartValue {
+							histogramMap["offset"] = rangeValue.Start
+						}
+
 						rangeAggs[dataField] = map[string]interface{}{
-							"histogram": map[string]interface{}{
-								"field":    dataField,
-								"interval": getValidInterval(query.Interval, *rangeValue),
-								"offset":   rangeValue.Start,
-							},
+							"histogram": histogramMap,
 						}
 					}
 				}
