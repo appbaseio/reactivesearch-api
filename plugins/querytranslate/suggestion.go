@@ -6,14 +6,14 @@ import (
 	"strings"
 )
 
-// Generate the queryDSL for search type request
-func (query *Query) generateSearchQuery() (*interface{}, error) {
+// Generate the queryDSL for suggestion type request
+func (query *Query) generateSuggestionQuery() (*interface{}, error) {
 	var searchQuery interface{}
-	rankQuery := query.getRankFeatureQuery()
+	rankQuery := query.getSuggestionRankFeatureQuery()
 
 	if query.Value != nil {
 		if query.QueryString != nil && *query.QueryString {
-			shouldQuery, err := query.getSearchQuery()
+			shouldQuery, err := query.generateSuggestionShouldQuery()
 			if err != nil {
 				return nil, err
 			}
@@ -21,7 +21,7 @@ func (query *Query) generateSearchQuery() (*interface{}, error) {
 				"query_string": shouldQuery,
 			}
 		} else if query.SearchOperators != nil && *query.SearchOperators {
-			shouldQuery, err := query.getSearchQuery()
+			shouldQuery, err := query.generateSuggestionShouldQuery()
 			if err != nil {
 				return nil, err
 			}
@@ -29,7 +29,7 @@ func (query *Query) generateSearchQuery() (*interface{}, error) {
 				"simple_query_string": shouldQuery,
 			}
 		} else {
-			shouldQuery, err := query.getSearchQuery()
+			shouldQuery, err := query.generateSuggestionShouldQuery()
 			if err != nil {
 				return nil, err
 			}
@@ -72,7 +72,7 @@ func (query *Query) generateSearchQuery() (*interface{}, error) {
 		return &searchQuery, nil
 	}
 
-	if query.Value == nil {
+	if query.Value == nil || *query.Value == "" {
 		return nil, nil
 	}
 	// check if query value is empty string
@@ -82,53 +82,13 @@ func (query *Query) generateSearchQuery() (*interface{}, error) {
 			return nil, nil
 		}
 	}
-	// check if query value is an empty array
-	queryAsArray, ok := (*query.Value).([]interface{})
-	if ok {
-		if len(queryAsArray) == 0 {
-			return nil, nil
-		}
-	}
-
 	// Apply nestedField query
 	searchQuery = query.applyNestedFieldQuery(searchQuery)
 
 	return &searchQuery, nil
 }
 
-func (query *Query) getSearchQuery() (interface{}, error) {
-	var queryValue []string
-
-	// check if query value of string type
-	queryAsString, ok := (*query.Value).(string)
-	if ok {
-		queryValue = []string{queryAsString}
-	} else {
-		// check if query value is array
-		queryAsArray, ok := (*query.Value).([]interface{})
-		if ok {
-			for _, v := range queryAsArray {
-				valueAsString, ok := v.(string)
-				if ok {
-					queryValue = append(queryValue, valueAsString)
-				}
-			}
-		}
-	}
-
-	if len(queryValue) == 0 {
-		return nil, nil
-	}
-	var isMultiSearch = false
-	if len(queryValue) > 1 {
-		isMultiSearch = true
-	}
-	// search query is a join of multiple values with space
-	searchQuery := strings.Join(queryValue, " ")
-	return query.generateShouldQueryByValue(searchQuery, isMultiSearch)
-}
-
-func (query *Query) generateShouldQueryByValue(value string, isMultiSearch bool) (interface{}, error) {
+func (query *Query) generateSuggestionShouldQuery() (interface{}, error) {
 	var fields []string
 	var phrasePrefixFields []string
 	normalizedFields := NormalizedDataFields(query.DataField, query.FieldWeights)
@@ -172,25 +132,24 @@ func (query *Query) generateShouldQueryByValue(value string, isMultiSearch bool)
 
 	if query.QueryString != nil && *query.QueryString {
 		return map[string]interface{}{
-			"query":            value,
+			"query":            query.Value,
 			"default_operator": queryFormat,
 		}, nil
 	}
 
 	if query.SearchOperators != nil && *query.SearchOperators {
 		return map[string]interface{}{
-			"query":            value,
+			"query":            query.Value,
 			"fields":           fields,
 			"default_operator": queryFormat,
 		}, nil
 	}
-	var valueAsInterface interface{} = value
 
 	if queryFormat == And.String() {
 		var finalQuery = []map[string]interface{}{
 			{
 				"multi_match": map[string]interface{}{
-					"query":    getPlural(&valueAsInterface),
+					"query":    getPlural(query.Value),
 					"fields":   fields,
 					"type":     "cross_fields",
 					"operator": And.String(),
@@ -198,18 +157,17 @@ func (query *Query) generateShouldQueryByValue(value string, isMultiSearch bool)
 			},
 			{
 				"multi_match": map[string]interface{}{
-					"query":    value,
+					"query":    query.Value,
 					"fields":   fields,
 					"type":     "phrase",
 					"operator": And.String(),
 				},
 			},
 		}
-		// Don't apply `phrase_prefix` query for multi-value search
-		if len(phrasePrefixFields) > 0 && !isMultiSearch {
+		if len(phrasePrefixFields) > 0 {
 			finalQuery = append(finalQuery, map[string]interface{}{
 				"multi_match": map[string]interface{}{
-					"query":    value,
+					"query":    query.Value,
 					"fields":   phrasePrefixFields,
 					"type":     "phrase_prefix",
 					"operator": And.String(),
@@ -263,7 +221,7 @@ func (query *Query) generateShouldQueryByValue(value string, isMultiSearch bool)
 	var finalQuery = []map[string]interface{}{
 		{
 			"multi_match": map[string]interface{}{
-				"query":    getPlural(&valueAsInterface),
+				"query":    getPlural(query.Value),
 				"fields":   fields,
 				"type":     "cross_fields",
 				"operator": Or.String(),
@@ -271,7 +229,7 @@ func (query *Query) generateShouldQueryByValue(value string, isMultiSearch bool)
 		},
 		{
 			"multi_match": map[string]interface{}{
-				"query":     valueAsInterface,
+				"query":     query.Value,
 				"fields":    fields,
 				"type":      "best_fields",
 				"operator":  Or.String(),
@@ -280,7 +238,7 @@ func (query *Query) generateShouldQueryByValue(value string, isMultiSearch bool)
 		},
 		{
 			"multi_match": map[string]interface{}{
-				"query":    valueAsInterface,
+				"query":    query.Value,
 				"fields":   fields,
 				"type":     "phrase",
 				"operator": Or.String(),
@@ -288,15 +246,15 @@ func (query *Query) generateShouldQueryByValue(value string, isMultiSearch bool)
 		},
 	}
 
-	rankQuery := query.getRankFeatureQuery()
+	rankQuery := query.getSuggestionRankFeatureQuery()
 	if rankQuery != nil {
 		finalQuery = append(finalQuery, *rankQuery...)
 	}
 
-	if len(phrasePrefixFields) > 0 && !isMultiSearch {
+	if len(phrasePrefixFields) > 0 {
 		finalQuery = append(finalQuery, map[string]interface{}{
 			"multi_match": map[string]interface{}{
-				"query":    valueAsInterface,
+				"query":    query.Value,
 				"fields":   phrasePrefixFields,
 				"type":     "phrase_prefix",
 				"operator": Or.String(),
@@ -307,7 +265,7 @@ func (query *Query) generateShouldQueryByValue(value string, isMultiSearch bool)
 	return finalQuery, nil
 }
 
-func (query *Query) getRankFeatureQuery() *[]map[string]interface{} {
+func (query *Query) getSuggestionRankFeatureQuery() *[]map[string]interface{} {
 	if query.RankFeature != nil {
 		var rankQuery = make([]map[string]interface{}, 0)
 		for k, v := range *query.RankFeature {
