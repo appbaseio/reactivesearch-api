@@ -1405,13 +1405,26 @@ func ParseSortField(query Query, defaultSortBy SortBy) (map[string]SortBy, error
 				}
 
 				// Parse the value as sortBy, if fails then raise an error.
-				valueAsSortBy, valueAsSortOk := value.(SortBy)
-				if !valueAsSortOk {
+				valueAsStr, valueAsStrOk := value.(string)
+				if !valueAsStrOk {
 					return sortFieldParsed, fmt.Errorf("invalid sort value passed for index `%d` and key: `%s`", sortFieldIndex, key)
 				}
 
+				type CustomSortByContainer struct {
+					SortBy *SortBy `json:"sortBy,omitempty"`
+				}
+
+				sortByTypeStr := fmt.Sprintf("{\"sortBy\": \"%s\"}", valueAsStr)
+
+				newCustomType := new(CustomSortByContainer)
+				unmarshalErr := json.Unmarshal([]byte(sortByTypeStr), &newCustomType)
+
+				if unmarshalErr != nil {
+					return sortFieldParsed, fmt.Errorf("invalid value passed for `sortBy` for index `%d` and key: `%s`", sortFieldIndex, key)
+				}
+
 				// If value is okay, add it to map.
-				sortFieldParsed[key] = valueAsSortBy
+				sortFieldParsed[key] = *newCustomType.SortBy
 				parseCount += 1
 			}
 		}
