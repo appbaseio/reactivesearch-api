@@ -353,14 +353,6 @@ func (query *Query) buildQueryOptions() (map[string]interface{}, error) {
 			query.SortBy = &defaultSortBy
 		}
 
-		// sortField get's priority
-		// if not present and normalized field is present
-		// then it is assigned.
-		if query.SortField == nil {
-			dataField := normalizedFields[0].Field
-			query.SortField = &dataField
-		}
-
 		// sortField can be a string, an array of strings or an object
 		// where the key indicates the field to sort on and the value is
 		// one of valid sort types.
@@ -368,6 +360,18 @@ func (query *Query) buildQueryOptions() (map[string]interface{}, error) {
 		// For string or array of strings, the value of `sortBy` will be
 		// considered.
 
+		sortFieldParsed := make(map[string]int)
+
+		// If not passed, just set the dataField as the sortField with
+		// the value of sortBy.
+		if query.SortField == nil {
+			dataField := normalizedFields[0].Field
+			sortFieldParsed[dataField] = int(*query.SortBy)
+		} else {
+			// TODO: Parse the sortField accordingly.
+		}
+
+		// TODO: Change the following to support proper formatting of sortField
 		queryWithOptions["sort"] = []map[string]interface{}{
 			{
 				*query.SortField: map[string]interface{}{
