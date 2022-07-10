@@ -361,25 +361,33 @@ func (query *Query) buildQueryOptions() (map[string]interface{}, error) {
 		// For string or array of strings, the value of `sortBy` will be
 		// considered.
 
-		sortFieldParsed := make(map[string]int)
+		sortFieldParsed := make(map[string]SortBy)
 
 		// If not passed, just set the dataField as the sortField with
 		// the value of sortBy.
 		if query.SortField == nil {
 			dataField := normalizedFields[0].Field
-			sortFieldParsed[dataField] = int(*query.SortBy)
+			sortFieldParsed[dataField] = *query.SortBy
 		} else {
-			// TODO: Parse the sortField accordingly.
+			// Parse the sortField accordingly.
+			var sortFieldParseErr error
+			sortFieldParsed, sortFieldParseErr = ParseSortField(*query, *query.SortBy)
+			if sortFieldParseErr != nil {
+				return nil, sortFieldParseErr
+			}
 		}
 
-		// TODO: Change the following to support proper formatting of sortField
-		queryWithOptions["sort"] = []map[string]interface{}{
-			{
-				*query.SortField: map[string]interface{}{
-					"order": *query.SortBy,
+		// Change the following to support proper formatting of sortField
+		for sortField, sortBy := range sortFieldParsed {
+			queryWithOptions["sort"] = []map[string]interface{}{
+				{
+					sortField: map[string]interface{}{
+						"order": sortBy,
+					},
 				},
-			},
+			}
 		}
+
 	}
 
 	includeFields := []string{"*"}
