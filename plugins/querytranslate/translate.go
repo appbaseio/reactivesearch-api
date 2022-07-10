@@ -353,7 +353,8 @@ func (query *Query) buildQueryOptions() (map[string]interface{}, error) {
 			query.SortBy = &defaultSortBy
 		}
 
-		// sortField can be a string, an array of strings or an object
+		// sortField can be a string, an array of strings or an array of objects
+		// and strings
 		// where the key indicates the field to sort on and the value is
 		// one of valid sort types.
 		//
