@@ -50,7 +50,7 @@ func translateQuery(rsQuery RSQuery, userIP string) (string, error) {
 		}
 
 		// Normalize query value for search and suggestion types of queries
-		if query.Type == Search || query.Type == Suggestion {
+		if query.Type == Suggestion {
 			if query.Value != nil {
 				// set the updated value
 				var err error
@@ -411,6 +411,8 @@ func (query *Query) generateQueryByType() (*interface{}, error) {
 		translatedQuery, translateError = query.generateRangeQuery()
 	case Geo:
 		translatedQuery, translateError = query.generateGeoQuery()
+	case Suggestion:
+		translatedQuery, translateError = query.generateSuggestionQuery()
 	default:
 		translatedQuery, translateError = query.generateSearchQuery()
 	}
@@ -520,6 +522,14 @@ func (query *Query) buildQueryOptions() (map[string]interface{}, error) {
 		termsQuery := map[string]interface{}{
 			"field": query.CategoryField,
 		}
+
+		if query.IncludeValues != nil {
+			termsQuery["include"] = *query.IncludeValues
+		}
+		if query.ExcludeValues != nil {
+			termsQuery["exclude"] = *query.ExcludeValues
+		}
+
 		// apply size for categories
 		if query.AggregationSize != nil {
 			termsQuery["size"] = query.AggregationSize
