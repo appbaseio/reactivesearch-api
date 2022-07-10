@@ -1390,7 +1390,12 @@ func ParseSortField(query Query, defaultSortBy SortBy) (map[string]SortBy, error
 				}
 
 				// If string is okay, add it to map and continue
-				sortFieldParsed[fieldAsString] = defaultSortBy
+				sortByToUse := defaultSortBy
+				if fieldAsString == "_score" {
+					sortByToUse = Desc
+				}
+
+				sortFieldParsed[fieldAsString] = sortByToUse
 
 				continue
 			}
@@ -1440,7 +1445,11 @@ func ParseSortField(query Query, defaultSortBy SortBy) (map[string]SortBy, error
 	}
 
 	// Parse the string and return accordingly.
-	sortFieldParsed[sortFieldAsStr] = defaultSortBy
+	sortByToUse := defaultSortBy
+	if sortFieldAsStr == "_score" {
+		sortByToUse = Desc
+	}
+	sortFieldParsed[sortFieldAsStr] = sortByToUse
 
 	return sortFieldParsed, nil
 }
