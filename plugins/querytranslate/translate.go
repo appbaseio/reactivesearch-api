@@ -378,16 +378,16 @@ func (query *Query) buildQueryOptions() (map[string]interface{}, error) {
 		}
 
 		// Change the following to support proper formatting of sortField
+		sortValue := make([]map[string]interface{}, 0)
 		for sortField, sortBy := range sortFieldParsed {
-			queryWithOptions["sort"] = []map[string]interface{}{
-				{
-					sortField: map[string]interface{}{
-						"order": sortBy,
-					},
+			sortValue = append(sortValue, map[string]interface{}{
+				sortField: map[string]interface{}{
+					"order": sortBy,
 				},
-			}
+			})
 		}
 
+		queryWithOptions["sort"] = sortValue
 	}
 
 	includeFields := []string{"*"}
