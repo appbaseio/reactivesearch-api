@@ -382,6 +382,14 @@ type DeepPaginationConfig struct {
 	Cursor *string `json:"cursor,omitempty"`
 }
 
+// Endpoint struct
+type Endpoint struct {
+	URL     *string            `json:"url,omitempty"`
+	Method  *string            `json:"method,omitempty"`
+	Headers *map[string]string `json:"headers,omitempty"`
+	Body    *interface{}       `json:"body,omitempty"`
+}
+
 // Query represents the query object
 type Query struct {
 	ID                          *string                     `json:"id,omitempty"` // component id
@@ -447,6 +455,7 @@ type Query struct {
 	IndexSuggestionsConfig      *IndexSuggestionsOptions    `json:"indexSuggestionsConfig,omitempty"`
 	DeepPagination              *bool                       `json:"deepPagination,omitempty"`
 	DeepPaginationConfig        *DeepPaginationConfig       `json:"deepPaginationConfig,omitempty"`
+	Endpoint                    *Endpoint                   `json:"endpoint,omitempty"`
 	IncludeValues               *[]string                   `json:"includeValues,omitempty"`
 	ExcludeValues               *[]string                   `json:"excludeValues,omitempty"`
 }
@@ -843,7 +852,8 @@ func (query *Query) shouldExecuteQuery() bool {
 func GetQueryIds(rsQuery RSQuery) []string {
 	var queryIds []string
 	for _, query := range rsQuery.Query {
-		if query.shouldExecuteQuery() {
+		// If endpoint is passed, execute is set as False
+		if query.shouldExecuteQuery() && query.Endpoint == nil {
 			queryIds = append(queryIds, *query.ID)
 		}
 	}
@@ -1391,4 +1401,17 @@ func addFieldHighlight(source ESDoc) ESDoc {
 		}
 	}
 	return source
+}
+
+// extractIDFromPreference will extract the query ID from the preference
+// string passed.
+//
+// Idea is to split it based on underscore `_` and remove the last element
+// and join it back using underscore `_`
+func extractIDFromPreference(preference string) string {
+	textSplitted := strings.Split(preference, "_")
+
+	textSplitted = textSplitted[:len(textSplitted)-1]
+
+	return strings.Join(textSplitted, "_")
 }
