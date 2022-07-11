@@ -252,6 +252,14 @@ func (r *QueryTranslate) validate() http.HandlerFunc {
 			reqBodySplitted = reqBodySplitted[:len(reqBodySplitted)-1]
 		}
 
+		// Extract the headers passed with the current request without the
+		// NOTE: Authorization header will be removed at the end before
+		// returning the response.
+		headersPassed := make(map[string]interface{})
+		for key, value := range req.Header {
+			headersPassed[key] = strings.Join(value, ", ")
+		}
+
 		// Extract the reqBody into the required format that shows based on ID.
 
 		// Extract some request details that might be required later
@@ -302,7 +310,7 @@ func (r *QueryTranslate) validate() http.HandlerFunc {
 				"endpoint": map[string]interface{}{
 					"url":     defaultURL,
 					"method":  methodUsed,
-					"headers": map[string]interface{}{},
+					"headers": headersPassed,
 					"body":    bodyAsMap,
 				},
 			})
@@ -318,6 +326,24 @@ func (r *QueryTranslate) validate() http.HandlerFunc {
 		// Add the independent requests to the validate body to return
 		for _, independentReq := range *independentReqBody {
 			validateMapToShow = append(validateMapToShow, independentReq)
+		}
+
+		// Iterate over all the requests and remove sensitive headers if any.
+		BLACKLISTED_HEADERS := []string{
+			"Authorization",
+		}
+
+		for validateIndex, validateMap := range validateMapToShow {
+			endpointAsMap := validateMap["endpoint"].(map[string]interface{})
+
+			headersAsMap := endpointAsMap["headers"].(map[string]interface{})
+
+			for _, blacklistedHeader := range BLACKLISTED_HEADERS {
+				delete(headersAsMap, blacklistedHeader)
+				delete(headersAsMap, strings.ToLower(blacklistedHeader))
+			}
+
+			validateMapToShow[validateIndex] = validateMap
 		}
 
 		// Marshal the validate response
