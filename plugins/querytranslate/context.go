@@ -38,7 +38,7 @@ func NewIndependentRequestContext(ctx context.Context, independentRequests []map
 	return context.WithValue(ctx, independentReqCtxKey, independentRequests)
 }
 
-// FromIndependentRequestContext retrieves the rs ap request stored
+// FromIndependentRequestContext retrieves the rs api request stored
 // against the querytranslate.ctxKey from the context.
 func FromIndependentRequestContext(ctx context.Context) (*[]map[string]interface{}, error) {
 	ctxRequest := ctx.Value(independentReqCtxKey)
