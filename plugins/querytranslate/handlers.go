@@ -255,7 +255,8 @@ func (r *QueryTranslate) validate() http.HandlerFunc {
 		// Extract the reqBody into the required format that shows based on ID.
 
 		// Extract some request details that might be required later
-		defaultURL := fmt.Sprint(req.Host, req.URL.Path)
+		vars := mux.Vars(req)
+		defaultURL := fmt.Sprint(util.GetESURL(), "/", vars["index"], "/_msearch")
 		methodUsed := req.Method
 
 		validateMapToShow := make([]map[string]interface{}, 0)
