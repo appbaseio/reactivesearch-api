@@ -196,7 +196,7 @@ func ExecuteIndependentQuery(independentReq map[string]interface{}) ([]byte, *ht
 		errMsg := fmt.Sprint("error while extracting headers from independent request built for: ", requestId)
 		return nil, nil, fmt.Errorf(errMsg)
 	}
-	headerToSend := new(http.Header)
+	headerToSend := make(http.Header)
 	for key, value := range headersToUse {
 		valueAsString, valueAsStrOk := value.(string)
 		if !valueAsStrOk {
@@ -224,7 +224,7 @@ func ExecuteIndependentQuery(independentReq map[string]interface{}) ([]byte, *ht
 		return nil, nil, fmt.Errorf(errMsg)
 	}
 
-	respBody, res, reqErr := util.MakeRequestWithHeader(urlToHit, methodToUse, bodyInBytes, *headerToSend)
+	respBody, res, reqErr := util.MakeRequestWithHeader(urlToHit, methodToUse, bodyInBytes, headerToSend)
 	if reqErr != nil {
 		errMsg := fmt.Sprintf("error while sending independent request for ID: `%s` with err: `%v`", requestId, reqErr)
 		log.Errorln(logTag, ": ", errMsg)
