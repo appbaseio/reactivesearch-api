@@ -437,7 +437,7 @@ type Query struct {
 	From                        *int                        `json:"from,omitempty" jsonschema:"title=from,description=index from which the results should start from"`
 	Size                        *int                        `json:"size,omitempty" jsonschema:"title=size,description=size of the results returned"`
 	AggregationSize             *int                        `json:"aggregationSize,omitempty" jsonschema:"title=aggregationSize,description=size of the aggregation"`
-	SortBy                      *SortBy                     `json:"sortBy,omitempty" jsonschema:"title=sortBy,description=sort order for the results. Can be one of (asc, desc or count)"`
+	SortBy                      *SortBy                     `json:"sortBy,omitempty" jsonschema:"title=sortBy,description=sort order for the results"`
 	SortField                   *string                     `json:"sortField,omitempty" jsonschema:"title=sortField,description=field(s) to run the sorting on"`
 	Value                       *interface{}                `json:"value,omitempty" jsonschema:"title=value,description=value for the query. Can be string or array of strings"` // either string or Array of string
 	AggregationField            *string                     `json:"aggregationField,omitempty" jsonschema:"aggregationField,description=field for doing the aggregation on"`
