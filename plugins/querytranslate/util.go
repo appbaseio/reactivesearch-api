@@ -329,6 +329,19 @@ func (o QueryFormat) MarshalJSON() ([]byte, error) {
 	return json.Marshal(queryFormat)
 }
 
+// JSONSchema will return the jsonschema for QueryFormat
+func (QueryFormat) JSONSchema() *jsonschema.Schema {
+	return &jsonschema.Schema{
+		Type: "string",
+		Enum: []interface{}{
+			Or.String(),
+			And.String(),
+		},
+		Title:       "queryFormat",
+		Description: "operators to use for joining queries",
+	}
+}
+
 // Backend will be the backend to be used for the knn
 // response stage changes.
 type Backend int
