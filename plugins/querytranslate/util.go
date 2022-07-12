@@ -10,6 +10,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"sync"
 	"unicode"
 
 	"github.com/alecthomas/jsonschema"
@@ -1414,4 +1415,25 @@ func extractIDFromPreference(preference string) string {
 	textSplitted = textSplitted[:len(textSplitted)-1]
 
 	return strings.Join(textSplitted, "_")
+}
+
+// GetReactiveSearchSchema will return the schema of RS API as bytes
+func GetReactiveSearchSchema() ([]byte, error) {
+	schema := GetReflactor().Reflect(&RSQuery{})
+	return schema.MarshalJSON()
+}
+
+var jsonSchemaInstance *jsonschema.Reflector
+var jsonSchemaInstanceOnce sync.Once
+
+func GetReflactor() *jsonschema.Reflector {
+	jsonSchemaInstanceOnce.Do(func() {
+		r := new(jsonschema.Reflector)
+		//r.ExpandedStruct = true
+		r.AllowAdditionalProperties = false
+		r.DoNotReference = true
+		r.RequiredFromJSONSchemaTags = true
+		jsonSchemaInstance = r
+	})
+	return jsonSchemaInstance
 }
