@@ -421,33 +421,33 @@ type Query struct {
 	HighlightConfig             *map[string]interface{}     `json:"highlightConfig,omitempty" jsonschema:"title=highlightConfig,description=settings for highlighting of results"`
 	Interval                    *int                        `json:"interval,omitempty" jsonschema:"title=interval,description=histogram bar interval, applicable only when aggregations are set to histogram"`
 	Aggregations                *[]string                   `json:"aggregations,omitempty" jsonschema:"title=aggregations,description=utilize the built-in aggregations for range type of queries"`
-	MissingLabel                string                      `json:"missingLabel,omitempty"`
-	ShowMissing                 *bool                       `json:"showMissing,omitempty"`
-	DefaultQuery                *map[string]interface{}     `json:"defaultQuery,omitempty"`
-	CustomQuery                 *map[string]interface{}     `json:"customQuery,omitempty"`
-	Execute                     *bool                       `json:"execute,omitempty"`
-	EnableSynonyms              *bool                       `json:"enableSynonyms,omitempty"`
-	SelectAllLabel              *string                     `json:"selectAllLabel,omitempty"`
-	Pagination                  *bool                       `json:"pagination,omitempty"`
-	QueryString                 *bool                       `json:"queryString,omitempty"`
-	RankFeature                 *map[string]RankFunction    `json:"rankFeature,omitempty"`
-	DistinctField               *string                     `json:"distinctField,omitempty"`
-	DistinctFieldConfig         *map[string]interface{}     `json:"distinctFieldConfig,omitempty"`
-	Index                       *string                     `json:"index,omitempty"`
-	EnableRecentSuggestions     *bool                       `json:"enableRecentSuggestions,omitempty"`
-	RecentSuggestionsConfig     *RecentSuggestionsOptions   `json:"recentSuggestionsConfig,omitempty"`
-	EnablePopularSuggestions    *bool                       `json:"enablePopularSuggestions,omitempty"`
-	PopularSuggestionsConfig    *PopularSuggestionsOptions  `json:"popularSuggestionsConfig,omitempty"`
-	ShowDistinctSuggestions     *bool                       `json:"showDistinctSuggestions,omitempty"`
-	EnablePredictiveSuggestions *bool                       `json:"enablePredictiveSuggestions,omitempty"`
-	MaxPredictedWords           *int                        `json:"maxPredictedWords,omitempty"`
-	URLField                    *string                     `json:"urlField,omitempty"`
-	ApplyStopwords              *bool                       `json:"applyStopwords,omitempty"`
-	Stopwords                   *[]string                   `json:"customStopwords,omitempty"`
-	SearchLanguage              *string                     `json:"searchLanguage,omitempty"`
-	CalendarInterval            *string                     `json:"calendarinterval,omitempty"`
-	Script                      *string                     `json:"script,omitempty"`
-	QueryVector                 *[]float64                  `json:"queryVector,omitempty"`
+	MissingLabel                string                      `json:"missingLabel,omitempty" jsonschema:"title=missingLabel,description=custom label to show when showMissing is set to true"`
+	ShowMissing                 *bool                       `json:"showMissing,omitempty" jsonschema:"title=showMissing,description=whether or not to show missing results"`
+	DefaultQuery                *map[string]interface{}     `json:"defaultQuery,omitempty" jsonschema:"title=defaultQuery,description=customize the source query. This doesn't get leaked to other queries unlike customQuery"`
+	CustomQuery                 *map[string]interface{}     `json:"customQuery,omitempty" jsonschema:"title=customQuery,description=query to be used by dependent queries specified using the react property"`
+	Execute                     *bool                       `json:"execute,omitempty" jsonschema:"title=execute,description=whether or not to execute the query"`
+	EnableSynonyms              *bool                       `json:"enableSynonyms,omitempty" jsonschema:"title=enableSynonyms,description=control the synonyms behavior for a particular query"`
+	SelectAllLabel              *string                     `json:"selectAllLabel,omitempty" jsonschema:"title=selectAllLabel,description=allows adding a new property in the list with a particular value such that when selected, it is similar to that label"`
+	Pagination                  *bool                       `json:"pagination,omitempty" jsonschema:"title=pagination,description=enable pagination for term type of queries"`
+	QueryString                 *bool                       `json:"queryString,omitempty" jsonschema:"title=queryString,description=whether or not to allow creating a complex search that includes wildcard characters, searches across multiple fields, and more"`
+	RankFeature                 *map[string]RankFunction    `json:"rankFeature,omitempty" jsonschema:"title=rankFeature,description=boost relevant score of documents based on rank_feature fields"`
+	DistinctField               *string                     `json:"distinctField,omitempty" jsonschema:"title=distinctField,description=returns only distinct value documents for the specified field"`
+	DistinctFieldConfig         *map[string]interface{}     `json:"distinctFieldConfig,omitempty" jsonschema:"title=distinctFieldConfig,description=additional options to the distinctField property"`
+	Index                       *string                     `json:"index,omitempty" jsonschema:"title=index,description=explicitly specify an index to run the query on"`
+	EnableRecentSuggestions     *bool                       `json:"enableRecentSuggestions,omitempty" jsonschema:"title=enableRecentSuggestions,description=whether or not to enable recent suggestions"`
+	RecentSuggestionsConfig     *RecentSuggestionsOptions   `json:"recentSuggestionsConfig,omitempty" jsonschema:"title=recentSuggestionsConfig,description=additional options for getting recent suggestions"`
+	EnablePopularSuggestions    *bool                       `json:"enablePopularSuggestions,omitempty" jsonschema:"title=enablePopularSuggestions,description=whether or not to enable popular suggestions"`
+	PopularSuggestionsConfig    *PopularSuggestionsOptions  `json:"popularSuggestionsConfig,omitempty" jsonschema:"title=popularSuggestionsConfig,description=additional options for getting popular suggestions"`
+	ShowDistinctSuggestions     *bool                       `json:"showDistinctSuggestions,omitempty" jsonschema:"title=showDistinctSuggestions,description=whether or not to show distinct suggestions"`
+	EnablePredictiveSuggestions *bool                       `json:"enablePredictiveSuggestions,omitempty" jsonschema:"title=enablePredictiveSuggestions,description=predicts the next relevant words from the value of a field based on the search query typed by the user"`
+	MaxPredictedWords           *int                        `json:"maxPredictedWords,omitempty" jsonschema:"title=maxPredictedWords,description=specify the the maximum number of relevant words that are predicted"`
+	URLField                    *string                     `json:"urlField,omitempty" jsonschema:"title=urlField,description=convenience prop that allows returning the URL value in the suggestion's response"`
+	ApplyStopwords              *bool                       `json:"applyStopwords,omitempty" jsonschema:"title=applyStopwords,description=whether or not predict a suggestion which starts or ends with a stopword"`
+	Stopwords                   *[]string                   `json:"customStopwords,omitempty" jsonschema:"title=customStopwords,description=list of custom stopwords"`
+	SearchLanguage              *string                     `json:"searchLanguage,omitempty" jsonschema:"title=searchLanguage,description=used to apply language specific stopwords for predictive suggestions"`
+	CalendarInterval            *string                     `json:"calendarinterval,omitempty" jsonschema:"title=calendarInterval,description=set the histogram bar interval when range value is of type date"`
+	Script                      *string                     `json:"script,omitempty" jsonschema:"title=script,description=indicates the script to run while reordering the results"`
+	QueryVector                 *[]float64                  `json:"queryVector,omitempty" jsonschema:"title=queryVector,description=specify a vector to match for the reordering the results using kNN"`
 	VectorDataField             *string                     `json:"vectorDataField,omitempty"`
 	Candidates                  *int                        `json:"candidates,omitempty"`
 	EnableFeaturedSuggestions   *bool                       `json:"enableFeaturedSuggestions,omitempty"`
