@@ -199,6 +199,22 @@ func (o QueryType) MarshalJSON() ([]byte, error) {
 	return json.Marshal(queryType)
 }
 
+// JSONSchema will return the jsonschema for QueryType
+func (QueryType) JSONSchema() *jsonschema.Schema {
+	return &jsonschema.Schema{
+		Type: "string",
+		Enum: []interface{}{
+			Search.String(),
+			Term.String(),
+			Range.String(),
+			Geo.String(),
+			Suggestion.String(),
+		},
+		Title:       "type",
+		Description: "type of query",
+	}
+}
+
 type SortBy int
 
 const (
@@ -250,6 +266,20 @@ func (o SortBy) MarshalJSON() ([]byte, error) {
 		return nil, fmt.Errorf("invalid sortBy encountered: %v", o)
 	}
 	return json.Marshal(sortBy)
+}
+
+// JSONSchema will return the jsonschema for SortBy
+func (SortBy) JSONSchema() *jsonschema.Schema {
+	return &jsonschema.Schema{
+		Type: "string",
+		Enum: []interface{}{
+			Asc.String(),
+			Desc.String(),
+			Count.String(),
+		},
+		Title:       "sortBy",
+		Description: "order to sort by",
+	}
 }
 
 type QueryFormat int
