@@ -1483,22 +1483,3 @@ func GetReflactor() *jsonschema.Reflector {
 	})
 	return jsonSchemaInstance
 }
-
-// AddAdditionalFields will add new fields in the struct tag
-// according to the ID of the struct type.
-//
-// As of now, this function will inject the following fields
-// if available for the passed ID:
-// - markdownDescription
-func AddAdditionalFields(typePassed reflect.Type) []reflect.StructField {
-	structFieldsToReturn := make([]reflect.StructField, 0)
-
-	for index := 0; index < typePassed.NumField(); index++ {
-		// Get the field
-		fieldToWorkOn := typePassed.Field(index)
-
-		structFieldsToReturn = append(structFieldsToReturn, fieldToWorkOn)
-	}
-
-	return structFieldsToReturn
-}

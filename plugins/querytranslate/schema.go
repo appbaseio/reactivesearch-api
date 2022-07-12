@@ -1,0 +1,65 @@
+package querytranslate
+
+import (
+	"fmt"
+	"reflect"
+	"regexp"
+	"strings"
+
+	log "github.com/sirupsen/logrus"
+)
+
+// AddAdditionalFields will add new fields in the struct tag
+// according to the ID of the struct type.
+//
+// As of now, this function will inject the following fields
+// if available for the passed ID:
+// - markdownDescription
+func AddAdditionalFields(typePassed reflect.Type) []reflect.StructField {
+	structFieldsToReturn := make([]reflect.StructField, 0)
+
+	for index := 0; index < typePassed.NumField(); index++ {
+		// Get the field
+		fieldToWorkOn := typePassed.Field(index)
+
+		// Extract the struct tag of the field,
+		// Get the jsonschema_extras field and inject the markdownDescription.
+		// Build a new struct tag field and add it to the current struct
+		// field and finally add it to the final response array.
+		tagOfField := fieldToWorkOn.Tag
+		updatedExtras := injectMarkdownDescription(tagOfField.Get("jsonschema_extras"))
+
+		re := regexp.MustCompile(`jsonschema_extras:".*?"`)
+		updatedTag := re.ReplaceAllString(string(tagOfField), fmt.Sprintf(`jsonschema_extras:"%s"`, updatedExtras))
+
+		log.Debugln(logTag, ": updated tag: ", updatedTag)
+		fieldToWorkOn.Tag = reflect.StructTag(updatedTag)
+
+		log.Debugln(logTag, ": field: ", fieldToWorkOn.Tag)
+
+		structFieldsToReturn = append(structFieldsToReturn, fieldToWorkOn)
+	}
+
+	return structFieldsToReturn
+}
+
+// injectMarkdownDescription will inject the markdown description
+// field to the jsonschema_extras field passed and return the
+// modified string
+func injectMarkdownDescription(extras string) string {
+	// If the field is already present, no need to modify
+	// the string.
+	if strings.Contains(extras, "markdownDescription") {
+		return extras
+	}
+
+	// Split the extras string based on comma
+	// TODO: Remove whitespace after commas from the string
+
+	splittedExtras := strings.Split(extras, ",")
+
+	// Inject markdownDescription
+	splittedExtras = append(splittedExtras, "markdownDescription=some md desc")
+
+	return strings.Join(splittedExtras, ",")
+}
