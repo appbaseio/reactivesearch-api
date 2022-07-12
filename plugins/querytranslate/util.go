@@ -393,8 +393,8 @@ type Endpoint struct {
 
 // Query represents the query object
 type Query struct {
-	ID                          *string                     `json:"id,omitempty"` // component id
-	Type                        QueryType                   `json:"type,omitempty"`
+	ID                          *string                     `json:"id,omitempty" jsonschema:"title=id,description=ID of the query,required"` // component id
+	Type                        QueryType                   `json:"type,omitempty" jsonschema:"title=type,description=type of query"`
 	React                       *map[string]interface{}     `json:"react,omitempty"`
 	QueryFormat                 *string                     `json:"queryFormat,omitempty"`
 	DataField                   interface{}                 `json:"dataField,omitempty"`
