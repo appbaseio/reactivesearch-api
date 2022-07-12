@@ -13,10 +13,10 @@ import (
 	"sync"
 	"unicode"
 
-	"github.com/alecthomas/jsonschema"
 	"github.com/appbaseio/reactivesearch-api/util"
 	"github.com/bbalet/stopwords"
 	pluralize "github.com/gertd/go-pluralize"
+	"github.com/invopop/jsonschema"
 	"github.com/kljensen/snowball"
 	"github.com/lithammer/fuzzysearch/fuzzy"
 	"github.com/microcosm-cc/bluemonday"
@@ -361,8 +361,8 @@ func (b Backend) MarshalJSON() ([]byte, error) {
 	return json.Marshal(knnBackend)
 }
 
-func (b Backend) JSONSchemaType() *jsonschema.Type {
-	return &jsonschema.Type{
+func (b Backend) JSONSchema() *jsonschema.Schema {
+	return &jsonschema.Schema{
 		Type: "string",
 		Enum: []interface{}{
 			ElasticSearch.String(),
@@ -370,6 +370,8 @@ func (b Backend) JSONSchemaType() *jsonschema.Type {
 			MongoDB.String(),
 			Solr.String(),
 		},
+		Title:       "Backend",
+		Description: "Backend that ReactiveSearch will use",
 	}
 }
 
