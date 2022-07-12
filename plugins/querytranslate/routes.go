@@ -36,6 +36,13 @@ func (px *QueryTranslate) routes() []plugins.Route {
 		HandlerFunc: middlewareFunction(px.validate()), // Validate route is an open route, don't apply middleware on it
 		Description: "Validates the query props and returns the query DSL.",
 	})
+	routes = append(routes, plugins.Route{
+		Name:        "To get the API schema for ReactiveSearch",
+		Methods:     []string{http.MethodGet},
+		Path:        "/_reactivesearch/schema",
+		HandlerFunc: middlewareFunction(px.HandleApiSchema()),
+		Description: "Get the API schema for ReactiveSearch endpoint.",
+	})
 	return routes
 }
 
