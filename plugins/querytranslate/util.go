@@ -411,8 +411,8 @@ type Query struct {
 	AggregationField            *string                     `json:"aggregationField,omitempty" jsonschema:"aggregationField,description=field for doing the aggregation on"`
 	After                       *map[string]interface{}     `json:"after,omitempty" jsonschema:"title=after,description=pagination for aggregations"`
 	IncludeNullValues           *bool                       `json:"includeNullValues,omitempty" jsonschema:"title=includeNullValues,description=whether or not to include null values"`
-	IncludeFields               *[]string                   `json:"includeFields,omitempty" jsonschema:"title=includeFields,description=indicates which fields to include in term queries"`
-	ExcludeFields               *[]string                   `json:"excludeFields,omitempty" jsonschema:"title=excludeFields,description=indicates which fields to exclude in term queries"`
+	IncludeFields               *[]string                   `json:"includeFields,omitempty" jsonschema:"title=includeFields,description=indicates which dataFields to include in search results"`
+	ExcludeFields               *[]string                   `json:"excludeFields,omitempty" jsonschema:"title=excludeFields,description=indicates which dataFields to exclude in search results"`
 	Fuzziness                   interface{}                 `json:"fuzziness,omitempty" jsonschema:"title=fuzziness,description=indicates the fuzziness of the query"` // string or int
 	SearchOperators             *bool                       `json:"searchOperators,omitempty" jsonschema:"title=searchOperators,description=use special characters in the search query to enable advanced search behavior"`
 	Highlight                   *bool                       `json:"highlight,omitempty" jsonschema:"title=highlight,description=whether or not to enable highlighting of results"`
@@ -448,17 +448,17 @@ type Query struct {
 	CalendarInterval            *string                     `json:"calendarinterval,omitempty" jsonschema:"title=calendarInterval,description=set the histogram bar interval when range value is of type date"`
 	Script                      *string                     `json:"script,omitempty" jsonschema:"title=script,description=indicates the script to run while reordering the results"`
 	QueryVector                 *[]float64                  `json:"queryVector,omitempty" jsonschema:"title=queryVector,description=specify a vector to match for the reordering the results using kNN"`
-	VectorDataField             *string                     `json:"vectorDataField,omitempty"`
-	Candidates                  *int                        `json:"candidates,omitempty"`
-	EnableFeaturedSuggestions   *bool                       `json:"enableFeaturedSuggestions,omitempty"`
-	FeaturedSuggestionsConfig   *FeaturedSuggestionsOptions `json:"featuredSuggestionsConfig,omitempty"`
-	EnableIndexSuggestions      *bool                       `json:"enableIndexSuggestions,omitempty"`
-	IndexSuggestionsConfig      *IndexSuggestionsOptions    `json:"indexSuggestionsConfig,omitempty"`
-	DeepPagination              *bool                       `json:"deepPagination,omitempty"`
-	DeepPaginationConfig        *DeepPaginationConfig       `json:"deepPaginationConfig,omitempty"`
-	Endpoint                    *Endpoint                   `json:"endpoint,omitempty"`
-	IncludeValues               *[]string                   `json:"includeValues,omitempty"`
-	ExcludeValues               *[]string                   `json:"excludeValues,omitempty"`
+	VectorDataField             *string                     `json:"vectorDataField,omitempty" jsonschema:"title=vectorDataField,description=field in the index to be used to reorder the results using kNN"`
+	Candidates                  *int                        `json:"candidates,omitempty" jsonschema:"title=candidates,description=indicates the number of candidates to consider while using the script_score functionality to reorder the results using kNN"`
+	EnableFeaturedSuggestions   *bool                       `json:"enableFeaturedSuggestions,omitempty" jsonschema:"title=enableFeaturedSuggestions,description=whether or not to enable featured suggestions"`
+	FeaturedSuggestionsConfig   *FeaturedSuggestionsOptions `json:"featuredSuggestionsConfig,omitempty" jsonschema:"title=featuredSuggestionsConfig,description=additional options to specify for featured suggestions"`
+	EnableIndexSuggestions      *bool                       `json:"enableIndexSuggestions,omitempty" jsonschema:"title=enableIndexSuggestions,description=whether or not to enable index suggestions"`
+	IndexSuggestionsConfig      *IndexSuggestionsOptions    `json:"indexSuggestionsConfig,omitempty" jsonschema:"title=indexSuggestionsConfig,description=additional options to specify for index suggestions"`
+	DeepPagination              *bool                       `json:"deepPagination,omitempty" jsonschema:"title=deepPagination,description=whether or not the enable deep pagination of results"`
+	DeepPaginationConfig        *DeepPaginationConfig       `json:"deepPaginationConfig,omitempty" jsonschema:"title=deepPaginationConfig,description=additional options for deepPagination for it to work properly"`
+	Endpoint                    *Endpoint                   `json:"endpoint,omitempty" jsonschema:"title=endpoint,description=endpoint and other details where the query should be hit"`
+	IncludeValues               *[]string                   `json:"includeValues,omitempty" jsonschema:"title=includeValues,description=values to include in term queries"`
+	ExcludeValues               *[]string                   `json:"excludeValues,omitempty" jsonschema:"title=excludeValues,description=values to exclude in term queries"`
 }
 
 type DataField struct {
