@@ -595,6 +595,7 @@ func TransformESResponse(response []byte, rsAPIRequest *RSQuery) ([]byte, error)
 // schema
 func (r *QueryTranslate) HandleApiSchema() http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
+		log.Infoln(logTag, ": returning already marshalled schema as bytes")
 		util.WriteBackRaw(w, r.apiSchema, http.StatusOK)
 	}
 }

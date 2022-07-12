@@ -480,9 +480,9 @@ type Settings struct {
 
 // RSQuery represents the request body
 type RSQuery struct {
-	Query    []Query                 `json:"query,omitempty"`
-	Settings *Settings               `json:"settings,omitempty"`
-	Metadata *map[string]interface{} `json:"metadata,omitempty"`
+	Query    []Query                 `json:"query,omitempty" jsonschema:"title=query,description=The array of queries to execute,required"`
+	Settings *Settings               `json:"settings,omitempty" jsonschema:"title=settings,description=Settings for the request being made"`
+	Metadata *map[string]interface{} `json:"metadata,omitempty" jsonschema:"title=metadata,description=Metadata for the request being made"`
 }
 
 type TermFilter struct {
@@ -1429,7 +1429,7 @@ var jsonSchemaInstanceOnce sync.Once
 func GetReflactor() *jsonschema.Reflector {
 	jsonSchemaInstanceOnce.Do(func() {
 		r := new(jsonschema.Reflector)
-		//r.ExpandedStruct = true
+		r.ExpandedStruct = true
 		r.AllowAdditionalProperties = false
 		r.DoNotReference = true
 		r.RequiredFromJSONSchemaTags = true
