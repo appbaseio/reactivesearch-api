@@ -54,6 +54,7 @@ var (
 	memprofile         bool
 	enableTelemetry    string
 	disableHealthCheck bool
+	showVersion        bool
 	// Version Reactivesearch version set during build
 	Version string
 	// PlanRefreshInterval can be used to define the custom interval to refresh the plan
@@ -119,6 +120,7 @@ func init() {
 	flag.BoolVar(&listPlugins, "plugins", false, "List currently registered plugins")
 	flag.StringVar(&address, "addr", "0.0.0.0", "Address to serve on")
 	flag.BoolVar(&disableHealthCheck, "disable-health-check", false, "Set as `true` to disable health check")
+	flag.BoolVar(&showVersion, "version", false, "show the version of ReactiveSearch")
 	// env port for deployments like heroku where port is dynamically assigned
 	envPort := os.Getenv("PORT")
 	defaultPort := 8000
@@ -180,6 +182,15 @@ func init() {
 }
 
 func main() {
+	// If showVersion is passed, show the version and do
+	// nothing.
+	util.Version = Version
+
+	if showVersion {
+		log.Info("ReactiveSearch ", util.Version)
+		return
+	}
+
 	// add cpu profilling
 	if cpuprofile {
 		defer profile.Start().Stop()
@@ -284,7 +295,6 @@ func main() {
 	util.HostedBilling = HostedBilling
 	util.ClusterBilling = ClusterBilling
 	util.Opensource = Opensource
-	util.Version = Version
 
 	var licenseKey string
 	// check for offline license key
