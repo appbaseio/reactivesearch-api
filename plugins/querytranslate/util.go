@@ -438,7 +438,7 @@ type Endpoint struct {
 
 // Query represents the query object
 type Query struct {
-	ID                          *string                     `json:"id,omitempty" jsonschema:"title=id,description=ID of the query,required"` // component id
+	ID                          *string                     `json:"id,omitempty" jsonschema:"title=id,description=ID of the query,required" jsonschema_extras:"engine=elasticsearch,engine=mongodb"` // component id
 	Type                        QueryType                   `json:"type,omitempty" jsonschema:"title=type,description=type of query" jsonschema_extras:"markdownDescription=some md desc"`
 	React                       *map[string]interface{}     `json:"react,omitempty" jsonschema:"title=react,description=which queries to react the current query with"`
 	QueryFormat                 *string                     `json:"queryFormat,omitempty" jsonschema:"title=queryFormat,description=the operator to join multiple values in the query.value field"`
