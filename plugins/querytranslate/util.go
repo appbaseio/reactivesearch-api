@@ -1465,7 +1465,15 @@ func extractIDFromPreference(preference string) string {
 // GetReactiveSearchSchema will return the schema of RS API as bytes
 func GetReactiveSearchSchema() ([]byte, error) {
 	schema := GetReflactor().Reflect(&RSQuery{})
-	return schema.MarshalJSON()
+	schemaMarshalled, marshalErr := schema.MarshalJSON()
+
+	if marshalErr != nil {
+		return nil, marshalErr
+	}
+
+	// TODO: Unmarshal and inject
+
+	return schemaMarshalled, nil
 }
 
 var jsonSchemaInstance *jsonschema.Reflector
@@ -1478,7 +1486,6 @@ func GetReflactor() *jsonschema.Reflector {
 		r.AllowAdditionalProperties = false
 		r.DoNotReference = true
 		r.RequiredFromJSONSchemaTags = true
-		r.AdditionalFields = AddAdditionalFields
 		jsonSchemaInstance = r
 	})
 	return jsonSchemaInstance

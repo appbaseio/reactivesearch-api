@@ -31,7 +31,7 @@ func AddAdditionalFields(typePassed reflect.Type) []reflect.StructField {
 		//
 		// So, we can get it, split it by comma (,) and use the first index element
 		// as the ID.
-		jsonAsArr := regexp.MustCompile(`, ?`).Split(tagOfField.Get("json"), -1)
+		jsonAsArr := regexp.MustCompile(`,[[:space:]]?`).Split(tagOfField.Get("json"), -1)
 
 		IDToUse := ""
 
