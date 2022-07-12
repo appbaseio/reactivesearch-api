@@ -395,32 +395,32 @@ type Endpoint struct {
 type Query struct {
 	ID                          *string                     `json:"id,omitempty" jsonschema:"title=id,description=ID of the query,required"` // component id
 	Type                        QueryType                   `json:"type,omitempty" jsonschema:"title=type,description=type of query"`
-	React                       *map[string]interface{}     `json:"react,omitempty"`
-	QueryFormat                 *string                     `json:"queryFormat,omitempty"`
-	DataField                   interface{}                 `json:"dataField,omitempty"`
-	CategoryField               *string                     `json:"categoryField,omitempty"`
-	CategoryValue               *interface{}                `json:"categoryValue,omitempty"`
-	FieldWeights                []float64                   `json:"fieldWeights,omitempty"`
-	NestedField                 *string                     `json:"nestedField,omitempty"`
-	From                        *int                        `json:"from,omitempty"`
-	Size                        *int                        `json:"size,omitempty"`
-	AggregationSize             *int                        `json:"aggregationSize,omitempty"`
-	SortBy                      *SortBy                     `json:"sortBy,omitempty"`
-	SortField                   *string                     `json:"sortField,omitempty"`
-	Value                       *interface{}                `json:"value,omitempty"` // either string or Array of string
-	AggregationField            *string                     `json:"aggregationField,omitempty"`
-	After                       *map[string]interface{}     `json:"after,omitempty"`
-	IncludeNullValues           *bool                       `json:"includeNullValues,omitempty"`
-	IncludeFields               *[]string                   `json:"includeFields,omitempty"`
-	ExcludeFields               *[]string                   `json:"excludeFields,omitempty"`
-	Fuzziness                   interface{}                 `json:"fuzziness,omitempty"` // string or int
-	SearchOperators             *bool                       `json:"searchOperators,omitempty"`
-	Highlight                   *bool                       `json:"highlight,omitempty"`
-	HighlightField              []string                    `json:"highlightField,omitempty"`
-	CustomHighlight             *map[string]interface{}     `json:"customHighlight,omitempty"`
-	HighlightConfig             *map[string]interface{}     `json:"highlightConfig,omitempty"`
-	Interval                    *int                        `json:"interval,omitempty"`
-	Aggregations                *[]string                   `json:"aggregations,omitempty"`
+	React                       *map[string]interface{}     `json:"react,omitempty" jsonschema:"title=react,description=which queries to react the current query with"`
+	QueryFormat                 *string                     `json:"queryFormat,omitempty" jsonschema:"title=queryFormat,description=the operator to join multiple values in the query.value field"`
+	DataField                   interface{}                 `json:"dataField,omitempty" jsonschema:"title=dataField,description=fields to run the query term on"`
+	CategoryField               *string                     `json:"categoryField,omitempty" jsonschema:"title=categoryField,description="`
+	CategoryValue               *interface{}                `json:"categoryValue,omitempty" jsonschema:"title=categoryValue,description="`
+	FieldWeights                []float64                   `json:"fieldWeights,omitempty" jsonschema:"title=fieldWeights,description=(deprecated) weights of the data fields"`
+	NestedField                 *string                     `json:"nestedField,omitempty" jsonschema:"title=nestedField,description="`
+	From                        *int                        `json:"from,omitempty" jsonschema:"title=from,description=index from which the results should start from"`
+	Size                        *int                        `json:"size,omitempty" jsonschema:"title=size,description=size of the results returned"`
+	AggregationSize             *int                        `json:"aggregationSize,omitempty" jsonschema:"title=aggregationSize,description=size of the aggregation"`
+	SortBy                      *SortBy                     `json:"sortBy,omitempty" jsonschema:"title=sortBy,description=sort order for the results. Can be one of (asc, desc or count)"`
+	SortField                   *string                     `json:"sortField,omitempty" jsonschema:"title=sortField,description=field(s) to run the sorting on"`
+	Value                       *interface{}                `json:"value,omitempty" jsonschema:"title=value,description=value for the query. Can be string or array of strings"` // either string or Array of string
+	AggregationField            *string                     `json:"aggregationField,omitempty" jsonschema:"aggregationField,description=field for doing the aggregation on"`
+	After                       *map[string]interface{}     `json:"after,omitempty" jsonschema:"title=after,description=pagination for aggregations"`
+	IncludeNullValues           *bool                       `json:"includeNullValues,omitempty" jsonschema:"title=includeNullValues,description=whether or not to include null values"`
+	IncludeFields               *[]string                   `json:"includeFields,omitempty" jsonschema:"title=includeFields,description=indicates which fields to include in term queries"`
+	ExcludeFields               *[]string                   `json:"excludeFields,omitempty" jsonschema:"title=excludeFields,description=indicates which fields to exclude in term queries"`
+	Fuzziness                   interface{}                 `json:"fuzziness,omitempty" jsonschema:"title=fuzziness,description=indicates the fuzziness of the query"` // string or int
+	SearchOperators             *bool                       `json:"searchOperators,omitempty" jsonschema:"title=searchOperators,description=use special characters in the search query to enable advanced search behavior"`
+	Highlight                   *bool                       `json:"highlight,omitempty" jsonschema:"title=highlight,description=whether or not to enable highlighting of results"`
+	HighlightField              []string                    `json:"highlightField,omitempty" jsonschema:"title=highlightField,description=fields to highlight in the results"`
+	CustomHighlight             *map[string]interface{}     `json:"customHighlight,omitempty" jsonschema:"title=customHighlight,description=(deprecated) same as highlightConfig"`
+	HighlightConfig             *map[string]interface{}     `json:"highlightConfig,omitempty" jsonschema:"title=highlightConfig,description=settings for highlighting of results"`
+	Interval                    *int                        `json:"interval,omitempty" jsonschema:"title=interval,description=histogram bar interval, applicable only when aggregations are set to histogram"`
+	Aggregations                *[]string                   `json:"aggregations,omitempty" jsonschema:"title=aggregations,description=utilize the built-in aggregations for range type of queries"`
 	MissingLabel                string                      `json:"missingLabel,omitempty"`
 	ShowMissing                 *bool                       `json:"showMissing,omitempty"`
 	DefaultQuery                *map[string]interface{}     `json:"defaultQuery,omitempty"`
