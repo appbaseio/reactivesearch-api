@@ -33,7 +33,16 @@ func AddAdditionalFields(typePassed reflect.Type) []reflect.StructField {
 		// as the ID.
 		jsonAsArr := regexp.MustCompile(`, ?`).Split(tagOfField.Get("json"), -1)
 
-		updatedExtras := injectMarkdownDescription(tagOfField.Get("jsonschema_extras"), jsonAsArr[0])
+		IDToUse := ""
+
+		if len(jsonAsArr) < 1 {
+			// Use the lowercase'd name value as a fallback
+			IDToUse = strings.ToLower(fieldToWorkOn.Name)
+		} else {
+			IDToUse = jsonAsArr[0]
+		}
+
+		updatedExtras := injectMarkdownDescription(tagOfField.Get("jsonschema_extras"), IDToUse)
 
 		re := regexp.MustCompile(`jsonschema_extras:".*?"`)
 		updatedTag := re.ReplaceAllString(string(tagOfField), fmt.Sprintf(`jsonschema_extras:"%s"`, updatedExtras))
