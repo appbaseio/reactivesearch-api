@@ -439,7 +439,7 @@ type Endpoint struct {
 // Query represents the query object
 type Query struct {
 	ID                          *string                     `json:"id,omitempty" jsonschema:"title=id,description=ID of the query,required" jsonschema_extras:"engine=elasticsearch,engine=mongodb,engine=solr,engine=opensearch"` // component id
-	Type                        QueryType                   `json:"type,omitempty" jsonschema:"title=type,description=type of query" jsonschema_extras:"markdownDescription=some md desc,engine=elasticsearch,engine=mongodb,engine=solr,engine=opensearch"`
+	Type                        QueryType                   `json:"type,omitempty" jsonschema:"title=type,description=type of query" jsonschema_extras:"engine=elasticsearch,engine=mongodb,engine=solr,engine=opensearch"`
 	React                       *map[string]interface{}     `json:"react,omitempty" jsonschema:"title=react,description=which queries to react the current query with" jsonschema_extras:"engine=elasticsearch,engine=mongodb,engine=solr,engine=opensearch"`
 	QueryFormat                 *string                     `json:"queryFormat,omitempty" jsonschema:"title=queryFormat,description=the operator to join multiple values in the query.value field" jsonschema_extras:"engine=elasticsearch,engine=mongodb,engine=solr,engine=opensearch"`
 	DataField                   interface{}                 `json:"dataField,omitempty" jsonschema:"title=dataField,description=fields to run the query term on" jsonschema_extras:"engine=elasticsearch,engine=mongodb,engine=solr,engine=opensearch"`

@@ -85,5 +85,5 @@ func injectMarkdownDescription(extras string, ID string) string {
 }
 
 var MARKDOWN_DESCRIPTIONS = map[string]string{
-	"id": "some md desc",
+	"id": "The unique identifier for the query can be referenced in the `react` property of other queries. The response of the `ReactiveSearch API` is a map of query ids to `Elasticsearch` response which means that `id` is also useful to retrieve the response for a particular query.",
 }
