@@ -139,7 +139,8 @@ func injectExtrasToSchema(schemaMarshalled []byte) ([]byte, error) {
 
 	schemaAsMap["properties"] = propertiesAsMap
 
-	return schemaMarshalled, nil
+	// Marshal the updated map and return it instead
+	return json.Marshal(schemaAsMap)
 }
 
 var MARKDOWN_DESCRIPTIONS = map[string]string{
