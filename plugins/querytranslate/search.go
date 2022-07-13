@@ -109,7 +109,7 @@ func (query *Query) getSearchQuery() (interface{}, error) {
 		if ok {
 			for _, v := range queryAsArray {
 				valueAsString, ok := v.(string)
-				if ok {
+				if ok && strings.TrimSpace(valueAsString) != "" {
 					queryValue = append(queryValue, valueAsString)
 				}
 			}

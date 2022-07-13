@@ -450,6 +450,15 @@ func (query *Query) buildQueryOptions() (map[string]interface{}, error) {
 	normalizedFields := NormalizedDataFields(query.DataField, query.FieldWeights)
 
 	// Only apply sort on search queries
+	//
+	// Following will only be reached if the sortField is passed
+	// or sortBy is passed. This also means that the following criterion
+	// will make sure that sorting on `_score` is done only if neither of
+	// them are passed and in that case we don't pass the sort key at all.
+	//
+	// Above explanation indicates that we can set the sortBy value to `ascending`
+	// if it is not passed without checking whether the sortField is `_score` because
+	// when the sortField is score, it will not go in the following block.
 	if (query.SortBy != nil || query.SortField != nil) && query.Type == Search {
 		// If both sortField and dataFields are not present
 		// then raise an error.
@@ -457,27 +466,47 @@ func (query *Query) buildQueryOptions() (map[string]interface{}, error) {
 			return nil, errors.New("field 'dataField' or `sortField` must be present to apply 'sortBy' property")
 		}
 
-		// sortField get's priority
-		// if not present and normalized field is present
-		// then it is assigned.
-		if query.SortField == nil {
-			dataField := normalizedFields[0].Field
-			query.SortField = &dataField
-		}
-
 		// If sortBy is nil, set it to Desc
 		if query.SortBy == nil {
-			defaultSortBy := Desc
+			defaultSortBy := Asc
 			query.SortBy = &defaultSortBy
 		}
 
-		queryWithOptions["sort"] = []map[string]interface{}{
-			{
-				*query.SortField: map[string]interface{}{
-					"order": *query.SortBy,
-				},
-			},
+		// sortField can be a string, an array of strings or an array of objects
+		// and strings
+		// where the key indicates the field to sort on and the value is
+		// one of valid sort types.
+		//
+		// For string or array of strings, the value of `sortBy` will be
+		// considered.
+
+		sortFieldParsed := make(map[string]SortBy)
+
+		// If not passed, just set the dataField as the sortField with
+		// the value of sortBy.
+		if query.SortField == nil {
+			dataField := normalizedFields[0].Field
+			sortFieldParsed[dataField] = *query.SortBy
+		} else {
+			// Parse the sortField accordingly.
+			var sortFieldParseErr error
+			sortFieldParsed, sortFieldParseErr = ParseSortField(*query, *query.SortBy)
+			if sortFieldParseErr != nil {
+				return nil, sortFieldParseErr
+			}
 		}
+
+		// Change the following to support proper formatting of sortField
+		sortValue := make([]map[string]interface{}, 0)
+		for sortField, sortBy := range sortFieldParsed {
+			sortValue = append(sortValue, map[string]interface{}{
+				sortField: map[string]interface{}{
+					"order": sortBy,
+				},
+			})
+		}
+
+		queryWithOptions["sort"] = sortValue
 	}
 
 	includeFields := []string{"*"}
