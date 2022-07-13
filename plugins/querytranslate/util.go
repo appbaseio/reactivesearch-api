@@ -515,7 +515,7 @@ func ExtractEnvsFromRequest(req RSQuery) QueryEnvs {
 						var valueAsArrayString []string
 						for _, v := range valueAsArray {
 							valAsString, ok := v.(string)
-							if ok {
+							if ok && strings.TrimSpace(valAsString) != "" {
 								valueAsArrayString = append(valueAsArrayString, valAsString)
 							}
 						}
