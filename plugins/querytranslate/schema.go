@@ -93,7 +93,53 @@ func injectExtrasToSchema(schemaMarshalled []byte) ([]byte, error) {
 		return nil, unmarshalErr
 	}
 
-	// TODO: Update the properties with injection of values.
+	// Update the properties with injection of values.
+	propertiesAsMap := schemaAsMap["properties"].(map[string]interface{})
+
+	// Update the settings.
+	// Settings should be a map inside which there will be a `properties` field
+	// that will map to another map where key will be the id and
+	// value will be a map.
+	// We need to inject the new values into this `value` map.
+	settingsAsMap, settingsAsMapOk := propertiesAsMap["settings"].(map[string]interface{})
+	if !settingsAsMapOk {
+		return nil, fmt.Errorf("error while parsing `settings` into a map to inject extra fields in schema")
+	}
+	settingPropertiesAsMap, settingPropertyOk := settingsAsMap["properties"].(map[string]interface{})
+	if !settingPropertyOk {
+		return nil, fmt.Errorf("error while parsing `settings.properties` into a map to inject extra fields")
+	}
+
+	// Finally, iterate the properties and inject the extra fields by using the ID.
+	for propKey, propValue := range settingPropertiesAsMap {
+		propValueAsMap := propValue.(map[string]interface{})
+
+		// Check if description is present or playgroundURL is present.
+		mdDesc, isMdDescPresent := MARKDOWN_DESCRIPTIONS[propKey]
+		if isMdDescPresent {
+			propValueAsMap["markdownDescription"] = mdDesc
+		}
+
+		playgroundURL, isUrlPresent := PLAYGROUND_URLS[propKey]
+		if isUrlPresent {
+			propValueAsMap["playgroundURL"] = playgroundURL
+		}
+
+		// Update the map in the settings properties
+		settingPropertiesAsMap[propKey] = propValueAsMap
+	}
+
+	// Update the properties map in settings
+	settingsAsMap["properties"] = settingPropertiesAsMap
+
+	// Update the main map now
+	propertiesAsMap["settings"] = settingsAsMap
+
+	// TODO: Update the query as well here
+
+	schemaAsMap["properties"] = propertiesAsMap
+
+	return schemaMarshalled, nil
 }
 
 var MARKDOWN_DESCRIPTIONS = map[string]string{
