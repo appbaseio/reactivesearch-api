@@ -7,6 +7,12 @@ import (
 	"github.com/invopop/jsonschema"
 )
 
+const (
+	MARKDOWN_DESC_KEY   = "markdownDescription"
+	PLAYGROUND_URL_KEY  = "playgroundURL"
+	PRESERVED_ORDER_KEY = "preservedOrder"
+)
+
 // injectExtrasToSchema will inject extra fields in the schema.
 //
 // This method will modify the `properties.query.items.properties`
@@ -61,7 +67,7 @@ func injectExtrasToSchema(schemaMarshalled []byte, originalSchema jsonschema.Sch
 		}
 	}
 
-	queryItemsAsMap["preservedOrder"] = preservedOrderForQuery
+	queryItemsAsMap[PRESERVED_ORDER_KEY] = preservedOrderForQuery
 
 	// Finally iterate the properties and inject the extra fields using the ID
 	iterateAndInject(&queryPropertiesAsMap)
@@ -95,7 +101,7 @@ func injectExtrasToSchema(schemaMarshalled []byte, originalSchema jsonschema.Sch
 		}
 	}
 
-	settingsAsMap["preservedOrder"] = preservedOrderForSettings
+	settingsAsMap[PRESERVED_ORDER_KEY] = preservedOrderForSettings
 
 	// Finally, iterate the properties and inject the extra fields by using the ID.
 	iterateAndInject(&settingPropertiesAsMap)
@@ -112,7 +118,7 @@ func injectExtrasToSchema(schemaMarshalled []byte, originalSchema jsonschema.Sch
 	schemaAsMap["properties"] = propertiesAsMap
 
 	// Inject a top-level preservedOrder field as well
-	schemaAsMap["preservedOrder"] = originalSchema.Properties.Keys()
+	schemaAsMap[PRESERVED_ORDER_KEY] = originalSchema.Properties.Keys()
 
 	// Marshal the updated map and return it instead
 	return json.Marshal(schemaAsMap)
@@ -133,12 +139,12 @@ func iterateAndInject(propertyMap *map[string]interface{}) {
 		// Check if description is present or playgroundURL is present.
 		mdDesc, isMdDescPresent := MARKDOWN_DESCRIPTIONS[propKey]
 		if isMdDescPresent {
-			propValueAsMap["markdownDescription"] = mdDesc
+			propValueAsMap[MARKDOWN_DESC_KEY] = mdDesc
 		}
 
 		playgroundURL, isUrlPresent := PLAYGROUND_URLS[propKey]
 		if isUrlPresent {
-			propValueAsMap["playgroundURL"] = playgroundURL
+			propValueAsMap[PLAYGROUND_URL_KEY] = playgroundURL
 		}
 
 		// Update the map in the settings properties
