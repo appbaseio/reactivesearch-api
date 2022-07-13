@@ -3,6 +3,8 @@ package querytranslate
 import (
 	"encoding/json"
 	"fmt"
+
+	"github.com/invopop/jsonschema"
 )
 
 // injectExtrasToSchema will inject extra fields in the schema.
@@ -14,7 +16,7 @@ import (
 //
 // Note that if the field value is not present based on the ID, it will
 // not be added to the schema
-func injectExtrasToSchema(schemaMarshalled []byte) ([]byte, error) {
+func injectExtrasToSchema(schemaMarshalled []byte, originalSchema jsonschema.Schema) ([]byte, error) {
 	schemaAsMap := make(map[string]interface{})
 	unmarshalErr := json.Unmarshal(schemaMarshalled, &schemaAsMap)
 
@@ -42,6 +44,23 @@ func injectExtrasToSchema(schemaMarshalled []byte) ([]byte, error) {
 	if !queryPropertyOk {
 		return nil, fmt.Errorf("error while parsing `query.items.properties` into a map to inject extra fields")
 	}
+
+	// Save the order and inject it as a custom field
+	preservedOrderForQuery := make([]string, 0)
+
+	// Try to extract the original order of the keys if possible,
+	// else go with the current flow and return empty preservedOrder
+	orderedQuery, isQueryOk := originalSchema.Properties.Get("query")
+	if isQueryOk {
+		orderedQueryAsSchema, asSchemaOk := orderedQuery.(*jsonschema.Schema)
+		if asSchemaOk {
+			itemsSchema := orderedQueryAsSchema.Items
+
+			preservedOrderForQuery = itemsSchema.Properties.Keys()
+		}
+	}
+
+	queryItemsAsMap["preservedOrder"] = preservedOrderForQuery
 
 	// Finally iterate the properties and inject the extra fields using the ID
 	iterateAndInject(&queryPropertiesAsMap)

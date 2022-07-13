@@ -1473,7 +1473,7 @@ func GetReactiveSearchSchema() ([]byte, error) {
 
 	// Unmarshal and inject
 	var injectErr error
-	schemaMarshalled, injectErr = injectExtrasToSchema(schemaMarshalled)
+	schemaMarshalled, injectErr = injectExtrasToSchema(schemaMarshalled, *schema)
 
 	return schemaMarshalled, injectErr
 }
