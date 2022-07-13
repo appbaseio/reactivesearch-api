@@ -13,6 +13,7 @@ import (
 // and `properties.settings.properties` to inject the following fields:
 // - markdownDescription
 // - playgroundURL
+// - preservedOrder
 //
 // Note that if the field value is not present based on the ID, it will
 // not be added to the schema
@@ -109,6 +110,9 @@ func injectExtrasToSchema(schemaMarshalled []byte, originalSchema jsonschema.Sch
 	propertiesAsMap["query"] = queryAsMap
 
 	schemaAsMap["properties"] = propertiesAsMap
+
+	// Inject a top-level preservedOrder field as well
+	schemaAsMap["preservedOrder"] = originalSchema.Properties.Keys()
 
 	// Marshal the updated map and return it instead
 	return json.Marshal(schemaAsMap)
