@@ -1,8 +1,8 @@
 name: Update Schema
 
 on:
-  push:
-    branches: [feat/update-schema]
+  release:
+    types: [published]
 
 jobs:
   build:
