@@ -26,6 +26,7 @@ import (
 	"github.com/appbaseio/reactivesearch-api/middleware"
 	"github.com/appbaseio/reactivesearch-api/plugins"
 	"github.com/appbaseio/reactivesearch-api/plugins/nodes"
+	"github.com/appbaseio/reactivesearch-api/plugins/querytranslate"
 	"github.com/appbaseio/reactivesearch-api/util"
 	"github.com/denisbrodbeck/machineid"
 	"github.com/getsentry/sentry-go"
@@ -55,6 +56,7 @@ var (
 	enableTelemetry    string
 	disableHealthCheck bool
 	showVersion        bool
+	createSchema       bool
 	// Version Reactivesearch version set during build
 	Version string
 	// PlanRefreshInterval can be used to define the custom interval to refresh the plan
@@ -121,6 +123,7 @@ func init() {
 	flag.StringVar(&address, "addr", "0.0.0.0", "Address to serve on")
 	flag.BoolVar(&disableHealthCheck, "disable-health-check", false, "Set as `true` to disable health check")
 	flag.BoolVar(&showVersion, "version", false, "show the version of ReactiveSearch")
+	flag.BoolVar(&createSchema, "create-schema", false, "create the schema for the current version of API and exit")
 
 	// env port for deployments like heroku where port is dynamically assigned
 	envPort := os.Getenv("PORT")
@@ -143,6 +146,18 @@ func init() {
 
 	if showVersion {
 		fmt.Println(fmt.Sprintf("ReactiveSearch v%s", util.Version))
+		os.Exit(0)
+	}
+
+	// if createSchema is passed, create the schema
+	if createSchema {
+		createErr := CreateSchema()
+
+		if createErr != nil {
+			fmt.Println("error while creating schema: ", createErr)
+			os.Exit(-1)
+		}
+
 		os.Exit(0)
 	}
 
@@ -716,4 +731,29 @@ func ParseEnvFile(envFile io.Reader) (map[string]string, error) {
 	}
 
 	return envMap, nil
+}
+
+// CreateSchema will create a file in the current directory
+// and save it in the format
+// schema/latest/schema.json
+func CreateSchema() error {
+	// Create the directory in the current directory.
+	// Ignore if already created.
+	pathToCreate := filepath.Join("schema", "latest")
+	dirCreateErr := os.MkdirAll(pathToCreate, os.ModePerm)
+
+	if dirCreateErr != nil {
+		return dirCreateErr
+	}
+
+	// Since the directory is created, write the contents into the file
+	// now.
+	schemaContext, schemaErr := querytranslate.GetReactiveSearchSchema()
+
+	if schemaErr != nil {
+		return schemaErr
+	}
+
+	// Finally write the content into a file
+	return ioutil.WriteFile(filepath.Join(pathToCreate, "schema.json"), schemaContext, 0644)
 }
