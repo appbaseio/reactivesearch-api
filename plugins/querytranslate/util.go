@@ -382,6 +382,14 @@ type DeepPaginationConfig struct {
 	Cursor *string `json:"cursor,omitempty"`
 }
 
+// Endpoint struct
+type Endpoint struct {
+	URL     *string            `json:"url,omitempty"`
+	Method  *string            `json:"method,omitempty"`
+	Headers *map[string]string `json:"headers,omitempty"`
+	Body    *interface{}       `json:"body,omitempty"`
+}
+
 // Query represents the query object
 type Query struct {
 	ID                          *string                     `json:"id,omitempty"` // component id
@@ -447,6 +455,7 @@ type Query struct {
 	IndexSuggestionsConfig      *IndexSuggestionsOptions    `json:"indexSuggestionsConfig,omitempty"`
 	DeepPagination              *bool                       `json:"deepPagination,omitempty"`
 	DeepPaginationConfig        *DeepPaginationConfig       `json:"deepPaginationConfig,omitempty"`
+	Endpoint                    *Endpoint                   `json:"endpoint,omitempty"`
 	IncludeValues               *[]string                   `json:"includeValues,omitempty"`
 	ExcludeValues               *[]string                   `json:"excludeValues,omitempty"`
 }
@@ -492,15 +501,42 @@ func ExtractEnvsFromRequest(req RSQuery) QueryEnvs {
 	var termFilters []TermFilter
 	for _, query := range req.Query {
 		// Set query
-		if (query.Type == Search || query.Type == Suggestion) && query.Value != nil {
-			value := *query.Value
-			valueAsString, ok := value.(string)
-			if ok {
-				// Use query in lower case
-				queryLowerCase := strings.ToLower(valueAsString)
-				queryEnvs.Query = &queryLowerCase
+		if query.Value != nil {
+			if query.Type == Search {
+				value := *query.Value
+				valueAsString, ok := value.(string)
+				if ok {
+					// Use query in lower case
+					queryLowerCase := strings.ToLower(valueAsString)
+					queryEnvs.Query = &queryLowerCase
+				} else {
+					valueAsArray, ok := value.([]interface{})
+					if ok {
+						var valueAsArrayString []string
+						for _, v := range valueAsArray {
+							valAsString, ok := v.(string)
+							if ok {
+								valueAsArrayString = append(valueAsArrayString, valAsString)
+							}
+						}
+						if len(valueAsArrayString) != 0 {
+							queryLowerCase := strings.ToLower(strings.Join(valueAsArrayString, ","))
+							queryEnvs.Query = &queryLowerCase
+						}
+
+					}
+				}
+			} else if query.Type == Suggestion {
+				value := *query.Value
+				valueAsString, ok := value.(string)
+				if ok {
+					// Use query in lower case
+					queryLowerCase := strings.ToLower(valueAsString)
+					queryEnvs.Query = &queryLowerCase
+				}
 			}
 		}
+
 		// Set term filters
 		normalizedFields := NormalizedDataFields(query.DataField, query.FieldWeights)
 		if query.Type == Term && query.Value != nil && len(normalizedFields) > 0 {
@@ -816,7 +852,8 @@ func (query *Query) shouldExecuteQuery() bool {
 func GetQueryIds(rsQuery RSQuery) []string {
 	var queryIds []string
 	for _, query := range rsQuery.Query {
-		if query.shouldExecuteQuery() {
+		// If endpoint is passed, execute is set as False
+		if query.shouldExecuteQuery() && query.Endpoint == nil {
 			queryIds = append(queryIds, *query.ID)
 		}
 	}
@@ -1452,4 +1489,17 @@ func ParseSortField(query Query, defaultSortBy SortBy) (map[string]SortBy, error
 	sortFieldParsed[sortFieldAsStr] = sortByToUse
 
 	return sortFieldParsed, nil
+}
+
+// extractIDFromPreference will extract the query ID from the preference
+// string passed.
+//
+// Idea is to split it based on underscore `_` and remove the last element
+// and join it back using underscore `_`
+func extractIDFromPreference(preference string) string {
+	textSplitted := strings.Split(preference, "_")
+
+	textSplitted = textSplitted[:len(textSplitted)-1]
+
+	return strings.Join(textSplitted, "_")
 }

@@ -3,6 +3,8 @@ package querytranslate
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
+	"net/http"
 	"strings"
 
 	"github.com/appbaseio/reactivesearch-api/util"
@@ -48,7 +50,7 @@ func translateQuery(rsQuery RSQuery, userIP string) (string, error) {
 		}
 
 		// Normalize query value for search and suggestion types of queries
-		if query.Type == Search || query.Type == Suggestion {
+		if query.Type == Suggestion {
 			if query.Value != nil {
 				// set the updated value
 				var err error
@@ -75,6 +77,16 @@ func translateQuery(rsQuery RSQuery, userIP string) (string, error) {
 			}
 		}
 
+		// Validate the endpoint property
+		if query.Endpoint != nil {
+			if query.Endpoint.URL == nil || *query.Endpoint.URL == "" {
+				return "", errors.New("`endpoint.url` is a required property when `endpoint` is passed. Remove the `endpoint` property if it's not used.")
+			}
+
+			// Setting the default method etc will be done during
+			// sending the independent queries and not in this part of the code.
+		}
+
 	}
 
 	// If no backend is passed for kNN, set it as `elasticsearch`
@@ -84,6 +96,13 @@ func translateQuery(rsQuery RSQuery, userIP string) (string, error) {
 	}
 
 	for _, query := range rsQuery.Query {
+
+		// If the endpoint property is passed, set the query execute as false
+		if query.Endpoint != nil {
+			executeValue := false
+			query.Execute = &executeValue
+		}
+
 		if query.shouldExecuteQuery() {
 			translatedQuery, queryOptions, isGeneratedByValue, translateError := query.getQuery(rsQuery)
 			if translateError != nil {
@@ -204,6 +223,104 @@ func translateQuery(rsQuery RSQuery, userIP string) (string, error) {
 	return mSearchQuery, nil
 }
 
+// buildIndependentRequests will build the requests that have the endpoint
+// property passed and will accordingly generate an array of objects
+// that will be hit one by one during searching.
+func buildIndependentRequests(rsQuery RSQuery) ([]map[string]interface{}, error) {
+	independentQueryArr := make([]map[string]interface{}, 0)
+
+	for _, query := range rsQuery.Query {
+		if query.Endpoint == nil {
+			continue
+		}
+
+		queryAsMap, queryBuildErr := BuildIndependentRequest(query, rsQuery)
+		if queryBuildErr != nil {
+			return independentQueryArr, queryBuildErr
+		}
+
+		independentQueryArr = append(independentQueryArr, queryAsMap)
+	}
+
+	return independentQueryArr, nil
+}
+
+// BuildIndependentRequest will build the independent request based on the passed
+// details and return a map to be used during execution of the request.
+func BuildIndependentRequest(query Query, rsQuery RSQuery) (map[string]interface{}, error) {
+	DEFAULT_METHOD := http.MethodGet
+	DEFAULT_HEADERS := make(map[string]string)
+
+	if query.Endpoint.Method == nil || *query.Endpoint.Method == "" {
+		// Set to default endpoint
+		query.Endpoint.Method = &DEFAULT_METHOD
+	}
+
+	// If headers are not passed, set it as empty headers
+	if query.Endpoint.Headers == nil {
+		query.Endpoint.Headers = &DEFAULT_HEADERS
+	}
+
+	// If body is not passed, pass the current body without
+	// the endpoint property.
+	if query.Endpoint.Body == nil && *query.Endpoint.Method == http.MethodPost {
+		// Generate the body without the endpoint part
+		queryAsMap := make(map[string]interface{})
+
+		queryAsBytes, marshalErr := json.Marshal(query)
+		if marshalErr != nil {
+			log.Warnln(logTag, ": error while marshalling body without the endpoint property, ", marshalErr)
+			return nil, marshalErr
+		}
+
+		unmarshalErr := json.Unmarshal(queryAsBytes, &queryAsMap)
+		if unmarshalErr != nil {
+			errMsg := fmt.Sprint("error while unmarshalling body without endpoint property into a map, ", unmarshalErr)
+			log.Warnln(logTag, ": ", errMsg)
+			return nil, fmt.Errorf(errMsg)
+		}
+
+		delete(queryAsMap, "endpoint")
+
+		bodyToSend := map[string]interface{}{
+			"query": []map[string]interface{}{
+				queryAsMap,
+			},
+		}
+
+		if rsQuery.Settings != nil {
+			bodyToSend["settings"] = *rsQuery.Settings
+		}
+		if rsQuery.Metadata != nil {
+			bodyToSend["metadata"] = *rsQuery.Metadata
+		}
+
+		query.Endpoint.Body = new(interface{})
+		*query.Endpoint.Body = bodyToSend
+	}
+
+	builtQuery, marshalErr := json.Marshal(*query.Endpoint)
+	if marshalErr != nil {
+		log.Warnln(logTag, ": error while marshalling query for hitting independently, ", marshalErr)
+		return nil, marshalErr
+	}
+
+	// Unmarshal the built query into a map
+	queryAsMap := make(map[string]interface{})
+	endpointAsMap := make(map[string]interface{})
+
+	unmarshalErr := json.Unmarshal(builtQuery, &endpointAsMap)
+	if unmarshalErr != nil {
+		log.Warnln(logTag, ": error while unmarshalling query for hitting independently, ", unmarshalErr)
+		return nil, unmarshalErr
+	}
+
+	queryAsMap["id"] = *query.ID
+	queryAsMap["endpoint"] = endpointAsMap
+
+	return queryAsMap, nil
+}
+
 // shouldApplyKnn determines whether or not to apply KNN stage
 func shouldApplyKnn(query Query) bool {
 	return query.QueryVector != nil && query.VectorDataField != nil
@@ -294,6 +411,8 @@ func (query *Query) generateQueryByType() (*interface{}, error) {
 		translatedQuery, translateError = query.generateRangeQuery()
 	case Geo:
 		translatedQuery, translateError = query.generateGeoQuery()
+	case Suggestion:
+		translatedQuery, translateError = query.generateSuggestionQuery()
 	default:
 		translatedQuery, translateError = query.generateSearchQuery()
 	}
