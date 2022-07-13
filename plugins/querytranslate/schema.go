@@ -83,6 +83,19 @@ func injectExtrasToSchema(schemaMarshalled []byte, originalSchema jsonschema.Sch
 		return nil, fmt.Errorf("error while parsing `settings.properties` into a map to inject extra fields")
 	}
 
+	// Try to extract the original order of keys for settings
+	// If not possible, just skip it and put an empty array.
+	preservedOrderForSettings := make([]string, 0)
+	orderedSettings, isSettingsOk := originalSchema.Properties.Get("settings")
+	if isSettingsOk {
+		orderedSettingsAsSchema, asSchemaOk := orderedSettings.(*jsonschema.Schema)
+		if asSchemaOk {
+			preservedOrderForSettings = orderedSettingsAsSchema.Properties.Keys()
+		}
+	}
+
+	settingsAsMap["preservedOrder"] = preservedOrderForSettings
+
 	// Finally, iterate the properties and inject the extra fields by using the ID.
 	iterateAndInject(&settingPropertiesAsMap)
 
