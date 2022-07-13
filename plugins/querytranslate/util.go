@@ -1471,9 +1471,11 @@ func GetReactiveSearchSchema() ([]byte, error) {
 		return nil, marshalErr
 	}
 
-	// TODO: Unmarshal and inject
+	// Unmarshal and inject
+	var injectErr error
+	schemaMarshalled, injectErr = injectExtrasToSchema(schemaMarshalled)
 
-	return schemaMarshalled, nil
+	return schemaMarshalled, injectErr
 }
 
 var jsonSchemaInstance *jsonschema.Reflector

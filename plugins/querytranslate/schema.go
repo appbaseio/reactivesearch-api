@@ -1,6 +1,7 @@
 package querytranslate
 
 import (
+	"encoding/json"
 	"fmt"
 	"reflect"
 	"regexp"
@@ -82,6 +83,17 @@ func injectMarkdownDescription(extras string, ID string) string {
 	splittedExtras = append(splittedExtras, fmt.Sprintf("markdownDescription=%s", mdDesc))
 
 	return strings.Join(splittedExtras, ",")
+}
+
+func injectExtrasToSchema(schemaMarshalled []byte) ([]byte, error) {
+	schemaAsMap := make(map[string]interface{})
+	unmarshalErr := json.Unmarshal(schemaMarshalled, &schemaAsMap)
+
+	if unmarshalErr != nil {
+		return nil, unmarshalErr
+	}
+
+	// TODO: Update the properties with injection of values.
 }
 
 var MARKDOWN_DESCRIPTIONS = map[string]string{
