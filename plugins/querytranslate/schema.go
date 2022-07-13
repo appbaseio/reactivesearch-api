@@ -96,6 +96,31 @@ func injectExtrasToSchema(schemaMarshalled []byte) ([]byte, error) {
 	// Update the properties with injection of values.
 	propertiesAsMap := schemaAsMap["properties"].(map[string]interface{})
 
+	// Update the query
+	// Query should be a map inside which there will be items which will be a map
+	// again.
+	// `items.properties` will be same as below `properties` and we can iterate
+	// and inject in the same way as above.
+	queryAsMap, queryAsMapOk := propertiesAsMap["query"].(map[string]interface{})
+	if !queryAsMapOk {
+		return nil, fmt.Errorf("error while parsing `query` into a map to inject extra fields")
+	}
+	queryItemsAsMap, itemAsMapOk := queryAsMap["items"].(map[string]interface{})
+	if !itemAsMapOk {
+		return nil, fmt.Errorf("error while parsing `query.items` into a map to inject extra fields")
+	}
+	queryPropertiesAsMap, queryPropertyOk := queryItemsAsMap["properties"].(map[string]interface{})
+	if !queryPropertyOk {
+		return nil, fmt.Errorf("error while parsing `query.items.properties` into a map to inject extra fields")
+	}
+
+	// Finally iterate the properties and inject the extra fields using the ID
+	iterateAndInject(&queryPropertiesAsMap)
+
+	// Update the properties map in query
+	queryItemsAsMap["properties"] = queryPropertiesAsMap
+	queryAsMap["items"] = queryItemsAsMap
+
 	// Update the settings.
 	// Settings should be a map inside which there will be a `properties` field
 	// that will map to another map where key will be the id and
@@ -116,16 +141,11 @@ func injectExtrasToSchema(schemaMarshalled []byte) ([]byte, error) {
 	// Update the properties map in settings
 	settingsAsMap["properties"] = settingPropertiesAsMap
 
-	// Update the query
-	// Query should be a map inside which there will be items which will be a map
-	// again.
-	// `items.properties` will be same as above `properties` and we can iterate
-	// and inject in the same way as above.
-
 	// Update the main map now
 	propertiesAsMap["settings"] = settingsAsMap
 
-	// TODO: Update the query as well here
+	// Update the query as well here
+	propertiesAsMap["query"] = queryAsMap
 
 	schemaAsMap["properties"] = propertiesAsMap
 
