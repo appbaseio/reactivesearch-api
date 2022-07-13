@@ -111,7 +111,38 @@ func injectExtrasToSchema(schemaMarshalled []byte) ([]byte, error) {
 	}
 
 	// Finally, iterate the properties and inject the extra fields by using the ID.
-	for propKey, propValue := range settingPropertiesAsMap {
+	iterateAndInject(&settingPropertiesAsMap)
+
+	// Update the properties map in settings
+	settingsAsMap["properties"] = settingPropertiesAsMap
+
+	// Update the query
+	// Query should be a map inside which there will be items which will be a map
+	// again.
+	// `items.properties` will be same as above `properties` and we can iterate
+	// and inject in the same way as above.
+
+	// Update the main map now
+	propertiesAsMap["settings"] = settingsAsMap
+
+	// TODO: Update the query as well here
+
+	schemaAsMap["properties"] = propertiesAsMap
+
+	// Marshal the updated map and return it instead
+	return json.Marshal(schemaAsMap)
+}
+
+// iterateAndInject will iterate the map and use the `key` to
+// get the extra property.
+// The `value` should be a map in where it will inject the extra
+// property if it is available for the `key` passed.
+//
+// As of now the following properties are injected:
+// - markdownDescription
+// - playgroundURL
+func iterateAndInject(propertyMap *map[string]interface{}) {
+	for propKey, propValue := range *propertyMap {
 		propValueAsMap := propValue.(map[string]interface{})
 
 		// Check if description is present or playgroundURL is present.
@@ -126,21 +157,8 @@ func injectExtrasToSchema(schemaMarshalled []byte) ([]byte, error) {
 		}
 
 		// Update the map in the settings properties
-		settingPropertiesAsMap[propKey] = propValueAsMap
+		(*propertyMap)[propKey] = propValueAsMap
 	}
-
-	// Update the properties map in settings
-	settingsAsMap["properties"] = settingPropertiesAsMap
-
-	// Update the main map now
-	propertiesAsMap["settings"] = settingsAsMap
-
-	// TODO: Update the query as well here
-
-	schemaAsMap["properties"] = propertiesAsMap
-
-	// Marshal the updated map and return it instead
-	return json.Marshal(schemaAsMap)
 }
 
 var MARKDOWN_DESCRIPTIONS = map[string]string{
