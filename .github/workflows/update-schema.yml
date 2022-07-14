@@ -5,8 +5,21 @@ on:
     types: [published]
 
 jobs:
+  determine_whether_to_run:
+    runs-on: ubuntu-latest
+    outputs:
+      update_schema: ${{ steps.check-update-schema.outputs.run_jobs }}
+
+    steps:
+      - name: Check if event should be sent
+        id: check-update-schema
+        run: (echo "${{ inputs.ref }}" | grep -Eq  '^refs\/tags\/[0-9]+\.[0-9]+\.[0-9]+$') && echo "::set-output name=run_jobs::true" || echo "::set-output name=run_jobs::false"
+
   build:
     runs-on: ubuntu-latest
+    needs: determine_whether_to_run
+    if: needs.determine_whether_to_run.outputs.update_schema == 'true'
+
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v2
