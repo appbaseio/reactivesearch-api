@@ -449,6 +449,7 @@ type Query struct {
 	DeepPaginationConfig        *DeepPaginationConfig       `json:"deepPaginationConfig,omitempty"`
 	IncludeValues               *[]string                   `json:"includeValues,omitempty"`
 	ExcludeValues               *[]string                   `json:"excludeValues,omitempty"`
+	SearchBoxId                 *string                     `json:"searchboxId,omitempty"`
 }
 
 type DataField struct {
