@@ -754,6 +754,12 @@ func CreateSchema() error {
 		return schemaErr
 	}
 
+	// Set the util flag so it's used in noss code.
+	util.CreateSchema = true
+
+	// Load the plugin and run initFunc for the schema to be created
+	// for pipelines.
+
 	// Finally write the content into a file
 	return ioutil.WriteFile(filepath.Join(pathToCreate, "schema.json"), schemaContent, 0644)
 }
