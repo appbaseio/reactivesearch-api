@@ -151,7 +151,7 @@ func init() {
 
 	// if createSchema is passed, create the schema
 	if createSchema {
-		createErr := CreateSchema()
+		createErr := CreateSchema(pluginDir)
 
 		if createErr != nil {
 			fmt.Println("error while creating schema: ", createErr)
@@ -736,7 +736,7 @@ func ParseEnvFile(envFile io.Reader) (map[string]string, error) {
 // CreateSchema will create a file in the current directory
 // and save it in the format
 // schema/latest/schema.json
-func CreateSchema() error {
+func CreateSchema(pluginDir string) error {
 	// Create the directory in the current directory.
 	// Ignore if already created.
 	pathToCreate := filepath.Join("schema", "latest")
@@ -754,25 +754,33 @@ func CreateSchema() error {
 		return schemaErr
 	}
 
+	// Create the oss schema
+	createSchemaErr := ioutil.WriteFile(filepath.Join(pathToCreate, "schema.json"), schemaContent, 0644)
+	if createSchemaErr != nil {
+		return createSchemaErr
+	}
+
 	// Set the util flag so it's used in noss code.
 	util.CreateSchema = true
 
 	// Load the plugin and run initFunc for the schema to be created
 	// for pipelines.
-	// TODO: Handle case where the pipelines plugin might not be present
-	// i:e when run from `oss` directly.
-	pi, err2 := LoadPIFromFile("pipelines.so")
+
+	pipelinePath := filepath.Join(pluginDir, "pipelines.so")
+
+	// Check if plugin exists, if not, then skip creating that schema
+	_, checkErr := os.Stat(pipelinePath)
+	if os.IsNotExist(checkErr) {
+		return nil
+	}
+
+	// Path exists and we need to create the pipeline schema
+	pi, err2 := LoadPIFromFile(pipelinePath)
 	if err2 != nil {
 		return err2
 	}
 	var p plugins.Plugin
 	p = *pi.(*plugins.Plugin)
 
-	pipelineSchemaCreateErr := p.InitFunc()
-	if pipelineSchemaCreateErr != nil {
-		return pipelineSchemaCreateErr
-	}
-
-	// Finally write the content into a file
-	return ioutil.WriteFile(filepath.Join(pathToCreate, "schema.json"), schemaContent, 0644)
+	return p.InitFunc()
 }
