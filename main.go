@@ -748,12 +748,12 @@ func CreateSchema() error {
 
 	// Since the directory is created, write the contents into the file
 	// now.
-	schemaContext, schemaErr := querytranslate.GetReactiveSearchSchema()
+	schemaContent, schemaErr := querytranslate.GetReactiveSearchSchema()
 
 	if schemaErr != nil {
 		return schemaErr
 	}
 
 	// Finally write the content into a file
-	return ioutil.WriteFile(filepath.Join(pathToCreate, "schema.json"), schemaContext, 0644)
+	return ioutil.WriteFile(filepath.Join(pathToCreate, "schema.json"), schemaContent, 0644)
 }
