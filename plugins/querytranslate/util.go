@@ -372,6 +372,24 @@ func (b Backend) JSONSchemaType() *jsonschema.Type {
 	}
 }
 
+// DeepPaginationConfig Struct
+type DeepPaginationConfig struct {
+	// The `cursor` value will map according to the
+	// backend.
+	//
+	// - ES: `search_after` ([$cursor])
+	// - Solr: `cursorMark` $cursor
+	Cursor *string `json:"cursor,omitempty"`
+}
+
+// Endpoint struct
+type Endpoint struct {
+	URL     *string            `json:"url,omitempty"`
+	Method  *string            `json:"method,omitempty"`
+	Headers *map[string]string `json:"headers,omitempty"`
+	Body    *interface{}       `json:"body,omitempty"`
+}
+
 // Query represents the query object
 type Query struct {
 	ID                          *string                     `json:"id,omitempty"` // component id
@@ -387,6 +405,7 @@ type Query struct {
 	Size                        *int                        `json:"size,omitempty"`
 	AggregationSize             *int                        `json:"aggregationSize,omitempty"`
 	SortBy                      *SortBy                     `json:"sortBy,omitempty"`
+	SortField                   *interface{}                `json:"sortField,omitempty"`
 	Value                       *interface{}                `json:"value,omitempty"` // either string or Array of string
 	AggregationField            *string                     `json:"aggregationField,omitempty"`
 	After                       *map[string]interface{}     `json:"after,omitempty"`
@@ -434,6 +453,11 @@ type Query struct {
 	FeaturedSuggestionsConfig   *FeaturedSuggestionsOptions `json:"featuredSuggestionsConfig,omitempty"`
 	EnableIndexSuggestions      *bool                       `json:"enableIndexSuggestions,omitempty"`
 	IndexSuggestionsConfig      *IndexSuggestionsOptions    `json:"indexSuggestionsConfig,omitempty"`
+	DeepPagination              *bool                       `json:"deepPagination,omitempty"`
+	DeepPaginationConfig        *DeepPaginationConfig       `json:"deepPaginationConfig,omitempty"`
+	Endpoint                    *Endpoint                   `json:"endpoint,omitempty"`
+	IncludeValues               *[]string                   `json:"includeValues,omitempty"`
+	ExcludeValues               *[]string                   `json:"excludeValues,omitempty"`
 }
 
 type DataField struct {
@@ -477,15 +501,42 @@ func ExtractEnvsFromRequest(req RSQuery) QueryEnvs {
 	var termFilters []TermFilter
 	for _, query := range req.Query {
 		// Set query
-		if (query.Type == Search || query.Type == Suggestion) && query.Value != nil {
-			value := *query.Value
-			valueAsString, ok := value.(string)
-			if ok {
-				// Use query in lower case
-				queryLowerCase := strings.ToLower(valueAsString)
-				queryEnvs.Query = &queryLowerCase
+		if query.Value != nil {
+			if query.Type == Search {
+				value := *query.Value
+				valueAsString, ok := value.(string)
+				if ok {
+					// Use query in lower case
+					queryLowerCase := strings.ToLower(valueAsString)
+					queryEnvs.Query = &queryLowerCase
+				} else {
+					valueAsArray, ok := value.([]interface{})
+					if ok {
+						var valueAsArrayString []string
+						for _, v := range valueAsArray {
+							valAsString, ok := v.(string)
+							if ok && strings.TrimSpace(valAsString) != "" {
+								valueAsArrayString = append(valueAsArrayString, valAsString)
+							}
+						}
+						if len(valueAsArrayString) != 0 {
+							queryLowerCase := strings.ToLower(strings.Join(valueAsArrayString, ","))
+							queryEnvs.Query = &queryLowerCase
+						}
+
+					}
+				}
+			} else if query.Type == Suggestion {
+				value := *query.Value
+				valueAsString, ok := value.(string)
+				if ok {
+					// Use query in lower case
+					queryLowerCase := strings.ToLower(valueAsString)
+					queryEnvs.Query = &queryLowerCase
+				}
 			}
 		}
+
 		// Set term filters
 		normalizedFields := NormalizedDataFields(query.DataField, query.FieldWeights)
 		if query.Type == Term && query.Value != nil && len(normalizedFields) > 0 {
@@ -759,7 +810,7 @@ func mergeMaps(x map[string]interface{}, y map[string]interface{}) map[string]in
 }
 
 func getValidInterval(interval *int, rangeValue RangeValue) int {
-	normalizedInterval := 0
+	normalizedInterval := 1
 	if interval != nil {
 		normalizedInterval = *interval
 	}
@@ -777,7 +828,7 @@ func getValidInterval(interval *int, rangeValue RangeValue) int {
 	if min == 0 {
 		min = 1
 	}
-	if normalizedInterval == 0 {
+	if normalizedInterval == 1 {
 		return int(min)
 	} else if normalizedInterval < int(min) {
 		return int(min)
@@ -801,7 +852,8 @@ func (query *Query) shouldExecuteQuery() bool {
 func GetQueryIds(rsQuery RSQuery) []string {
 	var queryIds []string
 	for _, query := range rsQuery.Query {
-		if query.shouldExecuteQuery() {
+		// If endpoint is passed, execute is set as False
+		if query.shouldExecuteQuery() && query.Endpoint == nil {
 			queryIds = append(queryIds, *query.ID)
 		}
 	}
@@ -1349,4 +1401,105 @@ func addFieldHighlight(source ESDoc) ESDoc {
 		}
 	}
 	return source
+}
+
+// ParseSortField will parse the sortField based on the values
+// passed.
+func ParseSortField(query Query, defaultSortBy SortBy) (map[string]SortBy, error) {
+	sortFieldParsed := make(map[string]SortBy)
+
+	// Parse as array of interface
+	sortFieldAsArr, asArrOk := (*query.SortField).([]interface{})
+	if asArrOk {
+		// Parse the array and return detail accordingly
+		// The value can be both a map  as well as a string.
+
+		for sortFieldIndex, sortFieldEach := range sortFieldAsArr {
+			// Try to parse it as an object
+			fieldEachAsMap, asMapOk := sortFieldEach.(map[string]interface{})
+			if !asMapOk {
+				// Try to parse as string.
+				fieldAsString, asStrOk := sortFieldEach.(string)
+
+				// If it's not a string either, invalid type is passed.
+				if !asStrOk {
+					return sortFieldParsed, fmt.Errorf("invalid type passed in sortField array at index: %d", sortFieldIndex)
+				}
+
+				// If string is okay, add it to map and continue
+				sortByToUse := defaultSortBy
+				if fieldAsString == "_score" {
+					sortByToUse = Desc
+				}
+
+				sortFieldParsed[fieldAsString] = sortByToUse
+
+				continue
+			}
+
+			// If passed as map, parse it properly.
+			// Make sure only one key is parsed from the index.
+			parseCount := 0
+
+			for key, value := range fieldEachAsMap {
+				if parseCount > 1 {
+					break
+				}
+
+				// Parse the value as sortBy, if fails then raise an error.
+				valueAsStr, valueAsStrOk := value.(string)
+				if !valueAsStrOk {
+					return sortFieldParsed, fmt.Errorf("invalid sort value passed for index `%d` and key: `%s`", sortFieldIndex, key)
+				}
+
+				type CustomSortByContainer struct {
+					SortBy *SortBy `json:"sortBy,omitempty"`
+				}
+
+				sortByTypeStr := fmt.Sprintf("{\"sortBy\": \"%s\"}", valueAsStr)
+
+				newCustomType := new(CustomSortByContainer)
+				unmarshalErr := json.Unmarshal([]byte(sortByTypeStr), &newCustomType)
+
+				if unmarshalErr != nil {
+					return sortFieldParsed, fmt.Errorf("invalid value passed for `sortBy` for index `%d` and key: `%s`", sortFieldIndex, key)
+				}
+
+				// If value is okay, add it to map.
+				sortFieldParsed[key] = *newCustomType.SortBy
+				parseCount += 1
+			}
+		}
+
+		// Return the parsed map
+		return sortFieldParsed, nil
+	}
+
+	// Parse as string
+	sortFieldAsStr, asStrOk := (*query.SortField).(string)
+	if !asStrOk {
+		return sortFieldParsed, fmt.Errorf("invalid value passed for `sortField`, only array and string are accepted!")
+	}
+
+	// Parse the string and return accordingly.
+	sortByToUse := defaultSortBy
+	if sortFieldAsStr == "_score" {
+		sortByToUse = Desc
+	}
+	sortFieldParsed[sortFieldAsStr] = sortByToUse
+
+	return sortFieldParsed, nil
+}
+
+// extractIDFromPreference will extract the query ID from the preference
+// string passed.
+//
+// Idea is to split it based on underscore `_` and remove the last element
+// and join it back using underscore `_`
+func extractIDFromPreference(preference string) string {
+	textSplitted := strings.Split(preference, "_")
+
+	textSplitted = textSplitted[:len(textSplitted)-1]
+
+	return strings.Join(textSplitted, "_")
 }

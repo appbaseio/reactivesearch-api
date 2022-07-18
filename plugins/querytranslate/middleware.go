@@ -275,6 +275,17 @@ func queryTranslate(h http.HandlerFunc) http.HandlerFunc {
 		// Update the request body to the parsed query
 		req.Body = ioutil.NopCloser(strings.NewReader(msearchQuery))
 
+		// Build independent queries as well
+		independentRequests, independentReqErr := buildIndependentRequests(*body)
+		if independentReqErr != nil {
+			telemetry.WriteBackErrorWithTelemetry(req, w, independentReqErr.Error(), http.StatusBadRequest)
+			return
+		}
+
+		// Inject the independent requests
+		updatedCtx := NewIndependentRequestContext(req.Context(), independentRequests)
+		req = req.WithContext(updatedCtx)
+
 		if shouldLogDiff {
 			reqBodyAfterModification := ioutil.NopCloser(strings.NewReader(string(msearchQuery)))
 
