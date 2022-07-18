@@ -759,6 +759,19 @@ func CreateSchema() error {
 
 	// Load the plugin and run initFunc for the schema to be created
 	// for pipelines.
+	// TODO: Handle case where the pipelines plugin might not be present
+	// i:e when run from `oss` directly.
+	pi, err2 := LoadPIFromFile("pipelines.so")
+	if err2 != nil {
+		return err2
+	}
+	var p plugins.Plugin
+	p = *pi.(*plugins.Plugin)
+
+	pipelineSchemaCreateErr := p.InitFunc()
+	if pipelineSchemaCreateErr != nil {
+		return pipelineSchemaCreateErr
+	}
 
 	// Finally write the content into a file
 	return ioutil.WriteFile(filepath.Join(pathToCreate, "schema.json"), schemaContent, 0644)
