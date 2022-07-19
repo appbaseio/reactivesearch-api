@@ -499,7 +499,7 @@ func main() {
 		}
 	}
 
-	if util.ExternalElasticsearch != "true" {
+	if util.ExternalElasticsearch == "true" {
 		errESPlugin := LoadESPluginFromFile(mainRouter, elasticSearchPath, elasticSearchMiddleware)
 		if errESPlugin != nil {
 			log.Fatal("error loading plugins: ", errESPlugin)
