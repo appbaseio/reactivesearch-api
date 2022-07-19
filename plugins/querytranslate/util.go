@@ -10,12 +10,13 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"sync"
 	"unicode"
 
-	"github.com/alecthomas/jsonschema"
 	"github.com/appbaseio/reactivesearch-api/util"
 	"github.com/bbalet/stopwords"
 	pluralize "github.com/gertd/go-pluralize"
+	"github.com/invopop/jsonschema"
 	"github.com/kljensen/snowball"
 	"github.com/lithammer/fuzzysearch/fuzzy"
 	"github.com/microcosm-cc/bluemonday"
@@ -198,6 +199,22 @@ func (o QueryType) MarshalJSON() ([]byte, error) {
 	return json.Marshal(queryType)
 }
 
+// JSONSchema will return the jsonschema for QueryType
+func (QueryType) JSONSchema() *jsonschema.Schema {
+	return &jsonschema.Schema{
+		Type: "string",
+		Enum: []interface{}{
+			Search.String(),
+			Term.String(),
+			Range.String(),
+			Geo.String(),
+			Suggestion.String(),
+		},
+		Title:       "type",
+		Description: "type of query",
+	}
+}
+
 type SortBy int
 
 const (
@@ -251,6 +268,20 @@ func (o SortBy) MarshalJSON() ([]byte, error) {
 	return json.Marshal(sortBy)
 }
 
+// JSONSchema will return the jsonschema for SortBy
+func (SortBy) JSONSchema() *jsonschema.Schema {
+	return &jsonschema.Schema{
+		Type: "string",
+		Enum: []interface{}{
+			Asc.String(),
+			Desc.String(),
+			Count.String(),
+		},
+		Title:       "sortBy",
+		Description: "order to sort by",
+	}
+}
+
 type QueryFormat int
 
 const (
@@ -296,6 +327,19 @@ func (o QueryFormat) MarshalJSON() ([]byte, error) {
 		return nil, fmt.Errorf("invalid queryFormat encountered: %v", o)
 	}
 	return json.Marshal(queryFormat)
+}
+
+// JSONSchema will return the jsonschema for QueryFormat
+func (QueryFormat) JSONSchema() *jsonschema.Schema {
+	return &jsonschema.Schema{
+		Type: "string",
+		Enum: []interface{}{
+			Or.String(),
+			And.String(),
+		},
+		Title:       "queryFormat",
+		Description: "operators to use for joining queries",
+	}
 }
 
 // Backend will be the backend to be used for the knn
@@ -360,8 +404,8 @@ func (b Backend) MarshalJSON() ([]byte, error) {
 	return json.Marshal(knnBackend)
 }
 
-func (b Backend) JSONSchemaType() *jsonschema.Type {
-	return &jsonschema.Type{
+func (b Backend) JSONSchema() *jsonschema.Schema {
+	return &jsonschema.Schema{
 		Type: "string",
 		Enum: []interface{}{
 			ElasticSearch.String(),
@@ -369,6 +413,8 @@ func (b Backend) JSONSchemaType() *jsonschema.Type {
 			MongoDB.String(),
 			Solr.String(),
 		},
+		Title:       "Backend",
+		Description: "Backend that ReactiveSearch will use",
 	}
 }
 
@@ -392,72 +438,72 @@ type Endpoint struct {
 
 // Query represents the query object
 type Query struct {
-	ID                          *string                     `json:"id,omitempty"` // component id
-	Type                        QueryType                   `json:"type,omitempty"`
-	React                       *map[string]interface{}     `json:"react,omitempty"`
-	QueryFormat                 *string                     `json:"queryFormat,omitempty"`
-	DataField                   interface{}                 `json:"dataField,omitempty"`
-	CategoryField               *string                     `json:"categoryField,omitempty"`
-	CategoryValue               *interface{}                `json:"categoryValue,omitempty"`
-	FieldWeights                []float64                   `json:"fieldWeights,omitempty"`
-	NestedField                 *string                     `json:"nestedField,omitempty"`
-	From                        *int                        `json:"from,omitempty"`
-	Size                        *int                        `json:"size,omitempty"`
-	AggregationSize             *int                        `json:"aggregationSize,omitempty"`
-	SortBy                      *SortBy                     `json:"sortBy,omitempty"`
-	SortField                   *interface{}                `json:"sortField,omitempty"`
-	Value                       *interface{}                `json:"value,omitempty"` // either string or Array of string
-	AggregationField            *string                     `json:"aggregationField,omitempty"`
-	After                       *map[string]interface{}     `json:"after,omitempty"`
-	IncludeNullValues           *bool                       `json:"includeNullValues,omitempty"`
-	IncludeFields               *[]string                   `json:"includeFields,omitempty"`
-	ExcludeFields               *[]string                   `json:"excludeFields,omitempty"`
-	Fuzziness                   interface{}                 `json:"fuzziness,omitempty"` // string or int
-	SearchOperators             *bool                       `json:"searchOperators,omitempty"`
-	Highlight                   *bool                       `json:"highlight,omitempty"`
-	HighlightField              []string                    `json:"highlightField,omitempty"`
-	CustomHighlight             *map[string]interface{}     `json:"customHighlight,omitempty"`
-	HighlightConfig             *map[string]interface{}     `json:"highlightConfig,omitempty"`
-	Interval                    *int                        `json:"interval,omitempty"`
-	Aggregations                *[]string                   `json:"aggregations,omitempty"`
-	MissingLabel                string                      `json:"missingLabel,omitempty"`
-	ShowMissing                 *bool                       `json:"showMissing,omitempty"`
-	DefaultQuery                *map[string]interface{}     `json:"defaultQuery,omitempty"`
-	CustomQuery                 *map[string]interface{}     `json:"customQuery,omitempty"`
-	Execute                     *bool                       `json:"execute,omitempty"`
-	EnableSynonyms              *bool                       `json:"enableSynonyms,omitempty"`
-	SelectAllLabel              *string                     `json:"selectAllLabel,omitempty"`
-	Pagination                  *bool                       `json:"pagination,omitempty"`
-	QueryString                 *bool                       `json:"queryString,omitempty"`
-	RankFeature                 *map[string]RankFunction    `json:"rankFeature,omitempty"`
-	DistinctField               *string                     `json:"distinctField,omitempty"`
-	DistinctFieldConfig         *map[string]interface{}     `json:"distinctFieldConfig,omitempty"`
-	Index                       *string                     `json:"index,omitempty"`
-	EnableRecentSuggestions     *bool                       `json:"enableRecentSuggestions,omitempty"`
-	RecentSuggestionsConfig     *RecentSuggestionsOptions   `json:"recentSuggestionsConfig,omitempty"`
-	EnablePopularSuggestions    *bool                       `json:"enablePopularSuggestions,omitempty"`
-	PopularSuggestionsConfig    *PopularSuggestionsOptions  `json:"popularSuggestionsConfig,omitempty"`
-	ShowDistinctSuggestions     *bool                       `json:"showDistinctSuggestions,omitempty"`
-	EnablePredictiveSuggestions *bool                       `json:"enablePredictiveSuggestions,omitempty"`
-	MaxPredictedWords           *int                        `json:"maxPredictedWords,omitempty"`
-	URLField                    *string                     `json:"urlField,omitempty"`
-	ApplyStopwords              *bool                       `json:"applyStopwords,omitempty"`
-	Stopwords                   *[]string                   `json:"customStopwords,omitempty"`
-	SearchLanguage              *string                     `json:"searchLanguage,omitempty"`
-	CalendarInterval            *string                     `json:"calendarinterval,omitempty"`
-	Script                      *string                     `json:"script,omitempty"`
-	QueryVector                 *[]float64                  `json:"queryVector,omitempty"`
-	VectorDataField             *string                     `json:"vectorDataField,omitempty"`
-	Candidates                  *int                        `json:"candidates,omitempty"`
-	EnableFeaturedSuggestions   *bool                       `json:"enableFeaturedSuggestions,omitempty"`
-	FeaturedSuggestionsConfig   *FeaturedSuggestionsOptions `json:"featuredSuggestionsConfig,omitempty"`
-	EnableIndexSuggestions      *bool                       `json:"enableIndexSuggestions,omitempty"`
-	IndexSuggestionsConfig      *IndexSuggestionsOptions    `json:"indexSuggestionsConfig,omitempty"`
-	DeepPagination              *bool                       `json:"deepPagination,omitempty"`
-	DeepPaginationConfig        *DeepPaginationConfig       `json:"deepPaginationConfig,omitempty"`
-	Endpoint                    *Endpoint                   `json:"endpoint,omitempty"`
-	IncludeValues               *[]string                   `json:"includeValues,omitempty"`
-	ExcludeValues               *[]string                   `json:"excludeValues,omitempty"`
+	ID                          *string                     `json:"id,omitempty" jsonschema:"title=id,description=ID of the query,required" jsonschema_extras:"engine=elasticsearch,engine=mongodb,engine=solr,engine=opensearch"` // component id
+	Type                        QueryType                   `json:"type,omitempty" jsonschema:"title=type,description=type of query" jsonschema_extras:"engine=elasticsearch,engine=mongodb,engine=solr,engine=opensearch"`
+	React                       *map[string]interface{}     `json:"react,omitempty" jsonschema:"title=react,description=which queries to react the current query with" jsonschema_extras:"engine=elasticsearch,engine=mongodb,engine=solr,engine=opensearch"`
+	QueryFormat                 *string                     `json:"queryFormat,omitempty" jsonschema:"title=queryFormat,description=the operator to join multiple values in the query.value field" jsonschema_extras:"engine=elasticsearch,engine=mongodb,engine=solr,engine=opensearch"`
+	DataField                   interface{}                 `json:"dataField,omitempty" jsonschema:"title=dataField,description=fields to run the query term on" jsonschema_extras:"engine=elasticsearch,engine=mongodb,engine=solr,engine=opensearch"`
+	CategoryField               *string                     `json:"categoryField,omitempty" jsonschema:"title=categoryField,description=" jsonschema_extras:"engine=elasticsearch,engine=mongodb,engine=opensearch"`
+	CategoryValue               *interface{}                `json:"categoryValue,omitempty" jsonschema:"title=categoryValue,description=" jsonschema_extras:"engine=elasticsearch,engine=mongodb,engine=opensearch"`
+	FieldWeights                []float64                   `json:"fieldWeights,omitempty" jsonschema:"title=fieldWeights,description=(deprecated) weights of the data fields" jsonschema_extras:"engine=elasticsearch,engine=opensearch"`
+	NestedField                 *string                     `json:"nestedField,omitempty" jsonschema:"title=nestedField,description=" jsonschema_extras:"engine=elasticsearch,engine=mongodb,engine=opensearch"`
+	From                        *int                        `json:"from,omitempty" jsonschema:"title=from,description=index from which the results should start from" jsonschema_extras:"engine=elasticsearch,engine=mongodb,engine=solr,engine=opensearch"`
+	Size                        *int                        `json:"size,omitempty" jsonschema:"title=size,description=size of the results returned" jsonschema_extras:"engine=elasticsearch,engine=mongodb,engine=solr,engine=opensearch"`
+	AggregationSize             *int                        `json:"aggregationSize,omitempty" jsonschema:"title=aggregationSize,description=size of the aggregation" jsonschema_extras:"engine=elasticsearch,engine=mongodb,engine=solr,engine=opensearch"`
+	SortBy                      *SortBy                     `json:"sortBy,omitempty" jsonschema:"title=sortBy,description=sort order for the results" jsonschema_extras:"engine=elasticsearch,engine=mongodb,engine=solr,engine=opensearch"`
+	SortField                   *interface{}                `json:"sortField,omitempty" jsonschema:"title=sortField,description=field(s) to run the sorting on" jsonschema_extras:"engine=elasticsearch,engine=solr,engine=opensearch"`
+	Value                       *interface{}                `json:"value,omitempty" jsonschema:"title=value,description=value for the query. Can be string or array of strings" jsonschema_extras:"engine=elasticsearch,engine=mongodb,engine=solr,engine=opensearch"` // either string or Array of string
+	AggregationField            *string                     `json:"aggregationField,omitempty" jsonschema:"aggregationField,description=field for doing the aggregation on" jsonschema_extras:"engine=elasticsearch,engine=mongodb,engine=opensearch"`
+	After                       *map[string]interface{}     `json:"after,omitempty" jsonschema:"title=after,description=pagination for aggregations" jsonschema_extras:"engine=elasticsearch,engine=mongodb,engine=opensearch"`
+	IncludeNullValues           *bool                       `json:"includeNullValues,omitempty" jsonschema:"title=includeNullValues,description=whether or not to include null values" jsonschema_extras:"engine=elasticsearch,engine=mongodb,engine=solr,engine=opensearch"`
+	IncludeFields               *[]string                   `json:"includeFields,omitempty" jsonschema:"title=includeFields,description=indicates which dataFields to include in search results" jsonschema_extras:"engine=elasticsearch,engine=mongodb,engine=solr,engine=opensearch"`
+	ExcludeFields               *[]string                   `json:"excludeFields,omitempty" jsonschema:"title=excludeFields,description=indicates which dataFields to exclude in search results" jsonschema_extras:"engine=elasticsearch,engine=mongodb,engine=solr,engine=opensearch"`
+	Fuzziness                   interface{}                 `json:"fuzziness,omitempty" jsonschema:"title=fuzziness,description=indicates the fuzziness of the query" jsonschema_extras:"engine=elasticsearch,engine=mongodb,engine=opensearch"` // string or int
+	SearchOperators             *bool                       `json:"searchOperators,omitempty" jsonschema:"title=searchOperators,description=use special characters in the search query to enable advanced search behavior" jsonschema_extras:"engine=elasticsearch,engine=mongodb,engine=opensearch"`
+	Highlight                   *bool                       `json:"highlight,omitempty" jsonschema:"title=highlight,description=whether or not to enable highlighting of results" jsonschema_extras:"engine=elasticsearch,engine=mongodb,engine=solr,engine=opensearch"`
+	HighlightField              []string                    `json:"highlightField,omitempty" jsonschema:"title=highlightField,description=fields to highlight in the results" jsonschema_extras:"engine=elasticsearch,engine=mongodb,engine=solr,engine=opensearch"`
+	CustomHighlight             *map[string]interface{}     `json:"customHighlight,omitempty" jsonschema:"title=customHighlight,description=(deprecated) same as highlightConfig" jsonschema_extras:"engine=elasticsearch,engine=opensearch"`
+	HighlightConfig             *map[string]interface{}     `json:"highlightConfig,omitempty" jsonschema:"title=highlightConfig,description=settings for highlighting of results" jsonschema_extras:"engine=elasticsearch,engine=mongodb,engine=solr,engine=opensearch"`
+	Interval                    *int                        `json:"interval,omitempty" jsonschema:"title=interval,description=histogram bar interval, applicable only when aggregations are set to histogram" jsonschema_extras:"engine=elasticsearch,engine=mongodb,engine=solr,engine=opensearch"`
+	Aggregations                *[]string                   `json:"aggregations,omitempty" jsonschema:"title=aggregations,description=utilize the built-in aggregations for range type of queries" jsonschema_extras:"engine=elasticsearch,engine=mongodb,engine=solr,engine=opensearch"`
+	MissingLabel                string                      `json:"missingLabel,omitempty" jsonschema:"title=missingLabel,description=custom label to show when showMissing is set to true" jsonschema_extras:"engine=elasticsearch,engine=mongodb,engine=solr,engine=opensearch"`
+	ShowMissing                 *bool                       `json:"showMissing,omitempty" jsonschema:"title=showMissing,description=whether or not to show missing results" jsonschema_extras:"engine=elasticsearch,engine=mongodb,engine=solr,engine=opensearch"`
+	DefaultQuery                *map[string]interface{}     `json:"defaultQuery,omitempty" jsonschema:"title=defaultQuery,description=customize the source query. This doesn't get leaked to other queries unlike customQuery" jsonschema_extras:"engine=elasticsearch,engine=mongodb,engine=solr,engine=opensearch"`
+	CustomQuery                 *map[string]interface{}     `json:"customQuery,omitempty" jsonschema:"title=customQuery,description=query to be used by dependent queries specified using the react property" jsonschema_extras:"engine=elasticsearch,engine=mongodb,engine=solr,engine=opensearch"`
+	Execute                     *bool                       `json:"execute,omitempty" jsonschema:"title=execute,description=whether or not to execute the query" jsonschema_extras:"engine=elasticsearch,engine=mongodb,engine=solr,engine=opensearch"`
+	EnableSynonyms              *bool                       `json:"enableSynonyms,omitempty" jsonschema:"title=enableSynonyms,description=control the synonyms behavior for a particular query" jsonschema_extras:"engine=elasticsearch,engine=mongodb,engine=solr,engine=opensearch"`
+	SelectAllLabel              *string                     `json:"selectAllLabel,omitempty" jsonschema:"title=selectAllLabel,description=allows adding a new property in the list with a particular value such that when selected, it is similar to that label" jsonschema_extras:"engine=elasticsearch,engine=mongodb,engine=opensearch"`
+	Pagination                  *bool                       `json:"pagination,omitempty" jsonschema:"title=pagination,description=enable pagination for term type of queries" jsonschema_extras:"engine=elasticsearch,engine=mongodb,engine=opensearch"`
+	QueryString                 *bool                       `json:"queryString,omitempty" jsonschema:"title=queryString,description=whether or not to allow creating a complex search that includes wildcard characters, searches across multiple fields, and more" jsonschema_extras:"engine=elasticsearch,engine=mongodb,engine=opensearch"`
+	RankFeature                 *map[string]RankFunction    `json:"rankFeature,omitempty" jsonschema:"title=rankFeature,description=boost relevant score of documents based on rank_feature fields" jsonschema_extras:"engine=elasticsearch,engine=opensearch"`
+	DistinctField               *string                     `json:"distinctField,omitempty" jsonschema:"title=distinctField,description=returns only distinct value documents for the specified field" jsonschema_extras:"engine=elasticsearch,engine=opensearch"`
+	DistinctFieldConfig         *map[string]interface{}     `json:"distinctFieldConfig,omitempty" jsonschema:"title=distinctFieldConfig,description=additional options to the distinctField property" jsonschema_extras:"engine=elasticsearch,engine=opensearch"`
+	Index                       *string                     `json:"index,omitempty" jsonschema:"title=index,description=explicitly specify an index to run the query on" jsonschema_extras:"engine=elasticsearch,engine=mongodb,engine=opensearch"`
+	EnableRecentSuggestions     *bool                       `json:"enableRecentSuggestions,omitempty" jsonschema:"title=enableRecentSuggestions,description=whether or not to enable recent suggestions" jsonschema_extras:"engine=elasticsearch,engine=opensearch"`
+	RecentSuggestionsConfig     *RecentSuggestionsOptions   `json:"recentSuggestionsConfig,omitempty" jsonschema:"title=recentSuggestionsConfig,description=additional options for getting recent suggestions" jsonschema_extras:"engine=elasticsearch,engine=opensearch"`
+	EnablePopularSuggestions    *bool                       `json:"enablePopularSuggestions,omitempty" jsonschema:"title=enablePopularSuggestions,description=whether or not to enable popular suggestions" jsonschema_extras:"engine=elasticsearch,engine=mongodb,engine=solr,engine=opensearch"`
+	PopularSuggestionsConfig    *PopularSuggestionsOptions  `json:"popularSuggestionsConfig,omitempty" jsonschema:"title=popularSuggestionsConfig,description=additional options for getting popular suggestions" jsonschema_extras:"engine=elasticsearch,engine=solr,engine=opensearch"`
+	ShowDistinctSuggestions     *bool                       `json:"showDistinctSuggestions,omitempty" jsonschema:"title=showDistinctSuggestions,description=whether or not to show distinct suggestions" jsonschema_extras:"engine=elasticsearch,engine=solr,engine=opensearch"`
+	EnablePredictiveSuggestions *bool                       `json:"enablePredictiveSuggestions,omitempty" jsonschema:"title=enablePredictiveSuggestions,description=predicts the next relevant words from the value of a field based on the search query typed by the user" jsonschema_extras:"engine=elasticsearch,engine=solr,engine=opensearch"`
+	MaxPredictedWords           *int                        `json:"maxPredictedWords,omitempty" jsonschema:"title=maxPredictedWords,description=specify the the maximum number of relevant words that are predicted" jsonschema_extras:"engine=elasticsearch,engine=solr,engine=opensearch"`
+	URLField                    *string                     `json:"urlField,omitempty" jsonschema:"title=urlField,description=convenience prop that allows returning the URL value in the suggestion's response" jsonschema_extras:"engine=elasticsearch,engine=solr,engine=opensearch"`
+	ApplyStopwords              *bool                       `json:"applyStopwords,omitempty" jsonschema:"title=applyStopwords,description=whether or not predict a suggestion which starts or ends with a stopword" jsonschema_extras:"engine=elasticsearch,engine=solr,engine=opensearch"`
+	Stopwords                   *[]string                   `json:"customStopwords,omitempty" jsonschema:"title=customStopwords,description=list of custom stopwords" jsonschema_extras:"engine=elasticsearch,engine=solr,engine=opensearch"`
+	SearchLanguage              *string                     `json:"searchLanguage,omitempty" jsonschema:"title=searchLanguage,description=used to apply language specific stopwords for predictive suggestions" jsonschema_extras:"engine=elasticsearch,engine=solr,engine=opensearch"`
+	CalendarInterval            *string                     `json:"calendarinterval,omitempty" jsonschema:"title=calendarInterval,description=set the histogram bar interval when range value is of type date" jsonschema_extras:"engine=elasticsearch,engine=solr,engine=opensearch"`
+	Script                      *string                     `json:"script,omitempty" jsonschema:"title=script,description=indicates the script to run while reordering the results" jsonschema_extras:"engine=elasticsearch,engine=opensearch"`
+	QueryVector                 *[]float64                  `json:"queryVector,omitempty" jsonschema:"title=queryVector,description=specify a vector to match for the reordering the results using kNN" jsonschema_extras:"engine=elasticsearch,engine=opensearch"`
+	VectorDataField             *string                     `json:"vectorDataField,omitempty" jsonschema:"title=vectorDataField,description=field in the index to be used to reorder the results using kNN" jsonschema_extras:"engine=elasticsearch,engine=opensearch"`
+	Candidates                  *int                        `json:"candidates,omitempty" jsonschema:"title=candidates,description=indicates the number of candidates to consider while using the script_score functionality to reorder the results using kNN" jsonschema_extras:"engine=elasticsearch,engine=opensearch"`
+	EnableFeaturedSuggestions   *bool                       `json:"enableFeaturedSuggestions,omitempty" jsonschema:"title=enableFeaturedSuggestions,description=whether or not to enable featured suggestions" jsonschema_extras:"engine=elasticsearch,engine=solr,engine=opensearch"`
+	FeaturedSuggestionsConfig   *FeaturedSuggestionsOptions `json:"featuredSuggestionsConfig,omitempty" jsonschema:"title=featuredSuggestionsConfig,description=additional options to specify for featured suggestions" jsonschema_extras:"engine=elasticsearch,engine=solr,engine=opensearch"`
+	EnableIndexSuggestions      *bool                       `json:"enableIndexSuggestions,omitempty" jsonschema:"title=enableIndexSuggestions,description=whether or not to enable index suggestions" jsonschema_extras:"engine=elasticsearch,engine=solr,engine=opensearch"`
+	IndexSuggestionsConfig      *IndexSuggestionsOptions    `json:"indexSuggestionsConfig,omitempty" jsonschema:"title=indexSuggestionsConfig,description=additional options to specify for index suggestions" jsonschema_extras:"engine=elasticsearch,engine=solr,engine=opensearch"`
+	DeepPagination              *bool                       `json:"deepPagination,omitempty" jsonschema:"title=deepPagination,description=whether or not the enable deep pagination of results" jsonschema_extras:"engine=elasticsearch,engine=solr,engine=opensearch"`
+	DeepPaginationConfig        *DeepPaginationConfig       `json:"deepPaginationConfig,omitempty" jsonschema:"title=deepPaginationConfig,description=additional options for deepPagination for it to work properly" jsonschema_extras:"engine=elasticsearch,engine=solr,engine=opensearch"`
+	Endpoint                    *Endpoint                   `json:"endpoint,omitempty" jsonschema:"title=endpoint,description=endpoint and other details where the query should be hit" jsonschema_extras:"engine=elasticsearch,engine=solr,engine=opensearch"`
+	IncludeValues               *[]string                   `json:"includeValues,omitempty" jsonschema:"title=includeValues,description=values to include in term queries" jsonschema_extras:"engine=elasticsearch,engine=solr,engine=opensearch"`
+	ExcludeValues               *[]string                   `json:"excludeValues,omitempty" jsonschema:"title=excludeValues,description=values to exclude in term queries" jsonschema_extras:"engine=elasticsearch,engine=solr,engine=opensearch"`
 }
 
 type DataField struct {
@@ -467,21 +513,21 @@ type DataField struct {
 
 // Settings represents the search settings
 type Settings struct {
-	RecordAnalytics       *bool                   `json:"recordAnalytics,omitempty"`
-	UserID                *string                 `json:"userId,omitempty"`
-	CustomEvents          *map[string]interface{} `json:"customEvents,omitempty"`
-	EnableQueryRules      *bool                   `json:"enableQueryRules,omitempty"`
-	EnableSearchRelevancy *bool                   `json:"enableSearchRelevancy,omitempty"`
-	UseCache              *bool                   `json:"useCache,omitempty"`
-	QueryRule             *map[string]interface{} `json:"queryRule,omitempty"`
-	Backend               *Backend                `json:"backend,omitempty"`
+	RecordAnalytics       *bool                   `json:"recordAnalytics,omitempty" jsonschema:"title=recordAnalytics,description=whether or not to record analytics for the current request"`
+	UserID                *string                 `json:"userId,omitempty" jsonschema:"title=userId,description=user ID that will be used to record the analytics"`
+	CustomEvents          *map[string]interface{} `json:"customEvents,omitempty" jsonschema:"title=customEvents,description=custom events that can be used to build own analytics on top of ReactiveSearch analytics"`
+	EnableQueryRules      *bool                   `json:"enableQueryRules,omitempty" jsonschema:"title=enableQueryRules,description=whether or not to apply the query rules for the current request"`
+	EnableSearchRelevancy *bool                   `json:"enableSearchRelevancy,omitempty" jsonschema:"title=enableSearchRelevancy,description=whether or not to apply search relevancy for the current request"`
+	UseCache              *bool                   `json:"useCache,omitempty" jsonschema:"title=useCache,description=whether or not to use cache for the current request"`
+	QueryRule             *map[string]interface{} `json:"queryRule,omitempty" jsonschema:"title=queryRule,description="`
+	Backend               *Backend                `json:"backend,omitempty" jsonschema:"title=backend,description=backend to use for the current request"`
 }
 
 // RSQuery represents the request body
 type RSQuery struct {
-	Query    []Query                 `json:"query,omitempty"`
-	Settings *Settings               `json:"settings,omitempty"`
-	Metadata *map[string]interface{} `json:"metadata,omitempty"`
+	Query    []Query                 `json:"query,omitempty" jsonschema:"title=query,description=The array of queries to execute,required"`
+	Settings *Settings               `json:"settings,omitempty" jsonschema:"title=settings,description=Settings for the request being made"`
+	Metadata *map[string]interface{} `json:"metadata,omitempty" jsonschema:"title=metadata,description=Metadata for the request being made"`
 }
 
 type TermFilter struct {
@@ -1502,4 +1548,35 @@ func extractIDFromPreference(preference string) string {
 	textSplitted = textSplitted[:len(textSplitted)-1]
 
 	return strings.Join(textSplitted, "_")
+}
+
+// GetReactiveSearchSchema will return the schema of RS API as bytes
+func GetReactiveSearchSchema() ([]byte, error) {
+	schema := GetReflactor().Reflect(&RSQuery{})
+	schemaMarshalled, marshalErr := schema.MarshalJSON()
+
+	if marshalErr != nil {
+		return nil, marshalErr
+	}
+
+	// Unmarshal and inject
+	var injectErr error
+	schemaMarshalled, injectErr = injectExtrasToSchema(schemaMarshalled, *schema)
+
+	return schemaMarshalled, injectErr
+}
+
+var jsonSchemaInstance *jsonschema.Reflector
+var jsonSchemaInstanceOnce sync.Once
+
+func GetReflactor() *jsonschema.Reflector {
+	jsonSchemaInstanceOnce.Do(func() {
+		r := new(jsonschema.Reflector)
+		r.ExpandedStruct = true
+		r.AllowAdditionalProperties = false
+		r.DoNotReference = true
+		r.RequiredFromJSONSchemaTags = true
+		jsonSchemaInstance = r
+	})
+	return jsonSchemaInstance
 }

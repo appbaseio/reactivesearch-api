@@ -61,6 +61,9 @@ var ClusterID string
 // Memory Allocated in number of bytes
 var MemoryAllocated uint64
 
+// Whether or not to create schema
+var CreateSchema bool = false
+
 // RandStr returns "node" field of a UUID.
 // See: https://tools.ietf.org/html/rfc4122#section-4.1.6
 func RandStr() string {

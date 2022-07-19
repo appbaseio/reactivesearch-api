@@ -199,6 +199,7 @@ func ExecuteIndependentQuery(independentReq map[string]interface{}) ([]byte, *ht
 	headerToSend := make(http.Header)
 	for key, value := range headersToUse {
 		valueAsString, valueAsStrOk := value.(string)
+
 		if !valueAsStrOk {
 			errMsg := fmt.Sprintf("error while converting header value to string for key `%s` and request: `%s`", key, requestId)
 			log.Warnln(logTag, ": ", errMsg)
@@ -588,4 +589,13 @@ func TransformESResponse(response []byte, rsAPIRequest *RSQuery) ([]byte, error)
 		}
 	}
 	return rsResponse, nil
+}
+
+// HandleApiSchema will handle returning the RS API body
+// schema
+func (r *QueryTranslate) HandleApiSchema() http.HandlerFunc {
+	return func(w http.ResponseWriter, req *http.Request) {
+		log.Infoln(logTag, ": returning already marshalled schema as bytes")
+		util.WriteBackRaw(w, r.apiSchema, http.StatusOK)
+	}
 }
