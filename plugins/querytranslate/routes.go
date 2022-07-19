@@ -22,6 +22,13 @@ func (c *chain) ValidateWrap(h http.HandlerFunc) http.HandlerFunc {
 func (px *QueryTranslate) routes() []plugins.Route {
 	middlewareFunction := (&chain{}).ValidateWrap
 	routes = append(routes, plugins.Route{
+		Name:        "To get the API schema for ReactiveSearch",
+		Methods:     []string{http.MethodGet},
+		Path:        "/_reactivesearch/schema",
+		HandlerFunc: px.HandleApiSchema(),
+		Description: "Get the API schema for ReactiveSearch endpoint.",
+	})
+	routes = append(routes, plugins.Route{
 		Name:        "To validate reactivesearch query",
 		Methods:     []string{http.MethodPost},
 		Path:        "/_reactivesearch.v3/validate",
