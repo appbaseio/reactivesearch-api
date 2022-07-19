@@ -498,10 +498,14 @@ func main() {
 			log.Fatal("error loading plugins: ", errRSPlugin)
 		}
 	}
-	errESPlugin := LoadESPluginFromFile(mainRouter, elasticSearchPath, elasticSearchMiddleware)
-	if errESPlugin != nil {
-		log.Fatal("error loading plugins: ", errESPlugin)
+
+	if util.ExternalElasticsearch != "true" {
+		errESPlugin := LoadESPluginFromFile(mainRouter, elasticSearchPath, elasticSearchMiddleware)
+		if errESPlugin != nil {
+			log.Fatal("error loading plugins: ", errESPlugin)
+		}
 	}
+
 	// Execute the migration scripts
 	for _, migration := range util.GetMigrationScripts() {
 		shouldExecute, err := migration.ConditionCheck()
