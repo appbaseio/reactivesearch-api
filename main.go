@@ -440,6 +440,7 @@ func main() {
 	// ES client instantiation
 	// ES v7 and v6 clients
 	util.NewClient()
+	util.NewZincClient()
 	util.SetDefaultIndexTemplate()
 	util.SetSystemIndexTemplate()
 
