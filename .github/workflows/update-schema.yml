@@ -1,0 +1,29 @@
+name: Update Schema
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  determine_whether_to_run:
+    runs-on: ubuntu-latest
+    outputs:
+      update_schema: ${{ steps.check-update-schema.outputs.run_jobs }}
+
+    steps:
+      - name: Check if event should be sent
+        id: check-update-schema
+        run: (echo "${{ inputs.ref }}" | grep -Eq  '^refs\/tags\/[0-9]+\.[0-9]+\.[0-9]+$') && echo "::set-output name=run_jobs::true" || echo "::set-output name=run_jobs::false"
+
+  send_build_event:
+    runs-on: ubuntu-latest
+    needs: determine_whether_to_run
+    if: needs.determine_whether_to_run.outputs.update_schema == 'true'
+
+    steps:
+      - name: Send Repo Dispatch Event
+        uses: peter-evans/repository-dispatch@v2
+        with:
+          token: ${{ secrets.token }}
+          repository: appbaseio-confidential/arc-noss
+          event-type: create_schema

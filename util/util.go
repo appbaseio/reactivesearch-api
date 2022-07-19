@@ -66,6 +66,9 @@ var ClusterID string
 // Memory Allocated in number of bytes
 var MemoryAllocated uint64
 
+// Whether or not to create schema
+var CreateSchema bool = false
+
 // RandStr returns "node" field of a UUID.
 // See: https://tools.ietf.org/html/rfc4122#section-4.1.6
 func RandStr() string {
@@ -289,6 +292,32 @@ func MakeRequest(url, method string, reqBody []byte) ([]byte, *http.Response, er
 		log.Errorln("Error while creating request object: ", err)
 		return nil, nil, err
 	}
+	response, err := HTTPClient().Do(request)
+	if err != nil {
+		log.Errorln("Error while making request: ", err)
+		return nil, nil, err
+	}
+
+	body, err := ioutil.ReadAll(response.Body)
+	if err != nil {
+		log.Errorln("Error while writing response:", err)
+		return nil, nil, err
+	}
+	return body, response, nil
+}
+
+// MakeRequestWithHeader helps in proxing http requests with header support
+func MakeRequestWithHeader(url, method string, reqBody []byte, headers http.Header) ([]byte, *http.Response, error) {
+	request, err := http.NewRequest(method, url, bytes.NewReader(reqBody))
+	if err != nil {
+		log.Errorln("Error while creating request object: ", err)
+		return nil, nil, err
+	}
+
+	for key, value := range headers {
+		request.Header.Set(key, strings.Join(value, ", "))
+	}
+
 	response, err := HTTPClient().Do(request)
 	if err != nil {
 		log.Errorln("Error while making request: ", err)

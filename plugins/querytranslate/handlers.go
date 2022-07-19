@@ -8,6 +8,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/appbaseio/reactivesearch-api/middleware/classify"
@@ -70,6 +71,73 @@ func (r *QueryTranslate) search() http.HandlerFunc {
 			return
 		}
 
+		// This is where the independent requests will be done.
+		independentReqBody, independentErr := FromIndependentRequestContext(req.Context())
+		if independentErr != nil {
+			log.Errorln(logTag, ": ", err)
+			util.WriteBackError(w, "Can't read independent requests built", http.StatusBadRequest)
+			return
+		}
+
+		independentResponse := make(map[string]interface{})
+
+		for _, independentReq := range *independentReqBody {
+			// Make the request with the passed details.
+			requestId := independentReq["id"].(string)
+
+			respBody, _, reqErr := ExecuteIndependentQuery(independentReq)
+
+			if reqErr != nil {
+				log.Warnln(logTag, ": ", reqErr)
+				util.WriteBackError(w, reqErr.Error(), http.StatusInternalServerError)
+				return
+			}
+
+			// TODO: Decide whether to map the response to the ID or extract the body
+			// for the ID from RS response and use that instead?
+
+			responseAsInterface := new(map[string]interface{})
+			unmarshalIndependentResponseErr := json.Unmarshal(respBody, &responseAsInterface)
+			if unmarshalIndependentResponseErr != nil {
+				errMsg := fmt.Sprintf("error while unmarshalling received response for independent request with ID: `%s` and err: `%v`", requestId, unmarshalIndependentResponseErr)
+				log.Errorln(logTag, ": ", errMsg)
+				util.WriteBackError(w, errMsg, http.StatusInternalServerError)
+				return
+			}
+
+			independentResponse[requestId] = responseAsInterface
+		}
+
+		if len(independentResponse) > 0 {
+			// Unmarshal the stage 1 response into a map and merge the independent
+			// responses as well
+			rsResponseAsMap := make(map[string]interface{})
+			rsResponseAsMapErr := json.Unmarshal(rsResponse, &rsResponseAsMap)
+			if rsResponseAsMapErr != nil {
+				errMsg := fmt.Sprint("error while unmarshalling RS response into a map to modify it: ", rsResponseAsMapErr)
+				log.Errorln(logTag, ": ", errMsg)
+				util.WriteBackError(w, errMsg, http.StatusInternalServerError)
+				return
+			}
+
+			// Merge the independent responses into the final response
+			for id, response := range independentResponse {
+				rsResponseAsMap[id] = response
+			}
+
+			// Marshal the map back into bytes with the updated
+			// content.
+			var marshalErr error
+			rsResponse, marshalErr = json.Marshal(rsResponseAsMap)
+
+			if marshalErr != nil {
+				errMsg := fmt.Sprint("error while marshalling rs response back into bytes from modified map: ", marshalErr)
+				log.Errorln(logTag, ": ", errMsg)
+				util.WriteBackError(w, errMsg, http.StatusInternalServerError)
+				return
+			}
+		}
+
 		indices, err := index.FromContext(req.Context())
 		if err != nil {
 			msg := "error getting the index names from context"
@@ -100,6 +168,73 @@ func (r *QueryTranslate) search() http.HandlerFunc {
 	}
 }
 
+// ExecuteIndependentQuery will execute the passed independent query and return
+// the response in bytes, HTTP response and error (if any).
+func ExecuteIndependentQuery(independentReq map[string]interface{}) ([]byte, *http.Response, error) {
+	requestId := independentReq["id"].(string)
+
+	endpointAsMap, endpointAsMapOk := independentReq["endpoint"].(map[string]interface{})
+	if !endpointAsMapOk {
+		errMsg := fmt.Sprint("error while converting endpoint to map for independent request with ID: ", requestId)
+		return nil, nil, fmt.Errorf(errMsg)
+	}
+
+	urlToHit, urlOk := endpointAsMap["url"].(string)
+	if !urlOk {
+		errMsg := fmt.Sprint("error while extracting URL from independent request built for: ", requestId)
+		return nil, nil, fmt.Errorf(errMsg)
+	}
+
+	methodToUse, methodOk := endpointAsMap["method"].(string)
+	if !methodOk {
+		errMsg := fmt.Sprint("error while extracting method from independent request built for: ", requestId)
+		return nil, nil, fmt.Errorf(errMsg)
+	}
+
+	headersToUse, headerOk := endpointAsMap["headers"].(map[string]interface{})
+	if !headerOk {
+		errMsg := fmt.Sprint("error while extracting headers from independent request built for: ", requestId)
+		return nil, nil, fmt.Errorf(errMsg)
+	}
+	headerToSend := make(http.Header)
+	for key, value := range headersToUse {
+		valueAsString, valueAsStrOk := value.(string)
+
+		if !valueAsStrOk {
+			errMsg := fmt.Sprintf("error while converting header value to string for key `%s` and request: `%s`", key, requestId)
+			log.Warnln(logTag, ": ", errMsg)
+			return nil, nil, fmt.Errorf(errMsg)
+		}
+		headerToSend.Set(key, valueAsString)
+	}
+
+	bodyToUse, bodyOk := endpointAsMap["body"].(interface{})
+	if !bodyOk {
+		errMsg := fmt.Sprint("error while extracting body from independent request built for: ", requestId)
+		log.Warnln(logTag, ": ", errMsg)
+		// No need to return, instead set the body as empty
+		defaultBody := make([]byte, 0)
+		bodyToUse = defaultBody
+	}
+
+	// Marshal the body
+	bodyInBytes, marshalErr := json.Marshal(bodyToUse)
+	if marshalErr != nil {
+		errMsg := fmt.Sprintf("error while marshalling body to send it for independent request for request `%s` with err: %v", requestId, marshalErr)
+		log.Errorln(logTag, ": ", errMsg)
+		return nil, nil, fmt.Errorf(errMsg)
+	}
+
+	respBody, res, reqErr := util.MakeRequestWithHeader(urlToHit, methodToUse, bodyInBytes, headerToSend)
+	if reqErr != nil {
+		errMsg := fmt.Sprintf("error while sending independent request for ID: `%s` with err: `%v`", requestId, reqErr)
+		log.Errorln(logTag, ": ", errMsg)
+		return nil, nil, fmt.Errorf(errMsg)
+	}
+
+	return respBody, res, reqErr
+}
+
 func (r *QueryTranslate) validate() http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
 		reqBody, err := ioutil.ReadAll(req.Body)
@@ -108,10 +243,123 @@ func (r *QueryTranslate) validate() http.HandlerFunc {
 			util.WriteBackError(w, "Can't read request body", http.StatusBadRequest)
 			return
 		}
-		w.Header().Add("Content-Type", "application/x-ndjson")
+
+		// Request body is nd-json so we need to convert it into an
+		// array of strings by splitting on \n
+		reqBodySplitted := strings.Split(string(reqBody), "\n")
+
+		// Remove the last item since it's empty
+		if len(reqBodySplitted) > 0 {
+			reqBodySplitted = reqBodySplitted[:len(reqBodySplitted)-1]
+		}
+
+		// Extract the headers passed with the current request without the
+		// NOTE: Authorization header will be removed at the end before
+		// returning the response.
+		headersPassed := make(map[string]interface{})
+		for key, value := range req.Header {
+			headersPassed[key] = strings.Join(value, ", ")
+		}
+
+		// Extract the reqBody into the required format that shows based on ID.
+
+		// Extract some request details that might be required later
+		vars := mux.Vars(req)
+		defaultURL := fmt.Sprint(util.GetESURL(), "/", vars["index"], "/_search")
+		methodUsed := req.Method
+
+		validateMapToShow := make([]map[string]interface{}, 0)
+
+		// The first item in the array will be the map that will contain the
+		// preference.
+		// Second object will be the body for that request.
+		for reqIndex, reqPref := range reqBodySplitted {
+			// We will skip all odd values since those will be worked
+			// on during even values.
+			if reqIndex%2 != 0 {
+				continue
+			}
+
+			requestBody := reqBodySplitted[reqIndex+1]
+
+			// Unmarshal into map
+			prefAsMap := make(map[string]interface{})
+			bodyAsMap := make(map[string]interface{})
+
+			prefUnmarshalErr := json.Unmarshal([]byte(reqPref), &prefAsMap)
+			if prefUnmarshalErr != nil {
+				errMsg := fmt.Sprintf("error while unmarshalling preferences at index `%d` with err: %v", reqIndex, prefUnmarshalErr)
+				log.Errorln(logTag, ": ", errMsg)
+				util.WriteBackError(w, errMsg, http.StatusInternalServerError)
+				return
+			}
+
+			reqUnmarshalErr := json.Unmarshal([]byte(requestBody), &bodyAsMap)
+			if reqUnmarshalErr != nil {
+				errMsg := fmt.Sprintf("error while unmarshalling request at index `%d` with err: %v", reqIndex+1, reqUnmarshalErr)
+				log.Errorln(logTag, ": ", errMsg)
+				util.WriteBackError(w, errMsg, http.StatusInternalServerError)
+				return
+			}
+
+			// Extract the preference string
+			preferenceAsString := prefAsMap["preference"].(string)
+			requestID := extractIDFromPreference(preferenceAsString)
+
+			validateMapToShow = append(validateMapToShow, map[string]interface{}{
+				"id": requestID,
+				"endpoint": map[string]interface{}{
+					"url":     defaultURL,
+					"method":  methodUsed,
+					"headers": headersPassed,
+					"body":    bodyAsMap,
+				},
+			})
+		}
+
+		independentReqBody, independentErr := FromIndependentRequestContext(req.Context())
+		if independentErr != nil {
+			log.Errorln(logTag, ": ", err)
+			util.WriteBackError(w, "Can't read independent requests built", http.StatusBadRequest)
+			return
+		}
+
+		// Add the independent requests to the validate body to return
+		for _, independentReq := range *independentReqBody {
+			validateMapToShow = append(validateMapToShow, independentReq)
+		}
+
+		// Iterate over all the requests and remove sensitive headers if any.
+		BLACKLISTED_HEADERS := []string{
+			"Authorization",
+		}
+
+		for validateIndex, validateMap := range validateMapToShow {
+			endpointAsMap := validateMap["endpoint"].(map[string]interface{})
+
+			headersAsMap := endpointAsMap["headers"].(map[string]interface{})
+
+			for _, blacklistedHeader := range BLACKLISTED_HEADERS {
+				delete(headersAsMap, blacklistedHeader)
+				delete(headersAsMap, strings.ToLower(blacklistedHeader))
+			}
+
+			validateMapToShow[validateIndex] = validateMap
+		}
+
+		// Marshal the validate response
+		marshalledResponse, marshalErr := json.Marshal(validateMapToShow)
+		if marshalErr != nil {
+			errMsg := fmt.Sprint("error while marshalling response, ", marshalErr)
+			log.Warnln(logTag, ": ", errMsg)
+			util.WriteBackError(w, errMsg, http.StatusInternalServerError)
+			return
+		}
+
+		w.Header().Add("Content-Type", "application/json")
 		w.Header().Set("X-Content-Type-Options", "nosniff")
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(string(reqBody)))
+		w.Write([]byte(string(marshalledResponse)))
 	}
 }
 
@@ -285,8 +533,7 @@ func TransformESResponse(response []byte, rsAPIRequest *RSQuery) ([]byte, error)
 								// extract index suggestions
 								suggestions = append(suggestions, getIndexSuggestions(suggestionsConfig, rawHits)...)
 								if query.Size != nil &&
-									!(query.FeaturedSuggestionsConfig != nil &&
-										query.FeaturedSuggestionsConfig.FeaturedSuggestionsGroupId != nil) {
+									!(query.EnableFeaturedSuggestions != nil && *query.EnableFeaturedSuggestions) {
 									// fit suggestions to the max requested size
 									// Avoid for featured suggestions
 									if len(suggestions) > *query.Size {
@@ -341,4 +588,13 @@ func TransformESResponse(response []byte, rsAPIRequest *RSQuery) ([]byte, error)
 		}
 	}
 	return rsResponse, nil
+}
+
+// HandleApiSchema will handle returning the RS API body
+// schema
+func (r *QueryTranslate) HandleApiSchema() http.HandlerFunc {
+	return func(w http.ResponseWriter, req *http.Request) {
+		log.Infoln(logTag, ": returning already marshalled schema as bytes")
+		util.WriteBackRaw(w, r.apiSchema, http.StatusOK)
+	}
 }
