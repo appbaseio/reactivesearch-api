@@ -35,7 +35,8 @@ func GetZincData() (string, string, string) {
 	zincURL := os.Getenv("ZINC_CLUSTER_URL")
 
 	if zincURL == "" {
-		log.Fatal("Error encountered: ", fmt.Errorf("ES_CLUSTER_URL must be set in the environment variables"))
+		log.Warnln("Error encountered: ", fmt.Errorf("ZINC_CLUSTER_URL must be set in the environment variables"))
+		zincURL = "http://appbase:zincf0rappbase@localhost:4080"
 	}
 
 	username, password := "", ""

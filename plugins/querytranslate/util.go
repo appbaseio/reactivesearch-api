@@ -504,6 +504,7 @@ type Query struct {
 	Endpoint                    *Endpoint                   `json:"endpoint,omitempty" jsonschema:"title=endpoint,description=endpoint and other details where the query should be hit" jsonschema_extras:"engine=elasticsearch,engine=solr,engine=opensearch"`
 	IncludeValues               *[]string                   `json:"includeValues,omitempty" jsonschema:"title=includeValues,description=values to include in term queries" jsonschema_extras:"engine=elasticsearch,engine=solr,engine=opensearch"`
 	ExcludeValues               *[]string                   `json:"excludeValues,omitempty" jsonschema:"title=excludeValues,description=values to exclude in term queries" jsonschema_extras:"engine=elasticsearch,engine=solr,engine=opensearch"`
+	SearchBoxId                 *string                     `json:"searchboxId,omitempty" jsonschema:"title=searchboxId,description=searchbox id for a suggestion query" jsonschema_extras:"engine=elasticsearch,engine=opensearch"`
 }
 
 type DataField struct {
