@@ -1564,7 +1564,22 @@ func GetReactiveSearchSchema() ([]byte, error) {
 	var injectErr error
 	schemaMarshalled, injectErr = injectExtrasToSchema(schemaMarshalled, *schema)
 
-	return schemaMarshalled, injectErr
+	// Unmarshal the schema into a temporary map and the marshal it
+	// again with indentation
+	tempMap := make(map[string]interface{})
+
+	unmarshalErr := json.Unmarshal(schemaMarshalled, &tempMap)
+	if unmarshalErr != nil {
+		return schemaMarshalled, fmt.Errorf("error while unmarshalling the RS API schema to indent it before writing: %v", unmarshalErr)
+	}
+
+	// Marshal it back again with indentation
+	writableBytes, indentErr := json.MarshalIndent(tempMap, "", "  ")
+	if indentErr != nil {
+		return schemaMarshalled, fmt.Errorf("error while marshaling the RS API schema with indentation: %v", marshalErr)
+	}
+
+	return writableBytes, injectErr
 }
 
 var jsonSchemaInstance *jsonschema.Reflector
