@@ -55,7 +55,16 @@ Alternative to using Elasticsearch, you can also start a single node OpenSearch 
 docker run --name opensearch --rm -d -p 9200:9200 -e http.port=9200 -e discovery.type=single-node -e http.max_content_length=10MB -e http.cors.enabled=true -e http.cors.allow-origin=\* -e http.cors.allow-headers=X-Requested-With,X-Auth-Token,Content-Type,Content-Length,Authorization -e http.cors.allow-credentials=true --net=reactivesearch opensearchproject/opensearch:1.3.2
 ```
 
-3. Start ReactiveSearch locally
+3. Start Zinc locally
+
+```sh
+mkdir data
+docker run -v /full/path/of/data:/data -e ZINC_DATA_PATH="/data" -p 4080:4080 \
+    -e ZINC_FIRST_ADMIN_USER=appbase -e ZINC_FIRST_ADMIN_PASSWORD=zincf0rappbase \
+    --name zinc public.ecr.aws/zinclabs/zinc:latest
+```
+
+4. Start ReactiveSearch locally
 
 ```sh
 docker build -t reactivesearch . && docker run --rm --name reactivesearch -p 8000:8000 --net=reactivesearch --env-file=config/docker.env reactivesearch

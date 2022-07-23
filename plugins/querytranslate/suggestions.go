@@ -117,7 +117,6 @@ type PopularSuggestionsOptions struct {
 
 // FeaturedSuggestionsOptions represents the options to configure default suggestions
 type FeaturedSuggestionsOptions struct {
-	FeaturedSuggestionsGroupId   *string   `json:"featuredSuggestionsGroupId,omitempty"`
 	VisibleSuggestionsPerSection *int      `json:"visibleSuggestionsPerSection,omitempty"`
 	MaxSuggestionsPerSection     *int      `json:"maxSuggestionsPerSection,omitempty"`
 	SectionsOrder                *[]string `json:"sectionsOrder,omitempty"`

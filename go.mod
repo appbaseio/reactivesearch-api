@@ -13,6 +13,7 @@ require (
 	github.com/google/uuid v1.3.0
 	github.com/gorilla/mux v1.7.1
 	github.com/hashicorp/go-version v1.3.0
+	github.com/invopop/jsonschema v0.5.0 // indirect
 	github.com/keygen-sh/keygen-go v1.11.0
 	github.com/klauspost/compress v1.15.1 // indirect
 	github.com/kljensen/snowball v0.6.0

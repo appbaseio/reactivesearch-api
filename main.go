@@ -26,6 +26,7 @@ import (
 	"github.com/appbaseio/reactivesearch-api/middleware"
 	"github.com/appbaseio/reactivesearch-api/plugins"
 	"github.com/appbaseio/reactivesearch-api/plugins/nodes"
+	"github.com/appbaseio/reactivesearch-api/plugins/querytranslate"
 	"github.com/appbaseio/reactivesearch-api/util"
 	"github.com/denisbrodbeck/machineid"
 	"github.com/getsentry/sentry-go"
@@ -54,6 +55,8 @@ var (
 	memprofile         bool
 	enableTelemetry    string
 	disableHealthCheck bool
+	showVersion        bool
+	createSchema       bool
 	// Version Reactivesearch version set during build
 	Version string
 	// PlanRefreshInterval can be used to define the custom interval to refresh the plan
@@ -119,6 +122,9 @@ func init() {
 	flag.BoolVar(&listPlugins, "plugins", false, "List currently registered plugins")
 	flag.StringVar(&address, "addr", "0.0.0.0", "Address to serve on")
 	flag.BoolVar(&disableHealthCheck, "disable-health-check", false, "Set as `true` to disable health check")
+	flag.BoolVar(&showVersion, "version", false, "show the version of ReactiveSearch")
+	flag.BoolVar(&createSchema, "create-schema", false, "create the schema for the current version of API and exit")
+
 	// env port for deployments like heroku where port is dynamically assigned
 	envPort := os.Getenv("PORT")
 	defaultPort := 8000
@@ -127,13 +133,36 @@ func init() {
 		defaultPort = portValue
 	}
 
-	fmt.Println("=> port used", defaultPort)
 	flag.IntVar(&port, "port", defaultPort, "Port number")
 	flag.StringVar(&pluginDir, "pluginDir", "build/plugins", "Directory containing the compiled plugins")
 	flag.BoolVar(&https, "https", false, "Starts a https server instead of a http server if true")
 	flag.BoolVar(&cpuprofile, "cpuprofile", false, "write cpu profile to `file`")
 	flag.BoolVar(&memprofile, "memprofile", false, "write mem profile to `file`")
 	flag.Parse()
+
+	// If showVersion is passed, show the version and do
+	// nothing.
+	util.Version = Version
+
+	if showVersion {
+		fmt.Println(fmt.Sprintf("ReactiveSearch v%s", util.Version))
+		os.Exit(0)
+	}
+
+	// if createSchema is passed, create the schema
+	if createSchema {
+		createErr := CreateSchema(pluginDir)
+
+		if createErr != nil {
+			fmt.Println("error while creating schema: ", createErr)
+			os.Exit(-1)
+		}
+
+		os.Exit(0)
+	}
+
+	fmt.Println("=> port used", defaultPort)
+
 	// Set telemetry based on the user input
 	// Runtime flag gets the highest priority
 	telemetryEnvVar := os.Getenv("ENABLE_TELEMETRY")
@@ -284,7 +313,6 @@ func main() {
 	util.HostedBilling = HostedBilling
 	util.ClusterBilling = ClusterBilling
 	util.Opensource = Opensource
-	util.Version = Version
 
 	var licenseKey string
 	// check for offline license key
@@ -412,6 +440,7 @@ func main() {
 	// ES client instantiation
 	// ES v7 and v6 clients
 	util.NewClient()
+	util.NewZincClient()
 	util.SetDefaultIndexTemplate()
 	util.SetSystemIndexTemplate()
 
@@ -703,4 +732,56 @@ func ParseEnvFile(envFile io.Reader) (map[string]string, error) {
 	}
 
 	return envMap, nil
+}
+
+// CreateSchema will create a file in the current directory
+// and save it in the format
+// schema/latest/schema.json
+func CreateSchema(pluginDir string) error {
+	// Create the directory in the current directory.
+	// Ignore if already created.
+	pathToCreate := filepath.Join("schema", "latest")
+	dirCreateErr := os.MkdirAll(pathToCreate, os.ModePerm)
+
+	if dirCreateErr != nil {
+		return dirCreateErr
+	}
+
+	// Since the directory is created, write the contents into the file
+	// now.
+	schemaContent, schemaErr := querytranslate.GetReactiveSearchSchema()
+
+	if schemaErr != nil {
+		return schemaErr
+	}
+
+	// Create the oss schema
+	createSchemaErr := ioutil.WriteFile(filepath.Join(pathToCreate, "schema.json"), schemaContent, 0644)
+	if createSchemaErr != nil {
+		return createSchemaErr
+	}
+
+	// Set the util flag so it's used in noss code.
+	util.CreateSchema = true
+
+	// Load the plugin and run initFunc for the schema to be created
+	// for pipelines.
+
+	pipelinePath := filepath.Join(pluginDir, "pipelines.so")
+
+	// Check if plugin exists, if not, then skip creating that schema
+	_, checkErr := os.Stat(pipelinePath)
+	if os.IsNotExist(checkErr) {
+		return nil
+	}
+
+	// Path exists and we need to create the pipeline schema
+	pi, err2 := LoadPIFromFile(pipelinePath)
+	if err2 != nil {
+		return err2
+	}
+	var p plugins.Plugin
+	p = *pi.(*plugins.Plugin)
+
+	return p.InitFunc()
 }

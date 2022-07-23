@@ -6,6 +6,7 @@ import (
 	"github.com/appbaseio/reactivesearch-api/middleware"
 	"github.com/appbaseio/reactivesearch-api/plugins"
 	pluralize "github.com/gertd/go-pluralize"
+	log "github.com/sirupsen/logrus"
 )
 
 const (
@@ -20,7 +21,9 @@ var (
 )
 
 // QueryTranslate plugin deals with managing query translation.
-type QueryTranslate struct{}
+type QueryTranslate struct {
+	apiSchema []byte
+}
 
 // Instance returns the singleton instance of the plugin. Instance
 // should be the only way (both within or outside the package) to fetch
@@ -41,6 +44,15 @@ func (r *QueryTranslate) Name() string {
 // InitFunc initializes the dao, i.e. elasticsearch client, and should be executed
 // only once in the lifetime of the plugin.
 func (r *QueryTranslate) InitFunc(mw []middleware.Middleware) error {
+	// Parse the api schema
+	marshalledSchema, schemaGenerationErr := GetReactiveSearchSchema()
+	if schemaGenerationErr != nil {
+		log.Errorln(logTag, ": error while generating schema for RS API body, ", schemaGenerationErr)
+		return schemaGenerationErr
+	}
+
+	r.apiSchema = marshalledSchema
+
 	return r.preprocess(mw)
 }
 
