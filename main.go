@@ -755,8 +755,23 @@ func CreateSchema(pluginDir string) error {
 		return schemaErr
 	}
 
+	// Unmarshal the schema into a temporary map and the marshal it
+	// again with indentation
+	tempMap := make(map[string]interface{})
+
+	unmarshalErr := json.Unmarshal(schemaContent, &tempMap)
+	if unmarshalErr != nil {
+		return fmt.Errorf("error while unmarshalling the RS API schema to indent it before writing: %v", unmarshalErr)
+	}
+
+	// Marshal it back again with indentation
+	writableBytes, indentErr := json.MarshalIndent(tempMap, "", "  ")
+	if indentErr != nil {
+		return fmt.Errorf("error while marshaling the RS API schema with indentation: %v", indentErr)
+	}
+
 	// Create the oss schema
-	createSchemaErr := ioutil.WriteFile(filepath.Join(pathToCreate, "schema.json"), schemaContent, 0644)
+	createSchemaErr := ioutil.WriteFile(filepath.Join(pathToCreate, "schema.json"), writableBytes, 0644)
 	if createSchemaErr != nil {
 		return createSchemaErr
 	}
