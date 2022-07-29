@@ -104,8 +104,8 @@ func (query *Query) getGeoValueWithoutDistance() (*GeoValue, float64, error) {
 
 func (query *Query) getGeoValue() (*GeoValue, error) {
 	valueWithoutDistance, distanceParsed, parseErr := query.getGeoValueWithoutDistance()
-	if parseErr != nil {
-		return nil, parseErr
+	if parseErr != nil || valueWithoutDistance == nil {
+		return valueWithoutDistance, parseErr
 	}
 
 	// If no error was thrown, parse the distance since it is
