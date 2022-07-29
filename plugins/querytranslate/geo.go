@@ -116,6 +116,25 @@ func (query *Query) getGeoValue() (*GeoValue, error) {
 	return valueWithoutDistance, nil
 }
 
+// GetSolrGeoValue will parse the value passed as a geo value for
+// Solr and accordingly return it.
+func (query *Query) GetSolrGeoValue() (*SolrGeoValue, error) {
+	valueWithoutDistance, distanceParsed, parseErr := query.getGeoValueWithoutDistance()
+	if parseErr != nil {
+		return nil, parseErr
+	}
+
+	// We will need to convert the GeoValue to SolrGeoValue first
+	solrGeoValue := &SolrGeoValue{
+		Unit:        valueWithoutDistance.Unit,
+		Location:    valueWithoutDistance.Location,
+		BoundingBox: valueWithoutDistance.BoundingBox,
+		Distance:    &distanceParsed,
+	}
+
+	return solrGeoValue, nil
+}
+
 // GetGeoValue extracts the value into a GeoValue object
 func (query *Query) GetGeoValue() (*GeoValue, error) {
 	return query.getGeoValue()
