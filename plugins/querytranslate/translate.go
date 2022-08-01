@@ -40,8 +40,8 @@ func translateQuery(rsQuery RSQuery, userIP string) (string, error) {
 		normalizedFields := NormalizedDataFields(query.DataField, query.FieldWeights)
 
 		// Validate multiple DataFields for term and geo queries
-		if (query.Type == Term || query.Type == Geo) && len(normalizedFields) > 1 {
-			return "", errors.New("field 'dataField' can not have multiple fields for 'term' or 'geo' queries")
+		if (query.Type == Geo) && len(normalizedFields) > 1 {
+			return "", errors.New("field 'dataField' can not have multiple fields for 'geo' query")
 		}
 
 		// Validate highlight and highlightConfig

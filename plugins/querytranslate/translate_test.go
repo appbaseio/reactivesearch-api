@@ -63,19 +63,6 @@ func TestTranslateQuery(t *testing.T) {
 		_, err := translateQuery(rsQuery, "127.0.0.1")
 		So(err, ShouldBeNil)
 	})
-	Convey("with multiple dataFields for search", t, func() {
-		id := "test"
-		rsQuery := RSQuery{
-			Query: []Query{
-				{
-					ID:        &id,
-					DataField: []interface{}{"data_field_1", "data_field_2"},
-				},
-			},
-		}
-		_, err := translateQuery(rsQuery, "127.0.0.1")
-		So(err, ShouldBeNil)
-	})
 	Convey("without dataField", t, func() {
 		id := "test"
 		var value interface{} = "data_field"

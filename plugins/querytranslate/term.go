@@ -1,6 +1,11 @@
 package querytranslate
 
-import "errors"
+import (
+	"errors"
+	"strings"
+)
+
+const pivotFacetSeparator = " > "
 
 func (query *Query) generateTermQuery() (*interface{}, error) {
 
@@ -36,58 +41,102 @@ func (query *Query) generateTermQuery() (*interface{}, error) {
 		}
 		return &termQuery, nil
 	}
-
 	if len(valueAsArray) != 0 {
-		// Use default query format as or
-		queryFormat := Or.String()
-		if query.QueryFormat != nil {
-			queryFormat = *query.QueryFormat
-		}
-		queryType := "term"
-		if queryFormat == Or.String() {
-			queryType = "terms"
-		}
-		if queryFormat == Or.String() {
-			var should = []map[string]interface{}{
-				{
-					queryType: map[string]interface{}{
-						dataField: query.filterValue(valueAsArray),
-					},
-				},
+		// if length of fields is greater than zero
+		// than apply pivot facets query
+		if len(normalizedFields) > 1 {
+			var queryValueArray = make([]interface{}, 0)
+			for _, val := range valueAsArray {
+				valueAsString, ok := val.(string)
+				if ok {
+					fieldsValues := strings.Split(valueAsString, pivotFacetSeparator)
+					fieldQueryValue := make([]map[string]interface{}, 0)
+					for index, fieldValue := range fieldsValues {
+						if index < len(normalizedFields) {
+							dataField := normalizedFields[index].Field
+							fieldQueryValue = append(fieldQueryValue, map[string]interface{}{
+								"term": map[string]interface{}{
+									dataField: fieldValue,
+								},
+							})
+						}
+					}
+					if len(fieldQueryValue) > 0 {
+						queryValueArray = append(queryValueArray, map[string]interface{}{
+							"bool": map[string]interface{}{
+								"must": fieldQueryValue,
+							},
+						})
+					}
+				}
 			}
-			if query.ShowMissing != nil && *query.ShowMissing {
-				hasMissingTerm := contains(valueAsArray, query.MissingLabel)
-				if hasMissingTerm {
-					should = append(should, map[string]interface{}{
-						"bool": map[string]interface{}{
-							"must_not": map[string]interface{}{
-								"exists": map[string]interface{}{
-									"field": dataField,
+			// Use default query format as or
+			queryFormat := Or.String()
+			if queryFormat == Or.String() {
+				termQuery = &map[string]interface{}{
+					"bool": map[string]interface{}{
+						"should": queryValueArray,
+					},
+				}
+			} else {
+				termQuery = &map[string]interface{}{
+					"bool": map[string]interface{}{
+						"must": queryValueArray,
+					},
+				}
+			}
+		} else {
+			// Use default query format as or
+			queryFormat := Or.String()
+			if query.QueryFormat != nil {
+				queryFormat = *query.QueryFormat
+			}
+			queryType := "term"
+			if queryFormat == Or.String() {
+				queryType = "terms"
+			}
+			if queryFormat == Or.String() {
+				var should = []map[string]interface{}{
+					{
+						queryType: map[string]interface{}{
+							dataField: query.filterValue(valueAsArray),
+						},
+					},
+				}
+				if query.ShowMissing != nil && *query.ShowMissing {
+					hasMissingTerm := contains(valueAsArray, query.MissingLabel)
+					if hasMissingTerm {
+						should = append(should, map[string]interface{}{
+							"bool": map[string]interface{}{
+								"must_not": map[string]interface{}{
+									"exists": map[string]interface{}{
+										"field": dataField,
+									},
 								},
 							},
+						})
+					}
+				}
+				termQuery = &map[string]interface{}{
+					"bool": map[string]interface{}{
+						"should": should,
+					},
+				}
+			} else {
+				// adds a sub-query with must as an array of objects for each term/value
+				var queryArray []map[string]interface{}
+				for _, item := range valueAsArray {
+					queryArray = append(queryArray, map[string]interface{}{
+						queryType: map[string]interface{}{
+							dataField: item,
 						},
 					})
 				}
-			}
-			termQuery = &map[string]interface{}{
-				"bool": map[string]interface{}{
-					"should": should,
-				},
-			}
-		} else {
-			// adds a sub-query with must as an array of objects for each term/value
-			var queryArray []map[string]interface{}
-			for _, item := range valueAsArray {
-				queryArray = append(queryArray, map[string]interface{}{
-					queryType: map[string]interface{}{
-						dataField: item,
+				termQuery = &map[string]interface{}{
+					"bool": map[string]interface{}{
+						"must": queryArray,
 					},
-				})
-			}
-			termQuery = &map[string]interface{}{
-				"bool": map[string]interface{}{
-					"must": queryArray,
-				},
+				}
 			}
 		}
 	} else if valueAsString != "" {
@@ -191,52 +240,9 @@ func (query *Query) applyTermsAggsQuery(queryOptions *map[string]interface{}) er
 		if len(normalizedFields) < 1 {
 			return errors.New("field 'dataField' cannot be empty")
 		}
-		dataField := normalizedFields[0].Field
+
 		clonedQuery := *queryOptions
-
-		termsQuery := map[string]interface{}{
-			"field": dataField,
-		}
-
-		if query.IncludeValues != nil {
-			termsQuery["include"] = *query.IncludeValues
-		}
-		if query.ExcludeValues != nil {
-			termsQuery["exclude"] = *query.ExcludeValues
-		}
-
-		if query.AggregationSize != nil {
-			termsQuery["size"] = query.AggregationSize
-		} else if query.Size != nil {
-			termsQuery["size"] = query.Size
-		}
-
-		// Apply sortBy, defaults to `count`
-		if query.SortBy == nil || *query.SortBy == Count {
-			termsQuery["order"] = map[string]interface{}{
-				"_count": "desc",
-			}
-		} else {
-			termsQuery["order"] = map[string]interface{}{
-				"_key": &query.SortBy,
-			}
-		}
-
-		// Apply missing label
-		if query.ShowMissing != nil && *query.ShowMissing {
-			if query.MissingLabel != "" {
-				termsQuery["missing"] = query.MissingLabel
-			} else {
-				termsQuery["missing"] = "N/A"
-			}
-		}
-
-		termQuery := map[string]interface{}{
-			dataField: map[string]interface{}{
-				"terms": termsQuery,
-			},
-		}
-
+		termQuery := query.getTermsAggsQuery(normalizedFields, 0)
 		if query.NestedField != nil {
 			clonedQuery["aggs"] = map[string]interface{}{
 				"reactivesearch_nested": map[string]interface{}{
@@ -251,4 +257,57 @@ func (query *Query) applyTermsAggsQuery(queryOptions *map[string]interface{}) er
 		}
 	}
 	return nil
+}
+
+func (query *Query) getTermsAggsQuery(normalizedFields []DataField, pos int) *map[string]interface{} {
+	if pos > (len(normalizedFields) - 1) {
+		return nil
+	}
+	subAggsQuery := query.getTermsAggsQuery(normalizedFields, pos+1)
+
+	dataField := normalizedFields[pos].Field
+	termQuery := make(map[string]interface{})
+	termsQuery := map[string]interface{}{
+		"field": dataField,
+	}
+	if query.IncludeValues != nil {
+		termsQuery["include"] = *query.IncludeValues
+	}
+	if query.ExcludeValues != nil {
+		termsQuery["exclude"] = *query.ExcludeValues
+	}
+
+	if query.AggregationSize != nil {
+		termsQuery["size"] = query.AggregationSize
+	} else if query.Size != nil {
+		termsQuery["size"] = query.Size
+	}
+
+	// Apply sortBy, defaults to `count`
+	if query.SortBy == nil || *query.SortBy == Count {
+		termsQuery["order"] = map[string]interface{}{
+			"_count": "desc",
+		}
+	} else {
+		termsQuery["order"] = map[string]interface{}{
+			"_key": &query.SortBy,
+		}
+	}
+	// Apply missing label
+	if query.ShowMissing != nil && *query.ShowMissing {
+		if query.MissingLabel != "" {
+			termsQuery["missing"] = query.MissingLabel
+		} else {
+			termsQuery["missing"] = "N/A"
+		}
+	}
+
+	aggsQuery := map[string]interface{}{
+		"terms": termsQuery,
+	}
+	if subAggsQuery != nil {
+		aggsQuery["aggs"] = *subAggsQuery
+	}
+	termQuery[dataField] = aggsQuery
+	return &termQuery
 }

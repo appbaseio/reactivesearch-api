@@ -360,3 +360,24 @@ func TestMultiListWithSortByCount(t *testing.T) {
 `)
 	})
 }
+
+func TestPivotFacets(t *testing.T) {
+	convey.Convey("with multiple fields", t, func() {
+		query := map[string]interface{}{
+			"query": []map[string]interface{}{
+				{
+					"id":        "BookSensor",
+					"size":      10,
+					"dataField": []string{"class.keyword", "subClass.keyword"},
+					"type":      "term",
+					"sortBy":    "count",
+				},
+			},
+		}
+		transformedQuery, err := transformQuery(query)
+		if err != nil {
+			t.Fatalf("Test Failed %v instead\n", err)
+		}
+		convey.So(transformedQuery, convey.ShouldResemble, "{\"preference\":\"BookSensor_127.0.0.1\"}\n{\"_source\":{\"excludes\":[],\"includes\":[\"*\"]},\"aggs\":{\"class.keyword\":{\"aggs\":{\"subClass.keyword\":{\"terms\":{\"field\":\"subClass.keyword\",\"order\":{\"_count\":\"desc\"},\"size\":10}}},\"terms\":{\"field\":\"class.keyword\",\"order\":{\"_count\":\"desc\"},\"size\":10}}},\"query\":{\"match_all\":{}},\"size\":10}\n")
+	})
+}
