@@ -72,6 +72,9 @@ func (query *Query) generateTermQuery() (*interface{}, error) {
 			}
 			// Use default query format as or
 			queryFormat := Or.String()
+			if query.QueryFormat != nil {
+				queryFormat = *query.QueryFormat
+			}
 			if queryFormat == Or.String() {
 				termQuery = &map[string]interface{}{
 					"bool": map[string]interface{}{
