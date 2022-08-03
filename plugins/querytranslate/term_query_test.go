@@ -406,7 +406,7 @@ func TestPivotFacets(t *testing.T) {
 		}
 		convey.So(transformedQuery, convey.ShouldResemble, "{\"preference\":\"Results_127.0.0.1\"}\n{\"_source\":{\"excludes\":[],\"includes\":[\"*\"]},\"query\":{\"bool\":{\"must\":[{\"bool\":{\"must\":{\"bool\":{\"should\":[{\"bool\":{\"must\":[{\"term\":{\"class.keyword\":\"COMPACT DISC\"}},{\"term\":{\"subClass.keyword\":\"VINYL\"}}]}}]}}}}]}}}\n")
 	})
-	convey.Convey("pivot facets: results query with queryFormat as or", t, func() {
+	convey.Convey("pivot facets: results query with queryFormat as and", t, func() {
 		query := map[string]interface{}{
 			"query": []map[string]interface{}{
 				{
