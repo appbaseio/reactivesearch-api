@@ -75,8 +75,8 @@ func sources(h http.HandlerFunc) http.HandlerFunc {
 			}
 
 			if !validated {
-				msg := fmt.Sprintf(`permission with username %s doesn't have required sources. reqIP = %s, sources = %s`,
-					reqPermission.Username, reqIP, allowedSources)
+				msg := fmt.Sprintf(`permission with username %s is failing IP sources validation. reqIP = %s`,
+					reqPermission.Username, reqIP)
 				w.Header().Set("www-authenticate", "Basic realm=\"Authentication Required\"")
 				telemetry.WriteBackErrorWithTelemetry(req, w, msg, http.StatusUnauthorized)
 				return

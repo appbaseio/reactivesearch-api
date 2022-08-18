@@ -5,6 +5,10 @@ import (
 	"net"
 	"net/http"
 	"strings"
+
+	"github.com/appbaseio/reactivesearch-api/model/credential"
+	"github.com/appbaseio/reactivesearch-api/model/permission"
+	"github.com/appbaseio/reactivesearch-api/model/user"
 )
 
 var cidrs []*net.IPNet
@@ -53,14 +57,38 @@ func FromRequest(r *http.Request) string {
 	// Fetch header value
 	xRealIP := r.Header.Get("X-Real-Ip")
 	xForwardedFor := r.Header.Get("X-Forwarded-For")
-
+	sourcesXffValue := 0
+	reqCredential, _ := credential.FromContext(r.Context())
+	if reqCredential == credential.User {
+		reqUser, err := user.FromContext(r.Context())
+		if err == nil && reqUser != nil && reqUser.SourcesXffValue != nil {
+			sourcesXffValue = *reqUser.SourcesXffValue
+		}
+	} else {
+		reqPermission, err := permission.FromContext(r.Context())
+		if err == nil && reqPermission != nil && reqPermission.SourcesXffValue != nil {
+			sourcesXffValue = *reqPermission.SourcesXffValue
+		}
+	}
 	if xForwardedFor != "" {
 		// Check list of IP in X-Forwarded-For and return the first global address
-		for _, address := range strings.Split(xForwardedFor, ",") {
-			address = strings.TrimSpace(address)
-			isPrivate, err := isPrivateAddress(address)
-			if !isPrivate && err == nil {
-				return address
+		ipAddresses := strings.Split(xForwardedFor, ",")
+		if sourcesXffValue != 0 {
+			// if xffSourceValue is invalid then throw error
+			if sourcesXffValue < len(ipAddresses) {
+				address := strings.TrimSpace(ipAddresses[sourcesXffValue-1])
+				isPrivate, err := isPrivateAddress(address)
+				if !isPrivate && err == nil {
+					return address
+				}
+			}
+		} else {
+			for _, address := range ipAddresses {
+				address = strings.TrimSpace(address)
+				isPrivate, err := isPrivateAddress(address)
+				if !isPrivate && err == nil {
+					return address
+				}
 			}
 		}
 	}
