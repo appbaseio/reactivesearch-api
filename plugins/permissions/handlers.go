@@ -84,6 +84,9 @@ func (p *permissions) postPermission(opts ...permission.Options) http.HandlerFun
 		if permissionBody.Sources != nil {
 			permissionOptions = append(permissionOptions, permission.SetSources(permissionBody.Sources))
 		}
+		if permissionBody.SourcesXffValue != nil {
+			permissionOptions = append(permissionOptions, permission.SetSourcesXffValue(permissionBody.SourcesXffValue))
+		}
 		if permissionBody.Referers != nil {
 			permissionOptions = append(permissionOptions, permission.SetReferers(permissionBody.Referers))
 		}

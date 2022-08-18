@@ -49,6 +49,7 @@ type Permission struct {
 	Ops                  []op.Operation        `json:"ops"`
 	Indices              []string              `json:"indices"`
 	Sources              []string              `json:"sources"`
+	SourcesXffValue      *int                  `json:"sources_xff_value"`
 	Referers             []string              `json:"referers"`
 	CreatedAt            string                `json:"created_at"`
 	TTL                  time.Duration         `json:"ttl"`
@@ -178,6 +179,14 @@ func SetSources(sources []string) Options {
 			return err
 		}
 		p.Sources = sources
+		return nil
+	}
+}
+
+// SetIncludes sets the sources_xff_value fields
+func SetSourcesXffValue(value *int) Options {
+	return func(p *Permission) error {
+		p.SourcesXffValue = value
 		return nil
 	}
 }
@@ -610,6 +619,9 @@ func (p *Permission) GetPatch(rolePatched bool) (map[string]interface{}, error) 
 			return nil, err
 		}
 		patch["sources"] = p.Sources
+	}
+	if p.SourcesXffValue != nil {
+		patch["sources_xff_value"] = p.SourcesXffValue
 	}
 	if p.Referers != nil {
 		if err := validateReferers(p.Referers); err != nil {

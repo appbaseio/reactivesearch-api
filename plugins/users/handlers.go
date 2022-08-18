@@ -98,6 +98,9 @@ func (u *Users) postUser() http.HandlerFunc {
 		if userBody.Sources != nil {
 			opts = append(opts, user.SetSources(*userBody.Sources))
 		}
+		if userBody.SourcesXffValue != nil {
+			opts = append(opts, user.SetSourcesXffValue(userBody.SourcesXffValue))
+		}
 		if userBody.ACLs != nil {
 			opts = append(opts, user.SetACLs(userBody.ACLs))
 		}

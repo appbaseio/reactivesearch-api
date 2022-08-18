@@ -40,6 +40,7 @@ type User struct {
 	CreatedAt        string              `json:"created_at"`
 	UpdatedAt        string              `json:"updated_at"`
 	Sources          *[]string           `json:"sources"`
+	SourcesXffValue  *int                `json:"sources_xff_value"`
 }
 
 // Options is a function type used to define a user's properties.
@@ -90,6 +91,14 @@ func SetSources(sources []string) Options {
 			return err
 		}
 		u.Sources = &sources
+		return nil
+	}
+}
+
+// SetIncludes sets the sources_xff_value fields
+func SetSourcesXffValue(value *int) Options {
+	return func(p *User) error {
+		p.SourcesXffValue = value
 		return nil
 	}
 }
@@ -341,6 +350,10 @@ func (u *User) GetPatch() (map[string]interface{}, error) {
 			return nil, err
 		}
 		patch["sources"] = *u.Sources
+	}
+
+	if u.SourcesXffValue != nil {
+		patch["sources_xff_value"] = u.SourcesXffValue
 	}
 	if u.AllowedActions != nil {
 		categories := GetCategories(*u.AllowedActions)
