@@ -527,13 +527,6 @@ func getPredictiveSuggestions(config SuggestionsConfig, suggestions *[]Suggestio
 					predictiveSuggestion.Value = matchQuery + " " + highlightPhrase
 					predictiveWordGap = maxPredictedWords - len(strings.Split(highlightPhrase, " "))
 					suffixMatch = true
-					if predictiveWordGap == 0 {
-						if !suggestionsMap[CompressAndOrder(predictiveSuggestion.Value, config)] {
-							suggestionsList = append(suggestionsList, predictiveSuggestion)
-							// update map
-							suggestionsMap[CompressAndOrder(predictiveSuggestion.Value, config)] = true
-						}
-					}
 				}
 			}
 			if prefixEnds >= 0 && predictiveWordGap > 0 {
@@ -562,6 +555,12 @@ func getPredictiveSuggestions(config SuggestionsConfig, suggestions *[]Suggestio
 						// update map
 						suggestionsMap[CompressAndOrder(predictiveSuggestion.Value, config)] = true
 					}
+				}
+			} else {
+				if !suggestionsMap[CompressAndOrder(predictiveSuggestion.Value, config)] {
+					suggestionsList = append(suggestionsList, predictiveSuggestion)
+					// update map
+					suggestionsMap[CompressAndOrder(predictiveSuggestion.Value, config)] = true
 				}
 			}
 		}
