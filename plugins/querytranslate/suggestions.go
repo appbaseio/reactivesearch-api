@@ -346,6 +346,7 @@ func populateDefaultSuggestions(
 			}
 		}
 		// stores the normalized field value to match agains the normalized query value
+		docField.value = strings.Replace(docField.value, `"`, ``, -1)
 		fieldValue := normalizeValue(GetTextFromHTML(docField.value))
 		// TODO: This won't work on query synonyms, need to account for that
 		rankField := FindMatch(fieldValue, config.Value, config)
@@ -497,7 +498,6 @@ func getPredictiveSuggestions(config SuggestionsConfig, suggestions *[]Suggestio
 					suffixStarts = max(suffixStarts, matchIndex+1)
 				}
 			}
-			var matched = false
 			maxPredictedWords := 2
 			if config.MaxPredictedWords != nil {
 				maxPredictedWords = *config.MaxPredictedWords
@@ -505,14 +505,17 @@ func getPredictiveSuggestions(config SuggestionsConfig, suggestions *[]Suggestio
 			// helpful for debugging
 			// fmt.Println("prefix ends: ", prefixEnds)
 			// fmt.Println("suffix starts: ", suffixStarts)
+			predictiveWordGap := maxPredictedWords
+			predictiveSuggestion := suggestion
+			suffixMatch := false
 
 			if suffixStarts > 0 {
 				highlightPhrase := getHighlightedPhrase(strings.Join(fieldValues[suffixStarts:], " "), max(maxPredictedWords, 1), config)
 				// ignore if highlightPhrase contains any of the query tokens
-				stemmedHighlightPhrase := strings.Join(stemmedTokens(highlightPhrase, language), " ")
+				stemmedHighlightPhrase := stemmedTokens(highlightPhrase, language)
 				ignore := false
 				for _, qToken := range stemmedQvls {
-					if strings.Contains(stemmedHighlightPhrase, qToken) {
+					if util.Contains(stemmedHighlightPhrase, qToken) {
 						ignore = true
 					}
 				}
@@ -520,46 +523,44 @@ func getPredictiveSuggestions(config SuggestionsConfig, suggestions *[]Suggestio
 					// helpful for debugging
 					// fmt.Println("in suffix: highlighted phrase is: ", highlightPhrase)
 					matchQuery := config.Value
-					suggestionPhrase := fmt.Sprintf("%s %s%s%s", matchQuery, tags.PreTags, highlightPhrase, tags.PostTags)
-					suggestionValue := matchQuery + " " + highlightPhrase
-					// transform diacritics chars when comparing for uniqueness of predictive suggestions
-					if !suggestionsMap[CompressAndOrder(suggestionValue, config)] {
-						predictiveSuggestion := suggestion
-						predictiveSuggestion.Label = suggestionPhrase
-						predictiveSuggestion.Value = suggestionValue
-						suggestionsList = append(suggestionsList, predictiveSuggestion)
-						// update map
-						suggestionsMap[CompressAndOrder(suggestionValue, config)] = true
-						matched = true
-					}
+					predictiveSuggestion.Label = fmt.Sprintf("%s %s%s%s", matchQuery, tags.PreTags, highlightPhrase, tags.PostTags)
+					predictiveSuggestion.Value = matchQuery + " " + highlightPhrase
+					predictiveWordGap = maxPredictedWords - len(strings.Split(highlightPhrase, " "))
+					suffixMatch = true
 				}
 			}
-			if prefixEnds >= 0 && !matched {
-				highlightPhrase := getHighlightedPhrase(strings.Join(fieldValues[:prefixEnds+1], " "), max(maxPredictedWords, 1), config)
+			if prefixEnds >= 0 && predictiveWordGap > 0 {
+				highlightPhrase := getHighlightedPhrase(strings.Join(fieldValues[:prefixEnds+1], " "), max(predictiveWordGap, 1), config)
 				// ignore if highlightPhrase contains any of the query tokens
-				stemmedHighlightPhrase := strings.Join(stemmedTokens(highlightPhrase, language), " ")
+				stemmedHighlightPhrase := stemmedTokens(highlightPhrase, language)
 				ignore := false
 				for _, qToken := range stemmedQvls {
-					if strings.Contains(stemmedHighlightPhrase, qToken) {
+					if util.Contains(stemmedHighlightPhrase, qToken) {
 						ignore = true
 					}
 				}
 				// helpful for debugging
 				// fmt.Println("in prefix: highlighted phrase is: ", highlightPhrase, ", ignore: ", ignore)
 				if !ignore && len(highlightPhrase) > 0 {
-					matchQuery := config.Value
-					suggestionPhrase := tags.PreTags + highlightPhrase + tags.PostTags + " " + matchQuery
-					suggestionValue := highlightPhrase + " " + matchQuery
+					if suffixMatch {
+						predictiveSuggestion.Label = tags.PreTags + highlightPhrase + tags.PostTags + " " + predictiveSuggestion.Label
+						predictiveSuggestion.Value = highlightPhrase + " " + predictiveSuggestion.Value
+					} else {
+						predictiveSuggestion.Label = tags.PreTags + highlightPhrase + tags.PostTags + " " + config.Value
+						predictiveSuggestion.Value = highlightPhrase + " " + config.Value
+					}
 					// transform diacritics chars when comparing for uniqueness of predictive suggestions
-					if !suggestionsMap[CompressAndOrder(suggestionValue, config)] {
-						predictiveSuggestion := suggestion
-						predictiveSuggestion.Label = suggestionPhrase
-						predictiveSuggestion.Value = suggestionValue
+					if !suggestionsMap[CompressAndOrder(predictiveSuggestion.Value, config)] {
 						suggestionsList = append(suggestionsList, predictiveSuggestion)
 						// update map
-						suggestionsMap[CompressAndOrder(suggestionValue, config)] = true
-						matched = true
+						suggestionsMap[CompressAndOrder(predictiveSuggestion.Value, config)] = true
 					}
+				}
+			} else {
+				if !suggestionsMap[CompressAndOrder(predictiveSuggestion.Value, config)] {
+					suggestionsList = append(suggestionsList, predictiveSuggestion)
+					// update map
+					suggestionsMap[CompressAndOrder(predictiveSuggestion.Value, config)] = true
 				}
 			}
 		}
