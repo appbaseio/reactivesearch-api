@@ -99,8 +99,10 @@ func translateQuery(rsQuery RSQuery, userIP string) (string, error) {
 
 		// If the endpoint property is passed, set the query execute as false
 		if query.Endpoint != nil {
-			executeValue := false
-			query.Execute = &executeValue
+			if query.EnableEndpointSuggestions == nil || *query.EnableEndpointSuggestions {
+				executeValue := false
+				query.Execute = &executeValue
+			}
 		}
 
 		if query.shouldExecuteQuery() {
@@ -230,7 +232,10 @@ func buildIndependentRequests(rsQuery RSQuery) ([]map[string]interface{}, error)
 	independentQueryArr := make([]map[string]interface{}, 0)
 
 	for _, query := range rsQuery.Query {
+
 		if query.Endpoint == nil {
+			continue
+		} else if query.EnableEndpointSuggestions != nil && !*query.EnableEndpointSuggestions {
 			continue
 		}
 

@@ -98,6 +98,7 @@ const (
 	Recent
 	Promoted
 	Featured
+	EndpointSuggestion
 )
 
 // String is the implementation of Stringer interface that returns the string representation of SuggestionType type.
@@ -108,6 +109,7 @@ func (o SuggestionType) String() string {
 		"recent",
 		"promoted",
 		"featured",
+		"endpoint",
 	}[o]
 }
 
@@ -129,6 +131,8 @@ func (o *SuggestionType) UnmarshalJSON(bytes []byte) error {
 		*o = Promoted
 	case Featured.String():
 		*o = Featured
+	case EndpointSuggestion.String():
+		*o = EndpointSuggestion
 	default:
 		return fmt.Errorf("invalid suggestion type encountered: %v", suggestionType)
 	}
@@ -149,6 +153,8 @@ func (o SuggestionType) MarshalJSON() ([]byte, error) {
 		suggestionType = Promoted.String()
 	case Featured:
 		suggestionType = Featured.String()
+	case EndpointSuggestion:
+		suggestionType = EndpointSuggestion.String()
 	default:
 		return nil, fmt.Errorf("invalid suggestion type encountered: %v", o)
 	}
@@ -498,6 +504,7 @@ type Query struct {
 	EnableFeaturedSuggestions   *bool                       `json:"enableFeaturedSuggestions,omitempty" jsonschema:"title=enableFeaturedSuggestions,description=whether or not to enable featured suggestions" jsonschema_extras:"engine=elasticsearch,engine=solr,engine=opensearch"`
 	FeaturedSuggestionsConfig   *FeaturedSuggestionsOptions `json:"featuredSuggestionsConfig,omitempty" jsonschema:"title=featuredSuggestionsConfig,description=additional options to specify for featured suggestions" jsonschema_extras:"engine=elasticsearch,engine=solr,engine=opensearch"`
 	EnableIndexSuggestions      *bool                       `json:"enableIndexSuggestions,omitempty" jsonschema:"title=enableIndexSuggestions,description=whether or not to enable index suggestions" jsonschema_extras:"engine=elasticsearch,engine=solr,engine=opensearch"`
+	EnableEndpointSuggestions   *bool                       `json:"enableEndpointSuggestions,omitempty" jsonschema:"title=enableEndpointSuggestions,description=whether or not to enable endpoint suggestions" jsonschema_extras:"engine=elasticsearch,engine=solr,engine=opensearch"`
 	IndexSuggestionsConfig      *IndexSuggestionsOptions    `json:"indexSuggestionsConfig,omitempty" jsonschema:"title=indexSuggestionsConfig,description=additional options to specify for index suggestions" jsonschema_extras:"engine=elasticsearch,engine=solr,engine=opensearch"`
 	DeepPagination              *bool                       `json:"deepPagination,omitempty" jsonschema:"title=deepPagination,description=whether or not the enable deep pagination of results" jsonschema_extras:"engine=elasticsearch,engine=solr,engine=opensearch"`
 	DeepPaginationConfig        *DeepPaginationConfig       `json:"deepPaginationConfig,omitempty" jsonschema:"title=deepPaginationConfig,description=additional options for deepPagination for it to work properly" jsonschema_extras:"engine=elasticsearch,engine=solr,engine=opensearch"`
@@ -888,6 +895,12 @@ func (query *Query) shouldExecuteQuery() bool {
 	if query.Type == Suggestion &&
 		query.EnableIndexSuggestions != nil &&
 		!*query.EnableIndexSuggestions {
+		return false
+	}
+	// don't execute query if endpoint suggestions are disabled
+	if query.Type == Suggestion &&
+		query.EnableEndpointSuggestions != nil &&
+		!*query.EnableEndpointSuggestions {
 		return false
 	}
 	if query.Execute != nil {
