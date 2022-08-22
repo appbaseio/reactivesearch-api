@@ -571,7 +571,12 @@ func getPredictiveSuggestions(config SuggestionsConfig, suggestions *[]Suggestio
 // getHighlightedPhrase takes a candidate phrase (prefix or suffix) of the field value based on the match found with the search query.
 // It returns up to maxTokens length of phrase ignoring for any stopwords in between
 func getHighlightedPhrase(candidateWord string, maxTokens int, config SuggestionsConfig) string {
-	wordsPhrase := strings.Split(removeStopwords(candidateWord, config), " ")
+	var wordsPhrase []string
+	if config.ApplyStopwords != nil && *config.ApplyStopwords {
+		wordsPhrase = strings.Split(removeStopwords(candidateWord, config), " ")
+	} else {
+		wordsPhrase = strings.Split(candidateWord, " ")
+	}
 	if len(wordsPhrase) > maxTokens {
 		return strings.TrimSpace(strings.Join(wordsPhrase[:maxTokens], " "))
 	}
