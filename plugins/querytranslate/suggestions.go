@@ -171,14 +171,27 @@ type SuggestionsConfig struct {
 	CategoryField               *string
 	Language                    *string
 	IndexSuggestionsConfig      *IndexSuggestionsOptions
+	ValueFields                 []string
 }
 
 // getIndexSuggestions gets the index suggestions based on user query config and search engine response
 func getIndexSuggestions(config SuggestionsConfig, rawHits []ESDoc) []SuggestionHIT {
 	// before parsing any suggestions, normalize the query
 	config.Value = normalizeValue(config.Value)
-	// set priority to highlight fields if present
-	if len(config.HighlightField) != 0 {
+
+	// If valueFields are passed, we will give them the most priority
+	// else it will be highlightField and otherwise fallback to fields
+	// from source if dataFields are not present.
+	//
+	// Order of priority is now:
+	// - valueFields
+	// - highlightField
+	// - dataFields (if passed)
+	// - fields from source (if dataFields are not passed)
+
+	if len(config.ValueFields) != 0 {
+		config.DataFields = config.ValueFields
+	} else if len(config.HighlightField) != 0 {
 		config.DataFields = config.HighlightField
 	} else if len(config.DataFields) == 0 && len(rawHits) > 0 {
 		// extract fields from first hit source
