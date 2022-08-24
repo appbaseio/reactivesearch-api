@@ -124,7 +124,8 @@ type FeaturedSuggestionsOptions struct {
 
 // IndexSuggestionsOptions represents the options to configure index suggestions
 type IndexSuggestionsOptions struct {
-	SectionLabel *string `json:"sectionLabel,omitempty"`
+	SectionLabel *string   `json:"sectionLabel,omitempty"`
+	ValueFields  *[]string `json:"valueFields,omitempty"`
 }
 
 // DocField contains properties of the field and the doc it belongs to
