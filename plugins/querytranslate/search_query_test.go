@@ -17,7 +17,8 @@ func transformQuery(query map[string]interface{}) (string, error) {
 	if err2 != nil {
 		return "", err2
 	}
-	return translateQuery(body, "127.0.0.1")
+	q, _, err := translateQuery(body, "127.0.0.1", nil)
+	return q, err
 }
 
 func TestQueryWithValue(t *testing.T) {
