@@ -374,15 +374,24 @@ func TransformESResponse(response []byte, rsAPIRequest *RSQuery) ([]byte, error)
 
 	mockedRSResponse, _ := json.Marshal(ES_MOCKED_RESPONSE)
 	for _, query := range rsAPIRequest.Query {
-		if query.Type == Suggestion &&
-			query.EnableIndexSuggestions != nil &&
-			!*query.EnableIndexSuggestions {
-			// mock empty response for suggestions when index suggestions are disabled
-			rsResponseMocked, err := jsonparser.Set(rsResponse, mockedRSResponse, *query.ID)
-			rsResponse = rsResponseMocked
-			if err != nil {
-				log.Errorln(logTag, ":", err)
-				return nil, errors.New("error updating response :" + err.Error())
+		if query.Type == Suggestion {
+			// mock empty response for suggestions when index/endpoint suggestions are disabled
+			isSuggestionDisabled := false
+			if query.EnableIndexSuggestions != nil &&
+				!*query.EnableIndexSuggestions {
+				isSuggestionDisabled = true
+			}
+			if query.EnableEndpointSuggestions != nil &&
+				!*query.EnableEndpointSuggestions {
+				isSuggestionDisabled = true
+			}
+			if isSuggestionDisabled {
+				rsResponseMocked, err := jsonparser.Set(rsResponse, mockedRSResponse, *query.ID)
+				rsResponse = rsResponseMocked
+				if err != nil {
+					log.Errorln(logTag, ":", err)
+					return nil, errors.New("error updating response :" + err.Error())
+				}
 			}
 		}
 	}
@@ -448,6 +457,13 @@ func TransformESResponse(response []byte, rsAPIRequest *RSQuery) ([]byte, error)
 								for _, dataField := range normalizedFields {
 									normalizedDataFields = append(normalizedDataFields, dataField.Field)
 								}
+
+								// Parse the valueFields passed in indexSuggestionsConfig
+								var valueFields = []string{}
+								if query.IndexSuggestionsConfig != nil && query.IndexSuggestionsConfig.ValueFields != nil {
+									valueFields = *query.IndexSuggestionsConfig.ValueFields
+								}
+
 								suggestionsConfig := SuggestionsConfig{
 									// Fields to extract suggestions
 									DataFields: normalizedDataFields,
@@ -465,6 +481,7 @@ func TransformESResponse(response []byte, rsAPIRequest *RSQuery) ([]byte, error)
 									HighlightConfig:             query.HighlightConfig,
 									Language:                    query.SearchLanguage,
 									IndexSuggestionsConfig:      query.IndexSuggestionsConfig,
+									ValueFields:                 valueFields,
 								}
 
 								var rawHits []ESDoc

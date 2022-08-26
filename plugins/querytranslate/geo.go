@@ -16,76 +16,128 @@ type GeoValue struct {
 	BoundingBox *GeoBoundingBox
 }
 
-func (query *Query) getGeoValue() (*GeoValue, error) {
+// SolrGeoValue will contain the GeoValue similar to the
+// ES Geo value except that it will have the distance as a
+// float.
+type SolrGeoValue struct {
+	Distance    *float64
+	Unit        *string
+	Location    *string
+	BoundingBox *GeoBoundingBox
+}
+
+// getGeoValueWithoutDistance will extract the geo value without
+// extracting the distance field and will return the distance as
+// a float (parsed from the request) so that it can be parsed further
+// according to need
+//
+// In case of errors or boundingBox type of value, the distance value
+// parsed will be returned as 0.
+func (query *Query) getGeoValueWithoutDistance() (*GeoValue, float64, error) {
 	if query.Value == nil {
-		return nil, nil
+		return nil, 0, nil
 	}
 	value := *query.Value
 
 	mapValue, isValidValue := value.(map[string]interface{})
 	if !isValidValue {
-		return nil, errors.New("invalid geo value")
+		return nil, 0, errors.New("invalid geo value")
 	}
 	if mapValue["geoBoundingBox"] == nil {
 		if mapValue["distance"] == nil {
-			return nil, errors.New("invalid geo value, 'distance' field is missing")
+			return nil, 0, errors.New("invalid geo value, 'distance' field is missing")
 		}
 		if mapValue["unit"] == nil {
-			return nil, errors.New("invalid geo value, 'unit' field is missing")
+			return nil, 0, errors.New("invalid geo value, 'unit' field is missing")
 		}
 		if mapValue["location"] == nil {
-			return nil, errors.New("invalid geo value, 'location' field is missing")
+			return nil, 0, errors.New("invalid geo value, 'location' field is missing")
 		}
 		geoValue := GeoValue{}
 
-		distance, ok := mapValue["distance"].(float64)
-		if ok {
-			distanceAsInt := int(distance)
-			geoValue.Distance = &distanceAsInt
-		} else {
-			return nil, errors.New("invalid distance value in geo query")
+		distanceAsFloat, ok := mapValue["distance"].(float64)
+		if !ok {
+			return nil, 0, errors.New("error while parsing `value.distance` for geo type of query")
 		}
 
 		unit, ok := mapValue["unit"].(string)
 		if ok {
 			geoValue.Unit = &unit
 		} else {
-			return nil, errors.New("invalid unit value in geo query")
+			return nil, 0, errors.New("invalid unit value in geo query")
 		}
 
 		location, ok := mapValue["location"].(string)
 		if ok {
 			geoValue.Location = &location
 		} else {
-			return nil, errors.New("invalid location value in geo query")
+			return nil, 0, errors.New("invalid location value in geo query")
 		}
-		return &geoValue, nil
+		return &geoValue, distanceAsFloat, nil
 	}
 	geoBoundingBox, ok := mapValue["geoBoundingBox"].(map[string]interface{})
 	if !ok {
-		return nil, errors.New("invalid geo value, geoBoundingBox must be an object")
+		return nil, 0, errors.New("invalid geo value, geoBoundingBox must be an object")
 	}
 	if geoBoundingBox["topLeft"] == nil {
-		return nil, errors.New("invalid geo value, 'geoBoundingBox.topLeft' field is missing")
+		return nil, 0, errors.New("invalid geo value, 'geoBoundingBox.topLeft' field is missing")
 	}
 	if geoBoundingBox["bottomRight"] == nil {
-		return nil, errors.New("invalid geo value, 'geoBoundingBox.bottomRight' field is missing")
+		return nil, 0, errors.New("invalid geo value, 'geoBoundingBox.bottomRight' field is missing")
 	}
 	geoValue := GeoValue{}
 
 	topLeft, ok := geoBoundingBox["topLeft"].(string)
 	if !ok {
-		return nil, errors.New("invalid topLeft value in geo query")
+		return nil, 0, errors.New("invalid topLeft value in geo query")
 	}
 	bottomRight, ok := geoBoundingBox["bottomRight"].(string)
 	if !ok {
-		return nil, errors.New("invalid bottomRight value in geo query")
+		return nil, 0, errors.New("invalid bottomRight value in geo query")
 	}
 	geoValue.BoundingBox = &GeoBoundingBox{
 		TopLeft:     topLeft,
 		BottomRight: bottomRight,
 	}
-	return &geoValue, nil
+	return &geoValue, 0, nil
+}
+
+func (query *Query) getGeoValue() (*GeoValue, error) {
+	valueWithoutDistance, distanceParsed, parseErr := query.getGeoValueWithoutDistance()
+	if parseErr != nil || valueWithoutDistance == nil {
+		return valueWithoutDistance, parseErr
+	}
+
+	// If no error was thrown, parse the distance since it is
+	// required in ES as integer.
+	distanceAsInt := int(distanceParsed)
+	valueWithoutDistance.Distance = &distanceAsInt
+
+	return valueWithoutDistance, nil
+}
+
+// GetSolrGeoValue will parse the value passed as a geo value for
+// Solr and accordingly return it.
+func (query *Query) GetSolrGeoValue() (*SolrGeoValue, error) {
+	valueWithoutDistance, distanceParsed, parseErr := query.getGeoValueWithoutDistance()
+	if parseErr != nil {
+		return nil, parseErr
+	}
+
+	// We will need to convert the GeoValue to SolrGeoValue first
+	solrGeoValue := &SolrGeoValue{
+		Unit:        valueWithoutDistance.Unit,
+		Location:    valueWithoutDistance.Location,
+		BoundingBox: valueWithoutDistance.BoundingBox,
+		Distance:    &distanceParsed,
+	}
+
+	return solrGeoValue, nil
+}
+
+// GetGeoValue extracts the value into a GeoValue object
+func (query *Query) GetGeoValue() (*GeoValue, error) {
+	return query.getGeoValue()
 }
 
 func (query *Query) generateGeoQuery() (*interface{}, error) {

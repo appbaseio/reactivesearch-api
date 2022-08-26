@@ -181,7 +181,7 @@ func validateTimeValidity() bool {
 // BillingMiddleware function to be called for each request
 func BillingMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		log.Println("current time validity value: ", GetTimeValidity())
+		log.Infoln("current time validity value: ", GetTimeValidity())
 
 		if isInvalidArcIDUsed {
 			// throw invalid APPBASE_ID usage error

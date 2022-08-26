@@ -74,8 +74,8 @@ func TestPredictiveSuggestions(t *testing.T) {
 		}, &suggestions)
 		So(predictiveSuggestions, ShouldResemble, []SuggestionHIT{
 			{
-				Label: "tagore <b class=\"highlight\">hall</b>",
-				Value: "tagore hall",
+				Label: "<b class=\"highlight\">rabindranath</b> tagore <b class=\"highlight\">hall</b>",
+				Value: "rabindranath tagore hall",
 			},
 		})
 	})

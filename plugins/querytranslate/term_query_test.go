@@ -360,3 +360,76 @@ func TestMultiListWithSortByCount(t *testing.T) {
 `)
 	})
 }
+
+func TestPivotFacets(t *testing.T) {
+	convey.Convey("pivot facets: aggs query", t, func() {
+		query := map[string]interface{}{
+			"query": []map[string]interface{}{
+				{
+					"id":        "BookSensor",
+					"size":      10,
+					"dataField": []string{"class.keyword", "subClass.keyword"},
+					"type":      "term",
+					"sortBy":    "count",
+				},
+			},
+		}
+		transformedQuery, err := transformQuery(query)
+		if err != nil {
+			t.Fatalf("Test Failed %v instead\n", err)
+		}
+		convey.So(transformedQuery, convey.ShouldResemble, "{\"preference\":\"BookSensor_127.0.0.1\"}\n{\"_source\":{\"excludes\":[],\"includes\":[\"*\"]},\"aggs\":{\"class.keyword\":{\"aggs\":{\"subClass.keyword\":{\"terms\":{\"field\":\"subClass.keyword\",\"order\":{\"_count\":\"desc\"},\"size\":10}}},\"terms\":{\"field\":\"class.keyword\",\"order\":{\"_count\":\"desc\"},\"size\":10}}},\"query\":{\"match_all\":{}},\"size\":10}\n")
+	})
+	convey.Convey("pivot facets: results query with queryFormat as or", t, func() {
+		query := map[string]interface{}{
+			"query": []map[string]interface{}{
+				{
+					"id":          "BookSensor",
+					"size":        10,
+					"dataField":   []string{"class.keyword", "subClass.keyword"},
+					"type":        "term",
+					"value":       []string{"COMPACT DISC > VINYL"},
+					"execute":     false,
+					"queryFormat": "or",
+				},
+				{
+					"id": "Results",
+					"react": map[string]interface{}{
+						"and": "BookSensor",
+					},
+				},
+			},
+		}
+		transformedQuery, err := transformQuery(query)
+		if err != nil {
+			t.Fatalf("Test Failed %v instead\n", err)
+		}
+		convey.So(transformedQuery, convey.ShouldResemble, "{\"preference\":\"Results_127.0.0.1\"}\n{\"_source\":{\"excludes\":[],\"includes\":[\"*\"]},\"query\":{\"bool\":{\"must\":[{\"bool\":{\"must\":{\"bool\":{\"should\":[{\"bool\":{\"must\":[{\"term\":{\"class.keyword\":\"COMPACT DISC\"}},{\"term\":{\"subClass.keyword\":\"VINYL\"}}]}}]}}}}]}}}\n")
+	})
+	convey.Convey("pivot facets: results query with queryFormat as and", t, func() {
+		query := map[string]interface{}{
+			"query": []map[string]interface{}{
+				{
+					"id":          "BookSensor",
+					"size":        10,
+					"dataField":   []string{"class.keyword", "subClass.keyword"},
+					"type":        "term",
+					"value":       []string{"COMPACT DISC > VINYL"},
+					"execute":     false,
+					"queryFormat": "and",
+				},
+				{
+					"id": "Results",
+					"react": map[string]interface{}{
+						"and": "BookSensor",
+					},
+				},
+			},
+		}
+		transformedQuery, err := transformQuery(query)
+		if err != nil {
+			t.Fatalf("Test Failed %v instead\n", err)
+		}
+		convey.So(transformedQuery, convey.ShouldResemble, "{\"preference\":\"Results_127.0.0.1\"}\n{\"_source\":{\"excludes\":[],\"includes\":[\"*\"]},\"query\":{\"bool\":{\"must\":[{\"bool\":{\"must\":{\"bool\":{\"must\":[{\"bool\":{\"must\":[{\"term\":{\"class.keyword\":\"COMPACT DISC\"}},{\"term\":{\"subClass.keyword\":\"VINYL\"}}]}}]}}}}]}}}\n")
+	})
+}
