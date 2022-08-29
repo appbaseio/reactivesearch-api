@@ -14,7 +14,7 @@ import (
 	es6 "gopkg.in/olivere/elastic.v6"
 )
 
-var version int
+var version int = 7
 var semanticVersion string
 
 var (
@@ -226,7 +226,7 @@ func NewClient() {
 		// Initialize the ES v6 client
 		// initClient6()
 		// Get the ES version
-		GetVersion()
+		// GetVersion()
 
 		log.Println("clients instantiated, elastic search version is", version)
 	})
