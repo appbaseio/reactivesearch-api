@@ -200,6 +200,8 @@ func initClient7() {
 		if err != nil {
 			log.Fatal("Error encountered while initializing internal ES client: ", err)
 		}
+
+		return
 	}
 
 	client7, err = es7.NewClient(
@@ -222,7 +224,7 @@ func NewClient() {
 		// Initialize the ES v7 client
 		initClient7()
 		// Initialize the ES v6 client
-		initClient6()
+		// initClient6()
 		// Get the ES version
 		GetVersion()
 
