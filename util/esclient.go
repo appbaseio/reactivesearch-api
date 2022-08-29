@@ -200,8 +200,6 @@ func initClient7() {
 		if err != nil {
 			log.Fatal("Error encountered while initializing internal ES client: ", err)
 		}
-
-		return
 	}
 
 	client7, err = es7.NewClient(
