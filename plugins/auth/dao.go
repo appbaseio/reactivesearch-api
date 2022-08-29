@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 
+	es7 "github.com/olivere/elastic/v7"
 	log "github.com/sirupsen/logrus"
 
 	"github.com/appbaseio/reactivesearch-api/model/credential"
@@ -39,7 +40,7 @@ func (es *elasticsearch) createIndex(indexName, mapping string) (bool, error) {
 	ctx := context.Background()
 
 	// Check if the index already exists
-	exists, err := util.GetClient7().IndexExists(indexName).
+	exists, err := util.GetInternalClient7().IndexExists(indexName).
 		Do(ctx)
 	if err != nil {
 		return false, fmt.Errorf("%s: error while checking if index already exists: %v",
@@ -54,7 +55,7 @@ func (es *elasticsearch) createIndex(indexName, mapping string) (bool, error) {
 
 	settings := fmt.Sprintf(mapping, util.HiddenIndexSettings(), replicas)
 	// Meta index does not exists, create a new one
-	_, err = util.GetClient7().CreateIndex(indexName).
+	_, err = util.GetInternalClient7().CreateIndex(indexName).
 		Body(settings).
 		Do(ctx)
 	if err != nil {
@@ -68,12 +69,14 @@ func (es *elasticsearch) createIndex(indexName, mapping string) (bool, error) {
 
 // Create or update the public key
 func (es *elasticsearch) savePublicKey(ctx context.Context, indexName string, record publicKey) (interface{}, error) {
-	_, err := util.GetClient7().
+	indexRequest := util.GetInternalClient7().
 		Index().
 		Index(indexName).
 		BodyJson(record).
-		Id(publicKeyDocID).
-		Do(ctx)
+		Id(publicKeyDocID)
+
+	_, err := util.IndexRequestDo(indexRequest, record, ctx)
+
 	if err != nil {
 		log.Errorln(logTag, ": error indexing public key record", err)
 		return false, err
@@ -106,12 +109,14 @@ func (es *elasticsearch) getCredential(ctx context.Context, username string) (cr
 }
 
 func (es *elasticsearch) putUser(ctx context.Context, u user.User) (bool, error) {
-	_, err := util.GetClient7().Index().
+	indexRequest := util.GetInternalClient7().Index().
 		Index(es.userIndex).
 		Type(es.userType).
 		Id(u.Username).
-		BodyJson(u).
-		Do(ctx)
+		BodyJson(u)
+
+	_, err := util.IndexRequestDo(indexRequest, u, ctx)
+
 	if err != nil {
 		return false, err
 	}
@@ -133,15 +138,24 @@ func (es *elasticsearch) getUser(ctx context.Context, username string) (*user.Us
 }
 
 func (es *elasticsearch) getRawUser(ctx context.Context, username string) ([]byte, error) {
-	data, err := util.GetClient7().Get().
+	searchQuery := es7.NewTermQuery("_id", username)
+	searchRequest := util.GetInternalClient7().Search().
 		Index(es.userIndex).
 		Type(es.userType).
-		Id(username).
-		FetchSource(true).
-		Do(ctx)
+		FetchSource(true).Query(searchQuery)
+
+	response, err := util.SearchRequestDo(searchRequest, ctx)
+
 	if err != nil {
 		return nil, err
 	}
+
+	if len(response.Hits.Hits) < 1 {
+		return nil, fmt.Errorf("no username found for: %s", username)
+	}
+
+	data := response.Hits.Hits[0]
+
 	src, err := data.Source.MarshalJSON()
 	if err != nil {
 		return nil, err
@@ -151,12 +165,14 @@ func (es *elasticsearch) getRawUser(ctx context.Context, username string) ([]byt
 }
 
 func (es *elasticsearch) putPermission(ctx context.Context, p permission.Permission) (bool, error) {
-	_, err := util.GetClient7().Index().
+	indexRequest := util.GetInternalClient7().Index().
 		Index(es.permissionIndex).
 		Type(es.permissionType).
 		Id(p.Username).
-		BodyJson(p).
-		Do(ctx)
+		BodyJson(p)
+
+	_, err := util.IndexRequestDo(indexRequest, p, ctx)
+
 	if err != nil {
 		return false, err
 	}
@@ -180,15 +196,24 @@ func (es *elasticsearch) getPermission(ctx context.Context, username string) (*p
 }
 
 func (es *elasticsearch) getRawPermission(ctx context.Context, username string) ([]byte, error) {
-	resp, err := util.GetClient7().Get().
+	searchQuery := es7.NewTermQuery("_id", username)
+	searchRequest := util.GetInternalClient7().Search().
 		Index(es.permissionIndex).
 		Type(es.permissionType).
-		Id(username).
 		FetchSource(true).
-		Do(ctx)
+		Query(searchQuery)
+
+	response, err := util.SearchRequestDo(searchRequest, ctx)
+
 	if err != nil {
 		return nil, err
 	}
+
+	if len(response.Hits.Hits) < 1 {
+		return nil, fmt.Errorf("no username found for: %s", username)
+	}
+
+	resp := response.Hits.Hits[0]
 
 	src, err := resp.Source.MarshalJSON()
 	if err != nil {
