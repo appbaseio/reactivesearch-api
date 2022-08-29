@@ -457,6 +457,13 @@ func TransformESResponse(response []byte, rsAPIRequest *RSQuery) ([]byte, error)
 								for _, dataField := range normalizedFields {
 									normalizedDataFields = append(normalizedDataFields, dataField.Field)
 								}
+
+								// Parse the valueFields passed in indexSuggestionsConfig
+								var valueFields = []string{}
+								if query.IndexSuggestionsConfig != nil && query.IndexSuggestionsConfig.ValueFields != nil {
+									valueFields = *query.IndexSuggestionsConfig.ValueFields
+								}
+
 								suggestionsConfig := SuggestionsConfig{
 									// Fields to extract suggestions
 									DataFields: normalizedDataFields,
@@ -474,6 +481,7 @@ func TransformESResponse(response []byte, rsAPIRequest *RSQuery) ([]byte, error)
 									HighlightConfig:             query.HighlightConfig,
 									Language:                    query.SearchLanguage,
 									IndexSuggestionsConfig:      query.IndexSuggestionsConfig,
+									ValueFields:                 valueFields,
 								}
 
 								var rawHits []ESDoc
