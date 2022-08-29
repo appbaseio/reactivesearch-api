@@ -121,7 +121,13 @@ func GetVersion() int {
 func GetSemanticVersion() string {
 	// Get the version if not present
 	if semanticVersion == "" {
-		esVersion, err := GetInternalClient7().ElasticsearchVersion(GetESURL())
+
+		esURLToUse := GetInternalESURL()
+		if ExternalElasticsearch == "true" {
+			esURLToUse = GetESURL()
+		}
+
+		esVersion, err := GetInternalClient7().ElasticsearchVersion(esURLToUse)
 		if err != nil {
 			log.Fatal("Error encountered: ", fmt.Errorf("error while retrieving the elastic version: %v", err))
 		} else {
