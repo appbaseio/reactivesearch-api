@@ -927,7 +927,7 @@ func isNilInterface(c interface{}) bool {
 
 // Makes the elasticsearch requests
 func makeESRequest(ctx context.Context, url, method string, reqBody []byte) (*es7.Response, error) {
-	esClient := util.GetInternalClient7()
+	esClient := util.GetClient7()
 	requestOptions := es7.PerformRequestOptions{
 		Method: method,
 		Path:   url,

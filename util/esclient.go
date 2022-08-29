@@ -14,7 +14,7 @@ import (
 	es6 "gopkg.in/olivere/elastic.v6"
 )
 
-var version int = 7
+var version int
 var semanticVersion string
 
 var (
@@ -96,13 +96,7 @@ func GetInternalESURL() string {
 func GetVersion() int {
 	// Get the version if not present
 	if version == 0 {
-
-		esURLToHit := GetInternalESURL()
-		if ExternalElasticsearch == "true" {
-			esURLToHit = GetESURL()
-		}
-
-		esVersion, err := client7.ElasticsearchVersion(esURLToHit)
+		esVersion, err := client7.ElasticsearchVersion(GetESURL())
 		if err != nil {
 			log.Fatal("Error encountered: ", fmt.Errorf("error while retrieving the elastic version: %v", err))
 		}
@@ -121,13 +115,7 @@ func GetVersion() int {
 func GetSemanticVersion() string {
 	// Get the version if not present
 	if semanticVersion == "" {
-
-		esURLToUse := GetInternalESURL()
-		if ExternalElasticsearch == "true" {
-			esURLToUse = GetESURL()
-		}
-
-		esVersion, err := GetInternalClient7().ElasticsearchVersion(esURLToUse)
+		esVersion, err := client7.ElasticsearchVersion(GetESURL())
 		if err != nil {
 			log.Fatal("Error encountered: ", fmt.Errorf("error while retrieving the elastic version: %v", err))
 		} else {
@@ -237,11 +225,8 @@ func NewClient() {
 		initClient7()
 		// Initialize the ES v6 client
 		// initClient6()
-
 		// Get the ES version
-		if ExternalElasticsearch == "true" {
-			GetVersion()
-		}
+		GetVersion()
 
 		log.Println("clients instantiated, elastic search version is", version)
 	})
