@@ -17,13 +17,18 @@ import (
 
 func (es *elasticsearch) getPublicKeyEs7(ctx context.Context, publicKeyIndex, publicKeyDocID string) (publicKey, error) {
 	var record = publicKey{}
-	response, err := util.GetClient7().Get().
-		Index(publicKeyIndex).
-		Id(publicKeyDocID).
-		Do(ctx)
-	if response == nil {
+
+	searchQuery := es7.NewTermQuery("_id", publicKeyDocID)
+	searchRequest := util.GetInternalClient7().Search().
+		Index(publicKeyIndex).Query(searchQuery)
+
+	resp, err := util.SearchRequestDo(searchRequest, ctx)
+	if len(resp.Hits.Hits) < 1 {
 		return record, errors.New("public key record not found")
 	}
+
+	response := resp.Hits.Hits[0]
+
 	err = json.Unmarshal(response.Source, &record)
 	if err != nil {
 		log.Errorln(logTag, ": error retrieving publickey record", err)
@@ -35,11 +40,13 @@ func (es *elasticsearch) getPublicKeyEs7(ctx context.Context, publicKeyIndex, pu
 func (es *elasticsearch) getCredentialEs7(ctx context.Context, username string) (credential.AuthCredential, error) {
 	matchUsername := es7.NewTermQuery("username.keyword", username)
 
-	response, err := util.GetClient7().Search().
+	searchRequest := util.GetInternalClient7().Search().
 		Index(es.userIndex, es.permissionIndex).
 		Query(matchUsername).
-		FetchSource(true).
-		Do(ctx)
+		FetchSource(true)
+
+	response, err := util.SearchRequestDo(searchRequest, ctx)
+
 	if err != nil {
 		return nil, err
 	}
@@ -81,13 +88,15 @@ func (es *elasticsearch) getCredentialEs7(ctx context.Context, username string) 
 }
 
 func (es *elasticsearch) getRawRolePermissionEs7(ctx context.Context, role string) ([]byte, error) {
-	resp, err := util.GetClient7().Search().
+	searchRequest := util.GetInternalClient7().Search().
 		Index(es.permissionIndex).
 		Type(es.permissionType).
 		Query(es7.NewTermQuery("role.keyword", role)).
 		Size(1).
-		FetchSource(true).
-		Do(ctx)
+		FetchSource(true)
+
+	resp, err := util.SearchRequestDo(searchRequest, ctx)
+
 	if err != nil {
 		return nil, err
 	}
