@@ -89,7 +89,7 @@ func IndexRequestDo(requestAsService *es7.IndexService, originalBody interface{}
 //
 // This method should be called whenever a search request is made
 // to ES through olivere/elasticsearch library.
-func SearchRequestDo(requestAsService *es7.SearchService, ctx context.Context) (*es7.SearchResult, error) {
+func SearchRequestDo(requestAsService *es7.SearchService, searchQuery es7.Query, ctx context.Context) (*es7.SearchResult, error) {
 	// There is no need to add tenant ID if the request is being
 	// made to an external ES so we can just do a normal
 	// search Do and return the response.
@@ -105,7 +105,13 @@ func SearchRequestDo(requestAsService *es7.SearchService, ctx context.Context) (
 	}
 
 	termQueryTenantId := es7.NewTermQuery("tenant_id", tenantId)
-	tenantIdFilterQuery := es7.NewBoolQuery().Filter(termQueryTenantId)
+
+	queriesToPass := []es7.Query{termQueryTenantId}
+	if searchQuery != nil {
+		queriesToPass = append(queriesToPass, searchQuery)
+	}
+
+	tenantIdFilterQuery := es7.NewBoolQuery().Filter(queriesToPass...)
 
 	esResponse, esResponseErr := requestAsService.Query(tenantIdFilterQuery).Do(ctx)
 

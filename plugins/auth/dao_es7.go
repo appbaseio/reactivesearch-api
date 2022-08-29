@@ -22,7 +22,7 @@ func (es *elasticsearch) getPublicKeyEs7(ctx context.Context, publicKeyIndex, pu
 	searchRequest := util.GetInternalClient7().Search().
 		Index(publicKeyIndex).Query(searchQuery)
 
-	resp, err := util.SearchRequestDo(searchRequest, ctx)
+	resp, err := util.SearchRequestDo(searchRequest, searchQuery, ctx)
 	if len(resp.Hits.Hits) < 1 {
 		return record, errors.New("public key record not found")
 	}
@@ -45,7 +45,7 @@ func (es *elasticsearch) getCredentialEs7(ctx context.Context, username string) 
 		Query(matchUsername).
 		FetchSource(true)
 
-	response, err := util.SearchRequestDo(searchRequest, ctx)
+	response, err := util.SearchRequestDo(searchRequest, matchUsername, ctx)
 
 	if err != nil {
 		return nil, err
@@ -95,7 +95,7 @@ func (es *elasticsearch) getRawRolePermissionEs7(ctx context.Context, role strin
 		Size(1).
 		FetchSource(true)
 
-	resp, err := util.SearchRequestDo(searchRequest, ctx)
+	resp, err := util.SearchRequestDo(searchRequest, es7.NewTermQuery("role.keyword", role), ctx)
 
 	if err != nil {
 		return nil, err

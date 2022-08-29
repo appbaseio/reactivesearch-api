@@ -144,7 +144,7 @@ func (es *elasticsearch) getRawUser(ctx context.Context, username string) ([]byt
 		Type(es.userType).
 		FetchSource(true).Query(searchQuery)
 
-	response, err := util.SearchRequestDo(searchRequest, ctx)
+	response, err := util.SearchRequestDo(searchRequest, searchQuery, ctx)
 
 	if err != nil {
 		return nil, err
@@ -203,7 +203,7 @@ func (es *elasticsearch) getRawPermission(ctx context.Context, username string) 
 		FetchSource(true).
 		Query(searchQuery)
 
-	response, err := util.SearchRequestDo(searchRequest, ctx)
+	response, err := util.SearchRequestDo(searchRequest, searchQuery, ctx)
 
 	if err != nil {
 		return nil, err

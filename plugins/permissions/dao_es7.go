@@ -14,7 +14,7 @@ func (es *elasticsearch) checkRoleExistsEs7(ctx context.Context, role string) (b
 		Index(es.indexName).
 		Query(es7.NewTermQuery("role", role))
 
-	resp, err := util.SearchRequestDo(searchRequest, ctx)
+	resp, err := util.SearchRequestDo(searchRequest, es7.NewTermQuery("role", role), ctx)
 	if err != nil {
 		return false, err
 	}
@@ -29,7 +29,7 @@ func (es *elasticsearch) getRawRolePermissionEs7(ctx context.Context, role strin
 		Size(1).
 		FetchSource(true)
 
-	resp, err := util.SearchRequestDo(searchRequest, ctx)
+	resp, err := util.SearchRequestDo(searchRequest, es7.NewTermQuery("role", role), ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -48,7 +48,7 @@ func (es *elasticsearch) getRawOwnerPermissionsEs7(ctx context.Context, owner st
 		Query(es7.NewTermQuery("owner.keyword", owner)).
 		Size(10000)
 
-	resp, err := util.SearchRequestDo(searchRequest, ctx)
+	resp, err := util.SearchRequestDo(searchRequest, es7.NewTermQuery("owner.keyword", owner), ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -78,7 +78,7 @@ func (es *elasticsearch) getPermissionsEs7(ctx context.Context, indices []string
 		Query(query).
 		Size(10000)
 
-	resp, err := util.SearchRequestDo(searchRequest, ctx)
+	resp, err := util.SearchRequestDo(searchRequest, query, ctx)
 
 	if err != nil {
 		return nil, err
@@ -109,7 +109,7 @@ func (es *elasticsearch) getRawPermissionEs7(ctx context.Context, username strin
 	usernameTermQuery := es7.NewTermQuery("_id", username)
 	searchRequest := util.GetInternalClient7().Search().Index(es.indexName).Query(usernameTermQuery).FetchSource(true).Size(1)
 
-	response, err := util.SearchRequestDo(searchRequest, ctx)
+	response, err := util.SearchRequestDo(searchRequest, usernameTermQuery, ctx)
 
 	if err != nil {
 		return nil, err

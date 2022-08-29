@@ -14,7 +14,7 @@ func (es *elasticsearch) getRawUsersEs7(ctx context.Context) ([]byte, error) {
 		Index(es.indexName).
 		Size(1000)
 
-	response, err := util.SearchRequestDo(searchRequest, ctx)
+	response, err := util.SearchRequestDo(searchRequest, nil, ctx)
 
 	if err != nil {
 		return nil, err
@@ -56,7 +56,7 @@ func (es *elasticsearch) getRawUserEs7(ctx context.Context, username string) ([]
 
 	searchRequest := util.GetInternalClient7().Search().Index(es.indexName).Query(usernameTermQuery).FetchSource(true).Size(1)
 
-	response, err := util.SearchRequestDo(searchRequest, ctx)
+	response, err := util.SearchRequestDo(searchRequest, usernameTermQuery, ctx)
 
 	if err != nil {
 		return nil, err
