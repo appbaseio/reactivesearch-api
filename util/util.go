@@ -333,10 +333,10 @@ func MakeRequestWithHeader(url, method string, reqBody []byte, headers http.Head
 }
 
 func CheckIfIndexExists(ctx context.Context, indexName string) bool {
-	exists, err := GetClient7().IndexExists(indexName).Do(ctx)
+	exists, err := GetInternalClient7().IndexExists(indexName).Do(ctx)
 
 	if err != nil {
-		aliases, err := GetClient7().CatAliases().Pretty(true).Do(ctx)
+		aliases, err := GetInternalClient7().CatAliases().Pretty(true).Do(ctx)
 
 		if err != nil {
 			return false

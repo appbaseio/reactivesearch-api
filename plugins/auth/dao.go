@@ -39,7 +39,7 @@ func (es *elasticsearch) createIndex(indexName, mapping string) (bool, error) {
 	ctx := context.Background()
 
 	// Check if the index already exists
-	exists, err := util.GetClient7().IndexExists(indexName).
+	exists, err := util.GetInternalClient7().IndexExists(indexName).
 		Do(ctx)
 	if err != nil {
 		return false, fmt.Errorf("%s: error while checking if index already exists: %v",
@@ -54,7 +54,7 @@ func (es *elasticsearch) createIndex(indexName, mapping string) (bool, error) {
 
 	settings := fmt.Sprintf(mapping, util.HiddenIndexSettings(), replicas)
 	// Meta index does not exists, create a new one
-	_, err = util.GetClient7().CreateIndex(indexName).
+	_, err = util.GetInternalClient7().CreateIndex(indexName).
 		Body(settings).
 		Do(ctx)
 	if err != nil {
@@ -68,7 +68,7 @@ func (es *elasticsearch) createIndex(indexName, mapping string) (bool, error) {
 
 // Create or update the public key
 func (es *elasticsearch) savePublicKey(ctx context.Context, indexName string, record publicKey) (interface{}, error) {
-	_, err := util.GetClient7().
+	_, err := util.GetInternalClient7().
 		Index().
 		Index(indexName).
 		BodyJson(record).
@@ -106,7 +106,7 @@ func (es *elasticsearch) getCredential(ctx context.Context, username string) (cr
 }
 
 func (es *elasticsearch) putUser(ctx context.Context, u user.User) (bool, error) {
-	_, err := util.GetClient7().Index().
+	_, err := util.GetInternalClient7().Index().
 		Index(es.userIndex).
 		Type(es.userType).
 		Id(u.Username).
@@ -133,7 +133,7 @@ func (es *elasticsearch) getUser(ctx context.Context, username string) (*user.Us
 }
 
 func (es *elasticsearch) getRawUser(ctx context.Context, username string) ([]byte, error) {
-	data, err := util.GetClient7().Get().
+	data, err := util.GetInternalClient7().Get().
 		Index(es.userIndex).
 		Type(es.userType).
 		Id(username).
@@ -151,7 +151,7 @@ func (es *elasticsearch) getRawUser(ctx context.Context, username string) ([]byt
 }
 
 func (es *elasticsearch) putPermission(ctx context.Context, p permission.Permission) (bool, error) {
-	_, err := util.GetClient7().Index().
+	_, err := util.GetInternalClient7().Index().
 		Index(es.permissionIndex).
 		Type(es.permissionType).
 		Id(p.Username).
@@ -180,7 +180,7 @@ func (es *elasticsearch) getPermission(ctx context.Context, username string) (*p
 }
 
 func (es *elasticsearch) getRawPermission(ctx context.Context, username string) ([]byte, error) {
-	resp, err := util.GetClient7().Get().
+	resp, err := util.GetInternalClient7().Get().
 		Index(es.permissionIndex).
 		Type(es.permissionType).
 		Id(username).

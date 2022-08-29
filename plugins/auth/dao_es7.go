@@ -17,7 +17,7 @@ import (
 
 func (es *elasticsearch) getPublicKeyEs7(ctx context.Context, publicKeyIndex, publicKeyDocID string) (publicKey, error) {
 	var record = publicKey{}
-	response, err := util.GetClient7().Get().
+	response, err := util.GetInternalClient7().Get().
 		Index(publicKeyIndex).
 		Id(publicKeyDocID).
 		Do(ctx)
@@ -35,7 +35,7 @@ func (es *elasticsearch) getPublicKeyEs7(ctx context.Context, publicKeyIndex, pu
 func (es *elasticsearch) getCredentialEs7(ctx context.Context, username string) (credential.AuthCredential, error) {
 	matchUsername := es7.NewTermQuery("username.keyword", username)
 
-	response, err := util.GetClient7().Search().
+	response, err := util.GetInternalClient7().Search().
 		Index(es.userIndex, es.permissionIndex).
 		Query(matchUsername).
 		FetchSource(true).
@@ -81,7 +81,7 @@ func (es *elasticsearch) getCredentialEs7(ctx context.Context, username string) 
 }
 
 func (es *elasticsearch) getRawRolePermissionEs7(ctx context.Context, role string) ([]byte, error) {
-	resp, err := util.GetClient7().Search().
+	resp, err := util.GetInternalClient7().Search().
 		Index(es.permissionIndex).
 		Type(es.permissionType).
 		Query(es7.NewTermQuery("role.keyword", role)).
