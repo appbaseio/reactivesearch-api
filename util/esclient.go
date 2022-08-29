@@ -225,8 +225,11 @@ func NewClient() {
 		initClient7()
 		// Initialize the ES v6 client
 		// initClient6()
+
 		// Get the ES version
-		// GetVersion()
+		if ExternalElasticsearch == "true" {
+			GetVersion()
+		}
 
 		log.Println("clients instantiated, elastic search version is", version)
 	})
