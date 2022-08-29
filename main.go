@@ -607,7 +607,7 @@ func syncPluginCache() {
 	indexToSearch := strings.Join(indices, ",")
 	// TODO: Handle es6
 	// Fetch ES response
-	response, err := util.GetClient7().
+	response, err := util.GetInternalClient7().
 		Search(indexToSearch).
 		Size(10000).
 		Do(context.Background())

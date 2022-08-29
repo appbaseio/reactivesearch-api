@@ -198,12 +198,12 @@ func SetDefaultIndexTemplate() error {
 			"priority": 10
 		}`, settings, mappings)
 
-		_, indexTemplateErr := GetClient7().IndexPutIndexTemplate("rs_api_user_template_v2").BodyString(defaultSettingIndex).Do(context.Background())
+		_, indexTemplateErr := GetInternalClient7().IndexPutIndexTemplate("rs_api_user_template_v2").BodyString(defaultSettingIndex).Do(context.Background())
 		if indexTemplateErr != nil {
 			// Try to create the template using IndexPutTemplate since Index template is
 			// supported from v7.8
 			log.Debug(fmt.Sprintf("Creating Index Template failed with error: %s, trying to create legacy template", indexTemplateErr))
-			_, err := GetClient7().IndexPutTemplate("rs_api_user_template_v2").BodyString(defaultSettingLegacy).Do(context.Background())
+			_, err := GetInternalClient7().IndexPutTemplate("rs_api_user_template_v2").BodyString(defaultSettingLegacy).Do(context.Background())
 
 			if err != nil {
 				log.Errorln("[SET USER INDEX TEMPLATE ERROR V7]", ": ", err)
@@ -306,12 +306,12 @@ func SetSystemIndexTemplate() error {
 			"priority": 100
 		}`, settings, mappings)
 
-		_, indexTemplateErr := GetClient7().IndexPutIndexTemplate("rs_api_system_template_v2").BodyString(defaultSettingIndex).Do(context.Background())
+		_, indexTemplateErr := GetInternalClient7().IndexPutIndexTemplate("rs_api_system_template_v2").BodyString(defaultSettingIndex).Do(context.Background())
 		if indexTemplateErr != nil {
 			// Try to create the template using IndexPutTemplate since Index template is
 			// supported from v7.8
 			log.Debug(fmt.Sprintf("Creating Index Template failed with error: %s, trying to create legacy template", indexTemplateErr))
-			_, err := GetClient7().IndexPutTemplate("rs_api_system_template_v2").BodyString(defaultSettingLegacy).Do(context.Background())
+			_, err := GetInternalClient7().IndexPutTemplate("rs_api_system_template_v2").BodyString(defaultSettingLegacy).Do(context.Background())
 
 			if err != nil {
 				log.Errorln("[SET SYSTEM INDEX TEMPLATE ERROR V7]", ": ", err)
