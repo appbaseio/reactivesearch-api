@@ -99,6 +99,7 @@ type ClusterPlan struct {
 	NumberOfMachines       int64  `json:"number_of_machines"`
 	SubscriptionCanceled   bool   `json:"subscription_canceled"`
 	CreatedAt              int64  `json:"created_at"`
+	Backend                string `json:"backend"`
 }
 
 // ArcUsageResponse stores the response from ACCAPI
@@ -149,6 +150,7 @@ type ArcInstanceDetails struct {
 	FeaturePipelines       bool                   `json:"feature_pipelines"`
 	ClusterID              string                 `json:"cluster_id"`
 	NumberOfMachines       int64                  `json:"number_of_machines"`
+	Backend                string                 `json:"backend"`
 }
 
 // SetDefaultTier sets the default tier when billing is disabled
