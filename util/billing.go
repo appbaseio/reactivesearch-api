@@ -656,5 +656,6 @@ func BillingBlacklistedPaths() []string {
 		"/arc/plan",
 		"/arc/health",
 		"/arc/_health",
+		"/reactivesearch/endpoints",
 	}
 }
