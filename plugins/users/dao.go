@@ -149,22 +149,6 @@ func (es *elasticsearch) getUser(ctx context.Context, username string) (*user.Us
 	return &u, nil
 }
 
-// getUserID will fetch the ID of the document for the username passed
-func (es *elasticsearch) getUserID(ctx context.Context, username string) (string, error) {
-	raw, err := es.getRawUser(ctx, username)
-	if err != nil {
-		return "", err
-	}
-
-	source := make(map[string]interface{})
-	unmarshallErr := json.Unmarshal(raw, &source)
-	if unmarshallErr != nil {
-		return "", unmarshallErr
-	}
-
-	return source["_id"].(string), nil
-}
-
 func (es *elasticsearch) getRawUsers(ctx context.Context) ([]byte, error) {
 	return es.getRawUsersEs7(ctx)
 }
@@ -174,6 +158,13 @@ func (es *elasticsearch) getRawUser(ctx context.Context, username string) ([]byt
 }
 
 func (es *elasticsearch) postUser(ctx context.Context, u user.User) (bool, error) {
+	// Check if the username already exists, if so, then return
+	// false.
+	olderUserID, _ := es.getUserID(ctx, u.Username)
+	if olderUserID != "" {
+		return false, nil
+	}
+
 	// Create an Unique ID
 	userID := uuid.New().String()
 
@@ -208,7 +199,7 @@ func (es *elasticsearch) deleteUser(ctx context.Context, username string) (bool,
 		Index(es.indexName).
 		Id(userID)
 
-	_, err := util.DeleteRequestDo(deleteRequest, ctx, username, es.indexName)
+	_, err := util.DeleteRequestDo(deleteRequest, ctx, userID, es.indexName)
 
 	if err != nil {
 		return false, err

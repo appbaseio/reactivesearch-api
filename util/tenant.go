@@ -202,7 +202,7 @@ func DeleteRequestDo(requestAsService interface{}, ctx context.Context, id inter
 		// Create a filter query based on the ID
 		filterByIdQuery := es7.NewMatchQuery("_id", id)
 
-		deleteByQuery = GetClient7().DeleteByQuery().Index(index).Query(filterByIdQuery)
+		deleteByQuery = GetInternalClient7().DeleteByQuery().Index(index).Query(filterByIdQuery)
 	default:
 		return nil, fmt.Errorf("invalid type passed for DeleteRequestDo: %v", requestType)
 	}
