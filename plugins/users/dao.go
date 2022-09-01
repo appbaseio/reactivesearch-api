@@ -199,7 +199,7 @@ func (es *elasticsearch) deleteUser(ctx context.Context, username string) (bool,
 		Index(es.indexName).
 		Id(userID)
 
-	_, err := util.DeleteRequestDo(deleteRequest, ctx, userID, es.indexName)
+	_, err := util.DeleteRequestDo(deleteRequest, ctx, nil, userID, es.indexName)
 
 	if err != nil {
 		return false, err

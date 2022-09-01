@@ -170,10 +170,12 @@ func SearchRequestDo(requestAsService *es7.SearchService, searchQuery es7.Query,
 //
 // This method should be called whenever a delete request is
 // made to ES and tenant related methods were used to index.
-func DeleteRequestDo(requestAsService interface{}, ctx context.Context, id interface{}, index string) (interface{}, error) {
+func DeleteRequestDo(requestAsService interface{}, ctx context.Context, deleteQuery es7.Query, id interface{}, index string) (interface{}, error) {
 
 	// Define a variable of DeleteByQueryService to use finally
 	var deleteByQuery *es7.DeleteByQueryService
+
+	queriesToFilterOn := make([]es7.Query, 0)
 
 	// The `requestAsService` will only support either
 	// DeleteByQueryService or DeleteService.
@@ -183,6 +185,14 @@ func DeleteRequestDo(requestAsService interface{}, ctx context.Context, id inter
 		if ExternalElasticsearch == "true" {
 			return requestAsType.Do(ctx)
 		}
+
+		// If type is deleteByQuery then we want the query to be
+		// passed to us.
+		if deleteQuery == nil {
+			return nil, fmt.Errorf("`deleteQuery` is a required parameter for DeleteByQueryService type.")
+		}
+
+		queriesToFilterOn = append(queriesToFilterOn, deleteQuery)
 
 		// Else pass it as is to deleteByQuery
 		deleteByQuery = requestAsType
@@ -201,8 +211,9 @@ func DeleteRequestDo(requestAsService interface{}, ctx context.Context, id inter
 		// Else convert it to DeleteByQueryService
 		// Create a filter query based on the ID
 		filterByIdQuery := es7.NewMatchQuery("_id", id)
+		queriesToFilterOn = append(queriesToFilterOn, filterByIdQuery)
 
-		deleteByQuery = GetInternalClient7().DeleteByQuery().Index(index).Query(filterByIdQuery)
+		deleteByQuery = GetInternalClient7().DeleteByQuery().Index(index)
 	default:
 		return nil, fmt.Errorf("invalid type passed for DeleteRequestDo: %v", requestType)
 	}
@@ -216,9 +227,12 @@ func DeleteRequestDo(requestAsService interface{}, ctx context.Context, id inter
 	}
 
 	// Finally add the `tenant_id` filter to the delete query
-	tenantIdFilter := es7.NewMatchQuery("tenant_id", tenantId)
+	tenantIdFilter := es7.NewTermQuery("tenant_id", tenantId)
+	queriesToFilterOn = append(queriesToFilterOn, tenantIdFilter)
 
-	deleteByQuery = deleteByQuery.Query(tenantIdFilter)
+	combinedQuery := es7.NewBoolQuery().Filter(queriesToFilterOn...)
+
+	deleteByQuery = deleteByQuery.Query(combinedQuery)
 
 	return deleteByQuery.Do(ctx)
 }

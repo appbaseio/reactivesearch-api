@@ -108,7 +108,7 @@ func (es *elasticsearch) deletePermission(ctx context.Context, username string) 
 		Index(es.indexName).
 		Id(username)
 
-	_, err := util.DeleteRequestDo(deleteByServiceReq, ctx, username, es.indexName)
+	_, err := util.DeleteRequestDo(deleteByServiceReq, ctx, nil, username, es.indexName)
 
 	if err != nil {
 		return false, err

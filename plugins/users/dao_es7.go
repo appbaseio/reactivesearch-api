@@ -129,7 +129,7 @@ func (es *elasticsearch) deleteUserEs7(ctx context.Context, username string) (bo
 		Refresh("wait_for").
 		Id(userID)
 
-	_, err := util.DeleteRequestDo(deleteRequest, ctx, username, es.indexName)
+	_, err := util.DeleteRequestDo(deleteRequest, ctx, nil, username, es.indexName)
 	if err != nil {
 		return false, err
 	}
