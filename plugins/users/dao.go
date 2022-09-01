@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/google/uuid"
 	log "github.com/sirupsen/logrus"
 
 	"github.com/appbaseio/reactivesearch-api/model/user"
@@ -148,6 +149,22 @@ func (es *elasticsearch) getUser(ctx context.Context, username string) (*user.Us
 	return &u, nil
 }
 
+// getUserID will fetch the ID of the document for the username passed
+func (es *elasticsearch) getUserID(ctx context.Context, username string) (string, error) {
+	raw, err := es.getRawUser(ctx, username)
+	if err != nil {
+		return "", err
+	}
+
+	source := make(map[string]interface{})
+	unmarshallErr := json.Unmarshal(raw, &source)
+	if unmarshallErr != nil {
+		return "", unmarshallErr
+	}
+
+	return source["_id"].(string), nil
+}
+
 func (es *elasticsearch) getRawUsers(ctx context.Context) ([]byte, error) {
 	return es.getRawUsersEs7(ctx)
 }
@@ -157,10 +174,13 @@ func (es *elasticsearch) getRawUser(ctx context.Context, username string) ([]byt
 }
 
 func (es *elasticsearch) postUser(ctx context.Context, u user.User) (bool, error) {
+	// Create an Unique ID
+	userID := uuid.New().String()
+
 	indexRequest := util.GetInternalClient7().Index().
 		Refresh("wait_for").
 		Index(es.indexName).
-		Id(u.Username).
+		Id(userID).
 		BodyJson(u)
 
 	_, err := util.IndexRequestDo(indexRequest, u, ctx)
@@ -177,10 +197,16 @@ func (es *elasticsearch) patchUser(ctx context.Context, username string, patch m
 }
 
 func (es *elasticsearch) deleteUser(ctx context.Context, username string) (bool, error) {
+	// Fetch the userID
+	userID, idFetchErr := es.getUserID(ctx, username)
+	if idFetchErr != nil {
+		return false, idFetchErr
+	}
+
 	deleteRequest := util.GetInternalClient7().Delete().
 		Refresh("wait_for").
 		Index(es.indexName).
-		Id(username)
+		Id(userID)
 
 	_, err := util.DeleteRequestDo(deleteRequest, ctx, username, es.indexName)
 

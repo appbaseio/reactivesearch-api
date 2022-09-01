@@ -29,10 +29,16 @@ func (es *elasticsearch) getRawUsersEs7(ctx context.Context) ([]byte, error) {
 }
 
 func (es *elasticsearch) patchUserEs7(ctx context.Context, username string, patch map[string]interface{}) ([]byte, error) {
+	// Fetch the userID
+	userID, idFetchErr := es.getUserID(ctx, username)
+	if idFetchErr != nil {
+		return nil, idFetchErr
+	}
+
 	updateRequest := util.GetInternalClient7().Update().
 		Refresh("wait_for").
 		Index(es.indexName).
-		Id(username).
+		Id(userID).
 		Doc(patch)
 
 	response, err := util.UpdateRequestDo(updateRequest, patch, ctx)
@@ -82,10 +88,16 @@ func (es *elasticsearch) getRawUserEs7(ctx context.Context, username string) ([]
 }
 
 func (es *elasticsearch) deleteUserEs7(ctx context.Context, username string) (bool, error) {
+	// Fetch the userID
+	userID, idFetchErr := es.getUserID(ctx, username)
+	if idFetchErr != nil {
+		return false, idFetchErr
+	}
+
 	deleteRequest := util.GetInternalClient7().Delete().
 		Index(es.indexName).
 		Refresh("wait_for").
-		Id(username)
+		Id(userID)
 
 	_, err := util.DeleteRequestDo(deleteRequest, ctx, username, es.indexName)
 	if err != nil {
