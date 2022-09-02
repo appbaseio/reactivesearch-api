@@ -69,11 +69,16 @@ func (es *elasticsearch) createIndex(indexName, mapping string) (bool, error) {
 
 // Create or update the public key
 func (es *elasticsearch) savePublicKey(ctx context.Context, indexName string, record publicKey) (interface{}, error) {
+	updatedID, appendErr := util.AppendTenantID(publicKeyDocID)
+	if appendErr != nil {
+		return record, appendErr
+	}
+
 	indexRequest := util.GetInternalClient7().
 		Index().
 		Index(indexName).
 		BodyJson(record).
-		Id(publicKeyDocID)
+		Id(updatedID)
 
 	_, err := util.IndexRequestDo(indexRequest, record, ctx)
 
@@ -91,21 +96,11 @@ func (es *elasticsearch) getPublicKey(ctx context.Context) (publicKey, error) {
 	if publicKeyIndex == "" {
 		publicKeyIndex = defaultPublicKeyEsIndex
 	}
-	switch util.GetVersion() {
-	case 6:
-		return es.getPublicKeyEs6(ctx, publicKeyIndex, publicKeyDocID)
-	default:
-		return es.getPublicKeyEs7(ctx, publicKeyIndex, publicKeyDocID)
-	}
+	return es.getPublicKeyEs7(ctx, publicKeyIndex, publicKeyDocID)
 }
 
 func (es *elasticsearch) getCredential(ctx context.Context, username string) (credential.AuthCredential, error) {
-	switch util.GetVersion() {
-	case 6:
-		return es.getCredentialEs6(ctx, username)
-	default:
-		return es.getCredentialEs7(ctx, username)
-	}
+	return es.getCredentialEs7(ctx, username)
 }
 
 func (es *elasticsearch) putUser(ctx context.Context, u user.User) (bool, error) {
@@ -239,10 +234,5 @@ func (es *elasticsearch) getRolePermission(ctx context.Context, role string) (*p
 }
 
 func (es *elasticsearch) getRawRolePermission(ctx context.Context, role string) ([]byte, error) {
-	switch util.GetVersion() {
-	case 6:
-		return es.getRawRolePermissionEs6(ctx, role)
-	default:
-		return es.getRawRolePermissionEs7(ctx, role)
-	}
+	return es.getRawRolePermissionEs7(ctx, role)
 }

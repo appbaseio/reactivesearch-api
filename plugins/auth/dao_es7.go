@@ -18,7 +18,12 @@ import (
 func (es *elasticsearch) getPublicKeyEs7(ctx context.Context, publicKeyIndex, publicKeyDocID string) (publicKey, error) {
 	var record = publicKey{}
 
-	searchQuery := es7.NewTermQuery("_id", publicKeyDocID)
+	updatedID, err := util.AppendTenantID(publicKeyDocID)
+	if err != nil {
+		return record, err
+	}
+
+	searchQuery := es7.NewTermQuery("_id", updatedID)
 	searchRequest := util.GetInternalClient7().Search().
 		Index(publicKeyIndex).Query(searchQuery)
 
