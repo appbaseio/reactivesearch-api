@@ -104,10 +104,16 @@ func (es *elasticsearch) getCredential(ctx context.Context, username string) (cr
 }
 
 func (es *elasticsearch) putUser(ctx context.Context, u user.User) (bool, error) {
+	// Tenant ID to username
+	usernameID, appendErr := util.AppendTenantID(u.Username)
+	if appendErr != nil {
+		return false, appendErr
+	}
+
 	indexRequest := util.GetInternalClient7().Index().
 		Index(es.userIndex).
 		Type(es.userType).
-		Id(u.Username).
+		Id(usernameID).
 		BodyJson(u)
 
 	_, err := util.IndexRequestDo(indexRequest, u, ctx)
@@ -133,7 +139,13 @@ func (es *elasticsearch) getUser(ctx context.Context, username string) (*user.Us
 }
 
 func (es *elasticsearch) getRawUser(ctx context.Context, username string) ([]byte, error) {
-	searchQuery := es7.NewTermQuery("_id", username)
+	// Tenant ID to username
+	usernameID, appendErr := util.AppendTenantID(username)
+	if appendErr != nil {
+		return nil, appendErr
+	}
+
+	searchQuery := es7.NewTermQuery("_id", usernameID)
 	searchRequest := util.GetInternalClient7().Search().
 		Index(es.userIndex).
 		Type(es.userType).
@@ -160,10 +172,16 @@ func (es *elasticsearch) getRawUser(ctx context.Context, username string) ([]byt
 }
 
 func (es *elasticsearch) putPermission(ctx context.Context, p permission.Permission) (bool, error) {
+	// Tenant ID to username
+	usernameID, appendErr := util.AppendTenantID(p.Username)
+	if appendErr != nil {
+		return false, appendErr
+	}
+
 	indexRequest := util.GetInternalClient7().Index().
 		Index(es.permissionIndex).
 		Type(es.permissionType).
-		Id(p.Username).
+		Id(usernameID).
 		BodyJson(p)
 
 	_, err := util.IndexRequestDo(indexRequest, p, ctx)
@@ -191,7 +209,13 @@ func (es *elasticsearch) getPermission(ctx context.Context, username string) (*p
 }
 
 func (es *elasticsearch) getRawPermission(ctx context.Context, username string) ([]byte, error) {
-	searchQuery := es7.NewTermQuery("_id", username)
+	// Tenant ID to username
+	usernameID, appendErr := util.AppendTenantID(username)
+	if appendErr != nil {
+		return nil, appendErr
+	}
+
+	searchQuery := es7.NewTermQuery("_id", usernameID)
 	searchRequest := util.GetInternalClient7().Search().
 		Index(es.permissionIndex).
 		Type(es.permissionType).
