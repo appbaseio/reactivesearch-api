@@ -75,8 +75,8 @@ func FromRequest(r *http.Request) string {
 		ipAddresses := strings.Split(xForwardedFor, ",")
 		if sourcesXffValue != 0 {
 			// if xffSourceValue is invalid then throw error
-			if sourcesXffValue < len(ipAddresses) {
-				address := strings.TrimSpace(ipAddresses[sourcesXffValue-1])
+			if sourcesXffValue <= len(ipAddresses) {
+				address := strings.TrimSpace(ipAddresses[len(ipAddresses)-sourcesXffValue])
 				isPrivate, err := isPrivateAddress(address)
 				if !isPrivate && err == nil {
 					return address
