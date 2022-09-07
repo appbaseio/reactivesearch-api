@@ -93,7 +93,7 @@ func (es *elasticsearch) getUserID(ctx context.Context, username string) (string
 	// but we want to be able to filter based on tenant_id and also
 	// remove the field accordingly so getting the user through search
 	// is a better idea.
-	usernameTermQuery := es7.NewTermQuery("username", username)
+	usernameTermQuery := es7.NewTermQuery("username.keyword", username)
 
 	searchRequest := util.GetInternalClient7().Search().Index(es.indexName).Query(usernameTermQuery).FetchSource(true).Size(1)
 
