@@ -4,7 +4,6 @@ import (
 	"net/http"
 
 	"github.com/appbaseio/reactivesearch-api/middleware"
-	"github.com/appbaseio/reactivesearch-api/plugins/telemetry"
 	"github.com/appbaseio/reactivesearch-api/util"
 )
 
@@ -16,7 +15,7 @@ func Elasticsearch() middleware.Middleware {
 func validateES(h http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
 		if util.ExternalElasticsearch != "true" {
-			telemetry.WriteBackErrorWithTelemetry(req, w, "invalid route", http.StatusNotFound)
+			util.WriteBackRaw(w, nil, http.StatusNotFound)
 			return
 		}
 		h(w, req)
