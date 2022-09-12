@@ -42,7 +42,7 @@ var Opensource string
 // ExternalElasticsearch is a build time variable
 // that indicates whether or not elasticsearch is
 // used externally.
-var ExternalElasticsearch string
+var ExternalElasticsearch string = "true"
 
 // We set it in the `main.go` based on the env variable and run time flag
 // defaults to `true`
