@@ -15,7 +15,6 @@ const (
 	logTag                    = "[permissions]"
 	defaultPermissionsEsIndex = ".permissions"
 	typeName                  = "_doc"
-	envEsURL                  = "ES_CLUSTER_URL"
 	envPermissionEsIndex      = "PERMISSIONS_ES_INDEX"
 	settings                  = `{ "settings" : { %s "index.number_of_shards" : 1, "index.number_of_replicas" : %d } }`
 )
@@ -76,4 +75,8 @@ func (p *permissions) ESMiddleware() []middleware.Middleware {
 // Default empty middleware array function
 func (p *permissions) RSMiddleware() []middleware.Middleware {
 	return make([]middleware.Middleware, 0)
+}
+
+func (p *permissions) Enabled() bool {
+	return true
 }

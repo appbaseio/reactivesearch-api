@@ -494,7 +494,7 @@ func main() {
 	if err != nil {
 		log.Fatal("error loading plugins: ", err)
 	}
-	// Load pipeline plugin at the begining to set the priority to stage routes
+	// Load pipeline plugin at the beginning to set the priority to stage routes
 	if pipelinesPath != "" {
 		_, errPipelinesPlugin := LoadPluginFromFile(mainRouter, pipelinesPath)
 		if errPipelinesPlugin != nil {

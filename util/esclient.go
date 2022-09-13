@@ -59,25 +59,27 @@ func GetClient6() *es6.Client {
 
 // GetESURL returns elasticsearch url with escaped auth
 func GetESURL() string {
-	esURL := os.Getenv("ES_CLUSTER_URL")
+	if IsUsingExternalES() {
+		esURL := os.Getenv("ES_CLUSTER_URL")
+		if esURL == "" {
+			log.Fatal("Error encountered: ", fmt.Errorf("ES_CLUSTER_URL must be set in the environment variables"))
+		}
+		if strings.Contains(esURL, "@") {
+			splitIndex := strings.LastIndex(esURL, "@")
+			protocolWithCredentials := strings.Split(esURL[0:splitIndex], "://")
+			credentials := protocolWithCredentials[1]
+			protocol := protocolWithCredentials[0]
+			host := esURL[splitIndex+1:]
 
-	if esURL == "" {
-		log.Fatal("Error encountered: ", fmt.Errorf("ES_CLUSTER_URL must be set in the environment variables"))
+			credentialSeparator := strings.Index(credentials, ":")
+			username := credentials[0:credentialSeparator]
+			password := credentials[credentialSeparator+1:]
+			esURL = protocol + "://" + url.PathEscape(username) + ":" + url.PathEscape(password) + "@" + host
+		}
+		return esURL
+	} else {
+		return GetInternalESURL()
 	}
-
-	if strings.Contains(esURL, "@") {
-		splitIndex := strings.LastIndex(esURL, "@")
-		protocolWithCredentials := strings.Split(esURL[0:splitIndex], "://")
-		credentials := protocolWithCredentials[1]
-		protocol := protocolWithCredentials[0]
-		host := esURL[splitIndex+1:]
-
-		credentialSeparator := strings.Index(credentials, ":")
-		username := credentials[0:credentialSeparator]
-		password := credentials[credentialSeparator+1:]
-		esURL = protocol + "://" + url.PathEscape(username) + ":" + url.PathEscape(password) + "@" + host
-	}
-	return esURL
 }
 
 // GetInternalESURL returns elasticsearch url for internal use

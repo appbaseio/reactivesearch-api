@@ -6,11 +6,11 @@ import (
 	"github.com/appbaseio/reactivesearch-api/middleware"
 	"github.com/appbaseio/reactivesearch-api/model/reindex"
 	"github.com/appbaseio/reactivesearch-api/plugins"
+	"github.com/appbaseio/reactivesearch-api/util"
 )
 
 const (
 	logTag   = "[reindexer]"
-	envEsURL = "ES_CLUSTER_URL"
 	typeName = "_doc"
 )
 
@@ -51,4 +51,9 @@ func (rx *reindexer) ESMiddleware() []middleware.Middleware {
 // Default empty middleware array function
 func (rx *reindexer) RSMiddleware() []middleware.Middleware {
 	return make([]middleware.Middleware, 0)
+}
+
+// Plugin is enabled only when external ES is used
+func (rx *reindexer) Enabled() bool {
+	return util.IsUsingExternalES()
 }

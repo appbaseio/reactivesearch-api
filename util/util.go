@@ -69,6 +69,16 @@ var MemoryAllocated uint64
 // Whether or not to create schema
 var CreateSchema bool = false
 
+// Returns `true` when external ES is used
+func IsUsingExternalES() bool {
+	return ExternalElasticsearch == "true"
+}
+
+// Returns `true` when external ES is not used
+func IsNotUsingExternalES() bool {
+	return ExternalElasticsearch != "true"
+}
+
 // RandStr returns "node" field of a UUID.
 // See: https://tools.ietf.org/html/rfc4122#section-4.1.6
 func RandStr() string {

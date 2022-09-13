@@ -6,6 +6,7 @@ import (
 
 	"github.com/appbaseio/reactivesearch-api/middleware"
 	"github.com/appbaseio/reactivesearch-api/plugins"
+	"github.com/appbaseio/reactivesearch-api/util"
 	"github.com/natefinch/lumberjack"
 	"github.com/robfig/cron"
 	log "github.com/sirupsen/logrus"
@@ -14,7 +15,6 @@ import (
 const (
 	logTag             = "[logs]"
 	defaultLogsEsIndex = ".logs"
-	envEsURL           = "ES_CLUSTER_URL"
 	envLogsEsIndex     = "LOGS_ES_INDEX"
 	defaultLogFilePath = "log/arc/es.json"
 	envLogFilePath     = "LOG_FILE_PATH"
@@ -117,4 +117,9 @@ func (l *Logs) ESMiddleware() []middleware.Middleware {
 // Default empty middleware array function
 func (a *Logs) RSMiddleware() []middleware.Middleware {
 	return make([]middleware.Middleware, 0)
+}
+
+// Plugin is enabled only when external ES is used
+func (a *Logs) Enabled() bool {
+	return util.IsUsingExternalES()
 }

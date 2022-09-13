@@ -5,6 +5,7 @@ import (
 
 	"github.com/appbaseio/reactivesearch-api/middleware"
 	"github.com/appbaseio/reactivesearch-api/plugins"
+	"github.com/appbaseio/reactivesearch-api/util"
 	pluralize "github.com/gertd/go-pluralize"
 	log "github.com/sirupsen/logrus"
 )
@@ -63,4 +64,9 @@ func (r *QueryTranslate) Routes() []plugins.Route {
 
 func (r *QueryTranslate) ESMiddleware() []middleware.Middleware {
 	return make([]middleware.Middleware, 0)
+}
+
+// Plugin is enabled only when external ES is used
+func (r *QueryTranslate) Enabled() bool {
+	return util.IsUsingExternalES()
 }
