@@ -55,5 +55,5 @@ func (rx *reindexer) RSMiddleware() []middleware.Middleware {
 
 // Plugin is enabled only when external ES is used
 func (rx *reindexer) Enabled() bool {
-	return util.IsSLSEnabled()
+	return util.IsSLSDisabled()
 }

@@ -70,12 +70,12 @@ var MemoryAllocated uint64
 var CreateSchema bool = false
 
 // Returns `true` when server less search is enabled
-func IsSLSEnabled() bool {
+func IsSLSDisabled() bool {
 	return ExternalElasticsearch == "true"
 }
 
 // Returns `true` when server less search is disabled
-func IsSLSDisabled() bool {
+func IsSLSEnabled() bool {
 	return ExternalElasticsearch != "true"
 }
 
