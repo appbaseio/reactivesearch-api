@@ -69,13 +69,13 @@ var MemoryAllocated uint64
 // Whether or not to create schema
 var CreateSchema bool = false
 
-// Returns `true` when external ES is used
-func IsUsingExternalES() bool {
+// Returns `true` when server less search is enabled
+func IsSLSEnabled() bool {
 	return ExternalElasticsearch == "true"
 }
 
-// Returns `true` when external ES is not used
-func IsNotUsingExternalES() bool {
+// Returns `true` when server less search is disabled
+func IsSLSDisabled() bool {
 	return ExternalElasticsearch != "true"
 }
 

@@ -9,7 +9,7 @@ import (
 
 // SetDefaultIndexTemplate sets default template for user indexes
 func SetDefaultIndexTemplate() error {
-	if IsNotUsingExternalES() {
+	if IsSLSDisabled() {
 		return nil
 	}
 	replicas := GetReplicas()
@@ -235,7 +235,7 @@ func SetDefaultIndexTemplate() error {
 
 // SetSystemIndexTemplate sets default template for system indexes
 func SetSystemIndexTemplate() error {
-	if IsNotUsingExternalES() {
+	if IsSLSDisabled() {
 		return nil
 	}
 	replicas := GetReplicas()
