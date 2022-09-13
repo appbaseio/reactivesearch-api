@@ -253,6 +253,12 @@ func buildIndependentRequests(rsQuery RSQuery) ([]map[string]interface{}, error)
 	return independentQueryArr, nil
 }
 
+// Just a wrapper around buildIndependentRequests to let it be accessible
+// outside the plugin
+func BuildIndependentRequests(rsQuery RSQuery) ([]map[string]interface{}, error) {
+	return buildIndependentRequests(rsQuery)
+}
+
 // BuildIndependentRequest will build the independent request based on the passed
 // details and return a map to be used during execution of the request.
 func BuildIndependentRequest(query Query, rsQuery RSQuery) (map[string]interface{}, error) {
