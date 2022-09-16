@@ -232,7 +232,16 @@ func ExecuteIndependentQuery(independentReq map[string]interface{}) ([]byte, *ht
 		return nil, nil, fmt.Errorf(errMsg)
 	}
 
-	return respBody, res, reqErr
+	// Parse the response and if it is of RS structure, return the top level of
+	// the response instead of returning a nested level.
+	responseToReturn, respErr := RemoveEndpointRecursionIfRS(respBody, requestId)
+	if respErr != nil {
+		errMsg := fmt.Sprint("error while parsing the response to remove recursion, ", respErr)
+		log.Errorln(logTag, ": ", errMsg)
+		return nil, nil, fmt.Errorf(errMsg)
+	}
+
+	return responseToReturn, res, reqErr
 }
 
 func (r *QueryTranslate) validate() http.HandlerFunc {
