@@ -354,7 +354,8 @@ func RemoveEndpointRecursionIfRS(resp []byte, queryID string) ([]byte, error) {
 	isRSResponse := true
 
 	for key := range responseMap {
-		if key != queryID || key != "settings" {
+		log.Debug(logTag, ": key: ", key)
+		if key != queryID && key != "settings" {
 			isRSResponse = false
 			break
 		}

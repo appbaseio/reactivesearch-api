@@ -236,7 +236,7 @@ func ExecuteIndependentQuery(independentReq map[string]interface{}) ([]byte, *ht
 	// the response instead of returning a nested level.
 	responseToReturn, respErr := RemoveEndpointRecursionIfRS(respBody, requestId)
 	if respErr != nil {
-		errMsg := fmt.Sprintf("error while parsing the response to remove recursion, ", respErr)
+		errMsg := fmt.Sprint("error while parsing the response to remove recursion, ", respErr)
 		log.Errorln(logTag, ": ", errMsg)
 		return nil, nil, fmt.Errorf(errMsg)
 	}
