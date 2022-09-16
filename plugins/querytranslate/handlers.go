@@ -85,7 +85,7 @@ func (r *QueryTranslate) search() http.HandlerFunc {
 			// Make the request with the passed details.
 			requestId := independentReq["id"].(string)
 
-			respBody, _, reqErr := ExecuteIndependentQuery(independentReq)
+			respBody, _, reqErr := ExecuteIndependentQuery(independentReq, req.Host)
 
 			if reqErr != nil {
 				log.Warnln(logTag, ": ", reqErr)
@@ -170,7 +170,7 @@ func (r *QueryTranslate) search() http.HandlerFunc {
 
 // ExecuteIndependentQuery will execute the passed independent query and return
 // the response in bytes, HTTP response and error (if any).
-func ExecuteIndependentQuery(independentReq map[string]interface{}) ([]byte, *http.Response, error) {
+func ExecuteIndependentQuery(independentReq map[string]interface{}, host string) ([]byte, *http.Response, error) {
 	requestId := independentReq["id"].(string)
 
 	endpointAsMap, endpointAsMapOk := independentReq["endpoint"].(map[string]interface{})
@@ -183,6 +183,12 @@ func ExecuteIndependentQuery(independentReq map[string]interface{}) ([]byte, *ht
 	if !urlOk {
 		errMsg := fmt.Sprint("error while extracting URL from independent request built for: ", requestId)
 		return nil, nil, fmt.Errorf(errMsg)
+	}
+
+	// If the URL is not complete, append the host to make it complete.
+	if !strings.HasPrefix(urlToHit, "http") && strings.HasPrefix(urlToHit, "/") {
+		// Add the host to the path
+		urlToHit = host + urlToHit
 	}
 
 	methodToUse, methodOk := endpointAsMap["method"].(string)
