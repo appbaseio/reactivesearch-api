@@ -46,10 +46,6 @@ func initPlugin(alias, config string) (*elasticsearch, error) {
 
 	settings := fmt.Sprintf(config, alias, util.HiddenIndexSettings(), replicas, LogsMappings)
 
-	if util.GetVersion() == 6 {
-		mappings := fmt.Sprintf(`{"_doc": %s}`, LogsMappings)
-		settings = fmt.Sprintf(config, alias, util.HiddenIndexSettings(), replicas, mappings)
-	}
 	// Meta index doesn't exist, create one
 	indexName := alias + `-000001`
 	// this works for ES6 client as well
@@ -138,12 +134,7 @@ type logsFilter struct {
 }
 
 func (es *elasticsearch) getRawLogs(ctx context.Context, logsFilter logsFilter) ([]byte, error) {
-	switch util.GetVersion() {
-	case 6:
-		return es.getRawLogsES6(ctx, logsFilter)
-	default:
-		return es.getRawLogsES7(ctx, logsFilter)
-	}
+	return es.getRawLogsES7(ctx, logsFilter)
 }
 
 func (es *elasticsearch) getRawLog(ctx context.Context, ID string, parseDiffs bool) ([]byte, *LogError) {
@@ -163,9 +154,6 @@ func (es *elasticsearch) rolloverIndexJob(alias string) {
 	json.Unmarshal([]byte(settingsString), &settings)
 
 	mappingString := LogsMappings
-	if util.GetVersion() == 6 {
-		mappingString = fmt.Sprintf(`{"_doc": %s}`, LogsMappings)
-	}
 
 	mappings := make(map[string]interface{})
 	json.Unmarshal([]byte(mappingString), &mappings)

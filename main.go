@@ -442,6 +442,11 @@ func main() {
 	if FeaturePipelines == "true" {
 		util.SetFeaturePipelines(true)
 	}
+	// Set Global Envs from env file
+	util.SetGlobalESURL(os.Getenv(util.EsURLKey))
+	util.SetGlobalESHeader(os.Getenv(util.EsHeaderKey))
+	util.SetGlobalOSURL(os.Getenv(util.OsURLKey))
+	util.SetGlobalOSHeader(os.Getenv(util.OsHeaderKey))
 	// Set port variable
 	util.Port = port
 
@@ -529,11 +534,9 @@ func main() {
 		}
 	}
 
-	if util.ExternalElasticsearch == "true" {
-		errESPlugin := LoadESPluginFromFile(mainRouter, elasticSearchPath, elasticSearchMiddleware)
-		if errESPlugin != nil {
-			log.Fatal("error loading plugins: ", errESPlugin)
-		}
+	errESPlugin := LoadESPluginFromFile(mainRouter, elasticSearchPath, elasticSearchMiddleware)
+	if errESPlugin != nil {
+		log.Fatal("error loading plugins: ", errESPlugin)
 	}
 
 	// Execute the migration scripts

@@ -67,12 +67,7 @@ func setAliasEs6(aliasConfig SetAliasConfig) error {
 
 // Set alias to an index
 func SetAlias(aliasConfig SetAliasConfig) error {
-	switch util.GetVersion() {
-	case 6:
-		return setAliasEs6(aliasConfig)
-	default:
-		return setAliasEs7(aliasConfig)
-	}
+	return setAliasEs7(aliasConfig)
 }
 
 // To track a re-index task by taskID
