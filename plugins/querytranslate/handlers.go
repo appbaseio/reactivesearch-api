@@ -309,7 +309,7 @@ func (r *QueryTranslate) validate() http.HandlerFunc {
 
 		// Extract some request details that might be required later
 		vars := mux.Vars(req)
-		defaultURL := fmt.Sprint(util.GetESURL(), "/", vars["index"], "/_search")
+		defaultURL := fmt.Sprint(util.GetSearchClientESURL(), "/", vars["index"], "/_search")
 		methodUsed := req.Method
 
 		validateMapToShow := make([]map[string]interface{}, 0)

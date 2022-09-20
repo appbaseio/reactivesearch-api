@@ -28,6 +28,9 @@ type nameRoutes interface {
 	// Routes returns the http routes that a plugin handles or is
 	// associated with.
 	Routes() []Route
+
+	// Returns `false` if plugin is disabled
+	Enabled() bool
 }
 
 // Plugin is a type that holds information about the plugin.
@@ -81,6 +84,9 @@ func RegisterPlugin(p Plugin) {
 // initializations before the plugin is functional and second,
 // calling loadRoutes
 func LoadPlugin(router *mux.Router, p Plugin) error {
+	if !p.Enabled() {
+		return nil
+	}
 	log.Println(logTag, ": Initializing plugin:", p.Name())
 	err := p.InitFunc()
 	if err != nil {
@@ -90,6 +96,9 @@ func LoadPlugin(router *mux.Router, p Plugin) error {
 }
 
 func LoadESPlugin(router *mux.Router, p ESPlugin, mw []middleware.Middleware) error {
+	if !p.Enabled() {
+		return nil
+	}
 	log.Println(logTag, ": Initializing plugin:", p.Name())
 	err := p.InitFunc(mw)
 	if err != nil {
@@ -99,6 +108,9 @@ func LoadESPlugin(router *mux.Router, p ESPlugin, mw []middleware.Middleware) er
 }
 
 func LoadRSPlugin(router *mux.Router, p RSPlugin, mw []middleware.Middleware) error {
+	if !p.Enabled() {
+		return nil
+	}
 	log.Println(logTag, ": Initializing plugin:", p.Name())
 	err := p.InitFunc(mw)
 	if err != nil {

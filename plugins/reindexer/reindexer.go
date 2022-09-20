@@ -10,7 +10,6 @@ import (
 
 const (
 	logTag   = "[reindexer]"
-	envEsURL = "ES_CLUSTER_URL"
 	typeName = "_doc"
 )
 
@@ -51,4 +50,9 @@ func (rx *reindexer) ESMiddleware() []middleware.Middleware {
 // Default empty middleware array function
 func (rx *reindexer) RSMiddleware() []middleware.Middleware {
 	return make([]middleware.Middleware, 0)
+}
+
+// Plugin is enabled only when external ES is used
+func (rx *reindexer) Enabled() bool {
+	return true
 }

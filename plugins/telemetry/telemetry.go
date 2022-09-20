@@ -93,3 +93,7 @@ func (t *Telemetry) ESMiddleware() []middleware.Middleware {
 func (t *Telemetry) RSMiddleware() []middleware.Middleware {
 	return make([]middleware.Middleware, 0)
 }
+
+func (t *Telemetry) Enabled() bool {
+	return true
+}

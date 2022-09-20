@@ -524,7 +524,7 @@ func GetAliasIndexMap(ctx context.Context) (map[string]string, error) {
 
 func isTaskCompleted(ctx context.Context, taskID string) (bool, error) {
 	isCompleted := false
-	url := util.GetESURL() + "/_tasks/" + taskID
+	url := util.GetSearchClientESURL() + "/_tasks/" + taskID
 
 	response, err := http.Get(url)
 	if err != nil {
@@ -621,10 +621,5 @@ func updateSynonyms(ctx context.Context, sourceIndex string, destinationIndex st
 	params := map[string]interface{}{
 		"index": destinationIndex,
 	}
-	switch util.GetVersion() {
-	case 6:
-		return updateSynonymsEs6(ctx, script, sourceIndex, params)
-	default:
-		return updateSynonymsEs7(ctx, script, sourceIndex, params)
-	}
+	return updateSynonymsEs7(ctx, script, sourceIndex, params)
 }

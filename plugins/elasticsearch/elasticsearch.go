@@ -39,3 +39,8 @@ func (es *elasticsearch) Routes() []plugins.Route {
 func (es *elasticsearch) ESMiddleware() []middleware.Middleware {
 	return make([]middleware.Middleware, 0)
 }
+
+// Enable plugin
+func (es *elasticsearch) Enabled() bool {
+	return true
+}

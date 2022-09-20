@@ -12,7 +12,6 @@ const (
 	logTag            = "[nodes]"
 	defaultNodesIndex = ".nodes"
 	typeName          = "_doc"
-	envEsURL          = "ES_CLUSTER_URL"
 	settings          = `{ "settings" : { %s "index.number_of_shards" : 1, "index.number_of_replicas" : %d } }`
 )
 
@@ -63,4 +62,8 @@ func (n *nodes) ESMiddleware() []middleware.Middleware {
 // Default empty middleware array function
 func (n *nodes) RSMiddleware() []middleware.Middleware {
 	return make([]middleware.Middleware, 0)
+}
+
+func (n *nodes) Enabled() bool {
+	return true
 }

@@ -20,7 +20,6 @@ const (
 	logTag                    = "[auth]"
 	envUsersEsIndex           = "USERS_ES_INDEX"
 	defaultUsersEsIndex       = ".users"
-	envEsURL                  = "ES_CLUSTER_URL"
 	envPermissionsEsIndex     = "PERMISSIONS_ES_INDEX"
 	defaultPermissionsEsIndex = ".permissions"
 	envPublicKeyEsIndex       = "PUBLIC_KEY_ES_INDEX"
@@ -162,4 +161,8 @@ func (a *Auth) ESMiddleware() []middleware.Middleware {
 // Default empty middleware array function
 func (a *Auth) RSMiddleware() []middleware.Middleware {
 	return make([]middleware.Middleware, 0)
+}
+
+func (a *Auth) Enabled() bool {
+	return true
 }

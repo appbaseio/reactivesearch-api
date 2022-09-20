@@ -64,3 +64,8 @@ func (r *QueryTranslate) Routes() []plugins.Route {
 func (r *QueryTranslate) ESMiddleware() []middleware.Middleware {
 	return make([]middleware.Middleware, 0)
 }
+
+// Enabled plugin
+func (r *QueryTranslate) Enabled() bool {
+	return true
+}
