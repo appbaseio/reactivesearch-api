@@ -85,7 +85,13 @@ func (r *QueryTranslate) search() http.HandlerFunc {
 			// Make the request with the passed details.
 			requestId := independentReq["id"].(string)
 
-			respBody, _, reqErr := ExecuteIndependentQuery(independentReq)
+			// Parse the request headers
+			requestHeaders := make(map[string]string)
+			for key, value := range req.Header {
+				requestHeaders[key] = strings.Join(value, "")
+			}
+
+			respBody, _, reqErr := ExecuteIndependentQuery(independentReq, req.Host, req.TLS != nil, requestHeaders)
 
 			if reqErr != nil {
 				log.Warnln(logTag, ": ", reqErr)
@@ -170,7 +176,7 @@ func (r *QueryTranslate) search() http.HandlerFunc {
 
 // ExecuteIndependentQuery will execute the passed independent query and return
 // the response in bytes, HTTP response and error (if any).
-func ExecuteIndependentQuery(independentReq map[string]interface{}) ([]byte, *http.Response, error) {
+func ExecuteIndependentQuery(independentReq map[string]interface{}, host string, isTLS bool, reqHeaders map[string]string) ([]byte, *http.Response, error) {
 	requestId := independentReq["id"].(string)
 
 	endpointAsMap, endpointAsMapOk := independentReq["endpoint"].(map[string]interface{})
@@ -185,6 +191,16 @@ func ExecuteIndependentQuery(independentReq map[string]interface{}) ([]byte, *ht
 		return nil, nil, fmt.Errorf(errMsg)
 	}
 
+	// If the URL is not complete, append the host to make it complete.
+	if !strings.HasPrefix(urlToHit, "http") && strings.HasPrefix(urlToHit, "/") {
+		// Add the host to the path
+		scheme := "http"
+		if isTLS {
+			scheme = "https"
+		}
+		urlToHit = fmt.Sprintf("%s://%s%s", scheme, host, urlToHit)
+	}
+
 	methodToUse, methodOk := endpointAsMap["method"].(string)
 	if !methodOk {
 		errMsg := fmt.Sprint("error while extracting method from independent request built for: ", requestId)
@@ -197,8 +213,14 @@ func ExecuteIndependentQuery(independentReq map[string]interface{}) ([]byte, *ht
 		return nil, nil, fmt.Errorf(errMsg)
 	}
 	headerToSend := make(http.Header)
+	isAuthPresent := false
+
 	for key, value := range headersToUse {
 		valueAsString, valueAsStrOk := value.(string)
+
+		if strings.ToLower(key) == "authorization" {
+			isAuthPresent = true
+		}
 
 		if !valueAsStrOk {
 			errMsg := fmt.Sprintf("error while converting header value to string for key `%s` and request: `%s`", key, requestId)
@@ -206,6 +228,19 @@ func ExecuteIndependentQuery(independentReq map[string]interface{}) ([]byte, *ht
 			return nil, nil, fmt.Errorf(errMsg)
 		}
 		headerToSend.Set(key, valueAsString)
+	}
+
+	// If auth header was not passed by user, we can try to extract
+	// it from the request headers.
+	if !isAuthPresent {
+		// Go through request headers and if authorization is present
+		// then pass it accordingly.
+		for key, value := range reqHeaders {
+			if strings.ToLower(key) == "authorization" {
+				headerToSend.Set(key, value)
+				break
+			}
+		}
 	}
 
 	bodyToUse, bodyOk := endpointAsMap["body"].(interface{})
@@ -232,7 +267,16 @@ func ExecuteIndependentQuery(independentReq map[string]interface{}) ([]byte, *ht
 		return nil, nil, fmt.Errorf(errMsg)
 	}
 
-	return respBody, res, reqErr
+	// Parse the response and if it is of RS structure, return the top level of
+	// the response instead of returning a nested level.
+	responseToReturn, respErr := RemoveEndpointRecursionIfRS(respBody, requestId)
+	if respErr != nil {
+		errMsg := fmt.Sprint("error while parsing the response to remove recursion, ", respErr)
+		log.Errorln(logTag, ": ", errMsg)
+		return nil, nil, fmt.Errorf(errMsg)
+	}
+
+	return responseToReturn, res, reqErr
 }
 
 func (r *QueryTranslate) validate() http.HandlerFunc {
