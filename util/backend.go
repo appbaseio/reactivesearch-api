@@ -15,6 +15,13 @@ func setBackend(be *Backend) {
 	backend = be
 }
 
+// SetDefaultBackend sets the backend value
+// if nothing is fetched based on billing
+func SetDefaultBackend() {
+	defaultBackend := ElasticSearch
+	backend = &defaultBackend
+}
+
 // GetBackend returns the backend
 func GetBackend() *Backend {
 	return backend

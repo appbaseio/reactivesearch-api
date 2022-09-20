@@ -395,6 +395,7 @@ func main() {
 			}
 		} else {
 			util.SetDefaultTier()
+			util.SetDefaultBackend()
 			log.Println("You're running ReactiveSearch with billing module disabled.")
 		}
 	}
