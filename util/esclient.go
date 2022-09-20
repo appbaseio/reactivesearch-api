@@ -295,6 +295,8 @@ func initClient7() {
 					log.Fatal("Error encountered while initializing internal ES client: ", err)
 				}
 			}
+		} else {
+			log.Fatal("Error while checking backend from passed `APPBASE_ID`: not present")
 		}
 	} else {
 		client7, err = es7.NewClient(
