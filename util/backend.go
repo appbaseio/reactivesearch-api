@@ -27,6 +27,14 @@ func GetBackend() *Backend {
 	return backend
 }
 
+// IsExternalESRequired will indicate whether or
+// not external ES is required.
+//
+// This will be true if backend is either ES or OS
+func IsExternalESRequired() bool {
+	return backend.String() == ElasticSearch.String() || backend.String() == OpenSearch.String()
+}
+
 // Backend will be the backend to be used for the knn
 // response stage changes.
 type Backend int

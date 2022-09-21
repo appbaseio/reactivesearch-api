@@ -171,7 +171,7 @@ func GetInternalESURL() string {
 
 // GetVersion returns the es version
 func GetVersion() int {
-	if IsSLSEnabled() {
+	if IsSLSEnabled() && !IsExternalESRequired() {
 		return 7
 	}
 
@@ -194,6 +194,10 @@ func GetVersion() int {
 
 // GetSemanticVersion returns the es version
 func GetSemanticVersion() string {
+	if IsSLSEnabled() && !IsExternalESRequired() {
+		return "7"
+	}
+
 	// Get the version if not present
 	if semanticVersion == "" {
 		esVersion, err := client7.ElasticsearchVersion(GetSearchClientESURL())
