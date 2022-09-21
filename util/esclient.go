@@ -171,6 +171,10 @@ func GetInternalESURL() string {
 
 // GetVersion returns the es version
 func GetVersion() int {
+	if IsSLSEnabled() {
+		return 7
+	}
+
 	// Get the version if not present
 	if version == 0 {
 		esVersion, err := client7.ElasticsearchVersion(GetSearchClientESURL())
@@ -319,6 +323,7 @@ func NewClient() {
 	clientInit.Do(func() {
 		// Initialize the ES v7 client
 		initClient7()
+
 		// Initialize the ES v6 client
 		// initClient6()
 		// Get the ES version

@@ -18,7 +18,7 @@ func setBackend(be *Backend) {
 // SetDefaultBackend sets the backend value
 // if nothing is fetched based on billing
 func SetDefaultBackend() {
-	defaultBackend := ElasticSearch
+	defaultBackend := Fusion
 	backend = &defaultBackend
 }
 
