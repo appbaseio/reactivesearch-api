@@ -6,6 +6,7 @@ import (
 	"github.com/appbaseio/reactivesearch-api/middleware"
 	"github.com/appbaseio/reactivesearch-api/model/reindex"
 	"github.com/appbaseio/reactivesearch-api/plugins"
+	"github.com/appbaseio/reactivesearch-api/util"
 )
 
 const (
@@ -54,5 +55,5 @@ func (rx *reindexer) RSMiddleware() []middleware.Middleware {
 
 // Plugin is enabled only when external ES is used
 func (rx *reindexer) Enabled() bool {
-	return true
+	return util.IsExternalESRequired()
 }
