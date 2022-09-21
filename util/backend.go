@@ -36,6 +36,7 @@ const (
 	OpenSearch
 	MongoDB
 	Solr
+	Fusion
 )
 
 // String returns the string representation
@@ -50,6 +51,8 @@ func (b Backend) String() string {
 		return "mongodb"
 	case Solr:
 		return "solr"
+	case Fusion:
+		return "fusion"
 	}
 	return ""
 }
@@ -71,6 +74,8 @@ func (b *Backend) UnmarshalJSON(bytes []byte) error {
 		*b = MongoDB
 	case Solr.String():
 		*b = Solr
+	case Fusion.String():
+		*b = Fusion
 	default:
 		return fmt.Errorf("invalid backend passed: %s", backend)
 	}
@@ -83,7 +88,7 @@ func (b Backend) MarshalJSON() ([]byte, error) {
 	backend := b.String()
 
 	if backend == "" {
-		return nil, fmt.Errorf("invalid kNN backend passed: %s", backend)
+		return nil, fmt.Errorf("invalid backend passed: %s", backend)
 	}
 
 	return json.Marshal(backend)
@@ -97,6 +102,7 @@ func (b Backend) JSONSchema() *jsonschema.Schema {
 			OpenSearch.String(),
 			MongoDB.String(),
 			Solr.String(),
+			Fusion.String(),
 		},
 		Title:       "Backend",
 		Description: "Backend that ReactiveSearch will use",
