@@ -11,7 +11,7 @@ import (
 var backend *Backend
 
 // setBackend sets the backend value
-func setBackend(be *Backend) {
+func SetBackend(be *Backend) {
 	backend = be
 }
 

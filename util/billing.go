@@ -254,7 +254,7 @@ func getArcInstance(arcID string) (ArcInstance, error) {
 			CreatedAt:           arcInstanceByID.CreatedAt,
 		})
 		SetTier(arcInstanceByID.Tier)
-		setBackend(arcInstanceByID.Backend)
+		SetBackend(arcInstanceByID.Backend)
 		SetFeatureSuggestions(arcInstanceByID.FeatureSuggestions)
 		SetFeatureCustomEvents(arcInstanceByID.FeatureCustomEvents)
 		SetFeatureRules(arcInstanceByID.FeatureRules)
@@ -323,7 +323,7 @@ func getArcClusterInstance(clusterID string) (ArcInstance, error) {
 			CreatedAt:           arcInstanceDetails.CreatedAt,
 		})
 		SetTier(arcInstanceDetails.Tier)
-		setBackend(arcInstanceDetails.Backend)
+		SetBackend(arcInstanceDetails.Backend)
 		SetFeatureSuggestions(arcInstanceDetails.FeatureSuggestions)
 		SetFeatureCustomEvents(arcInstanceDetails.FeatureCustomEvents)
 		SetFeatureRules(arcInstanceDetails.FeatureRules)
@@ -406,7 +406,7 @@ func getClusterPlan(clusterID string) (ClusterPlan, error) {
 	}
 	// Set the plan for clusters
 	SetTier(response.Plan.Tier)
-	setBackend(response.Plan.Backend)
+	SetBackend(response.Plan.Backend)
 	SetTimeValidity(response.Plan.TimeValidity)
 	setMaxErrorTime(Subscripton{
 		SubscriptionID:      response.Plan.SubscriptionID,
