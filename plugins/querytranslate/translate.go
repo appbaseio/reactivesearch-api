@@ -253,6 +253,12 @@ func buildIndependentRequests(rsQuery RSQuery) ([]map[string]interface{}, error)
 	return independentQueryArr, nil
 }
 
+// Just a wrapper around buildIndependentRequests to let it be accessible
+// outside the plugin
+func BuildIndependentRequests(rsQuery RSQuery) ([]map[string]interface{}, error) {
+	return buildIndependentRequests(rsQuery)
+}
+
 // BuildIndependentRequest will build the independent request based on the passed
 // details and return a map to be used during execution of the request.
 func BuildIndependentRequest(query Query, rsQuery RSQuery) (map[string]interface{}, error) {
@@ -327,6 +333,40 @@ func BuildIndependentRequest(query Query, rsQuery RSQuery) (map[string]interface
 	queryAsMap["endpoint"] = endpointAsMap
 
 	return queryAsMap, nil
+}
+
+// RemoveEndpointRecursionIfRS will remove the endpoint response's recursion if
+// the response is of RS structure.
+//
+// RS response will be considered if the response if of type map and the only
+// key inside the response is the ID of the query.
+func RemoveEndpointRecursionIfRS(resp []byte, queryID string) ([]byte, error) {
+	responseMap := make(map[string]interface{})
+	unmarshalErr := json.Unmarshal(resp, &responseMap)
+
+	if unmarshalErr != nil {
+		// Since the response is not of type map, can't be an
+		// RS response.
+		return resp, nil
+	}
+
+	// Check if the only ID present in the map is the queryID and `settings`.
+	isRSResponse := true
+
+	for key := range responseMap {
+		log.Debug(logTag, ": key: ", key)
+		if key != queryID && key != "settings" {
+			isRSResponse = false
+			break
+		}
+	}
+
+	if !isRSResponse {
+		return resp, nil
+	}
+
+	responseToReturn := responseMap[queryID]
+	return json.Marshal(responseToReturn)
 }
 
 // shouldApplyKnn determines whether or not to apply KNN stage
