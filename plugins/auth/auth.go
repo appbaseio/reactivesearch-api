@@ -92,11 +92,12 @@ func (a *Auth) InitFunc() error {
 	if err != nil {
 		return err
 	}
-
-	// Create public key index
-	_, err = a.es.createIndex(publicKeyIndex, settings)
-	if err != nil {
-		return err
+	if util.IsSLSDisabled() {
+		// Create public key index
+		_, err = a.es.createIndex(publicKeyIndex, settings)
+		if err != nil {
+			return err
+		}
 	}
 
 	// Populate public key from ES

@@ -22,44 +22,47 @@ func initPlugin(indexName, mapping string) (*elasticsearch, error) {
 	ctx := context.Background()
 
 	es := &elasticsearch{indexName}
-	defer func() {
-		if es != nil {
-			if err := es.postMasterUser(); err != nil {
-				log.Errorln(logTag, ":", err)
+	// Only check index existence for non-sls Arc
+	if util.IsSLSDisabled() {
+		defer func() {
+			if es != nil {
+				if err := es.postMasterUser(); err != nil {
+					log.Errorln(logTag, ":", err)
+				}
 			}
-		}
-	}()
+		}()
 
-	// Check if the meta index already exists
-	exists, err := util.GetInternalClient7().IndexExists(indexName).
-		Do(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("%s: error while checking if index already exists: %v",
-			logTag, err)
-	}
-	if exists {
-		log.Println(logTag, ": index named", indexName, "already exists, skipping...")
-		// hash the passwords if not hashed already
-		err := es.hashPasswords()
+		// Check if the meta index already exists
+		exists, err := util.GetInternalClient7().IndexExists(indexName).
+			Do(ctx)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("%s: error while checking if index already exists: %v",
+				logTag, err)
+		}
+		if exists {
+			log.Println(logTag, ": index named", indexName, "already exists, skipping...")
+			// hash the passwords if not hashed already
+			err := es.hashPasswords()
+			if err != nil {
+				return nil, err
+			}
+
+			return es, nil
 		}
 
-		return es, nil
-	}
+		replicas := util.GetReplicas()
+		settings := fmt.Sprintf(mapping, util.HiddenIndexSettings(), replicas)
+		// Meta index does not exists, create a new one
+		_, err = util.GetInternalClient7().CreateIndex(indexName).
+			Body(settings).
+			Do(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("%s: error while creating index named %s: %v",
+				logTag, indexName, err)
+		}
 
-	replicas := util.GetReplicas()
-	settings := fmt.Sprintf(mapping, util.HiddenIndexSettings(), replicas)
-	// Meta index does not exists, create a new one
-	_, err = util.GetInternalClient7().CreateIndex(indexName).
-		Body(settings).
-		Do(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("%s: error while creating index named %s: %v",
-			logTag, indexName, err)
+		log.Println(logTag, ": successfully created index named", indexName)
 	}
-
-	log.Println(logTag, ": successfully created index named", indexName)
 	return es, nil
 }
 
