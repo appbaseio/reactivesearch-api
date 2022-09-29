@@ -284,28 +284,6 @@ func initClient7() {
 		if err != nil {
 			log.Fatal("Error encountered while initializing internal ES client: ", err)
 		}
-		// init search client if BE is OpenSearch or Elasticsearch
-		backend := GetBackend()
-		if backend != nil {
-			if *backend == ElasticSearch || *backend == OpenSearch {
-				internalEsHttpClient.Transport = &CustomESTransport{originalTransport: internalEsHttpClient.Transport}
-				client7, err = es7.NewClient(
-					es7.SetURL(GetSearchClientESURL()),
-					es7.SetRetrier(NewRetrier()),
-					es7.SetSniff(isSniffingEnabled()),
-					es7.SetHttpClient(internalEsHttpClient),
-					es7.SetErrorLog(wrappedLoggerError),
-					es7.SetInfoLog(wrappedLoggerDebug),
-					es7.SetTraceLog(wrappedLoggerDebug),
-				)
-
-				if err != nil {
-					log.Fatal("Error encountered while initializing internal ES client: ", err)
-				}
-			}
-		} else {
-			log.Fatal("Error while checking backend from passed `APPBASE_ID`: not present")
-		}
 	} else {
 		client7, err = es7.NewClient(
 			es7.SetURL(GetESURL()),
@@ -319,6 +297,46 @@ func initClient7() {
 		if err != nil {
 			log.Fatal("Error encountered: ", fmt.Errorf("error while initializing elastic v7 client: %v", err))
 		}
+	}
+}
+
+// initExternalESClient7 will init the external ES client if backend
+// is ES or OS and SLS is enabled.
+//
+// The client will be accessible through `GetClient7()`
+func initExternalESClient7() {
+	// No need to initiate if SLS is disabled.
+	if IsSLSDisabled() {
+		return
+	}
+
+	var err error
+
+	// init search client if BE is OpenSearch or Elasticsearch
+	backend := GetBackend()
+	if backend != nil {
+		if *backend == ElasticSearch || *backend == OpenSearch {
+			internalEsHttpClient := HTTPClient()
+			internalEsHttpClient.Transport = &CustomESTransport{originalTransport: internalEsHttpClient.Transport}
+			loggerT := log.New()
+			wrappedLoggerDebug := &WrapKitLoggerDebug{*loggerT}
+			wrappedLoggerError := &WrapKitLoggerError{*loggerT}
+			client7, err = es7.NewClient(
+				es7.SetURL(GetSearchClientESURL()),
+				es7.SetRetrier(NewRetrier()),
+				es7.SetSniff(isSniffingEnabled()),
+				es7.SetHttpClient(internalEsHttpClient),
+				es7.SetErrorLog(wrappedLoggerError),
+				es7.SetInfoLog(wrappedLoggerDebug),
+				es7.SetTraceLog(wrappedLoggerDebug),
+			)
+
+			if err != nil {
+				log.Fatal("Error encountered while initializing internal ES client: ", err)
+			}
+		}
+	} else {
+		log.Fatal("Error while checking backend from passed `APPBASE_ID`: not present")
 	}
 }
 
