@@ -453,12 +453,7 @@ func main() {
 
 	// ES client instantiation
 	// ES v7 and v6 clients
-
-	// If SLS is disabled, create the client as is.
-	if util.IsSLSDisabled() {
-		util.NewClient()
-	}
-
+	util.NewClient()
 	util.NewZincClient()
 	util.SetDefaultIndexTemplate()
 	util.SetSystemIndexTemplate()
@@ -512,13 +507,6 @@ func main() {
 			log.Fatal("error loading plugins: ", errPipelinesPlugin)
 		}
 	}
-
-	// If SLS is enabled, we need to create the ES client after pipelines
-	// is initialized.
-	if util.IsSLSEnabled() {
-		util.NewClient()
-	}
-
 	for _, pluginPath := range pluginsByPath {
 		plugin, err1 := LoadPluginFromFile(mainRouter, pluginPath)
 		if err1 != nil {
