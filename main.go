@@ -507,6 +507,12 @@ func main() {
 			log.Fatal("error loading plugins: ", errPipelinesPlugin)
 		}
 	}
+
+	// Initiate the external ES client
+	if util.IsSLSEnabled() {
+		util.InitExternalESClient7()
+	}
+
 	for _, pluginPath := range pluginsByPath {
 		plugin, err1 := LoadPluginFromFile(mainRouter, pluginPath)
 		if err1 != nil {

@@ -304,7 +304,7 @@ func initClient7() {
 // is ES or OS and SLS is enabled.
 //
 // The client will be accessible through `GetClient7()`
-func initExternalESClient7() {
+func InitExternalESClient7() {
 	// No need to initiate if SLS is disabled.
 	if IsSLSDisabled() {
 		return
