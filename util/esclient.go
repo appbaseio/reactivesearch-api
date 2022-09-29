@@ -171,7 +171,7 @@ func GetInternalESURL() string {
 
 // GetVersion returns the es version
 func GetVersion() int {
-	if IsSLSEnabled() && !IsExternalESRequired() {
+	if (IsSLSEnabled() && !IsExternalESRequired()) || client7 == nil {
 		return 7
 	}
 
@@ -194,7 +194,7 @@ func GetVersion() int {
 
 // GetSemanticVersion returns the es version
 func GetSemanticVersion() string {
-	if IsSLSEnabled() && !IsExternalESRequired() {
+	if (IsSLSEnabled() && !IsExternalESRequired()) || client7 == nil {
 		return "7"
 	}
 
@@ -334,6 +334,10 @@ func InitExternalESClient7() {
 			if err != nil {
 				log.Fatal("Error encountered while initializing internal ES client: ", err)
 			}
+
+			// Get the versions
+			GetVersion()
+			GetSemanticVersion()
 		}
 	} else {
 		log.Fatal("Error while checking backend from passed `APPBASE_ID`: not present")
