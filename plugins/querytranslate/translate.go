@@ -72,8 +72,6 @@ func translateQuery(rsQuery RSQuery, userIP string, queryForId *string) (string,
 			if len(normalizedDataFields) > 0 {
 				// Set the updated fields
 				rsQuery.Query[queryIndex].DataField = normalizedDataFields
-			} else {
-				return "", nil, errors.New("you're using .synonyms suffix fields in the 'dataField' property but 'enableSynonyms' property is set to `false`. We recommend removing these fields from the Search Settings UI / API or set enableSynonyms to true")
 			}
 		}
 
