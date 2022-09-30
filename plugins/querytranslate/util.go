@@ -521,14 +521,14 @@ type DataField struct {
 
 // Settings represents the search settings
 type Settings struct {
-	RecordAnalytics       *bool                   `json:"recordAnalytics,omitempty" jsonschema:"title=recordAnalytics,description=whether or not to record analytics for the current request"`
-	UserID                *string                 `json:"userId,omitempty" jsonschema:"title=userId,description=user ID that will be used to record the analytics"`
-	CustomEvents          *map[string]interface{} `json:"customEvents,omitempty" jsonschema:"title=customEvents,description=custom events that can be used to build own analytics on top of ReactiveSearch analytics"`
-	EnableQueryRules      *bool                   `json:"enableQueryRules,omitempty" jsonschema:"title=enableQueryRules,description=whether or not to apply the query rules for the current request"`
-	EnableSearchRelevancy *bool                   `json:"enableSearchRelevancy,omitempty" jsonschema:"title=enableSearchRelevancy,description=whether or not to apply search relevancy for the current request"`
-	UseCache              *bool                   `json:"useCache,omitempty" jsonschema:"title=useCache,description=whether or not to use cache for the current request"`
-	QueryRule             *map[string]interface{} `json:"queryRule,omitempty" jsonschema:"title=queryRule,description="`
-	Backend               *Backend                `json:"backend,omitempty" jsonschema:"title=backend,description=backend to use for the current request"`
+	RecordAnalytics       *bool                   `json:"recordAnalytics,omitempty" jsonschema:"title=recordAnalytics,description=whether or not to record analytics for the current request" jsonschema_extras:"engine=elasticsearch,engine=solr,engine=opensearch"`
+	UserID                *string                 `json:"userId,omitempty" jsonschema:"title=userId,description=user ID that will be used to record the analytics" jsonschema_extras:"engine=elasticsearch,engine=opensearch"`
+	CustomEvents          *map[string]interface{} `json:"customEvents,omitempty" jsonschema:"title=customEvents,description=custom events that can be used to build own analytics on top of ReactiveSearch analytics" jsonschema_extras:"engine=elasticsearch,engine=opensearch"`
+	EnableQueryRules      *bool                   `json:"enableQueryRules,omitempty" jsonschema:"title=enableQueryRules,description=whether or not to apply the query rules for the current request" jsonschema_extras:"engine=elasticsearch,engine=opensearch"`
+	EnableSearchRelevancy *bool                   `json:"enableSearchRelevancy,omitempty" jsonschema:"title=enableSearchRelevancy,description=whether or not to apply search relevancy for the current request" jsonschema_extras:"engine=elasticsearch,engine=opensearch"`
+	UseCache              *bool                   `json:"useCache,omitempty" jsonschema:"title=useCache,description=whether or not to use cache for the current request" jsonschema_extras:"engine=elasticsearch,engine=opensearch"`
+	QueryRule             *map[string]interface{} `json:"queryRule,omitempty" jsonschema:"title=queryRule,description=" jsonschema_extras:"engine=elasticsearch,engine=opensearch"`
+	Backend               *Backend                `json:"backend,omitempty" jsonschema:"title=backend,description=backend to use for the current request" jsonschema_extras:"engine=elasticsearch,engine=solr,engine=opensearch"`
 }
 
 // RSQuery represents the request body
