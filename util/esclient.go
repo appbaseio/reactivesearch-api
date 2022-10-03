@@ -310,6 +310,27 @@ func InitExternalESClient7() {
 		return
 	}
 
+	// If backend is ElasticSearch or OpenSearch and the equivalent
+	// values are not present, we will fallback the backend to `fusion`
+	// and let the server start accordingly.
+	if backend != nil {
+		if *backend == ElasticSearch {
+			esURL = GetGlobalESURL()
+			if esURL == "" {
+				log.Warnln("Falling back to backend `fusion` since ES_URL is not provided!")
+				SetDefaultBackend()
+				return
+			}
+		} else if *backend == OpenSearch {
+			osURL = GetGlobalOSURL()
+			if osURL == "" {
+				log.Warnln("Falling back to backend `fusion` since OS_URL is not provided!")
+				SetDefaultBackend()
+				return
+			}
+		}
+	}
+
 	var err error
 
 	// init search client if BE is OpenSearch or Elasticsearch
