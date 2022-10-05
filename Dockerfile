@@ -1,4 +1,4 @@
-FROM golang:1.18.6 as builder
+FROM golang:1.18.7 as builder
 
 # Default value
 # Run `--build-arg BILLING=true` to enable billing
