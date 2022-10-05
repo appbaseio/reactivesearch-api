@@ -13,7 +13,7 @@ jobs:
     steps:
       - name: Check if event should be sent
         id: check-update-schema
-        run: (echo "${{ inputs.ref }}" | grep -Eq  '^refs\/tags\/[0-9]+\.[0-9]+\.[0-9]+$') && echo "::set-output name=run_jobs::true" || echo "::set-output name=run_jobs::false"
+        run: (echo "${{ github.ref }}" | grep -Eq  '^refs\/tags\/[0-9]+\.[0-9]+\.[0-9]+$') && echo "::set-output name=run_jobs::true" || echo "::set-output name=run_jobs::false"
 
   send_build_event:
     runs-on: ubuntu-latest
