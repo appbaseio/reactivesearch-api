@@ -227,45 +227,165 @@ var MARKDOWN_DESCRIPTIONS = map[string]string{
 	"metadata":                    "This field indicates the backend of ReactiveSearch. Backend implies the search service being used to store the data.\n\nAs of now, the `backend` field supports the following values:\n\n1. `elasticsearch`: ElasticSearch\n2. `opensearch`: OpenSearch\n\nwhere `elasticsearch` is the default value.\n\n> This field is necessary if backend is OpenSearch and the kNN reordering of scripts are to be used.\n\nFollowing example indicates how to use this field to use kNN reordering with OpenSearch as backend:\n\n```json\n{\n    \"query\": [\n        {\n            \"value\": \"sudoku\",\n            \"vectorDataField\": \"name_vector\",\n            \"queryVector\": [1.0, -0.2],\n        }\n    ],\n    \"settings\": {\n        \"backend\": \"opensearch\"\n    }\n}\n```",
 }
 
-var PLAYGROUND_URLS = map[string]string{
-	"dataField":                "https://play.reactivesearch.io/embed/FTOsW5jSBOzeNWEZy6FL",
-	"index":                    "https://play.reactivesearch.io/embed/GsFi6AyoFYD0iiGhNgQi",
-	"size":                     "https://play.reactivesearch.io/embed/O1BdUDaqk2aVkU4J0qOL",
-	"from":                     "https://play.reactivesearch.io/embed/vvurxeUDndDYLBfg0qNx",
-	"pagination":               "https://play.reactivesearch.io/embed/isUvzMDdjLFxTErHUw2i",
-	"aggregationSize":          "https://play.reactivesearch.io/embed/apAMBqEVwmgUJv2j7Y6C",
-	"queryFormat":              "https://play.reactivesearch.io/embed/9NwNk4QRJxdbX0zQviNE",
-	"fuzziness":                "https://play.reactivesearch.io/embed/FfBZDt4981lxD2At3KuK",
-	"categoryField":            "https://play.reactivesearch.io/embed/adZAj2AcCVpDlHmNljl0",
-	"categoryValue":            "https://play.reactivesearch.io/embed/9MswTJYI7pne7Awi5vWT",
-	"sortBy":                   "https://play.reactivesearch.io/embed/O8i1jMI5xlXM78rqxULu",
-	"react":                    "https://play.reactivesearch.io/embed/AjkyDj8zGt32xV2QcOcu",
-	"highlight":                "https://play.reactivesearch.io/embed/AjkyDj8zGt32xV2QcOcu",
-	"highlightField":           "https://play.reactivesearch.io/embed/GcO9cz4HSDeYh6xBzlrq",
-	"highlightConfig":          "https://play.reactivesearch.io/embed/ycCvpsb6ZiWFrEIEPxMX",
-	"searchOperators":          "https://play.reactivesearch.io/embed/yb5IhaBzF9qUXtTam5j7",
-	"queryString":              "https://play.reactivesearch.io/embed/HEJtHdiyKC4LwE0cC1ZA",
-	"includeFields":            "https://play.reactivesearch.io/embed/i0wVmWCvfJJLJAWAEn0F",
-	"excludeFields":            "https://play.reactivesearch.io/embed/MXpPbR2OGdAQPbN2ox2H",
-	"showMissing":              "https://play.reactivesearch.io/embed/Ht0aHbUljvjjFVny2X2Y",
-	"missingLabel":             "https://play.reactivesearch.io/embed/QoFtxI5RCI5c4BWnCfRH",
-	"selectAllLabel":           "https://play.reactivesearch.io/embed/N1lkEUFb3W2SEKgJ1D2L",
-	"includeNullValues":        "https://play.reactivesearch.io/embed/WN0V4iEgY80vRe9UQSvm",
-	"interval":                 "https://play.reactivesearch.io/embed/k5MeCmPeELaWvTYeqoGl",
-	"calendarInterval":         "https://play.reactivesearch.io/embed/k9XiDeleXCZ6cXHWTTr4",
-	"aggregationField":         "https://play.reactivesearch.io/embed/9Q46nHI7Re5vHal9M8he",
-	"after":                    "https://play.reactivesearch.io/embed/isUvzMDdjLFxTErHUw2i",
-	"aggregations":             "https://play.reactivesearch.io/embed/cnHhcTQ4nSiMzyaNtA4y",
-	"nestedField":              "https://play.reactivesearch.io/embed/d3ADrjDKGVuRYQ6cxKRa",
-	"defaultQuery":             "https://play.reactivesearch.io/embed/DxQUolzQZnhas6Hma15A",
-	"customQuery":              "https://play.reactivesearch.io/embed/IIPiPFpXbPbhKtL3IoPt",
-	"execute":                  "https://play.reactivesearch.io/embed/NSUbJjAEdAERswHFV6lv",
-	"enableSynonyms":           "https://play.reactivesearch.io/embed/FLwTmwBpcLZezTW3Wg5D",
-	"rankFeature":              "https://play.reactivesearch.io/embed/moCjhTRZK14FNsA9mvNo",
-	"distinctField":            "https://play.reactivesearch.io/embed/AwwZ3kuEF2QhQ9M38yPA",
-	"distinctFieldConfig":      "https://play.reactivesearch.io/embed/RrD7aB3vstYvPZxfaHNo",
-	"urlField":                 "https://play.reactivesearch.io/embed/2YaNeEx4AEF4PHeJrSdw",
-	"recentSuggestionsConfig":  "https://play.reactivesearch.io/embed/VaJF1wffzE2guKfyEhBr",
-	"popularSuggestionsConfig": "https://play.reactivesearch.io/embed/3H9Z2lOjp7nQjDqnHDZY",
-	"useCache":                 "https://play.reactivesearch.io/embed/LfmsZDWgTw5Zf2Z3WTR9",
+var PLAYGROUND_URLS = map[string]map[string]interface{}{
+	"dataField": {
+		"elasticsearch": "https://play.reactivesearch.io/embed/FTOsW5jSBOzeNWEZy6FL",
+		"opensearch":    "https://play.reactivesearch.io/embed/FTOsW5jSBOzeNWEZy6FL",
+	},
+	"index": {
+		"elasticsearch": "https://play.reactivesearch.io/embed/GsFi6AyoFYD0iiGhNgQi",
+		"opensearch":    "https://play.reactivesearch.io/embed/GsFi6AyoFYD0iiGhNgQi",
+	},
+	"size": {
+		"elasticsearch": "https://play.reactivesearch.io/embed/O1BdUDaqk2aVkU4J0qOL",
+		"opensearch":    "https://play.reactivesearch.io/embed/O1BdUDaqk2aVkU4J0qOL",
+	},
+	"from": {
+		"elasticsearch": "https://play.reactivesearch.io/embed/vvurxeUDndDYLBfg0qNx",
+		"opensearch":    "https://play.reactivesearch.io/embed/vvurxeUDndDYLBfg0qNx",
+	},
+	"pagination": {
+		"elasticsearch": "https://play.reactivesearch.io/embed/isUvzMDdjLFxTErHUw2i",
+		"opensearch":    "https://play.reactivesearch.io/embed/isUvzMDdjLFxTErHUw2i",
+	},
+	"aggregationSize": {
+		"elasticsearch": "https://play.reactivesearch.io/embed/apAMBqEVwmgUJv2j7Y6C",
+		"opensearch":    "https://play.reactivesearch.io/embed/apAMBqEVwmgUJv2j7Y6C",
+	},
+	"queryFormat": {
+		"elasticsearch": "https://play.reactivesearch.io/embed/9NwNk4QRJxdbX0zQviNE",
+		"opensearch":    "https://play.reactivesearch.io/embed/9NwNk4QRJxdbX0zQviNE",
+	},
+	"fuzziness": {
+		"elasticsearch": "https://play.reactivesearch.io/embed/FfBZDt4981lxD2At3KuK",
+		"opensearch":    "https://play.reactivesearch.io/embed/FfBZDt4981lxD2At3KuK",
+	},
+	"categoryField": {
+		"elasticsearch": "https://play.reactivesearch.io/embed/adZAj2AcCVpDlHmNljl0",
+		"opensearch":    "https://play.reactivesearch.io/embed/adZAj2AcCVpDlHmNljl0",
+	},
+	"categoryValue": {
+		"elasticsearch": "https://play.reactivesearch.io/embed/9MswTJYI7pne7Awi5vWT",
+		"opensearch":    "https://play.reactivesearch.io/embed/9MswTJYI7pne7Awi5vWT",
+	},
+	"sortBy": {
+		"elasticsearch": "https://play.reactivesearch.io/embed/O8i1jMI5xlXM78rqxULu",
+		"opensearch":    "https://play.reactivesearch.io/embed/O8i1jMI5xlXM78rqxULu",
+	},
+	"react": {
+		"elasticsearch": "https://play.reactivesearch.io/embed/AjkyDj8zGt32xV2QcOcu",
+		"opensearch":    "https://play.reactivesearch.io/embed/AjkyDj8zGt32xV2QcOcu",
+	},
+	"highlight": {
+		"elasticsearch": "https://play.reactivesearch.io/embed/AjkyDj8zGt32xV2QcOcu",
+		"opensearch":    "https://play.reactivesearch.io/embed/AjkyDj8zGt32xV2QcOcu",
+	},
+	"highlightField": {
+		"elasticsearch": "https://play.reactivesearch.io/embed/GcO9cz4HSDeYh6xBzlrq",
+		"opensearch":    "https://play.reactivesearch.io/embed/GcO9cz4HSDeYh6xBzlrq",
+	},
+	"highlightConfig": {
+		"elasticsearch": "https://play.reactivesearch.io/embed/ycCvpsb6ZiWFrEIEPxMX",
+		"opensearch":    "https://play.reactivesearch.io/embed/ycCvpsb6ZiWFrEIEPxMX",
+	},
+	"searchOperators": {
+		"elasticsearch": "https://play.reactivesearch.io/embed/yb5IhaBzF9qUXtTam5j7",
+		"opensearch":    "https://play.reactivesearch.io/embed/yb5IhaBzF9qUXtTam5j7",
+	},
+	"queryString": {
+		"elasticsearch": "https://play.reactivesearch.io/embed/HEJtHdiyKC4LwE0cC1ZA",
+		"opensearch":    "https://play.reactivesearch.io/embed/HEJtHdiyKC4LwE0cC1ZA",
+	},
+	"includeFields": {
+		"elasticsearch": "https://play.reactivesearch.io/embed/i0wVmWCvfJJLJAWAEn0F",
+		"opensearch":    "https://play.reactivesearch.io/embed/i0wVmWCvfJJLJAWAEn0F",
+	},
+	"excludeFields": {
+		"elasticsearch": "https://play.reactivesearch.io/embed/MXpPbR2OGdAQPbN2ox2H",
+		"opensearch":    "https://play.reactivesearch.io/embed/MXpPbR2OGdAQPbN2ox2H",
+	},
+	"showMissing": {
+		"elasticsearch": "https://play.reactivesearch.io/embed/Ht0aHbUljvjjFVny2X2Y",
+		"opensearch":    "https://play.reactivesearch.io/embed/Ht0aHbUljvjjFVny2X2Y",
+	},
+	"missingLabel": {
+		"elasticsearch": "https://play.reactivesearch.io/embed/QoFtxI5RCI5c4BWnCfRH",
+		"opensearch":    "https://play.reactivesearch.io/embed/QoFtxI5RCI5c4BWnCfRH",
+	},
+	"selectAllLabel": {
+		"elasticsearch": "https://play.reactivesearch.io/embed/N1lkEUFb3W2SEKgJ1D2L",
+		"opensearch":    "https://play.reactivesearch.io/embed/N1lkEUFb3W2SEKgJ1D2L",
+	},
+	"includeNullValues": {
+		"elasticsearch": "https://play.reactivesearch.io/embed/WN0V4iEgY80vRe9UQSvm",
+		"opensearch":    "https://play.reactivesearch.io/embed/WN0V4iEgY80vRe9UQSvm",
+	},
+	"interval": {
+		"elasticsearch": "https://play.reactivesearch.io/embed/k5MeCmPeELaWvTYeqoGl",
+		"opensearch":    "https://play.reactivesearch.io/embed/k5MeCmPeELaWvTYeqoGl",
+	},
+	"calendarInterval": {
+		"elasticsearch": "https://play.reactivesearch.io/embed/k9XiDeleXCZ6cXHWTTr4",
+		"opensearch":    "https://play.reactivesearch.io/embed/k9XiDeleXCZ6cXHWTTr4",
+	},
+	"aggregationField": {
+		"elasticsearch": "https://play.reactivesearch.io/embed/9Q46nHI7Re5vHal9M8he",
+		"opensearch":    "https://play.reactivesearch.io/embed/9Q46nHI7Re5vHal9M8he",
+	},
+	"after": {
+		"elasticsearch": "https://play.reactivesearch.io/embed/isUvzMDdjLFxTErHUw2i",
+		"opensearch":    "https://play.reactivesearch.io/embed/isUvzMDdjLFxTErHUw2i",
+	},
+	"aggregations": {
+		"elasticsearch": "https://play.reactivesearch.io/embed/cnHhcTQ4nSiMzyaNtA4y",
+		"opensearch":    "https://play.reactivesearch.io/embed/cnHhcTQ4nSiMzyaNtA4y",
+	},
+	"nestedField": {
+		"elasticsearch": "https://play.reactivesearch.io/embed/d3ADrjDKGVuRYQ6cxKRa",
+		"opensearch":    "https://play.reactivesearch.io/embed/d3ADrjDKGVuRYQ6cxKRa",
+	},
+	"defaultQuery": {
+		"elasticsearch": "https://play.reactivesearch.io/embed/DxQUolzQZnhas6Hma15A",
+		"opensearch":    "https://play.reactivesearch.io/embed/DxQUolzQZnhas6Hma15A",
+	},
+	"customQuery": {
+		"elasticsearch": "https://play.reactivesearch.io/embed/IIPiPFpXbPbhKtL3IoPt",
+		"opensearch":    "https://play.reactivesearch.io/embed/IIPiPFpXbPbhKtL3IoPt",
+	},
+	"execute": {
+		"elasticsearch": "https://play.reactivesearch.io/embed/NSUbJjAEdAERswHFV6lv",
+		"opensearch":    "https://play.reactivesearch.io/embed/NSUbJjAEdAERswHFV6lv",
+	},
+	"enableSynonyms": {
+		"elasticsearch": "https://play.reactivesearch.io/embed/FLwTmwBpcLZezTW3Wg5D",
+		"opensearch":    "https://play.reactivesearch.io/embed/FLwTmwBpcLZezTW3Wg5D",
+	},
+	"rankFeature": {
+		"elasticsearch": "https://play.reactivesearch.io/embed/moCjhTRZK14FNsA9mvNo",
+		"opensearch":    "https://play.reactivesearch.io/embed/moCjhTRZK14FNsA9mvNo",
+	},
+	"distinctField": {
+		"elasticsearch": "https://play.reactivesearch.io/embed/AwwZ3kuEF2QhQ9M38yPA",
+		"opensearch":    "https://play.reactivesearch.io/embed/AwwZ3kuEF2QhQ9M38yPA",
+	},
+	"distinctFieldConfig": {
+		"elasticsearch": "https://play.reactivesearch.io/embed/RrD7aB3vstYvPZxfaHNo",
+		"opensearch":    "https://play.reactivesearch.io/embed/RrD7aB3vstYvPZxfaHNo",
+	},
+	"urlField": {
+		"elasticsearch": "https://play.reactivesearch.io/embed/2YaNeEx4AEF4PHeJrSdw",
+		"opensearch":    "https://play.reactivesearch.io/embed/2YaNeEx4AEF4PHeJrSdw",
+	},
+	"recentSuggestionsConfig": {
+		"elasticsearch": "https://play.reactivesearch.io/embed/VaJF1wffzE2guKfyEhBr",
+		"opensearch":    "https://play.reactivesearch.io/embed/VaJF1wffzE2guKfyEhBr",
+	},
+	"popularSuggestionsConfig": {
+		"elasticsearch": "https://play.reactivesearch.io/embed/3H9Z2lOjp7nQjDqnHDZY",
+		"opensearch":    "https://play.reactivesearch.io/embed/3H9Z2lOjp7nQjDqnHDZY",
+	},
+	"useCache": {
+		"elasticsearch": "https://play.reactivesearch.io/embed/LfmsZDWgTw5Zf2Z3WTR9",
+		"opensearch":    "https://play.reactivesearch.io/embed/LfmsZDWgTw5Zf2Z3WTR9",
+	},
 }
