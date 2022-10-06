@@ -231,98 +231,122 @@ var PLAYGROUND_URLS = map[string]map[string]interface{}{
 	"dataField": {
 		"elasticsearch": "https://play.reactivesearch.io/embed/FTOsW5jSBOzeNWEZy6FL",
 		"opensearch":    "https://play.reactivesearch.io/embed/FTOsW5jSBOzeNWEZy6FL",
+		"mongodb":       "https://play.reactivesearch.io/embed/HtFk5w1Mnq9EU8frz64e",
 	},
 	"index": {
 		"elasticsearch": "https://play.reactivesearch.io/embed/GsFi6AyoFYD0iiGhNgQi",
 		"opensearch":    "https://play.reactivesearch.io/embed/GsFi6AyoFYD0iiGhNgQi",
+		"mongodb":       "https://play.reactivesearch.io/embed/3Jd1QQg1hFoQyg7wwpCi",
 	},
 	"size": {
 		"elasticsearch": "https://play.reactivesearch.io/embed/O1BdUDaqk2aVkU4J0qOL",
 		"opensearch":    "https://play.reactivesearch.io/embed/O1BdUDaqk2aVkU4J0qOL",
+		"mongodb":       "https://play.reactivesearch.io/embed/kQJpKEujvQrpRqwuQxYV",
 	},
 	"from": {
 		"elasticsearch": "https://play.reactivesearch.io/embed/vvurxeUDndDYLBfg0qNx",
 		"opensearch":    "https://play.reactivesearch.io/embed/vvurxeUDndDYLBfg0qNx",
+		"mongodb":       "https://play.reactivesearch.io/embed/n8fwxbBjAWK5dy20lNNo",
 	},
 	"pagination": {
 		"elasticsearch": "https://play.reactivesearch.io/embed/isUvzMDdjLFxTErHUw2i",
 		"opensearch":    "https://play.reactivesearch.io/embed/isUvzMDdjLFxTErHUw2i",
+		"mongodb":       "https://play.reactivesearch.io/embed/9HR0pRcDet8VnWJDmJHG",
 	},
 	"aggregationSize": {
 		"elasticsearch": "https://play.reactivesearch.io/embed/apAMBqEVwmgUJv2j7Y6C",
 		"opensearch":    "https://play.reactivesearch.io/embed/apAMBqEVwmgUJv2j7Y6C",
+		"mongodb":       "https://play.reactivesearch.io/embed/HtFk5w1Mnq9EU8frz64e",
 	},
 	"queryFormat": {
 		"elasticsearch": "https://play.reactivesearch.io/embed/9NwNk4QRJxdbX0zQviNE",
 		"opensearch":    "https://play.reactivesearch.io/embed/9NwNk4QRJxdbX0zQviNE",
+		"mongodb":       "https://play.reactivesearch.io/embed/qRFh2PiS19Z6GfqOX9r0",
 	},
 	"fuzziness": {
 		"elasticsearch": "https://play.reactivesearch.io/embed/FfBZDt4981lxD2At3KuK",
 		"opensearch":    "https://play.reactivesearch.io/embed/FfBZDt4981lxD2At3KuK",
+		"mongodb":       "https://play.reactivesearch.io/embed/CGaSSGlTPUOPmL4wv6Xb",
 	},
 	"categoryField": {
 		"elasticsearch": "https://play.reactivesearch.io/embed/adZAj2AcCVpDlHmNljl0",
 		"opensearch":    "https://play.reactivesearch.io/embed/adZAj2AcCVpDlHmNljl0",
+		"mongodb":       "https://play.reactivesearch.io/embed/aQBWt5qU2dENQAtjGgLI",
 	},
 	"categoryValue": {
 		"elasticsearch": "https://play.reactivesearch.io/embed/9MswTJYI7pne7Awi5vWT",
 		"opensearch":    "https://play.reactivesearch.io/embed/9MswTJYI7pne7Awi5vWT",
+		"mongodb":       "https://play.reactivesearch.io/embed/CxpWy5aQvkzRYVVNJKPr",
 	},
 	"sortBy": {
 		"elasticsearch": "https://play.reactivesearch.io/embed/O8i1jMI5xlXM78rqxULu",
 		"opensearch":    "https://play.reactivesearch.io/embed/O8i1jMI5xlXM78rqxULu",
+		"mongodb":       "https://play.reactivesearch.io/embed/7gCL96Etkz3cSir9D2tj",
 	},
 	"react": {
 		"elasticsearch": "https://play.reactivesearch.io/embed/AjkyDj8zGt32xV2QcOcu",
 		"opensearch":    "https://play.reactivesearch.io/embed/AjkyDj8zGt32xV2QcOcu",
+		"mongodb":       "https://play.reactivesearch.io/embed/7cGXu7zfytS65UCaJw5N",
 	},
 	"highlight": {
 		"elasticsearch": "https://play.reactivesearch.io/embed/AjkyDj8zGt32xV2QcOcu",
 		"opensearch":    "https://play.reactivesearch.io/embed/AjkyDj8zGt32xV2QcOcu",
+		"mongodb":       "https://play.reactivesearch.io/embed/TCMHP5musWLxjm9SAcg8",
 	},
 	"highlightField": {
 		"elasticsearch": "https://play.reactivesearch.io/embed/GcO9cz4HSDeYh6xBzlrq",
 		"opensearch":    "https://play.reactivesearch.io/embed/GcO9cz4HSDeYh6xBzlrq",
+		"mongodb":       "https://play.reactivesearch.io/embed/TCMHP5musWLxjm9SAcg8",
 	},
 	"highlightConfig": {
 		"elasticsearch": "https://play.reactivesearch.io/embed/ycCvpsb6ZiWFrEIEPxMX",
 		"opensearch":    "https://play.reactivesearch.io/embed/ycCvpsb6ZiWFrEIEPxMX",
+		"mongodb":       "https://play.reactivesearch.io/embed/TCMHP5musWLxjm9SAcg8",
 	},
 	"searchOperators": {
 		"elasticsearch": "https://play.reactivesearch.io/embed/yb5IhaBzF9qUXtTam5j7",
 		"opensearch":    "https://play.reactivesearch.io/embed/yb5IhaBzF9qUXtTam5j7",
+		"mongodb":       "https://play.reactivesearch.io/embed/AIuL75TpGfjCiPy23Ntc",
 	},
 	"queryString": {
 		"elasticsearch": "https://play.reactivesearch.io/embed/HEJtHdiyKC4LwE0cC1ZA",
 		"opensearch":    "https://play.reactivesearch.io/embed/HEJtHdiyKC4LwE0cC1ZA",
+		"mongodb":       "https://play.reactivesearch.io/embed/9CrNp0tW637cU2dMKEDQ",
 	},
 	"includeFields": {
 		"elasticsearch": "https://play.reactivesearch.io/embed/i0wVmWCvfJJLJAWAEn0F",
 		"opensearch":    "https://play.reactivesearch.io/embed/i0wVmWCvfJJLJAWAEn0F",
+		"mongodb":       "https://play.reactivesearch.io/embed/6DedqY8wcwnFnVV0H5jv",
 	},
 	"excludeFields": {
 		"elasticsearch": "https://play.reactivesearch.io/embed/MXpPbR2OGdAQPbN2ox2H",
 		"opensearch":    "https://play.reactivesearch.io/embed/MXpPbR2OGdAQPbN2ox2H",
+		"mongodb":       "https://play.reactivesearch.io/embed/tuuLL8woVjeiu4QOWY0S",
 	},
 	"showMissing": {
 		"elasticsearch": "https://play.reactivesearch.io/embed/Ht0aHbUljvjjFVny2X2Y",
 		"opensearch":    "https://play.reactivesearch.io/embed/Ht0aHbUljvjjFVny2X2Y",
+		"mongodb":       "https://play.reactivesearch.io/embed/Cx8oBlfvg432RGNcwDfs",
 	},
 	"missingLabel": {
 		"elasticsearch": "https://play.reactivesearch.io/embed/QoFtxI5RCI5c4BWnCfRH",
 		"opensearch":    "https://play.reactivesearch.io/embed/QoFtxI5RCI5c4BWnCfRH",
+		"mongodb":       "https://play.reactivesearch.io/embed/djmguXPaBC7PYHLq9TGr",
 	},
 	"selectAllLabel": {
 		"elasticsearch": "https://play.reactivesearch.io/embed/N1lkEUFb3W2SEKgJ1D2L",
 		"opensearch":    "https://play.reactivesearch.io/embed/N1lkEUFb3W2SEKgJ1D2L",
+		"mongodb":       "https://play.reactivesearch.io/embed/IxdVjictTpVDIxUyMx8s",
 	},
 	"includeNullValues": {
 		"elasticsearch": "https://play.reactivesearch.io/embed/WN0V4iEgY80vRe9UQSvm",
 		"opensearch":    "https://play.reactivesearch.io/embed/WN0V4iEgY80vRe9UQSvm",
+		"mongodb":       "https://play.reactivesearch.io/embed/uwo7xjiMHbNG7cAm798g",
 	},
 	"interval": {
 		"elasticsearch": "https://play.reactivesearch.io/embed/k5MeCmPeELaWvTYeqoGl",
 		"opensearch":    "https://play.reactivesearch.io/embed/k5MeCmPeELaWvTYeqoGl",
+		"mongodb":       "https://play.reactivesearch.io/embed/m780VL1HLEK5YgyadjLK",
 	},
 	"calendarInterval": {
 		"elasticsearch": "https://play.reactivesearch.io/embed/k9XiDeleXCZ6cXHWTTr4",
@@ -331,34 +355,42 @@ var PLAYGROUND_URLS = map[string]map[string]interface{}{
 	"aggregationField": {
 		"elasticsearch": "https://play.reactivesearch.io/embed/9Q46nHI7Re5vHal9M8he",
 		"opensearch":    "https://play.reactivesearch.io/embed/9Q46nHI7Re5vHal9M8he",
+		"mongodb":       "https://play.reactivesearch.io/embed/lXtfrhTSQgPImhLqCDuG",
 	},
 	"after": {
 		"elasticsearch": "https://play.reactivesearch.io/embed/isUvzMDdjLFxTErHUw2i",
 		"opensearch":    "https://play.reactivesearch.io/embed/isUvzMDdjLFxTErHUw2i",
+		"mongodb":       "https://play.reactivesearch.io/embed/9HR0pRcDet8VnWJDmJHG",
 	},
 	"aggregations": {
 		"elasticsearch": "https://play.reactivesearch.io/embed/cnHhcTQ4nSiMzyaNtA4y",
 		"opensearch":    "https://play.reactivesearch.io/embed/cnHhcTQ4nSiMzyaNtA4y",
+		"mongodb":       "https://play.reactivesearch.io/embed/vn8F113vBVnlDDG3FeqL",
 	},
 	"nestedField": {
 		"elasticsearch": "https://play.reactivesearch.io/embed/d3ADrjDKGVuRYQ6cxKRa",
 		"opensearch":    "https://play.reactivesearch.io/embed/d3ADrjDKGVuRYQ6cxKRa",
+		"mongodb":       "https://play.reactivesearch.io/embed/aRzjyfarFs6tlk59eT6I",
 	},
 	"defaultQuery": {
 		"elasticsearch": "https://play.reactivesearch.io/embed/DxQUolzQZnhas6Hma15A",
 		"opensearch":    "https://play.reactivesearch.io/embed/DxQUolzQZnhas6Hma15A",
+		"mongodb":       "https://play.reactivesearch.io/embed/D79f1gc0JbA8wBq54AoS",
 	},
 	"customQuery": {
 		"elasticsearch": "https://play.reactivesearch.io/embed/IIPiPFpXbPbhKtL3IoPt",
 		"opensearch":    "https://play.reactivesearch.io/embed/IIPiPFpXbPbhKtL3IoPt",
+		"mongodb":       "https://play.reactivesearch.io/embed/Uq1kQp0dC1eB2D4ehD4d",
 	},
 	"execute": {
 		"elasticsearch": "https://play.reactivesearch.io/embed/NSUbJjAEdAERswHFV6lv",
 		"opensearch":    "https://play.reactivesearch.io/embed/NSUbJjAEdAERswHFV6lv",
+		"mongodb":       "https://play.reactivesearch.io/embed/Uq1kQp0dC1eB2D4ehD4d",
 	},
 	"enableSynonyms": {
 		"elasticsearch": "https://play.reactivesearch.io/embed/FLwTmwBpcLZezTW3Wg5D",
 		"opensearch":    "https://play.reactivesearch.io/embed/FLwTmwBpcLZezTW3Wg5D",
+		"mongodb":       "https://play.reactivesearch.io/embed/6YWIIPkZ8Sc0VZYfToeC",
 	},
 	"rankFeature": {
 		"elasticsearch": "https://play.reactivesearch.io/embed/moCjhTRZK14FNsA9mvNo",
@@ -387,5 +419,6 @@ var PLAYGROUND_URLS = map[string]map[string]interface{}{
 	"useCache": {
 		"elasticsearch": "https://play.reactivesearch.io/embed/LfmsZDWgTw5Zf2Z3WTR9",
 		"opensearch":    "https://play.reactivesearch.io/embed/LfmsZDWgTw5Zf2Z3WTR9",
+		"mongodb":       "https://play.reactivesearch.io/embed/Pqmv6mkhri7fFfhCUEwC",
 	},
 }
