@@ -232,21 +232,25 @@ var PLAYGROUND_URLS = map[string]map[string]interface{}{
 		"elasticsearch": "https://play.reactivesearch.io/embed/FTOsW5jSBOzeNWEZy6FL",
 		"opensearch":    "https://play.reactivesearch.io/embed/FTOsW5jSBOzeNWEZy6FL",
 		"mongodb":       "https://play.reactivesearch.io/embed/HtFk5w1Mnq9EU8frz64e",
+		"solr":          "https://play.reactivesearch.io/embed/OEsNqfreC5r618rPj3O1",
 	},
 	"index": {
 		"elasticsearch": "https://play.reactivesearch.io/embed/GsFi6AyoFYD0iiGhNgQi",
 		"opensearch":    "https://play.reactivesearch.io/embed/GsFi6AyoFYD0iiGhNgQi",
 		"mongodb":       "https://play.reactivesearch.io/embed/3Jd1QQg1hFoQyg7wwpCi",
+		"solr":          "https://play.reactivesearch.io/embed/uGsCMC1l87IwFOct4Gzg",
 	},
 	"size": {
 		"elasticsearch": "https://play.reactivesearch.io/embed/O1BdUDaqk2aVkU4J0qOL",
 		"opensearch":    "https://play.reactivesearch.io/embed/O1BdUDaqk2aVkU4J0qOL",
 		"mongodb":       "https://play.reactivesearch.io/embed/kQJpKEujvQrpRqwuQxYV",
+		"solr":          "https://play.reactivesearch.io/embed/OEsNqfreC5r618rPj3O1",
 	},
 	"from": {
 		"elasticsearch": "https://play.reactivesearch.io/embed/vvurxeUDndDYLBfg0qNx",
 		"opensearch":    "https://play.reactivesearch.io/embed/vvurxeUDndDYLBfg0qNx",
 		"mongodb":       "https://play.reactivesearch.io/embed/n8fwxbBjAWK5dy20lNNo",
+		"solr":          "https://play.reactivesearch.io/embed/CkDIWMFkB1xA1lr6fExm",
 	},
 	"pagination": {
 		"elasticsearch": "https://play.reactivesearch.io/embed/isUvzMDdjLFxTErHUw2i",
@@ -257,11 +261,13 @@ var PLAYGROUND_URLS = map[string]map[string]interface{}{
 		"elasticsearch": "https://play.reactivesearch.io/embed/apAMBqEVwmgUJv2j7Y6C",
 		"opensearch":    "https://play.reactivesearch.io/embed/apAMBqEVwmgUJv2j7Y6C",
 		"mongodb":       "https://play.reactivesearch.io/embed/HtFk5w1Mnq9EU8frz64e",
+		"solr":          "https://play.reactivesearch.io/embed/zVafjHpSZS2Vngji6cCu",
 	},
 	"queryFormat": {
 		"elasticsearch": "https://play.reactivesearch.io/embed/9NwNk4QRJxdbX0zQviNE",
 		"opensearch":    "https://play.reactivesearch.io/embed/9NwNk4QRJxdbX0zQviNE",
 		"mongodb":       "https://play.reactivesearch.io/embed/qRFh2PiS19Z6GfqOX9r0",
+		"solr":          "https://play.reactivesearch.io/embed/BrZJZmtQ8rysDwNFkwSZ",
 	},
 	"fuzziness": {
 		"elasticsearch": "https://play.reactivesearch.io/embed/FfBZDt4981lxD2At3KuK",
@@ -282,16 +288,19 @@ var PLAYGROUND_URLS = map[string]map[string]interface{}{
 		"elasticsearch": "https://play.reactivesearch.io/embed/O8i1jMI5xlXM78rqxULu",
 		"opensearch":    "https://play.reactivesearch.io/embed/O8i1jMI5xlXM78rqxULu",
 		"mongodb":       "https://play.reactivesearch.io/embed/7gCL96Etkz3cSir9D2tj",
+		"solr":          "https://play.reactivesearch.io/embed/zbxzsh9ZJRBarHUAzd0t",
 	},
 	"react": {
 		"elasticsearch": "https://play.reactivesearch.io/embed/AjkyDj8zGt32xV2QcOcu",
 		"opensearch":    "https://play.reactivesearch.io/embed/AjkyDj8zGt32xV2QcOcu",
 		"mongodb":       "https://play.reactivesearch.io/embed/7cGXu7zfytS65UCaJw5N",
+		"solr":          "https://play.reactivesearch.io/embed/D78cJ8naiP4eFwey7fkH",
 	},
 	"highlight": {
 		"elasticsearch": "https://play.reactivesearch.io/embed/AjkyDj8zGt32xV2QcOcu",
 		"opensearch":    "https://play.reactivesearch.io/embed/AjkyDj8zGt32xV2QcOcu",
 		"mongodb":       "https://play.reactivesearch.io/embed/TCMHP5musWLxjm9SAcg8",
+		"solr":          "https://play.reactivesearch.io/embed/SJS4477ORrmJMI7bFhg4",
 	},
 	"highlightField": {
 		"elasticsearch": "https://play.reactivesearch.io/embed/GcO9cz4HSDeYh6xBzlrq",
@@ -302,6 +311,7 @@ var PLAYGROUND_URLS = map[string]map[string]interface{}{
 		"elasticsearch": "https://play.reactivesearch.io/embed/ycCvpsb6ZiWFrEIEPxMX",
 		"opensearch":    "https://play.reactivesearch.io/embed/ycCvpsb6ZiWFrEIEPxMX",
 		"mongodb":       "https://play.reactivesearch.io/embed/TCMHP5musWLxjm9SAcg8",
+		"solr":          "https://play.reactivesearch.io/embed/wwXjDm82AYjTDwmXy3Wj",
 	},
 	"searchOperators": {
 		"elasticsearch": "https://play.reactivesearch.io/embed/yb5IhaBzF9qUXtTam5j7",
@@ -317,6 +327,7 @@ var PLAYGROUND_URLS = map[string]map[string]interface{}{
 		"elasticsearch": "https://play.reactivesearch.io/embed/i0wVmWCvfJJLJAWAEn0F",
 		"opensearch":    "https://play.reactivesearch.io/embed/i0wVmWCvfJJLJAWAEn0F",
 		"mongodb":       "https://play.reactivesearch.io/embed/6DedqY8wcwnFnVV0H5jv",
+		"solr":          "https://play.reactivesearch.io/embed/BiSDVAIW9LX3nnCFbcbs",
 	},
 	"excludeFields": {
 		"elasticsearch": "https://play.reactivesearch.io/embed/MXpPbR2OGdAQPbN2ox2H",
@@ -327,6 +338,7 @@ var PLAYGROUND_URLS = map[string]map[string]interface{}{
 		"elasticsearch": "https://play.reactivesearch.io/embed/Ht0aHbUljvjjFVny2X2Y",
 		"opensearch":    "https://play.reactivesearch.io/embed/Ht0aHbUljvjjFVny2X2Y",
 		"mongodb":       "https://play.reactivesearch.io/embed/Cx8oBlfvg432RGNcwDfs",
+		"solr":          "https://play.reactivesearch.io/embed/6EDzwDFK1NAAaWXTnG1N",
 	},
 	"missingLabel": {
 		"elasticsearch": "https://play.reactivesearch.io/embed/QoFtxI5RCI5c4BWnCfRH",
@@ -337,11 +349,13 @@ var PLAYGROUND_URLS = map[string]map[string]interface{}{
 		"elasticsearch": "https://play.reactivesearch.io/embed/N1lkEUFb3W2SEKgJ1D2L",
 		"opensearch":    "https://play.reactivesearch.io/embed/N1lkEUFb3W2SEKgJ1D2L",
 		"mongodb":       "https://play.reactivesearch.io/embed/IxdVjictTpVDIxUyMx8s",
+		"solr":          "https://play.reactivesearch.io/embed/swcIJ4Tv2RcoqgZL5ha9",
 	},
 	"includeNullValues": {
 		"elasticsearch": "https://play.reactivesearch.io/embed/WN0V4iEgY80vRe9UQSvm",
 		"opensearch":    "https://play.reactivesearch.io/embed/WN0V4iEgY80vRe9UQSvm",
 		"mongodb":       "https://play.reactivesearch.io/embed/uwo7xjiMHbNG7cAm798g",
+		"solr":          "https://play.reactivesearch.io/embed/v9CSJs1tuzjSte1fX85y",
 	},
 	"interval": {
 		"elasticsearch": "https://play.reactivesearch.io/embed/k5MeCmPeELaWvTYeqoGl",
@@ -366,6 +380,7 @@ var PLAYGROUND_URLS = map[string]map[string]interface{}{
 		"elasticsearch": "https://play.reactivesearch.io/embed/cnHhcTQ4nSiMzyaNtA4y",
 		"opensearch":    "https://play.reactivesearch.io/embed/cnHhcTQ4nSiMzyaNtA4y",
 		"mongodb":       "https://play.reactivesearch.io/embed/vn8F113vBVnlDDG3FeqL",
+		"solr":          "https://play.reactivesearch.io/embed/18dGWITtMwz7IqsEQiEU",
 	},
 	"nestedField": {
 		"elasticsearch": "https://play.reactivesearch.io/embed/d3ADrjDKGVuRYQ6cxKRa",
@@ -376,21 +391,25 @@ var PLAYGROUND_URLS = map[string]map[string]interface{}{
 		"elasticsearch": "https://play.reactivesearch.io/embed/DxQUolzQZnhas6Hma15A",
 		"opensearch":    "https://play.reactivesearch.io/embed/DxQUolzQZnhas6Hma15A",
 		"mongodb":       "https://play.reactivesearch.io/embed/D79f1gc0JbA8wBq54AoS",
+		"solr":          "https://play.reactivesearch.io/embed/2nSqDGicQ4nm0Kiwt2WT",
 	},
 	"customQuery": {
 		"elasticsearch": "https://play.reactivesearch.io/embed/IIPiPFpXbPbhKtL3IoPt",
 		"opensearch":    "https://play.reactivesearch.io/embed/IIPiPFpXbPbhKtL3IoPt",
 		"mongodb":       "https://play.reactivesearch.io/embed/Uq1kQp0dC1eB2D4ehD4d",
+		"solr":          "https://play.reactivesearch.io/embed/5GWsnFaRK8TUeG9uxiFD",
 	},
 	"execute": {
 		"elasticsearch": "https://play.reactivesearch.io/embed/NSUbJjAEdAERswHFV6lv",
 		"opensearch":    "https://play.reactivesearch.io/embed/NSUbJjAEdAERswHFV6lv",
 		"mongodb":       "https://play.reactivesearch.io/embed/Uq1kQp0dC1eB2D4ehD4d",
+		"solr":          "https://play.reactivesearch.io/embed/5GWsnFaRK8TUeG9uxiFD",
 	},
 	"enableSynonyms": {
 		"elasticsearch": "https://play.reactivesearch.io/embed/FLwTmwBpcLZezTW3Wg5D",
 		"opensearch":    "https://play.reactivesearch.io/embed/FLwTmwBpcLZezTW3Wg5D",
 		"mongodb":       "https://play.reactivesearch.io/embed/6YWIIPkZ8Sc0VZYfToeC",
+		"solr":          "https://play.reactivesearch.io/embed/Y6ofCAWpEE02zlkZKKgj",
 	},
 	"rankFeature": {
 		"elasticsearch": "https://play.reactivesearch.io/embed/moCjhTRZK14FNsA9mvNo",
@@ -407,6 +426,7 @@ var PLAYGROUND_URLS = map[string]map[string]interface{}{
 	"urlField": {
 		"elasticsearch": "https://play.reactivesearch.io/embed/2YaNeEx4AEF4PHeJrSdw",
 		"opensearch":    "https://play.reactivesearch.io/embed/2YaNeEx4AEF4PHeJrSdw",
+		"solr":          "https://play.reactivesearch.io/embed/41RHlvv68haiY9tN5JLY",
 	},
 	"recentSuggestionsConfig": {
 		"elasticsearch": "https://play.reactivesearch.io/embed/VaJF1wffzE2guKfyEhBr",
@@ -420,5 +440,6 @@ var PLAYGROUND_URLS = map[string]map[string]interface{}{
 		"elasticsearch": "https://play.reactivesearch.io/embed/LfmsZDWgTw5Zf2Z3WTR9",
 		"opensearch":    "https://play.reactivesearch.io/embed/LfmsZDWgTw5Zf2Z3WTR9",
 		"mongodb":       "https://play.reactivesearch.io/embed/Pqmv6mkhri7fFfhCUEwC",
+		"solr":          "https://play.reactivesearch.io/embed/fuu85Z3lehMq7wkKokrH",
 	},
 }
