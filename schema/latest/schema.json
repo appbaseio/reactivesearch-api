@@ -96,7 +96,11 @@
               "opensearch"
             ],
             "markdownDescription": "This property can be used to implement the pagination for `aggregations`. We use the [composite aggregations](https://www.elastic.co/guide/en/elasticsearch/reference/current/search-aggregations-bucket-composite-aggregation.html) of `Elasticsearch` to execute the aggregations\\' query, the response of composite aggregations includes a key named `after_key` which can be used to fetch the next set of aggregations for the same query. You can read more about the pagination for composite aggregations at [here](https://www.elastic.co/guide/en/elasticsearch/reference/current/search-aggregations-bucket-composite-aggregation.html#_pagination).\n\nYou need to define the `after` property in the next request to retrieve the next set of aggregations.\n\n| \u003cp style=\"margin: 0px;\" class=\"table-header-text\"\u003eType\u003c/p\u003e     | \u003cp style=\"margin: 0px;\" class=\"table-header-text\"\u003eApplicable on query of type\u003c/p\u003e | \u003cp style=\"margin: 0px;\" class=\"table-header-text\"\u003eRequired\u003c/p\u003e |\n| -------- | --------------------------- | -------- |\n| `Object` | `all`                       | false    |",
-            "playgroundURL": "https://play.reactivesearch.io/embed/isUvzMDdjLFxTErHUw2i",
+            "playgroundURL": {
+              "elasticsearch": "https://play.reactivesearch.io/embed/isUvzMDdjLFxTErHUw2i",
+              "mongodb": "https://play.reactivesearch.io/embed/9HR0pRcDet8VnWJDmJHG",
+              "opensearch": "https://play.reactivesearch.io/embed/isUvzMDdjLFxTErHUw2i"
+            },
             "title": "after",
             "type": "object"
           },
@@ -108,7 +112,11 @@
               "opensearch"
             ],
             "markdownDescription": "`aggregationField` enables you to get `DISTINCT` results (useful when you are dealing with sessions, events, and logs type data). It utilizes [composite aggregations](https://www.elastic.co/guide/en/elasticsearch/reference/current/search-aggregations-bucket-composite-aggregation.html) which are newly introduced in ES v6 and offer vast performance benefits over a traditional terms aggregation.\n\n| \u003cp style=\"margin: 0px;\" class=\"table-header-text\"\u003eType\u003c/p\u003e     | \u003cp style=\"margin: 0px;\" class=\"table-header-text\"\u003eApplicable on query of type\u003c/p\u003e | \u003cp style=\"margin: 0px;\" class=\"table-header-text\"\u003eRequired\u003c/p\u003e |\n| -------- | --------------------------- | -------- |\n| `string` | `all`                       | false    |",
-            "playgroundURL": "https://play.reactivesearch.io/embed/9Q46nHI7Re5vHal9M8he",
+            "playgroundURL": {
+              "elasticsearch": "https://play.reactivesearch.io/embed/9Q46nHI7Re5vHal9M8he",
+              "mongodb": "https://play.reactivesearch.io/embed/lXtfrhTSQgPImhLqCDuG",
+              "opensearch": "https://play.reactivesearch.io/embed/9Q46nHI7Re5vHal9M8he"
+            },
             "type": "string"
           },
           "aggregationSize": {
@@ -120,7 +128,12 @@
               "opensearch"
             ],
             "markdownDescription": "To set the number of buckets to be returned by aggregations.\n\n| \u003cp style=\"margin: 0px;\" class=\"table-header-text\"\u003eType\u003c/p\u003e  | \u003cp style=\"margin: 0px;\" class=\"table-header-text\"\u003eApplicable on query of type\u003c/p\u003e | \u003cp style=\"margin: 0px;\" class=\"table-header-text\"\u003eRequired\u003c/p\u003e |\n| ----- | --------------------------- | -------- |\n| `int` | `term`                      | false    |\n\n\u003e Note:\n\u003e 1. This property can also be used for `search` and `suggestion` type of queries when `aggregationField` or `categoryField` is set.\n\u003e 2. This is a new feature and only available for appbase versions \u003e= 7.41.0.",
-            "playgroundURL": "https://play.reactivesearch.io/embed/apAMBqEVwmgUJv2j7Y6C",
+            "playgroundURL": {
+              "elasticsearch": "https://play.reactivesearch.io/embed/apAMBqEVwmgUJv2j7Y6C",
+              "mongodb": "https://play.reactivesearch.io/embed/HtFk5w1Mnq9EU8frz64e",
+              "opensearch": "https://play.reactivesearch.io/embed/apAMBqEVwmgUJv2j7Y6C",
+              "solr": "https://play.reactivesearch.io/embed/zVafjHpSZS2Vngji6cCu"
+            },
             "title": "aggregationSize",
             "type": "integer"
           },
@@ -136,7 +149,12 @@
               "type": "string"
             },
             "markdownDescription": "\nIt helps you to utilize the built-in aggregations for `range` type of queries directly, valid values are:\n- `max`: to retrieve the maximum value for a `dataField`,\n- `min`: to retrieve the minimum value for a `dataField`,\n- `histogram`: to retrieve the histogram aggregations for a particular `interval`\n\n| \u003cp style=\"margin: 0px;\" class=\"table-header-text\"\u003eType\u003c/p\u003e            | \u003cp style=\"margin: 0px;\" class=\"table-header-text\"\u003eApplicable on query of type\u003c/p\u003e | \u003cp style=\"margin: 0px;\" class=\"table-header-text\"\u003eRequired\u003c/p\u003e |\n| --------------- | --------------------------- | -------- |\n| `Array\u003cstring\u003e` | `range`                     | false    |",
-            "playgroundURL": "https://play.reactivesearch.io/embed/cnHhcTQ4nSiMzyaNtA4y",
+            "playgroundURL": {
+              "elasticsearch": "https://play.reactivesearch.io/embed/cnHhcTQ4nSiMzyaNtA4y",
+              "mongodb": "https://play.reactivesearch.io/embed/vn8F113vBVnlDDG3FeqL",
+              "opensearch": "https://play.reactivesearch.io/embed/cnHhcTQ4nSiMzyaNtA4y",
+              "solr": "https://play.reactivesearch.io/embed/18dGWITtMwz7IqsEQiEU"
+            },
             "title": "aggregations",
             "type": "array"
           },
@@ -178,7 +196,11 @@
               "opensearch"
             ],
             "markdownDescription": "Data field whose values are used to provide category specific suggestions.\n\n| \u003cp style=\"margin: 0px;\" class=\"table-header-text\"\u003eType\u003c/p\u003e     | \u003cp style=\"margin: 0px;\" class=\"table-header-text\"\u003eApplicable on query of type\u003c/p\u003e | \u003cp style=\"margin: 0px;\" class=\"table-header-text\"\u003eRequired\u003c/p\u003e |\n| -------- | --------------------------- | -------- |\n| `string` | `search`,`suggestion`       | false    |\n\n\u003e Note:\n\u003e\n\u003e The [aggregationSize](/docs/search/reactivesearch-api/reference/#aggregationsize) property can be used to control the size of category suggestions.",
-            "playgroundURL": "https://play.reactivesearch.io/embed/adZAj2AcCVpDlHmNljl0",
+            "playgroundURL": {
+              "elasticsearch": "https://play.reactivesearch.io/embed/adZAj2AcCVpDlHmNljl0",
+              "mongodb": "https://play.reactivesearch.io/embed/aQBWt5qU2dENQAtjGgLI",
+              "opensearch": "https://play.reactivesearch.io/embed/adZAj2AcCVpDlHmNljl0"
+            },
             "title": "categoryField",
             "type": "string"
           },
@@ -189,7 +211,11 @@
               "opensearch"
             ],
             "markdownDescription": "This is the selected category value. It is used for informing the search result.\n\n| \u003cp style=\"margin: 0px;\" class=\"table-header-text\"\u003eType\u003c/p\u003e     | \u003cp style=\"margin: 0px;\" class=\"table-header-text\"\u003eApplicable on query of type\u003c/p\u003e | \u003cp style=\"margin: 0px;\" class=\"table-header-text\"\u003eRequired\u003c/p\u003e |\n| -------- | --------------------------- | -------- |\n| `string` | `search`,`suggestion`       | false    |",
-            "playgroundURL": "https://play.reactivesearch.io/embed/9MswTJYI7pne7Awi5vWT",
+            "playgroundURL": {
+              "elasticsearch": "https://play.reactivesearch.io/embed/9MswTJYI7pne7Awi5vWT",
+              "mongodb": "https://play.reactivesearch.io/embed/CxpWy5aQvkzRYVVNJKPr",
+              "opensearch": "https://play.reactivesearch.io/embed/9MswTJYI7pne7Awi5vWT"
+            },
             "title": "categoryValue"
           },
           "customHighlight": {
@@ -210,7 +236,12 @@
               "opensearch"
             ],
             "markdownDescription": "Custom query property will be applied to the dependent queries by `react` property, as defined in Elasticsearch Query DSL. You can read more about the `customQuery` usage over [here](/docs/reactivesearch/v3/advanced/customqueries/#when-to-use-custom-query).\n\n\u003e Note:\n\u003e\n\u003e It\\'ll not affect that particular query for which it has been defined, it\\'ll only affect the query for dependent queries. If you want to customize the source query then use the [defaultQuery](/docs/search/reactivesearch-api/reference/#defaultquery) property instead.\n\n| \u003cp style=\"margin: 0px;\" class=\"table-header-text\"\u003eType\u003c/p\u003e     | \u003cp style=\"margin: 0px;\" class=\"table-header-text\"\u003eApplicable on query of type\u003c/p\u003e | \u003cp style=\"margin: 0px;\" class=\"table-header-text\"\u003eRequired\u003c/p\u003e |\n| -------- | --------------------------- | -------- |\n| `Object` | `all`                       | false    |",
-            "playgroundURL": "https://play.reactivesearch.io/embed/IIPiPFpXbPbhKtL3IoPt",
+            "playgroundURL": {
+              "elasticsearch": "https://play.reactivesearch.io/embed/IIPiPFpXbPbhKtL3IoPt",
+              "mongodb": "https://play.reactivesearch.io/embed/Uq1kQp0dC1eB2D4ehD4d",
+              "opensearch": "https://play.reactivesearch.io/embed/IIPiPFpXbPbhKtL3IoPt",
+              "solr": "https://play.reactivesearch.io/embed/5GWsnFaRK8TUeG9uxiFD"
+            },
             "title": "customQuery",
             "type": "object"
           },
@@ -237,7 +268,12 @@
               "opensearch"
             ],
             "markdownDescription": "database field(s) to be queried against, useful for applying search across multiple fields.\nIt accepts the following formats:\n- `string`\n- `DataField`\n- `Array\u003cstring|DataField\u003e`\n\nThe `DataField` type has the following shape:\n\n```ts\ntype DataField = {\n    field: string;\n    weight: float;\n};\n```\nFor examples,\n\n1. `dataField` without field weights\n```js\n    dataField: ['title', 'title.search']\n```\n\n2. `dataField` with field weights\n\n```js\n    dataField: [\n        {\n            \"field\": \"title\",\n            \"weight\": 1\n        },\n        {\n            \"field\": \"title.search\",\n            \"weight\": 3\n        }\n    ]\n```\n\n3. `dataField` with and without field weights\n\n```js\n    dataField: [\n        {\n            \"field\": \"title\",\n            \"weight\": 1\n        },\n        {\n            \"field\": \"title.search\",\n            \"weight\": 3\n        },\n        \"description\"\n    ]\n```\n\n| \u003cp style=\"margin: 0px;\" class=\"table-header-text\"\u003eType\u003c/p\u003e                                       | \u003cp style=\"margin: 0px;\" class=\"table-header-text\"\u003eApplicable on query of type\u003c/p\u003e | \u003cp style=\"margin: 0px;\" class=\"table-header-text\"\u003eRequired\u003c/p\u003e |\n| ------------------------------------------ | --------------------------- | -------- |\n| `string | DataField | Array` | `all`                       | true     |\n\n\u003e Note:\n\u003e Multiple `dataFields` are not applicable for `term` and `geo` queries.",
-            "playgroundURL": "https://play.reactivesearch.io/embed/FTOsW5jSBOzeNWEZy6FL",
+            "playgroundURL": {
+              "elasticsearch": "https://play.reactivesearch.io/embed/FTOsW5jSBOzeNWEZy6FL",
+              "mongodb": "https://play.reactivesearch.io/embed/HtFk5w1Mnq9EU8frz64e",
+              "opensearch": "https://play.reactivesearch.io/embed/FTOsW5jSBOzeNWEZy6FL",
+              "solr": "https://play.reactivesearch.io/embed/OEsNqfreC5r618rPj3O1"
+            },
             "title": "dataField"
           },
           "deepPagination": {
@@ -277,7 +313,12 @@
               "opensearch"
             ],
             "markdownDescription": "This property is useful to customize the source query, as defined in Elasticsearch Query DSL. It is different from the [customQuery](/docs/search/reactivesearch-api/reference/#customquery) in a way that it doesn\\'t get leaked to other queries(dependent queries by `react` prop) and only modifies the query for which it has been applied.\n\nYou can read more about the `defaultQuery` usage over [here](/docs/reactivesearch/v3/advanced/customqueries/#when-to-use-default-query).\n\n| \u003cp style=\"margin: 0px;\" class=\"table-header-text\"\u003eType\u003c/p\u003e     | \u003cp style=\"margin: 0px;\" class=\"table-header-text\"\u003eApplicable on query of type\u003c/p\u003e | \u003cp style=\"margin: 0px;\" class=\"table-header-text\"\u003eRequired\u003c/p\u003e |\n| -------- | --------------------------- | -------- |\n| `Object` | `all`                       | false    |",
-            "playgroundURL": "https://play.reactivesearch.io/embed/DxQUolzQZnhas6Hma15A",
+            "playgroundURL": {
+              "elasticsearch": "https://play.reactivesearch.io/embed/DxQUolzQZnhas6Hma15A",
+              "mongodb": "https://play.reactivesearch.io/embed/D79f1gc0JbA8wBq54AoS",
+              "opensearch": "https://play.reactivesearch.io/embed/DxQUolzQZnhas6Hma15A",
+              "solr": "https://play.reactivesearch.io/embed/2nSqDGicQ4nm0Kiwt2WT"
+            },
             "title": "defaultQuery",
             "type": "object"
           },
@@ -288,7 +329,10 @@
               "opensearch"
             ],
             "markdownDescription": "This property returns only the distinct value documents for the specified field. It is equivalent to the `DISTINCT` clause in SQL. It internally uses the collapse feature of Elasticsearch. You can read more about it over [here](https://www.elastic.co/guide/en/elasticsearch/reference/current/collapse-search-results.html).\n\n| \u003cp style=\"margin: 0px;\" class=\"table-header-text\"\u003eType\u003c/p\u003e     | \u003cp style=\"margin: 0px;\" class=\"table-header-text\"\u003eApplicable on query of type\u003c/p\u003e | \u003cp style=\"margin: 0px;\" class=\"table-header-text\"\u003eRequired\u003c/p\u003e |\n| ------   | --------------------------- | -------- |\n| `string` | `all`                  | false    |\n\nThe following query would return the products for distinct brands.\n```js\n{\n    \"query\": [\n        {\n            \"id\": \"test\",\n            \"dataField\": [\n                \"product_name\"\n            ],\n            \"distinctField\": \"brand.keyword\",\n        }\n    ]\n}\n```",
-            "playgroundURL": "https://play.reactivesearch.io/embed/AwwZ3kuEF2QhQ9M38yPA",
+            "playgroundURL": {
+              "elasticsearch": "https://play.reactivesearch.io/embed/AwwZ3kuEF2QhQ9M38yPA",
+              "opensearch": "https://play.reactivesearch.io/embed/AwwZ3kuEF2QhQ9M38yPA"
+            },
             "title": "distinctField",
             "type": "string"
           },
@@ -299,7 +343,10 @@
               "opensearch"
             ],
             "markdownDescription": "This property allows specifying additional options to the `distinctField` property. Using the allowed DSL, one can specify how to return K distinct values (default value of K=1), sort them by a specific order, or return a second level of distinct values. `distinctFieldConfig` object corresponds to the `inner_hits` key\\'s DSL. You can read more about it over [here](https://www.elastic.co/guide/en/elasticsearch/reference/current/collapse-search-results.html).\n\n| \u003cp style=\"margin: 0px;\" class=\"table-header-text\"\u003eType\u003c/p\u003e     | \u003cp style=\"margin: 0px;\" class=\"table-header-text\"\u003eApplicable on query of type\u003c/p\u003e | \u003cp style=\"margin: 0px;\" class=\"table-header-text\"\u003eRequired\u003c/p\u003e |\n| ------   | --------------------------- | -------- |\n| `object` | `all`                       | false    |\n\nThe following query would return the products for distinct brands. Additionally, it would return the top five products for each brand.\n```js\n{\n    \"query\": [\n        {\n            \"id\": \"test\",\n            \"dataField\": [\n                \"product_name\"\n            ],\n            \"distinctField\": \"brand.keyword\",\n            \"distinctFieldConfig\": {\n                \"inner_hits\": {\n                    \"name\": \"most_recent\",\n                    \"size\": 5,\n                    \"sort\": [\n                        {\n                            \"crawl_timestamp.keyword\": \"asc\"\n                        }\n                    ]\n                },\n                \"max_concurrent_group_searches\": 4\n            }\n        }\n    ]\n}\n```",
-            "playgroundURL": "https://play.reactivesearch.io/embed/RrD7aB3vstYvPZxfaHNo",
+            "playgroundURL": {
+              "elasticsearch": "https://play.reactivesearch.io/embed/RrD7aB3vstYvPZxfaHNo",
+              "opensearch": "https://play.reactivesearch.io/embed/RrD7aB3vstYvPZxfaHNo"
+            },
             "title": "distinctFieldConfig",
             "type": "object"
           },
@@ -377,7 +424,12 @@
               "opensearch"
             ],
             "markdownDescription": "This property can be used to control (enable/disable) the synonyms behavior for a particular query. Defaults to `true`, if set to `false` then fields having `.synonyms` suffix will not affect the query.\n\n| \u003cp style=\"margin: 0px;\" class=\"table-header-text\"\u003eType\u003c/p\u003e   | \u003cp style=\"margin: 0px;\" class=\"table-header-text\"\u003eApplicable on query of type\u003c/p\u003e | \u003cp style=\"margin: 0px;\" class=\"table-header-text\"\u003eRequired\u003c/p\u003e |\n| ------ | --------------------------- | -------- |\n| `bool` | `search`,`suggestion`       | false    |",
-            "playgroundURL": "https://play.reactivesearch.io/embed/FLwTmwBpcLZezTW3Wg5D",
+            "playgroundURL": {
+              "elasticsearch": "https://play.reactivesearch.io/embed/FLwTmwBpcLZezTW3Wg5D",
+              "mongodb": "https://play.reactivesearch.io/embed/6YWIIPkZ8Sc0VZYfToeC",
+              "opensearch": "https://play.reactivesearch.io/embed/FLwTmwBpcLZezTW3Wg5D",
+              "solr": "https://play.reactivesearch.io/embed/Y6ofCAWpEE02zlkZKKgj"
+            },
             "title": "enableSynonyms",
             "type": "boolean"
           },
@@ -422,7 +474,11 @@
               "type": "string"
             },
             "markdownDescription": "Data fields to be excluded in search results.\n\n| \u003cp style=\"margin: 0px;\" class=\"table-header-text\"\u003eType\u003c/p\u003e            | \u003cp style=\"margin: 0px;\" class=\"table-header-text\"\u003eApplicable on query of type\u003c/p\u003ee | \u003cp style=\"margin: 0px;\" class=\"table-header-text\"\u003eRequired\u003c/p\u003e |\n| --------------- | --------------------------- | -------- |\n| `Array\u003cstring\u003e` | `all`                       | false    |",
-            "playgroundURL": "https://play.reactivesearch.io/embed/MXpPbR2OGdAQPbN2ox2H",
+            "playgroundURL": {
+              "elasticsearch": "https://play.reactivesearch.io/embed/MXpPbR2OGdAQPbN2ox2H",
+              "mongodb": "https://play.reactivesearch.io/embed/tuuLL8woVjeiu4QOWY0S",
+              "opensearch": "https://play.reactivesearch.io/embed/MXpPbR2OGdAQPbN2ox2H"
+            },
             "title": "excludeFields",
             "type": "array"
           },
@@ -430,7 +486,6 @@
             "description": "values to exclude in term queries",
             "engine": [
               "elasticsearch",
-              "solr",
               "opensearch"
             ],
             "items": {
@@ -449,7 +504,12 @@
               "opensearch"
             ],
             "markdownDescription": "Sometimes it may require that you want to apply some query for results with the help of `react` property but want to avoid any un-necessary query execution for the performance reasons. If you set `execute` to `false` for a particular query then you can use it with `react` prop without executing it.\nFor example, consider a scenario where we want to filter the search query by some range. To implement it with RS API we need to define two queries(search \u0026 range type). Since you defined the two queries then by default both queries will get executed, however you can avoid this by setting `execute` to `false` for the range query.\n\n| \u003cp style=\"margin: 0px;\" class=\"table-header-text\"\u003eType\u003c/p\u003e   |\u003cp style=\"margin: 0px;\" class=\"table-header-text\"\u003eApplicable on query of type\u003c/p\u003e | \u003cp style=\"margin: 0px;\" class=\"table-header-text\"\u003eRequired\u003c/p\u003e |\n| ------ | --------------------------- | -------- |\n| `bool` | `all`                       | false    |",
-            "playgroundURL": "https://play.reactivesearch.io/embed/NSUbJjAEdAERswHFV6lv",
+            "playgroundURL": {
+              "elasticsearch": "https://play.reactivesearch.io/embed/NSUbJjAEdAERswHFV6lv",
+              "mongodb": "https://play.reactivesearch.io/embed/Uq1kQp0dC1eB2D4ehD4d",
+              "opensearch": "https://play.reactivesearch.io/embed/NSUbJjAEdAERswHFV6lv",
+              "solr": "https://play.reactivesearch.io/embed/5GWsnFaRK8TUeG9uxiFD"
+            },
             "title": "execute",
             "type": "boolean"
           },
@@ -501,7 +561,12 @@
               "opensearch"
             ],
             "markdownDescription": "Starting document offset. Defaults to `0`.\n\n| \u003cp style=\"margin: 0px;\" class=\"table-header-text\"\u003eType\u003c/p\u003e  | \u003cp style=\"margin: 0px;\" class=\"table-header-text\"\u003eApplicable on query of type\u003c/p\u003e              | \u003cp style=\"margin: 0px;\" class=\"table-header-text\"\u003eRequired\u003c/p\u003e |\n| ----- | ---------------------------------------- | -------- |\n| `int` | `search`,`suggestion`,`geo`,`range`      | false    |",
-            "playgroundURL": "https://play.reactivesearch.io/embed/vvurxeUDndDYLBfg0qNx",
+            "playgroundURL": {
+              "elasticsearch": "https://play.reactivesearch.io/embed/vvurxeUDndDYLBfg0qNx",
+              "mongodb": "https://play.reactivesearch.io/embed/n8fwxbBjAWK5dy20lNNo",
+              "opensearch": "https://play.reactivesearch.io/embed/vvurxeUDndDYLBfg0qNx",
+              "solr": "https://play.reactivesearch.io/embed/CkDIWMFkB1xA1lr6fExm"
+            },
             "title": "from",
             "type": "integer"
           },
@@ -513,7 +578,11 @@
               "opensearch"
             ],
             "markdownDescription": "Useful for showing the correct results for an incorrect search parameter by taking the fuzziness into account. For example, with a substitution of one character, `fox` can become `box`. Read more about it in the elastic search https://www.elastic.co/guide/en/elasticsearch/guide/current/fuzziness.html.\n\n| \u003cp style=\"margin: 0px;\" class=\"table-header-text\"\u003eType\u003c/p\u003e           | \u003cp style=\"margin: 0px;\" class=\"table-header-text\"\u003eApplicable on query of type\u003c/p\u003e | \u003cp style=\"margin: 0px;\" class=\"table-header-text\"\u003eRequired\u003c/p\u003e |\n| -------------- | --------------------------- | -------- |\n| `int | string` | `search`, `suggestion`      | false    |\n\n\u003e Note:\n\u003e\n\u003e This property doesn\\'t work when the value of [queryFormat](/docs/search/reactivesearch-api/reference/#queryformat) property is set to `and`.\"",
-            "playgroundURL": "https://play.reactivesearch.io/embed/FfBZDt4981lxD2At3KuK",
+            "playgroundURL": {
+              "elasticsearch": "https://play.reactivesearch.io/embed/FfBZDt4981lxD2At3KuK",
+              "mongodb": "https://play.reactivesearch.io/embed/CGaSSGlTPUOPmL4wv6Xb",
+              "opensearch": "https://play.reactivesearch.io/embed/FfBZDt4981lxD2At3KuK"
+            },
             "title": "fuzziness"
           },
           "highlight": {
@@ -525,7 +594,12 @@
               "opensearch"
             ],
             "markdownDescription": "This property can be used to enable the highlighting in the returned results. If set to `false`, [highlightField](/docs/search/reactivesearch-api/reference/#highlightfield) and [highlightConfig](/docs/search/reactivesearch-api/reference/#highlightconfig) values will be ignored.\n\n| \u003cp style=\"margin: 0px;\" class=\"table-header-text\"\u003eType\u003c/p\u003e   | \u003cp style=\"margin: 0px;\" class=\"table-header-text\"\u003eApplicable on query of type\u003c/p\u003e | \u003cp style=\"margin: 0px;\" class=\"table-header-text\"\u003eRequired\u003c/p\u003e |\n| ------ | --------------------------- | -------- |\n| `bool` | `all`                       | false    |",
-            "playgroundURL": "https://play.reactivesearch.io/embed/AjkyDj8zGt32xV2QcOcu",
+            "playgroundURL": {
+              "elasticsearch": "https://play.reactivesearch.io/embed/AjkyDj8zGt32xV2QcOcu",
+              "mongodb": "https://play.reactivesearch.io/embed/TCMHP5musWLxjm9SAcg8",
+              "opensearch": "https://play.reactivesearch.io/embed/AjkyDj8zGt32xV2QcOcu",
+              "solr": "https://play.reactivesearch.io/embed/SJS4477ORrmJMI7bFhg4"
+            },
             "title": "highlight",
             "type": "boolean"
           },
@@ -538,7 +612,12 @@
               "opensearch"
             ],
             "markdownDescription": "It can be used to set the custom highlight settings. You can read the `Elasticsearch` docs for the highlight options at [here](https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-highlighting.html).\n\n| \u003cp style=\"margin: 0px;\" class=\"table-header-text\"\u003eType\u003c/p\u003e     | \u003cp style=\"margin: 0px;\" class=\"table-header-text\"\u003eApplicable on query of type\u003c/p\u003e | \u003cp style=\"margin: 0px;\" class=\"table-header-text\"\u003eRequired\u003c/p\u003e |\n| -------- | --------------------------- | -------- |\n| `Object` | `all`                       | false    |",
-            "playgroundURL": "https://play.reactivesearch.io/embed/ycCvpsb6ZiWFrEIEPxMX",
+            "playgroundURL": {
+              "elasticsearch": "https://play.reactivesearch.io/embed/ycCvpsb6ZiWFrEIEPxMX",
+              "mongodb": "https://play.reactivesearch.io/embed/TCMHP5musWLxjm9SAcg8",
+              "opensearch": "https://play.reactivesearch.io/embed/ycCvpsb6ZiWFrEIEPxMX",
+              "solr": "https://play.reactivesearch.io/embed/wwXjDm82AYjTDwmXy3Wj"
+            },
             "title": "highlightConfig",
             "type": "object"
           },
@@ -554,7 +633,11 @@
               "type": "string"
             },
             "markdownDescription": "When highlighting is `enabled`, this property allows specifying the fields which should be returned with the matching highlights. When not specified, it defaults to apply highlights on the field(s) specified in the `dataField` prop.\n\n| \u003cp style=\"margin: 0px;\" class=\"table-header-text\"\u003eType\u003c/p\u003e            | \u003cp style=\"margin: 0px;\" class=\"table-header-text\"\u003eApplicable on query of type\u003c/p\u003e | \u003cp style=\"margin: 0px;\" class=\"table-header-text\"\u003eRequired\u003c/p\u003e |\n| --------------- | --------------------------- | -------- |\n| `Array\u003cstring\u003e` | `all`                       | false    |",
-            "playgroundURL": "https://play.reactivesearch.io/embed/GcO9cz4HSDeYh6xBzlrq",
+            "playgroundURL": {
+              "elasticsearch": "https://play.reactivesearch.io/embed/GcO9cz4HSDeYh6xBzlrq",
+              "mongodb": "https://play.reactivesearch.io/embed/TCMHP5musWLxjm9SAcg8",
+              "opensearch": "https://play.reactivesearch.io/embed/GcO9cz4HSDeYh6xBzlrq"
+            },
             "title": "highlightField",
             "type": "array"
           },
@@ -582,7 +665,12 @@
               "type": "string"
             },
             "markdownDescription": "Data fields to be included in search results. Defaults to `[*]` which means all fields are included.\n\n| \u003cp style=\"margin: 0px;\" class=\"table-header-text\"\u003eType\u003c/p\u003e            | \u003cp style=\"margin: 0px;\" class=\"table-header-text\"\u003eApplicable on query of type\u003c/p\u003ee | \u003cp style=\"margin: 0px;\" class=\"table-header-text\"\u003eRequired\u003c/p\u003e |\n| --------------- | --------------------------- | -------- |\n| `Array\u003cstring\u003e` | `all`                       | false    |",
-            "playgroundURL": "https://play.reactivesearch.io/embed/i0wVmWCvfJJLJAWAEn0F",
+            "playgroundURL": {
+              "elasticsearch": "https://play.reactivesearch.io/embed/i0wVmWCvfJJLJAWAEn0F",
+              "mongodb": "https://play.reactivesearch.io/embed/6DedqY8wcwnFnVV0H5jv",
+              "opensearch": "https://play.reactivesearch.io/embed/i0wVmWCvfJJLJAWAEn0F",
+              "solr": "https://play.reactivesearch.io/embed/BiSDVAIW9LX3nnCFbcbs"
+            },
             "title": "includeFields",
             "type": "array"
           },
@@ -595,7 +683,12 @@
               "opensearch"
             ],
             "markdownDescription": "If you have sparse data or documents or items not having the value in the specified field or mapping, then this prop enables you to show that data.\n\n| \u003cp style=\"margin: 0px;\" class=\"table-header-text\"\u003eType\u003c/p\u003e   | \u003cp style=\"margin: 0px;\" class=\"table-header-text\"\u003eApplicable on query of type\u003c/p\u003e | \u003cp style=\"margin: 0px;\" class=\"table-header-text\"\u003eRequired\u003c/p\u003e |\n| ------ | --------------------------- | -------- |\n| `bool` | `range`                     | false    |",
-            "playgroundURL": "https://play.reactivesearch.io/embed/WN0V4iEgY80vRe9UQSvm",
+            "playgroundURL": {
+              "elasticsearch": "https://play.reactivesearch.io/embed/WN0V4iEgY80vRe9UQSvm",
+              "mongodb": "https://play.reactivesearch.io/embed/uwo7xjiMHbNG7cAm798g",
+              "opensearch": "https://play.reactivesearch.io/embed/WN0V4iEgY80vRe9UQSvm",
+              "solr": "https://play.reactivesearch.io/embed/v9CSJs1tuzjSte1fX85y"
+            },
             "title": "includeNullValues",
             "type": "boolean"
           },
@@ -621,7 +714,12 @@
               "opensearch"
             ],
             "markdownDescription": "The `index` property can be used to explicitly specify an `index` for a particular query. It is suitable for use-cases where you want to fetch results from more than one index in a single ReactiveSearch API request. The default value for the index is set to the `index` path variable defined in the URL.\n\n| \u003cp style=\"margin: 0px;\" class=\"table-header-text\"\u003eType\u003c/p\u003e     | \u003cp style=\"margin: 0px;\" class=\"table-header-text\"\u003eApplicable on query of type\u003c/p\u003e | \u003cp style=\"margin: 0px;\" class=\"table-header-text\"\u003eRequired\u003c/p\u003e |\n| -------- | --------------------------- | -------- |\n| `string` | `all`                       | false    |\n\n\nLet\\'s take this example to see how this works:\n\n```\nURL: /my-index/_reactivesearch.v3\n\nBody:\n{\n\t\"query\": [\n\t  {\n\t\t \"id\": \"search\",\n\t\t \"type\": \"search\",\n\t\t ...\n\t  },\n\t  {\n\t\t \"id\": \"facet\",\n\t\t \"type\": \"term\",\n\t\t \"index\": \"optimized-facet-index\"\n\t  }\n\t]\n}\n```\n\nHere, the first query uses the `my-index` index to query against, as specified in the request URL. However, the second query will use the `optimized-facet-index` index as specified by the `index` key in it.",
-            "playgroundURL": "https://play.reactivesearch.io/embed/GsFi6AyoFYD0iiGhNgQi",
+            "playgroundURL": {
+              "elasticsearch": "https://play.reactivesearch.io/embed/GsFi6AyoFYD0iiGhNgQi",
+              "mongodb": "https://play.reactivesearch.io/embed/3Jd1QQg1hFoQyg7wwpCi",
+              "opensearch": "https://play.reactivesearch.io/embed/GsFi6AyoFYD0iiGhNgQi",
+              "solr": "https://play.reactivesearch.io/embed/uGsCMC1l87IwFOct4Gzg"
+            },
             "title": "index",
             "type": "string"
           },
@@ -657,7 +755,11 @@
               "opensearch"
             ],
             "markdownDescription": "To set the histogram bar interval, applicable when [aggregations](/docs/search/reactivesearch-api/reference/#aggregations) value is set to `[\"histogram\"]`. Defaults to `Math.ceil((range.end - range.start) / 100) || 1`.\n\n| \u003cp style=\"margin: 0px;\" class=\"table-header-text\"\u003eType\u003c/p\u003e  | \u003cp style=\"margin: 0px;\" class=\"table-header-text\"\u003eApplicable on query of type\u003c/p\u003e | \u003cp style=\"margin: 0px;\" class=\"table-header-text\"\u003eRequired\u003c/p\u003e |\n| ----- | --------------------------- | -------- |\n| `int` | `range`                     | false    |",
-            "playgroundURL": "https://play.reactivesearch.io/embed/k5MeCmPeELaWvTYeqoGl",
+            "playgroundURL": {
+              "elasticsearch": "https://play.reactivesearch.io/embed/k5MeCmPeELaWvTYeqoGl",
+              "mongodb": "https://play.reactivesearch.io/embed/m780VL1HLEK5YgyadjLK",
+              "opensearch": "https://play.reactivesearch.io/embed/k5MeCmPeELaWvTYeqoGl"
+            },
             "title": "interval",
             "type": "integer"
           },
@@ -677,11 +779,14 @@
             "engine": [
               "elasticsearch",
               "mongodb",
-              "solr",
               "opensearch"
             ],
             "markdownDescription": "Defaults to `N/A`. It allows you to specify a custom label to show when [showMissing](/docs/search/reactivesearch-api/reference/#showmissing) is set to `true`.\n\n| \u003cp style=\"margin: 0px;\" class=\"table-header-text\"\u003eType\u003c/p\u003e     | \u003cp style=\"margin: 0px;\" class=\"table-header-text\"\u003eApplicable on query of type\u003c/p\u003e | \u003cp style=\"margin: 0px;\" class=\"table-header-text\"\u003eRequired\u003c/p\u003e |\n| -------- | --------------------------- | -------- |\n| `string` | `term`                      | false    |\n\n\u003e Note: This property doesn\\'t work when [pagination](/docs/search/reactivesearch-api/reference/#pagination) is set to `true`.",
-            "playgroundURL": "https://play.reactivesearch.io/embed/QoFtxI5RCI5c4BWnCfRH",
+            "playgroundURL": {
+              "elasticsearch": "https://play.reactivesearch.io/embed/QoFtxI5RCI5c4BWnCfRH",
+              "mongodb": "https://play.reactivesearch.io/embed/djmguXPaBC7PYHLq9TGr",
+              "opensearch": "https://play.reactivesearch.io/embed/QoFtxI5RCI5c4BWnCfRH"
+            },
             "title": "missingLabel",
             "type": "string"
           },
@@ -692,7 +797,11 @@
               "opensearch"
             ],
             "markdownDescription": "Set the path of the nested type under which the `dataField` is present. Only applicable only when the field(s) specified in the `dataField` is(are) present under a nested type mapping.\n\n| \u003cp style=\"margin: 0px;\" class=\"table-header-text\"\u003eType\u003c/p\u003e     | \u003cp style=\"margin: 0px;\" class=\"table-header-text\"\u003eApplicable on query of type\u003c/p\u003e | \u003cp style=\"margin: 0px;\" class=\"table-header-text\"\u003eRequired\u003c/p\u003e |\n| -------- | --------------------------- | -------- |\n| `string` | `all`                       | false    |",
-            "playgroundURL": "https://play.reactivesearch.io/embed/d3ADrjDKGVuRYQ6cxKRa",
+            "playgroundURL": {
+              "elasticsearch": "https://play.reactivesearch.io/embed/d3ADrjDKGVuRYQ6cxKRa",
+              "mongodb": "https://play.reactivesearch.io/embed/aRzjyfarFs6tlk59eT6I",
+              "opensearch": "https://play.reactivesearch.io/embed/d3ADrjDKGVuRYQ6cxKRa"
+            },
             "title": "nestedField",
             "type": "string"
           },
@@ -704,7 +813,11 @@
               "opensearch"
             ],
             "markdownDescription": "This property allows you to implement the `pagination` for `term` type of queries. If `pagination` is set to `true` then appbase will use the [composite aggregations](https://www.elastic.co/guide/en/elasticsearch/reference/current/search-aggregations-bucket-composite-aggregation.html) of Elasticsearch instead of [terms aggregations](https://www.elastic.co/guide/en/elasticsearch/reference/current/search-aggregations-bucket-terms-aggregation.html).\n\n| \u003cp style=\"margin: 0px;\" class=\"table-header-text\"\u003eType\u003c/p\u003e  | \u003cp style=\"margin: 0px;\" class=\"table-header-text\"\u003eApplicable on query of type\u003c/p\u003e | \u003cp style=\"margin: 0px;\" class=\"table-header-text\"\u003eRequired\u003c/p\u003e |\n| ----- | --------------------------- | -------- |\n| `bool` | `term`                     | false    |\n\n\u003e Note:\n\u003e 1. Sort by as `count` doesn\\'t work with composite aggregations i.e when `pagination` is set to `true`.\n\u003e 2. The [missingLabel](/docs/search/reactivesearch-api/reference/#missinglabel) property also won\\'t work when composite aggregations have been used.",
-            "playgroundURL": "https://play.reactivesearch.io/embed/isUvzMDdjLFxTErHUw2i",
+            "playgroundURL": {
+              "elasticsearch": "https://play.reactivesearch.io/embed/isUvzMDdjLFxTErHUw2i",
+              "mongodb": "https://play.reactivesearch.io/embed/9HR0pRcDet8VnWJDmJHG",
+              "opensearch": "https://play.reactivesearch.io/embed/isUvzMDdjLFxTErHUw2i"
+            },
             "title": "pagination",
             "type": "boolean"
           },
@@ -717,7 +830,10 @@
               "opensearch"
             ],
             "markdownDescription": "Specify additional options for fetching popular suggestions. It can accept the following keys:\n\n- **size**: `int` Maximum number of popular suggestions to return. Defaults to `5`.\n\n- **minCount**: `int` Return only popular suggestions that have been searched at least minCount times. There is no default minimum count-based restriction.\n\n- **minChars**: `int` Return only popular suggestions that have minimum characters, as set in this property. There is no default minimum character-based restriction.\n\n- **showGlobal**: `Boolean` Defaults to true. When set to `false`, return popular suggestions only based on the current user\\'s past searches.\n\n- **index**: `string` Index(es) from which to return the popular suggestions from. Defaults to searching the entire cluster.\n\n\u003e Note: It is possible to define multiple indices using a comma separated pattern, for e.g `products,categories`.\n\n- **customEvents** `Object` Custom analytics events to filter the popular suggestions.\nFor example,\n```js\n    \"popularSuggestionsConfig\": {\n        \"customEvents\": {\n            \"browser\": \"Chrome\",\n            \"user_id\": \"john@appbase.io\"\n        }\n    }\n```\n\n**sectionLabel**: `string` To define the section title for popular suggestions.\n\n| \u003cp style=\"margin: 0px;\" class=\"table-header-text\"\u003eType\u003c/p\u003e     | \u003cp style=\"margin: 0px;\" class=\"table-header-text\"\u003eApplicable on query of type\u003c/p\u003e | \u003cp style=\"margin: 0px;\" class=\"table-header-text\"\u003eRequired\u003c/p\u003e |\n| ------   | --------------------------- | -------- |\n| `Object` | `suggestion`                | false    |",
-            "playgroundURL": "https://play.reactivesearch.io/embed/3H9Z2lOjp7nQjDqnHDZY",
+            "playgroundURL": {
+              "elasticsearch": "https://play.reactivesearch.io/embed/3H9Z2lOjp7nQjDqnHDZY",
+              "opensearch": "https://play.reactivesearch.io/embed/3H9Z2lOjp7nQjDqnHDZY"
+            },
             "properties": {
               "customEvents": {
                 "type": "object"
@@ -753,7 +869,12 @@
               "opensearch"
             ],
             "markdownDescription": "Sets the query format, can be `or`, `and` and [date format](https://www.elastic.co/guide/en/elasticsearch/reference/current/mapping-date-format.html). Defaults to `or`.\n\n- `or` returns all the results matching any of the search query text\\'s parameters. For example, searching for \"bat man\" with or will return all the results matching either \"bat\" or \"man\".\n\n- On the other hand with `and`, only results matching both \"bat\" and \"man\" will be returned. It returns the results matching all of the search query text\\'s parameters.\"\n\n- `queryFormat` can be set as Elasticsearch [date format](https://www.elastic.co/guide/en/elasticsearch/reference/current/mapping-date-format.html) for `range` type of queries. It allows Elasticsearch to parse the range values (dates) to a specified format before querying the data. You can find the valid date formats at [here](https://www.elastic.co/guide/en/elasticsearch/reference/current/mapping-date-format.html#built-in-date-formats).\n\n| \u003cp style=\"margin: 0px;\" class=\"table-header-text\"\u003eType\u003c/p\u003e     | \u003cp style=\"margin: 0px;\" class=\"table-header-text\"\u003eApplicable on query of type\u003c/p\u003e | \u003cp style=\"margin: 0px;\" class=\"table-header-text\"\u003eRequired\u003c/p\u003e |\n| -------- | --------------------------- | -------- |\n| `string` | `all`                       | false    |",
-            "playgroundURL": "https://play.reactivesearch.io/embed/9NwNk4QRJxdbX0zQviNE",
+            "playgroundURL": {
+              "elasticsearch": "https://play.reactivesearch.io/embed/9NwNk4QRJxdbX0zQviNE",
+              "mongodb": "https://play.reactivesearch.io/embed/qRFh2PiS19Z6GfqOX9r0",
+              "opensearch": "https://play.reactivesearch.io/embed/9NwNk4QRJxdbX0zQviNE",
+              "solr": "https://play.reactivesearch.io/embed/BrZJZmtQ8rysDwNFkwSZ"
+            },
             "title": "queryFormat",
             "type": "string"
           },
@@ -765,7 +886,11 @@
               "opensearch"
             ],
             "markdownDescription": "Defaults to `false`. If set to `true` than it allows you to create a complex search that includes wildcard characters, searches across multiple fields, and more. Read more about it [here](https://www.elastic.co/guide/en/elasticsearch/reference/current/query-dsl-query-string-query.html).\n\n| \u003cp style=\"margin: 0px;\" class=\"table-header-text\"\u003eType\u003c/p\u003e   | \u003cp style=\"margin: 0px;\" class=\"table-header-text\"\u003eApplicable on query of type\u003c/p\u003e | \u003cp style=\"margin: 0px;\" class=\"table-header-text\"\u003eRequired\u003c/p\u003e |\n| ------ | --------------------------- | -------- |\n| `bool` | `search`,`suggestion`       | false    |\n\n\u003e Note: If both properties `searchOperators` and `queryString` are set to `true` then `queryString` will have the priority over `searchOperators`.",
-            "playgroundURL": "https://play.reactivesearch.io/embed/HEJtHdiyKC4LwE0cC1ZA",
+            "playgroundURL": {
+              "elasticsearch": "https://play.reactivesearch.io/embed/HEJtHdiyKC4LwE0cC1ZA",
+              "mongodb": "https://play.reactivesearch.io/embed/9CrNp0tW637cU2dMKEDQ",
+              "opensearch": "https://play.reactivesearch.io/embed/HEJtHdiyKC4LwE0cC1ZA"
+            },
             "title": "queryString",
             "type": "boolean"
           },
@@ -845,7 +970,10 @@
                 "type": "object"
               }
             },
-            "playgroundURL": "https://play.reactivesearch.io/embed/moCjhTRZK14FNsA9mvNo",
+            "playgroundURL": {
+              "elasticsearch": "https://play.reactivesearch.io/embed/moCjhTRZK14FNsA9mvNo",
+              "opensearch": "https://play.reactivesearch.io/embed/moCjhTRZK14FNsA9mvNo"
+            },
             "title": "rankFeature",
             "type": "object"
           },
@@ -858,7 +986,12 @@
               "opensearch"
             ],
             "markdownDescription": "To specify dependent queries to update that particular query for which the react prop is defined. You can read more about it [here](/docs/reactivesearch/v3/advanced/reactprop/).\n\n| \u003cp style=\"margin: 0px;\" class=\"table-header-text\"\u003eType\u003c/p\u003e     | \u003cp style=\"margin: 0px;\" class=\"table-header-text\"\u003eApplicable on query of type\u003c/p\u003ee | \u003cp style=\"margin: 0px;\" class=\"table-header-text\"\u003eRequired\u003c/p\u003e |\n| -------- | --------------------------- | -------- |\n| `Object` | `all`                       | false    |\n\n**Example Playground**: \n\u003ciframe src=\"https://play.reactivesearch.io/embed/fnTtSJmMehxSn3AAJWwi\"  style=\"width:100%; height:100%; border:1px solid;  overflow:hidden;min-height:400px;\" title=\"rs-playground-Nbpi1vkkywun82Z8aqFP\"\u003e\u003c/iframe\u003e\n\n### highlight\n\nThis property can be used to enable the highlighting in the returned results. If set to `false`, [highlightField](/docs/search/reactivesearch-api/reference/#highlightfield) and [highlightConfig](/docs/search/reactivesearch-api/reference/#highlightconfig) values will be ignored.\n\n| \u003cp style=\"margin: 0px;\" class=\"table-header-text\"\u003eType\u003c/p\u003e   | \u003cp style=\"margin: 0px;\" class=\"table-header-text\"\u003eApplicable on query of type\u003c/p\u003e | \u003cp style=\"margin: 0px;\" class=\"table-header-text\"\u003eRequired\u003c/p\u003e |\n| ------ | --------------------------- | -------- |\n| `bool` | `all`                       | false    |",
-            "playgroundURL": "https://play.reactivesearch.io/embed/AjkyDj8zGt32xV2QcOcu",
+            "playgroundURL": {
+              "elasticsearch": "https://play.reactivesearch.io/embed/AjkyDj8zGt32xV2QcOcu",
+              "mongodb": "https://play.reactivesearch.io/embed/7cGXu7zfytS65UCaJw5N",
+              "opensearch": "https://play.reactivesearch.io/embed/AjkyDj8zGt32xV2QcOcu",
+              "solr": "https://play.reactivesearch.io/embed/D78cJ8naiP4eFwey7fkH"
+            },
             "title": "react",
             "type": "object"
           },
@@ -870,7 +1003,10 @@
               "opensearch"
             ],
             "markdownDescription": "Specify additional options for fetching recent suggestions. It can accept the following keys:\n\n- **size**: `int` Maximum number of recent suggestions to return. Defaults to 5.\n\n- **minHits**: `int` Return only recent searches that returned at least minHits results. There is no default minimum hits-based restriction.\n\n- **minChars**: `int` Return only recent suggestions that have minimum characters, as set in this property. There is no default minimum character-based restriction.\n\n- **index**: `string` Index(es) from which to return the recent suggestions from. Defaults to the entire cluster.\n\n\u003e Note: It is possible to define multiple indices using comma separated pattern, for e.g `products,categories`.\n\n- **customEvents** `Object` Custom analytics events to filter the recent suggestions.\nFor example,\n```js\n    \"recentSuggestionsConfig\": {\n        \"customEvents\": {\n            \"browser\": \"Chrome\",\n            \"user_id\": \"john@appbase.io\"\n        }\n    }\n```\n\n**sectionLabel**: `string` To define the section title for recent suggestions.\n\n| \u003cp style=\"margin: 0px;\" class=\"table-header-text\"\u003eType\u003c/p\u003e     | \u003cp style=\"margin: 0px;\" class=\"table-header-text\"\u003eApplicable on query of type\u003c/p\u003e | \u003cp style=\"margin: 0px;\" class=\"table-header-text\"\u003eRequired\u003c/p\u003e |\n| ------   | --------------------------- | -------- |\n| `Object` | `suggestion`                | false    |\n\n**sectionLabel**: `string` To define the section title for popular suggestions.",
-            "playgroundURL": "https://play.reactivesearch.io/embed/VaJF1wffzE2guKfyEhBr",
+            "playgroundURL": {
+              "elasticsearch": "https://play.reactivesearch.io/embed/VaJF1wffzE2guKfyEhBr",
+              "opensearch": "https://play.reactivesearch.io/embed/VaJF1wffzE2guKfyEhBr"
+            },
             "properties": {
               "customEvents": {
                 "type": "object"
@@ -923,7 +1059,11 @@
               "opensearch"
             ],
             "markdownDescription": "Defaults to `false`. If set to `true` then you can use special characters in the search query to enable an advanced search behavior. Read more about it [here](https://www.elastic.co/guide/en/elasticsearch/reference/current/query-dsl-simple-query-string-query.html).\n\n| \u003cp style=\"margin: 0px;\" class=\"table-header-text\"\u003eType\u003c/p\u003e   | \u003cp style=\"margin: 0px;\" class=\"table-header-text\"\u003eApplicable on query of type\u003c/p\u003e | \u003cp style=\"margin: 0px;\" class=\"table-header-text\"\u003eRequired\u003c/p\u003e |\n| ------ | --------------------------- | -------- |\n| `bool` | `search`,`suggestion`       | false    |\n\n\u003e Note: If both properties `searchOperators` and `queryString` are set to `true` then `queryString` will have the priority over `searchOperators`.",
-            "playgroundURL": "https://play.reactivesearch.io/embed/yb5IhaBzF9qUXtTam5j7",
+            "playgroundURL": {
+              "elasticsearch": "https://play.reactivesearch.io/embed/yb5IhaBzF9qUXtTam5j7",
+              "mongodb": "https://play.reactivesearch.io/embed/AIuL75TpGfjCiPy23Ntc",
+              "opensearch": "https://play.reactivesearch.io/embed/yb5IhaBzF9qUXtTam5j7"
+            },
             "title": "searchOperators",
             "type": "boolean"
           },
@@ -944,7 +1084,12 @@
               "opensearch"
             ],
             "markdownDescription": "This property allows you to add a new property in the list with a particular value in such a way that when selected i.e `value` is similar/contains to that label(`selectAllLabel`) then `term` query will make sure that the `field` exists in the `results`.\n\n| \u003cp style=\"margin: 0px;\" class=\"table-header-text\"\u003eType\u003c/p\u003e     | \u003cp style=\"margin: 0px;\" class=\"table-header-text\"\u003eApplicable on query of type\u003c/p\u003e | \u003cp style=\"margin: 0px;\" class=\"table-header-text\"\u003eRequired\u003c/p\u003e |\n| -------- | --------------------------- | -------- |\n| `string` | `term`                      | false    |",
-            "playgroundURL": "https://play.reactivesearch.io/embed/N1lkEUFb3W2SEKgJ1D2L",
+            "playgroundURL": {
+              "elasticsearch": "https://play.reactivesearch.io/embed/N1lkEUFb3W2SEKgJ1D2L",
+              "mongodb": "https://play.reactivesearch.io/embed/IxdVjictTpVDIxUyMx8s",
+              "opensearch": "https://play.reactivesearch.io/embed/N1lkEUFb3W2SEKgJ1D2L",
+              "solr": "https://play.reactivesearch.io/embed/swcIJ4Tv2RcoqgZL5ha9"
+            },
             "title": "selectAllLabel",
             "type": "string"
           },
@@ -967,7 +1112,12 @@
               "opensearch"
             ],
             "markdownDescription": "Defaults to `false`. When set to `true` then it also retrieves the aggregations for missing fields.\n\n| \u003cp style=\"margin: 0px;\" class=\"table-header-text\"\u003eType\u003c/p\u003e   | \u003cp style=\"margin: 0px;\" class=\"table-header-text\"\u003eApplicable on query of type\u003c/p\u003e | \u003cp style=\"margin: 0px;\" class=\"table-header-text\"\u003eRequired\u003c/p\u003e |\n| ------ | --------------------------- | -------- |\n| `bool` | `term`                      | false    |",
-            "playgroundURL": "https://play.reactivesearch.io/embed/Ht0aHbUljvjjFVny2X2Y",
+            "playgroundURL": {
+              "elasticsearch": "https://play.reactivesearch.io/embed/Ht0aHbUljvjjFVny2X2Y",
+              "mongodb": "https://play.reactivesearch.io/embed/Cx8oBlfvg432RGNcwDfs",
+              "opensearch": "https://play.reactivesearch.io/embed/Ht0aHbUljvjjFVny2X2Y",
+              "solr": "https://play.reactivesearch.io/embed/6EDzwDFK1NAAaWXTnG1N"
+            },
             "title": "showMissing",
             "type": "boolean"
           },
@@ -980,7 +1130,12 @@
               "opensearch"
             ],
             "markdownDescription": "To set the number of results to be returned by a query.\n\n| \u003cp style=\"margin: 0px;\" class=\"table-header-text\"\u003eType\u003c/p\u003e  | \u003cp style=\"margin: 0px;\" class=\"table-header-text\"\u003eApplicable on query of type\u003c/p\u003e | \u003cp style=\"margin: 0px;\" class=\"table-header-text\"\u003eRequired\u003c/p\u003e |\n| ----- | --------------------------- | -------- |\n| `int` | `all`                       | false    |",
-            "playgroundURL": "https://play.reactivesearch.io/embed/O1BdUDaqk2aVkU4J0qOL",
+            "playgroundURL": {
+              "elasticsearch": "https://play.reactivesearch.io/embed/O1BdUDaqk2aVkU4J0qOL",
+              "mongodb": "https://play.reactivesearch.io/embed/kQJpKEujvQrpRqwuQxYV",
+              "opensearch": "https://play.reactivesearch.io/embed/O1BdUDaqk2aVkU4J0qOL",
+              "solr": "https://play.reactivesearch.io/embed/OEsNqfreC5r618rPj3O1"
+            },
             "title": "size",
             "type": "integer"
           },
@@ -998,7 +1153,12 @@
               "count"
             ],
             "markdownDescription": "This property can be used to sort the results in a particular format. The valid values are:\n- `asc`, sorts the results in ascending order,\n- `desc`, sorts the results in descending order,\n- `count`, sorts the aggregations by `count`.\n\n\n| \u003cp style=\"margin: 0px;\" class=\"table-header-text\"\u003eType\u003c/p\u003e     | \u003cp style=\"margin: 0px;\" class=\"table-header-text\"\u003eApplicable on query of type\u003c/p\u003e | \u003cp style=\"margin: 0px;\" class=\"table-header-text\"\u003eRequired\u003c/p\u003e |\n| -------- | --------------------------- | -------- |\n| `string` | `all`*                      | false    |\n\n\u003e Note:\n\u003e\n\u003e Please note that the `count` value can only be applied when the query type is of `term`. In addition, the [pagination](/docs/search/reactivesearch-api/reference/#pagination) property for the query needs to be set to `false` (default behavior). When pagination is `true`, a composite aggregation is used under the hood, which doesn\\'t support ordering by count.\n\nThe `sortBy` value by default is set according to the following criterion:\n\n- If field is `_score`, set as `desc`.\n- If field is anything other than `_score`, set as `asc`",
-            "playgroundURL": "https://play.reactivesearch.io/embed/O8i1jMI5xlXM78rqxULu",
+            "playgroundURL": {
+              "elasticsearch": "https://play.reactivesearch.io/embed/O8i1jMI5xlXM78rqxULu",
+              "mongodb": "https://play.reactivesearch.io/embed/7gCL96Etkz3cSir9D2tj",
+              "opensearch": "https://play.reactivesearch.io/embed/O8i1jMI5xlXM78rqxULu",
+              "solr": "https://play.reactivesearch.io/embed/zbxzsh9ZJRBarHUAzd0t"
+            },
             "title": "sortBy",
             "type": "string"
           },
@@ -1039,7 +1199,11 @@
               "opensearch"
             ],
             "markdownDescription": "Data field whose value contains a URL. This is a convenience prop that allows returning the URL value in the suggestion\\'s response.\n\n| \u003cp style=\"margin: 0px;\" class=\"table-header-text\"\u003eType\u003c/p\u003e     | \u003cp style=\"margin: 0px;\" class=\"table-header-text\"\u003eApplicable on query of type\u003c/p\u003e | \u003cp style=\"margin: 0px;\" class=\"table-header-text\"\u003eRequired\u003c/p\u003e |\n| ------   | --------------------------- | -------- |\n| `string` | `suggestion`                | false    |",
-            "playgroundURL": "https://play.reactivesearch.io/embed/2YaNeEx4AEF4PHeJrSdw",
+            "playgroundURL": {
+              "elasticsearch": "https://play.reactivesearch.io/embed/2YaNeEx4AEF4PHeJrSdw",
+              "opensearch": "https://play.reactivesearch.io/embed/2YaNeEx4AEF4PHeJrSdw",
+              "solr": "https://play.reactivesearch.io/embed/41RHlvv68haiY9tN5JLY"
+            },
             "title": "urlField",
             "type": "string"
           },
@@ -1160,7 +1324,12 @@
             "opensearch"
           ],
           "markdownDescription": "`Boolean` This property when set allows you to cache the current search query. The `useCache` property takes precedence irrespective of whether caching is enabled or disabled via the dashboard.",
-          "playgroundURL": "https://play.reactivesearch.io/embed/LfmsZDWgTw5Zf2Z3WTR9",
+          "playgroundURL": {
+            "elasticsearch": "https://play.reactivesearch.io/embed/LfmsZDWgTw5Zf2Z3WTR9",
+            "mongodb": "https://play.reactivesearch.io/embed/Pqmv6mkhri7fFfhCUEwC",
+            "opensearch": "https://play.reactivesearch.io/embed/LfmsZDWgTw5Zf2Z3WTR9",
+            "solr": "https://play.reactivesearch.io/embed/fuu85Z3lehMq7wkKokrH"
+          },
           "title": "useCache",
           "type": "boolean"
         },
