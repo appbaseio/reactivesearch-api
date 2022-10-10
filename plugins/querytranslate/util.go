@@ -357,6 +357,7 @@ const (
 	OpenSearch
 	MongoDB
 	Solr
+	Zinc
 )
 
 // String returns the string representation
@@ -371,6 +372,8 @@ func (b Backend) String() string {
 		return "mongodb"
 	case Solr:
 		return "solr"
+	case Zinc:
+		return "zinc"
 	}
 	return ""
 }
@@ -392,6 +395,8 @@ func (b *Backend) UnmarshalJSON(bytes []byte) error {
 		*b = MongoDB
 	case Solr.String():
 		*b = Solr
+	case Zinc.String():
+		*b = Zinc
 	default:
 		return fmt.Errorf("invalid kNN backend passed: %s", knnBackend)
 	}
@@ -418,6 +423,7 @@ func (b Backend) JSONSchema() *jsonschema.Schema {
 			OpenSearch.String(),
 			MongoDB.String(),
 			Solr.String(),
+			Zinc.String(),
 		},
 		Title:       "Backend",
 		Description: "Backend that ReactiveSearch will use",
