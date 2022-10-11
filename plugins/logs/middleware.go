@@ -75,29 +75,33 @@ func classifyCategory(h http.HandlerFunc) http.HandlerFunc {
 }
 
 type Request struct {
-	URI     string              `json:"uri"`
-	Method  string              `json:"method"`
-	Headers map[string][]string `json:"header"`
-	Body    string              `json:"body"`
+	URI        string              `json:"uri"`
+	Method     string              `json:"method"`
+	HeadersMap map[string][]string `json:"header"`
+	Headers    *string             `json:"headers_string"`
+	Body       string              `json:"body"`
 }
 
 type Response struct {
-	Code    int    `json:"code"`
-	Status  string `json:"status"`
-	Headers map[string][]string
-	Took    *float64 `json:"took,omitempty"`
-	Body    string   `json:"body"`
+	Code       int                 `json:"code"`
+	Status     string              `json:"status"`
+	HeadersMap map[string][]string `json:"header"`
+	Headers    *string             `json:"headers_string"`
+	Took       *float64            `json:"took,omitempty"`
+	Body       string              `json:"body"`
 }
 
 type record struct {
-	Indices         []string                `json:"indices"`
-	Category        string                  `json:"category"`
-	Request         Request                 `json:"request"`
-	Response        Response                `json:"response"`
-	RequestChanges  []difference.Difference `json:"requestChanges"`
-	ResponseChanges []difference.Difference `json:"responseChanges"`
-	Timestamp       time.Time               `json:"timestamp"`
-	Console         []string                `json:"console_logs"`
+	Indices                   []string                `json:"indices"`
+	Category                  string                  `json:"category"`
+	Request                   Request                 `json:"request"`
+	Response                  Response                `json:"response"`
+	RequestChanges            []difference.Difference `json:"requestChanges"`
+	ResponseChanges           []difference.Difference `json:"responseChanges"`
+	Timestamp                 time.Time               `json:"timestamp"`
+	Console                   []string                `json:"console_logs"`
+	IsUsingStringifiedHeaders bool                    `json:"is_using_stringified_headers"`
+	TenantId                  string                  `json:"tenant_id"`
 }
 
 // Recorder records a log "record" for every request.
@@ -177,6 +181,8 @@ func (l *Logs) recordResponse(w *httptest.ResponseRecorder, r *http.Request, req
 	}
 
 	var rec record
+	tenantId, _ := util.GetTenantID()
+	rec.TenantId = tenantId
 	rec.Indices = reqIndices
 	rec.Category = reqCategory.String()
 	requestBody := strings.Split(string(reqBody), "\r\n\r\n")
@@ -216,7 +222,7 @@ func (l *Logs) recordResponse(w *httptest.ResponseRecorder, r *http.Request, req
 	response := w.Result()
 	rec.Response.Code = response.StatusCode
 	rec.Response.Status = http.StatusText(response.StatusCode)
-	rec.Response.Headers = response.Header
+	rec.Response.Headers = GetStringifiedHeader(response.Header)
 
 	responseBody, err := ioutil.ReadAll(response.Body)
 	if err != nil {
@@ -238,7 +244,7 @@ func (l *Logs) recordResponse(w *httptest.ResponseRecorder, r *http.Request, req
 	if *reqCategory == category.ReactiveSearch {
 		rec.Request = Request{
 			URI:     r.URL.Path,
-			Headers: headers,
+			Headers: GetStringifiedHeader(headers),
 			Body:    requestBodyToStore,
 			Method:  r.Method,
 		}
@@ -256,7 +262,7 @@ func (l *Logs) recordResponse(w *httptest.ResponseRecorder, r *http.Request, req
 		// record request
 		rec.Request = Request{
 			URI:     r.URL.Path,
-			Headers: headers,
+			Headers: GetStringifiedHeader(headers),
 			Body:    requestBodyToStore,
 			Method:  r.Method,
 		}
@@ -286,7 +292,7 @@ func (l *Logs) recordResponse(w *httptest.ResponseRecorder, r *http.Request, req
 	} else {
 		rec.Console = *consoleStr
 	}
-
+	rec.IsUsingStringifiedHeaders = true
 	marshalledLog, err := json.Marshal(rec)
 	if err != nil {
 		log.Warningln(logTag, "error encountered while marshalling record :", err)
@@ -300,4 +306,14 @@ func (l *Logs) recordResponse(w *httptest.ResponseRecorder, r *http.Request, req
 	// Add new line character so filebeat can sync it with ES
 	l.lumberjack.Write([]byte("\n"))
 	log.Println(logTag, "logged request successfully", n)
+}
+
+func GetStringifiedHeader(header http.Header) *string {
+	marshalledHeaders, err := json.Marshal(header)
+	if err != nil {
+		log.Errorln(logTag, "error marshalling header", err)
+		return nil
+	}
+	headerAsString := string(marshalledHeaders)
+	return &headerAsString
 }

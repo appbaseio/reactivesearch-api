@@ -127,5 +127,5 @@ func (a *Logs) RSMiddleware() []middleware.Middleware {
 
 // Plugin is enabled only when external ES is used
 func (a *Logs) Enabled() bool {
-	return util.IsSLSDisabled()
+	return true
 }

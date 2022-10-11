@@ -19,36 +19,36 @@ func (es *elasticsearch) getRawLogsES7(ctx context.Context, logsFilter logsFilte
 		From(logsFilter.StartDate).
 		To(logsFilter.EndDate)
 
-	query := es7.NewBoolQuery().Filter(duration)
+	searchQuery := es7.NewBoolQuery().Filter(duration)
 	// apply category filter
 	if logsFilter.Filter == "search" {
 		filters := es7.NewTermsQuery("category.keyword", []interface{}{"search", category.ReactiveSearch.String(), "suggestion"}...)
-		query.Filter(filters)
+		searchQuery.Filter(filters)
 	} else if logsFilter.Filter == "suggestion" {
 		filters := es7.NewTermsQuery("category.keyword", []interface{}{"suggestion"}...)
-		query.Filter(filters)
+		searchQuery.Filter(filters)
 	} else if logsFilter.Filter == "index" {
 		filters := []es7.Query{
 			es7.NewTermsQuery("request.method.keyword", []interface{}{"POST", "PUT"}...),
 			es7.NewTermsQuery("category.keyword", []interface{}{"docs"}...),
 			es7.NewRangeQuery("response.code").Gte(200).Lte(299),
 		}
-		query.Filter(filters...)
+		searchQuery.Filter(filters...)
 	} else if logsFilter.Filter == "delete" {
 		filters := es7.NewMatchQuery("request.method.keyword", "DELETE")
-		query.Filter(filters)
+		searchQuery.Filter(filters)
 	} else if logsFilter.Filter == "success" {
 		filters := es7.NewRangeQuery("response.code").Gte(200).Lte(299)
-		query.Filter(filters)
+		searchQuery.Filter(filters)
 	} else if logsFilter.Filter == "error" {
 		filters := es7.NewRangeQuery("response.code").Gte(400)
-		query.Filter(filters)
+		searchQuery.Filter(filters)
 	} else {
-		query.Filter(es7.NewMatchAllQuery())
+		searchQuery.Filter(es7.NewMatchAllQuery())
 	}
 
 	// apply index filtering logic
-	util.GetIndexFilterQueryEs7(query, logsFilter.Indices...)
+	util.GetIndexFilterQueryEs7(searchQuery, logsFilter.Indices...)
 
 	// only apply latency filter when start or end range is available
 	if logsFilter.StartLatency != nil || logsFilter.EndLatency != nil {
@@ -59,23 +59,25 @@ func (es *elasticsearch) getRawLogsES7(ctx context.Context, logsFilter logsFilte
 		if logsFilter.EndLatency != nil {
 			latencyRangeQuery.Lte(*logsFilter.EndLatency)
 		}
-		query.Filter(latencyRangeQuery)
+		searchQuery.Filter(latencyRangeQuery)
 	}
 
-	searchQuery := util.GetClient7().Search(es.indexName).
-		Query(query).
+	searchRequest := util.GetInternalClient7().
+		Search(es.indexName).
+		Query(searchQuery).
 		From(logsFilter.Offset).
 		Size(logsFilter.Size)
+
 	if logsFilter.OrderByLatency != "" {
 		ascending := false
 		if logsFilter.OrderByLatency == "asc" {
 			ascending = true
 		}
 		// sort by latency
-		searchQuery.SortWithInfo(es7.SortInfo{Field: "response.took", UnmappedType: "int", Ascending: ascending})
+		searchRequest.SortWithInfo(es7.SortInfo{Field: "response.took", UnmappedType: "int", Ascending: ascending})
 	}
-	searchQuery.SortWithInfo(es7.SortInfo{Field: "timestamp", UnmappedType: "date", Ascending: false})
-	response, err := searchQuery.Do(ctx)
+	searchRequest.SortWithInfo(es7.SortInfo{Field: "timestamp", UnmappedType: "date", Ascending: false})
+	response, err := util.SearchRequestDo(searchRequest, searchQuery, context.Background())
 	if err != nil {
 		return nil, err
 	}
@@ -90,7 +92,8 @@ func (es *elasticsearch) getRawLogsES7(ctx context.Context, logsFilter logsFilte
 
 		// Extract the log ID
 		source["id"] = hit.Id
-
+		// Prase stringified headers
+		source = ParseHeaderString(source)
 		hits = append(hits, source)
 	}
 
@@ -110,12 +113,15 @@ func (es *elasticsearch) getRawLogsES7(ctx context.Context, logsFilter logsFilte
 // If we don't find a match, we will raise a 404 error.
 func (es *elasticsearch) getRawLogES7(ctx context.Context, ID string, parseDiffs bool) ([]byte, *LogError) {
 	// Create the query
-	query := es7.NewTermQuery("_id", ID)
-	response, err := util.GetClient7().Search(es.indexName).Query(query).Size(1).Do(ctx)
+	searchQuery := es7.NewTermQuery("_id", ID)
+
+	searchRequest := util.GetInternalClient7().Search().
+		Index(es.indexName).Query(searchQuery).Size(1)
+
+	response, err := util.SearchRequestDo(searchRequest, searchQuery, context.Background())
 
 	if err != nil {
 		errCode := http.StatusInternalServerError
-
 		log.Errorln(logTag, ": error while getting log by ID")
 		return nil, &LogError{
 			Err:  err,
@@ -130,10 +136,10 @@ func (es *elasticsearch) getRawLogES7(ctx context.Context, ID string, parseDiffs
 		}
 	}
 
-	log := make(map[string]interface{})
+	logData := make(map[string]interface{})
 	logMatched := response.Hits.Hits[0]
 
-	err = json.Unmarshal(logMatched.Source, &log)
+	err = json.Unmarshal(logMatched.Source, &logData)
 	if err != nil {
 		return nil, &LogError{
 			Err:  errors.New("Error occurred while unmarshalling log hit"),
@@ -142,10 +148,12 @@ func (es *elasticsearch) getRawLogES7(ctx context.Context, ID string, parseDiffs
 	}
 
 	// Add the ID
-	log["id"] = logMatched.Id
+	logData["id"] = logMatched.Id
+
+	logData = ParseHeaderString(logData)
 
 	// Marshal and return
-	rawLog, err := json.Marshal(log)
+	rawLog, err := json.Marshal(logData)
 	if err != nil {
 		return nil, &LogError{
 			Err:  errors.New("error occurred while marshalling log body"),
@@ -403,4 +411,46 @@ func parseStringToMap(changes interface{}) (interface{}, error) {
 type LogError struct {
 	Err  error
 	Code int
+}
+
+// To handle the breaking change to return `headers_string` as a map named `header`
+func ParseHeaderString(logData map[string]interface{}) map[string]interface{} {
+	IsUsingStringHeaders, ok := logData["is_using_stringified_headers"].(bool)
+	if ok && IsUsingStringHeaders {
+		if logData["request"] != nil {
+			requestAsMap, ok := logData["request"].(map[string]interface{})
+			if ok {
+				headersAsString, ok := requestAsMap["headers_string"].(string)
+				if ok {
+					var headersMap map[string][]string
+					err := json.Unmarshal([]byte(headersAsString), &headersMap)
+					if err != nil {
+						log.Errorln(logTag, ":", err)
+					} else {
+						// write header for header string
+						logData["request"].(map[string]interface{})["header"] = headersMap
+						delete(logData["request"].(map[string]interface{}), "headers_string")
+					}
+				}
+			}
+		}
+		if logData["response"] != nil {
+			requestAsMap, ok := logData["response"].(map[string]interface{})
+			if ok {
+				headersAsString, ok := requestAsMap["headers_string"].(string)
+				if ok {
+					var headersMap map[string][]string
+					err := json.Unmarshal([]byte(headersAsString), &headersMap)
+					if err != nil {
+						log.Errorln(logTag, ":", err)
+					} else {
+						// write header for header string
+						logData["response"].(map[string]interface{})["header"] = headersMap
+						delete(logData["response"].(map[string]interface{}), "headers_string")
+					}
+				}
+			}
+		}
+	}
+	return logData
 }

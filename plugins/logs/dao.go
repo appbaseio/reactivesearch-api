@@ -24,13 +24,14 @@ func initPlugin(alias, config string) (*elasticsearch, error) {
 	ctx := context.Background()
 
 	var es = &elasticsearch{alias}
-	// Only check index existence for non-sls Arc
+	// // Only check index existence for non-sls Arc
 	if util.IsSLSDisabled() {
 		// Check if alias exists instead of index and create first index if not exists with `${alias}-000001`
-		res, err := util.GetClient7().Aliases().Do(ctx)
+		res, err := util.GetInternalClient7().Aliases().Index("_all").Do(ctx)
 		if err != nil {
 			return nil, fmt.Errorf("error while checking if index already exists: %v", err)
 		}
+
 		indices := res.IndicesByAlias(alias)
 		exists := false
 		if len(indices) > 0 {
@@ -49,12 +50,12 @@ func initPlugin(alias, config string) (*elasticsearch, error) {
 		// Meta index doesn't exist, create one
 		indexName := alias + `-000001`
 		// this works for ES6 client as well
-		_, err = util.GetClient7().CreateIndex(indexName).
+		_, err = util.GetInternalClient7().CreateIndex(indexName).
 			Body(settings).
 			Do(ctx)
 		if err != nil {
 			log.Errorln(logTag, " : ", fmt.Errorf("error while creating index named \"%s\" %v", indexName, err))
-			isAliasExistsAsIndex, err := util.GetClient7().IndexExists(alias).Do(ctx)
+			isAliasExistsAsIndex, err := util.GetInternalClient7().IndexExists(alias).Do(ctx)
 			if err != nil {
 				return nil, fmt.Errorf("error while checking if index already exists: %v", err)
 			}
@@ -96,30 +97,8 @@ func initPlugin(alias, config string) (*elasticsearch, error) {
 
 		classify.SetIndexAlias(indexName, alias)
 		classify.SetAliasIndex(alias, indexName)
-
-		rolloverConditions := make(map[string]interface{})
-
-		rolloverConfiguration := fmt.Sprintf(rolloverConfig, "7d", 10000, "1gb")
-		if util.IsProductionPlan() {
-			rolloverConfiguration = fmt.Sprintf(rolloverConfig, "30d", 1000000, "10gb")
-		}
-		json.Unmarshal([]byte(rolloverConfiguration), &rolloverConditions)
 	}
 	return es, nil
-}
-
-func (es *elasticsearch) indexRecord(ctx context.Context, rec record) {
-	bulkIndex := es7.NewBulkIndexRequest().
-		Index(es.indexName).
-		Type("_doc").
-		Doc(rec)
-
-	_, err := util.GetClient7().Bulk().
-		Add(bulkIndex).
-		Do(ctx)
-	if err != nil {
-		log.Errorln(logTag, ": error indexing log record :", err)
-	}
 }
 
 type logsFilter struct {
