@@ -93,7 +93,7 @@ func (es *elasticsearch) getRawLogsES7(ctx context.Context, logsFilter logsFilte
 		// Extract the log ID
 		source["id"] = hit.Id
 		// Prase stringified headers
-		source = ParseHeaderString(source)
+		source = ParseHeaderString(source, "headers_string", "header")
 		hits = append(hits, source)
 	}
 
@@ -150,7 +150,7 @@ func (es *elasticsearch) getRawLogES7(ctx context.Context, ID string, parseDiffs
 	// Add the ID
 	logData["id"] = logMatched.Id
 
-	logData = ParseHeaderString(logData)
+	logData = ParseHeaderString(logData, "headers_string", "header")
 
 	// Marshal and return
 	rawLog, err := json.Marshal(logData)
@@ -414,13 +414,13 @@ type LogError struct {
 }
 
 // To handle the breaking change to return `headers_string` as a map named `header`
-func ParseHeaderString(logData map[string]interface{}) map[string]interface{} {
+func ParseHeaderString(logData map[string]interface{}, headersStringKey, headersMapKey string) map[string]interface{} {
 	IsUsingStringHeaders, ok := logData["is_using_stringified_headers"].(bool)
 	if ok && IsUsingStringHeaders {
 		if logData["request"] != nil {
 			requestAsMap, ok := logData["request"].(map[string]interface{})
 			if ok {
-				headersAsString, ok := requestAsMap["headers_string"].(string)
+				headersAsString, ok := requestAsMap[headersStringKey].(string)
 				if ok {
 					var headersMap map[string][]string
 					err := json.Unmarshal([]byte(headersAsString), &headersMap)
@@ -428,8 +428,8 @@ func ParseHeaderString(logData map[string]interface{}) map[string]interface{} {
 						log.Errorln(logTag, ":", err)
 					} else {
 						// write header for header string
-						logData["request"].(map[string]interface{})["header"] = headersMap
-						delete(logData["request"].(map[string]interface{}), "headers_string")
+						logData["request"].(map[string]interface{})[headersMapKey] = headersMap
+						delete(logData["request"].(map[string]interface{}), headersStringKey)
 					}
 				}
 			}
@@ -437,7 +437,7 @@ func ParseHeaderString(logData map[string]interface{}) map[string]interface{} {
 		if logData["response"] != nil {
 			requestAsMap, ok := logData["response"].(map[string]interface{})
 			if ok {
-				headersAsString, ok := requestAsMap["headers_string"].(string)
+				headersAsString, ok := requestAsMap[headersStringKey].(string)
 				if ok {
 					var headersMap map[string][]string
 					err := json.Unmarshal([]byte(headersAsString), &headersMap)
@@ -445,8 +445,8 @@ func ParseHeaderString(logData map[string]interface{}) map[string]interface{} {
 						log.Errorln(logTag, ":", err)
 					} else {
 						// write header for header string
-						logData["response"].(map[string]interface{})["header"] = headersMap
-						delete(logData["response"].(map[string]interface{}), "headers_string")
+						logData["response"].(map[string]interface{})[headersMapKey] = headersMap
+						delete(logData["response"].(map[string]interface{}), headersStringKey)
 					}
 				}
 			}
