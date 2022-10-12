@@ -786,3 +786,9 @@ func (query *Query) applyHighlightQuery(queryOptions *map[string]interface{}) {
 		}
 	}
 }
+
+// ApplyHighlightQuery is a wrapper to apply highlight query into the passed
+// query map
+func (query *Query) ApplyHighlightQuery(queryOptions *map[string]interface{}) {
+	query.applyHighlightQuery(queryOptions)
+}
