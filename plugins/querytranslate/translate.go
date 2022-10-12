@@ -446,7 +446,7 @@ func TranslateQuery(rsQuery RSQuery, userIP string, queryForId *string) (string,
 	return translateQuery(rsQuery, userIP, queryForId)
 }
 
-type QueryByType func() (*interface{}, error)
+type QueryByType func(query *Query) (*interface{}, error)
 
 // Generate the queryDSL without options for a particular query type
 func (query *Query) generateQueryByType() (*interface{}, error) {
@@ -465,6 +465,11 @@ func (query *Query) generateQueryByType() (*interface{}, error) {
 		translatedQuery, translateError = query.generateSearchQuery()
 	}
 	return &translatedQuery, translateError
+}
+
+// generateQueryByType will generate the query by type
+func generateQueryByType(query *Query) (*interface{}, error) {
+	return query.generateQueryByType()
 }
 
 // Builds the query options for e.g `size`, `from`, `highlight` etc.

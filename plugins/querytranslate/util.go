@@ -756,7 +756,7 @@ func (query *Query) getQuery(rsQuery RSQuery) (*interface{}, map[string]interfac
 
 	if query.React != nil {
 		var err error
-		finalQuery, err = evalReactProp(finalQuery, &finalOptions, "", *query.React, rsQuery, query.generateQueryByType)
+		finalQuery, err = evalReactProp(finalQuery, &finalOptions, "", *query.React, rsQuery, generateQueryByType)
 		if err != nil {
 			log.Errorln(logTag, ":", err)
 			return nil, finalOptions, true, err
@@ -820,7 +820,7 @@ func (query *Query) applyCustomQuery(byTypeFunc QueryByType) (*interface{}, map[
 		// filter query options keys
 		queryOptions = getFilteredOptions(customQuery)
 	}
-	originalQuery, err := byTypeFunc()
+	originalQuery, err := byTypeFunc(query)
 	if err != nil {
 		return nil, queryOptions, err
 	}
