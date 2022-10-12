@@ -648,25 +648,25 @@ func getQueryInstanceByID(id string, rsQuery RSQuery) *Query {
 }
 
 // Evaluate the react prop and adds the dependencies in query
-func evalReactProp(query []interface{}, queryOptions *map[string]interface{}, conjunction string, react interface{}, rsQuery RSQuery) ([]interface{}, error) {
+func evalReactProp(query []interface{}, queryOptions *map[string]interface{}, conjunction string, react interface{}, rsQuery RSQuery, buildByTypeFunc QueryByType) ([]interface{}, error) {
 	nestedReact, isNestedReact := react.(map[string]interface{})
 	if isNestedReact {
 		var err error
 		// handle react prop as struct
 		if nestedReact["and"] != nil {
-			query, err = evalReactProp(query, queryOptions, "and", nestedReact["and"], rsQuery)
+			query, err = evalReactProp(query, queryOptions, "and", nestedReact["and"], rsQuery, buildByTypeFunc)
 			if err != nil {
 				return query, err
 			}
 		}
 		if nestedReact["or"] != nil {
-			query, err = evalReactProp(query, queryOptions, "or", nestedReact["or"], rsQuery)
+			query, err = evalReactProp(query, queryOptions, "or", nestedReact["or"], rsQuery, buildByTypeFunc)
 			if err != nil {
 				return query, err
 			}
 		}
 		if nestedReact["not"] != nil {
-			query, err = evalReactProp(query, queryOptions, "not", nestedReact["not"], rsQuery)
+			query, err = evalReactProp(query, queryOptions, "not", nestedReact["not"], rsQuery, buildByTypeFunc)
 			if err != nil {
 				return query, err
 			}
@@ -690,7 +690,7 @@ func evalReactProp(query []interface{}, queryOptions *map[string]interface{}, co
 						// query options specific to a component for e.g `highlight`
 						componentQueryOptions := getFilteredOptions(queryOps)
 						// Apply custom query
-						translatedQuery, options, err := componentQueryInstance.applyCustomQuery()
+						translatedQuery, options, err := componentQueryInstance.applyCustomQuery(buildByTypeFunc)
 						if err != nil {
 							return query, err
 						}
@@ -702,7 +702,7 @@ func evalReactProp(query []interface{}, queryOptions *map[string]interface{}, co
 						}
 					}
 				} else {
-					return evalReactProp(query, queryOptions, "", comp, rsQuery)
+					return evalReactProp(query, queryOptions, "", comp, rsQuery, buildByTypeFunc)
 				}
 			}
 			if len(queryArr) > 0 {
@@ -725,7 +725,7 @@ func evalReactProp(query []interface{}, queryOptions *map[string]interface{}, co
 					// query options specific to a component for e.g `highlight`
 					componentQueryOptions := getFilteredOptions(queryOps)
 					// Apply custom query
-					translatedQuery, options, err := componentQueryInstance.applyCustomQuery()
+					translatedQuery, options, err := componentQueryInstance.applyCustomQuery(buildByTypeFunc)
 					if err != nil {
 						return query, err
 					}
@@ -744,6 +744,11 @@ func evalReactProp(query []interface{}, queryOptions *map[string]interface{}, co
 	return query, nil
 }
 
+// EvalReactProp will evaluate the react prop and add dependencies in the query
+func EvalReactProp(query []interface{}, queryOptions *map[string]interface{}, conjunction string, react interface{}, rsQuery RSQuery, buildByTypeFunc QueryByType) ([]interface{}, error) {
+	return evalReactProp(query, queryOptions, conjunction, react, rsQuery, buildByTypeFunc)
+}
+
 // Returns the queryDSL with react prop dependencies
 func (query *Query) getQuery(rsQuery RSQuery) (*interface{}, map[string]interface{}, bool, error) {
 	var finalQuery []interface{}
@@ -751,7 +756,7 @@ func (query *Query) getQuery(rsQuery RSQuery) (*interface{}, map[string]interfac
 
 	if query.React != nil {
 		var err error
-		finalQuery, err = evalReactProp(finalQuery, &finalOptions, "", *query.React, rsQuery)
+		finalQuery, err = evalReactProp(finalQuery, &finalOptions, "", *query.React, rsQuery, query.generateQueryByType)
 		if err != nil {
 			log.Errorln(logTag, ":", err)
 			return nil, finalOptions, true, err
@@ -802,7 +807,7 @@ func getFilteredOptions(options map[string]interface{}) map[string]interface{} {
 }
 
 // Apply the custom query
-func (query *Query) applyCustomQuery() (*interface{}, map[string]interface{}, error) {
+func (query *Query) applyCustomQuery(byTypeFunc QueryByType) (*interface{}, map[string]interface{}, error) {
 	queryOptions := make(map[string]interface{})
 	if query.CustomQuery != nil {
 		customQuery := *query.CustomQuery
@@ -815,7 +820,7 @@ func (query *Query) applyCustomQuery() (*interface{}, map[string]interface{}, er
 		// filter query options keys
 		queryOptions = getFilteredOptions(customQuery)
 	}
-	originalQuery, err := query.generateQueryByType()
+	originalQuery, err := byTypeFunc()
 	if err != nil {
 		return nil, queryOptions, err
 	}

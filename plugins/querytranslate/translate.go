@@ -446,6 +446,8 @@ func TranslateQuery(rsQuery RSQuery, userIP string, queryForId *string) (string,
 	return translateQuery(rsQuery, userIP, queryForId)
 }
 
+type QueryByType func() (*interface{}, error)
+
 // Generate the queryDSL without options for a particular query type
 func (query *Query) generateQueryByType() (*interface{}, error) {
 	var translatedQuery interface{}
