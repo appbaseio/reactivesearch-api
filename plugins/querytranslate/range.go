@@ -160,3 +160,9 @@ func (query *Query) generateRangeQuery() (*interface{}, error) {
 
 	return &rangeQuery, nil
 }
+
+// GenerateRangeQuery will generate the range query based on the details
+// passed.
+func (query *Query) GenerateRangeQuery() (*interface{}, error) {
+	return query.generateGeoQuery()
+}
