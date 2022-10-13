@@ -45,6 +45,7 @@ const (
 	MongoDB
 	Solr
 	Fusion
+	Zinc
 )
 
 // String returns the string representation
@@ -61,6 +62,8 @@ func (b Backend) String() string {
 		return "solr"
 	case Fusion:
 		return "fusion"
+	case Zinc:
+		return "zinc"
 	}
 	return ""
 }
@@ -84,6 +87,8 @@ func (b *Backend) UnmarshalJSON(bytes []byte) error {
 		*b = Solr
 	case Fusion.String():
 		*b = Fusion
+	case Zinc.String():
+		*b = Zinc
 	default:
 		return fmt.Errorf("invalid backend passed: %s", backend)
 	}
@@ -111,6 +116,7 @@ func (b Backend) JSONSchema() *jsonschema.Schema {
 			MongoDB.String(),
 			Solr.String(),
 			Fusion.String(),
+			Zinc.String(),
 		},
 		Title:       "Backend",
 		Description: "Backend that ReactiveSearch will use",
