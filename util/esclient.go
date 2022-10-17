@@ -317,14 +317,14 @@ func InitExternalESClient7() {
 		if *backend == ElasticSearch {
 			esURL = GetGlobalESURL()
 			if esURL == "" {
-				log.Warnln("Falling back to backend `fusion` since ES_URL is not provided!")
+				log.Warnln("Falling back to backend `zinc` since ES_URL is not provided!")
 				SetDefaultBackend()
 				return
 			}
 		} else if *backend == OpenSearch {
 			osURL = GetGlobalOSURL()
 			if osURL == "" {
-				log.Warnln("Falling back to backend `fusion` since OS_URL is not provided!")
+				log.Warnln("Falling back to backend `zinc` since OS_URL is not provided!")
 				SetDefaultBackend()
 				return
 			}
