@@ -18,7 +18,7 @@ func SetBackend(be *Backend) {
 // SetDefaultBackend sets the backend value
 // if nothing is fetched based on billing
 func SetDefaultBackend() {
-	defaultBackend := Fusion
+	defaultBackend := Zinc
 	backend = &defaultBackend
 }
 
