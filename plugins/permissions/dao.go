@@ -87,13 +87,12 @@ func (es *elasticsearch) getRawPermission(ctx context.Context, username string) 
 }
 
 func (es *elasticsearch) postPermission(ctx context.Context, p permission.Permission) (bool, error) {
-	indexRequest := util.GetInternalClient7().Index().
+
+	_, err := util.GetInternalClient7().Index().
 		Refresh("wait_for").
 		Index(es.indexName).
 		Id(p.Username).
-		BodyJson(p)
-
-	_, err := util.IndexRequestDo(indexRequest, p, ctx)
+		BodyJson(p).Do(ctx)
 
 	if err != nil {
 		return false, err
@@ -107,12 +106,10 @@ func (es *elasticsearch) patchPermission(ctx context.Context, username string, p
 }
 
 func (es *elasticsearch) deletePermission(ctx context.Context, username string) (bool, error) {
-	deleteByServiceReq := util.GetInternalClient7().Delete().
+	_, err := util.GetInternalClient7().Delete().
 		Refresh("wait_for").
 		Index(es.indexName).
-		Id(username)
-
-	_, err := util.DeleteRequestDo(deleteByServiceReq, ctx, nil, username, es.indexName)
+		Id(username).Do(ctx)
 
 	if err != nil {
 		return false, err
