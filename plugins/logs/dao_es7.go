@@ -77,7 +77,7 @@ func (es *elasticsearch) getRawLogsES7(ctx context.Context, logsFilter logsFilte
 		searchRequest.SortWithInfo(es7.SortInfo{Field: "response.took", UnmappedType: "int", Ascending: ascending})
 	}
 	searchRequest.SortWithInfo(es7.SortInfo{Field: "timestamp", UnmappedType: "date", Ascending: false})
-	response, err := util.SearchRequestDo(searchRequest, searchQuery, context.Background())
+	response, err := searchRequest.Do(context.Background())
 	if err != nil {
 		return nil, err
 	}
@@ -118,7 +118,7 @@ func (es *elasticsearch) getRawLogES7(ctx context.Context, ID string, parseDiffs
 	searchRequest := util.GetInternalClient7().Search().
 		Index(es.indexName).Query(searchQuery).Size(1)
 
-	response, err := util.SearchRequestDo(searchRequest, searchQuery, context.Background())
+	response, err := searchRequest.Do(context.Background())
 
 	if err != nil {
 		errCode := http.StatusInternalServerError

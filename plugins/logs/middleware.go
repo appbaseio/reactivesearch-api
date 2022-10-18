@@ -181,7 +181,7 @@ func (l *Logs) recordResponse(w *httptest.ResponseRecorder, r *http.Request, req
 	}
 
 	var rec record
-	tenantId, _ := util.GetTenantID()
+	tenantId, _ := util.GetAppbaseID()
 	rec.TenantId = tenantId
 	rec.Indices = reqIndices
 	rec.Category = reqCategory.String()
