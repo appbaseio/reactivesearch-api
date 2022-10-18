@@ -5,6 +5,7 @@ import (
 	"sync"
 
 	"github.com/appbaseio/reactivesearch-api/middleware"
+	"github.com/appbaseio/reactivesearch-api/model/reindex"
 	"github.com/appbaseio/reactivesearch-api/plugins"
 	"github.com/appbaseio/reactivesearch-api/util"
 	"github.com/natefinch/lumberjack"
@@ -98,9 +99,14 @@ func (l *Logs) InitFunc() error {
 
 	// init cron job
 	cronjob := cron.New()
-	cronjob.AddFunc("@midnight", func() { l.es.rolloverIndexJob(indexName) })
+	if util.IsSLSDisabled() {
+		// init cron job
+		cronjob.AddFunc("@midnight", func() { l.es.rolloverIndexJob(indexName) })
+	} else {
+		// run a cron job at midnight + 30m (00h:30m) to refresh the index to alias cache
+		cronjob.AddFunc("0 30 0 * * *", func() { reindex.InitAliasIndexCache() })
+	}
 	cronjob.Start()
-
 	return nil
 }
 
@@ -121,5 +127,5 @@ func (a *Logs) RSMiddleware() []middleware.Middleware {
 
 // Plugin is enabled only when external ES is used
 func (a *Logs) Enabled() bool {
-	return util.IsSLSDisabled()
+	return true
 }
