@@ -10,11 +10,10 @@ import (
 )
 
 func (es *elasticsearch) getRawUsersEs7(ctx context.Context) ([]byte, error) {
-	searchRequest := util.GetInternalClient7().Search().
-		Index(es.indexName).
-		Size(1000)
 
-	response, err := util.SearchRequestDo(searchRequest, nil, ctx)
+	response, err := util.GetInternalClient7().Search().
+		Index(es.indexName).
+		Size(1000).Do(ctx)
 
 	if err != nil {
 		return nil, err
@@ -35,13 +34,11 @@ func (es *elasticsearch) patchUserEs7(ctx context.Context, username string, patc
 		return nil, idFetchErr
 	}
 
-	updateRequest := util.GetInternalClient7().Update().
+	response, err := util.GetInternalClient7().Update().
 		Refresh("wait_for").
 		Index(es.indexName).
 		Id(userID).
-		Doc(patch)
-
-	response, err := util.UpdateRequestDo(updateRequest, patch, ctx)
+		Doc(patch).Do(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -60,9 +57,7 @@ func (es *elasticsearch) getRawUserEs7(ctx context.Context, username string) ([]
 	// is a better idea.
 	usernameTermQuery := es7.NewTermQuery("username", username)
 
-	searchRequest := util.GetInternalClient7().Search().Index(es.indexName).Query(usernameTermQuery).FetchSource(true).Size(1)
-
-	response, err := util.SearchRequestDo(searchRequest, usernameTermQuery, ctx)
+	response, err := util.GetInternalClient7().Search().Index(es.indexName).Query(usernameTermQuery).FetchSource(true).Size(1).Do(ctx)
 
 	if err != nil {
 		return nil, err
@@ -95,9 +90,7 @@ func (es *elasticsearch) getUserID(ctx context.Context, username string) (string
 	// is a better idea.
 	usernameTermQuery := es7.NewTermQuery("username.keyword", username)
 
-	searchRequest := util.GetInternalClient7().Search().Index(es.indexName).Query(usernameTermQuery).FetchSource(true).Size(1)
-
-	response, err := util.SearchRequestDo(searchRequest, usernameTermQuery, ctx)
+	response, err := util.GetInternalClient7().Search().Index(es.indexName).Query(usernameTermQuery).FetchSource(true).Size(1).Do(ctx)
 
 	if err != nil {
 		return "", err
@@ -124,12 +117,10 @@ func (es *elasticsearch) deleteUserEs7(ctx context.Context, username string) (bo
 		return false, idFetchErr
 	}
 
-	deleteRequest := util.GetInternalClient7().Delete().
+	_, err := util.GetInternalClient7().Delete().
 		Index(es.indexName).
 		Refresh("wait_for").
-		Id(userID)
-
-	_, err := util.DeleteRequestDo(deleteRequest, ctx, nil, username, es.indexName)
+		Id(userID).Do(ctx)
 	if err != nil {
 		return false, err
 	}
