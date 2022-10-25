@@ -12,7 +12,7 @@ import (
 )
 
 // transform the query
-func translateQuery(rsQuery RSQuery, userIP string, queryForId *string) (string, []byte, error) {
+func translateQuery(rsQuery RSQuery, userIP string, queryForId *string, preference *string) (string, []byte, error) {
 	// Validate custom events
 	if rsQuery.Settings != nil && rsQuery.Settings.CustomEvents != nil {
 		for k, v := range *rsQuery.Settings.CustomEvents {
@@ -200,9 +200,14 @@ func translateQuery(rsQuery RSQuery, userIP string, queryForId *string) (string,
 				return mSearchQuery, nil, err2
 			}
 			// Add preference
-			preferenceId := *query.ID + "_" + userIP
-			if rsQuery.Settings != nil && rsQuery.Settings.UserID != nil {
-				preferenceId = *query.ID + "_" + *rsQuery.Settings.UserID
+			var preferenceId string
+			if preference != nil {
+				preferenceId = *preference
+			} else {
+				preferenceId = *query.ID + "_" + userIP
+				if rsQuery.Settings != nil && rsQuery.Settings.UserID != nil {
+					preferenceId = *query.ID + "_" + *rsQuery.Settings.UserID
+				}
 			}
 			var msearchConfig = map[string]interface{}{
 				"preference": preferenceId,
@@ -444,8 +449,8 @@ func GetDefaultScript(backend Backend) string {
 }
 
 // global function to transform the RS API query to _msearch equivalent query
-func TranslateQuery(rsQuery RSQuery, userIP string, queryForId *string) (string, []byte, error) {
-	return translateQuery(rsQuery, userIP, queryForId)
+func TranslateQuery(rsQuery RSQuery, userIP string, queryForId *string, preference *string) (string, []byte, error) {
+	return translateQuery(rsQuery, userIP, queryForId, preference)
 }
 
 // Generate the queryDSL without options for a particular query type

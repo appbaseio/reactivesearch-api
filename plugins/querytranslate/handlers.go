@@ -43,7 +43,7 @@ func (r *QueryTranslate) search() http.HandlerFunc {
 		if len(reqBody) != 0 {
 			reqURL := "/" + vars["index"] + "/_msearch"
 			start := time.Now()
-			httpRes, err := makeESRequest(ctx, reqURL, http.MethodPost, reqBody)
+			httpRes, err := makeESRequest(ctx, reqURL, http.MethodPost, reqBody, req.URL.Query())
 			if err != nil {
 				msg := err.Error()
 				log.Errorln(logTag, ":", err)
