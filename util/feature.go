@@ -78,6 +78,19 @@ func SetFeatureEcommerce(val bool) {
 	featureEcommerce = val
 }
 
+// Feature ui builder premium
+var featureUIBuilder bool
+
+// GetFeatureUIBuilderPremium returns the featureUIBuilder
+func GetFeatureUIBuilderPremium() bool {
+	return featureUIBuilder
+}
+
+// SetFeatureUIBuilderPremium sets the featureUIBuilder
+func SetFeatureUIBuilderPremium(val bool) {
+	featureUIBuilder = val
+}
+
 // Feature cache
 var featureCache bool
 
