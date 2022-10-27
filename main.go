@@ -89,6 +89,8 @@ var (
 	FeatureCache string
 	// FeaturePipelines for testing
 	FeaturePipelines string
+	// FeatureUIBuilderPremium for testing
+	FeatureUIBuilderPremium string
 )
 
 // SentryErrorHook implements the logrus.Hooks interface to report errors to sentry
@@ -427,6 +429,9 @@ func main() {
 	}
 	if FeatureEcommerce == "true" {
 		util.SetFeatureEcommerce(true)
+	}
+	if FeatureUIBuilderPremium == "true" {
+		util.SetFeatureUIBuilderPremium(true)
 	}
 	if FeatureCache == "true" {
 		util.SetFeatureCache(true)

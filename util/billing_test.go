@@ -42,6 +42,10 @@ func TestBilling(t *testing.T) {
 			SetFeatureEcommerce(true)
 			So(GetFeatureEcommerce(), ShouldEqual, true)
 		})
+		Convey("Set FeatureUIBuilder", func() {
+			SetFeatureUIBuilderPremium(true)
+			So(GetFeatureUIBuilderPremium(), ShouldEqual, true)
+		})
 		Convey("Set FeatureCache", func() {
 			SetFeatureCache(true)
 			So(GetFeatureCache(), ShouldEqual, true)
