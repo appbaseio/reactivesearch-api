@@ -263,7 +263,12 @@ func queryTranslate(h http.HandlerFunc) http.HandlerFunc {
 		var translateErr error
 		var msearchQuery string
 
-		msearchQuery, _, translateErr = translateQuery(*body, iplookup.FromRequest(req), nil)
+		var preference *string
+		p := req.URL.Query().Get("preference")
+		if p != "" {
+			preference = &p
+		}
+		msearchQuery, _, translateErr = translateQuery(*body, iplookup.FromRequest(req), nil, preference)
 
 		// log.Println("RS QUERY", msearchQuery)
 		if translateErr != nil {

@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"math"
+	"net/url"
 	"reflect"
 	"sort"
 	"strconv"
@@ -937,12 +938,19 @@ func isNilInterface(c interface{}) bool {
 }
 
 // Makes the elasticsearch requests
-func makeESRequest(ctx context.Context, url, method string, reqBody []byte) (*es7.Response, error) {
+func makeESRequest(ctx context.Context, url, method string, reqBody []byte, params url.Values) (*es7.Response, error) {
 	esClient := util.GetClient7()
+	filteredParams := params
+	for k := range filteredParams {
+		if k == "preference" {
+			filteredParams.Del("preference")
+		}
+	}
 	requestOptions := es7.PerformRequestOptions{
 		Method: method,
 		Path:   url,
 		Body:   string(reqBody),
+		Params: filteredParams,
 	}
 	response, err := esClient.PerformRequest(ctx, requestOptions)
 	if err != nil {

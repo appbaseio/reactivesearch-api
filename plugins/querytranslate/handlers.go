@@ -43,7 +43,7 @@ func (r *QueryTranslate) search() http.HandlerFunc {
 		if len(reqBody) != 0 {
 			reqURL := "/" + vars["index"] + "/_msearch"
 			start := time.Now()
-			httpRes, err := makeESRequest(ctx, reqURL, http.MethodPost, reqBody)
+			httpRes, err := makeESRequest(ctx, reqURL, http.MethodPost, reqBody, req.URL.Query())
 			if err != nil {
 				msg := err.Error()
 				log.Errorln(logTag, ":", err)
@@ -310,6 +310,19 @@ func (r *QueryTranslate) validate() http.HandlerFunc {
 		// Extract some request details that might be required later
 		vars := mux.Vars(req)
 		defaultURL := fmt.Sprint(util.GetESURL(), "/", vars["index"], "/_search")
+		request, err := http.NewRequest("POST", defaultURL, nil)
+		if err != nil {
+			log.Errorln(logTag, ":", err)
+			util.WriteBackError(w, "Error while creating request", http.StatusBadRequest)
+			return
+		}
+		filteredParams := req.URL.Query()
+		for k := range filteredParams {
+			if k == "preference" {
+				filteredParams.Del("preference")
+			}
+		}
+		request.URL.RawQuery = filteredParams.Encode()
 		methodUsed := req.Method
 
 		validateMapToShow := make([]map[string]interface{}, 0)
@@ -353,7 +366,7 @@ func (r *QueryTranslate) validate() http.HandlerFunc {
 			validateMapToShow = append(validateMapToShow, map[string]interface{}{
 				"id": requestID,
 				"endpoint": map[string]interface{}{
-					"url":     defaultURL,
+					"url":     request.URL.String(),
 					"method":  methodUsed,
 					"headers": headersPassed,
 					"body":    bodyAsMap,
