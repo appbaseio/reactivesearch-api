@@ -314,3 +314,8 @@ func (query *Query) getTermsAggsQuery(normalizedFields []DataField, pos int) *ma
 	termQuery[dataField] = aggsQuery
 	return &termQuery
 }
+
+// GetTermsAggsQuery will build the aggs for the term query
+func (query *Query) GetTermsAggsQuery(normalizedFields []DataField, pos int) *map[string]interface{} {
+	return query.getTermsAggsQuery(normalizedFields, pos)
+}

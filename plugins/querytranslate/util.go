@@ -358,6 +358,7 @@ const (
 	OpenSearch
 	MongoDB
 	Solr
+	Zinc
 )
 
 // String returns the string representation
@@ -372,6 +373,8 @@ func (b Backend) String() string {
 		return "mongodb"
 	case Solr:
 		return "solr"
+	case Zinc:
+		return "zinc"
 	}
 	return ""
 }
@@ -393,6 +396,8 @@ func (b *Backend) UnmarshalJSON(bytes []byte) error {
 		*b = MongoDB
 	case Solr.String():
 		*b = Solr
+	case Zinc.String():
+		*b = Zinc
 	default:
 		return fmt.Errorf("invalid kNN backend passed: %s", knnBackend)
 	}
@@ -419,6 +424,7 @@ func (b Backend) JSONSchema() *jsonschema.Schema {
 			OpenSearch.String(),
 			MongoDB.String(),
 			Solr.String(),
+			Zinc.String(),
 		},
 		Title:       "Backend",
 		Description: "Backend that ReactiveSearch will use",
@@ -473,7 +479,7 @@ type Query struct {
 	HighlightConfig             *map[string]interface{}     `json:"highlightConfig,omitempty" jsonschema:"title=highlightConfig,description=settings for highlighting of results" jsonschema_extras:"engine=elasticsearch,engine=mongodb,engine=solr,engine=opensearch"`
 	Interval                    *int                        `json:"interval,omitempty" jsonschema:"title=interval,description=histogram bar interval, applicable only when aggregations are set to histogram" jsonschema_extras:"engine=elasticsearch,engine=mongodb,engine=solr,engine=opensearch"`
 	Aggregations                *[]string                   `json:"aggregations,omitempty" jsonschema:"title=aggregations,description=utilize the built-in aggregations for range type of queries" jsonschema_extras:"engine=elasticsearch,engine=mongodb,engine=solr,engine=opensearch"`
-	MissingLabel                string                      `json:"missingLabel,omitempty" jsonschema:"title=missingLabel,description=custom label to show when showMissing is set to true" jsonschema_extras:"engine=elasticsearch,engine=mongodb,engine=solr,engine=opensearch"`
+	MissingLabel                string                      `json:"missingLabel,omitempty" jsonschema:"title=missingLabel,description=custom label to show when showMissing is set to true" jsonschema_extras:"engine=elasticsearch,engine=mongodb,engine=opensearch"`
 	ShowMissing                 *bool                       `json:"showMissing,omitempty" jsonschema:"title=showMissing,description=whether or not to show missing results" jsonschema_extras:"engine=elasticsearch,engine=mongodb,engine=solr,engine=opensearch"`
 	DefaultQuery                *map[string]interface{}     `json:"defaultQuery,omitempty" jsonschema:"title=defaultQuery,description=customize the source query. This doesn't get leaked to other queries unlike customQuery" jsonschema_extras:"engine=elasticsearch,engine=mongodb,engine=solr,engine=opensearch"`
 	CustomQuery                 *map[string]interface{}     `json:"customQuery,omitempty" jsonschema:"title=customQuery,description=query to be used by dependent queries specified using the react property" jsonschema_extras:"engine=elasticsearch,engine=mongodb,engine=solr,engine=opensearch"`
@@ -511,7 +517,7 @@ type Query struct {
 	DeepPaginationConfig        *DeepPaginationConfig       `json:"deepPaginationConfig,omitempty" jsonschema:"title=deepPaginationConfig,description=additional options for deepPagination for it to work properly" jsonschema_extras:"engine=elasticsearch,engine=solr,engine=opensearch"`
 	Endpoint                    *Endpoint                   `json:"endpoint,omitempty" jsonschema:"title=endpoint,description=endpoint and other details where the query should be hit" jsonschema_extras:"engine=elasticsearch,engine=solr,engine=opensearch"`
 	IncludeValues               *[]string                   `json:"includeValues,omitempty" jsonschema:"title=includeValues,description=values to include in term queries" jsonschema_extras:"engine=elasticsearch,engine=solr,engine=opensearch"`
-	ExcludeValues               *[]string                   `json:"excludeValues,omitempty" jsonschema:"title=excludeValues,description=values to exclude in term queries" jsonschema_extras:"engine=elasticsearch,engine=solr,engine=opensearch"`
+	ExcludeValues               *[]string                   `json:"excludeValues,omitempty" jsonschema:"title=excludeValues,description=values to exclude in term queries" jsonschema_extras:"engine=elasticsearch,engine=opensearch"`
 	SearchBoxId                 *string                     `json:"searchboxId,omitempty" jsonschema:"title=searchboxId,description=searchbox id for a suggestion query" jsonschema_extras:"engine=elasticsearch,engine=opensearch"`
 }
 
@@ -522,14 +528,14 @@ type DataField struct {
 
 // Settings represents the search settings
 type Settings struct {
-	RecordAnalytics       *bool                   `json:"recordAnalytics,omitempty" jsonschema:"title=recordAnalytics,description=whether or not to record analytics for the current request"`
-	UserID                *string                 `json:"userId,omitempty" jsonschema:"title=userId,description=user ID that will be used to record the analytics"`
-	CustomEvents          *map[string]interface{} `json:"customEvents,omitempty" jsonschema:"title=customEvents,description=custom events that can be used to build own analytics on top of ReactiveSearch analytics"`
-	EnableQueryRules      *bool                   `json:"enableQueryRules,omitempty" jsonschema:"title=enableQueryRules,description=whether or not to apply the query rules for the current request"`
-	EnableSearchRelevancy *bool                   `json:"enableSearchRelevancy,omitempty" jsonschema:"title=enableSearchRelevancy,description=whether or not to apply search relevancy for the current request"`
-	UseCache              *bool                   `json:"useCache,omitempty" jsonschema:"title=useCache,description=whether or not to use cache for the current request"`
-	QueryRule             *map[string]interface{} `json:"queryRule,omitempty" jsonschema:"title=queryRule,description="`
-	Backend               *Backend                `json:"backend,omitempty" jsonschema:"title=backend,description=backend to use for the current request"`
+	RecordAnalytics       *bool                   `json:"recordAnalytics,omitempty" jsonschema:"title=recordAnalytics,description=whether or not to record analytics for the current request" jsonschema_extras:"engine=elasticsearch,engine=solr,engine=opensearch"`
+	UserID                *string                 `json:"userId,omitempty" jsonschema:"title=userId,description=user ID that will be used to record the analytics" jsonschema_extras:"engine=elasticsearch,engine=opensearch"`
+	CustomEvents          *map[string]interface{} `json:"customEvents,omitempty" jsonschema:"title=customEvents,description=custom events that can be used to build own analytics on top of ReactiveSearch analytics" jsonschema_extras:"engine=elasticsearch,engine=opensearch"`
+	EnableQueryRules      *bool                   `json:"enableQueryRules,omitempty" jsonschema:"title=enableQueryRules,description=whether or not to apply the query rules for the current request" jsonschema_extras:"engine=elasticsearch,engine=opensearch"`
+	EnableSearchRelevancy *bool                   `json:"enableSearchRelevancy,omitempty" jsonschema:"title=enableSearchRelevancy,description=whether or not to apply search relevancy for the current request" jsonschema_extras:"engine=elasticsearch,engine=opensearch"`
+	UseCache              *bool                   `json:"useCache,omitempty" jsonschema:"title=useCache,description=whether or not to use cache for the current request" jsonschema_extras:"engine=elasticsearch,engine=opensearch"`
+	QueryRule             *map[string]interface{} `json:"queryRule,omitempty" jsonschema:"title=queryRule,description=" jsonschema_extras:"engine=elasticsearch,engine=opensearch"`
+	Backend               *Backend                `json:"backend,omitempty" jsonschema:"title=backend,description=backend to use for the current request" jsonschema_extras:"engine=elasticsearch,engine=solr,engine=opensearch"`
 }
 
 // RSQuery represents the request body
@@ -643,25 +649,25 @@ func getQueryInstanceByID(id string, rsQuery RSQuery) *Query {
 }
 
 // Evaluate the react prop and adds the dependencies in query
-func evalReactProp(query []interface{}, queryOptions *map[string]interface{}, conjunction string, react interface{}, rsQuery RSQuery) ([]interface{}, error) {
+func evalReactProp(query []interface{}, queryOptions *map[string]interface{}, conjunction string, react interface{}, rsQuery RSQuery, buildByTypeFunc QueryByType) ([]interface{}, error) {
 	nestedReact, isNestedReact := react.(map[string]interface{})
 	if isNestedReact {
 		var err error
 		// handle react prop as struct
 		if nestedReact["and"] != nil {
-			query, err = evalReactProp(query, queryOptions, "and", nestedReact["and"], rsQuery)
+			query, err = evalReactProp(query, queryOptions, "and", nestedReact["and"], rsQuery, buildByTypeFunc)
 			if err != nil {
 				return query, err
 			}
 		}
 		if nestedReact["or"] != nil {
-			query, err = evalReactProp(query, queryOptions, "or", nestedReact["or"], rsQuery)
+			query, err = evalReactProp(query, queryOptions, "or", nestedReact["or"], rsQuery, buildByTypeFunc)
 			if err != nil {
 				return query, err
 			}
 		}
 		if nestedReact["not"] != nil {
-			query, err = evalReactProp(query, queryOptions, "not", nestedReact["not"], rsQuery)
+			query, err = evalReactProp(query, queryOptions, "not", nestedReact["not"], rsQuery, buildByTypeFunc)
 			if err != nil {
 				return query, err
 			}
@@ -685,7 +691,7 @@ func evalReactProp(query []interface{}, queryOptions *map[string]interface{}, co
 						// query options specific to a component for e.g `highlight`
 						componentQueryOptions := getFilteredOptions(queryOps)
 						// Apply custom query
-						translatedQuery, options, err := componentQueryInstance.applyCustomQuery()
+						translatedQuery, options, err := componentQueryInstance.applyCustomQuery(buildByTypeFunc)
 						if err != nil {
 							return query, err
 						}
@@ -697,7 +703,7 @@ func evalReactProp(query []interface{}, queryOptions *map[string]interface{}, co
 						}
 					}
 				} else {
-					return evalReactProp(query, queryOptions, "", comp, rsQuery)
+					return evalReactProp(query, queryOptions, "", comp, rsQuery, buildByTypeFunc)
 				}
 			}
 			if len(queryArr) > 0 {
@@ -720,7 +726,7 @@ func evalReactProp(query []interface{}, queryOptions *map[string]interface{}, co
 					// query options specific to a component for e.g `highlight`
 					componentQueryOptions := getFilteredOptions(queryOps)
 					// Apply custom query
-					translatedQuery, options, err := componentQueryInstance.applyCustomQuery()
+					translatedQuery, options, err := componentQueryInstance.applyCustomQuery(buildByTypeFunc)
 					if err != nil {
 						return query, err
 					}
@@ -739,6 +745,11 @@ func evalReactProp(query []interface{}, queryOptions *map[string]interface{}, co
 	return query, nil
 }
 
+// EvalReactProp will evaluate the react prop and add dependencies in the query
+func EvalReactProp(query []interface{}, queryOptions *map[string]interface{}, conjunction string, react interface{}, rsQuery RSQuery, buildByTypeFunc QueryByType) ([]interface{}, error) {
+	return evalReactProp(query, queryOptions, conjunction, react, rsQuery, buildByTypeFunc)
+}
+
 // Returns the queryDSL with react prop dependencies
 func (query *Query) getQuery(rsQuery RSQuery) (*interface{}, map[string]interface{}, bool, error) {
 	var finalQuery []interface{}
@@ -746,7 +757,7 @@ func (query *Query) getQuery(rsQuery RSQuery) (*interface{}, map[string]interfac
 
 	if query.React != nil {
 		var err error
-		finalQuery, err = evalReactProp(finalQuery, &finalOptions, "", *query.React, rsQuery)
+		finalQuery, err = evalReactProp(finalQuery, &finalOptions, "", *query.React, rsQuery, generateQueryByType)
 		if err != nil {
 			log.Errorln(logTag, ":", err)
 			return nil, finalOptions, true, err
@@ -797,7 +808,7 @@ func getFilteredOptions(options map[string]interface{}) map[string]interface{} {
 }
 
 // Apply the custom query
-func (query *Query) applyCustomQuery() (*interface{}, map[string]interface{}, error) {
+func (query *Query) applyCustomQuery(byTypeFunc QueryByType) (*interface{}, map[string]interface{}, error) {
 	queryOptions := make(map[string]interface{})
 	if query.CustomQuery != nil {
 		customQuery := *query.CustomQuery
@@ -810,7 +821,7 @@ func (query *Query) applyCustomQuery() (*interface{}, map[string]interface{}, er
 		// filter query options keys
 		queryOptions = getFilteredOptions(customQuery)
 	}
-	originalQuery, err := query.generateQueryByType()
+	originalQuery, err := byTypeFunc(query)
 	if err != nil {
 		return nil, queryOptions, err
 	}

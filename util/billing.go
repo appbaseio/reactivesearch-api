@@ -81,24 +81,25 @@ type ArcUsage struct {
 }
 
 type ClusterPlan struct {
-	Tier                   *Plan  `json:"tier"`
-	FeatureCustomEvents    bool   `json:"feature_custom_events"`
-	FeatureSuggestions     bool   `json:"feature_suggestions"`
-	FeatureRules           bool   `json:"feature_rules"`
-	FeatureSearchRelevancy bool   `json:"feature_search_relevancy"`
-	FeatureSearchGrader    bool   `json:"feature_search_grader"`
-	FeatureEcommerce       bool   `json:"feature_ecommerce"`
-	FeatureCache           bool   `json:"feature_cache"`
-	FeaturePipelines       bool   `json:"feature_pipelines"`
-	Trial                  bool   `json:"trial"`
-	TrialValidity          int64  `json:"trial_validity"`
-	TierValidity           int64  `json:"tier_validity"`
-	TimeValidity           int64  `json:"time_validity"`
-	SubscriptionID         string `json:"subscription_id"`
-	ClusterID              string `json:"cluster_id"`
-	NumberOfMachines       int64  `json:"number_of_machines"`
-	SubscriptionCanceled   bool   `json:"subscription_canceled"`
-	CreatedAt              int64  `json:"created_at"`
+	Tier                    *Plan  `json:"tier"`
+	FeatureCustomEvents     bool   `json:"feature_custom_events"`
+	FeatureSuggestions      bool   `json:"feature_suggestions"`
+	FeatureRules            bool   `json:"feature_rules"`
+	FeatureSearchRelevancy  bool   `json:"feature_search_relevancy"`
+	FeatureSearchGrader     bool   `json:"feature_search_grader"`
+	FeatureEcommerce        bool   `json:"feature_ecommerce"`
+	FeatureCache            bool   `json:"feature_cache"`
+	FeaturePipelines        bool   `json:"feature_pipelines"`
+	FeatureUIBuilderPremium bool   `json:"feature_uibuilder_premium"`
+	Trial                   bool   `json:"trial"`
+	TrialValidity           int64  `json:"trial_validity"`
+	TierValidity            int64  `json:"tier_validity"`
+	TimeValidity            int64  `json:"time_validity"`
+	SubscriptionID          string `json:"subscription_id"`
+	ClusterID               string `json:"cluster_id"`
+	NumberOfMachines        int64  `json:"number_of_machines"`
+	SubscriptionCanceled    bool   `json:"subscription_canceled"`
+	CreatedAt               int64  `json:"created_at"`
 }
 
 // ArcUsageResponse stores the response from ACCAPI
@@ -128,27 +129,28 @@ type ClusterPlanResponse struct {
 
 // ArcInstanceDetails contains the info about a ReactiveSearch Instance
 type ArcInstanceDetails struct {
-	NodeCount              int                    `json:"node_count"`
-	Description            string                 `json:"description"`
-	SubscriptionID         string                 `json:"subscription_id"`
-	SubscriptionCanceled   bool                   `json:"subscription_canceled"`
-	Trial                  bool                   `json:"trial"`
-	TrialValidity          int64                  `json:"trial_validity"`
-	CreatedAt              int64                  `json:"created_at"`
-	Tier                   *Plan                  `json:"tier"`
-	TierValidity           int64                  `json:"tier_validity"`
-	TimeValidity           int64                  `json:"time_validity"`
-	Metadata               map[string]interface{} `json:"metadata"`
-	FeatureCustomEvents    bool                   `json:"feature_custom_events"`
-	FeatureSuggestions     bool                   `json:"feature_suggestions"`
-	FeatureRules           bool                   `json:"feature_rules"`
-	FeatureSearchRelevancy bool                   `json:"feature_search_relevancy"`
-	FeatureSearchGrader    bool                   `json:"feature_search_grader"`
-	FeatureEcommerce       bool                   `json:"feature_ecommerce"`
-	FeatureCache           bool                   `json:"feature_cache"`
-	FeaturePipelines       bool                   `json:"feature_pipelines"`
-	ClusterID              string                 `json:"cluster_id"`
-	NumberOfMachines       int64                  `json:"number_of_machines"`
+	NodeCount               int                    `json:"node_count"`
+	Description             string                 `json:"description"`
+	SubscriptionID          string                 `json:"subscription_id"`
+	SubscriptionCanceled    bool                   `json:"subscription_canceled"`
+	Trial                   bool                   `json:"trial"`
+	TrialValidity           int64                  `json:"trial_validity"`
+	CreatedAt               int64                  `json:"created_at"`
+	Tier                    *Plan                  `json:"tier"`
+	TierValidity            int64                  `json:"tier_validity"`
+	TimeValidity            int64                  `json:"time_validity"`
+	Metadata                map[string]interface{} `json:"metadata"`
+	FeatureCustomEvents     bool                   `json:"feature_custom_events"`
+	FeatureSuggestions      bool                   `json:"feature_suggestions"`
+	FeatureRules            bool                   `json:"feature_rules"`
+	FeatureSearchRelevancy  bool                   `json:"feature_search_relevancy"`
+	FeatureSearchGrader     bool                   `json:"feature_search_grader"`
+	FeatureEcommerce        bool                   `json:"feature_ecommerce"`
+	FeatureUIBuilderPremium bool                   `json:"feature_uibuilder_premium"`
+	FeatureCache            bool                   `json:"feature_cache"`
+	FeaturePipelines        bool                   `json:"feature_pipelines"`
+	ClusterID               string                 `json:"cluster_id"`
+	NumberOfMachines        int64                  `json:"number_of_machines"`
 }
 
 // SetDefaultTier sets the default tier when billing is disabled
@@ -258,6 +260,7 @@ func getArcInstance(arcID string) (ArcInstance, error) {
 		SetFeatureSearchRelevancy(arcInstanceByID.FeatureSearchRelevancy)
 		SetFeatureSearchGrader(arcInstanceByID.FeatureSearchGrader)
 		SetFeatureEcommerce(arcInstanceByID.FeatureEcommerce)
+		SetFeatureUIBuilderPremium(arcInstanceByID.FeatureUIBuilderPremium)
 		SetFeatureCache(arcInstanceByID.FeatureCache)
 		SetFeaturePipelines(arcInstanceByID.FeaturePipelines)
 		setNumberOfMachines(arcInstanceByID.NumberOfMachines)
@@ -326,6 +329,7 @@ func getArcClusterInstance(clusterID string) (ArcInstance, error) {
 		SetFeatureSearchRelevancy(arcInstanceDetails.FeatureSearchRelevancy)
 		SetFeatureSearchGrader(arcInstanceDetails.FeatureSearchGrader)
 		SetFeatureEcommerce(arcInstanceDetails.FeatureEcommerce)
+		SetFeatureUIBuilderPremium(arcInstanceDetails.FeatureUIBuilderPremium)
 		SetFeatureCache(arcInstanceDetails.FeatureCache)
 		SetFeaturePipelines(arcInstanceDetails.FeaturePipelines)
 		setNumberOfMachines(arcInstanceDetails.NumberOfMachines)
@@ -414,6 +418,7 @@ func getClusterPlan(clusterID string) (ClusterPlan, error) {
 	SetFeatureSearchRelevancy(response.Plan.FeatureSearchRelevancy)
 	SetFeatureSearchGrader(response.Plan.FeatureSearchGrader)
 	SetFeatureEcommerce(response.Plan.FeatureEcommerce)
+	SetFeatureUIBuilderPremium(response.Plan.FeatureUIBuilderPremium)
 	SetFeatureCache(response.Plan.FeatureCache)
 	SetFeaturePipelines(response.Plan.FeaturePipelines)
 	setNumberOfMachines(response.Plan.NumberOfMachines)
