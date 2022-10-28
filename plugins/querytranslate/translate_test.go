@@ -33,7 +33,7 @@ func TestTranslateQuery(t *testing.T) {
 			},
 		}
 		_, _, err := translateQuery(rsQuery, "127.0.0.1", nil, nil)
-		So(err, ShouldBeNil, nil)
+		So(err, ShouldBeNil)
 	})
 	Convey("with single dataField for term", t, func() {
 		id := "test"
@@ -47,7 +47,7 @@ func TestTranslateQuery(t *testing.T) {
 			},
 		}
 		_, _, err := translateQuery(rsQuery, "127.0.0.1", nil, nil)
-		So(err, ShouldBeNil, nil)
+		So(err, ShouldBeNil)
 	})
 	Convey("with multiple dataFields for search", t, func() {
 		id := "test"
@@ -60,7 +60,7 @@ func TestTranslateQuery(t *testing.T) {
 			},
 		}
 		_, _, err := translateQuery(rsQuery, "127.0.0.1", nil, nil)
-		So(err, ShouldBeNil, nil)
+		So(err, ShouldBeNil)
 	})
 	Convey("without dataField", t, func() {
 		id := "test"
@@ -75,6 +75,6 @@ func TestTranslateQuery(t *testing.T) {
 			},
 		}
 		_, _, err := translateQuery(rsQuery, "127.0.0.1", nil, nil)
-		So(err, ShouldNotBeNil, nil)
+		So(err, ShouldNotBeNil)
 	})
 }
