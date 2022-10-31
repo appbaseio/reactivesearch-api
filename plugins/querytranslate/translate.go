@@ -298,6 +298,7 @@ func BuildIndependentRequest(query Query, rsQuery RSQuery) (map[string]interface
 		}
 
 		delete(queryAsMap, "endpoint")
+		delete(queryAsMap, "searchboxId")
 
 		bodyToSend := map[string]interface{}{
 			"query": []map[string]interface{}{
