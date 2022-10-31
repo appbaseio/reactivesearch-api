@@ -299,6 +299,8 @@ func BuildIndependentRequest(query Query, rsQuery RSQuery) (map[string]interface
 
 		delete(queryAsMap, "endpoint")
 		delete(queryAsMap, "searchboxId")
+		// Set query type as search if body is not specified
+		queryAsMap["type"] = "search"
 
 		bodyToSend := map[string]interface{}{
 			"query": []map[string]interface{}{
