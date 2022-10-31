@@ -434,7 +434,7 @@ func TransformESResponse(response []byte, rsAPIRequest *RSQuery) ([]byte, error)
 		if query.Type == Suggestion {
 			// mock empty response for suggestions when index/endpoint suggestions are disabled
 			isSuggestionDisabled := false
-			if query.EnableIndexSuggestions != nil &&
+			if query.EnableIndexSuggestions != nil && query.Endpoint == nil &&
 				!*query.EnableIndexSuggestions {
 				isSuggestionDisabled = true
 			}
