@@ -265,7 +265,7 @@ func BuildIndependentRequests(rsQuery RSQuery) ([]map[string]interface{}, error)
 // BuildIndependentRequest will build the independent request based on the passed
 // details and return a map to be used during execution of the request.
 func BuildIndependentRequest(query Query, rsQuery RSQuery) (map[string]interface{}, error) {
-	DEFAULT_METHOD := http.MethodGet
+	DEFAULT_METHOD := http.MethodPost
 	DEFAULT_HEADERS := make(map[string]string)
 
 	if query.Endpoint.Method == nil || *query.Endpoint.Method == "" {
