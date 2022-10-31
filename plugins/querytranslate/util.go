@@ -905,7 +905,7 @@ func getValidInterval(interval *int, rangeValue RangeValue) int {
 func (query *Query) shouldExecuteQuery() bool {
 	// don't execute query if index suggestions are disabled
 	if query.Type == Suggestion &&
-		query.EnableIndexSuggestions != nil &&
+		query.EnableIndexSuggestions != nil && query.Endpoint == nil &&
 		!*query.EnableIndexSuggestions {
 		return false
 	}
