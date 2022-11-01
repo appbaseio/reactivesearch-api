@@ -35,6 +35,7 @@ var planDetails *[]byte
 
 // setPlanDetails sets the plan details
 func setPlanDetails(planInfo []byte) {
+	log.Println("SETTING PLAN DETAILS", planInfo, planDetailsHook)
 	planDetails = &planInfo
 	if planDetailsHook != nil {
 		hook := *planDetailsHook

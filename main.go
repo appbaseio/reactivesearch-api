@@ -331,7 +331,6 @@ func main() {
 		// read from env file
 		licenseKey = os.Getenv("LICENSE_KEY")
 	}
-	planCronJob := cron.New()
 	if licenseKey != "" {
 		util.OfflineBilling = true
 		keygen.PublicKey = util.AppbasePublicKey
@@ -365,14 +364,18 @@ func main() {
 		if Billing == "true" {
 			log.Println("You're running ReactiveSearch with billing module enabled.")
 			util.ReportUsage()
-			planCronJob.AddFunc(interval, util.ReportUsage)
+			cronJob := cron.New()
+			cronJob.AddFunc(interval, util.ReportUsage)
+			cronJob.Start()
 			if IgnoreBillingMiddleware != "true" {
 				mainRouter.Use(util.BillingMiddleware)
 			}
 		} else if HostedBilling == "true" {
 			log.Println("You're running ReactiveSearch with hosted billing module enabled.")
 			util.ReportHostedArcUsage()
-			planCronJob.AddFunc(interval, util.ReportHostedArcUsage)
+			cronJob := cron.New()
+			cronJob.AddFunc(interval, util.ReportHostedArcUsage)
+			cronJob.Start()
 			if IgnoreBillingMiddleware != "true" {
 				mainRouter.Use(util.BillingMiddleware)
 			}
@@ -380,7 +383,9 @@ func main() {
 			log.Println("You're running ReactiveSearch with cluster billing module enabled.")
 			util.SetClusterPlan()
 			// refresh plan
-			planCronJob.AddFunc(interval, util.SetClusterPlan)
+			cronJob := cron.New()
+			cronJob.AddFunc(interval, util.SetClusterPlan)
+			cronJob.Start()
 			if IgnoreBillingMiddleware != "true" {
 				mainRouter.Use(util.BillingMiddleware)
 			}
@@ -584,8 +589,6 @@ func main() {
 
 	// Finally start the server
 	routerSwapper.StartServer()
-	// Fetch arc plan
-	planCronJob.Start()
 }
 
 func syncPluginCache() {
