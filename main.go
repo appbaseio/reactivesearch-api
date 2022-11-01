@@ -309,9 +309,7 @@ func main() {
 		}
 	}
 
-	// interval := "@every " + PlanRefreshInterval + "h"
-
-	interval := "@every " + "30s"
+	interval := "@every " + PlanRefreshInterval + "h"
 
 	util.Billing = Billing
 	util.HostedBilling = HostedBilling

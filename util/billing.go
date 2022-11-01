@@ -20,9 +20,9 @@ const ClusterIDEnvName = "CLUSTER_ID"
 const AppbaseIDEnvName = "APPBASE_ID"
 
 // ACCAPI URL
-// var ACCAPI = "https://accapi.appbase.io/"
+var ACCAPI = "https://accapi.appbase.io/"
 
-var ACCAPI = "http://localhost:3000/"
+// var ACCAPI = "http://localhost:3000/"
 
 var planDetailsHook *func([]byte)
 
@@ -35,7 +35,6 @@ var planDetails *[]byte
 
 // setPlanDetails sets the plan details
 func setPlanDetails(planInfo []byte) {
-	log.Println("SETTING PLAN DETAILS", planInfo, planDetailsHook)
 	planDetails = &planInfo
 	if planDetailsHook != nil {
 		hook := *planDetailsHook
