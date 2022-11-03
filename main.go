@@ -93,6 +93,8 @@ var (
 	FeatureCache string
 	// FeaturePipelines for testing
 	FeaturePipelines string
+	// FeatureUIBuilderPremium for testing
+	FeatureUIBuilderPremium string
 )
 
 // SentryErrorHook implements the logrus.Hooks interface to report errors to sentry
@@ -368,18 +370,18 @@ func main() {
 		if Billing == "true" {
 			log.Println("You're running ReactiveSearch with billing module enabled.")
 			util.ReportUsage()
-			cronjob := cron.New()
-			cronjob.AddFunc(interval, util.ReportUsage)
-			cronjob.Start()
+			cronJob := cron.New()
+			cronJob.AddFunc(interval, util.ReportUsage)
+			cronJob.Start()
 			if IgnoreBillingMiddleware != "true" {
 				mainRouter.Use(util.BillingMiddleware)
 			}
 		} else if HostedBilling == "true" {
 			log.Println("You're running ReactiveSearch with hosted billing module enabled.")
 			util.ReportHostedArcUsage()
-			cronjob := cron.New()
-			cronjob.AddFunc(interval, util.ReportHostedArcUsage)
-			cronjob.Start()
+			cronJob := cron.New()
+			cronJob.AddFunc(interval, util.ReportHostedArcUsage)
+			cronJob.Start()
 			if IgnoreBillingMiddleware != "true" {
 				mainRouter.Use(util.BillingMiddleware)
 			}
@@ -387,9 +389,9 @@ func main() {
 			log.Println("You're running ReactiveSearch with cluster billing module enabled.")
 			util.SetClusterPlan()
 			// refresh plan
-			cronjob := cron.New()
-			cronjob.AddFunc(interval, util.SetClusterPlan)
-			cronjob.Start()
+			cronJob := cron.New()
+			cronJob.AddFunc(interval, util.SetClusterPlan)
+			cronJob.Start()
 			if IgnoreBillingMiddleware != "true" {
 				mainRouter.Use(util.BillingMiddleware)
 			}
@@ -436,6 +438,9 @@ func main() {
 	}
 	if FeatureEcommerce == "true" {
 		util.SetFeatureEcommerce(true)
+	}
+	if FeatureUIBuilderPremium == "true" {
+		util.SetFeatureUIBuilderPremium(true)
 	}
 	if FeatureCache == "true" {
 		util.SetFeatureCache(true)

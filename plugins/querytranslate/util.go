@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"math"
+	"net/url"
 	"reflect"
 	"sort"
 	"strconv"
@@ -822,7 +823,7 @@ func getValidInterval(interval *int, rangeValue RangeValue) int {
 func (query *Query) shouldExecuteQuery() bool {
 	// don't execute query if index suggestions are disabled
 	if query.Type == Suggestion &&
-		query.EnableIndexSuggestions != nil &&
+		query.EnableIndexSuggestions != nil && query.Endpoint == nil &&
 		!*query.EnableIndexSuggestions {
 		return false
 	}
@@ -855,12 +856,19 @@ func isNilInterface(c interface{}) bool {
 }
 
 // Makes the elasticsearch requests
-func makeESRequest(ctx context.Context, url, method string, reqBody []byte) (*es7.Response, error) {
+func makeESRequest(ctx context.Context, url, method string, reqBody []byte, params url.Values) (*es7.Response, error) {
 	esClient := util.GetClient7()
+	filteredParams := params
+	for k := range filteredParams {
+		if k == "preference" {
+			filteredParams.Del("preference")
+		}
+	}
 	requestOptions := es7.PerformRequestOptions{
 		Method: method,
 		Path:   url,
 		Body:   string(reqBody),
+		Params: filteredParams,
 	}
 	response, err := esClient.PerformRequest(ctx, requestOptions)
 	if err != nil {

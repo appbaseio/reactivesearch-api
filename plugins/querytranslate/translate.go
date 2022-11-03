@@ -12,7 +12,7 @@ import (
 )
 
 // transform the query
-func translateQuery(rsQuery RSQuery, userIP string, queryForId *string) (string, []byte, error) {
+func translateQuery(rsQuery RSQuery, userIP string, queryForId *string, preference *string) (string, []byte, error) {
 	// Validate custom events
 	if rsQuery.Settings != nil && rsQuery.Settings.CustomEvents != nil {
 		for k, v := range *rsQuery.Settings.CustomEvents {
@@ -198,9 +198,14 @@ func translateQuery(rsQuery RSQuery, userIP string, queryForId *string) (string,
 				return mSearchQuery, nil, err2
 			}
 			// Add preference
-			preferenceId := *query.ID + "_" + userIP
-			if rsQuery.Settings != nil && rsQuery.Settings.UserID != nil {
-				preferenceId = *query.ID + "_" + *rsQuery.Settings.UserID
+			var preferenceId string
+			if preference != nil {
+				preferenceId = *preference
+			} else {
+				preferenceId = *query.ID + "_" + userIP
+				if rsQuery.Settings != nil && rsQuery.Settings.UserID != nil {
+					preferenceId = *query.ID + "_" + *rsQuery.Settings.UserID
+				}
 			}
 			var msearchConfig = map[string]interface{}{
 				"preference": preferenceId,
@@ -260,7 +265,7 @@ func BuildIndependentRequests(rsQuery RSQuery) ([]map[string]interface{}, error)
 // BuildIndependentRequest will build the independent request based on the passed
 // details and return a map to be used during execution of the request.
 func BuildIndependentRequest(query Query, rsQuery RSQuery) (map[string]interface{}, error) {
-	DEFAULT_METHOD := http.MethodGet
+	DEFAULT_METHOD := http.MethodPost
 	DEFAULT_HEADERS := make(map[string]string)
 
 	if query.Endpoint.Method == nil || *query.Endpoint.Method == "" {
@@ -293,6 +298,9 @@ func BuildIndependentRequest(query Query, rsQuery RSQuery) (map[string]interface
 		}
 
 		delete(queryAsMap, "endpoint")
+		delete(queryAsMap, "searchboxId")
+		// Remove query type if body is not specified
+		delete(queryAsMap, "type")
 
 		bodyToSend := map[string]interface{}{
 			"query": []map[string]interface{}{
@@ -442,8 +450,8 @@ func GetDefaultScript(backend util.Backend) string {
 }
 
 // global function to transform the RS API query to _msearch equivalent query
-func TranslateQuery(rsQuery RSQuery, userIP string, queryForId *string) (string, []byte, error) {
-	return translateQuery(rsQuery, userIP, queryForId)
+func TranslateQuery(rsQuery RSQuery, userIP string, queryForId *string, preference *string) (string, []byte, error) {
+	return translateQuery(rsQuery, userIP, queryForId, preference)
 }
 
 type QueryByType func(query *Query) (*interface{}, error)
