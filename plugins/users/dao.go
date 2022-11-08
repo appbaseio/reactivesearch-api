@@ -22,16 +22,16 @@ func initPlugin(indexName, mapping string) (*elasticsearch, error) {
 	ctx := context.Background()
 
 	es := &elasticsearch{indexName}
+	defer func() {
+		if es != nil {
+			if err := es.postMasterUser(); err != nil {
+				log.Errorln(logTag, ":", err)
+			}
+		}
+	}()
+
 	// Only check index existence for non-sls Arc
 	if util.IsSLSDisabled() {
-		defer func() {
-			if es != nil {
-				if err := es.postMasterUser(); err != nil {
-					log.Errorln(logTag, ":", err)
-				}
-			}
-		}()
-
 		// Check if the meta index already exists
 		exists, err := util.GetInternalClient7().IndexExists(indexName).
 			Do(ctx)
