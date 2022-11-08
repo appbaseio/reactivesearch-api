@@ -74,6 +74,6 @@ func CleanPasswordFromURL(URL string) string {
 
 	// If it is an URL, clean it up
 	cleanerRe := regexp.MustCompile(`\/\/(?P<username>.+):.+@`)
-	cleanedVar := cleanerRe.ReplaceAllString(URL, "//${username}:***@")
+	cleanedVar := cleanerRe.ReplaceAllString(URL, "//${username}:********@")
 	return cleanedVar
 }
