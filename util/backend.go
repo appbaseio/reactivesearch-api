@@ -46,6 +46,7 @@ const (
 	Solr
 	Fusion
 	Zinc
+	MarkLogic
 )
 
 // String returns the string representation
@@ -64,6 +65,8 @@ func (b Backend) String() string {
 		return "fusion"
 	case Zinc:
 		return "zinc"
+	case MarkLogic:
+		return "marklogic"
 	}
 	return ""
 }
@@ -89,6 +92,8 @@ func (b *Backend) UnmarshalJSON(bytes []byte) error {
 		*b = Fusion
 	case Zinc.String():
 		*b = Zinc
+	case MarkLogic.String():
+		*b = MarkLogic
 	default:
 		return fmt.Errorf("invalid backend passed: %s", backend)
 	}
@@ -117,6 +122,7 @@ func (b Backend) JSONSchema() *jsonschema.Schema {
 			Solr.String(),
 			Fusion.String(),
 			Zinc.String(),
+			MarkLogic.String(),
 		},
 		Title:       "Backend",
 		Description: "Backend that ReactiveSearch will use",
