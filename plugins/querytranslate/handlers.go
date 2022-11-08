@@ -366,7 +366,7 @@ func (r *QueryTranslate) validate() http.HandlerFunc {
 			validateMapToShow = append(validateMapToShow, map[string]interface{}{
 				"id": requestID,
 				"endpoint": map[string]interface{}{
-					"url":     request.URL.String(),
+					"url":     util.CleanPasswordFromURL(request.URL.String()),
 					"method":  methodUsed,
 					"headers": headersPassed,
 					"body":    bodyAsMap,

@@ -57,16 +57,23 @@ func cleanSenstiveData(vars *[]interface{}) {
 			continue
 		}
 
-		// Check if URL
-		isURL, _ := regexp.MatchString(`^https?://(www.)?.+\..+$`, stringedVar)
-		if !isURL {
-			continue
-		}
-
-		// If it is an URL, clean it up
-		cleanerRe := regexp.MustCompile(`\/\/(?P<username>.+):.+@`)
-		cleanedVar := cleanerRe.ReplaceAllString(stringedVar, "//${username}:***@")
+		cleanedVar := CleanPasswordFromURL(stringedVar)
 
 		(*vars)[index] = cleanedVar
 	}
+}
+
+// CleanPasswordFromURL will clean password from the URL if
+// it is present
+func CleanPasswordFromURL(URL string) string {
+	// Check if URL
+	isURL, _ := regexp.MatchString(`^https?://(www.)?.+\..+$`, URL)
+	if !isURL {
+		return URL
+	}
+
+	// If it is an URL, clean it up
+	cleanerRe := regexp.MustCompile(`\/\/(?P<username>.+):.+@`)
+	cleanedVar := cleanerRe.ReplaceAllString(URL, "//${username}:********@")
+	return cleanedVar
 }
