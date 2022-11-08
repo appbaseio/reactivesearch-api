@@ -366,7 +366,7 @@ func (r *QueryTranslate) validate() http.HandlerFunc {
 			validateMapToShow = append(validateMapToShow, map[string]interface{}{
 				"id": requestID,
 				"endpoint": map[string]interface{}{
-					"url":     request.URL.String(),
+					"url":     util.CleanPasswordFromURL(request.URL.String()),
 					"method":  methodUsed,
 					"headers": headersPassed,
 					"body":    bodyAsMap,
@@ -434,7 +434,7 @@ func TransformESResponse(response []byte, rsAPIRequest *RSQuery) ([]byte, error)
 		if query.Type == Suggestion {
 			// mock empty response for suggestions when index/endpoint suggestions are disabled
 			isSuggestionDisabled := false
-			if query.EnableIndexSuggestions != nil &&
+			if query.EnableIndexSuggestions != nil && query.Endpoint == nil &&
 				!*query.EnableIndexSuggestions {
 				isSuggestionDisabled = true
 			}
