@@ -103,6 +103,7 @@ type RouterSwapper struct {
 	server  http.Server
 	Routes  []Route
 	fin     *finish.Finisher
+	isDown  bool
 }
 
 var (
@@ -176,6 +177,7 @@ func (rs *RouterSwapper) StartServer() {
 	rs.fin = fin
 
 	go func() {
+		rs.isDown = false
 		if *rs.isHttps {
 			httpsCert := os.Getenv("HTTPS_CERT")
 			httpsKey := os.Getenv("HTTPS_KEY")
@@ -183,6 +185,7 @@ func (rs *RouterSwapper) StartServer() {
 		} else {
 			serverError = rs.server.ListenAndServe()
 		}
+		rs.isDown = true
 
 		if serverError != http.ErrServerClosed {
 			// Error starting or closing listener:
@@ -203,6 +206,19 @@ func (rs *RouterSwapper) RestartServer() {
 
 	// Trigger server shutdown using fin
 	rs.fin.Trigger()
+
+	// Wait till the server is shutdown
+	var shutdownWg sync.WaitGroup
+	shutdownWg.Add(1)
+	go func() {
+		defer shutdownWg.Done()
+		for !rs.isDown {
+			continue
+		}
+	}()
+
+	// Wait for shutdown to complete
+	shutdownWg.Wait()
 
 	// Create a new server
 	log.Debug(logTag, ": Updating the server since variable")
