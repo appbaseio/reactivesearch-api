@@ -164,7 +164,8 @@ func (rs *RouterSwapper) StartServer() {
 	addr := fmt.Sprintf("%s:%d", *rs.address, *rs.port)
 	log.Println(logTag, ":listening on", addr)
 
-	idleConnsClosed := make(chan struct{})
+	var shutDownWg sync.WaitGroup
+	shutDownWg.Add(1)
 	go func() {
 		sigint := make(chan os.Signal, 1)
 		signal.Notify(sigint, os.Interrupt)
@@ -175,10 +176,10 @@ func (rs *RouterSwapper) StartServer() {
 			// Error from closing listeners, or context timeout:
 			log.Printf("HTTP server Shutdown: %v", err)
 		}
-		close(idleConnsClosed)
+		defer shutDownWg.Done()
 	}()
 
-	<-idleConnsClosed
+	shutDownWg.Wait()
 
 	var serverError error
 
