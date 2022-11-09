@@ -190,7 +190,8 @@ func (rs *RouterSwapper) StartServer() {
 		// signal
 		select {
 		case <-sigint:
-		case <-rs.GetManualTrigger():
+		case value := <-rs.GetManualTrigger():
+			log.Debug(logTag, ": received manual trigger to shutdown with value: ", value)
 		}
 
 		// We received an interrupt signal, shut down.
@@ -215,6 +216,7 @@ func (rs *RouterSwapper) StartServer() {
 		serverError = rs.server.ListenAndServe()
 	}
 
+	log.Debug(logTag, ": exited the server")
 	// Mark the server as down once the listen and serve exits
 	rs.isDown = true
 
@@ -247,6 +249,7 @@ func (rs *RouterSwapper) RestartServer() {
 
 	// Wait for shutdown to complete
 	<-isShutdown
+	log.Debug(logTag, ": shutdown complete")
 
 	// Create a new server
 	log.Debug(logTag, ": Updating the server since variable")
