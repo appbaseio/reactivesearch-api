@@ -1,16 +1,17 @@
 package plugins
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"os"
+	"os/signal"
 	"sort"
 	"sync"
 
 	"github.com/appbaseio/reactivesearch-api/middleware/logger"
 	"github.com/appbaseio/reactivesearch-api/model/tracktime"
 	"github.com/gorilla/mux"
-	"github.com/pseidemann/finish"
 	"github.com/rs/cors"
 	log "github.com/sirupsen/logrus"
 )
@@ -95,15 +96,15 @@ func (rs *routeSorter) Less(i, j int) bool {
 
 // routerSwapper lets routers to be swapper
 type RouterSwapper struct {
-	mu      sync.Mutex
-	router  *mux.Router
-	port    *int
-	address *string
-	isHttps *bool
-	server  http.Server
-	Routes  []Route
-	fin     *finish.Finisher
-	isDown  bool
+	mu            sync.Mutex
+	router        *mux.Router
+	port          *int
+	address       *string
+	isHttps       *bool
+	server        http.Server
+	Routes        []Route
+	isDown        bool
+	manualTrigger chan interface{}
 }
 
 var (
@@ -143,6 +144,23 @@ func (rs *RouterSwapper) SetRouterAttrs(address string, port int, isHttps bool) 
 	rs.isHttps = &isHttps
 }
 
+// GetManualTrigger will return the manual trigger if
+// used or a default one that would be empty
+func (rs *RouterSwapper) GetManualTrigger() chan interface{} {
+	rs.mu.Lock()
+	defer rs.mu.Unlock()
+	if rs.manualTrigger == nil {
+		rs.manualTrigger = make(chan interface{}, 1)
+	}
+	return rs.manualTrigger
+}
+
+// StopServer will stop the server by sending a manual trigger
+// to stop the server
+func (rs *RouterSwapper) StopServer() {
+	rs.GetManualTrigger() <- nil
+}
+
 // StartServer starts the server by using the latest routerswapper
 // interface router, creating a handler and listening
 func (rs *RouterSwapper) StartServer() {
@@ -165,36 +183,49 @@ func (rs *RouterSwapper) StartServer() {
 	addr := fmt.Sprintf("%s:%d", *rs.address, *rs.port)
 	log.Println(logTag, ":listening on", addr)
 
+	idleConnectionsClosed := make(chan struct{})
+	go func() {
+		sigint := make(chan os.Signal, 1)
+		signal.Notify(sigint, os.Interrupt)
+
+		// Wait for either interrupt or a internal
+		// signal
+		select {
+		case <-sigint:
+		case <-rs.GetManualTrigger():
+		}
+
+		// We received an interrupt signal, shut down.
+		if err := rs.server.Shutdown(context.Background()); err != nil {
+			// Error from closing listeners, or context timeout:
+			log.Printf("HTTP server Shutdown: %v", err)
+		}
+		close(idleConnectionsClosed)
+	}()
+
 	var serverError error
 
 	rs.server.Addr = addr
 	rs.server.Handler = handler
+	rs.isDown = false
 
-	// Add `finish` to handle server shutdown gracefully
-	fin := &finish.Finisher{Log: log.StandardLogger()}
-	fin.Add(&rs.server)
+	if *rs.isHttps {
+		httpsCert := os.Getenv("HTTPS_CERT")
+		httpsKey := os.Getenv("HTTPS_KEY")
+		serverError = rs.server.ListenAndServeTLS(httpsCert, httpsKey)
+	} else {
+		serverError = rs.server.ListenAndServe()
+	}
 
-	rs.fin = fin
+	// Mark the server as down once the listen and serve exits
+	rs.isDown = true
 
-	go func() {
-		rs.isDown = false
-		if *rs.isHttps {
-			httpsCert := os.Getenv("HTTPS_CERT")
-			httpsKey := os.Getenv("HTTPS_KEY")
-			serverError = rs.server.ListenAndServeTLS(httpsCert, httpsKey)
-		} else {
-			serverError = rs.server.ListenAndServe()
-		}
-		rs.isDown = true
+	if serverError != http.ErrServerClosed {
+		// Error starting or closing listener:
+		log.Fatalf("HTTP server ListenAndServe: %v", serverError)
+	}
 
-		if serverError != http.ErrServerClosed {
-			// Error starting or closing listener:
-			log.Fatalf("HTTP server ListenAndServe: %v", serverError)
-		}
-	}()
-
-	// Wait for fin to gracefully shutdown server
-	fin.Wait()
+	<-idleConnectionsClosed
 }
 
 // RestartServer shuts down the current server and starts it again
@@ -204,21 +235,20 @@ func (rs *RouterSwapper) RestartServer() {
 	// Access the server and shut it down
 	log.Debug(logTag, ": Shutting down the current server")
 
-	// Trigger server shutdown using fin
-	rs.fin.Trigger()
+	// Trigger a server shutdown by using the manual trigger
+	rs.StopServer()
 
 	// Wait till the server is shutdown
-	var shutdownWg sync.WaitGroup
-	shutdownWg.Add(1)
+	isShutdown := make(chan bool, 1)
 	go func() {
-		defer shutdownWg.Done()
 		for !rs.isDown {
 			continue
 		}
+		isShutdown <- true
 	}()
 
 	// Wait for shutdown to complete
-	shutdownWg.Wait()
+	<-isShutdown
 
 	// Create a new server
 	log.Debug(logTag, ": Updating the server since variable")
