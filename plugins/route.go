@@ -8,6 +8,7 @@ import (
 	"os/signal"
 	"sort"
 	"sync"
+	"time"
 
 	"github.com/appbaseio/reactivesearch-api/middleware/logger"
 	"github.com/appbaseio/reactivesearch-api/model/tracktime"
@@ -210,16 +211,13 @@ func (rs *RouterSwapper) StartServer() {
 		// complete
 		isServerUp := make(chan bool, 1)
 		go func() {
-			healthCheckInstance := RSUtilInstance().getHealthInstance()
-			for true {
-				res, _ := healthCheckInstance.MakeRequest()
-				if res.StatusCode == http.StatusOK {
-					break
-				}
+			for rs.isDown {
+				continue
 			}
 			isServerUp <- true
 		}()
 		<-isServerUp
+		time.Sleep(2 * time.Second)
 
 		close(idleConnectionsClosed)
 	}()
