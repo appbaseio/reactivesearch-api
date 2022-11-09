@@ -105,7 +105,7 @@ type RouterSwapper struct {
 	server        http.Server
 	Routes        []Route
 	isDown        bool
-	manualTrigger chan bool
+	manualTrigger chan interface{}
 }
 
 var (
@@ -147,14 +147,17 @@ func (rs *RouterSwapper) SetRouterAttrs(address string, port int, isHttps bool) 
 
 // GetManualTrigger will return the manual trigger if
 // used or a default one that would be empty
-func (rs *RouterSwapper) GetManualTrigger() chan bool {
+func (rs *RouterSwapper) GetManualTrigger() chan interface{} {
+	if rs.manualTrigger == nil {
+		rs.manualTrigger = make(chan interface{}, 1)
+	}
 	return rs.manualTrigger
 }
 
 // StopServer will stop the server by sending a manual trigger
 // to stop the server
 func (rs *RouterSwapper) StopServer() {
-	rs.GetManualTrigger() <- true
+	rs.GetManualTrigger() <- 1
 }
 
 // StartServer starts the server by using the latest routerswapper
@@ -220,7 +223,7 @@ func (rs *RouterSwapper) StartServer() {
 
 	rs.isDown = true
 	log.Debug(logTag, ": listen and serve exited!")
-	log.Debug(logTag, ": manual trigger value: ", rs.GetManualTrigger())
+	log.Debug(logTag, ": manual trigger value: ", rs.manualTrigger)
 	if serverError != http.ErrServerClosed {
 		// Error starting or closing listener:
 		log.Fatalf("HTTP server ListenAndServe: %v", serverError)
