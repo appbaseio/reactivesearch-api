@@ -105,6 +105,7 @@ type RouterSwapper struct {
 	Routes        []Route
 	isDown        bool
 	manualTrigger chan interface{}
+	manTriggerMu  sync.Mutex
 }
 
 var (
@@ -147,8 +148,8 @@ func (rs *RouterSwapper) SetRouterAttrs(address string, port int, isHttps bool) 
 // GetManualTrigger will return the manual trigger if
 // used or a default one that would be empty
 func (rs *RouterSwapper) GetManualTrigger() chan interface{} {
-	rs.mu.Lock()
-	defer rs.mu.Unlock()
+	rs.manTriggerMu.Lock()
+	defer rs.manTriggerMu.Unlock()
 	if rs.manualTrigger == nil {
 		rs.manualTrigger = make(chan interface{}, 1)
 	}
