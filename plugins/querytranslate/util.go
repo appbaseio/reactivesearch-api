@@ -359,6 +359,7 @@ const (
 	MongoDB
 	Solr
 	Zinc
+	MarkLogic
 )
 
 // String returns the string representation
@@ -375,6 +376,8 @@ func (b Backend) String() string {
 		return "solr"
 	case Zinc:
 		return "zinc"
+	case MarkLogic:
+		return "marklogic"
 	}
 	return ""
 }
@@ -398,6 +401,8 @@ func (b *Backend) UnmarshalJSON(bytes []byte) error {
 		*b = Solr
 	case Zinc.String():
 		*b = Zinc
+	case MarkLogic.String():
+		*b = MarkLogic
 	default:
 		return fmt.Errorf("invalid kNN backend passed: %s", knnBackend)
 	}
@@ -425,6 +430,7 @@ func (b Backend) JSONSchema() *jsonschema.Schema {
 			MongoDB.String(),
 			Solr.String(),
 			Zinc.String(),
+			MarkLogic.String(),
 		},
 		Title:       "Backend",
 		Description: "Backend that ReactiveSearch will use",
