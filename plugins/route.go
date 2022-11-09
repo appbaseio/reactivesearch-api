@@ -11,6 +11,7 @@ import (
 
 	"github.com/appbaseio/reactivesearch-api/middleware/logger"
 	"github.com/appbaseio/reactivesearch-api/model/tracktime"
+	"github.com/gdexlab/go-render/render"
 	"github.com/gorilla/mux"
 	"github.com/rs/cors"
 	log "github.com/sirupsen/logrus"
@@ -180,6 +181,8 @@ func (rs *RouterSwapper) StartServer() {
 	// Listen and serve ...
 	addr := fmt.Sprintf("%s:%d", *rs.address, *rs.port)
 	log.Println(logTag, ":listening on", addr)
+
+	log.Debug(logTag, "server addr: ", &rs.server, " : server passed: ", render.AsCode(rs.server))
 
 	idleConnectionsClosed := make(chan struct{})
 	go func() {
