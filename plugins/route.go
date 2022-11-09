@@ -1,17 +1,16 @@
 package plugins
 
 import (
-	"context"
 	"fmt"
 	"net/http"
 	"os"
-	"os/signal"
 	"sort"
 	"sync"
 
 	"github.com/appbaseio/reactivesearch-api/middleware/logger"
 	"github.com/appbaseio/reactivesearch-api/model/tracktime"
 	"github.com/gorilla/mux"
+	"github.com/pseidemann/finish"
 	"github.com/rs/cors"
 	log "github.com/sirupsen/logrus"
 )
@@ -103,6 +102,7 @@ type RouterSwapper struct {
 	isHttps *bool
 	server  http.Server
 	Routes  []Route
+	fin     *finish.Finisher
 }
 
 var (
@@ -164,40 +164,34 @@ func (rs *RouterSwapper) StartServer() {
 	addr := fmt.Sprintf("%s:%d", *rs.address, *rs.port)
 	log.Println(logTag, ":listening on", addr)
 
-	var shutDownWg sync.WaitGroup
-	shutDownWg.Add(1)
-	go func() {
-		sigint := make(chan os.Signal, 1)
-		signal.Notify(sigint, os.Interrupt)
-		<-sigint
-
-		// We received an interrupt signal, shut down.
-		if err := rs.server.Shutdown(context.Background()); err != nil {
-			// Error from closing listeners, or context timeout:
-			log.Printf("HTTP server Shutdown: %v", err)
-		}
-		defer shutDownWg.Done()
-	}()
-
-	shutDownWg.Wait()
-
 	var serverError error
 
 	rs.server.Addr = addr
 	rs.server.Handler = handler
 
-	if *rs.isHttps {
-		httpsCert := os.Getenv("HTTPS_CERT")
-		httpsKey := os.Getenv("HTTPS_KEY")
-		serverError = rs.server.ListenAndServeTLS(httpsCert, httpsKey)
-	} else {
-		serverError = rs.server.ListenAndServe()
-	}
+	// Add `finish` to handle server shutdown gracefully
+	fin := &finish.Finisher{Log: log.StandardLogger()}
+	fin.Add(&rs.server)
 
-	if serverError != http.ErrServerClosed {
-		// Error starting or closing listener:
-		log.Fatalf("HTTP server ListenAndServe: %v", serverError)
-	}
+	rs.fin = fin
+
+	go func() {
+		if *rs.isHttps {
+			httpsCert := os.Getenv("HTTPS_CERT")
+			httpsKey := os.Getenv("HTTPS_KEY")
+			serverError = rs.server.ListenAndServeTLS(httpsCert, httpsKey)
+		} else {
+			serverError = rs.server.ListenAndServe()
+		}
+
+		if serverError != http.ErrServerClosed {
+			// Error starting or closing listener:
+			log.Fatalf("HTTP server ListenAndServe: %v", serverError)
+		}
+	}()
+
+	// Wait for fin to gracefully shutdown server
+	fin.Wait()
 }
 
 // RestartServer shuts down the current server and starts it again
@@ -205,12 +199,10 @@ func (rs *RouterSwapper) StartServer() {
 // It is useful when a router swap happens
 func (rs *RouterSwapper) RestartServer() {
 	// Access the server and shut it down
-	// log.Debug(logTag, ": Shutting down the current server")
-	// err := rs.server.Shutdown(context.Background())
-	// if err != nil {
-	// 	log.Errorln("Something went wrong while shutting down server: ", err)
-	// 	return
-	// }
+	log.Debug(logTag, ": Shutting down the current server")
+
+	// Trigger server shutdown using fin
+	rs.fin.Trigger()
 
 	// Create a new server
 	log.Debug(logTag, ": Updating the server since variable")
