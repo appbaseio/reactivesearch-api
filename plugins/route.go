@@ -210,8 +210,12 @@ func (rs *RouterSwapper) StartServer() {
 		// complete
 		isServerUp := make(chan bool, 1)
 		go func() {
-			for rs.isDown {
-				continue
+			healthCheckInstance := RSUtilInstance().getHealthInstance()
+			for true {
+				res, _ := healthCheckInstance.MakeRequest()
+				if res.StatusCode == http.StatusOK {
+					break
+				}
 			}
 			isServerUp <- true
 		}()
@@ -314,11 +318,9 @@ func (h *RouterHealthCheck) Append(status bool) {
 	}
 }
 
-// Check will check the routers health by
-// hitting the dry health check endpoint.
-//
-// This function should be run with a cron job to be effective.
-func (h *RouterHealthCheck) Check() {
+// MakeRequest will make the health check request and return
+// the response and error (if any)
+func (h *RouterHealthCheck) MakeRequest() (*http.Response, error) {
 	endpoint := "/arc/_health"
 
 	// Build the URL to hit
@@ -330,13 +332,20 @@ func (h *RouterHealthCheck) Check() {
 	urlToHit := fmt.Sprintf("%s://%s:%d%s", ssl, *h.address, *h.port, endpoint)
 	log.Debug(logTag, ": Hitting ", urlToHit, " for health check")
 
-	status := true
-
 	// Hit the URL now
 	//
 	// We don't need the response, just need
 	// to check if there was an error and accordingly set the status.
-	res, err := http.Get(urlToHit)
+	return http.Get(urlToHit)
+}
+
+// Check will check the routers health by
+// hitting the dry health check endpoint.
+//
+// This function should be run with a cron job to be effective.
+func (h *RouterHealthCheck) Check() {
+	status := true
+	res, err := h.MakeRequest()
 	if err != nil || res.StatusCode != http.StatusOK {
 		status = false
 	}
