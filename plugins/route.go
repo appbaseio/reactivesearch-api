@@ -204,6 +204,19 @@ func (rs *RouterSwapper) StartServer() {
 			log.Printf("HTTP server Shutdown: %v", err)
 		}
 		log.Debug(logTag, ": succesfully closed server")
+
+		// Wait till the server is up again before closing the
+		// idleConnectionsClosed channel since otherwise the restart won't
+		// complete
+		isServerUp := make(chan bool, 1)
+		go func() {
+			for rs.isDown {
+				continue
+			}
+			isServerUp <- true
+		}()
+		<-isServerUp
+
 		close(idleConnectionsClosed)
 	}()
 
