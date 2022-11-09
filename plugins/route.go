@@ -224,11 +224,11 @@ func (rs *RouterSwapper) StartServer() {
 		log.Fatalf("HTTP server ListenAndServe: %v", serverError)
 	}
 
-	<-idleConnectionsClosed
-
 	log.Debug(logTag, ": exited the server")
 	// Mark the server as down once the listen and serve exits
 	rs.isDown = true
+
+	<-idleConnectionsClosed
 }
 
 // RestartServer shuts down the current server and starts it again
@@ -257,8 +257,11 @@ func (rs *RouterSwapper) RestartServer() {
 	// Create a new server
 	log.Debug(logTag, ": Updating the server since variable")
 	var newServer http.Server
+	log.Debug(logTag, ": older server: ", &rs.server)
+
 	rs.server = newServer
 
+	log.Debug(logTag, ": newere server: ", &rs.server)
 	// If shutdown was successful, start again.
 	rs.StartServer()
 }
