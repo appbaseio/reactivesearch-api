@@ -106,6 +106,7 @@ type RouterSwapper struct {
 	Routes        []Route
 	isDown        bool
 	manualTrigger chan interface{}
+	shutdownWg    sync.WaitGroup
 }
 
 var (
@@ -184,8 +185,8 @@ func (rs *RouterSwapper) StartServer() {
 
 	log.Debug(logTag, "server addr: ", &rs.server, " : server passed: ", render.AsCode(rs.server))
 
-	idleConnectionsClosed := make(chan struct{})
 	go func() {
+		rs.shutdownWg.Add(1)
 		sigint := make(chan os.Signal, 1)
 		signal.Notify(sigint, os.Interrupt)
 
@@ -204,7 +205,7 @@ func (rs *RouterSwapper) StartServer() {
 			log.Printf("HTTP server Shutdown: %v", err)
 		}
 		log.Debug(logTag, ": succesfully closed server")
-		close(idleConnectionsClosed)
+		rs.shutdownWg.Done()
 	}()
 
 	var serverError error
@@ -229,7 +230,7 @@ func (rs *RouterSwapper) StartServer() {
 		log.Fatalf("HTTP server ListenAndServe: %v", serverError)
 	}
 
-	<-idleConnectionsClosed
+	rs.shutdownWg.Wait()
 }
 
 // RestartServer shuts down the current server and starts it again
@@ -242,17 +243,8 @@ func (rs *RouterSwapper) RestartServer() {
 	// Trigger a server shutdown by using the manual trigger
 	rs.StopServer()
 
-	// Wait till the server is shutdown
-	isShutdown := make(chan bool, 1)
-	go func() {
-		for !rs.isDown {
-			continue
-		}
-		isShutdown <- true
-	}()
-
 	// Wait for shutdown to complete
-	<-isShutdown
+	rs.shutdownWg.Wait()
 	log.Debug(logTag, ": shutdown complete")
 
 	// Create a new server
