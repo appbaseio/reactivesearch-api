@@ -178,6 +178,8 @@ func (rs *RouterSwapper) StartServer() {
 		close(idleConnsClosed)
 	}()
 
+	<-idleConnsClosed
+
 	var serverError error
 
 	rs.server.Addr = addr
@@ -195,8 +197,6 @@ func (rs *RouterSwapper) StartServer() {
 		// Error starting or closing listener:
 		log.Fatalf("HTTP server ListenAndServe: %v", serverError)
 	}
-
-	<-idleConnsClosed
 }
 
 // RestartServer shuts down the current server and starts it again
