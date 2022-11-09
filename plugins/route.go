@@ -219,16 +219,16 @@ func (rs *RouterSwapper) StartServer() {
 		serverError = rs.server.ListenAndServe()
 	}
 
-	log.Debug(logTag, ": exited the server")
-	// Mark the server as down once the listen and serve exits
-	rs.isDown = true
-
 	if serverError != http.ErrServerClosed {
 		// Error starting or closing listener:
 		log.Fatalf("HTTP server ListenAndServe: %v", serverError)
 	}
 
 	<-idleConnectionsClosed
+
+	log.Debug(logTag, ": exited the server")
+	// Mark the server as down once the listen and serve exits
+	rs.isDown = true
 }
 
 // RestartServer shuts down the current server and starts it again
