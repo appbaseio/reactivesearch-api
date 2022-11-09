@@ -198,11 +198,14 @@ func (rs *RouterSwapper) StartServer() {
 		}
 
 		// We received an interrupt signal, shut down.
+		log.Debug(logTag, ": going to shutdown the server now:")
 		if err := rs.server.Shutdown(context.Background()); err != nil {
 			// Error from closing listeners, or context timeout:
 			log.Printf("HTTP server Shutdown: %v", err)
 		}
+		log.Debug(logTag, ": succesfully closed server")
 		close(idleConnectionsClosed)
+		rs.isDown = true
 	}()
 
 	var serverError error
@@ -223,10 +226,6 @@ func (rs *RouterSwapper) StartServer() {
 		// Error starting or closing listener:
 		log.Fatalf("HTTP server ListenAndServe: %v", serverError)
 	}
-
-	log.Debug(logTag, ": exited the server")
-	// Mark the server as down once the listen and serve exits
-	rs.isDown = true
 
 	<-idleConnectionsClosed
 }
