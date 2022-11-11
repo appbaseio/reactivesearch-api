@@ -170,7 +170,7 @@ func (query *Query) generateTermQuery() (*interface{}, error) {
 }
 
 func (query *Query) GenerateTermQuery() (*interface{}, error) {
-	return query.generateRangeQuery()
+	return query.generateTermQuery()
 }
 
 func (query *Query) filterValue(ss []interface{}) (ret []interface{}) {
