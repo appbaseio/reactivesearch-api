@@ -169,6 +169,10 @@ func (query *Query) generateTermQuery() (*interface{}, error) {
 	return &termQuery, nil
 }
 
+func (query *Query) GenerateTermQuery() (*interface{}, error) {
+	return query.generateTermQuery()
+}
+
 func (query *Query) filterValue(ss []interface{}) (ret []interface{}) {
 	for _, item := range ss {
 		if item != query.MissingLabel {
