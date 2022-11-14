@@ -211,7 +211,7 @@ func init() {
 func main() {
 	// add cpu profilling
 	if cpuprofile {
-		defer profile.Start().Stop()
+		defer profile.Start(profile.NoShutdownHook).Stop()
 	}
 	// add mem profilling
 	if memprofile {
