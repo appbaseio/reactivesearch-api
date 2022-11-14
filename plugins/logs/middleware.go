@@ -107,6 +107,9 @@ func Recorder() middleware.Middleware {
 
 func (l *Logs) recorder(h http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		// Disable logs middleware
+		h(w, r)
+		return
 		// skip logs from streams and blacklisted paths
 		if r.Header.Get("X-Request-Category") == "streams" || isPathBlacklisted(r.URL.Path) {
 			h(w, r)
