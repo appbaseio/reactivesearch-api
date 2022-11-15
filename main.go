@@ -24,6 +24,7 @@ import (
 	"time"
 
 	"github.com/appbaseio/reactivesearch-api/middleware"
+	"github.com/appbaseio/reactivesearch-api/model/requestlogs"
 	"github.com/appbaseio/reactivesearch-api/plugins"
 	"github.com/appbaseio/reactivesearch-api/plugins/nodes"
 	"github.com/appbaseio/reactivesearch-api/plugins/querytranslate"
@@ -549,6 +550,9 @@ func main() {
 			}
 		}
 	}
+
+	// Initialize request logs map
+	requestlogs.InitRequestLogs(100000, 5*60)
 
 	cronjob := cron.New()
 	syncInterval := "@every " + strconv.Itoa(util.GetSyncInterval()) + "s"
