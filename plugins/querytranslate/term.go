@@ -169,6 +169,10 @@ func (query *Query) generateTermQuery() (*interface{}, error) {
 	return &termQuery, nil
 }
 
+func (query *Query) GenerateTermQuery() (*interface{}, error) {
+	return query.generateTermQuery()
+}
+
 func (query *Query) filterValue(ss []interface{}) (ret []interface{}) {
 	for _, item := range ss {
 		if item != query.MissingLabel {
@@ -313,4 +317,9 @@ func (query *Query) getTermsAggsQuery(normalizedFields []DataField, pos int) *ma
 	}
 	termQuery[dataField] = aggsQuery
 	return &termQuery
+}
+
+// GetTermsAggsQuery will build the aggs for the term query
+func (query *Query) GetTermsAggsQuery(normalizedFields []DataField, pos int) *map[string]interface{} {
+	return query.getTermsAggsQuery(normalizedFields, pos)
 }

@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"math"
+	"net/url"
 	"reflect"
 	"sort"
 	"strconv"
@@ -357,6 +358,8 @@ const (
 	OpenSearch
 	MongoDB
 	Solr
+	Zinc
+	MarkLogic
 )
 
 // String returns the string representation
@@ -371,6 +374,10 @@ func (b Backend) String() string {
 		return "mongodb"
 	case Solr:
 		return "solr"
+	case Zinc:
+		return "zinc"
+	case MarkLogic:
+		return "marklogic"
 	}
 	return ""
 }
@@ -392,6 +399,10 @@ func (b *Backend) UnmarshalJSON(bytes []byte) error {
 		*b = MongoDB
 	case Solr.String():
 		*b = Solr
+	case Zinc.String():
+		*b = Zinc
+	case MarkLogic.String():
+		*b = MarkLogic
 	default:
 		return fmt.Errorf("invalid kNN backend passed: %s", knnBackend)
 	}
@@ -418,6 +429,8 @@ func (b Backend) JSONSchema() *jsonschema.Schema {
 			OpenSearch.String(),
 			MongoDB.String(),
 			Solr.String(),
+			Zinc.String(),
+			MarkLogic.String(),
 		},
 		Title:       "Backend",
 		Description: "Backend that ReactiveSearch will use",
@@ -642,25 +655,25 @@ func getQueryInstanceByID(id string, rsQuery RSQuery) *Query {
 }
 
 // Evaluate the react prop and adds the dependencies in query
-func evalReactProp(query []interface{}, queryOptions *map[string]interface{}, conjunction string, react interface{}, rsQuery RSQuery) ([]interface{}, error) {
+func evalReactProp(query []interface{}, queryOptions *map[string]interface{}, conjunction string, react interface{}, rsQuery RSQuery, buildByTypeFunc QueryByType) ([]interface{}, error) {
 	nestedReact, isNestedReact := react.(map[string]interface{})
 	if isNestedReact {
 		var err error
 		// handle react prop as struct
 		if nestedReact["and"] != nil {
-			query, err = evalReactProp(query, queryOptions, "and", nestedReact["and"], rsQuery)
+			query, err = evalReactProp(query, queryOptions, "and", nestedReact["and"], rsQuery, buildByTypeFunc)
 			if err != nil {
 				return query, err
 			}
 		}
 		if nestedReact["or"] != nil {
-			query, err = evalReactProp(query, queryOptions, "or", nestedReact["or"], rsQuery)
+			query, err = evalReactProp(query, queryOptions, "or", nestedReact["or"], rsQuery, buildByTypeFunc)
 			if err != nil {
 				return query, err
 			}
 		}
 		if nestedReact["not"] != nil {
-			query, err = evalReactProp(query, queryOptions, "not", nestedReact["not"], rsQuery)
+			query, err = evalReactProp(query, queryOptions, "not", nestedReact["not"], rsQuery, buildByTypeFunc)
 			if err != nil {
 				return query, err
 			}
@@ -684,7 +697,7 @@ func evalReactProp(query []interface{}, queryOptions *map[string]interface{}, co
 						// query options specific to a component for e.g `highlight`
 						componentQueryOptions := getFilteredOptions(queryOps)
 						// Apply custom query
-						translatedQuery, options, err := componentQueryInstance.applyCustomQuery()
+						translatedQuery, options, err := componentQueryInstance.applyCustomQuery(buildByTypeFunc)
 						if err != nil {
 							return query, err
 						}
@@ -696,7 +709,7 @@ func evalReactProp(query []interface{}, queryOptions *map[string]interface{}, co
 						}
 					}
 				} else {
-					return evalReactProp(query, queryOptions, "", comp, rsQuery)
+					return evalReactProp(query, queryOptions, "", comp, rsQuery, buildByTypeFunc)
 				}
 			}
 			if len(queryArr) > 0 {
@@ -719,7 +732,7 @@ func evalReactProp(query []interface{}, queryOptions *map[string]interface{}, co
 					// query options specific to a component for e.g `highlight`
 					componentQueryOptions := getFilteredOptions(queryOps)
 					// Apply custom query
-					translatedQuery, options, err := componentQueryInstance.applyCustomQuery()
+					translatedQuery, options, err := componentQueryInstance.applyCustomQuery(buildByTypeFunc)
 					if err != nil {
 						return query, err
 					}
@@ -738,6 +751,11 @@ func evalReactProp(query []interface{}, queryOptions *map[string]interface{}, co
 	return query, nil
 }
 
+// EvalReactProp will evaluate the react prop and add dependencies in the query
+func EvalReactProp(query []interface{}, queryOptions *map[string]interface{}, conjunction string, react interface{}, rsQuery RSQuery, buildByTypeFunc QueryByType) ([]interface{}, error) {
+	return evalReactProp(query, queryOptions, conjunction, react, rsQuery, buildByTypeFunc)
+}
+
 // Returns the queryDSL with react prop dependencies
 func (query *Query) getQuery(rsQuery RSQuery) (*interface{}, map[string]interface{}, bool, error) {
 	var finalQuery []interface{}
@@ -745,7 +763,7 @@ func (query *Query) getQuery(rsQuery RSQuery) (*interface{}, map[string]interfac
 
 	if query.React != nil {
 		var err error
-		finalQuery, err = evalReactProp(finalQuery, &finalOptions, "", *query.React, rsQuery)
+		finalQuery, err = evalReactProp(finalQuery, &finalOptions, "", *query.React, rsQuery, generateQueryByType)
 		if err != nil {
 			log.Errorln(logTag, ":", err)
 			return nil, finalOptions, true, err
@@ -796,7 +814,7 @@ func getFilteredOptions(options map[string]interface{}) map[string]interface{} {
 }
 
 // Apply the custom query
-func (query *Query) applyCustomQuery() (*interface{}, map[string]interface{}, error) {
+func (query *Query) applyCustomQuery(byTypeFunc QueryByType) (*interface{}, map[string]interface{}, error) {
 	queryOptions := make(map[string]interface{})
 	if query.CustomQuery != nil {
 		customQuery := *query.CustomQuery
@@ -809,7 +827,7 @@ func (query *Query) applyCustomQuery() (*interface{}, map[string]interface{}, er
 		// filter query options keys
 		queryOptions = getFilteredOptions(customQuery)
 	}
-	originalQuery, err := query.generateQueryByType()
+	originalQuery, err := byTypeFunc(query)
 	if err != nil {
 		return nil, queryOptions, err
 	}
@@ -893,7 +911,7 @@ func getValidInterval(interval *int, rangeValue RangeValue) int {
 func (query *Query) shouldExecuteQuery() bool {
 	// don't execute query if index suggestions are disabled
 	if query.Type == Suggestion &&
-		query.EnableIndexSuggestions != nil &&
+		query.EnableIndexSuggestions != nil && query.Endpoint == nil &&
 		!*query.EnableIndexSuggestions {
 		return false
 	}
@@ -926,12 +944,19 @@ func isNilInterface(c interface{}) bool {
 }
 
 // Makes the elasticsearch requests
-func makeESRequest(ctx context.Context, url, method string, reqBody []byte) (*es7.Response, error) {
+func makeESRequest(ctx context.Context, url, method string, reqBody []byte, params url.Values) (*es7.Response, error) {
 	esClient := util.GetClient7()
+	filteredParams := params
+	for k := range filteredParams {
+		if k == "preference" {
+			filteredParams.Del("preference")
+		}
+	}
 	requestOptions := es7.PerformRequestOptions{
 		Method: method,
 		Path:   url,
 		Body:   string(reqBody),
+		Params: filteredParams,
 	}
 	response, err := esClient.PerformRequest(ctx, requestOptions)
 	if err != nil {

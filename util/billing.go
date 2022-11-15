@@ -8,6 +8,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 
@@ -22,6 +23,29 @@ const AppbaseIDEnvName = "APPBASE_ID"
 var ACCAPI = "https://accapi.appbase.io/"
 
 // var ACCAPI = "http://localhost:3000/"
+
+var planDetailsHook *func([]byte)
+
+func SetPlanDetailsHook(fn *func([]byte)) {
+	planDetailsHook = fn
+}
+
+// planDetails represents the plan endpoint response
+var planDetails *[]byte
+
+// setPlanDetails sets the plan details
+func setPlanDetails(planInfo []byte) {
+	planDetails = &planInfo
+	if planDetailsHook != nil {
+		hook := *planDetailsHook
+		hook(planInfo)
+	}
+}
+
+// GetPlanDetails returns the plan details
+func GetPlanDetails() *[]byte {
+	return planDetails
+}
 
 // Tier is the value of the user's plan
 var tier *Plan
@@ -81,24 +105,25 @@ type ArcUsage struct {
 }
 
 type ClusterPlan struct {
-	Tier                   *Plan  `json:"tier"`
-	FeatureCustomEvents    bool   `json:"feature_custom_events"`
-	FeatureSuggestions     bool   `json:"feature_suggestions"`
-	FeatureRules           bool   `json:"feature_rules"`
-	FeatureSearchRelevancy bool   `json:"feature_search_relevancy"`
-	FeatureSearchGrader    bool   `json:"feature_search_grader"`
-	FeatureEcommerce       bool   `json:"feature_ecommerce"`
-	FeatureCache           bool   `json:"feature_cache"`
-	FeaturePipelines       bool   `json:"feature_pipelines"`
-	Trial                  bool   `json:"trial"`
-	TrialValidity          int64  `json:"trial_validity"`
-	TierValidity           int64  `json:"tier_validity"`
-	TimeValidity           int64  `json:"time_validity"`
-	SubscriptionID         string `json:"subscription_id"`
-	ClusterID              string `json:"cluster_id"`
-	NumberOfMachines       int64  `json:"number_of_machines"`
-	SubscriptionCanceled   bool   `json:"subscription_canceled"`
-	CreatedAt              int64  `json:"created_at"`
+	Tier                    *Plan  `json:"tier"`
+	FeatureCustomEvents     bool   `json:"feature_custom_events"`
+	FeatureSuggestions      bool   `json:"feature_suggestions"`
+	FeatureRules            bool   `json:"feature_rules"`
+	FeatureSearchRelevancy  bool   `json:"feature_search_relevancy"`
+	FeatureSearchGrader     bool   `json:"feature_search_grader"`
+	FeatureEcommerce        bool   `json:"feature_ecommerce"`
+	FeatureCache            bool   `json:"feature_cache"`
+	FeaturePipelines        bool   `json:"feature_pipelines"`
+	FeatureUIBuilderPremium bool   `json:"feature_uibuilder_premium"`
+	Trial                   bool   `json:"trial"`
+	TrialValidity           int64  `json:"trial_validity"`
+	TierValidity            int64  `json:"tier_validity"`
+	TimeValidity            int64  `json:"time_validity"`
+	SubscriptionID          string `json:"subscription_id"`
+	ClusterID               string `json:"cluster_id"`
+	NumberOfMachines        int64  `json:"number_of_machines"`
+	SubscriptionCanceled    bool   `json:"subscription_canceled"`
+	CreatedAt               int64  `json:"created_at"`
 }
 
 // ArcUsageResponse stores the response from ACCAPI
@@ -128,27 +153,28 @@ type ClusterPlanResponse struct {
 
 // ArcInstanceDetails contains the info about a ReactiveSearch Instance
 type ArcInstanceDetails struct {
-	NodeCount              int                    `json:"node_count"`
-	Description            string                 `json:"description"`
-	SubscriptionID         string                 `json:"subscription_id"`
-	SubscriptionCanceled   bool                   `json:"subscription_canceled"`
-	Trial                  bool                   `json:"trial"`
-	TrialValidity          int64                  `json:"trial_validity"`
-	CreatedAt              int64                  `json:"created_at"`
-	Tier                   *Plan                  `json:"tier"`
-	TierValidity           int64                  `json:"tier_validity"`
-	TimeValidity           int64                  `json:"time_validity"`
-	Metadata               map[string]interface{} `json:"metadata"`
-	FeatureCustomEvents    bool                   `json:"feature_custom_events"`
-	FeatureSuggestions     bool                   `json:"feature_suggestions"`
-	FeatureRules           bool                   `json:"feature_rules"`
-	FeatureSearchRelevancy bool                   `json:"feature_search_relevancy"`
-	FeatureSearchGrader    bool                   `json:"feature_search_grader"`
-	FeatureEcommerce       bool                   `json:"feature_ecommerce"`
-	FeatureCache           bool                   `json:"feature_cache"`
-	FeaturePipelines       bool                   `json:"feature_pipelines"`
-	ClusterID              string                 `json:"cluster_id"`
-	NumberOfMachines       int64                  `json:"number_of_machines"`
+	NodeCount               int                    `json:"node_count"`
+	Description             string                 `json:"description"`
+	SubscriptionID          string                 `json:"subscription_id"`
+	SubscriptionCanceled    bool                   `json:"subscription_canceled"`
+	Trial                   bool                   `json:"trial"`
+	TrialValidity           int64                  `json:"trial_validity"`
+	CreatedAt               int64                  `json:"created_at"`
+	Tier                    *Plan                  `json:"tier"`
+	TierValidity            int64                  `json:"tier_validity"`
+	TimeValidity            int64                  `json:"time_validity"`
+	Metadata                map[string]interface{} `json:"metadata"`
+	FeatureCustomEvents     bool                   `json:"feature_custom_events"`
+	FeatureSuggestions      bool                   `json:"feature_suggestions"`
+	FeatureRules            bool                   `json:"feature_rules"`
+	FeatureSearchRelevancy  bool                   `json:"feature_search_relevancy"`
+	FeatureSearchGrader     bool                   `json:"feature_search_grader"`
+	FeatureEcommerce        bool                   `json:"feature_ecommerce"`
+	FeatureUIBuilderPremium bool                   `json:"feature_uibuilder_premium"`
+	FeatureCache            bool                   `json:"feature_cache"`
+	FeaturePipelines        bool                   `json:"feature_pipelines"`
+	ClusterID               string                 `json:"cluster_id"`
+	NumberOfMachines        int64                  `json:"number_of_machines"`
 }
 
 // SetDefaultTier sets the default tier when billing is disabled
@@ -210,9 +236,30 @@ func BillingMiddleware(next http.Handler) http.Handler {
 	})
 }
 
+func getMasterCredentials() string {
+	username, password := os.Getenv("USERNAME"), os.Getenv("PASSWORD")
+	if username == "" {
+		username, password = "foo", "bar"
+	}
+	return username + ":" + password
+}
+
+func GetCachedPlanDetails() ([]byte, error) {
+	url := "http://" + getMasterCredentials() + "@localhost:" + strconv.Itoa(Port) + "/arc/plan/fs"
+	req, _ := http.NewRequest("GET", url, nil)
+	req.Header.Add("Content-Type", "application/json")
+	req.Header.Add("cache-control", "no-cache")
+	res, err := HTTPClient().Do(req)
+	if err != nil {
+		log.Errorln("error while requesting /arc/plan/fs")
+		return nil, err
+	}
+	defer res.Body.Close()
+	return ioutil.ReadAll(res.Body)
+}
+
 func getArcInstance(arcID string) (ArcInstance, error) {
 	arcInstance := ArcInstance{}
-	response := ArcInstanceResponse{}
 	url := ACCAPI + "arc/instances?arcid=" + arcID
 	req, _ := http.NewRequest("GET", url, nil)
 	req.Header.Add("Content-Type", "application/json")
@@ -221,15 +268,25 @@ func getArcInstance(arcID string) (ArcInstance, error) {
 	res, err := HTTPClient().Do(req)
 	// If ACCAPI is down then set the plan
 	if (res != nil && res.StatusCode >= 500) || err != nil {
-		plan := GetTier()
-		// If plan is not set already (that would be the case at the time of initialization)
-		// then set the highest appbase.io plan
-		if plan == nil {
-			highestPlan := ArcEnterprise
-			plan = &highestPlan
+		if planDetails != nil {
+			return setBillingVarsArcInstance(*planDetails)
+		} else {
+			// fetch plan from arc/fs/plan endpoint
+			planDetails, err := GetCachedPlanDetails()
+			if err != nil {
+				log.Errorln("error while refreshing plan, please contact at support@appbase.io")
+				// If plan is not set already (that would be the case at the time of initialization)
+				// then set the highest appbase.io plan
+				plan := GetTier()
+				if plan == nil {
+					highestPlan := ArcEnterprise
+					plan = &highestPlan
+				}
+				SetTier(plan)
+			} else {
+				return setBillingVarsArcInstance(planDetails)
+			}
 		}
-		SetTier(plan)
-		log.Errorln("error while sending request:", err)
 		return arcInstance, err
 	}
 	defer res.Body.Close()
@@ -241,7 +298,17 @@ func getArcInstance(arcID string) (ArcInstance, error) {
 	// Validate the ACCAPI response
 	ValidateArcID(res.StatusCode)
 
-	err = json.Unmarshal(body, &response)
+	return setBillingVarsArcInstance(body)
+}
+
+func setBillingVarsArcInstance(body []byte) (ArcInstance, error) {
+	response := ArcInstanceResponse{}
+	arcInstance := ArcInstance{}
+	err := json.Unmarshal(body, &response)
+	if err != nil {
+		log.Errorln("error while unmarshalling res body:", err)
+		return arcInstance, err
+	}
 	if len(response.ArcInstances) != 0 {
 		arcInstanceByID := response.ArcInstances[0]
 		arcInstance.SubscriptionID = arcInstanceByID.SubscriptionID
@@ -251,6 +318,8 @@ func getArcInstance(arcID string) (ArcInstance, error) {
 			SubscriptonCanceled: arcInstanceByID.SubscriptionCanceled,
 			CreatedAt:           arcInstanceByID.CreatedAt,
 		})
+		// Set plan details to local variable
+		setPlanDetails(body)
 		SetTier(arcInstanceByID.Tier)
 		SetFeatureSuggestions(arcInstanceByID.FeatureSuggestions)
 		SetFeatureCustomEvents(arcInstanceByID.FeatureCustomEvents)
@@ -258,6 +327,7 @@ func getArcInstance(arcID string) (ArcInstance, error) {
 		SetFeatureSearchRelevancy(arcInstanceByID.FeatureSearchRelevancy)
 		SetFeatureSearchGrader(arcInstanceByID.FeatureSearchGrader)
 		SetFeatureEcommerce(arcInstanceByID.FeatureEcommerce)
+		SetFeatureUIBuilderPremium(arcInstanceByID.FeatureUIBuilderPremium)
 		SetFeatureCache(arcInstanceByID.FeatureCache)
 		SetFeaturePipelines(arcInstanceByID.FeaturePipelines)
 		setNumberOfMachines(arcInstanceByID.NumberOfMachines)
@@ -265,17 +335,11 @@ func getArcInstance(arcID string) (ArcInstance, error) {
 	} else {
 		return arcInstance, errors.New("no valid instance found for the provided APPBASE_ID")
 	}
-
-	if err != nil {
-		log.Errorln("error while unmarshalling res body:", err)
-		return arcInstance, err
-	}
 	return arcInstance, nil
 }
 
 func getArcClusterInstance(clusterID string) (ArcInstance, error) {
 	arcInstance := ArcInstance{}
-	var response ArcInstanceResponse
 	url := ACCAPI + "byoc/" + clusterID
 	req, _ := http.NewRequest("GET", url, nil)
 	req.Header.Add("Content-Type", "application/json")
@@ -284,15 +348,25 @@ func getArcClusterInstance(clusterID string) (ArcInstance, error) {
 	res, err := HTTPClient().Do(req)
 	// If ACCAPI is down then set the plan
 	if (res != nil && res.StatusCode >= 500) || err != nil {
-		plan := GetTier()
-		// If plan is not set already (that would be the case at the time of initialization)
-		// then set the highest appbase.io plan
-		if plan == nil {
-			highestPlan := HostedArcEnterprise2021
-			plan = &highestPlan
+		if planDetails != nil {
+			return setBillingVarsArcInstance(*planDetails)
+		} else {
+			// fetch plan from arc/fs/plan endpoint
+			planDetails, err := GetCachedPlanDetails()
+			if err != nil {
+				log.Errorln("error while refreshing plan, please contact at support@appbase.io")
+				// If plan is not set already (that would be the case at the time of initialization)
+				// then set the highest appbase.io plan
+				plan := GetTier()
+				if plan == nil {
+					highestPlan := HostedArcEnterprise2021
+					plan = &highestPlan
+				}
+				SetTier(plan)
+			} else {
+				return setBillingVarsArcInstance(planDetails)
+			}
 		}
-		SetTier(plan)
-		log.Errorln("error while sending request:", err)
 		return arcInstance, err
 	}
 	defer res.Body.Close()
@@ -304,36 +378,7 @@ func getArcClusterInstance(clusterID string) (ArcInstance, error) {
 		log.Errorln("error reading res body:", err)
 		return arcInstance, err
 	}
-	err = json.Unmarshal(body, &response)
-
-	if err != nil {
-		log.Errorln("error while unmarshalling res body:", err)
-		return arcInstance, err
-	}
-	if len(response.ArcInstances) != 0 {
-		arcInstanceDetails := response.ArcInstances[0]
-		arcInstance.SubscriptionID = arcInstanceDetails.SubscriptionID
-		SetTimeValidity(arcInstanceDetails.TimeValidity)
-		setMaxErrorTime(Subscripton{
-			SubscriptionID:      arcInstanceDetails.SubscriptionID,
-			SubscriptonCanceled: arcInstanceDetails.SubscriptionCanceled,
-			CreatedAt:           arcInstanceDetails.CreatedAt,
-		})
-		SetTier(arcInstanceDetails.Tier)
-		SetFeatureSuggestions(arcInstanceDetails.FeatureSuggestions)
-		SetFeatureCustomEvents(arcInstanceDetails.FeatureCustomEvents)
-		SetFeatureRules(arcInstanceDetails.FeatureRules)
-		SetFeatureSearchRelevancy(arcInstanceDetails.FeatureSearchRelevancy)
-		SetFeatureSearchGrader(arcInstanceDetails.FeatureSearchGrader)
-		SetFeatureEcommerce(arcInstanceDetails.FeatureEcommerce)
-		SetFeatureCache(arcInstanceDetails.FeatureCache)
-		SetFeaturePipelines(arcInstanceDetails.FeaturePipelines)
-		setNumberOfMachines(arcInstanceDetails.NumberOfMachines)
-		ClusterID = arcInstanceDetails.ClusterID
-	} else {
-		return arcInstance, errors.New("no valid instance found for the provided CLUSTER_ID")
-	}
-	return arcInstance, nil
+	return setBillingVarsArcInstance(body)
 }
 
 type Subscripton struct {
@@ -361,7 +406,6 @@ func setMaxErrorTime(subscriptionDetails Subscripton) {
 // Fetches the cluster plan details for the encrypted cluster id
 func getClusterPlan(clusterID string) (ClusterPlan, error) {
 	clusterPlan := ClusterPlan{}
-	var response ClusterPlanResponse
 	url := ACCAPI + "v1/plan/" + clusterID
 	req, _ := http.NewRequest("GET", url, nil)
 	req.Header.Add("Content-Type", "application/json")
@@ -370,15 +414,23 @@ func getClusterPlan(clusterID string) (ClusterPlan, error) {
 	res, err := HTTPClient().Do(req)
 	// If ACCAPI is down then set the plan
 	if (res != nil && res.StatusCode >= 500) || err != nil {
-		plan := GetTier()
-		// If plan is not set already (that would be the case at the time of initialization)
-		// then set the highest cluster plan
-		if plan == nil {
-			highestPlan := ProductionThird2021
-			plan = &highestPlan
+		if planDetails != nil {
+			return setBillingVarsCluster(*planDetails)
+		} else {
+			// fetch plan from arc/fs/plan endpoint
+			planDetails, err := GetCachedPlanDetails()
+			if err != nil {
+				log.Errorln("error while refreshing plan, please contact at support@appbase.io")
+				plan := GetTier()
+				if plan == nil {
+					highestPlan := ProductionThird2021
+					plan = &highestPlan
+				}
+				SetTier(plan)
+			} else {
+				return setBillingVarsCluster(planDetails)
+			}
 		}
-		SetTier(plan)
-		log.Errorln("error while sending request:", err)
 		return clusterPlan, err
 	}
 	defer res.Body.Close()
@@ -387,19 +439,28 @@ func getClusterPlan(clusterID string) (ClusterPlan, error) {
 		log.Errorln("error reading res body:", err)
 		return clusterPlan, err
 	}
-	// Validate the ACCAPI response
-	ValidateArcID(res.StatusCode)
+	return setBillingVarsCluster(body)
+}
 
+func setBillingVarsCluster(body []byte) (ClusterPlan, error) {
+	clusterPlan := ClusterPlan{}
+	var response ClusterPlanResponse
+	err := json.Unmarshal(body, &response)
+	if err != nil {
+		log.Errorln("error while unmarshalling res body:", err)
+		return clusterPlan, err
+	}
 	err = json.Unmarshal(body, &response)
 
 	if err != nil {
 		log.Errorln("error while unmarshalling res body:", err)
 		return clusterPlan, err
 	}
-
 	if response.Plan.Tier == nil {
 		return clusterPlan, fmt.Errorf("error while getting the cluster plan")
 	}
+	// Set plan details to local variable
+	setPlanDetails(body)
 	// Set the plan for clusters
 	SetTier(response.Plan.Tier)
 	SetTimeValidity(response.Plan.TimeValidity)
@@ -414,6 +475,7 @@ func getClusterPlan(clusterID string) (ClusterPlan, error) {
 	SetFeatureSearchRelevancy(response.Plan.FeatureSearchRelevancy)
 	SetFeatureSearchGrader(response.Plan.FeatureSearchGrader)
 	SetFeatureEcommerce(response.Plan.FeatureEcommerce)
+	SetFeatureUIBuilderPremium(response.Plan.FeatureUIBuilderPremium)
 	SetFeatureCache(response.Plan.FeatureCache)
 	SetFeaturePipelines(response.Plan.FeaturePipelines)
 	setNumberOfMachines(response.Plan.NumberOfMachines)

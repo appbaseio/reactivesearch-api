@@ -12,7 +12,7 @@ import (
 )
 
 // transform the query
-func translateQuery(rsQuery RSQuery, userIP string, queryForId *string) (string, []byte, error) {
+func translateQuery(rsQuery RSQuery, userIP string, queryForId *string, preference *string) (string, []byte, error) {
 	// Validate custom events
 	if rsQuery.Settings != nil && rsQuery.Settings.CustomEvents != nil {
 		for k, v := range *rsQuery.Settings.CustomEvents {
@@ -198,9 +198,14 @@ func translateQuery(rsQuery RSQuery, userIP string, queryForId *string) (string,
 				return mSearchQuery, nil, err2
 			}
 			// Add preference
-			preferenceId := *query.ID + "_" + userIP
-			if rsQuery.Settings != nil && rsQuery.Settings.UserID != nil {
-				preferenceId = *query.ID + "_" + *rsQuery.Settings.UserID
+			var preferenceId string
+			if preference != nil {
+				preferenceId = *preference
+			} else {
+				preferenceId = *query.ID + "_" + userIP
+				if rsQuery.Settings != nil && rsQuery.Settings.UserID != nil {
+					preferenceId = *query.ID + "_" + *rsQuery.Settings.UserID
+				}
 			}
 			var msearchConfig = map[string]interface{}{
 				"preference": preferenceId,
@@ -260,7 +265,7 @@ func BuildIndependentRequests(rsQuery RSQuery) ([]map[string]interface{}, error)
 // BuildIndependentRequest will build the independent request based on the passed
 // details and return a map to be used during execution of the request.
 func BuildIndependentRequest(query Query, rsQuery RSQuery) (map[string]interface{}, error) {
-	DEFAULT_METHOD := http.MethodGet
+	DEFAULT_METHOD := http.MethodPost
 	DEFAULT_HEADERS := make(map[string]string)
 
 	if query.Endpoint.Method == nil || *query.Endpoint.Method == "" {
@@ -293,6 +298,9 @@ func BuildIndependentRequest(query Query, rsQuery RSQuery) (map[string]interface
 		}
 
 		delete(queryAsMap, "endpoint")
+		delete(queryAsMap, "searchboxId")
+		// Remove query type if body is not specified
+		delete(queryAsMap, "type")
 
 		bodyToSend := map[string]interface{}{
 			"query": []map[string]interface{}{
@@ -442,9 +450,11 @@ func GetDefaultScript(backend Backend) string {
 }
 
 // global function to transform the RS API query to _msearch equivalent query
-func TranslateQuery(rsQuery RSQuery, userIP string, queryForId *string) (string, []byte, error) {
-	return translateQuery(rsQuery, userIP, queryForId)
+func TranslateQuery(rsQuery RSQuery, userIP string, queryForId *string, preference *string) (string, []byte, error) {
+	return translateQuery(rsQuery, userIP, queryForId, preference)
 }
+
+type QueryByType func(query *Query) (*interface{}, error)
 
 // Generate the queryDSL without options for a particular query type
 func (query *Query) generateQueryByType() (*interface{}, error) {
@@ -463,6 +473,11 @@ func (query *Query) generateQueryByType() (*interface{}, error) {
 		translatedQuery, translateError = query.generateSearchQuery()
 	}
 	return &translatedQuery, translateError
+}
+
+// generateQueryByType will generate the query by type
+func generateQueryByType(query *Query) (*interface{}, error) {
+	return query.generateQueryByType()
 }
 
 // Builds the query options for e.g `size`, `from`, `highlight` etc.
@@ -627,97 +642,108 @@ func (query *Query) buildQueryOptions() (map[string]interface{}, error) {
 			return nil, errors.New("field 'dataField' must be present to make 'aggregations' property work")
 		}
 		if query.Type == Range {
-			dataField := normalizedFields[0].Field
-			tempAggs := *query.Aggregations
-			rangeAggs := map[string]interface{}{}
-			if util.Contains(tempAggs, "min") {
-				rangeAggs["min"] = map[string]interface{}{
-					"min": map[string]interface{}{"field": dataField}}
-			}
-			if util.Contains(tempAggs, "max") {
-				rangeAggs["max"] = map[string]interface{}{
-					"max": map[string]interface{}{"field": dataField}}
-			}
-
-			if util.Contains(tempAggs, "histogram") {
-				if query.CalendarInterval != nil {
-					// run date histogram query
-					rangeAggs[dataField] = map[string]interface{}{
-						"date_histogram": map[string]interface{}{
-							"field":             dataField,
-							"calendar_interval": *query.CalendarInterval,
-						},
-					}
-				} else {
-					// rangeHistogram can work without range value as well
-					// so it being nil should not have an effect.
-
-					// If range value is not present, just create a dummy one.
-					var dummyStartEndValue interface{} = 0
-					rangeValue := &RangeValue{
-						Start: &dummyStartEndValue,
-						End:   &dummyStartEndValue,
-					}
-
-					var err error
-
-					useStartValue := false
-
-					if query.Value != nil {
-						rangeValue, err = query.getRangeValue(*query.Value)
-						useStartValue = true
-					}
-
-					if err != nil {
-						log.Errorln(logTag, ":", err)
-					} else if rangeValue != nil && rangeValue.Start != nil && rangeValue.End != nil {
-						histogramMap := map[string]interface{}{
-							"field":    dataField,
-							"interval": getValidInterval(query.Interval, *rangeValue),
-						}
-
-						if useStartValue {
-							histogramMap["offset"] = rangeValue.Start
-						}
-
-						rangeAggs[dataField] = map[string]interface{}{
-							"histogram": histogramMap,
-						}
-					}
-				}
-			}
-
-			if util.Contains(tempAggs, "date-histogram") && query.Value != nil {
-				rangeValue, err := query.getRangeValue(*query.Value)
-				if err != nil {
-					log.Errorln(logTag, ":", err)
-				} else if rangeValue != nil && rangeValue.Start != nil && rangeValue.End != nil {
-					rangeAggs[dataField] = map[string]interface{}{
-						"histogram": map[string]interface{}{
-							"field":    dataField,
-							"interval": getValidInterval(query.Interval, *rangeValue),
-							"offset":   rangeValue.Start,
-						},
-					}
-				}
-			}
-
-			if query.NestedField != nil {
-				tempNestedField := *query.NestedField
-				queryWithOptions["aggs"] = map[string]interface{}{
-					tempNestedField: map[string]interface{}{
-						"nested": map[string]interface{}{
-							"path": tempNestedField,
-						},
-						"aggs": rangeAggs,
-					},
-				}
-			} else {
-				queryWithOptions["aggs"] = rangeAggs
-			}
+			queryWithOptions = query.ApplyAggsForRange(normalizedFields, queryWithOptions)
 		}
 	}
 	return queryWithOptions, nil
+}
+
+// ApplyAggsForRange will build the aggregations for range type of
+// query.
+//
+// The function will inject aggs related fields to the query and return
+// the update map.
+func (query *Query) ApplyAggsForRange(normalizedFields []DataField, queryWithOptions map[string]interface{}) map[string]interface{} {
+	dataField := normalizedFields[0].Field
+	tempAggs := *query.Aggregations
+	rangeAggs := map[string]interface{}{}
+	if util.Contains(tempAggs, "min") {
+		rangeAggs["min"] = map[string]interface{}{
+			"min": map[string]interface{}{"field": dataField}}
+	}
+	if util.Contains(tempAggs, "max") {
+		rangeAggs["max"] = map[string]interface{}{
+			"max": map[string]interface{}{"field": dataField}}
+	}
+
+	if util.Contains(tempAggs, "histogram") {
+		if query.CalendarInterval != nil {
+			// run date histogram query
+			rangeAggs[dataField] = map[string]interface{}{
+				"date_histogram": map[string]interface{}{
+					"field":             dataField,
+					"calendar_interval": *query.CalendarInterval,
+				},
+			}
+		} else {
+			// rangeHistogram can work without range value as well
+			// so it being nil should not have an effect.
+
+			// If range value is not present, just create a dummy one.
+			var dummyStartEndValue interface{} = 0
+			rangeValue := &RangeValue{
+				Start: &dummyStartEndValue,
+				End:   &dummyStartEndValue,
+			}
+
+			var err error
+
+			useStartValue := false
+
+			if query.Value != nil {
+				rangeValue, err = query.getRangeValue(*query.Value)
+				useStartValue = true
+			}
+
+			if err != nil {
+				log.Errorln(logTag, ":", err)
+			} else if rangeValue != nil && rangeValue.Start != nil && rangeValue.End != nil {
+				histogramMap := map[string]interface{}{
+					"field":    dataField,
+					"interval": getValidInterval(query.Interval, *rangeValue),
+				}
+
+				if useStartValue {
+					histogramMap["offset"] = rangeValue.Start
+				}
+
+				rangeAggs[dataField] = map[string]interface{}{
+					"histogram": histogramMap,
+				}
+			}
+		}
+	}
+
+	if util.Contains(tempAggs, "date-histogram") && query.Value != nil {
+		rangeValue, err := query.getRangeValue(*query.Value)
+		if err != nil {
+			log.Errorln(logTag, ":", err)
+		} else if rangeValue != nil && rangeValue.Start != nil && rangeValue.End != nil {
+			rangeAggs[dataField] = map[string]interface{}{
+				"histogram": map[string]interface{}{
+					"field":    dataField,
+					"interval": getValidInterval(query.Interval, *rangeValue),
+					"offset":   rangeValue.Start,
+				},
+			}
+		}
+	}
+
+	if query.NestedField != nil {
+		tempNestedField := *query.NestedField
+		queryWithOptions["aggs"] = map[string]interface{}{
+			tempNestedField: map[string]interface{}{
+				"nested": map[string]interface{}{
+					"path": tempNestedField,
+				},
+				"aggs": rangeAggs,
+			},
+		}
+	} else {
+		queryWithOptions["aggs"] = rangeAggs
+	}
+
+	return queryWithOptions
 }
 
 func (query *Query) applyNestedFieldQuery(originalQuery interface{}) interface{} {
@@ -785,4 +811,10 @@ func (query *Query) applyHighlightQuery(queryOptions *map[string]interface{}) {
 			clonedQuery["highlight"] = highlightOptions
 		}
 	}
+}
+
+// ApplyHighlightQuery is a wrapper to apply highlight query into the passed
+// query map
+func (query *Query) ApplyHighlightQuery(queryOptions *map[string]interface{}) {
+	query.applyHighlightQuery(queryOptions)
 }
