@@ -310,8 +310,6 @@ func (l *Logs) recordResponse(w *httptest.ResponseRecorder, r *http.Request, req
 				responseChanges = append(responseChanges, difference.Difference{
 					Body:    util.CalculateBodyStringDiff(changes.Before.Data.Body, changes.After.Data.Body),
 					Headers: util.CalculateHeaderDiff(changes.Before.Data.Headers, changes.After.Data.Headers),
-					URI:     util.CalculateStringDiff(changes.Before.Data.URL, changes.After.Data.URL),
-					Method:  util.CalculateMethodStringDiff(changes.Before.Data.Method, changes.After.Data.Method),
 					Stage:   stage,
 					Took:    &changes.After.TimeTaken,
 				})
