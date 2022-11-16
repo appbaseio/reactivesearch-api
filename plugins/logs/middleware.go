@@ -172,8 +172,9 @@ func (l *Logs) recordResponse(w *httptest.ResponseRecorder, r *http.Request, req
 
 	requestId, err := request.FromRequestIDContext(ctx)
 	if err != nil {
-		log.Errorln(logTag, ":", err)
-		return
+		if *reqCategory == category.ReactiveSearch {
+			log.Warnln(logTag, ":", err)
+		}
 	}
 
 	var rec record
