@@ -557,7 +557,7 @@ func main() {
 	}
 
 	// Initialize request logs map
-	requestlogs.InitRequestLogs(100000, 5*60)
+	requestlogs.InitRequestLogs(60000, 1*60)
 
 	cronjob := cron.New()
 	syncInterval := "@every " + strconv.Itoa(util.GetSyncInterval()) + "s"
