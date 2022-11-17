@@ -24,6 +24,7 @@ import (
 	"time"
 
 	"github.com/appbaseio/reactivesearch-api/middleware"
+	"github.com/appbaseio/reactivesearch-api/model/requestlogs"
 	"github.com/appbaseio/reactivesearch-api/plugins"
 	"github.com/appbaseio/reactivesearch-api/plugins/nodes"
 	"github.com/appbaseio/reactivesearch-api/plugins/querytranslate"
@@ -213,7 +214,7 @@ func init() {
 func main() {
 	// add cpu profilling
 	if cpuprofile {
-		defer profile.Start().Stop()
+		defer profile.Start(profile.NoShutdownHook).Stop()
 	}
 	// add mem profilling
 	if memprofile {
@@ -554,6 +555,9 @@ func main() {
 			}
 		}
 	}
+
+	// Initialize request logs map
+	requestlogs.InitRequestLogs(60000, 1*60)
 
 	cronjob := cron.New()
 	syncInterval := "@every " + strconv.Itoa(util.GetSyncInterval()) + "s"

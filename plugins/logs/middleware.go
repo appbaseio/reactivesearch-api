@@ -17,8 +17,7 @@ import (
 	"github.com/appbaseio/reactivesearch-api/model/difference"
 	"github.com/appbaseio/reactivesearch-api/model/index"
 	"github.com/appbaseio/reactivesearch-api/model/request"
-	"github.com/appbaseio/reactivesearch-api/model/requestchange"
-	"github.com/appbaseio/reactivesearch-api/model/responsechange"
+	"github.com/appbaseio/reactivesearch-api/model/requestlogs"
 	"github.com/appbaseio/reactivesearch-api/plugins/auth"
 	"github.com/appbaseio/reactivesearch-api/plugins/telemetry"
 	"github.com/appbaseio/reactivesearch-api/util"
@@ -118,16 +117,6 @@ func (l *Logs) recorder(h http.HandlerFunc) http.HandlerFunc {
 			return
 		}
 
-		// Init the request change context
-		reqDiff := make([]difference.Difference, 0)
-		reqDiffCtx := requestchange.NewContext(r.Context(), &reqDiff)
-		r = r.WithContext(reqDiffCtx)
-
-		// Init the response change context
-		resDiff := make([]difference.Difference, 0)
-		resDiffCtx := responsechange.NewContext(r.Context(), &resDiff)
-		r = r.WithContext(resDiffCtx)
-
 		// Init the console logs in the context
 		consoleLogs := make([]string, 0)
 		consoleLogsCtx := console.NewContext(r.Context(), &consoleLogs)
@@ -155,6 +144,11 @@ type RSAPI struct {
 	Query []Query `json:"query"`
 }
 
+type RequestChange struct {
+	Before requestlogs.LogsResults
+	After  requestlogs.LogsResults
+}
+
 func (l *Logs) recordResponse(w *httptest.ResponseRecorder, r *http.Request, reqBody []byte) {
 	var headers = make(map[string][]string)
 
@@ -176,6 +170,13 @@ func (l *Logs) recordResponse(w *httptest.ResponseRecorder, r *http.Request, req
 		return
 	}
 
+	requestInfo, err := request.FromRequestIDContext(ctx)
+	if err != nil {
+		if *reqCategory == category.ReactiveSearch {
+			log.Warnln(logTag, ":", err)
+		}
+	}
+
 	var rec record
 	rec.Indices = reqIndices
 	rec.Category = reqCategory.String()
@@ -186,25 +187,18 @@ func (l *Logs) recordResponse(w *httptest.ResponseRecorder, r *http.Request, req
 	}
 	// apply suggestion category
 	if *reqCategory == category.ReactiveSearch {
-		reqBody, err := request.FromContext(ctx)
-		if err != nil {
-			log.Errorln(logTag, "error encountered while reading request body:", err)
-		}
-		if reqBody != nil {
-			bodyInBytes, err := json.Marshal(*reqBody)
-			if err != nil {
-				log.Errorln(logTag, ":", err)
+		var reqBody []byte
+		if requestInfo != nil {
+			reqBody = requestInfo.Body
+			var query RSAPI
+			err2 := json.Unmarshal(reqBody, &query)
+			if err2 != nil {
+				log.Errorln(logTag, ":", err2)
 			} else {
-				var query RSAPI
-				err2 := json.Unmarshal(bodyInBytes, &query)
-				if err2 != nil {
-					log.Errorln(logTag, ":", err2)
-				} else {
-					parsedBody = bodyInBytes
-					for _, query := range query.Query {
-						if query.Type == "suggestion" {
-							rec.Category = "suggestion"
-						}
+				parsedBody = reqBody
+				for _, query := range query.Query {
+					if query.Type == "suggestion" {
+						rec.Category = "suggestion"
 					}
 				}
 			}
@@ -264,19 +258,71 @@ func (l *Logs) recordResponse(w *httptest.ResponseRecorder, r *http.Request, req
 	}
 
 	// Extract the request changes from context
-	requestChanges, err := requestchange.FromContext(ctx)
-	if err != nil {
-		log.Warnln(logTag, "No request changes added with err: ", err)
-	} else {
-		rec.RequestChanges = *requestChanges
-	}
+	if requestInfo != nil {
+		requestId := requestInfo.Id
+		rl := requestlogs.Get(requestId)
+		if rl != nil {
+			go func() {
+				rl.LogsDiffing.Wait()
+				close(rl.Output)
+			}()
+			requestChangesByStage := make(map[string]RequestChange)
+			responseChangesByStage := make(map[string]RequestChange)
 
-	// Extract the response changes from context
-	responseChanges, err := responsechange.FromContext(ctx)
-	if err != nil {
-		log.Warnln(logTag, "No response changes added with err: ", err)
-	} else {
-		rec.ResponseChanges = *responseChanges
+			for result := range rl.Output {
+				if result.LogType == "request" {
+					requestChange := RequestChange{}
+					rc, ok := requestChangesByStage[result.Stage]
+					if ok {
+						requestChange = rc
+					}
+					if result.LogTime == "before" {
+						requestChange.Before = result
+					} else if result.LogTime == "after" {
+						requestChange.After = result
+					}
+					requestChangesByStage[result.Stage] = requestChange
+				} else if result.LogType == "response" {
+					responseChange := RequestChange{}
+					rc, ok := requestChangesByStage[result.Stage]
+					if ok {
+						responseChange = rc
+					}
+					if result.LogTime == "before" {
+						responseChange.Before = result
+					} else if result.LogTime == "after" {
+						responseChange.Before = result
+					}
+					responseChangesByStage[result.Stage] = responseChange
+				}
+			}
+			// calculate diffing
+			requestChanges := make([]difference.Difference, 0)
+			for stage, changes := range requestChangesByStage {
+				requestChanges = append(requestChanges, difference.Difference{
+					Body:    util.CalculateBodyStringDiff(changes.Before.Data.Body, changes.After.Data.Body),
+					Headers: util.CalculateHeaderDiff(changes.Before.Data.Headers, changes.After.Data.Headers),
+					URI:     util.CalculateStringDiff(changes.Before.Data.URL, changes.After.Data.URL),
+					Method:  util.CalculateMethodStringDiff(changes.Before.Data.Method, changes.After.Data.Method),
+					Stage:   stage,
+					Took:    &changes.After.TimeTaken,
+				})
+			}
+			rec.RequestChanges = requestChanges
+			responseChanges := make([]difference.Difference, 0)
+			for stage, changes := range responseChangesByStage {
+				responseChanges = append(responseChanges, difference.Difference{
+					Body:    util.CalculateBodyStringDiff(changes.Before.Data.Body, changes.After.Data.Body),
+					Headers: util.CalculateHeaderDiff(changes.Before.Data.Headers, changes.After.Data.Headers),
+					Stage:   stage,
+					Took:    &changes.After.TimeTaken,
+				})
+			}
+			rec.ResponseChanges = responseChanges
+
+			// Delete request logs
+			requestlogs.Delete(requestId)
+		}
 	}
 
 	// Extract the console logs

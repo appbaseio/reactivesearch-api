@@ -114,6 +114,29 @@ func CalculateBodyDiff(originalReqBody io.ReadCloser, modifiedReqBody io.ReadClo
 	return bodyDiffStr
 }
 
+// Calculate the diff in the body
+func CalculateBodyStringDiff(originalReqBody string, modifiedReqBody string) string {
+	originalBodyStr := originalReqBody
+
+	modifiedBodyStr := modifiedReqBody
+
+	dmp := diffmatchpatch.New()
+	bodyDiffs := dmp.DiffMain(originalBodyStr, modifiedBodyStr, false)
+	bodyDiffStr := dmp.DiffToDelta(bodyDiffs)
+
+	// Make an integrity check to make sure the delta
+	// is not compromised
+	if log.GetLevel() == log.DebugLevel {
+		_, err := dmp.DiffFromDelta(originalBodyStr, bodyDiffStr)
+		if err != nil {
+			log.Warnln("Integrity check failed for body, couldn't build diffs from delta")
+			return ""
+		}
+	}
+
+	return bodyDiffStr
+}
+
 // Calculate the difference in the URI
 func CalculateUriDiff(originalReq *http.Request, modifiedReq *http.Request) string {
 	dmp := diffmatchpatch.New()
@@ -133,6 +156,13 @@ func CalculateStringDiff(text1 string, text2 string) string {
 func CalculateMethodDiff(originalReq *http.Request, modifiedReq *http.Request) string {
 	dmp := diffmatchpatch.New()
 	methodDiff := dmp.DiffMain(originalReq.Method, modifiedReq.Method, false)
+	return dmp.DiffToDelta(methodDiff)
+}
+
+// Calculate method difference
+func CalculateMethodStringDiff(originalReqMethod string, modifiedReqMethod string) string {
+	dmp := diffmatchpatch.New()
+	methodDiff := dmp.DiffMain(originalReqMethod, modifiedReqMethod, false)
 	return dmp.DiffToDelta(methodDiff)
 }
 
