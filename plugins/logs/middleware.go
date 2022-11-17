@@ -170,7 +170,7 @@ func (l *Logs) recordResponse(w *httptest.ResponseRecorder, r *http.Request, req
 		return
 	}
 
-	requestId, err := request.FromRequestIDContext(ctx)
+	requestInfo, err := request.FromRequestIDContext(ctx)
 	if err != nil {
 		if *reqCategory == category.ReactiveSearch {
 			log.Warnln(logTag, ":", err)
@@ -187,25 +187,18 @@ func (l *Logs) recordResponse(w *httptest.ResponseRecorder, r *http.Request, req
 	}
 	// apply suggestion category
 	if *reqCategory == category.ReactiveSearch {
-		reqBody, err := request.FromContext(ctx)
-		if err != nil {
-			log.Errorln(logTag, "error encountered while reading request body:", err)
-		}
-		if reqBody != nil {
-			bodyInBytes, err := json.Marshal(*reqBody)
-			if err != nil {
-				log.Errorln(logTag, ":", err)
+		var reqBody []byte
+		if requestInfo != nil {
+			reqBody = requestInfo.Body
+			var query RSAPI
+			err2 := json.Unmarshal(reqBody, &query)
+			if err2 != nil {
+				log.Errorln(logTag, ":", err2)
 			} else {
-				var query RSAPI
-				err2 := json.Unmarshal(bodyInBytes, &query)
-				if err2 != nil {
-					log.Errorln(logTag, ":", err2)
-				} else {
-					parsedBody = bodyInBytes
-					for _, query := range query.Query {
-						if query.Type == "suggestion" {
-							rec.Category = "suggestion"
-						}
+				parsedBody = reqBody
+				for _, query := range query.Query {
+					if query.Type == "suggestion" {
+						rec.Category = "suggestion"
 					}
 				}
 			}
@@ -265,8 +258,9 @@ func (l *Logs) recordResponse(w *httptest.ResponseRecorder, r *http.Request, req
 	}
 
 	// Extract the request changes from context
-	if requestId != nil {
-		rl := requestlogs.Get(*requestId)
+	if requestInfo != nil {
+		requestId := requestInfo.Id
+		rl := requestlogs.Get(requestId)
 		if rl != nil {
 			go func() {
 				rl.LogsDiffing.Wait()
@@ -274,9 +268,14 @@ func (l *Logs) recordResponse(w *httptest.ResponseRecorder, r *http.Request, req
 			}()
 			requestChangesByStage := make(map[string]RequestChange)
 			responseChangesByStage := make(map[string]RequestChange)
+
 			for result := range rl.Output {
 				if result.LogType == "request" {
 					requestChange := RequestChange{}
+					rc, ok := requestChangesByStage[result.Stage]
+					if ok {
+						requestChange = rc
+					}
 					if result.LogTime == "before" {
 						requestChange.Before = result
 					} else if result.LogTime == "after" {
@@ -285,6 +284,10 @@ func (l *Logs) recordResponse(w *httptest.ResponseRecorder, r *http.Request, req
 					requestChangesByStage[result.Stage] = requestChange
 				} else if result.LogType == "response" {
 					responseChange := RequestChange{}
+					rc, ok := requestChangesByStage[result.Stage]
+					if ok {
+						responseChange = rc
+					}
 					if result.LogTime == "before" {
 						responseChange.Before = result
 					} else if result.LogTime == "after" {
@@ -318,7 +321,7 @@ func (l *Logs) recordResponse(w *httptest.ResponseRecorder, r *http.Request, req
 			rec.ResponseChanges = responseChanges
 
 			// Delete request logs
-			requestlogs.Delete(*requestId)
+			requestlogs.Delete(requestId)
 		}
 	}
 

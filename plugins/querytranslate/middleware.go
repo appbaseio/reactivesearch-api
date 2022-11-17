@@ -113,18 +113,18 @@ func saveRequestToCtx(h http.HandlerFunc) http.HandlerFunc {
 			req = req.WithContext(originalCtx)
 		}
 		// Forward context with request Id
-		ctx := request.NewRequestIDContext(NewContext(req.Context(), body))
+		ctx := request.NewRequestIDContext(NewContext(req.Context(), body), buf.Bytes())
 		req = req.WithContext(ctx)
-		requestId, err := request.FromRequestIDContext(req.Context())
+		requestInfo, err := request.FromRequestIDContext(req.Context())
 		if err != nil {
 			log.Errorln(logTag, ":", err)
 			telemetry.WriteBackErrorWithTelemetry(req, w, "error encountered while retrieving request-id from context", http.StatusInternalServerError)
 			return
 		}
-		if requestId != nil {
+		if requestInfo != nil {
 			var wg sync.WaitGroup
 			// Initialize logger
-			requestlogs.Put(*requestId, requestlogs.ActiveRequestLog{
+			requestlogs.Put(requestInfo.Id, requestlogs.ActiveRequestLog{
 				LogsDiffing: &wg,
 				Output:      make(chan requestlogs.LogsResults),
 			})
@@ -182,7 +182,7 @@ func queryTranslate(h http.HandlerFunc) http.HandlerFunc {
 			return
 		}
 
-		requestId, err := request.FromRequestIDContext(req.Context())
+		requestInfo, err := request.FromRequestIDContext(req.Context())
 		if err != nil {
 			log.Errorln(logTag, ":", err)
 			telemetry.WriteBackErrorWithTelemetry(req, w, "error encountered while retrieving request-id from context", http.StatusInternalServerError)
@@ -190,7 +190,7 @@ func queryTranslate(h http.HandlerFunc) http.HandlerFunc {
 		}
 
 		// Records logs
-		rl := requestlogs.Get(*requestId)
+		rl := requestlogs.Get(requestInfo.Id)
 		if rl != nil {
 			rl.LogsDiffing.Add(1)
 			go func(body *RSQuery, out chan<- requestlogs.LogsResults) {
@@ -200,7 +200,6 @@ func queryTranslate(h http.HandlerFunc) http.HandlerFunc {
 					log.Warnln(logTag, "couldn't marshal body to run log diff on it, ", err)
 					shouldLogDiff = false
 				}
-
 				defer rl.LogsDiffing.Done()
 				// Write log output
 				out <- requestlogs.LogsResults{

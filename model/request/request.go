@@ -26,19 +26,28 @@ func FromContext(ctx context.Context) (*interface{}, error) {
 // ctxKeyRequestId is a key against which request ID would be stored in context.
 const ctxKeyRequestId = contextKey("request-id")
 
+type RequestInfo struct {
+	Id   string
+	Body []byte
+}
+
 // NewRequestIDContext returns a new context with request ID.
-func NewRequestIDContext(ctx context.Context) context.Context {
+func NewRequestIDContext(ctx context.Context, originalRequestBody []byte) context.Context {
 	requestId := uuid.New().String()
-	return context.WithValue(ctx, ctxKeyRequestId, requestId)
+	requestInfo := RequestInfo{
+		Id:   requestId,
+		Body: originalRequestBody,
+	}
+	return context.WithValue(ctx, ctxKeyRequestId, requestInfo)
 }
 
 // FromContext retrieves the rs ap request Id stored against the querytranslate.ctxKeyRequestId from the context.
-func FromRequestIDContext(ctx context.Context) (*string, error) {
+func FromRequestIDContext(ctx context.Context) (*RequestInfo, error) {
 	ctxRequest := ctx.Value(ctxKeyRequestId)
 	if ctxRequest == nil {
 		return nil, errors.NewNotFoundInContextError("RequestId")
 	}
-	reqQuery, ok := ctxRequest.(string)
+	reqQuery, ok := ctxRequest.(RequestInfo)
 	if !ok {
 		return nil, errors.NewInvalidCastError("ctxRequest", "RequestId")
 	}
