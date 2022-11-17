@@ -257,12 +257,14 @@
               "httpRequest",
               "mongoDBQuery",
               "solrQuery",
+              "zincQuery",
               "recordClick",
               "recordConversion",
               "recordFavorite",
               "recordSaveSearch",
               "searchboxPreferences",
-              "boost"
+              "boost",
+              "marklogicQuery"
             ],
             "stages": {
               "addFilter": {
@@ -518,7 +520,8 @@
                         "opensearch",
                         "mongodb",
                         "solr",
-                        "zinc"
+                        "zinc",
+                        "marklogic"
                       ],
                       "title": "Search Backend",
                       "type": "string"
@@ -1398,6 +1401,47 @@
                   "type": "object"
                 },
                 "title": "kNN Response"
+              },
+              "marklogicQuery": {
+                "description": "To perform a request to MarkLogic.",
+                "inputs": {
+                  "$id": "https://github.com/appbaseio-confidential/arc-noss/plugins/pipelines/mark-logic-input",
+                  "$schema": "https://json-schema.org/draft/2020-12/schema",
+                  "properties": {
+                    "headers": {
+                      "description": "Headers to be passed in the Solr query request.",
+                      "patternProperties": {
+                        ".*": {
+                          "type": "string"
+                        }
+                      },
+                      "title": "Headers",
+                      "type": "object"
+                    },
+                    "password": {
+                      "description": "Password to access the URI passed",
+                      "title": "Password",
+                      "type": "string"
+                    },
+                    "type": {
+                      "description": "Type of request to make to MarkLogic. Valid options are sparql, search or optic",
+                      "title": "Type",
+                      "type": "string"
+                    },
+                    "uri": {
+                      "description": "URI to connect to the fusion instance. If passed, host, app, profile and credentials will be ignored and not required. Example: 'http://username:password@localhost:6764/api/apps/appbase/query/appbase'",
+                      "title": "URI",
+                      "type": "string"
+                    },
+                    "username": {
+                      "description": "Username to access the URI passed",
+                      "title": "Username",
+                      "type": "string"
+                    }
+                  },
+                  "type": "object"
+                },
+                "title": "MarkLogic"
               },
               "mongoDBQuery": {
                 "description": "To perform a request to MongoDB.\n\nMongoDB stage supports async execution. In case of asynchronous execution, you're expected to write a merge script to consume the response from mongoDB.\nThe mongoDB response would be present in global script context with stage Id (defaults to mongoDBQuery) as key.",
@@ -6046,6 +6090,52 @@
                 "description": "To apply the cached response. It is recommended to apply cached response after authentication.",
                 "inputs": null,
                 "title": "Apply Cached Response"
+              },
+              "zincQuery": {
+                "description": "To perform a request to Zinc",
+                "inputs": {
+                  "$id": "https://github.com/appbaseio-confidential/arc-noss/plugins/pipelines/zinc-input",
+                  "$schema": "https://json-schema.org/draft/2020-12/schema",
+                  "properties": {
+                    "credentials": {
+                      "description": "Credentials to access the Zinc host. Example: 'username:password'",
+                      "title": "Credentials",
+                      "type": "string"
+                    },
+                    "headers": {
+                      "description": "Headers to be passed in the Zinc request.",
+                      "patternProperties": {
+                        ".*": {
+                          "type": "string"
+                        }
+                      },
+                      "title": "Headers",
+                      "type": "object"
+                    },
+                    "host": {
+                      "description": "Host name and port for Zinc. For example: 'localhost:4080'",
+                      "title": "Host",
+                      "type": "string"
+                    },
+                    "independentBody": {
+                      "description": "Array of independent requests, i:e ones that contain the endpoint in the query.",
+                      "title": "Independent Body",
+                      "type": "string"
+                    },
+                    "protocol": {
+                      "description": "Protocol to use for connecting. Defaults to 'http'.",
+                      "title": "Protocol",
+                      "type": "string"
+                    },
+                    "url": {
+                      "description": "Zinc URL, for e.g: 'https://admin:Complexpass#123@zinc-url.com'. The URL can have path and query params too, for instance, 'https://zinc-url.com/_cat/indices?format=JSON'.",
+                      "title": "Request URL",
+                      "type": "string"
+                    }
+                  },
+                  "type": "object"
+                },
+                "title": "Zinc"
               }
             },
             "title": "Pre-built Stage",
