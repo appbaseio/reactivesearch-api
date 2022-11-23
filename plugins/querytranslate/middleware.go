@@ -8,9 +8,9 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
-	"github.com/appbaseio/reactivesearch-api/util"
 	"github.com/appbaseio/reactivesearch-api/util/iplookup"
 	"github.com/gorilla/mux"
 
@@ -19,11 +19,10 @@ import (
 	"github.com/appbaseio/reactivesearch-api/middleware/ratelimiter"
 	"github.com/appbaseio/reactivesearch-api/middleware/validate"
 	"github.com/appbaseio/reactivesearch-api/model/category"
-	"github.com/appbaseio/reactivesearch-api/model/difference"
 	"github.com/appbaseio/reactivesearch-api/model/op"
 	"github.com/appbaseio/reactivesearch-api/model/permission"
 	"github.com/appbaseio/reactivesearch-api/model/request"
-	"github.com/appbaseio/reactivesearch-api/model/requestchange"
+	"github.com/appbaseio/reactivesearch-api/model/requestlogs"
 	"github.com/appbaseio/reactivesearch-api/model/trackplugin"
 	"github.com/appbaseio/reactivesearch-api/plugins/auth"
 	"github.com/appbaseio/reactivesearch-api/plugins/logs"
@@ -114,10 +113,23 @@ func saveRequestToCtx(h http.HandlerFunc) http.HandlerFunc {
 			originalCtx := request.NewContext(req.Context(), body)
 			req = req.WithContext(originalCtx)
 		}
-
-		ctx := NewContext(req.Context(), body)
+		// Forward context with request Id
+		ctx := request.NewRequestIDContext(NewContext(req.Context(), body), buf.Bytes())
 		req = req.WithContext(ctx)
-
+		requestInfo, err := request.FromRequestIDContext(req.Context())
+		if err != nil {
+			log.Errorln(logTag, ":", err)
+			telemetry.WriteBackErrorWithTelemetry(req, w, "error encountered while retrieving request-id from context", http.StatusInternalServerError)
+			return
+		}
+		if requestInfo != nil {
+			var wg sync.WaitGroup
+			// Initialize logger
+			requestlogs.Put(requestInfo.Id, requestlogs.ActiveRequestLog{
+				LogsDiffing: &wg,
+				Output:      make(chan requestlogs.LogsResults),
+			})
+		}
 		h(w, req)
 	}
 }
@@ -162,6 +174,7 @@ func queryTranslate(h http.HandlerFunc) http.HandlerFunc {
 		vars := mux.Vars(req)
 
 		shouldLogDiff := true
+		stage := "querytranslate"
 
 		body, err := FromContext(req.Context())
 		if err != nil {
@@ -170,14 +183,39 @@ func queryTranslate(h http.HandlerFunc) http.HandlerFunc {
 			return
 		}
 
-		// Marshal the body and save it as the one before modification
-		marshalledBody, err := json.Marshal(body)
+		requestInfo, err := request.FromRequestIDContext(req.Context())
 		if err != nil {
-			log.Warnln(logTag, "couldn't marshal body to run log diff on it, ", err)
-			shouldLogDiff = false
+			log.Errorln(logTag, ":", err)
+			telemetry.WriteBackErrorWithTelemetry(req, w, "error encountered while retrieving request-id from context", http.StatusInternalServerError)
+			return
 		}
 
-		reqBodyBeforeModification := ioutil.NopCloser(strings.NewReader(string(marshalledBody)))
+		// Records logs
+		rl := requestlogs.Get(requestInfo.Id)
+		if rl != nil {
+			rl.LogsDiffing.Add(1)
+			go func(body *RSQuery, out chan<- requestlogs.LogsResults) {
+				// Marshal the body and save it as the one before modification
+				marshalledBody, err := json.Marshal(body)
+				if err != nil {
+					log.Warnln(logTag, "couldn't marshal body to run log diff on it, ", err)
+					shouldLogDiff = false
+				}
+				defer rl.LogsDiffing.Done()
+				// Write log output
+				out <- requestlogs.LogsResults{
+					LogType: "request",
+					LogTime: "before",
+					Data: requestlogs.RequestData{
+						Body:    string(marshalledBody),
+						Method:  req.Method,
+						Headers: req.Header,
+						URL:     req.URL.Path,
+					},
+					Stage: stage,
+				}
+			}(body, rl.Output)
+		}
 
 		// validate request by permission
 		reqPermission, err := permission.FromContext(req.Context())
@@ -293,37 +331,28 @@ func queryTranslate(h http.HandlerFunc) http.HandlerFunc {
 		req = req.WithContext(updatedCtx)
 
 		if shouldLogDiff {
-			reqBodyAfterModification := ioutil.NopCloser(strings.NewReader(string(msearchQuery)))
-
-			bodyDiffStr := util.CalculateBodyDiff(reqBodyBeforeModification, reqBodyAfterModification)
-
-			// Diff the URI manually for this stage
-			esURL := "/" + vars["index"] + "/_msearch"
-
-			DiffCalculated := &difference.Difference{
-				Body:    bodyDiffStr,
-				Headers: util.CalculateHeaderDiff(req.Header, req.Header),
-				URI:     util.CalculateStringDiff(req.URL.Path, esURL),
-				Method:  util.CalculateMethodDiff(req, req),
+			if rl != nil {
+				rl.LogsDiffing.Add(1)
+				timeTaken := float64(time.Since(start).Milliseconds())
+				go func(body string, timeTaken float64, out chan<- requestlogs.LogsResults) {
+					defer rl.LogsDiffing.Done()
+					// Diff the URI manually for this stage
+					esURL := "/" + vars["index"] + "/_msearch"
+					// Write log output
+					out <- requestlogs.LogsResults{
+						LogType: "request",
+						LogTime: "after",
+						Data: requestlogs.RequestData{
+							Body:    msearchQuery,
+							Method:  req.Method,
+							Headers: req.Header,
+							URL:     esURL,
+						},
+						Stage:     stage,
+						TimeTaken: timeTaken,
+					}
+				}(msearchQuery, timeTaken, rl.Output)
 			}
-
-			timeTaken := float64(time.Since(start).Milliseconds())
-			DiffCalculated.Took = &timeTaken
-			DiffCalculated.Stage = "querytranslate"
-
-			// Save the diff to context
-			// Get all the diffs first, then append and update the context
-			currentDiffs, err := requestchange.FromContext(req.Context())
-			if err != nil {
-				log.Warnln(logTag, ": error while getting diff, creating new diff. Err: ", err)
-				madeDiffs := make([]difference.Difference, 0)
-				currentDiffs = &madeDiffs
-			}
-			*currentDiffs = append(*currentDiffs, *DiffCalculated)
-
-			// Save the value to the context
-			diffCtx := requestchange.NewContext(req.Context(), currentDiffs)
-			req = req.WithContext(diffCtx)
 		}
 
 		// Track plugin
