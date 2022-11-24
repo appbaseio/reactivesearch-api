@@ -15,8 +15,8 @@ func addToUsage(usage int) {
 }
 
 // Method to clear reported usage
-func ClearUsage(usage int) {
-	totalUsage += usage
+func ClearUsage() {
+	totalUsage = 0
 }
 
 // Returns the total usage
