@@ -1,3 +1,4 @@
+//go:build !unit
 // +build !unit
 
 package permissions
@@ -80,7 +81,6 @@ var createPermissionResponse = map[string]interface{}{
 	"categories":     adminCategories,
 	"acls":           category.ACLsFor(adminCategories...),
 	"ops":            adminOps,
-	"indices":        []string{"*"},
 	"sources":        []string{"0.0.0.0/0"},
 	"referers":       []string{"*"},
 	"ttl":            -1,

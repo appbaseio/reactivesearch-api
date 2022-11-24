@@ -48,6 +48,7 @@ type Permission struct {
 	ACLs                 []acl.ACL             `json:"acls"`
 	Ops                  []op.Operation        `json:"ops"`
 	Indices              []string              `json:"indices"`
+	Pipelines            []string              `json:"pipelines"`
 	Sources              []string              `json:"sources"`
 	SourcesXffValue      *int                  `json:"sources_xff_value"`
 	Referers             []string              `json:"referers"`
@@ -164,6 +165,23 @@ func SetIndices(indices []string) Options {
 			}
 		}
 		p.Indices = indices
+		return nil
+	}
+}
+
+// SetPipelines sets the pipelines or pipeline pattern a permission can have access to.
+func SetPipelines(pipelines []string) Options {
+	return func(p *Permission) error {
+		if pipelines == nil {
+			return errors.ErrNilPipelines
+		}
+		for _, pattern := range pipelines {
+			pattern = strings.Replace(pattern, "*", ".*", -1)
+			if _, err := regexp.Compile(pattern); err != nil {
+				return err
+			}
+		}
+		p.Pipelines = pipelines
 		return nil
 	}
 }

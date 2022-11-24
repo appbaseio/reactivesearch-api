@@ -8,6 +8,7 @@ import (
 // Nil field errors.
 var (
 	ErrNilIndices    = errors.New(`indices cannot be set to "nil"`)
+	ErrNilPipelines  = errors.New(`pipelines cannot be set to "nil"`)
 	ErrNilACLs       = errors.New(`acls cannot be set to "nil"`)
 	ErrNilOps        = errors.New(`ops cannot be set to "nil"`)
 	ErrNilCategories = errors.New(`categories cannot be set to "nil"`)
