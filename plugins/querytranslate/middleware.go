@@ -96,6 +96,7 @@ func saveRequestToCtx(h http.HandlerFunc) http.HandlerFunc {
 		err = json.Unmarshal(buf.Bytes(), &body)
 		if err != nil {
 			log.Errorln(logTag, "error while unmarshalling request body to save to context", err)
+			telemetry.WriteBackErrorWithTelemetry(req, w, err.Error(), http.StatusBadRequest)
 			return
 		}
 
