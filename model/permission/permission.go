@@ -537,6 +537,32 @@ func (p *Permission) CanAccessIndices(indices ...string) (bool, error) {
 	return true, nil
 }
 
+// CanAccessPipeline checks whether the permission has access to given pipeline or pipeline pattern.
+func (p *Permission) CanAccessPipeline(pipeline string) (bool, error) {
+	pipelines := p.Pipelines
+	for _, pattern := range pipelines {
+		matched, err := util.ValidateIndex(pattern, pipeline)
+		if err != nil {
+			log.Errorln("invalid pipeline regexp", pattern, "encountered: ", err)
+			return false, err
+		}
+		if matched {
+			return matched, nil
+		}
+	}
+	return false, nil
+}
+
+// CanAccessPipelines checks whether the user has access to the given pipelines.
+func (p *Permission) CanAccessPipelines(pipelines ...string) (bool, error) {
+	for _, pipeline := range pipelines {
+		if ok, err := p.CanAccessPipeline(pipeline); !ok || err != nil {
+			return ok, err
+		}
+	}
+	return true, nil
+}
+
 // GetLimitFor returns the rate limit for the given category in the permission.
 func (p *Permission) GetLimitFor(c category.Category) (int64, error) {
 	switch c {
