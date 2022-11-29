@@ -3,8 +3,8 @@ package acl
 import (
 	"context"
 
-	"github.com/alecthomas/jsonschema"
 	"github.com/appbaseio/reactivesearch-api/errors"
+	"github.com/invopop/jsonschema"
 )
 
 type contextKey string
@@ -73,12 +73,12 @@ const (
 	Update
 )
 
-func (a ACL) JSONSchemaType() *jsonschema.Type {
+func (a ACL) JSONSchema() *jsonschema.Schema {
 	values := []interface{}{}
 	for _, acl := range Values() {
 		values = append(values, acl.String())
 	}
-	return &jsonschema.Type{
+	return &jsonschema.Schema{
 		Type: "string",
 		Enum: values,
 	}
