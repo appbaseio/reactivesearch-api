@@ -658,6 +658,9 @@ func (p *Permission) GetPatch(rolePatched bool) (map[string]interface{}, error) 
 	if p.Indices != nil {
 		patch["indices"] = p.Indices
 	}
+	if p.Pipelines != nil {
+		patch["pipelines"] = p.Pipelines
+	}
 	if p.Sources != nil {
 		if err := validateSources(p.Sources); err != nil {
 			return nil, err
