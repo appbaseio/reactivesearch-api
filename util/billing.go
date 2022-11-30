@@ -221,7 +221,7 @@ func BillingMiddleware(next http.Handler) http.Handler {
 		requestURI := r.RequestURI
 		for _, route := range BillingBlacklistedPaths() {
 			if strings.HasPrefix(requestURI, route) {
-				next.ServeHTTP(w, r)
+				RecordUsageMiddleware(next).ServeHTTP(w, r)
 				return
 			}
 		}
@@ -229,7 +229,7 @@ func BillingMiddleware(next http.Handler) http.Handler {
 		// Routes are not blacklisted, verify the payment
 
 		if validateTimeValidity() {
-			next.ServeHTTP(w, r)
+			RecordUsageMiddleware(next).ServeHTTP(w, r)
 		} else {
 			// Write an error and stop the handler chain
 			WriteBackError(w, "Payment required", http.StatusPaymentRequired)
