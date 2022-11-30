@@ -13,7 +13,6 @@ const (
 	logTag              = "[users]"
 	envUsersEsIndex     = "USERS_ES_INDEX"
 	typeName            = "_doc"
-	envEsURL            = "ES_CLUSTER_URL"
 	defaultUsersEsIndex = ".users"
 	settings            = `{ "settings" : { %s "index.number_of_shards" : 1, "index.number_of_replicas" : %d } }`
 )
@@ -78,4 +77,8 @@ func (u *Users) ESMiddleware() []middleware.Middleware {
 // Default empty middleware array function
 func (u *Users) RSMiddleware() []middleware.Middleware {
 	return make([]middleware.Middleware, 0)
+}
+
+func (u *Users) Enabled() bool {
+	return true
 }

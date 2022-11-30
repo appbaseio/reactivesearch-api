@@ -36,6 +36,9 @@ func GetIndexFilterQueryEs7(query *es7.BoolQuery, indices ...string) *es7.BoolQu
 
 // GetTotalNodes retrieves the number of es nodes
 func GetTotalNodes() (int, error) {
+	if (IsSLSEnabled() && !IsExternalESRequired()) || client7 == nil {
+		return 1, nil
+	}
 	response, err := GetClient7().NodesInfo().
 		Metric("nodes").
 		Do(context.Background())

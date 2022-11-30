@@ -5,7 +5,9 @@ import (
 	"sync"
 
 	"github.com/appbaseio/reactivesearch-api/middleware"
+	"github.com/appbaseio/reactivesearch-api/model/reindex"
 	"github.com/appbaseio/reactivesearch-api/plugins"
+	"github.com/appbaseio/reactivesearch-api/util"
 	"github.com/natefinch/lumberjack"
 	"github.com/robfig/cron"
 	log "github.com/sirupsen/logrus"
@@ -14,7 +16,6 @@ import (
 const (
 	logTag             = "[logs]"
 	defaultLogsEsIndex = ".logs"
-	envEsURL           = "ES_CLUSTER_URL"
 	envLogsEsIndex     = "LOGS_ES_INDEX"
 	defaultLogFilePath = "log/arc/es.json"
 	envLogFilePath     = "LOG_FILE_PATH"
@@ -98,9 +99,14 @@ func (l *Logs) InitFunc() error {
 
 	// init cron job
 	cronjob := cron.New()
-	cronjob.AddFunc("@midnight", func() { l.es.rolloverIndexJob(indexName) })
+	if util.IsSLSDisabled() {
+		// init cron job
+		cronjob.AddFunc("@midnight", func() { l.es.rolloverIndexJob(indexName) })
+	} else {
+		// run a cron job at midnight + 30m (00h:30m) to refresh the index to alias cache
+		cronjob.AddFunc("0 30 0 * * *", func() { reindex.InitAliasIndexCache() })
+	}
 	cronjob.Start()
-
 	return nil
 }
 
@@ -117,4 +123,9 @@ func (l *Logs) ESMiddleware() []middleware.Middleware {
 // Default empty middleware array function
 func (a *Logs) RSMiddleware() []middleware.Middleware {
 	return make([]middleware.Middleware, 0)
+}
+
+// Plugin is enabled only when external ES is used
+func (a *Logs) Enabled() bool {
+	return true
 }

@@ -10,10 +10,9 @@ import (
 )
 
 func (es *elasticsearch) checkRoleExistsEs7(ctx context.Context, role string) (bool, error) {
-	resp, err := util.GetClient7().Search().
+	resp, err := util.GetInternalClient7().Search().
 		Index(es.indexName).
-		Query(es7.NewTermQuery("role", role)).
-		Do(ctx)
+		Query(es7.NewTermQuery("role", role)).Do(ctx)
 	if err != nil {
 		return false, err
 	}
@@ -22,12 +21,11 @@ func (es *elasticsearch) checkRoleExistsEs7(ctx context.Context, role string) (b
 }
 
 func (es *elasticsearch) getRawRolePermissionEs7(ctx context.Context, role string) ([]byte, error) {
-	resp, err := util.GetClient7().Search().
+	resp, err := util.GetInternalClient7().Search().
 		Index(es.indexName).
 		Query(es7.NewTermQuery("role", role)).
 		Size(1).
-		FetchSource(true).
-		Do(ctx)
+		FetchSource(true).Do(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -41,11 +39,11 @@ func (es *elasticsearch) getRawRolePermissionEs7(ctx context.Context, role strin
 }
 
 func (es *elasticsearch) getRawOwnerPermissionsEs7(ctx context.Context, owner string) ([]byte, error) {
-	resp, err := util.GetClient7().Search().
+
+	resp, err := util.GetInternalClient7().Search().
 		Index(es.indexName).
 		Query(es7.NewTermQuery("owner.keyword", owner)).
-		Size(10000).
-		Do(ctx)
+		Size(10000).Do(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -70,11 +68,12 @@ func (es *elasticsearch) getRawOwnerPermissionsEs7(ctx context.Context, owner st
 func (es *elasticsearch) getPermissionsEs7(ctx context.Context, indices []string) ([]byte, error) {
 	query := es7.NewBoolQuery()
 	util.GetIndexFilterQueryEs7(query, indices...)
-	resp, err := util.GetClient7().Search().
+
+	resp, err := util.GetInternalClient7().Search().
 		Index(es.indexName).
 		Query(query).
-		Size(10000).
-		Do(ctx)
+		Size(10000).Do(ctx)
+
 	if err != nil {
 		return nil, err
 	}
@@ -97,16 +96,26 @@ func (es *elasticsearch) getPermissionsEs7(ctx context.Context, indices []string
 }
 
 func (es *elasticsearch) getRawPermissionEs7(ctx context.Context, username string) ([]byte, error) {
-	response, err := util.GetClient7().Get().
-		Index(es.indexName).
-		Id(username).
-		FetchSource(true).
-		Do(ctx)
+	// NOTE: Adding `tenant_id` to a get doc request is not possible
+	// but we want to be able to filter based on tenant_id and also
+	// remove the field accordingly so getting the user through search
+	// is a better idea.
+	usernameTermQuery := es7.NewTermQuery("_id", username)
+
+	response, err := util.GetInternalClient7().Search().Index(es.indexName).Query(usernameTermQuery).FetchSource(true).Size(1).Do(ctx)
+
 	if err != nil {
 		return nil, err
 	}
 
-	src, err := applyExpiredField(response.Source)
+	// Make sure the length of response is at least 1
+	if len(response.Hits.Hits) < 1 {
+		return nil, fmt.Errorf("no user found with username: `%s`", username)
+	}
+
+	responseToUse := response.Hits.Hits[0]
+
+	src, err := applyExpiredField(responseToUse.Source)
 	if err != nil {
 		return nil, err
 	}
@@ -114,12 +123,12 @@ func (es *elasticsearch) getRawPermissionEs7(ctx context.Context, username strin
 }
 
 func (es *elasticsearch) patchPermissionEs7(ctx context.Context, username string, patch map[string]interface{}) ([]byte, error) {
-	response, err := util.GetClient7().Update().
+
+	response, err := util.GetInternalClient7().Update().
 		Refresh("wait_for").
 		Index(es.indexName).
 		Id(username).
-		Doc(patch).
-		Do(ctx)
+		Doc(patch).Do(ctx)
 	if err != nil {
 		return nil, err
 	}

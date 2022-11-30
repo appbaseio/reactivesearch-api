@@ -48,6 +48,7 @@ type Permission struct {
 	ACLs                 []acl.ACL             `json:"acls"`
 	Ops                  []op.Operation        `json:"ops"`
 	Indices              []string              `json:"indices"`
+	Pipelines            []string              `json:"pipelines"`
 	Sources              []string              `json:"sources"`
 	SourcesXffValue      *int                  `json:"sources_xff_value"`
 	Referers             []string              `json:"referers"`
@@ -164,6 +165,23 @@ func SetIndices(indices []string) Options {
 			}
 		}
 		p.Indices = indices
+		return nil
+	}
+}
+
+// SetPipelines sets the pipelines or pipeline pattern a permission can have access to.
+func SetPipelines(pipelines []string) Options {
+	return func(p *Permission) error {
+		if pipelines == nil {
+			return errors.ErrNilPipelines
+		}
+		for _, pattern := range pipelines {
+			pattern = strings.Replace(pattern, "*", ".*", -1)
+			if _, err := regexp.Compile(pattern); err != nil {
+				return err
+			}
+		}
+		p.Pipelines = pipelines
 		return nil
 	}
 }
@@ -519,6 +537,32 @@ func (p *Permission) CanAccessIndices(indices ...string) (bool, error) {
 	return true, nil
 }
 
+// CanAccessPipeline checks whether the permission has access to given pipeline or pipeline pattern.
+func (p *Permission) CanAccessPipeline(pipeline string) (bool, error) {
+	pipelines := p.Pipelines
+	for _, pattern := range pipelines {
+		matched, err := util.ValidateIndex(pattern, pipeline)
+		if err != nil {
+			log.Errorln("invalid pipeline regexp", pattern, "encountered: ", err)
+			return false, err
+		}
+		if matched {
+			return matched, nil
+		}
+	}
+	return false, nil
+}
+
+// CanAccessPipelines checks whether the user has access to the given pipelines.
+func (p *Permission) CanAccessPipelines(pipelines ...string) (bool, error) {
+	for _, pipeline := range pipelines {
+		if ok, err := p.CanAccessPipeline(pipeline); !ok || err != nil {
+			return ok, err
+		}
+	}
+	return true, nil
+}
+
 // GetLimitFor returns the rate limit for the given category in the permission.
 func (p *Permission) GetLimitFor(c category.Category) (int64, error) {
 	switch c {
@@ -613,6 +657,9 @@ func (p *Permission) GetPatch(rolePatched bool) (map[string]interface{}, error) 
 	}
 	if p.Indices != nil {
 		patch["indices"] = p.Indices
+	}
+	if p.Pipelines != nil {
+		patch["pipelines"] = p.Pipelines
 	}
 	if p.Sources != nil {
 		if err := validateSources(p.Sources); err != nil {

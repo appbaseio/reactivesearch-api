@@ -349,94 +349,6 @@ func (QueryFormat) JSONSchema() *jsonschema.Schema {
 	}
 }
 
-// Backend will be the backend to be used for the knn
-// response stage changes.
-type Backend int
-
-const (
-	ElasticSearch Backend = iota
-	OpenSearch
-	MongoDB
-	Solr
-	Zinc
-	MarkLogic
-)
-
-// String returns the string representation
-// of the Backend
-func (b Backend) String() string {
-	switch b {
-	case ElasticSearch:
-		return "elasticsearch"
-	case OpenSearch:
-		return "opensearch"
-	case MongoDB:
-		return "mongodb"
-	case Solr:
-		return "solr"
-	case Zinc:
-		return "zinc"
-	case MarkLogic:
-		return "marklogic"
-	}
-	return ""
-}
-
-// UnmarshalJSON is the implementation of Unmarshaler interface to unmarshal the Backend
-func (b *Backend) UnmarshalJSON(bytes []byte) error {
-	var knnBackend string
-	err := json.Unmarshal(bytes, &knnBackend)
-	if err != nil {
-		return err
-	}
-
-	switch knnBackend {
-	case OpenSearch.String():
-		*b = OpenSearch
-	case ElasticSearch.String():
-		*b = ElasticSearch
-	case MongoDB.String():
-		*b = MongoDB
-	case Solr.String():
-		*b = Solr
-	case Zinc.String():
-		*b = Zinc
-	case MarkLogic.String():
-		*b = MarkLogic
-	default:
-		return fmt.Errorf("invalid kNN backend passed: %s", knnBackend)
-	}
-
-	return nil
-}
-
-// MarshalJSON is the implementation of the Marshaler interface to marshal the Backend
-func (b Backend) MarshalJSON() ([]byte, error) {
-	knnBackend := b.String()
-
-	if knnBackend == "" {
-		return nil, fmt.Errorf("invalid kNN backend passed: %s", knnBackend)
-	}
-
-	return json.Marshal(knnBackend)
-}
-
-func (b Backend) JSONSchema() *jsonschema.Schema {
-	return &jsonschema.Schema{
-		Type: "string",
-		Enum: []interface{}{
-			ElasticSearch.String(),
-			OpenSearch.String(),
-			MongoDB.String(),
-			Solr.String(),
-			Zinc.String(),
-			MarkLogic.String(),
-		},
-		Title:       "Backend",
-		Description: "Backend that ReactiveSearch will use",
-	}
-}
-
 // DeepPaginationConfig Struct
 type DeepPaginationConfig struct {
 	// The `cursor` value will map according to the
@@ -542,7 +454,7 @@ type Settings struct {
 	EnableSearchRelevancy *bool                   `json:"enableSearchRelevancy,omitempty" jsonschema:"title=enableSearchRelevancy,description=whether or not to apply search relevancy for the current request" jsonschema_extras:"engine=elasticsearch,engine=opensearch"`
 	UseCache              *bool                   `json:"useCache,omitempty" jsonschema:"title=useCache,description=whether or not to use cache for the current request" jsonschema_extras:"engine=elasticsearch,engine=opensearch"`
 	QueryRule             *map[string]interface{} `json:"queryRule,omitempty" jsonschema:"title=queryRule,description=" jsonschema_extras:"engine=elasticsearch,engine=opensearch"`
-	Backend               *Backend                `json:"backend,omitempty" jsonschema:"title=backend,description=backend to use for the current request" jsonschema_extras:"engine=elasticsearch,engine=solr,engine=opensearch"`
+	Backend               *util.Backend           `json:"backend,omitempty" jsonschema:"title=backend,description=backend to use for the current request" jsonschema_extras:"engine=elasticsearch,engine=solr,engine=opensearch"`
 }
 
 // RSQuery represents the request body

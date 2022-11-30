@@ -120,7 +120,7 @@ func (es *elasticsearch) handler() http.HandlerFunc {
 
 func (es *elasticsearch) healthCheck() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		_, code, err := util.GetClient7().Ping(util.GetESURL()).Do(context.Background())
+		_, code, err := util.GetClient7().Ping(util.GetSearchClientESURL()).Do(context.Background())
 		if err != nil {
 			log.Errorln(logTag, ": error fetching cluster health", err)
 			telemetry.WriteBackErrorWithTelemetry(r, w, err.Error(), http.StatusInternalServerError)
@@ -132,7 +132,7 @@ func (es *elasticsearch) healthCheck() http.HandlerFunc {
 
 func (es *elasticsearch) pingES() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		result, code, err := util.GetClient7().Ping(util.GetESURL()).Do(context.Background())
+		result, code, err := util.GetClient7().Ping(util.GetSearchClientESURL()).Do(context.Background())
 		if err != nil {
 			log.Errorln(logTag, ": error fetching ES cluster health", err)
 			telemetry.WriteBackErrorWithTelemetry(r, w, err.Error(), http.StatusInternalServerError)

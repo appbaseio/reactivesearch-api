@@ -105,25 +105,26 @@ type ArcUsage struct {
 }
 
 type ClusterPlan struct {
-	Tier                    *Plan  `json:"tier"`
-	FeatureCustomEvents     bool   `json:"feature_custom_events"`
-	FeatureSuggestions      bool   `json:"feature_suggestions"`
-	FeatureRules            bool   `json:"feature_rules"`
-	FeatureSearchRelevancy  bool   `json:"feature_search_relevancy"`
-	FeatureSearchGrader     bool   `json:"feature_search_grader"`
-	FeatureEcommerce        bool   `json:"feature_ecommerce"`
-	FeatureCache            bool   `json:"feature_cache"`
-	FeaturePipelines        bool   `json:"feature_pipelines"`
-	FeatureUIBuilderPremium bool   `json:"feature_uibuilder_premium"`
-	Trial                   bool   `json:"trial"`
-	TrialValidity           int64  `json:"trial_validity"`
-	TierValidity            int64  `json:"tier_validity"`
-	TimeValidity            int64  `json:"time_validity"`
-	SubscriptionID          string `json:"subscription_id"`
-	ClusterID               string `json:"cluster_id"`
-	NumberOfMachines        int64  `json:"number_of_machines"`
-	SubscriptionCanceled    bool   `json:"subscription_canceled"`
-	CreatedAt               int64  `json:"created_at"`
+	Tier                    *Plan    `json:"tier"`
+	FeatureCustomEvents     bool     `json:"feature_custom_events"`
+	FeatureSuggestions      bool     `json:"feature_suggestions"`
+	FeatureRules            bool     `json:"feature_rules"`
+	FeatureSearchRelevancy  bool     `json:"feature_search_relevancy"`
+	FeatureSearchGrader     bool     `json:"feature_search_grader"`
+	FeatureEcommerce        bool     `json:"feature_ecommerce"`
+	FeatureCache            bool     `json:"feature_cache"`
+	FeaturePipelines        bool     `json:"feature_pipelines"`
+	FeatureUIBuilderPremium bool     `json:"feature_uibuilder_premium"`
+	Trial                   bool     `json:"trial"`
+	TrialValidity           int64    `json:"trial_validity"`
+	TierValidity            int64    `json:"tier_validity"`
+	TimeValidity            int64    `json:"time_validity"`
+	SubscriptionID          string   `json:"subscription_id"`
+	ClusterID               string   `json:"cluster_id"`
+	NumberOfMachines        int64    `json:"number_of_machines"`
+	SubscriptionCanceled    bool     `json:"subscription_canceled"`
+	CreatedAt               int64    `json:"created_at"`
+	Backend                 *Backend `json:"backend"`
 }
 
 // ArcUsageResponse stores the response from ACCAPI
@@ -175,6 +176,7 @@ type ArcInstanceDetails struct {
 	FeaturePipelines        bool                   `json:"feature_pipelines"`
 	ClusterID               string                 `json:"cluster_id"`
 	NumberOfMachines        int64                  `json:"number_of_machines"`
+	Backend                 *Backend               `json:"backend"`
 }
 
 // SetDefaultTier sets the default tier when billing is disabled
@@ -219,7 +221,7 @@ func BillingMiddleware(next http.Handler) http.Handler {
 		requestURI := r.RequestURI
 		for _, route := range BillingBlacklistedPaths() {
 			if strings.HasPrefix(requestURI, route) {
-				next.ServeHTTP(w, r)
+				RecordUsageMiddleware(next).ServeHTTP(w, r)
 				return
 			}
 		}
@@ -227,7 +229,7 @@ func BillingMiddleware(next http.Handler) http.Handler {
 		// Routes are not blacklisted, verify the payment
 
 		if validateTimeValidity() {
-			next.ServeHTTP(w, r)
+			RecordUsageMiddleware(next).ServeHTTP(w, r)
 		} else {
 			// Write an error and stop the handler chain
 			WriteBackError(w, "Payment required", http.StatusPaymentRequired)
@@ -321,6 +323,7 @@ func setBillingVarsArcInstance(body []byte) (ArcInstance, error) {
 		// Set plan details to local variable
 		setPlanDetails(body)
 		SetTier(arcInstanceByID.Tier)
+		SetBackend(arcInstanceByID.Backend)
 		SetFeatureSuggestions(arcInstanceByID.FeatureSuggestions)
 		SetFeatureCustomEvents(arcInstanceByID.FeatureCustomEvents)
 		SetFeatureRules(arcInstanceByID.FeatureRules)
@@ -463,6 +466,7 @@ func setBillingVarsCluster(body []byte) (ClusterPlan, error) {
 	setPlanDetails(body)
 	// Set the plan for clusters
 	SetTier(response.Plan.Tier)
+	SetBackend(response.Plan.Backend)
 	SetTimeValidity(response.Plan.TimeValidity)
 	setMaxErrorTime(Subscripton{
 		SubscriptionID:      response.Plan.SubscriptionID,
@@ -598,12 +602,6 @@ func GetAppbaseID() (string, error) {
 
 // ReportUsage reports ReactiveSearch usage, intended to be called every hour
 func ReportUsage() {
-	url := os.Getenv("ES_CLUSTER_URL")
-	if url == "" {
-		log.Fatalln("ES_CLUSTER_URL env required but not present")
-		return
-	}
-
 	arcID, err := GetAppbaseID()
 	if err != nil {
 		log.Fatalln(err)
@@ -649,11 +647,6 @@ func ReportUsage() {
 // ReportHostedArcUsage reports ReactiveSearch usage by hosted cluster, intended to be called every hour
 func ReportHostedArcUsage() {
 	log.Println("=> Reporting hosted ReactiveSearch usage")
-	url := os.Getenv("ES_CLUSTER_URL")
-	if url == "" {
-		log.Fatalln("ES_CLUSTER_URL env required but not present")
-		return
-	}
 	clusterID := os.Getenv("CLUSTER_ID")
 	if clusterID == "" {
 		log.Fatalln("CLUSTER_ID env required but not present")
@@ -718,5 +711,6 @@ func BillingBlacklistedPaths() []string {
 		"/arc/plan",
 		"/arc/health",
 		"/arc/_health",
+		"/reactivesearch/endpoints",
 	}
 }

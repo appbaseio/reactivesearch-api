@@ -21,108 +21,84 @@ type elasticsearch struct {
 }
 
 func initPlugin(alias, config string) (*elasticsearch, error) {
-
 	ctx := context.Background()
 
 	var es = &elasticsearch{alias}
-
-	// Check if alias exists instead of index and create first index if not exists with `${alias}-000001`
-	res, err := util.GetClient7().Aliases().Do(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("error while checking if index already exists: %v", err)
-	}
-	indices := res.IndicesByAlias(alias)
-	exists := false
-	if len(indices) > 0 {
-		exists = true
-	}
-
-	if exists {
-		log.Println(logTag, ": index named", alias, "already exists, skipping ...")
-		return es, nil
-	}
-
-	replicas := util.GetReplicas()
-
-	settings := fmt.Sprintf(config, alias, util.HiddenIndexSettings(), replicas, LogsMappings)
-
-	if util.GetVersion() == 6 {
-		mappings := fmt.Sprintf(`{"_doc": %s}`, LogsMappings)
-		settings = fmt.Sprintf(config, alias, util.HiddenIndexSettings(), replicas, mappings)
-	}
-	// Meta index doesn't exist, create one
-	indexName := alias + `-000001`
-	// this works for ES6 client as well
-	_, err = util.GetClient7().CreateIndex(indexName).
-		Body(settings).
-		Do(ctx)
-	if err != nil {
-		log.Errorln(logTag, " : ", fmt.Errorf("error while creating index named \"%s\" %v", indexName, err))
-		isAliasExistsAsIndex, err := util.GetClient7().IndexExists(alias).Do(ctx)
+	// // Only check index existence for non-sls Arc
+	if util.IsSLSDisabled() {
+		// Check if alias exists instead of index and create first index if not exists with `${alias}-000001`
+		res, err := util.GetInternalClient7().Aliases().Index("_all").Do(ctx)
 		if err != nil {
 			return nil, fmt.Errorf("error while checking if index already exists: %v", err)
 		}
-		if !isAliasExistsAsIndex {
-			return nil, fmt.Errorf("error while creating index named \"%s\" %v", indexName, err)
+
+		indices := res.IndicesByAlias(alias)
+		exists := false
+		if len(indices) > 0 {
+			exists = true
 		}
-		// If .logs exists as an index then perform following steps:
-		// 1. Re-index `.logs` to `.logs-000001`
-		// 2. Delete ``.logs` and continue
-		sourceIndex := alias
-		destinationIndex := indexName
-		var settingsAsMap map[string]interface{}
-		err1 := json.Unmarshal([]byte(settings), &settingsAsMap)
-		if err1 != nil {
-			log.Errorln(logTag, ":", err1)
-			return nil, fmt.Errorf("error while un-marshalling logs mappings %v", err1)
+
+		if exists {
+			log.Println(logTag, ": index named", alias, "already exists, skipping ...")
+			return es, nil
 		}
-		settings, _ := settingsAsMap["settings"].(map[string]interface{})
-		mappings, _ := settingsAsMap["mappings"].(map[string]interface{})
-		reIndexConfig := reindex.ReindexConfig{
-			Settings: settings,
-			Mappings: mappings,
-		}
-		taskDetails, err := reindex.Reindex(context.Background(), sourceIndex, &reIndexConfig, false, destinationIndex)
+
+		replicas := util.GetReplicas()
+
+		settings := fmt.Sprintf(config, alias, util.HiddenIndexSettings(), replicas, LogsMappings)
+
+		// Meta index doesn't exist, create one
+		indexName := alias + `-000001`
+		// this works for ES6 client as well
+		_, err = util.GetInternalClient7().CreateIndex(indexName).
+			Body(settings).
+			Do(ctx)
 		if err != nil {
-			log.Errorln(logTag, ":", err)
-			return nil, fmt.Errorf("error while re-indexing logs index %v", err)
+			log.Errorln(logTag, " : ", fmt.Errorf("error while creating index named \"%s\" %v", indexName, err))
+			isAliasExistsAsIndex, err := util.GetInternalClient7().IndexExists(alias).Do(ctx)
+			if err != nil {
+				return nil, fmt.Errorf("error while checking if index already exists: %v", err)
+			}
+			if !isAliasExistsAsIndex {
+				return nil, fmt.Errorf("error while creating index named \"%s\" %v", indexName, err)
+			}
+			// If .logs exists as an index then perform following steps:
+			// 1. Re-index `.logs` to `.logs-000001`
+			// 2. Delete ``.logs` and continue
+			sourceIndex := alias
+			destinationIndex := indexName
+			var settingsAsMap map[string]interface{}
+			err1 := json.Unmarshal([]byte(settings), &settingsAsMap)
+			if err1 != nil {
+				log.Errorln(logTag, ":", err1)
+				return nil, fmt.Errorf("error while un-marshalling logs mappings %v", err1)
+			}
+			settings, _ := settingsAsMap["settings"].(map[string]interface{})
+			mappings, _ := settingsAsMap["mappings"].(map[string]interface{})
+			reIndexConfig := reindex.ReindexConfig{
+				Settings: settings,
+				Mappings: mappings,
+			}
+			taskDetails, err := reindex.Reindex(context.Background(), sourceIndex, &reIndexConfig, false, destinationIndex)
+			if err != nil {
+				log.Errorln(logTag, ":", err)
+				return nil, fmt.Errorf("error while re-indexing logs index %v", err)
+			}
+			// Re-index synchronously
+			reindex.TrackReindex(reindex.SetAliasConfig{
+				AliasName:    sourceIndex,
+				NewIndex:     destinationIndex,
+				OldIndex:     sourceIndex,
+				IsWriteIndex: true,
+			}, taskDetails)
 		}
-		// Re-index synchronously
-		reindex.TrackReindex(reindex.SetAliasConfig{
-			AliasName:    sourceIndex,
-			NewIndex:     destinationIndex,
-			OldIndex:     sourceIndex,
-			IsWriteIndex: true,
-		}, taskDetails)
+
+		log.Println(logTag, ": successfully created index name", indexName)
+
+		classify.SetIndexAlias(indexName, alias)
+		classify.SetAliasIndex(alias, indexName)
 	}
-
-	log.Println(logTag, ": successfully created index name", indexName)
-
-	classify.SetIndexAlias(indexName, alias)
-	classify.SetAliasIndex(alias, indexName)
-
-	rolloverConditions := make(map[string]interface{})
-
-	rolloverConfiguration := fmt.Sprintf(rolloverConfig, "7d", 10000, "1gb")
-	if util.IsProductionPlan() {
-		rolloverConfiguration = fmt.Sprintf(rolloverConfig, "30d", 1000000, "10gb")
-	}
-	json.Unmarshal([]byte(rolloverConfiguration), &rolloverConditions)
 	return es, nil
-}
-
-func (es *elasticsearch) indexRecord(ctx context.Context, rec record) {
-	bulkIndex := es7.NewBulkIndexRequest().
-		Index(es.indexName).
-		Type("_doc").
-		Doc(rec)
-
-	_, err := util.GetClient7().Bulk().
-		Add(bulkIndex).
-		Do(ctx)
-	if err != nil {
-		log.Errorln(logTag, ": error indexing log record :", err)
-	}
 }
 
 type logsFilter struct {
@@ -138,12 +114,7 @@ type logsFilter struct {
 }
 
 func (es *elasticsearch) getRawLogs(ctx context.Context, logsFilter logsFilter) ([]byte, error) {
-	switch util.GetVersion() {
-	case 6:
-		return es.getRawLogsES6(ctx, logsFilter)
-	default:
-		return es.getRawLogsES7(ctx, logsFilter)
-	}
+	return es.getRawLogsES7(ctx, logsFilter)
 }
 
 func (es *elasticsearch) getRawLog(ctx context.Context, ID string, parseDiffs bool) ([]byte, *LogError) {
@@ -163,9 +134,6 @@ func (es *elasticsearch) rolloverIndexJob(alias string) {
 	json.Unmarshal([]byte(settingsString), &settings)
 
 	mappingString := LogsMappings
-	if util.GetVersion() == 6 {
-		mappingString = fmt.Sprintf(`{"_doc": %s}`, LogsMappings)
-	}
 
 	mappings := make(map[string]interface{})
 	json.Unmarshal([]byte(mappingString), &mappings)

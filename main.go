@@ -70,6 +70,10 @@ var (
 	ClusterBilling string
 	// Opensource is a build time flag
 	Opensource string
+	// ExternalElasticsearch is a build time flag that
+	// indicates whether external Elasticsearch instance
+	// is being used.
+	ExternalElasticsearch string
 	// IgnoreBillingMiddleware ignores the billing middleware
 	IgnoreBillingMiddleware string
 	// Tier for testing
@@ -316,6 +320,8 @@ func main() {
 	util.HostedBilling = HostedBilling
 	util.ClusterBilling = ClusterBilling
 	util.Opensource = Opensource
+	util.Version = Version
+	util.ExternalElasticsearch = ExternalElasticsearch
 
 	var licenseKey string
 	// check for offline license key
@@ -390,6 +396,7 @@ func main() {
 			}
 		} else {
 			util.SetDefaultTier()
+			util.SetDefaultBackend()
 			log.Println("You're running ReactiveSearch with billing module disabled.")
 		}
 	}
@@ -440,6 +447,11 @@ func main() {
 	if FeaturePipelines == "true" {
 		util.SetFeaturePipelines(true)
 	}
+	// Set Global Envs from env file
+	util.SetGlobalESURL(os.Getenv(util.EsURLKey))
+	util.SetGlobalESHeader(os.Getenv(util.EsHeaderKey))
+	util.SetGlobalOSURL(os.Getenv(util.OsURLKey))
+	util.SetGlobalOSHeader(os.Getenv(util.OsHeaderKey))
 	// Set port variable
 	util.Port = port
 
@@ -492,13 +504,19 @@ func main() {
 	if err != nil {
 		log.Fatal("error loading plugins: ", err)
 	}
-	// Load pipeline plugin at the begining to set the priority to stage routes
+	// Load pipeline plugin at the beginning to set the priority to stage routes
 	if pipelinesPath != "" {
 		_, errPipelinesPlugin := LoadPluginFromFile(mainRouter, pipelinesPath)
 		if errPipelinesPlugin != nil {
 			log.Fatal("error loading plugins: ", errPipelinesPlugin)
 		}
 	}
+
+	// Initiate the external ES client
+	if util.IsSLSEnabled() {
+		util.InitExternalESClient7()
+	}
+
 	for _, pluginPath := range pluginsByPath {
 		plugin, err1 := LoadPluginFromFile(mainRouter, pluginPath)
 		if err1 != nil {
@@ -526,10 +544,12 @@ func main() {
 			log.Fatal("error loading plugins: ", errRSPlugin)
 		}
 	}
+
 	errESPlugin := LoadESPluginFromFile(mainRouter, elasticSearchPath, elasticSearchMiddleware)
 	if errESPlugin != nil {
 		log.Fatal("error loading plugins: ", errESPlugin)
 	}
+
 	// Execute the migration scripts
 	for _, migration := range util.GetMigrationScripts() {
 		shouldExecute, err := migration.ConditionCheck()
@@ -602,12 +622,16 @@ func syncPluginCache() {
 		indices = append(indices, syncScript.Index())
 	}
 	indexToSearch := strings.Join(indices, ",")
-	// TODO: Handle es6
+
 	// Fetch ES response
-	response, err := util.GetClient7().
+	//
+	// We need to make sure that different tenant's data stays
+	// separate so the request needs to be through the util
+	// methods for the tenant.
+	response, err := util.GetInternalClient7().
 		Search(indexToSearch).
-		Size(10000).
-		Do(context.Background())
+		Size(10000).Do(context.Background())
+
 	if err != nil {
 		log.Errorln(logTag, "Error while syncing plugin cache", err.Error())
 		return

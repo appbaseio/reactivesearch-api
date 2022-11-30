@@ -39,6 +39,11 @@ var OfflineBilling bool
 // Opensource is a build time variable
 var Opensource string
 
+// ExternalElasticsearch is a build time variable
+// that indicates whether or not elasticsearch is
+// used externally.
+var ExternalElasticsearch string = "false"
+
 // We set it in the `main.go` based on the env variable and run time flag
 // defaults to `true`
 var IsTelemetryEnabled bool = true
@@ -63,6 +68,16 @@ var MemoryAllocated uint64
 
 // Whether or not to create schema
 var CreateSchema bool = false
+
+// Returns `true` when server less search is enabled
+func IsSLSDisabled() bool {
+	return ExternalElasticsearch == "true"
+}
+
+// Returns `true` when server less search is disabled
+func IsSLSEnabled() bool {
+	return ExternalElasticsearch != "true"
+}
 
 // RandStr returns "node" field of a UUID.
 // See: https://tools.ietf.org/html/rfc4122#section-4.1.6

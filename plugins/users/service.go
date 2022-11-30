@@ -13,4 +13,5 @@ type userService interface {
 	postUser(ctx context.Context, u user.User) (bool, error)
 	patchUser(ctx context.Context, username string, patch map[string]interface{}) ([]byte, error)
 	deleteUser(ctx context.Context, username string) (bool, error)
+	getUserID(ctx context.Context, username string) (string, error)
 }

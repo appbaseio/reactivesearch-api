@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/google/uuid"
 	log "github.com/sirupsen/logrus"
 
 	"github.com/appbaseio/reactivesearch-api/model/user"
@@ -29,36 +30,39 @@ func initPlugin(indexName, mapping string) (*elasticsearch, error) {
 		}
 	}()
 
-	// Check if the meta index already exists
-	exists, err := util.GetClient7().IndexExists(indexName).
-		Do(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("%s: error while checking if index already exists: %v",
-			logTag, err)
-	}
-	if exists {
-		log.Println(logTag, ": index named", indexName, "already exists, skipping...")
-		// hash the passwords if not hashed already
-		err := es.hashPasswords()
+	// Only check index existence for non-sls Arc
+	if util.IsSLSDisabled() {
+		// Check if the meta index already exists
+		exists, err := util.GetInternalClient7().IndexExists(indexName).
+			Do(ctx)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("%s: error while checking if index already exists: %v",
+				logTag, err)
+		}
+		if exists {
+			log.Println(logTag, ": index named", indexName, "already exists, skipping...")
+			// hash the passwords if not hashed already
+			err := es.hashPasswords()
+			if err != nil {
+				return nil, err
+			}
+
+			return es, nil
 		}
 
-		return es, nil
-	}
+		replicas := util.GetReplicas()
+		settings := fmt.Sprintf(mapping, util.HiddenIndexSettings(), replicas)
+		// Meta index does not exists, create a new one
+		_, err = util.GetInternalClient7().CreateIndex(indexName).
+			Body(settings).
+			Do(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("%s: error while creating index named %s: %v",
+				logTag, indexName, err)
+		}
 
-	replicas := util.GetReplicas()
-	settings := fmt.Sprintf(mapping, util.HiddenIndexSettings(), replicas)
-	// Meta index does not exists, create a new one
-	_, err = util.GetClient7().CreateIndex(indexName).
-		Body(settings).
-		Do(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("%s: error while creating index named %s: %v",
-			logTag, indexName, err)
+		log.Println(logTag, ": successfully created index named", indexName)
 	}
-
-	log.Println(logTag, ": successfully created index named", indexName)
 	return es, nil
 }
 
@@ -149,30 +153,30 @@ func (es *elasticsearch) getUser(ctx context.Context, username string) (*user.Us
 }
 
 func (es *elasticsearch) getRawUsers(ctx context.Context) ([]byte, error) {
-	switch util.GetVersion() {
-	case 6:
-		return es.getRawUsersEs6(ctx)
-	default:
-		return es.getRawUsersEs7(ctx)
-	}
+	return es.getRawUsersEs7(ctx)
 }
 
 func (es *elasticsearch) getRawUser(ctx context.Context, username string) ([]byte, error) {
-	switch util.GetVersion() {
-	case 6:
-		return es.getRawUserEs6(ctx, username)
-	default:
-		return es.getRawUserEs7(ctx, username)
-	}
+	return es.getRawUserEs7(ctx, username)
 }
 
 func (es *elasticsearch) postUser(ctx context.Context, u user.User) (bool, error) {
-	_, err := util.GetClient7().Index().
+	// Check if the username already exists, if so, then return
+	// false.
+	olderUserID, _ := es.getUserID(ctx, u.Username)
+	if olderUserID != "" {
+		return false, nil
+	}
+
+	// Create an Unique ID
+	userID := uuid.New().String()
+
+	_, err := util.GetInternalClient7().Index().
 		Refresh("wait_for").
 		Index(es.indexName).
-		Id(u.Username).
-		BodyJson(u).
-		Do(ctx)
+		Id(userID).
+		BodyJson(u).Do(ctx)
+
 	if err != nil {
 		return false, err
 	}
@@ -181,20 +185,21 @@ func (es *elasticsearch) postUser(ctx context.Context, u user.User) (bool, error
 }
 
 func (es *elasticsearch) patchUser(ctx context.Context, username string, patch map[string]interface{}) ([]byte, error) {
-	switch util.GetVersion() {
-	case 6:
-		return es.patchUserEs6(ctx, username, patch)
-	default:
-		return es.patchUserEs7(ctx, username, patch)
-	}
+	return es.patchUserEs7(ctx, username, patch)
 }
 
 func (es *elasticsearch) deleteUser(ctx context.Context, username string) (bool, error) {
-	_, err := util.GetClient7().Delete().
+	// Fetch the userID
+	userID, idFetchErr := es.getUserID(ctx, username)
+	if idFetchErr != nil {
+		return false, idFetchErr
+	}
+
+	_, err := util.GetInternalClient7().Delete().
 		Refresh("wait_for").
 		Index(es.indexName).
-		Id(username).
-		Do(ctx)
+		Id(userID).Do(ctx)
+
 	if err != nil {
 		return false, err
 	}

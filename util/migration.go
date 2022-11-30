@@ -68,7 +68,7 @@ func GetIndexMapping(indexName string, ctx context.Context) (resp IndexMappingRe
 	// Declare the mapping response variable
 	var data IndexMappingResponse
 
-	response, err := GetClient7().PerformRequest(ctx, requestOptions)
+	response, err := GetInternalClient7().PerformRequest(ctx, requestOptions)
 
 	if err != nil {
 		return data, err

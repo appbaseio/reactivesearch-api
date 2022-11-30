@@ -5,6 +5,7 @@ import (
 
 	"github.com/appbaseio/reactivesearch-api/middleware"
 	"github.com/appbaseio/reactivesearch-api/plugins"
+	"github.com/appbaseio/reactivesearch-api/util"
 )
 
 const logTag = "[elasticsearch]"
@@ -38,4 +39,9 @@ func (es *elasticsearch) Routes() []plugins.Route {
 // Default empty middleware array function
 func (es *elasticsearch) ESMiddleware() []middleware.Middleware {
 	return make([]middleware.Middleware, 0)
+}
+
+// Enable plugin
+func (es *elasticsearch) Enabled() bool {
+	return util.IsExternalESRequired()
 }

@@ -9,6 +9,9 @@ import (
 
 // SetDefaultIndexTemplate sets default template for user indexes
 func SetDefaultIndexTemplate() error {
+	if IsSLSEnabled() {
+		return nil
+	}
 	replicas := GetReplicas()
 	settings := fmt.Sprintf(`{
 		"index.number_of_shards": 1,
@@ -232,6 +235,9 @@ func SetDefaultIndexTemplate() error {
 
 // SetSystemIndexTemplate sets default template for system indexes
 func SetSystemIndexTemplate() error {
+	if IsSLSEnabled() {
+		return nil
+	}
 	replicas := GetReplicas()
 	settings := fmt.Sprintf(`{
 		"index.number_of_shards": 1,
