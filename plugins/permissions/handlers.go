@@ -99,6 +99,9 @@ func (p *permissions) postPermission(opts ...permission.Options) http.HandlerFun
 		if permissionBody.Indices != nil {
 			permissionOptions = append(permissionOptions, permission.SetIndices(permissionBody.Indices))
 		}
+		if permissionBody.Pipelines != nil {
+			permissionOptions = append(permissionOptions, permission.SetPipelines(permissionBody.Pipelines))
+		}
 		if permissionBody.Limits != nil {
 			permissionOptions = append(permissionOptions, permission.SetLimits(permissionBody.Limits, *reqUser.IsAdmin))
 		}
