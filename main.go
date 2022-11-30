@@ -305,18 +305,16 @@ func main() {
 
 	mainRouter := router.PathPrefix("").Subrouter()
 
-	if PlanRefreshInterval == "" {
-		PlanRefreshInterval = "1"
-	} else {
+	// default is hourly
+	interval := "0 0 * * * *"
+
+	if PlanRefreshInterval != "" {
 		_, err := strconv.Atoi(PlanRefreshInterval)
 		if err != nil {
 			log.Fatal("PLAN_REFRESH_INTERVAL must be an integer: ", err)
 		}
+		interval = "0 0 0-59/" + PlanRefreshInterval + " * * *"
 	}
-
-	interval := "@every " + PlanRefreshInterval + "h"
-
-	log.Infoln(logTag, ": external elasticsearch => ", ExternalElasticsearch)
 
 	util.Billing = Billing
 	util.HostedBilling = HostedBilling

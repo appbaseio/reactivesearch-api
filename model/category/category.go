@@ -4,9 +4,9 @@ import (
 	"context"
 	"encoding/json"
 
-	"github.com/alecthomas/jsonschema"
 	"github.com/appbaseio/reactivesearch-api/errors"
 	"github.com/appbaseio/reactivesearch-api/model/acl"
+	"github.com/invopop/jsonschema"
 )
 
 type contextKey string
@@ -189,8 +189,8 @@ func (c Category) MarshalJSON() ([]byte, error) {
 	return json.Marshal(category)
 }
 
-func (c Category) JSONSchemaType() *jsonschema.Type {
-	return &jsonschema.Type{
+func (c Category) JSONSchema() *jsonschema.Schema {
+	return &jsonschema.Schema{
 		Type: "string",
 		Enum: []interface{}{
 			Docs.String(),

@@ -437,6 +437,7 @@ type Query struct {
 	IncludeValues               *[]string                   `json:"includeValues,omitempty" jsonschema:"title=includeValues,description=values to include in term queries" jsonschema_extras:"engine=elasticsearch,engine=solr,engine=opensearch"`
 	ExcludeValues               *[]string                   `json:"excludeValues,omitempty" jsonschema:"title=excludeValues,description=values to exclude in term queries" jsonschema_extras:"engine=elasticsearch,engine=opensearch"`
 	SearchBoxId                 *string                     `json:"searchboxId,omitempty" jsonschema:"title=searchboxId,description=searchbox id for a suggestion query" jsonschema_extras:"engine=elasticsearch,engine=opensearch"`
+	Range                       *interface{}                `json:"range,omitempty" jsonschema:"title=range,description=range value to filter the histogram aggregations" jsonschema_extras:"engine=elasticsearch,engine=opensearch"`
 }
 
 type DataField struct {
