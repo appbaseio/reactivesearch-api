@@ -35,6 +35,7 @@ func (c *chain) Wrap(h http.HandlerFunc) http.HandlerFunc {
 
 func list() []middleware.Middleware {
 	return []middleware.Middleware{
+		validate.Domain(),
 		classifyCategory,
 		classifyIndices,
 		classify.Op(),
@@ -134,7 +135,7 @@ func (a *Auth) basicAuth(h http.HandlerFunc) http.HandlerFunc {
 		// we don't know if the credentials provided here are of a 'user' or a 'permission'
 		var obj credential.AuthCredential
 		if role != "" {
-			obj, err = a.es.getRolePermission(ctx, role)
+			obj, err = a.es.getRolePermission(ctx, req, role)
 			if err != nil || obj == nil {
 				msg := fmt.Sprintf("No API credentials match with provided role: %s", role)
 				log.Errorln(logTag, ":", err)
@@ -143,7 +144,7 @@ func (a *Auth) basicAuth(h http.HandlerFunc) http.HandlerFunc {
 				return
 			}
 		} else {
-			obj, err = a.getCredential(ctx, username)
+			obj, err = a.getCredential(ctx, req, username)
 			if err != nil || obj == nil {
 				msg := fmt.Sprintf("No API credentials match with provided username: %s", username)
 				log.Warnln(logTag, ":", err)
@@ -265,12 +266,12 @@ func (a *Auth) basicAuth(h http.HandlerFunc) http.HandlerFunc {
 	}
 }
 
-func (a *Auth) getCredential(ctx context.Context, username string) (credential.AuthCredential, error) {
+func (a *Auth) getCredential(ctx context.Context, req *http.Request, username string) (credential.AuthCredential, error) {
 	c, ok := GetCachedCredential(username)
 	if ok {
 		return c, nil
 	}
-	return a.es.getCredential(ctx, username)
+	return a.es.getCredential(ctx, req, username)
 }
 
 // GetCachedCredential returns the cached credential

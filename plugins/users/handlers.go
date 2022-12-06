@@ -35,7 +35,7 @@ func (u *Users) getUser() http.HandlerFunc {
 		}
 
 		// fetch the user from elasticsearch
-		rawUser, err := u.es.getRawUser(req.Context(), username)
+		rawUser, err := u.es.getRawUser(req.Context(), req, username)
 		if err != nil {
 			msg := fmt.Sprintf(`user with "username"="%s" not found`, username)
 			log.Errorln(logTag, ":", msg, ":", err)
@@ -56,7 +56,7 @@ func (u *Users) getUserWithUsername() http.HandlerFunc {
 			return
 		}
 
-		rawUser, err := u.es.getRawUser(req.Context(), username)
+		rawUser, err := u.es.getRawUser(req.Context(), req, username)
 		if err != nil {
 			msg := fmt.Sprintf(`user with "username"="%s" not found`, username)
 			log.Errorln(logTag, ":", msg, ":", err)
@@ -155,7 +155,7 @@ func (u *Users) postUser() http.HandlerFunc {
 			return
 		}
 
-		ok, err := u.es.postUser(req.Context(), *newUser)
+		ok, err := u.es.postUser(req.Context(), req, *newUser)
 		if ok && err == nil {
 			// Subscribe to down time alerts
 			if newUser.HasAction(user.DowntimeAlerts) {
@@ -226,7 +226,7 @@ func (u *Users) patchUser() http.HandlerFunc {
 		// Set the updated_at field
 		patch["updated_at"] = time.Now().Format(time.RFC3339)
 
-		_, err2 := u.es.patchUser(req.Context(), username, patch)
+		_, err2 := u.es.patchUser(req.Context(), req, username, patch)
 		if err2 == nil {
 			// Only update local state when proxy API has not been called
 			// If proxy API would get called then it would automatically update the
@@ -349,7 +349,7 @@ func (u *Users) patchUserWithUsername() http.HandlerFunc {
 		// Set the updated_at
 		patch["updated_at"] = time.Now().Format(time.RFC3339)
 
-		_, err2 := u.es.patchUser(req.Context(), username, patch)
+		_, err2 := u.es.patchUser(req.Context(), req, username, patch)
 		if err2 == nil {
 			// Only update local state when proxy API has not been called
 			// If proxy API would get called then it would automatically update the
@@ -430,14 +430,14 @@ func (u *Users) deleteUser() http.HandlerFunc {
 			return
 		}
 
-		userDetails, err := u.es.getUser(req.Context(), username)
+		userDetails, err := u.es.getUser(req.Context(), req, username)
 		if err != nil {
 			msg := fmt.Sprintf(`user with "username"="%s" not found`, username)
 			log.Errorln(logTag, ":", msg, ":", err)
 			util.WriteBackError(w, msg, http.StatusNotFound)
 			return
 		}
-		ok, err := u.es.deleteUser(req.Context(), username)
+		ok, err := u.es.deleteUser(req.Context(), req, username)
 		if ok && err == nil {
 			// Only update local state when proxy API has not been called
 			// If proxy API would get called then it would automatically update the
@@ -507,14 +507,14 @@ func (u *Users) deleteUserWithUsername() http.HandlerFunc {
 			util.WriteBackMessage(w, msg, http.StatusOK)
 			return
 		}
-		userDetails, err2 := u.es.getUser(req.Context(), username)
+		userDetails, err2 := u.es.getUser(req.Context(), req, username)
 		if err2 != nil {
 			msg := fmt.Sprintf(`user with "username"="%s" not found`, username)
 			log.Errorln(logTag, ":", msg, ":", err2)
 			util.WriteBackError(w, msg, http.StatusNotFound)
 			return
 		}
-		ok, err := u.es.deleteUser(req.Context(), username)
+		ok, err := u.es.deleteUser(req.Context(), req, username)
 		if ok && err == nil {
 			// Only update local state when proxy API has not been called
 			// If proxy API would get called then it would automatically update the
@@ -568,7 +568,7 @@ func (u *Users) deleteUserWithUsername() http.HandlerFunc {
 
 func (u *Users) getAllUsers() http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
-		raw, err := u.es.getRawUsers(req.Context())
+		raw, err := u.es.getRawUsers(req.Context(), req)
 		if err != nil {
 			msg := `an error occurred while fetching users`
 			log.Errorln(logTag, ":", err)

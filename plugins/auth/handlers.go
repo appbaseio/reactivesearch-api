@@ -17,13 +17,13 @@ import (
 	"github.com/appbaseio/reactivesearch-api/util"
 )
 
-func (a *Auth) savePublicKey(ctx context.Context, indexName string, record publicKey) (interface{}, error) {
+func (a *Auth) savePublicKey(ctx context.Context, req *http.Request, indexName string, record publicKey) (interface{}, error) {
 	if strings.TrimSpace(record.RoleKey) == "" {
 		record.RoleKey = "role"
 	}
 
 	// Update es index
-	_, err := a.es.savePublicKey(ctx, indexName, record)
+	_, err := a.es.savePublicKey(ctx, req, indexName, record)
 	if err != nil {
 		log.Errorln(logTag, ": error indexing public key record", logTag)
 		return false, err
@@ -34,7 +34,7 @@ func (a *Auth) savePublicKey(ctx context.Context, indexName string, record publi
 
 func (a *Auth) getPublicKey() http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
-		record, _ := a.es.getPublicKey(req.Context())
+		record, _ := a.es.getPublicKey(req.Context(), req)
 		rawPermission, err := json.Marshal(record)
 		if err != nil {
 			msg := "public key record not found"
@@ -82,7 +82,7 @@ func (a *Auth) setPublicKey() http.HandlerFunc {
 			util.WriteBackMessage(w, "Public key saved successfully.", http.StatusOK)
 			return
 		}
-		_, err = a.savePublicKey(req.Context(), publicKeyIndex, body)
+		_, err = a.savePublicKey(req.Context(), req, publicKeyIndex, body)
 		if err != nil {
 			log.Errorln(logTag, ":", err)
 			util.WriteBackError(w, err.Error(), http.StatusBadRequest)

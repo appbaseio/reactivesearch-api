@@ -44,20 +44,21 @@ import (
 const logTag = "[cmd]"
 
 var (
-	envFile            string
-	logMode            string
-	licenseKeyPath     string
-	listPlugins        bool
-	address            string
-	port               int
-	pluginDir          string
-	https              bool
-	cpuprofile         bool
-	memprofile         bool
-	enableTelemetry    string
-	disableHealthCheck bool
-	showVersion        bool
-	createSchema       bool
+	envFile               string
+	logMode               string
+	licenseKeyPath        string
+	listPlugins           bool
+	address               string
+	port                  int
+	pluginDir             string
+	https                 bool
+	cpuprofile            bool
+	memprofile            bool
+	enableTelemetry       string
+	disableHealthCheck    bool
+	showVersion           bool
+	createSchema          bool
+	enableDevelopmentMode bool
 	// Version Reactivesearch version set during build
 	Version string
 	// PlanRefreshInterval can be used to define the custom interval to refresh the plan
@@ -68,6 +69,8 @@ var (
 	HostedBilling string
 	// ClusterBilling is a build time flag
 	ClusterBilling string
+	// MultiTenant is a build time flag
+	MultiTenant string
 	// Opensource is a build time flag
 	Opensource string
 	// ExternalElasticsearch is a build time flag that
@@ -131,6 +134,7 @@ func init() {
 	flag.BoolVar(&disableHealthCheck, "disable-health-check", false, "Set as `true` to disable health check")
 	flag.BoolVar(&showVersion, "version", false, "show the version of ReactiveSearch")
 	flag.BoolVar(&createSchema, "create-schema", false, "create the schema for the current version of API and exit")
+	flag.BoolVar(&enableDevelopmentMode, "development", false, "Set as `true` to use development mode")
 
 	// env port for deployments like heroku where port is dynamically assigned
 	envPort := os.Getenv("PORT")
@@ -146,6 +150,10 @@ func init() {
 	flag.BoolVar(&cpuprofile, "cpuprofile", false, "write cpu profile to `file`")
 	flag.BoolVar(&memprofile, "memprofile", false, "write mem profile to `file`")
 	flag.Parse()
+
+	if enableDevelopmentMode {
+		util.IsDevelopmentEnv = true
+	}
 
 	// If showVersion is passed, show the version and do
 	// nothing.
@@ -319,6 +327,17 @@ func main() {
 	util.Billing = Billing
 	util.HostedBilling = HostedBilling
 	util.ClusterBilling = ClusterBilling
+	if MultiTenant == "true" {
+		util.MultiTenant = true
+		if os.Getenv("REACTIVESEARCH_AUTH_TOKEN") == "" {
+			log.Fatal("REACTIVESEARCH_AUTH_TOKEN is required in multi-tenant mode")
+			return
+		}
+		if os.Getenv("DOMAIN_NAME_ENCRYPTION_KEY") == "" {
+			log.Fatal("DOMAIN_NAME_ENCRYPTION_KEY is required in multi-tenant mode")
+			return
+		}
+	}
 	util.Opensource = Opensource
 	util.Version = Version
 	util.ExternalElasticsearch = ExternalElasticsearch
@@ -606,8 +625,10 @@ func main() {
 
 	// Start the job to keep pinging ES to mark as live node
 	log.Info(logTag, ": setting up active node ping jobs")
-	nodeInstance := nodes.Instance()
-	nodeInstance.StartAutomatedJobs()
+	if !util.MultiTenant {
+		nodeInstance := nodes.Instance()
+		nodeInstance.StartAutomatedJobs()
+	}
 
 	// Finally start the server
 	routerSwapper.StartServer()

@@ -386,7 +386,7 @@ func (p *permissions) getPermissions() http.HandlerFunc {
 			util.WriteBackError(w, msg, http.StatusUnauthorized)
 			return
 		}
-		raw, err := p.es.getPermissions(ctx, indices)
+		raw, err := p.es.getPermissions(ctx, req, indices)
 		if err != nil {
 			msg := fmt.Sprintf(`an error occurred while fetching permissions`)
 			log.Errorln(logTag, ":", msg, ":", err)

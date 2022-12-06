@@ -7,12 +7,12 @@ PLUGIN_BUILD_DIR=$(BUILD_DIR)/plugins
 DEFAULT_VERSION=8.9.0
 VERSION := $(or $(VERSION),$(DEFAULT_VERSION))
  
-PLUGINS=$(shell ls -l plugins | grep ^d | awk '{ print $$9 }')
+PLUGINS=auth users permissions elasticsearch telemetry
 PLUGIN_MAIN_LOC_FUNC=plugins/$(1)/main/$(1).$(2)
 PLUGIN_LOC_FUNC=$(foreach PLUGIN,$(PLUGINS),$(call PLUGIN_MAIN_LOC_FUNC,$(PLUGIN),$(1)))
 
 cmd: plugins
-	$(GC) -ldflags "-w -X main.Billing=$(BILLING) -X main.HostedBilling=$(HOSTED_BILLING) -X main.ClusterBilling=$(CLUSTER_BILLING) -X main.Opensource=$(OPENSOURCE) -X main.ExternalElasticsearch=$(EXTERNAL_ELASTICSEARCH) -X main.PlanRefreshInterval=$(PLAN_REFRESH_INTERVAL) -X main.IgnoreBillingMiddleware=$(IGNORE_BILLING_MIDDLEWARE) -X main.Tier=$(TEST_TIER) -X main.FeatureCustomEvents=$(TEST_FEATURE_CUSTOM_EVENTS) -X main.FeatureSuggestions=$(TEST_FEATURE_SUGGESTIONS) -X main.Version=$(VERSION)" -o $(BUILD_DIR)/reactivesearch main.go
+	$(GC) -ldflags "-w -X main.Billing=$(BILLING) -X main.HostedBilling=$(HOSTED_BILLING) -X main.ClusterBilling=$(CLUSTER_BILLING) -X main.MultiTenant=$(MULTI_TENANT) -X main.Opensource=$(OPENSOURCE) -X main.ExternalElasticsearch=$(EXTERNAL_ELASTICSEARCH) -X main.PlanRefreshInterval=$(PLAN_REFRESH_INTERVAL) -X main.IgnoreBillingMiddleware=$(IGNORE_BILLING_MIDDLEWARE) -X main.Tier=$(TEST_TIER) -X main.FeatureCustomEvents=$(TEST_FEATURE_CUSTOM_EVENTS) -X main.FeatureSuggestions=$(TEST_FEATURE_SUGGESTIONS) -X main.Version=$(VERSION)" -o $(BUILD_DIR)/reactivesearch main.go
 
 plugins: $(call PLUGIN_LOC_FUNC,so)
 

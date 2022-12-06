@@ -5,6 +5,7 @@ import (
 
 	"github.com/appbaseio/reactivesearch-api/middleware"
 	"github.com/appbaseio/reactivesearch-api/plugins"
+	"github.com/appbaseio/reactivesearch-api/util"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -65,5 +66,6 @@ func (n *nodes) RSMiddleware() []middleware.Middleware {
 }
 
 func (n *nodes) Enabled() bool {
-	return true
+	// disable with ARC is used as multi-tenant
+	return !util.MultiTenant
 }

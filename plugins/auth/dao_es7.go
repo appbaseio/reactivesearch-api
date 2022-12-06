@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net/http"
 
 	log "github.com/sirupsen/logrus"
 
@@ -15,11 +16,11 @@ import (
 	es7 "github.com/olivere/elastic/v7"
 )
 
-func (es *elasticsearch) getPublicKeyEs7(ctx context.Context, publicKeyIndex, publicKeyDocID string) (publicKey, error) {
+func (es *elasticsearch) getPublicKeyEs7(ctx context.Context, req *http.Request, publicKeyIndex, publicKeyDocID string) (publicKey, error) {
 	var record = publicKey{}
 
-	resp, err := util.GetInternalClient7().Search().
-		Index(publicKeyIndex).Query(es7.NewTermQuery("_id", publicKeyDocID)).Do(ctx)
+	resp, err := util.SearchServiceWithAuth(util.GetInternalClient7().Search().
+		Index(publicKeyIndex).Query(es7.NewTermQuery("_id", publicKeyDocID)), req).Do(ctx)
 	if len(resp.Hits.Hits) < 1 {
 		return record, errors.New("public key record not found")
 	}
@@ -34,13 +35,13 @@ func (es *elasticsearch) getPublicKeyEs7(ctx context.Context, publicKeyIndex, pu
 	return record, nil
 }
 
-func (es *elasticsearch) getCredentialEs7(ctx context.Context, username string) (credential.AuthCredential, error) {
+func (es *elasticsearch) getCredentialEs7(ctx context.Context, req *http.Request, username string) (credential.AuthCredential, error) {
 	matchUsername := es7.NewTermQuery("username.keyword", username)
 
-	response, err := util.GetInternalClient7().Search().
+	response, err := util.SearchServiceWithAuth(util.GetInternalClient7().Search().
 		Index(es.userIndex, es.permissionIndex).
 		Query(matchUsername).
-		FetchSource(true).Do(ctx)
+		FetchSource(true), req).Do(ctx)
 
 	if err != nil {
 		return nil, err
@@ -82,13 +83,13 @@ func (es *elasticsearch) getCredentialEs7(ctx context.Context, username string) 
 	return obj, nil
 }
 
-func (es *elasticsearch) getRawRolePermissionEs7(ctx context.Context, role string) ([]byte, error) {
-	resp, err := util.GetInternalClient7().Search().
+func (es *elasticsearch) getRawRolePermissionEs7(ctx context.Context, req *http.Request, role string) ([]byte, error) {
+	resp, err := util.SearchServiceWithAuth(util.GetInternalClient7().Search().
 		Index(es.permissionIndex).
 		Type(es.permissionType).
 		Query(es7.NewTermQuery("role.keyword", role)).
 		Size(1).
-		FetchSource(true).Do(ctx)
+		FetchSource(true), req).Do(ctx)
 	if err != nil {
 		return nil, err
 	}

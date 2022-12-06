@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net/http"
 
 	log "github.com/sirupsen/logrus"
 
@@ -122,8 +123,8 @@ func (es *elasticsearch) getRawOwnerPermissions(ctx context.Context, owner strin
 	return es.getRawOwnerPermissionsEs7(ctx, owner)
 }
 
-func (es *elasticsearch) getPermissions(ctx context.Context, indices []string) ([]byte, error) {
-	return es.getPermissionsEs7(ctx, indices)
+func (es *elasticsearch) getPermissions(ctx context.Context, req *http.Request, indices []string) ([]byte, error) {
+	return es.getPermissionsEs7(ctx, req, indices)
 }
 
 func (es *elasticsearch) checkRoleExists(ctx context.Context, role string) (bool, error) {

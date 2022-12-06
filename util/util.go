@@ -33,6 +33,9 @@ var HostedBilling string
 // ClusterBilling is a build time variable
 var ClusterBilling string
 
+// MultiTenant is a build time variable
+var MultiTenant bool = false
+
 // OfflineBilling is true when license key is defined
 var OfflineBilling bool
 
@@ -50,6 +53,9 @@ var IsTelemetryEnabled bool = true
 
 // Version ReactiveSearch version
 var Version string
+
+// True means env is development
+var IsDevelopmentEnv bool
 
 // Machine ID
 var MachineID string
