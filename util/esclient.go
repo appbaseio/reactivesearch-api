@@ -221,7 +221,7 @@ func HiddenIndexSettings() string {
 	return ""
 }
 
-func isSniffingEnabled() bool {
+func IsSniffingEnabled() bool {
 	setSniffing := os.Getenv("SET_SNIFFING")
 	sniffing := false
 	if setSniffing == "true" {
@@ -247,7 +247,7 @@ func initClient6() {
 	client6, err = es6.NewClient(
 		es6.SetURL(GetESURL()),
 		es6.SetRetrier(NewRetrier()),
-		es6.SetSniff(isSniffingEnabled()),
+		es6.SetSniff(IsSniffingEnabled()),
 		es6.SetHttpClient(esHttpClient),
 		es6.SetErrorLog(wrappedLoggerError),
 		es6.SetInfoLog(wrappedLoggerDebug),
@@ -274,7 +274,7 @@ func initClient7() {
 		internalClient7, err = es7.NewClient(
 			es7.SetURL(GetInternalESURL()),
 			es7.SetRetrier(NewRetrier()),
-			es7.SetSniff(isSniffingEnabled()),
+			es7.SetSniff(IsSniffingEnabled()),
 			es7.SetHttpClient(internalEsHttpClient),
 			es7.SetErrorLog(wrappedLoggerError),
 			es7.SetInfoLog(wrappedLoggerDebug),
@@ -288,7 +288,7 @@ func initClient7() {
 		client7, err = es7.NewClient(
 			es7.SetURL(GetESURL()),
 			es7.SetRetrier(NewRetrier()),
-			es7.SetSniff(isSniffingEnabled()),
+			es7.SetSniff(IsSniffingEnabled()),
 			es7.SetHttpClient(esHttpClient),
 			es7.SetErrorLog(wrappedLoggerError),
 			es7.SetInfoLog(wrappedLoggerDebug),
@@ -345,7 +345,7 @@ func InitExternalESClient7() {
 			client7, err = es7.NewClient(
 				es7.SetURL(GetSearchClientESURL()),
 				es7.SetRetrier(NewRetrier()),
-				es7.SetSniff(isSniffingEnabled()),
+				es7.SetSniff(IsSniffingEnabled()),
 				es7.SetHttpClient(internalEsHttpClient),
 				es7.SetErrorLog(wrappedLoggerError),
 				es7.SetInfoLog(wrappedLoggerDebug),

@@ -6,13 +6,18 @@ import (
 	"github.com/appbaseio/reactivesearch-api/middleware"
 	"github.com/appbaseio/reactivesearch-api/plugins"
 	"github.com/appbaseio/reactivesearch-api/util"
+	es7 "github.com/olivere/elastic/v7"
 )
 
-const logTag = "[elasticsearch]"
+const (
+	logTag         = "[elasticsearch]"
+	systemESUrlKey = "SYSTEM_ES_URL"
+)
 
 var (
-	singleton *elasticsearch
-	once      sync.Once
+	singleton      *elasticsearch
+	once           sync.Once
+	systemESClient *es7.Client
 )
 
 type elasticsearch struct {
@@ -29,6 +34,13 @@ func (es *elasticsearch) Name() string {
 }
 
 func (es *elasticsearch) InitFunc(mw []middleware.Middleware) error {
+	// Init the system ES client
+	var clientErr error
+	systemESClient, clientErr = initSystemESClient()
+	if clientErr != nil {
+		return clientErr
+	}
+
 	return es.preprocess(mw)
 }
 
