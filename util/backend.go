@@ -32,6 +32,9 @@ func GetBackend() *Backend {
 //
 // This will be true if backend is either ES or OS
 func IsExternalESRequired() bool {
+	if backend == nil {
+		return false
+	}
 	return backend.String() == ElasticSearch.String() || backend.String() == OpenSearch.String()
 }
 

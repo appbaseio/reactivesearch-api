@@ -44,7 +44,7 @@ func (c *chain) Wrap(mw []middleware.Middleware, h http.HandlerFunc) http.Handle
 
 func list() []middleware.Middleware {
 	return []middleware.Middleware{
-		validate.Domain(),
+
 		validate.Elasticsearch(),
 		classifyCategory,
 		classifyOp,
