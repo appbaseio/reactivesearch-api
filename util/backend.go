@@ -50,6 +50,7 @@ const (
 	Fusion
 	Zinc
 	MarkLogic
+	System
 )
 
 // String returns the string representation
@@ -70,6 +71,8 @@ func (b Backend) String() string {
 		return "zinc"
 	case MarkLogic:
 		return "marklogic"
+	case System:
+		return "system"
 	}
 	return ""
 }
@@ -97,6 +100,8 @@ func (b *Backend) UnmarshalJSON(bytes []byte) error {
 		*b = Zinc
 	case MarkLogic.String():
 		*b = MarkLogic
+	case System.String():
+		*b = System
 	default:
 		return fmt.Errorf("invalid backend passed: %s", backend)
 	}
@@ -126,6 +131,7 @@ func (b Backend) JSONSchema() *jsonschema.Schema {
 			Fusion.String(),
 			Zinc.String(),
 			MarkLogic.String(),
+			System.String(),
 		},
 		Title:       "Backend",
 		Description: "Backend that ReactiveSearch will use",
