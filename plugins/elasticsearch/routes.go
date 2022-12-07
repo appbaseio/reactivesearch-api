@@ -71,16 +71,10 @@ func (es *elasticsearch) preprocess(mw []middleware.Middleware) error {
 				continue
 			}
 
-			// If the route it to fetch/create/delete index, we
-			// need to add a middleware to append tenantId there
-			if api.name == "indices.create" || api.name == "indices.delete" || api.name == "indices.get" {
-				mw = append(mw, updateIndexName)
-			}
-
 			// Create a new middleware list with the whitelist check being the first
 			// middleware in the chain
 			wh := WhitelistedRoute{Path: path}
-			updatedMw := []middleware.Middleware{wh.CheckIfPathWhitelisted}
+			updatedMw := []middleware.Middleware{wh.CheckIfPathWhitelisted, wh.UpdateIndexName}
 			updatedMw = append(updatedMw, mw...)
 
 			r := plugins.Route{
