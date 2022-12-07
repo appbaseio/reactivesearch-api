@@ -39,6 +39,22 @@ func GetESAccessForTenant(tenantID string) ESAccess {
 	return ESAccessDetails
 }
 
+func GetGlobalESURL() string {
+	return esURL
+}
+
+func SetGlobalESURL(url string) {
+	esURL = url
+}
+
+func GetGlobalESHeader() string {
+	return esHeader
+}
+
+func SetGlobalESHeader(header string) {
+	esHeader = header
+}
+
 // Opensearch envs
 const OsURLKey = "OS_URL"
 const OsHeaderKey = "OS_HEADER"
