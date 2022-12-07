@@ -363,6 +363,13 @@ func intercept(h http.HandlerFunc) http.HandlerFunc {
 // index routes.
 func updateIndexName(h http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
+		// This middleware will only be executed if SLS is enabled
+		// and multi-tenant is enabled
+		if util.IsSLSDisabled() || !util.MultiTenant {
+			h(w, req)
+			return
+		}
+
 		// Access the vars to fetch the name of the index
 		reqVars := mux.Vars(req)
 		indexPassed := reqVars["index"]

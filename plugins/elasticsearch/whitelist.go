@@ -1,6 +1,13 @@
 package elasticsearch
 
-import "net/http"
+import (
+	"net/http"
+
+	"github.com/appbaseio/reactivesearch-api/model/domain"
+	"github.com/appbaseio/reactivesearch-api/plugins/telemetry"
+	"github.com/appbaseio/reactivesearch-api/util"
+	log "github.com/sirupsen/logrus"
+)
 
 // WhitelistedRoute will contain the path
 // of the route
@@ -39,4 +46,44 @@ func (w *WhitelistedRoute) IsMethodWhitelisted(methodPassed string) bool {
 	}
 
 	return false
+}
+
+// CheckIfPathWhitelisted will check if the path being called is whitelisted
+// based on the method and accordingly allow/deny access.
+//
+// This should be the first middleware that is called so that no other
+// middleware are executed if the path is denied
+func (wh *WhitelistedRoute) CheckIfPathWhitelisted(h http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, req *http.Request) {
+		// This check only needs to happen if the instance is
+		// multi-tenant and backend for the incoming domain is `system`
+		if util.IsSLSDisabled() || !util.MultiTenant {
+			h(w, req)
+			return
+		}
+
+		// Fetch the domain from context
+		domainUsed, domainFetchErr := domain.FromContext(req.Context())
+		if domainFetchErr != nil {
+			errMsg := "Error while validating the domain!"
+			log.Warnln(logTag, ": ", errMsg)
+			telemetry.WriteBackErrorWithTelemetry(req, w, errMsg, http.StatusUnauthorized)
+		}
+
+		// Get the backend using the domain
+		if *(util.GetBackendByDomain(domainUsed.Raw)) != util.System {
+			// No need to blacklist
+			h(w, req)
+			return
+		}
+
+		// Check if the request method is whitelisted, else deny access
+		if !wh.IsMethodWhitelisted(req.Method) {
+			telemetry.WriteBackErrorWithTelemetry(req, w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
+			return
+		}
+
+		// Allow access otherwise
+		h(w, req)
+	}
 }
