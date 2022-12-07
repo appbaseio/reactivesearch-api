@@ -15,7 +15,6 @@ import (
 	"github.com/appbaseio/reactivesearch-api/model/index"
 	"github.com/appbaseio/reactivesearch-api/util"
 	"github.com/buger/jsonparser"
-	"github.com/gorilla/mux"
 	es7 "github.com/olivere/elastic/v7"
 	log "github.com/sirupsen/logrus"
 )
@@ -23,7 +22,16 @@ import (
 func (r *QueryTranslate) search() http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
 		ctx := req.Context()
-		vars := mux.Vars(req)
+
+		// Fetch the index value from context instead of vars
+		indexValue, fetchErr := FromIndexMsearchContext(ctx)
+		if fetchErr != nil {
+			errMsg := fmt.Sprint("error while getting index value from ctx for msearch: ", fetchErr.Error())
+			log.Warnln(logTag, ": ", errMsg)
+			util.WriteBackError(w, errMsg, http.StatusInternalServerError)
+			return
+		}
+
 		reqBody, err := ioutil.ReadAll(req.Body)
 		if err != nil {
 			log.Errorln(logTag, ":", err)
@@ -41,7 +49,7 @@ func (r *QueryTranslate) search() http.HandlerFunc {
 		var esResponseBody []byte
 		responseStatusCode := http.StatusOK
 		if len(reqBody) != 0 {
-			reqURL := "/" + vars["index"] + "/_msearch"
+			reqURL := "/" + *indexValue + "/_msearch"
 			start := time.Now()
 			httpRes, err := makeESRequest(ctx, reqURL, http.MethodPost, reqBody, req.URL.Query())
 			if err != nil {
@@ -308,8 +316,16 @@ func (r *QueryTranslate) validate() http.HandlerFunc {
 		// Extract the reqBody into the required format that shows based on ID.
 
 		// Extract some request details that might be required later
-		vars := mux.Vars(req)
-		defaultURL := fmt.Sprint(util.GetESURL(), "/", vars["index"], "/_search")
+		// Fetch the index value from context instead of vars
+		indexValue, fetchErr := FromIndexMsearchContext(req.Context())
+		if fetchErr != nil {
+			errMsg := fmt.Sprint("error while getting index value from ctx for msearch: ", fetchErr.Error())
+			log.Warnln(logTag, ": ", errMsg)
+			util.WriteBackError(w, errMsg, http.StatusInternalServerError)
+			return
+		}
+
+		defaultURL := fmt.Sprint(util.GetESURL(), "/", *indexValue, "/_search")
 		request, err := http.NewRequest("POST", defaultURL, nil)
 		if err != nil {
 			log.Errorln(logTag, ":", err)
