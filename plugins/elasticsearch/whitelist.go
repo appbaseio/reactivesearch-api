@@ -122,6 +122,7 @@ func (wh *WhitelistedRoute) CheckIfPathWhitelisted(h http.HandlerFunc) http.Hand
 			errMsg := "Error while validating the domain!"
 			log.Warnln(logTag, ": ", errMsg)
 			telemetry.WriteBackErrorWithTelemetry(req, w, errMsg, http.StatusUnauthorized)
+			return
 		}
 
 		// Get the backend using the domain

@@ -381,6 +381,7 @@ func (wh *WhitelistedRoute) UpdateIndexName(h http.HandlerFunc) http.HandlerFunc
 			errMsg := "Error while validating the domain!"
 			log.Warnln(logTag, ": ", errMsg)
 			telemetry.WriteBackErrorWithTelemetry(req, w, errMsg, http.StatusUnauthorized)
+			return
 		}
 
 		// Get the backend using the domain
@@ -405,8 +406,11 @@ func (wh *WhitelistedRoute) UpdateIndexName(h http.HandlerFunc) http.HandlerFunc
 		reqVars := mux.Vars(req)
 		indexPassed := reqVars["index"]
 
-		// TODO: Fetch the tenant ID using the domain
-		tenantId := ""
+		tenantId := util.GetDomainMap().GetTenantForDomain(domainUsed.Raw)
+		if tenantId == "" {
+			telemetry.WriteBackErrorWithTelemetry(req, w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
+			return
+		}
 
 		// Update the path
 		indexWithTenant := util.AppendTenantID(indexPassed, tenantId)
