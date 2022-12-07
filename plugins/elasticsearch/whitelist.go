@@ -22,6 +22,60 @@ func GetWhitelistedRoutesForSystem() map[string][]string {
 		"/{index}": {
 			http.MethodGet, http.MethodPut,
 		},
+		"/{index}/_analyze": {
+			http.MethodGet, http.MethodPost,
+		},
+		"/{index}/_mapping": {
+			http.MethodGet, http.MethodPost, http.MethodPut,
+		},
+		"/{index}/_mappings": {
+			http.MethodPost, http.MethodPut,
+		},
+		"/{index}/_delete_by_query": {
+			http.MethodPost,
+		},
+		"/{index}/_recovery": {
+			http.MethodGet,
+		},
+		"/{index}/_settings": {
+			http.MethodGet, http.MethodPut,
+		},
+		"/{index}/_open": {
+			http.MethodPost,
+		},
+		"/{index}/_close": {
+			http.MethodPost,
+		},
+		"/{index}/_stats": {
+			http.MethodGet,
+		},
+		"/{index}/_stats/{metric}": {
+			http.MethodGet,
+		},
+		"/{index}/_count": {
+			http.MethodPost, http.MethodGet,
+		},
+		"/{index}/{id}": {
+			http.MethodGet,
+		},
+		"/{index}/_doc/{id}": {
+			http.MethodGet, http.MethodPost, http.MethodPut, http.MethodDelete,
+		},
+		"/{index}/_termvectors": {
+			http.MethodGet, http.MethodPost,
+		},
+		"/{index}/_termvectors/{id}": {
+			http.MethodGet, http.MethodPost,
+		},
+		"/{index}/_mget": {
+			http.MethodGet, http.MethodPost,
+		},
+		"/{index}/_doc/{id}/_update": {
+			http.MethodPost,
+		},
+		"/{index}/_bulk": {
+			http.MethodPost, http.MethodPut,
+		},
 	}
 }
 
