@@ -41,6 +41,7 @@ type slsInstanceDetails struct {
 	NumberOfMachines        int64                  `json:"number_of_machines"`
 	Backend                 string                 `json:"backend"`
 	CustomerID              string                 `json:"customer_id"`
+	TenantID                string                 `json:"tenant_id"`
 }
 
 var slsInstancesByDomain = make(map[string]slsInstanceDetails)
