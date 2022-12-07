@@ -109,6 +109,51 @@ func (es *elasticsearch) handler() http.HandlerFunc {
 			//
 			// We will have to fetch the ES_URL value from global vars and create
 			// a simple client using that.
+
+			// TODO: Fetch the tenantId using the domain
+			tenantId := ""
+			esAccess := util.GetESAccessForTenant(tenantId)
+
+			if esAccess.URL == "" {
+				errMsg := "ES_URL not defined in global vars, cannot continue without that!"
+				log.Warnln(logTag, ": ", errMsg)
+				telemetry.WriteBackErrorWithTelemetry(r, w, errMsg, http.StatusBadRequest)
+				return
+			}
+
+			// NOTE: We are assuming that basic auth will be provided in the URL itself.
+			//
+			// We will deprecate support for ES_HEADER since pipelines can work without
+			// the header as well by accepting basic auth in the URL itself.
+			esURLParsed, parseErr := util.ParseESURL(esAccess.URL, esAccess.Header)
+			if parseErr != nil {
+				errMsg := fmt.Sprint("Error while parsing ES_URL and ES_HEADER: ", parseErr.Error())
+				log.Warnln(logTag, ": ", errMsg)
+				telemetry.WriteBackErrorWithTelemetry(r, w, errMsg, http.StatusBadRequest)
+				return
+			}
+
+			loggerT := log.New()
+			wrappedLoggerDebug := &util.WrapKitLoggerDebug{*loggerT}
+			wrappedLoggerError := &util.WrapKitLoggerError{*loggerT}
+
+			var clientErr error
+			esClient, clientErr = es7.NewSimpleClient(
+				es7.SetURL(esURLParsed),
+				es7.SetRetrier(util.NewRetrier()),
+				es7.SetHttpClient(util.HTTPClient()),
+				es7.SetErrorLog(wrappedLoggerError),
+				es7.SetInfoLog(wrappedLoggerDebug),
+				es7.SetTraceLog(wrappedLoggerDebug),
+			)
+
+			if clientErr != nil {
+				errMsg := fmt.Sprint("error while initiating client to make request: ", clientErr.Error())
+				log.Warnln(logTag, ": ", errMsg)
+				telemetry.WriteBackErrorWithTelemetry(r, w, errMsg, http.StatusInternalServerError)
+				return
+			}
+
 		}
 
 		// convert body to string string as oliver Perform request can accept io.Reader, String, interface

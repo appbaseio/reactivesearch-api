@@ -99,38 +99,48 @@ func GetSearchClientESURL() string {
 			esHeader = GetGlobalOSHeader()
 		}
 		if esURL != "" {
-			if strings.Contains(esURL, "@") {
-				splitIndex := strings.LastIndex(esURL, "@")
-				protocolWithCredentials := strings.Split(esURL[0:splitIndex], "://")
-				credentials := protocolWithCredentials[1]
-				protocol := protocolWithCredentials[0]
-				host := esURL[splitIndex+1:]
-
-				credentialSeparator := strings.Index(credentials, ":")
-				username := credentials[0:credentialSeparator]
-				password := credentials[credentialSeparator+1:]
-				esURL = protocol + "://" + url.PathEscape(username) + ":" + url.PathEscape(password) + "@" + host
-			} else {
-				if esHeader != "" {
-					authHeader, err := base64.StdEncoding.DecodeString(esHeader)
-					if err != nil {
-						log.Fatal("Error encountered: ", fmt.Errorf("ES_HEADER must be set in base64 format"))
-					}
-					protocolWithCredentials := strings.Split(esURL, "://")
-					host := protocolWithCredentials[1]
-					protocol := protocolWithCredentials[0]
-
-					credentials := string(authHeader)
-					credentialSeparator := strings.Index(credentials, ":")
-					username := credentials[0:credentialSeparator]
-					password := credentials[credentialSeparator+1:]
-					esURL = protocol + "://" + url.PathEscape(username) + ":" + url.PathEscape(password) + "@" + host
-				}
+			var parseErr error
+			esURL, parseErr = ParseESURL(esURL, esHeader)
+			if parseErr != nil {
+				log.Fatal("Error encountered: ", parseErr.Error())
 			}
-			return esURL
 		}
 	}
 	return ""
+}
+
+// ParseESURL will parse the ES URL passed along with header which
+// can be optionally passed
+func ParseESURL(esURL string, esHeader string) (string, error) {
+	if strings.Contains(esURL, "@") {
+		splitIndex := strings.LastIndex(esURL, "@")
+		protocolWithCredentials := strings.Split(esURL[0:splitIndex], "://")
+		credentials := protocolWithCredentials[1]
+		protocol := protocolWithCredentials[0]
+		host := esURL[splitIndex+1:]
+
+		credentialSeparator := strings.Index(credentials, ":")
+		username := credentials[0:credentialSeparator]
+		password := credentials[credentialSeparator+1:]
+		esURL = protocol + "://" + url.PathEscape(username) + ":" + url.PathEscape(password) + "@" + host
+	} else {
+		if esHeader != "" {
+			authHeader, err := base64.StdEncoding.DecodeString(esHeader)
+			if err != nil {
+				return "", fmt.Errorf("ES_HEADER must be set in base64 format")
+			}
+			protocolWithCredentials := strings.Split(esURL, "://")
+			host := protocolWithCredentials[1]
+			protocol := protocolWithCredentials[0]
+
+			credentials := string(authHeader)
+			credentialSeparator := strings.Index(credentials, ":")
+			username := credentials[0:credentialSeparator]
+			password := credentials[credentialSeparator+1:]
+			esURL = protocol + "://" + url.PathEscape(username) + ":" + url.PathEscape(password) + "@" + host
+		}
+	}
+	return esURL, nil
 }
 
 // GetESURL returns elasticsearch url with escaped auth
