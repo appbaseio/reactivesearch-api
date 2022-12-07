@@ -7,20 +7,36 @@ const EsHeaderKey = "ES_HEADER"
 var esURL string
 var esHeader string
 
-func GetGlobalESURL() string {
-	return esURL
+// ESAccess will store details about accessing ES
+// that the user has provided if they chose `elasticsearch`
+// as a backend.
+type ESAccess struct {
+	URL    string
+	Header string
 }
 
-func SetGlobalESURL(url string) {
-	esURL = url
+// tenantToESAccess will be a map of the raw tenantID
+// to the ESAccess credentials
+var tenantToESAccess map[string]ESAccess
+
+// SetESAccessForTenant will set the ESAccess values for
+// the passed `tenantId`
+func SetESAccessForTenant(tenantID string, esAccess ESAccess) {
+	tenantToESAccess[tenantID] = esAccess
 }
 
-func GetGlobalESHeader() string {
-	return esHeader
-}
+// GetESAccessForTenant will get the ESAccess values for the
+// passed `tenantId`.
+//
+// The first value returned will be the ES_URL and the second
+// value will be the ES_HEADER.
+func GetESAccessForTenant(tenantID string) ESAccess {
+	ESAccessDetails, isExists := tenantToESAccess[tenantID]
+	if !isExists {
+		return ESAccess{}
+	}
 
-func SetGlobalESHeader(header string) {
-	esHeader = header
+	return ESAccessDetails
 }
 
 // Opensearch envs
