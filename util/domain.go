@@ -11,8 +11,19 @@ type DomainToTenant map[string]string
 var domainMap DomainToTenant
 
 // GetDomainMap will return the domain map
-func GetDomainMap() DomainToTenant {
-	return domainMap
+func GetDomainMap() *DomainToTenant {
+	return &domainMap
+}
+
+// GetTenantForDomain will return the tenantID for the domain
+// passed.
+func (dt *DomainToTenant) GetTenantForDomain(domain string) string {
+	tenantId, exists := (*dt)[domain]
+	if !exists {
+		return ""
+	}
+
+	return tenantId
 }
 
 // FetchDomainMap will fetch the domain to tenant map
