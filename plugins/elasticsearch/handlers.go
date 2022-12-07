@@ -17,7 +17,6 @@ import (
 
 	"github.com/appbaseio/reactivesearch-api/model/acl"
 	"github.com/appbaseio/reactivesearch-api/model/category"
-	"github.com/appbaseio/reactivesearch-api/model/domain"
 	"github.com/appbaseio/reactivesearch-api/model/op"
 	"github.com/appbaseio/reactivesearch-api/plugins/telemetry"
 	"github.com/appbaseio/reactivesearch-api/util"
@@ -86,74 +85,11 @@ func (es *elasticsearch) handler() http.HandlerFunc {
 		//
 		// If the request is for a multi-tenant setup and the backend
 		// is `system`, we need to use the system client to make the call.
-		var esClient *es7.Client
-		if util.IsSLSDisabled() || !util.MultiTenant {
-			esClient = util.GetClient7()
-		} else {
-			// Check the backend and accordingly determine the client.
-			domain, domainFetchErr := domain.FromContext(r.Context())
-			if domainFetchErr != nil {
-				errMsg := fmt.Sprintf("error while fetching domain info from context: %s", domainFetchErr.Error())
-				log.Warnln(logTag, ": ", errMsg)
-				telemetry.WriteBackErrorWithTelemetry(r, w, errMsg, http.StatusInternalServerError)
-				return
-			}
-
-			backend := util.GetBackendByDomain(domain.Raw)
-			if *backend == util.System {
-				esClient = es.systemESClient
-			}
-
-			// If backend is not `system`, this route can be called for an ES
-			// backend only.
-			//
-			// We will have to fetch the ES_URL value from global vars and create
-			// a simple client using that.
-
-			// TODO: Fetch the tenantId using the domain
-			tenantId := ""
-			esAccess := util.GetESAccessForTenant(tenantId)
-
-			if esAccess.URL == "" {
-				errMsg := "ES_URL not defined in global vars, cannot continue without that!"
-				log.Warnln(logTag, ": ", errMsg)
-				telemetry.WriteBackErrorWithTelemetry(r, w, errMsg, http.StatusBadRequest)
-				return
-			}
-
-			// NOTE: We are assuming that basic auth will be provided in the URL itself.
-			//
-			// We will deprecate support for ES_HEADER since pipelines can work without
-			// the header as well by accepting basic auth in the URL itself.
-			esURLParsed, parseErr := util.ParseESURL(esAccess.URL, esAccess.Header)
-			if parseErr != nil {
-				errMsg := fmt.Sprint("Error while parsing ES_URL and ES_HEADER: ", parseErr.Error())
-				log.Warnln(logTag, ": ", errMsg)
-				telemetry.WriteBackErrorWithTelemetry(r, w, errMsg, http.StatusBadRequest)
-				return
-			}
-
-			loggerT := log.New()
-			wrappedLoggerDebug := &util.WrapKitLoggerDebug{*loggerT}
-			wrappedLoggerError := &util.WrapKitLoggerError{*loggerT}
-
-			var clientErr error
-			esClient, clientErr = es7.NewSimpleClient(
-				es7.SetURL(esURLParsed),
-				es7.SetRetrier(util.NewRetrier()),
-				es7.SetHttpClient(util.HTTPClient()),
-				es7.SetErrorLog(wrappedLoggerError),
-				es7.SetInfoLog(wrappedLoggerDebug),
-				es7.SetTraceLog(wrappedLoggerDebug),
-			)
-
-			if clientErr != nil {
-				errMsg := fmt.Sprint("error while initiating client to make request: ", clientErr.Error())
-				log.Warnln(logTag, ": ", errMsg)
-				telemetry.WriteBackErrorWithTelemetry(r, w, errMsg, http.StatusInternalServerError)
-				return
-			}
-
+		esClient, clientFetchErr := es.GetESClientForTenant(r)
+		if clientFetchErr != nil {
+			log.Warnln(logTag, ": ", clientFetchErr)
+			telemetry.WriteBackErrorWithTelemetry(r, w, clientFetchErr.Error(), http.StatusInternalServerError)
+			return
 		}
 
 		// convert body to string string as oliver Perform request can accept io.Reader, String, interface
