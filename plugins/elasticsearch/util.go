@@ -3,7 +3,6 @@ package elasticsearch
 import (
 	"context"
 	"fmt"
-	"net/http"
 	"os"
 
 	"github.com/appbaseio/reactivesearch-api/model/domain"
@@ -92,13 +91,13 @@ func CacheIndexesForTenants(systemESClient *es7.Client, ctx context.Context) err
 
 // GetESClientForTenant will get the esClient for the tenant so that
 // it can be used to make requests
-func (es *elasticsearch) GetESClientForTenant(r *http.Request) (*es7.Client, error) {
+func (es *elasticsearch) GetESClientForTenant(ctx context.Context) (*es7.Client, error) {
 	if util.IsSLSDisabled() || !util.MultiTenant {
 		return util.GetClient7(), nil
 	}
 
 	// Check the backend and accordingly determine the client.
-	domain, domainFetchErr := domain.FromContext(r.Context())
+	domain, domainFetchErr := domain.FromContext(ctx)
 	if domainFetchErr != nil {
 		errMsg := fmt.Sprintf("error while fetching domain info from context: %s", domainFetchErr.Error())
 		return nil, fmt.Errorf(errMsg)

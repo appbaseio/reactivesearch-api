@@ -14,6 +14,7 @@ import (
 	"sync"
 	"unicode"
 
+	"github.com/appbaseio/reactivesearch-api/plugins/elasticsearch"
 	"github.com/appbaseio/reactivesearch-api/util"
 	"github.com/bbalet/stopwords"
 	pluralize "github.com/gertd/go-pluralize"
@@ -858,7 +859,13 @@ func isNilInterface(c interface{}) bool {
 
 // Makes the elasticsearch requests
 func makeESRequest(ctx context.Context, url, method string, reqBody []byte, params url.Values) (*es7.Response, error) {
-	esClient := util.GetClient7()
+	esClient, fetchErr := elasticsearch.Instance().GetESClientForTenant(ctx)
+	if fetchErr != nil {
+		errMsg := fmt.Sprint("error while fetching esClient to make ES request: ", fetchErr.Error())
+		log.Warnln(logTag, ": ", errMsg)
+		return nil, fmt.Errorf(errMsg)
+	}
+
 	filteredParams := params
 	for k := range filteredParams {
 		if k == "preference" {
