@@ -73,7 +73,16 @@ func CacheIndexesForTenants(systemESClient *es7.Client, ctx context.Context) err
 	for _, index := range indices {
 		// Use the name of the index to extract the tenant_id and then
 		// cache it accordingly.
-		indexName := index.Index
+		strippedIndexName, tenantId := util.RemoveTenantID(index.Index)
+
+		// Not likely, but there can be indexes that do not have the
+		// tenantId appended to the name of the index. In such a case,
+		// we can skip these indexes
+		if tenantId == "" {
+			continue
+		}
+
+		SetIndexToCache(tenantId, strippedIndexName)
 	}
 
 	return nil
