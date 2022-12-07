@@ -11,6 +11,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/appbaseio/reactivesearch-api/util"
 	"github.com/appbaseio/reactivesearch-api/util/iplookup"
 	"github.com/gorilla/mux"
 
@@ -19,6 +20,7 @@ import (
 	"github.com/appbaseio/reactivesearch-api/middleware/ratelimiter"
 	"github.com/appbaseio/reactivesearch-api/middleware/validate"
 	"github.com/appbaseio/reactivesearch-api/model/category"
+	"github.com/appbaseio/reactivesearch-api/model/domain"
 	"github.com/appbaseio/reactivesearch-api/model/op"
 	"github.com/appbaseio/reactivesearch-api/model/permission"
 	"github.com/appbaseio/reactivesearch-api/model/request"
@@ -60,6 +62,7 @@ func list() []middleware.Middleware {
 		validate.Operation(),
 		validate.PermissionExpiry(),
 		applySourceFiltering,
+		StoreIndexValuesForMsearch,
 	}
 }
 
@@ -362,5 +365,52 @@ func queryTranslate(h http.HandlerFunc) http.HandlerFunc {
 		req = req.WithContext(ctxTrackPlugin)
 
 		h(w, req)
+	}
+}
+
+// StoreIndexValuesForMsearch will store the index values to
+// be used in the msearch request in the request context
+func StoreIndexValuesForMsearch(h http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, req *http.Request) {
+		vars := mux.Vars(req)
+		index := vars["index"]
+
+		// If SLS is Disable or it is single tenant SLS, we just need to
+		// store the value in ctx and not do anything.
+		if util.IsSLSDisabled() || !util.MultiTenant {
+			updatedCtx := NewIndexMsearchContext(req.Context(), index)
+			req = req.WithContext(updatedCtx)
+			h(w, req)
+			return
+		}
+
+		// If it is multi-tenant, we need to make sure that the index
+		// names are updated and intercept the response to update
+		// the name again.
+		//
+		// NOTE: Execution will reach this part only if SLS is enabled
+		// , multi-tenant is enabled and backend is one of `elasticsearch`,
+		// `opensearch` or `system`.
+
+		// So we need to check if backend is `system` and then do the changes
+		// Fetch the domain from context
+		domainUsed, domainFetchErr := domain.FromContext(req.Context())
+		if domainFetchErr != nil {
+			errMsg := "Error while validating the domain!"
+			log.Warnln(logTag, ": ", errMsg)
+			telemetry.WriteBackErrorWithTelemetry(req, w, errMsg, http.StatusUnauthorized)
+			return
+		}
+
+		// Get the backend using the domain
+		if *(util.GetBackendByDomain(domainUsed.Raw)) != util.System {
+			// No need to change values
+			updatedCtx := NewIndexMsearchContext(req.Context(), index)
+			req = req.WithContext(updatedCtx)
+			h(w, req)
+			return
+		}
+
+		// Finally, if it is `system`, we need to change the index names
 	}
 }
