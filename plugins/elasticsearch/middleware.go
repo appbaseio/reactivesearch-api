@@ -378,7 +378,7 @@ func updateIndexName(h http.HandlerFunc) http.HandlerFunc {
 		if req.Method == http.MethodDelete {
 			// Remove the entry from the cache
 			DeleteIndexFromCache(tenantId, indexPassed)
-		} else if req.Method == http.MethodPost {
+		} else if req.Method == http.MethodPut {
 			// Add the new entry in the cache
 			SetIndexToCache(tenantId, indexPassed)
 		}
