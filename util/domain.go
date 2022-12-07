@@ -1,10 +1,19 @@
 package util
 
+import (
+	log "github.com/sirupsen/logrus"
+)
+
 // DomainToTenant will contain the tenantID
 // mapped to the domain of the tenant
 type DomainToTenant map[string]string
 
 var domainMap DomainToTenant
+
+// GetDomainMap will return the domain map
+func GetDomainMap() DomainToTenant {
+	return domainMap
+}
 
 // FetchDomainMap will fetch the domain to tenant map
 // from AccAPI and return it
@@ -23,4 +32,14 @@ func SetDomainInCache() error {
 
 	domainMap = domainMapFetched
 	return nil
+}
+
+// SetDomainInCacheCronFunc is a wrapper on top of
+// SetDomainInCache to handle errors and report them
+// gracefully.
+func SetDomainInCacheCronFunc() {
+	setErr := SetDomainInCache()
+	if setErr != nil {
+		log.Warnln("Error while updating domain map cache: ", setErr.Error())
+	}
 }

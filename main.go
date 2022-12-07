@@ -498,6 +498,20 @@ func main() {
 	util.SetDefaultIndexTemplate()
 	util.SetSystemIndexTemplate()
 
+	// Fetch the domain to tenant map if SLS is enabled and multi-tenant
+	// is enabled
+	if util.IsSLSEnabled() && util.MultiTenant {
+		fetchErr := util.SetDomainInCache()
+		if fetchErr != nil {
+			log.Fatal("error while fetching domain to tenant map: ", fetchErr)
+		}
+
+		// Set the cronjob to fetch it every 60 seconds
+		domainUpdateCronJob := cron.New()
+		domainUpdateCronJob.AddFunc("@every 60s", util.SetDomainInCacheCronFunc)
+		domainUpdateCronJob.Start()
+	}
+
 	/*
 	   Safety net for 'too many open files' issue on legacy code.
 	   Set a sane timeout duration for the http.DefaultClient, to ensure idle connections are terminated.
