@@ -51,3 +51,25 @@ func FromIndependentRequestContext(ctx context.Context) (*[]map[string]interface
 	}
 	return &reqQuery, nil
 }
+
+const indexKey = contextKey("indexes-for-msearch")
+
+// NewIndexMsearchContext will return a new request context with
+// the index string for use in `_msearch`
+func NewIndexMsearchContext(ctx context.Context, indexes string) context.Context {
+	return context.WithValue(ctx, indexKey, indexes)
+}
+
+// FromIndexMsearchContext will return the index value to use
+// in the msearch request
+func FromIndexMsearchContext(ctx context.Context) (*string, error) {
+	ctxRequest := ctx.Value(indexKey)
+	if ctxRequest == nil {
+		return nil, errors.NewNotFoundInContextError("Msearch Index Value")
+	}
+	index, ok := ctxRequest.(string)
+	if !ok {
+		return nil, errors.NewInvalidCastError("ctxRequest", "Msearch Index Value")
+	}
+	return &index, nil
+}
