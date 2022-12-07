@@ -371,9 +371,8 @@ func updateIndexName(h http.HandlerFunc) http.HandlerFunc {
 		tenantId := ""
 
 		// Update the path
-		req.URL.Path = strings.Replace(req.URL.Path, indexPassed, util.AppendTenantID(indexPassed, tenantId), -1)
-
-		// TODO: Modify response to not return the updated index name for POST/DELETE methods
+		indexWithTenant := util.AppendTenantID(indexPassed, tenantId)
+		req.URL.Path = strings.Replace(req.URL.Path, indexPassed, indexWithTenant, -1)
 
 		// If method is POST/DELETE, we need to update the tenant index cache
 		if req.Method == http.MethodDelete {
@@ -383,5 +382,25 @@ func updateIndexName(h http.HandlerFunc) http.HandlerFunc {
 			// Add the new entry in the cache
 			SetIndexToCache(tenantId, indexPassed)
 		}
+
+		// Serve using response recorder to capture the response
+		//
+		// We are doing this because we want to modify the outgoing response with
+		// the name of the index that was passed instead of the one that
+		// has the tenantId appended to it.
+		respRecorder := httptest.NewRecorder()
+		h(respRecorder, req)
+		// Copy the response to writer
+		for k, v := range respRecorder.Header() {
+			w.Header()[k] = v
+		}
+		w.WriteHeader(respRecorder.Code)
+
+		// Before writing the response, replace the index name to the one
+		// that the user passed
+		responseFromES := respRecorder.Body.Bytes()
+		modifiedResponse := strings.Replace(string(responseFromES), indexWithTenant, indexPassed, -1)
+
+		w.Write([]byte(modifiedResponse))
 	}
 }
