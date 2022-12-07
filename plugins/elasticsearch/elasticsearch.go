@@ -16,13 +16,13 @@ const (
 )
 
 var (
-	singleton      *elasticsearch
-	once           sync.Once
-	systemESClient *es7.Client
+	singleton *elasticsearch
+	once      sync.Once
 )
 
 type elasticsearch struct {
-	specs []api
+	specs          []api
+	systemESClient *es7.Client
 }
 
 func Instance() *elasticsearch {
@@ -37,13 +37,13 @@ func (es *elasticsearch) Name() string {
 func (es *elasticsearch) InitFunc(mw []middleware.Middleware) error {
 	// Init the system ES client
 	var clientErr error
-	systemESClient, clientErr = initSystemESClient()
+	es.systemESClient, clientErr = initSystemESClient()
 	if clientErr != nil {
 		return clientErr
 	}
 
 	// Cache the indexes for the tenants
-	indexCacheErr := CacheIndexesForTenants(systemESClient, context.Background())
+	indexCacheErr := CacheIndexesForTenants(es.systemESClient, context.Background())
 	if indexCacheErr != nil {
 		return indexCacheErr
 	}

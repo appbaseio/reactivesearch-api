@@ -17,6 +17,7 @@ import (
 
 	"github.com/appbaseio/reactivesearch-api/model/acl"
 	"github.com/appbaseio/reactivesearch-api/model/category"
+	"github.com/appbaseio/reactivesearch-api/model/domain"
 	"github.com/appbaseio/reactivesearch-api/model/op"
 	"github.com/appbaseio/reactivesearch-api/plugins/telemetry"
 	"github.com/appbaseio/reactivesearch-api/util"
@@ -81,13 +82,42 @@ func (es *elasticsearch) handler() http.HandlerFunc {
 			Headers: headers,
 		}
 
+		// Get the client ready for the request
+		//
+		// If the request is for a multi-tenant setup and the backend
+		// is `system`, we need to use the system client to make the call.
+		var esClient *es7.Client
+		if util.IsSLSDisabled() || !util.MultiTenant {
+			esClient = util.GetClient7()
+		} else {
+			// Check the backend and accordingly determine the client.
+			domain, domainFetchErr := domain.FromContext(r.Context())
+			if domainFetchErr != nil {
+				errMsg := fmt.Sprintf("error while fetching domain info from context: %s", domainFetchErr.Error())
+				log.Warnln(logTag, ": ", errMsg)
+				telemetry.WriteBackErrorWithTelemetry(r, w, errMsg, http.StatusInternalServerError)
+				return
+			}
+
+			backend := util.GetBackendByDomain(domain.Raw)
+			if *backend == util.System {
+				esClient = es.systemESClient
+			}
+
+			// If backend is not `system`, this route can be called for an ES
+			// backend only.
+			//
+			// We will have to fetch the ES_URL value from global vars and create
+			// a simple client using that.
+		}
+
 		// convert body to string string as oliver Perform request can accept io.Reader, String, interface
 		body, err := ioutil.ReadAll(r.Body)
 		if len(body) > 0 {
 			requestOptions.Body = string(body)
 		}
 		start := time.Now()
-		response, err := util.GetClient7().PerformRequest(ctx, requestOptions)
+		response, err := esClient.PerformRequest(ctx, requestOptions)
 		log.Println(fmt.Sprintf("TIME TAKEN BY ES: %dms", time.Since(start).Milliseconds()))
 		if err != nil {
 			log.Errorln(logTag, ": error while sending request :", r.URL.Path, err)
