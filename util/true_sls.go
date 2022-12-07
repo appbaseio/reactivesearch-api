@@ -54,6 +54,15 @@ func GetSLSInstanceByDomain(domain string) *slsInstanceDetails {
 	return nil
 }
 
+// GetTenantForDomain will get the tenantID for the passed domain
+func GetTenantForDomain(domain string) string {
+	instanceDetails := GetSLSInstanceByDomain(domain)
+	if instanceDetails == nil {
+		return ""
+	}
+	return ""
+}
+
 func UpdateSLSInstances() {
 	url := ACCAPI + "sls/instances"
 	req, _ := http.NewRequest(http.MethodGet, url, nil)

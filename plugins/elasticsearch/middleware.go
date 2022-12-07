@@ -406,7 +406,7 @@ func (wh *WhitelistedRoute) UpdateIndexName(h http.HandlerFunc) http.HandlerFunc
 		reqVars := mux.Vars(req)
 		indexPassed := reqVars["index"]
 
-		tenantId := util.GetDomainMap().GetTenantForDomain(domainUsed.Raw)
+		tenantId := util.GetTenantForDomain(domainUsed.Raw)
 		if tenantId == "" {
 			telemetry.WriteBackErrorWithTelemetry(req, w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
 			return

@@ -32,9 +32,9 @@ func GetBackend() *Backend {
 func GetBackendByDomain(domain string) *Backend {
 	// Get the instance details
 	slsInstanceDetails := GetSLSInstanceByDomain(domain)
-	if slsInstanceDetails.Backend == nil {
+	if slsInstanceDetails == nil || slsInstanceDetails.Backend == nil {
 		defaultBackend := System
-		slsInstanceDetails.Backend = &defaultBackend
+		return &defaultBackend
 	}
 
 	return slsInstanceDetails.Backend
