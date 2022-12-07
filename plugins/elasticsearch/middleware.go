@@ -357,3 +357,28 @@ func intercept(h http.HandlerFunc) http.HandlerFunc {
 		util.WriteBackRaw(w, body, result.StatusCode)
 	}
 }
+
+// updateIndexName will update the index name by appending
+// the tenantId to the name of the index for create/delete
+// index routes.
+func updateIndexName(h http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, req *http.Request) {
+		// Access the vars to fetch the name of the index
+		reqVars := mux.Vars(req)
+		indexPassed := reqVars["index"]
+
+		// TODO: Fetch the tenant ID using the domain
+		tenantId := ""
+
+		// Update the path
+		req.URL.Path = strings.Replace(req.URL.Path, indexPassed, util.AppendTenantID(indexPassed, tenantId), -1)
+
+		// If method is POST/DELETE, we need to update the tenant index cache
+		if req.Method == http.MethodDelete {
+			// Remove the entry from the cache
+		} else if req.Method == http.MethodPost {
+			// Add the new entry in the cache
+			SetIndexToCache(tenantId, indexPassed)
+		}
+	}
+}

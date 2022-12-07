@@ -70,6 +70,13 @@ func (es *elasticsearch) preprocess(mw []middleware.Middleware) error {
 			if path == "/" {
 				continue
 			}
+
+			// If the route it to fetch/create/delete index, we
+			// need to add a middleware to append tenantId there
+			if api.name == "indices.create" || api.name == "indices.delete" || api.name == "indices.get" {
+				mw = append(mw, updateIndexName)
+			}
+
 			r := plugins.Route{
 				Name:        api.name,
 				Methods:     api.spec.Methods,
