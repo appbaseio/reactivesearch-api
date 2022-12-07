@@ -26,17 +26,23 @@ func validateElasticsearch(h http.HandlerFunc) http.HandlerFunc {
 
 		// Else, if backend is `elasticsearch` or `system`, we can allow
 		// access else deny.
-		// Fetch the domain from context
-		domainUsed, domainFetchErr := domain.FromContext(req.Context())
-		if domainFetchErr != nil {
-			errMsg := "Error while validating the domain!"
-			log.Warnln(logTag, ": ", errMsg)
-			telemetry.WriteBackErrorWithTelemetry(req, w, errMsg, http.StatusUnauthorized)
-			return
-		}
 
 		// Fetch the backed using the domain
-		backend := util.GetBackendByDomain(domainUsed.Raw)
+		var backend *util.Backend
+		if util.MultiTenant {
+			// Fetch the domain from context
+			domainUsed, domainFetchErr := domain.FromContext(req.Context())
+			if domainFetchErr != nil {
+				errMsg := "Error while validating the domain!"
+				log.Warnln(logTag, ": ", errMsg)
+				telemetry.WriteBackErrorWithTelemetry(req, w, errMsg, http.StatusUnauthorized)
+				return
+			}
+
+			backend = util.GetBackendByDomain(domainUsed.Raw)
+		} else {
+			backend = util.GetBackend()
+		}
 
 		if *backend != util.ElasticSearch && *backend != util.OpenSearch && *backend != util.System {
 			util.WriteBackRaw(w, nil, http.StatusNotFound)
