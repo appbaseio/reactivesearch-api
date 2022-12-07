@@ -27,6 +27,19 @@ func GetBackend() *Backend {
 	return backend
 }
 
+// GetBackendByDomain will get the backend based on the
+// passed domain
+func GetBackendByDomain(domain string) *Backend {
+	// Get the instance details
+	slsInstanceDetails := GetSLSInstanceByDomain(domain)
+	if slsInstanceDetails.Backend == nil {
+		defaultBackend := System
+		slsInstanceDetails.Backend = &defaultBackend
+	}
+
+	return slsInstanceDetails.Backend
+}
+
 // IsExternalESRequired will indicate whether or
 // not external ES is required.
 //

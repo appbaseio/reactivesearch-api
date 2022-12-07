@@ -39,7 +39,7 @@ type slsInstanceDetails struct {
 	FeaturePipelines        bool                   `json:"feature_pipelines"`
 	FeatureUIBuilderPremium bool                   `json:"feature_uibuilder_premium"`
 	NumberOfMachines        int64                  `json:"number_of_machines"`
-	Backend                 string                 `json:"backend"`
+	Backend                 *Backend               `json:"backend,omitempty"`
 	CustomerID              string                 `json:"customer_id"`
 }
 
