@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"net/http/httptest"
 	"strconv"
 	"strings"
 	"sync"
@@ -411,6 +412,46 @@ func StoreIndexValuesForMsearch(h http.HandlerFunc) http.HandlerFunc {
 			return
 		}
 
+		// Fetch the tenantID using the domain name
+		tenantID := util.GetTenantForDomain(domainUsed.Raw)
+
 		// Finally, if it is `system`, we need to change the index names
+		//
+		// We need to consider a situation where the `index` value might
+		// have commas in it.
+		indexSplitted := strings.Split(index, ",")
+		updatedIndexNames := make([]string, 0)
+
+		for _, originalIndexName := range indexSplitted {
+			// Append tenantID to the index name
+			updatedIndexNames = append(updatedIndexNames, util.AppendTenantID(originalIndexName, tenantID))
+		}
+
+		// Set the index names in ctx now
+		updatedIndex := strings.Join(updatedIndexNames, ",")
+		updatedCtx := NewIndexMsearchContext(req.Context(), updatedIndex)
+		req = req.WithContext(updatedCtx)
+
+		// Intercept the response and modify it to remove tenantID in index names
+		respRecorder := httptest.NewRecorder()
+		h(respRecorder, req)
+		// Copy the response to writer
+		for k, v := range respRecorder.Header() {
+			w.Header()[k] = v
+		}
+		w.WriteHeader(respRecorder.Code)
+
+		// Before writing the response, replace the index name to the one
+		// that the user passed
+		responseFromES := respRecorder.Body.Bytes()
+
+		// Replace all the possible entries
+		for _, updatedIndexName := range updatedIndexNames {
+			// Remove the tenant ID
+			removedIndexName, _ := util.RemoveTenantID(updatedIndexName)
+			responseFromES = []byte(strings.Replace(string(responseFromES), updatedIndexName, removedIndexName, -1))
+		}
+
+		w.Write([]byte(responseFromES))
 	}
 }
