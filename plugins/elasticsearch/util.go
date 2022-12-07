@@ -1,6 +1,7 @@
 package elasticsearch
 
 import (
+	"context"
 	"fmt"
 	"os"
 
@@ -50,4 +51,30 @@ func initSystemESClient() (*es7.Client, error) {
 	}
 
 	return client7, nil
+}
+
+// CacheIndexesForTenants will fetch all the indexes from the system
+// ES and then filter them into different tenants and accordingly
+// cache them into the cache map
+//
+// This function will only execute if SLS is enabled and Multi-Tenant
+// is enabled
+func CacheIndexesForTenants(systemESClient *es7.Client, ctx context.Context) error {
+	if util.IsSLSDisabled() || !util.MultiTenant {
+		return nil
+	}
+
+	// Make a _cat/indices call to get all the indexes for the tenant
+	indices, indicesFetchErr := systemESClient.CatIndices().Do(ctx)
+	if indicesFetchErr != nil {
+		return indicesFetchErr
+	}
+
+	for _, index := range indices {
+		// Use the name of the index to extract the tenant_id and then
+		// cache it accordingly.
+		indexName := index.Index
+	}
+
+	return nil
 }
