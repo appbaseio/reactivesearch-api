@@ -12,6 +12,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/appbaseio/reactivesearch-api/model/domain"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -195,10 +196,10 @@ func ValidateArcID(statusCode int) {
 	}
 }
 
-func validateTimeValidity() bool {
-	if GetTimeValidity() > 0 { // Valid plan
+func validateTimeValidity(timeValidity int64) bool {
+	if timeValidity > 0 { // Valid plan
 		return true
-	} else if GetTimeValidity() <= 0 && -GetTimeValidity() < 3600*maxErrorTime { // Negative validity, plan has been expired
+	} else if timeValidity <= 0 && -timeValidity < 3600*maxErrorTime { // Negative validity, plan has been expired
 		// Print warning message if remaining time is less than max allowed time
 		log.Println("Warning: Payment is required. Arc will start sending out error messages in next", maxErrorTime, "hours")
 		return true
@@ -209,31 +210,62 @@ func validateTimeValidity() bool {
 // BillingMiddleware function to be called for each request
 func BillingMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		log.Infoln("current time validity value: ", GetTimeValidity())
-
-		if isInvalidArcIDUsed {
-			// throw invalid APPBASE_ID usage error
-			WriteBackError(w, "Please make sure that you're using a valid APPBASE_ID. If the issue persists please contact support@appbase.io with your APPBASE_ID or registered e-mail address.", http.StatusBadRequest)
-			return
-		}
-
-		// Check if routes are blacklisted
-		requestURI := r.RequestURI
-		for _, route := range BillingBlacklistedPaths() {
-			if strings.HasPrefix(requestURI, route) {
-				RecordUsageMiddleware(next).ServeHTTP(w, r)
+		if MultiTenant {
+			domainInfo, err := domain.FromContext(r.Context())
+			if err != nil {
+				log.Errorln("error while reading domain from context")
+				WriteBackError(w, "Please make sure that you're using a valid domain. If the issue persists please contact support@appbase.io with your domain or registered e-mail address.", http.StatusBadRequest)
 				return
 			}
-		}
-
-		// Routes are not blacklisted, verify the payment
-
-		if validateTimeValidity() {
-			RecordUsageMiddleware(next).ServeHTTP(w, r)
+			// Check if routes are blacklisted
+			requestURI := r.RequestURI
+			for _, route := range BillingBlacklistedPaths() {
+				if strings.HasPrefix(requestURI, route) {
+					RecordUsageMiddleware(next).ServeHTTP(w, r)
+					return
+				}
+			}
+			// Get instance details for domain
+			slsInstanceInfo := GetSLSInstanceByDomain(domainInfo.Raw)
+			if slsInstanceInfo == nil {
+				WriteBackError(w, "Please make sure that you're using a valid domain. If the issue persists please contact support@appbase.io with your domain or registered e-mail address.", http.StatusBadRequest)
+				return
+			}
+			log.Infoln("current time validity value: ", slsInstanceInfo.TimeValidity)
+			// Routes are not blacklisted, verify the payment
+			if validateTimeValidity(slsInstanceInfo.TimeValidity) {
+				RecordUsageMiddleware(next).ServeHTTP(w, r)
+			} else {
+				// Write an error and stop the handler chain
+				WriteBackError(w, "Payment required", http.StatusPaymentRequired)
+				return
+			}
 		} else {
-			// Write an error and stop the handler chain
-			WriteBackError(w, "Payment required", http.StatusPaymentRequired)
-			return
+			log.Infoln("current time validity value: ", GetTimeValidity())
+
+			if isInvalidArcIDUsed {
+				// throw invalid APPBASE_ID usage error
+				WriteBackError(w, "Please make sure that you're using a valid APPBASE_ID. If the issue persists please contact support@appbase.io with your APPBASE_ID or registered e-mail address.", http.StatusBadRequest)
+				return
+			}
+
+			// Check if routes are blacklisted
+			requestURI := r.RequestURI
+			for _, route := range BillingBlacklistedPaths() {
+				if strings.HasPrefix(requestURI, route) {
+					RecordUsageMiddleware(next).ServeHTTP(w, r)
+					return
+				}
+			}
+
+			// Routes are not blacklisted, verify the payment
+			if validateTimeValidity(GetTimeValidity()) {
+				RecordUsageMiddleware(next).ServeHTTP(w, r)
+			} else {
+				// Write an error and stop the handler chain
+				WriteBackError(w, "Payment required", http.StatusPaymentRequired)
+				return
+			}
 		}
 	})
 }

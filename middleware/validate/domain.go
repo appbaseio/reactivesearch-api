@@ -11,7 +11,6 @@ import (
 	"os"
 	"strings"
 
-	"github.com/appbaseio/reactivesearch-api/middleware"
 	"github.com/appbaseio/reactivesearch-api/model/domain"
 	"github.com/appbaseio/reactivesearch-api/plugins/telemetry"
 	"github.com/appbaseio/reactivesearch-api/util"
@@ -19,13 +18,8 @@ import (
 
 const testDomain = "reactivesearch.test.io"
 
-// Domain returns a middleware that validates the request domain and stores it.
-func Domain() middleware.Middleware {
-	return validateDomain
-}
-
-func validateDomain(h http.HandlerFunc) http.HandlerFunc {
-	return func(w http.ResponseWriter, req *http.Request) {
+func ValidateDomain(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		if util.MultiTenant {
 			domainName := req.Header.Get("X_REACTIVESEARCH_DOMAIN")
 			if util.IsDevelopmentEnv && strings.TrimSpace(domainName) == "" {
@@ -45,13 +39,16 @@ func validateDomain(h http.HandlerFunc) http.HandlerFunc {
 					return
 				}
 				encryptedDomain := fmt.Sprintf("%0x", ciphertext)
-				ctx := domain.NewContext(req.Context(), string(encryptedDomain))
-				h(w, req.WithContext(ctx))
+				ctx := domain.NewContext(req.Context(), domain.DomainInfo{
+					Encrypted: string(encryptedDomain),
+					Raw:       domainName,
+				})
+				next.ServeHTTP(w, req.WithContext(ctx))
 				return
 			}
 		}
-		h(w, req)
-	}
+		next.ServeHTTP(w, req)
+	})
 }
 
 func Encrypt(key, text []byte) ([]byte, error) {

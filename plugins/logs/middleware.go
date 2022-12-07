@@ -50,7 +50,7 @@ func (c *chain) Wrap(h http.HandlerFunc) http.HandlerFunc {
 
 func list() []middleware.Middleware {
 	return []middleware.Middleware{
-		validate.Domain(),
+
 		classifyCategory,
 		classify.Op(),
 		classify.Indices(),

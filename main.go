@@ -24,6 +24,7 @@ import (
 	"time"
 
 	"github.com/appbaseio/reactivesearch-api/middleware"
+	"github.com/appbaseio/reactivesearch-api/middleware/validate"
 	"github.com/appbaseio/reactivesearch-api/model/requestlogs"
 	"github.com/appbaseio/reactivesearch-api/plugins"
 	"github.com/appbaseio/reactivesearch-api/plugins/nodes"
@@ -385,38 +386,54 @@ func main() {
 			mainRouter.Use(util.BillingMiddlewareOffline)
 		}
 	} else {
-		if Billing == "true" {
-			log.Println("You're running ReactiveSearch with billing module enabled.")
-			util.ReportUsage()
+		if util.MultiTenant {
+			// Maintain SLS instance details
+			log.Println("You're running ReactiveSearch with SLS multi-tenancy enabled.")
+			util.UpdateSLSInstances()
 			cronJob := cron.New()
-			cronJob.AddFunc(interval, util.ReportUsage)
+			cronJob.AddFunc("@every 60s", util.UpdateSLSInstances)
 			cronJob.Start()
+			// Use validate domain middleware, it creates a context with domain
+			mainRouter.Use(validate.ValidateDomain)
 			if IgnoreBillingMiddleware != "true" {
 				mainRouter.Use(util.BillingMiddleware)
 			}
-		} else if HostedBilling == "true" {
-			log.Println("You're running ReactiveSearch with hosted billing module enabled.")
-			util.ReportHostedArcUsage()
-			cronJob := cron.New()
-			cronJob.AddFunc(interval, util.ReportHostedArcUsage)
-			cronJob.Start()
-			if IgnoreBillingMiddleware != "true" {
-				mainRouter.Use(util.BillingMiddleware)
-			}
-		} else if ClusterBilling == "true" {
-			log.Println("You're running ReactiveSearch with cluster billing module enabled.")
-			util.SetClusterPlan()
-			// refresh plan
-			cronJob := cron.New()
-			cronJob.AddFunc(interval, util.SetClusterPlan)
-			cronJob.Start()
-			if IgnoreBillingMiddleware != "true" {
-				mainRouter.Use(util.BillingMiddleware)
-			}
-		} else {
-			util.SetDefaultTier()
+			// TODO: Set default backend as system
 			util.SetDefaultBackend()
-			log.Println("You're running ReactiveSearch with billing module disabled.")
+		} else {
+			if Billing == "true" {
+				log.Println("You're running ReactiveSearch with billing module enabled.")
+				util.ReportUsage()
+				cronJob := cron.New()
+				cronJob.AddFunc(interval, util.ReportUsage)
+				cronJob.Start()
+				if IgnoreBillingMiddleware != "true" {
+					mainRouter.Use(util.BillingMiddleware)
+				}
+			} else if HostedBilling == "true" {
+				log.Println("You're running ReactiveSearch with hosted billing module enabled.")
+				util.ReportHostedArcUsage()
+				cronJob := cron.New()
+				cronJob.AddFunc(interval, util.ReportHostedArcUsage)
+				cronJob.Start()
+				if IgnoreBillingMiddleware != "true" {
+					mainRouter.Use(util.BillingMiddleware)
+				}
+			} else if ClusterBilling == "true" {
+				log.Println("You're running ReactiveSearch with cluster billing module enabled.")
+				util.SetClusterPlan()
+				// refresh plan
+				cronJob := cron.New()
+				cronJob.AddFunc(interval, util.SetClusterPlan)
+				cronJob.Start()
+				if IgnoreBillingMiddleware != "true" {
+					mainRouter.Use(util.BillingMiddleware)
+				}
+			} else {
+				util.SetDefaultTier()
+				util.SetDefaultBackend()
+				log.Println("You're running ReactiveSearch with billing module disabled.")
+			}
 		}
 	}
 
