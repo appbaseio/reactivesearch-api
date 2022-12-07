@@ -373,9 +373,12 @@ func updateIndexName(h http.HandlerFunc) http.HandlerFunc {
 		// Update the path
 		req.URL.Path = strings.Replace(req.URL.Path, indexPassed, util.AppendTenantID(indexPassed, tenantId), -1)
 
+		// TODO: Modify response to not return the updated index name for POST/DELETE methods
+
 		// If method is POST/DELETE, we need to update the tenant index cache
 		if req.Method == http.MethodDelete {
 			// Remove the entry from the cache
+			DeleteIndexFromCache(tenantId, indexPassed)
 		} else if req.Method == http.MethodPost {
 			// Add the new entry in the cache
 			SetIndexToCache(tenantId, indexPassed)
