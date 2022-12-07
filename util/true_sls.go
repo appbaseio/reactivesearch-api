@@ -61,7 +61,7 @@ func GetTenantForDomain(domain string) string {
 	if instanceDetails == nil {
 		return ""
 	}
-	return ""
+	return instanceDetails.TenantID
 }
 
 func UpdateSLSInstances() {
