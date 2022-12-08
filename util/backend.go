@@ -45,10 +45,15 @@ func GetBackendByDomain(domain string) *Backend {
 //
 // This will be true if backend is either ES or OS
 func IsExternalESRequired() bool {
-	if backend == nil {
-		return false
+	if !MultiTenant {
+		if backend == nil {
+			return false
+		}
+		return backend.String() == ElasticSearch.String() || backend.String() == OpenSearch.String()
 	}
-	return backend.String() == ElasticSearch.String() || backend.String() == OpenSearch.String()
+
+	// If it is multi-tenant, we want it to be initialized every time.
+	return true
 }
 
 // Backend will be the backend to be used for the knn

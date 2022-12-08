@@ -11,3 +11,5 @@ tags
 config
 log
 telemetrylog
+
+config/manual.local.env

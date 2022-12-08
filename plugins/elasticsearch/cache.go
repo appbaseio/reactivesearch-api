@@ -4,7 +4,7 @@ package elasticsearch
 //
 // The name of the index will be stored without the `tenant_id`
 // appended in it.
-var tenantToIndexMap map[string][]string
+var tenantToIndexMap map[string][]string = make(map[string][]string)
 
 // SetIndexToCache will set the index into the cache map
 func SetIndexToCache(tenantID string, index string) {
