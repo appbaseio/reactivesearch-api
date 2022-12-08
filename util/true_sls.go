@@ -1,6 +1,7 @@
 package util
 
 import (
+	"context"
 	"encoding/json"
 	"io/ioutil"
 	"net/http"
@@ -89,67 +90,69 @@ func UpdateSLSInstances() {
 	defer res.Body.Close()
 }
 
-func SearchServiceWithAuth(s *es7.SearchService, req *http.Request) *es7.SearchService {
+func SearchServiceWithAuth(s *es7.SearchService, ctx context.Context) *es7.SearchService {
 	if MultiTenant {
-		if req != nil {
-			domainInfo, err := domain.FromContext(req.Context())
+		if ctx == nil || ctx == context.Background() {
+			// user master creds if context is nil
+			s.Header("X-REACTIVESEARCH-TOKEN", os.Getenv("REACTIVESEARCH_AUTH_TOKEN"))
+		} else {
+			domainInfo, err := domain.FromContext(ctx)
 			if err != nil {
 				log.Errorln("error while reading domain from context")
 			} else {
 				s.Header("X-REACTIVESEARCH-DOMAIN", domainInfo.Encrypted)
 			}
-		} else {
-			s.Header("X-REACTIVESEARCH-TOKEN", os.Getenv("REACTIVESEARCH_AUTH_TOKEN"))
 		}
 	}
 	return s
 }
 
-func IndexServiceWithAuth(s *es7.IndexService, req *http.Request) *es7.IndexService {
+func IndexServiceWithAuth(s *es7.IndexService, ctx context.Context) *es7.IndexService {
 	if MultiTenant {
-		if req != nil {
-			domainInfo, err := domain.FromContext(req.Context())
+		if ctx == nil || ctx == context.Background() {
+			// user master creds if context is nil
+			s.Header("X-REACTIVESEARCH-TOKEN", os.Getenv("REACTIVESEARCH_AUTH_TOKEN"))
+		} else {
+			domainInfo, err := domain.FromContext(ctx)
 			if err != nil {
 				log.Errorln("error while reading domain from context")
 			} else {
 				s.Header("X-REACTIVESEARCH-DOMAIN", domainInfo.Encrypted)
 			}
-		} else {
-			// Use master creds for internal sync cache requests
-			s.Header("X-REACTIVESEARCH-TOKEN", os.Getenv("REACTIVESEARCH_AUTH_TOKEN"))
 		}
 	}
 	return s
 }
 
-func UpdateServiceWithAuth(s *es7.UpdateService, req *http.Request) *es7.UpdateService {
+func UpdateServiceWithAuth(s *es7.UpdateService, ctx context.Context) *es7.UpdateService {
 	if MultiTenant {
-		if req != nil {
-			domainInfo, err := domain.FromContext(req.Context())
+		if ctx == nil || ctx == context.Background() {
+			// user master creds if context is nil
+			s.Header("X-REACTIVESEARCH-TOKEN", os.Getenv("REACTIVESEARCH_AUTH_TOKEN"))
+		} else {
+			domainInfo, err := domain.FromContext(ctx)
 			if err != nil {
 				log.Errorln("error while reading domain from context")
 			} else {
 				s.Header("X-REACTIVESEARCH-DOMAIN", domainInfo.Encrypted)
 			}
-		} else {
-			// Use master creds for internal sync cache requests
-			s.Header("X-REACTIVESEARCH-TOKEN", os.Getenv("REACTIVESEARCH_AUTH_TOKEN"))
 		}
 	}
 	return s
 }
 
-func DeleteServiceWithAuth(s *es7.DeleteService, req *http.Request) *es7.DeleteService {
+func DeleteServiceWithAuth(s *es7.DeleteService, ctx context.Context) *es7.DeleteService {
 	if MultiTenant {
-		if req != nil {
-			domainInfo, err := domain.FromContext(req.Context())
+		if ctx == nil || ctx == context.Background() {
+			// user master creds if context is nil
+			s.Header("X-REACTIVESEARCH-TOKEN", os.Getenv("REACTIVESEARCH_AUTH_TOKEN"))
+		} else {
+			domainInfo, err := domain.FromContext(ctx)
 			if err != nil {
 				log.Errorln("error while reading domain from context")
 			} else {
 				s.Header("X-REACTIVESEARCH-DOMAIN", domainInfo.Encrypted)
 			}
-		} else {
-			s.Header("X-REACTIVESEARCH-TOKEN", os.Getenv("REACTIVESEARCH_AUTH_TOKEN"))
 		}
 	}
 	return s

@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"net/http"
 	"os"
 
 	es7 "github.com/olivere/elastic/v7"
@@ -69,13 +68,13 @@ func (es *elasticsearch) createIndex(indexName, mapping string) (bool, error) {
 }
 
 // Create or update the public key
-func (es *elasticsearch) savePublicKey(ctx context.Context, req *http.Request, indexName string, record publicKey) (interface{}, error) {
+func (es *elasticsearch) savePublicKey(ctx context.Context, indexName string, record publicKey) (interface{}, error) {
 
 	_, err := util.IndexServiceWithAuth(util.GetInternalClient7().
 		Index().
 		Index(indexName).
 		BodyJson(record).
-		Id(publicKeyDocID), req).Do(ctx)
+		Id(publicKeyDocID), ctx).Do(ctx)
 
 	if err != nil {
 		log.Errorln(logTag, ": error indexing public key record", err)
@@ -86,24 +85,24 @@ func (es *elasticsearch) savePublicKey(ctx context.Context, req *http.Request, i
 }
 
 // Get the public key
-func (es *elasticsearch) getPublicKey(ctx context.Context, req *http.Request) (publicKey, error) {
+func (es *elasticsearch) getPublicKey(ctx context.Context) (publicKey, error) {
 	publicKeyIndex := os.Getenv(envPublicKeyEsIndex)
 	if publicKeyIndex == "" {
 		publicKeyIndex = defaultPublicKeyEsIndex
 	}
-	return es.getPublicKeyEs7(ctx, req, publicKeyIndex, publicKeyDocID)
+	return es.getPublicKeyEs7(ctx, publicKeyIndex, publicKeyDocID)
 }
 
-func (es *elasticsearch) getCredential(ctx context.Context, req *http.Request, username string) (credential.AuthCredential, error) {
-	return es.getCredentialEs7(ctx, req, username)
+func (es *elasticsearch) getCredential(ctx context.Context, username string) (credential.AuthCredential, error) {
+	return es.getCredentialEs7(ctx, username)
 }
 
-func (es *elasticsearch) putUser(ctx context.Context, req *http.Request, u user.User) (bool, error) {
+func (es *elasticsearch) putUser(ctx context.Context, u user.User) (bool, error) {
 	_, err := util.IndexServiceWithAuth(util.GetInternalClient7().Index().
 		Index(es.userIndex).
 		Type(es.userType).
 		Id(u.Username).
-		BodyJson(u), req).Do(ctx)
+		BodyJson(u), ctx).Do(ctx)
 
 	if err != nil {
 		return false, err
@@ -112,8 +111,8 @@ func (es *elasticsearch) putUser(ctx context.Context, req *http.Request, u user.
 	return true, nil
 }
 
-func (es *elasticsearch) getUser(ctx context.Context, req *http.Request, username string) (*user.User, error) {
-	data, err := es.getRawUser(ctx, req, username)
+func (es *elasticsearch) getUser(ctx context.Context, username string) (*user.User, error) {
+	data, err := es.getRawUser(ctx, username)
 	if err != nil {
 		return nil, err
 	}
@@ -125,12 +124,12 @@ func (es *elasticsearch) getUser(ctx context.Context, req *http.Request, usernam
 	return &u, nil
 }
 
-func (es *elasticsearch) getRawUser(ctx context.Context, req *http.Request, username string) ([]byte, error) {
+func (es *elasticsearch) getRawUser(ctx context.Context, username string) ([]byte, error) {
 	searchQuery := es7.NewTermQuery("_id", username)
 	response, err := util.SearchServiceWithAuth(util.GetInternalClient7().Search().
 		Index(es.userIndex).
 		Type(es.userType).
-		FetchSource(true).Query(searchQuery), req).Do(ctx)
+		FetchSource(true).Query(searchQuery), ctx).Do(ctx)
 
 	if err != nil {
 		return nil, err
@@ -150,13 +149,13 @@ func (es *elasticsearch) getRawUser(ctx context.Context, req *http.Request, user
 	return src, nil
 }
 
-func (es *elasticsearch) putPermission(ctx context.Context, req *http.Request, p permission.Permission) (bool, error) {
+func (es *elasticsearch) putPermission(ctx context.Context, p permission.Permission) (bool, error) {
 
 	_, err := util.IndexServiceWithAuth(util.GetInternalClient7().Index().
 		Index(es.permissionIndex).
 		Type(es.permissionType).
 		Id(p.Username).
-		BodyJson(p), req).Do(ctx)
+		BodyJson(p), ctx).Do(ctx)
 
 	if err != nil {
 		return false, err
@@ -165,8 +164,8 @@ func (es *elasticsearch) putPermission(ctx context.Context, req *http.Request, p
 	return true, nil
 }
 
-func (es *elasticsearch) getPermission(ctx context.Context, req *http.Request, username string) (*permission.Permission, error) {
-	data, err := es.getRawPermission(ctx, req, username)
+func (es *elasticsearch) getPermission(ctx context.Context, username string) (*permission.Permission, error) {
+	data, err := es.getRawPermission(ctx, username)
 	if err != nil {
 		return nil, err
 	}
@@ -180,14 +179,14 @@ func (es *elasticsearch) getPermission(ctx context.Context, req *http.Request, u
 	return &p, nil
 }
 
-func (es *elasticsearch) getRawPermission(ctx context.Context, req *http.Request, username string) ([]byte, error) {
+func (es *elasticsearch) getRawPermission(ctx context.Context, username string) ([]byte, error) {
 
 	searchQuery := es7.NewTermQuery("_id", username)
 	response, err := util.SearchServiceWithAuth(util.GetInternalClient7().Search().
 		Index(es.permissionIndex).
 		Type(es.permissionType).
 		FetchSource(true).
-		Query(searchQuery), req).Do(ctx)
+		Query(searchQuery), ctx).Do(ctx)
 
 	if err != nil {
 		return nil, err
@@ -207,8 +206,8 @@ func (es *elasticsearch) getRawPermission(ctx context.Context, req *http.Request
 	return src, nil
 }
 
-func (es *elasticsearch) getRolePermission(ctx context.Context, req *http.Request, role string) (*permission.Permission, error) {
-	data, err := es.getRawRolePermission(ctx, req, role)
+func (es *elasticsearch) getRolePermission(ctx context.Context, role string) (*permission.Permission, error) {
+	data, err := es.getRawRolePermission(ctx, role)
 	if err != nil {
 		return nil, err
 	}
@@ -222,6 +221,6 @@ func (es *elasticsearch) getRolePermission(ctx context.Context, req *http.Reques
 	return &p, nil
 }
 
-func (es *elasticsearch) getRawRolePermission(ctx context.Context, req *http.Request, role string) ([]byte, error) {
-	return es.getRawRolePermissionEs7(ctx, req, role)
+func (es *elasticsearch) getRawRolePermission(ctx context.Context, role string) ([]byte, error) {
+	return es.getRawRolePermissionEs7(ctx, role)
 }

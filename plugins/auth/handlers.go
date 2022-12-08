@@ -23,7 +23,7 @@ func (a *Auth) savePublicKey(ctx context.Context, req *http.Request, indexName s
 	}
 
 	// Update es index
-	_, err := a.es.savePublicKey(ctx, req, indexName, record)
+	_, err := a.es.savePublicKey(ctx, indexName, record)
 	if err != nil {
 		log.Errorln(logTag, ": error indexing public key record", logTag)
 		return false, err
@@ -34,7 +34,7 @@ func (a *Auth) savePublicKey(ctx context.Context, req *http.Request, indexName s
 
 func (a *Auth) getPublicKey() http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
-		record, _ := a.es.getPublicKey(req.Context(), req)
+		record, _ := a.es.getPublicKey(req.Context())
 		rawPermission, err := json.Marshal(record)
 		if err != nil {
 			msg := "public key record not found"

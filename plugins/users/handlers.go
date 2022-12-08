@@ -9,8 +9,10 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
+	"github.com/appbaseio/reactivesearch-api/model/domain"
 	"github.com/appbaseio/reactivesearch-api/model/user"
 	"github.com/appbaseio/reactivesearch-api/plugins/auth"
+	"github.com/appbaseio/reactivesearch-api/plugins/telemetry"
 	"github.com/appbaseio/reactivesearch-api/util"
 	"github.com/gorilla/mux"
 	"golang.org/x/crypto/bcrypt"
@@ -35,7 +37,7 @@ func (u *Users) getUser() http.HandlerFunc {
 		}
 
 		// fetch the user from elasticsearch
-		rawUser, err := u.es.getRawUser(req.Context(), req, username)
+		rawUser, err := u.es.getRawUser(req.Context(), username)
 		if err != nil {
 			msg := fmt.Sprintf(`user with "username"="%s" not found`, username)
 			log.Errorln(logTag, ":", msg, ":", err)
@@ -56,7 +58,7 @@ func (u *Users) getUserWithUsername() http.HandlerFunc {
 			return
 		}
 
-		rawUser, err := u.es.getRawUser(req.Context(), req, username)
+		rawUser, err := u.es.getRawUser(req.Context(), username)
 		if err != nil {
 			msg := fmt.Sprintf(`user with "username"="%s" not found`, username)
 			log.Errorln(logTag, ":", msg, ":", err)
@@ -155,7 +157,7 @@ func (u *Users) postUser() http.HandlerFunc {
 			return
 		}
 
-		ok, err := u.es.postUser(req.Context(), req, *newUser)
+		ok, err := u.es.postUser(req.Context(), *newUser)
 		if ok && err == nil {
 			// Subscribe to down time alerts
 			if newUser.HasAction(user.DowntimeAlerts) {
@@ -176,13 +178,18 @@ func (u *Users) postUser() http.HandlerFunc {
 
 func (u *Users) patchUser() http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
+		tenantInfo, err := domain.FromContext(req.Context())
+		if err != nil {
+			log.Errorln("error while reading domain from context")
+			telemetry.WriteBackErrorWithTelemetry(req, w, "Please make sure that you're using a tenant Id. If the issue persists please contact support@appbase.io with your domain or registered e-mail address.", http.StatusBadRequest)
+			return
+		}
 		username, _, _ := req.BasicAuth()
-
 		// To decide whether to just update the local state
 		isLocal := req.URL.Query().Get("local")
 		if isLocal == "true" {
 			// clear user details locally
-			auth.ClearLocalUser(username)
+			auth.ClearLocalUser(tenantInfo.Raw, username)
 			util.WriteBackMessage(w, "User is updated successfully", http.StatusOK)
 			return
 		}
@@ -226,7 +233,7 @@ func (u *Users) patchUser() http.HandlerFunc {
 		// Set the updated_at field
 		patch["updated_at"] = time.Now().Format(time.RFC3339)
 
-		_, err2 := u.es.patchUser(req.Context(), req, username, patch)
+		_, err2 := u.es.patchUser(req.Context(), username, patch)
 		if err2 == nil {
 			// Only update local state when proxy API has not been called
 			// If proxy API would get called then it would automatically update the
@@ -258,7 +265,7 @@ func (u *Users) patchUser() http.HandlerFunc {
 				}
 			} else {
 				// clear user details locally
-				auth.ClearLocalUser(username)
+				auth.ClearLocalUser(tenantInfo.Raw, username)
 			}
 			// Subscribe to down time alerts
 			if patch["allowed_actions"] != nil {
@@ -295,6 +302,12 @@ func (u *Users) patchUser() http.HandlerFunc {
 
 func (u *Users) patchUserWithUsername() http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
+		tenantInfo, err := domain.FromContext(req.Context())
+		if err != nil {
+			log.Errorln("error while reading domain from context")
+			telemetry.WriteBackErrorWithTelemetry(req, w, "Please make sure that you're using a tenant Id. If the issue persists please contact support@appbase.io with your domain or registered e-mail address.", http.StatusBadRequest)
+			return
+		}
 		vars := mux.Vars(req)
 		username, ok := vars["username"]
 		if !ok {
@@ -305,7 +318,7 @@ func (u *Users) patchUserWithUsername() http.HandlerFunc {
 		isLocal := req.URL.Query().Get("local")
 		if isLocal == "true" {
 			// clear user details locally
-			auth.ClearLocalUser(username)
+			auth.ClearLocalUser(username, tenantInfo.Raw)
 			util.WriteBackMessage(w, "User is updated successfully", http.StatusOK)
 			return
 		}
@@ -349,7 +362,7 @@ func (u *Users) patchUserWithUsername() http.HandlerFunc {
 		// Set the updated_at
 		patch["updated_at"] = time.Now().Format(time.RFC3339)
 
-		_, err2 := u.es.patchUser(req.Context(), req, username, patch)
+		_, err2 := u.es.patchUser(req.Context(), username, patch)
 		if err2 == nil {
 			// Only update local state when proxy API has not been called
 			// If proxy API would get called then it would automatically update the
@@ -381,7 +394,7 @@ func (u *Users) patchUserWithUsername() http.HandlerFunc {
 				}
 			} else {
 				// clear user details locally
-				auth.ClearLocalUser(username)
+				auth.ClearLocalUser(tenantInfo.Raw, username)
 			}
 			// Subscribe to down time alerts
 			if patch["allowed_actions"] != nil {
@@ -419,25 +432,30 @@ func (u *Users) patchUserWithUsername() http.HandlerFunc {
 func (u *Users) deleteUser() http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
 		username, _, _ := req.BasicAuth()
-
+		tenantInfo, err := domain.FromContext(req.Context())
+		if err != nil {
+			log.Errorln("error while reading domain from context")
+			telemetry.WriteBackErrorWithTelemetry(req, w, "Please make sure that you're using a tenant Id. If the issue persists please contact support@appbase.io with your domain or registered e-mail address.", http.StatusBadRequest)
+			return
+		}
 		// To decide whether to just update the local state
 		isLocal := req.URL.Query().Get("local")
 		if isLocal == "true" {
 			// delete user details locally
-			auth.ClearLocalUser(username)
+			auth.ClearLocalUser(tenantInfo.Raw, username)
 			msg := fmt.Sprintf(`user with "username"="%s" deleted`, username)
 			util.WriteBackMessage(w, msg, http.StatusOK)
 			return
 		}
 
-		userDetails, err := u.es.getUser(req.Context(), req, username)
+		userDetails, err := u.es.getUser(req.Context(), username)
 		if err != nil {
 			msg := fmt.Sprintf(`user with "username"="%s" not found`, username)
 			log.Errorln(logTag, ":", msg, ":", err)
 			util.WriteBackError(w, msg, http.StatusNotFound)
 			return
 		}
-		ok, err := u.es.deleteUser(req.Context(), req, username)
+		ok, err := u.es.deleteUser(req.Context(), username)
 		if ok && err == nil {
 			// Only update local state when proxy API has not been called
 			// If proxy API would get called then it would automatically update the
@@ -469,7 +487,7 @@ func (u *Users) deleteUser() http.HandlerFunc {
 				}
 			} else {
 				// delete user details locally
-				auth.ClearLocalUser(username)
+				auth.ClearLocalUser(tenantInfo.Raw, username)
 			}
 
 			// Unsubscribe to downtime alerts
@@ -498,24 +516,30 @@ func (u *Users) deleteUserWithUsername() http.HandlerFunc {
 			util.WriteBackError(w, `can't delete a user without a "username"`, http.StatusBadRequest)
 			return
 		}
+		tenantInfo, err := domain.FromContext(req.Context())
+		if err != nil {
+			log.Errorln("error while reading domain from context")
+			telemetry.WriteBackErrorWithTelemetry(req, w, "Please make sure that you're using a tenant Id. If the issue persists please contact support@appbase.io with your domain or registered e-mail address.", http.StatusBadRequest)
+			return
+		}
 		// To decide whether to just update the local state
 		isLocal := req.URL.Query().Get("local")
 		if isLocal == "true" {
 			// delete user details locally
-			auth.ClearLocalUser(username)
+			auth.ClearLocalUser(tenantInfo.Raw, username)
 			msg := fmt.Sprintf(`user with "username"="%s" deleted`, username)
 			util.WriteBackMessage(w, msg, http.StatusOK)
 			return
 		}
-		userDetails, err2 := u.es.getUser(req.Context(), req, username)
+		userDetails, err2 := u.es.getUser(req.Context(), username)
 		if err2 != nil {
 			msg := fmt.Sprintf(`user with "username"="%s" not found`, username)
 			log.Errorln(logTag, ":", msg, ":", err2)
 			util.WriteBackError(w, msg, http.StatusNotFound)
 			return
 		}
-		ok, err := u.es.deleteUser(req.Context(), req, username)
-		if ok && err == nil {
+		ok2, err := u.es.deleteUser(req.Context(), username)
+		if ok2 && err == nil {
 			// Only update local state when proxy API has not been called
 			// If proxy API would get called then it would automatically update the
 			// state for all machines
@@ -546,7 +570,7 @@ func (u *Users) deleteUserWithUsername() http.HandlerFunc {
 				}
 			} else {
 				// delete user details locally
-				auth.ClearLocalUser(username)
+				auth.ClearLocalUser(tenantInfo.Raw, username)
 			}
 
 			// Unsubscribe to downtime alerts
@@ -568,7 +592,7 @@ func (u *Users) deleteUserWithUsername() http.HandlerFunc {
 
 func (u *Users) getAllUsers() http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
-		raw, err := u.es.getRawUsers(req.Context(), req)
+		raw, err := u.es.getRawUsers(req.Context())
 		if err != nil {
 			msg := `an error occurred while fetching users`
 			log.Errorln(logTag, ":", err)

@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"net/http"
 
 	"github.com/appbaseio/reactivesearch-api/util"
 	es7 "github.com/olivere/elastic/v7"
@@ -66,13 +65,13 @@ func (es *elasticsearch) getRawOwnerPermissionsEs7(ctx context.Context, owner st
 	return raw, nil
 }
 
-func (es *elasticsearch) getPermissionsEs7(ctx context.Context, req *http.Request, indices []string) ([]byte, error) {
+func (es *elasticsearch) getPermissionsEs7(ctx context.Context, indices []string) ([]byte, error) {
 	query := es7.NewBoolQuery()
 	util.GetIndexFilterQueryEs7(query, indices...)
 	resp, err := util.SearchServiceWithAuth(util.GetInternalClient7().Search().
 		Index(es.indexName).
 		Query(query).
-		Size(10000), req).Do(ctx)
+		Size(10000), ctx).Do(ctx)
 
 	if err != nil {
 		return nil, err

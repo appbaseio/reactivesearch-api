@@ -37,14 +37,15 @@ var (
 
 // Cache represents the struct for CredentialCache
 type Cache struct {
-	mu    sync.RWMutex
-	cache map[string]credential.AuthCredential
+	mu sync.RWMutex
+	// Map of tenant to auth creds
+	cache map[string]map[string]credential.AuthCredential
 }
 
 // CredentialCache represents the cached users/credentials where key is `username`
 var CredentialCache = Cache{
 	mu:    sync.RWMutex{},
-	cache: make(map[string]credential.AuthCredential),
+	cache: make(map[string]map[string]credential.AuthCredential),
 }
 
 type Auth struct {
@@ -101,7 +102,7 @@ func (a *Auth) InitFunc() error {
 	}
 
 	// Populate public key from ES
-	record, err := a.es.getPublicKey(context.Background(), nil)
+	record, err := a.es.getPublicKey(context.Background())
 	if err != nil {
 		if !util.MultiTenant {
 			jwtRsaPublicKeyLoc := os.Getenv(envJwtRsaPublicKeyLoc)
