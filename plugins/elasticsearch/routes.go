@@ -70,11 +70,18 @@ func (es *elasticsearch) preprocess(mw []middleware.Middleware) error {
 			if path == "/" {
 				continue
 			}
+
+			// Create a new middleware list with the whitelist check being the first
+			// middleware in the chain
+			wh := WhitelistedRoute{Path: path}
+			updatedMw := []middleware.Middleware{wh.CheckIfPathWhitelisted, wh.UpdateIndexName}
+			updatedMw = append(updatedMw, mw...)
+
 			r := plugins.Route{
 				Name:        api.name,
 				Methods:     api.spec.Methods,
 				Path:        path,
-				HandlerFunc: middlewareFunction(mw, es.handler()),
+				HandlerFunc: middlewareFunction(updatedMw, es.handler()),
 				Description: api.spec.Documentation,
 			}
 			routes = append(routes, r)

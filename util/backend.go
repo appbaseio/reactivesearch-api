@@ -27,15 +27,33 @@ func GetBackend() *Backend {
 	return backend
 }
 
+// GetBackendByDomain will get the backend based on the
+// passed domain
+func GetBackendByDomain(domain string) *Backend {
+	// Get the instance details
+	slsInstanceDetails := GetSLSInstanceByDomain(domain)
+	if slsInstanceDetails == nil || slsInstanceDetails.Backend == nil {
+		defaultBackend := System
+		return &defaultBackend
+	}
+
+	return slsInstanceDetails.Backend
+}
+
 // IsExternalESRequired will indicate whether or
 // not external ES is required.
 //
 // This will be true if backend is either ES or OS
 func IsExternalESRequired() bool {
-	if backend == nil {
-		return false
+	if !MultiTenant {
+		if backend == nil {
+			return false
+		}
+		return backend.String() == ElasticSearch.String() || backend.String() == OpenSearch.String()
 	}
-	return backend.String() == ElasticSearch.String() || backend.String() == OpenSearch.String()
+
+	// If it is multi-tenant, we want it to be initialized every time.
+	return true
 }
 
 // Backend will be the backend to be used for the knn
@@ -50,6 +68,7 @@ const (
 	Fusion
 	Zinc
 	MarkLogic
+	System
 )
 
 // String returns the string representation
@@ -70,6 +89,8 @@ func (b Backend) String() string {
 		return "zinc"
 	case MarkLogic:
 		return "marklogic"
+	case System:
+		return "system"
 	}
 	return ""
 }
@@ -97,6 +118,8 @@ func (b *Backend) UnmarshalJSON(bytes []byte) error {
 		*b = Zinc
 	case MarkLogic.String():
 		*b = MarkLogic
+	case System.String():
+		*b = System
 	default:
 		return fmt.Errorf("invalid backend passed: %s", backend)
 	}
@@ -126,6 +149,7 @@ func (b Backend) JSONSchema() *jsonschema.Schema {
 			Fusion.String(),
 			Zinc.String(),
 			MarkLogic.String(),
+			System.String(),
 		},
 		Title:       "Backend",
 		Description: "Backend that ReactiveSearch will use",

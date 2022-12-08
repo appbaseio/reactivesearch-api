@@ -20,35 +20,59 @@ const testDomain = "reactivesearch.test.io"
 
 func ValidateDomain(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-		if util.MultiTenant {
-			domainName := req.Header.Get("X_REACTIVESEARCH_DOMAIN")
-			if util.IsDevelopmentEnv && strings.TrimSpace(domainName) == "" {
-				domainName = testDomain
+		req, parseErr := ParseDomainWithValidation(req)
+		if parseErr != nil {
+			if parseErr.Code == http.StatusUnauthorized {
+				w.Header().Set("www-authenticate", "Basic realm=\"Authentication Required\"")
 			}
 
-			if strings.TrimSpace(domainName) == "" {
-				w.Header().Set("www-authenticate", "Basic realm=\"Authentication Required\"")
-				telemetry.WriteBackErrorWithTelemetry(req, w, "domain name is required", http.StatusUnauthorized)
-				return
-			} else {
-				// encrypt domain and update context
-				key := os.Getenv("DOMAIN_NAME_ENCRYPTION_KEY")
-				ciphertext, err := Encrypt([]byte(key), []byte(domainName))
-				if err != nil {
-					telemetry.WriteBackErrorWithTelemetry(req, w, "error encrypting domain name: "+err.Error(), http.StatusInternalServerError)
-					return
-				}
-				encryptedDomain := fmt.Sprintf("%0x", ciphertext)
-				ctx := domain.NewContext(req.Context(), domain.DomainInfo{
-					Encrypted: string(encryptedDomain),
-					Raw:       domainName,
-				})
-				next.ServeHTTP(w, req.WithContext(ctx))
-				return
-			}
+			telemetry.WriteBackErrorWithTelemetry(req, w, parseErr.Err.Error(), parseErr.Code)
+			return
 		}
+
 		next.ServeHTTP(w, req)
 	})
+}
+
+// ParseDomainWithValidation will parse the domain from the passed
+// request and inject it into the context.
+//
+// This method is defined separately so that it can be triggered
+// manually in case the need comes. As of now, this method will be used
+// in `pipelines` to fetch the domain name in the pipeline catch-all
+// matcher.
+func ParseDomainWithValidation(req *http.Request) (*http.Request, *util.ErrorWithCode) {
+	if util.MultiTenant {
+		domainName := req.Header.Get("X_REACTIVESEARCH_DOMAIN")
+		if util.IsDevelopmentEnv && strings.TrimSpace(domainName) == "" {
+			domainName = testDomain
+		}
+
+		if strings.TrimSpace(domainName) == "" {
+			return req, &util.ErrorWithCode{
+				Code: http.StatusUnauthorized,
+				Err:  fmt.Errorf("domain name is required"),
+			}
+		} else {
+			// encrypt domain and update context
+			key := os.Getenv("DOMAIN_NAME_ENCRYPTION_KEY")
+			ciphertext, err := Encrypt([]byte(key), []byte(domainName))
+			if err != nil {
+				return req, &util.ErrorWithCode{
+					Code: http.StatusInternalServerError,
+					Err:  fmt.Errorf("error encrypting domain name: " + err.Error()),
+				}
+			}
+			encryptedDomain := fmt.Sprintf("%0x", ciphertext)
+			ctx := domain.NewContext(req.Context(), domain.DomainInfo{
+				Encrypted: string(encryptedDomain),
+				Raw:       domainName,
+			})
+			return req.WithContext(ctx), nil
+		}
+	}
+
+	return req, nil
 }
 
 func Encrypt(key, text []byte) ([]byte, error) {

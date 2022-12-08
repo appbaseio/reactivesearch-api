@@ -1,14 +1,18 @@
 package elasticsearch
 
 import (
+	"context"
 	"sync"
 
 	"github.com/appbaseio/reactivesearch-api/middleware"
 	"github.com/appbaseio/reactivesearch-api/plugins"
 	"github.com/appbaseio/reactivesearch-api/util"
+	es7 "github.com/olivere/elastic/v7"
 )
 
-const logTag = "[elasticsearch]"
+const (
+	logTag = "[elasticsearch]"
+)
 
 var (
 	singleton *elasticsearch
@@ -16,7 +20,8 @@ var (
 )
 
 type elasticsearch struct {
-	specs []api
+	specs          []api
+	systemESClient *es7.Client
 }
 
 func Instance() *elasticsearch {
@@ -29,6 +34,19 @@ func (es *elasticsearch) Name() string {
 }
 
 func (es *elasticsearch) InitFunc(mw []middleware.Middleware) error {
+	// Init the system ES client
+	var clientErr error
+	es.systemESClient, clientErr = initSystemESClient()
+	if clientErr != nil {
+		return clientErr
+	}
+
+	// Cache the indexes for the tenants
+	indexCacheErr := CacheIndexesForTenants(es.systemESClient, context.Background())
+	if indexCacheErr != nil {
+		return indexCacheErr
+	}
+
 	return es.preprocess(mw)
 }
 

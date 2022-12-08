@@ -43,7 +43,7 @@ type slsInstanceDetails struct {
 	FeaturePipelines        bool                   `json:"feature_pipelines"`
 	FeatureUIBuilderPremium bool                   `json:"feature_uibuilder_premium"`
 	NumberOfMachines        int64                  `json:"number_of_machines"`
-	Backend                 string                 `json:"backend"`
+	Backend                 *Backend               `json:"backend,omitempty"`
 	CustomerID              string                 `json:"customer_id"`
 	TenantID                string                 `json:"tenant_id"`
 }
@@ -57,6 +57,15 @@ func GetSLSInstanceByDomain(domain string) *slsInstanceDetails {
 		return &instanceDetails
 	}
 	return nil
+}
+
+// GetTenantForDomain will get the tenantID for the passed domain
+func GetTenantForDomain(domain string) string {
+	instanceDetails := GetSLSInstanceByDomain(domain)
+	if instanceDetails == nil {
+		return ""
+	}
+	return instanceDetails.TenantID
 }
 
 func UpdateSLSInstances() {

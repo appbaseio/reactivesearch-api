@@ -81,13 +81,24 @@ func (es *elasticsearch) handler() http.HandlerFunc {
 			Headers: headers,
 		}
 
+		// Get the client ready for the request
+		//
+		// If the request is for a multi-tenant setup and the backend
+		// is `system`, we need to use the system client to make the call.
+		esClient, clientFetchErr := es.GetESClientForTenant(r.Context())
+		if clientFetchErr != nil {
+			log.Warnln(logTag, ": ", clientFetchErr)
+			telemetry.WriteBackErrorWithTelemetry(r, w, clientFetchErr.Error(), http.StatusInternalServerError)
+			return
+		}
+
 		// convert body to string string as oliver Perform request can accept io.Reader, String, interface
 		body, err := ioutil.ReadAll(r.Body)
 		if len(body) > 0 {
 			requestOptions.Body = string(body)
 		}
 		start := time.Now()
-		response, err := util.GetClient7().PerformRequest(ctx, requestOptions)
+		response, err := esClient.PerformRequest(ctx, requestOptions)
 		log.Println(fmt.Sprintf("TIME TAKEN BY ES: %dms", time.Since(start).Milliseconds()))
 		if err != nil {
 			log.Errorln(logTag, ": error while sending request :", r.URL.Path, err)

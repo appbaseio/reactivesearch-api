@@ -19,6 +19,7 @@ import (
 	"github.com/appbaseio/reactivesearch-api/middleware/validate"
 	"github.com/appbaseio/reactivesearch-api/model/acl"
 	"github.com/appbaseio/reactivesearch-api/model/category"
+	"github.com/appbaseio/reactivesearch-api/model/domain"
 	"github.com/appbaseio/reactivesearch-api/model/index"
 	"github.com/appbaseio/reactivesearch-api/model/op"
 	"github.com/appbaseio/reactivesearch-api/model/permission"
@@ -355,5 +356,95 @@ func intercept(h http.HandlerFunc) http.HandlerFunc {
 			}
 		}
 		util.WriteBackRaw(w, body, result.StatusCode)
+	}
+}
+
+// UpdateIndexName will update the index name by appending
+// the tenantId to the name of the index for all whitelisted
+// system routes that have {index} in the route
+//
+// It will also take care of updating the tenant cache with the
+// deleted/created index.
+func (wh *WhitelistedRoute) UpdateIndexName(h http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, req *http.Request) {
+		// This middleware will only be executed if SLS is enabled
+		// and multi-tenant is enabled
+		if util.IsSLSDisabled() || !util.MultiTenant {
+			h(w, req)
+			return
+		}
+
+		// Disable this middleware if the backend is not system
+		// Fetch the domain from context
+		domainUsed, domainFetchErr := domain.FromContext(req.Context())
+		if domainFetchErr != nil {
+			errMsg := "Error while validating the domain!"
+			log.Warnln(logTag, ": ", errMsg)
+			telemetry.WriteBackErrorWithTelemetry(req, w, errMsg, http.StatusUnauthorized)
+			return
+		}
+
+		// Get the backend using the domain
+		if *(util.GetBackendByDomain(domainUsed.Raw)) != util.System {
+			// No need to blacklist
+			h(w, req)
+			return
+		}
+
+		// Execution will reach this point only if the backend is `system`
+		// and multi-tenant SLS is used.
+		//
+		// We already have a separate middleware that whitelists certain
+		// routes based on the whitelisted route list.
+		//
+		// This means execution will reach this point only if the backend
+		// is `system` and the route is whitelisted so at this point
+		// we can automatically replace the index name with the
+		// tenant ID added index name
+
+		// Access the vars to fetch the name of the index
+		reqVars := mux.Vars(req)
+		indexPassed := reqVars["index"]
+
+		tenantId := util.GetTenantForDomain(domainUsed.Raw)
+		if tenantId == "" {
+			telemetry.WriteBackErrorWithTelemetry(req, w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
+			return
+		}
+
+		// Update the path
+		indexWithTenant := util.AppendTenantID(indexPassed, tenantId)
+		req.URL.Path = strings.Replace(req.URL.Path, indexPassed, indexWithTenant, -1)
+
+		// If route is index and method is POST/DELETE, we need to update the tenant index cache
+		if wh.Path == "/{index}" {
+			if req.Method == http.MethodDelete {
+				// Remove the entry from the cache
+				DeleteIndexFromCache(tenantId, indexPassed)
+			} else if req.Method == http.MethodPut {
+				// Add the new entry in the cache
+				SetIndexToCache(tenantId, indexPassed)
+			}
+		}
+
+		// Serve using response recorder to capture the response
+		//
+		// We are doing this because we want to modify the outgoing response with
+		// the name of the index that was passed instead of the one that
+		// has the tenantId appended to it.
+		respRecorder := httptest.NewRecorder()
+		h(respRecorder, req)
+		// Copy the response to writer
+		for k, v := range respRecorder.Header() {
+			w.Header()[k] = v
+		}
+		w.WriteHeader(respRecorder.Code)
+
+		// Before writing the response, replace the index name to the one
+		// that the user passed
+		responseFromES := respRecorder.Body.Bytes()
+		modifiedResponse := strings.Replace(string(responseFromES), indexWithTenant, indexPassed, -1)
+
+		w.Write([]byte(modifiedResponse))
 	}
 }

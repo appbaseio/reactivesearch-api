@@ -21,9 +21,14 @@ var semanticVersion string
 var (
 	clientInit sync.Once
 	// External ES client
-	client7         *es7.Client
-	internalClient7 *es7.Client
-	client6         *es6.Client
+	client7          *es7.Client
+	internalClient7  *es7.Client
+	client6          *es6.Client
+	systemESUrlValue string
+)
+
+const (
+	systemESUrlKey = "SYSTEM_ES_URL"
 )
 
 // GetClient7 returns the es7 client
@@ -99,38 +104,48 @@ func GetSearchClientESURL() string {
 			esHeader = GetGlobalOSHeader()
 		}
 		if esURL != "" {
-			if strings.Contains(esURL, "@") {
-				splitIndex := strings.LastIndex(esURL, "@")
-				protocolWithCredentials := strings.Split(esURL[0:splitIndex], "://")
-				credentials := protocolWithCredentials[1]
-				protocol := protocolWithCredentials[0]
-				host := esURL[splitIndex+1:]
-
-				credentialSeparator := strings.Index(credentials, ":")
-				username := credentials[0:credentialSeparator]
-				password := credentials[credentialSeparator+1:]
-				esURL = protocol + "://" + url.PathEscape(username) + ":" + url.PathEscape(password) + "@" + host
-			} else {
-				if esHeader != "" {
-					authHeader, err := base64.StdEncoding.DecodeString(esHeader)
-					if err != nil {
-						log.Fatal("Error encountered: ", fmt.Errorf("ES_HEADER must be set in base64 format"))
-					}
-					protocolWithCredentials := strings.Split(esURL, "://")
-					host := protocolWithCredentials[1]
-					protocol := protocolWithCredentials[0]
-
-					credentials := string(authHeader)
-					credentialSeparator := strings.Index(credentials, ":")
-					username := credentials[0:credentialSeparator]
-					password := credentials[credentialSeparator+1:]
-					esURL = protocol + "://" + url.PathEscape(username) + ":" + url.PathEscape(password) + "@" + host
-				}
+			var parseErr error
+			esURL, parseErr = ParseESURL(esURL, esHeader)
+			if parseErr != nil {
+				log.Fatal("Error encountered: ", parseErr.Error())
 			}
-			return esURL
 		}
 	}
 	return ""
+}
+
+// ParseESURL will parse the ES URL passed along with header which
+// can be optionally passed
+func ParseESURL(esURL string, esHeader string) (string, error) {
+	if strings.Contains(esURL, "@") {
+		splitIndex := strings.LastIndex(esURL, "@")
+		protocolWithCredentials := strings.Split(esURL[0:splitIndex], "://")
+		credentials := protocolWithCredentials[1]
+		protocol := protocolWithCredentials[0]
+		host := esURL[splitIndex+1:]
+
+		credentialSeparator := strings.Index(credentials, ":")
+		username := credentials[0:credentialSeparator]
+		password := credentials[credentialSeparator+1:]
+		esURL = protocol + "://" + url.PathEscape(username) + ":" + url.PathEscape(password) + "@" + host
+	} else {
+		if esHeader != "" {
+			authHeader, err := base64.StdEncoding.DecodeString(esHeader)
+			if err != nil {
+				return "", fmt.Errorf("ES_HEADER must be set in base64 format")
+			}
+			protocolWithCredentials := strings.Split(esURL, "://")
+			host := protocolWithCredentials[1]
+			protocol := protocolWithCredentials[0]
+
+			credentials := string(authHeader)
+			credentialSeparator := strings.Index(credentials, ":")
+			username := credentials[0:credentialSeparator]
+			password := credentials[credentialSeparator+1:]
+			esURL = protocol + "://" + url.PathEscape(username) + ":" + url.PathEscape(password) + "@" + host
+		}
+	}
+	return esURL, nil
 }
 
 // GetESURL returns elasticsearch url with escaped auth
@@ -221,7 +236,7 @@ func HiddenIndexSettings() string {
 	return ""
 }
 
-func isSniffingEnabled() bool {
+func IsSniffingEnabled() bool {
 	setSniffing := os.Getenv("SET_SNIFFING")
 	sniffing := false
 	if setSniffing == "true" {
@@ -247,7 +262,7 @@ func initClient6() {
 	client6, err = es6.NewClient(
 		es6.SetURL(GetESURL()),
 		es6.SetRetrier(NewRetrier()),
-		es6.SetSniff(isSniffingEnabled()),
+		es6.SetSniff(IsSniffingEnabled()),
 		es6.SetHttpClient(esHttpClient),
 		es6.SetErrorLog(wrappedLoggerError),
 		es6.SetInfoLog(wrappedLoggerDebug),
@@ -274,7 +289,7 @@ func initClient7() {
 		internalClient7, err = es7.NewClient(
 			es7.SetURL(GetInternalESURL()),
 			es7.SetRetrier(NewRetrier()),
-			es7.SetSniff(isSniffingEnabled()),
+			es7.SetSniff(IsSniffingEnabled()),
 			es7.SetHttpClient(internalEsHttpClient),
 			es7.SetErrorLog(wrappedLoggerError),
 			es7.SetInfoLog(wrappedLoggerDebug),
@@ -288,7 +303,7 @@ func initClient7() {
 		client7, err = es7.NewClient(
 			es7.SetURL(GetESURL()),
 			es7.SetRetrier(NewRetrier()),
-			es7.SetSniff(isSniffingEnabled()),
+			es7.SetSniff(IsSniffingEnabled()),
 			es7.SetHttpClient(esHttpClient),
 			es7.SetErrorLog(wrappedLoggerError),
 			es7.SetInfoLog(wrappedLoggerDebug),
@@ -345,7 +360,7 @@ func InitExternalESClient7() {
 			client7, err = es7.NewClient(
 				es7.SetURL(GetSearchClientESURL()),
 				es7.SetRetrier(NewRetrier()),
-				es7.SetSniff(isSniffingEnabled()),
+				es7.SetSniff(IsSniffingEnabled()),
 				es7.SetHttpClient(internalEsHttpClient),
 				es7.SetErrorLog(wrappedLoggerError),
 				es7.SetInfoLog(wrappedLoggerDebug),
@@ -386,4 +401,26 @@ func NewClient() {
 // This should only be used if External ES is false.
 func CreateCustomTransport() {
 
+}
+
+// SetSystemESURL will set the system ES URL in vars during
+// startup so that it can be accessed in various places during execution.
+func SetSystemESURL() {
+	if IsSLSDisabled() || !MultiTenant {
+		return
+	}
+
+	// Get the system ES URL
+	systemESUrl := os.Getenv(systemESUrlKey)
+	if systemESUrl == "" {
+		// Throw an error
+		log.Fatal("`%s` not present in environment!", systemESUrlKey)
+	}
+
+	systemESUrlValue = systemESUrl
+}
+
+// GetSystemESURL will return the system ES URL value
+func GetSystemESURL() string {
+	return systemESUrlValue
 }
