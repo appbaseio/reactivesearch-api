@@ -239,6 +239,57 @@ func CountServiceWithAuth(s *es7.CountService, ctx context.Context) *es7.CountSe
 	return s
 }
 
+func AliasesServiceWithAuth(s *es7.AliasesService, ctx context.Context) *es7.AliasesService {
+	if MultiTenant {
+		if ctx == nil || ctx == context.Background() {
+			// user master creds if context is nil
+			s.Header("X-REACTIVESEARCH-TOKEN", os.Getenv("REACTIVESEARCH_AUTH_TOKEN"))
+		} else {
+			domainInfo, err := domain.FromContext(ctx)
+			if err != nil {
+				log.Errorln("error while reading domain from context")
+			} else {
+				s.Header("X-REACTIVESEARCH-DOMAIN", domainInfo.Encrypted)
+			}
+		}
+	}
+	return s
+}
+
+func DeleteByQueryServiceWithAuth(s *es7.DeleteByQueryService, ctx context.Context) *es7.DeleteByQueryService {
+	if MultiTenant {
+		if ctx == nil || ctx == context.Background() {
+			// user master creds if context is nil
+			s.Header("X-REACTIVESEARCH-TOKEN", os.Getenv("REACTIVESEARCH_AUTH_TOKEN"))
+		} else {
+			domainInfo, err := domain.FromContext(ctx)
+			if err != nil {
+				log.Errorln("error while reading domain from context")
+			} else {
+				s.Header("X-REACTIVESEARCH-DOMAIN", domainInfo.Encrypted)
+			}
+		}
+	}
+	return s
+}
+
+func IndicesGetMappingServiceWithAuth(s *es7.IndicesGetMappingService, ctx context.Context) *es7.IndicesGetMappingService {
+	if MultiTenant {
+		if ctx == nil || ctx == context.Background() {
+			// user master creds if context is nil
+			s.Header("X-REACTIVESEARCH-TOKEN", os.Getenv("REACTIVESEARCH_AUTH_TOKEN"))
+		} else {
+			domainInfo, err := domain.FromContext(ctx)
+			if err != nil {
+				log.Errorln("error while reading domain from context")
+			} else {
+				s.Header("X-REACTIVESEARCH-DOMAIN", domainInfo.Encrypted)
+			}
+		}
+	}
+	return s
+}
+
 // GetESClientForTenant will get the esClient for the tenant so that
 // it can be used to make requests
 func GetESClientForTenant(ctx context.Context) (*es7.Client, error) {
