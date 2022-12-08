@@ -125,6 +125,7 @@ type ClusterPlan struct {
 	SubscriptionCanceled    bool     `json:"subscription_canceled"`
 	CreatedAt               int64    `json:"created_at"`
 	Backend                 *Backend `json:"backend"`
+	CustomerID              string   `json:"customer_id"`
 }
 
 // ArcUsageResponse stores the response from ACCAPI
@@ -177,6 +178,7 @@ type ArcInstanceDetails struct {
 	ClusterID               string                 `json:"cluster_id"`
 	NumberOfMachines        int64                  `json:"number_of_machines"`
 	Backend                 *Backend               `json:"backend"`
+	CustomerID              string                 `json:"customer_id"`
 }
 
 // SetDefaultTier sets the default tier when billing is disabled
