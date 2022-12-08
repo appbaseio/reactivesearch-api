@@ -18,8 +18,35 @@ import (
 
 const testDomain = "reactivesearch.test.io"
 
+// DomainWhitelistedPaths will return an array of paths that do
+// not require domain validation
+func DomainWhitelistedPaths() []string {
+	return []string{
+		"/arc/health",
+	}
+}
+
+// IsDomainWhitelisted will return whether or not the
+// passed domain is whitelisted
+func IsDomainWhitelisted(path string) bool {
+	// Check if routes are blacklisted
+	for _, route := range DomainWhitelistedPaths() {
+		if strings.HasPrefix(path, route) {
+			return true
+		}
+	}
+
+	return false
+}
+
 func ValidateDomain(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		// If domain is whitelisted, we don't need to do anything
+		if IsDomainWhitelisted(req.RequestURI) {
+			next.ServeHTTP(w, req)
+			return
+		}
+
 		req, parseErr := ParseDomainWithValidation(req)
 		if parseErr != nil {
 			if parseErr.Code == http.StatusUnauthorized {

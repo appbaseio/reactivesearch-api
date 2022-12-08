@@ -211,12 +211,6 @@ func validateTimeValidity(timeValidity int64) bool {
 func BillingMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if MultiTenant {
-			domainInfo, err := domain.FromContext(r.Context())
-			if err != nil {
-				log.Errorln("error while reading domain from context")
-				WriteBackError(w, "Please make sure that you're using a valid domain. If the issue persists please contact support@appbase.io with your domain or registered e-mail address.", http.StatusBadRequest)
-				return
-			}
 			// Check if routes are blacklisted
 			requestURI := r.RequestURI
 			for _, route := range BillingBlacklistedPaths() {
@@ -225,6 +219,14 @@ func BillingMiddleware(next http.Handler) http.Handler {
 					return
 				}
 			}
+
+			domainInfo, err := domain.FromContext(r.Context())
+			if err != nil {
+				log.Errorln("error while reading domain from context")
+				WriteBackError(w, "Please make sure that you're using a valid domain. If the issue persists please contact support@appbase.io with your domain or registered e-mail address.", http.StatusBadRequest)
+				return
+			}
+
 			// Get instance details for domain
 			slsInstanceInfo := GetSLSInstanceByDomain(domainInfo.Raw)
 			if slsInstanceInfo == nil {
