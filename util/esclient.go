@@ -24,6 +24,7 @@ var (
 	client7          *es7.Client
 	internalClient7  *es7.Client
 	client6          *es6.Client
+	systemClient     *es7.Client
 	systemESUrlValue string
 )
 
@@ -62,6 +63,53 @@ func GetClient6() *es6.Client {
 		initClient6()
 	}
 	return client6
+}
+
+func GetSystemClient() (*es7.Client, error) {
+	if MultiTenant {
+		// initialize the client if not present
+		if systemClient == nil {
+			return initSystemESClient()
+		}
+		return systemClient, nil
+	}
+	return GetClient7(), nil
+}
+
+// initSystemESClient will initiate the system ES client
+// that will be used to make all calls to the system
+// ES index.
+//
+// The system ES index is the one that will be used for
+// all users whose backend is set to `system`
+//
+// We only want this client if Arc is being run in
+// multi-tenant SLS
+func initSystemESClient() (*es7.Client, error) {
+	if IsSLSDisabled() || !MultiTenant {
+		return nil, nil
+	}
+
+	loggerT := log.New()
+	wrappedLoggerDebug := &WrapKitLoggerDebug{*loggerT}
+	wrappedLoggerError := &WrapKitLoggerError{*loggerT}
+
+	esHttpClient := HTTPClient()
+
+	client, err := es7.NewClient(
+		es7.SetURL(GetSystemESURL()),
+		es7.SetRetrier(NewRetrier()),
+		es7.SetSniff(IsSniffingEnabled()),
+		es7.SetHttpClient(esHttpClient),
+		es7.SetErrorLog(wrappedLoggerError),
+		es7.SetInfoLog(wrappedLoggerDebug),
+		es7.SetTraceLog(wrappedLoggerDebug),
+	)
+	if err != nil {
+		log.Fatal("Error encountered: ", fmt.Errorf("error while initializing elastic v7 client: %v", err))
+	}
+	systemClient = client
+	return client, nil
 }
 
 // GetSearchClientESURL returns the ES URL used by SLS and non-SSL plugins

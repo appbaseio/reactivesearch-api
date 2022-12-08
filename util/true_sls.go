@@ -3,13 +3,14 @@ package util
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"os"
 
 	"github.com/appbaseio/reactivesearch-api/model/domain"
 	es7 "github.com/olivere/elastic/v7"
-	"github.com/prometheus/common/log"
+	log "github.com/sirupsen/logrus"
 )
 
 // Use it to set the default value of tenant/domain in cache for single tenant
@@ -219,4 +220,69 @@ func BulkServiceWithAuth(s *es7.BulkService, ctx context.Context) *es7.BulkServi
 		}
 	}
 	return s
+}
+
+// GetESClientForTenant will get the esClient for the tenant so that
+// it can be used to make requests
+func GetESClientForTenant(ctx context.Context) (*es7.Client, error) {
+	if !MultiTenant {
+		return GetClient7(), nil
+	}
+
+	// Check the backend and accordingly determine the client.
+	domain, domainFetchErr := domain.FromContext(ctx)
+	if domainFetchErr != nil {
+		errMsg := fmt.Sprintf("error while fetching domain info from context: %s", domainFetchErr.Error())
+		return nil, fmt.Errorf(errMsg)
+	}
+
+	backend := GetBackendByDomain(domain.Raw)
+	if *backend == System {
+		return systemClient, nil
+	}
+
+	// If backend is not `system`, this route can be called for an ES
+	// backend only.
+	//
+	// We will have to fetch the ES_URL value from global vars and create
+	// a simple client using that.
+
+	// Fetch the tenantId using the domain
+	tenantId := GetTenantForDomain(domain.Raw)
+	esAccess := GetESAccessForTenant(tenantId)
+
+	if esAccess.URL == "" {
+		errMsg := "ES_URL not defined in global vars, cannot continue without that!"
+		return nil, fmt.Errorf(errMsg)
+	}
+
+	// NOTE: We are assuming that basic auth will be provided in the URL itself.
+	//
+	// We will deprecate support for ES_HEADER since pipelines can work without
+	// the header as well by accepting basic auth in the URL itself.
+	esURLParsed, parseErr := ParseESURL(esAccess.URL, esAccess.Header)
+	if parseErr != nil {
+		errMsg := fmt.Sprint("Error while parsing ES_URL and ES_HEADER: ", parseErr.Error())
+		return nil, fmt.Errorf(errMsg)
+	}
+
+	loggerT := log.New()
+	wrappedLoggerDebug := &WrapKitLoggerDebug{*loggerT}
+	wrappedLoggerError := &WrapKitLoggerError{*loggerT}
+
+	esClient, clientErr := es7.NewSimpleClient(
+		es7.SetURL(esURLParsed),
+		es7.SetRetrier(NewRetrier()),
+		es7.SetHttpClient(HTTPClient()),
+		es7.SetErrorLog(wrappedLoggerError),
+		es7.SetInfoLog(wrappedLoggerDebug),
+		es7.SetTraceLog(wrappedLoggerDebug),
+	)
+
+	if clientErr != nil {
+		errMsg := fmt.Sprint("error while initiating client to make request: ", clientErr.Error())
+		return nil, fmt.Errorf(errMsg)
+	}
+
+	return esClient, nil
 }

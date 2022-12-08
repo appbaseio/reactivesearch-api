@@ -85,7 +85,7 @@ func (es *elasticsearch) handler() http.HandlerFunc {
 		//
 		// If the request is for a multi-tenant setup and the backend
 		// is `system`, we need to use the system client to make the call.
-		esClient, clientFetchErr := es.GetESClientForTenant(r.Context())
+		esClient, clientFetchErr := util.GetESClientForTenant(r.Context())
 		if clientFetchErr != nil {
 			log.Warnln(logTag, ": ", clientFetchErr)
 			telemetry.WriteBackErrorWithTelemetry(r, w, clientFetchErr.Error(), http.StatusInternalServerError)

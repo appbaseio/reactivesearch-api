@@ -23,16 +23,26 @@ const logTag = "[reindex]"
 const typeName = "_doc"
 
 func setAliasEs7(aliasConfig SetAliasConfig) error {
+	// Get the client ready for the request
+	//
+	// If the request is for a multi-tenant setup and the backend
+	// is `system`, we need to use the system client to make the call.
+	esClient, clientFetchErr := util.GetESClientForTenant(context.Background())
+	if clientFetchErr != nil {
+		log.Warnln(logTag, ": ", clientFetchErr)
+		return clientFetchErr
+	}
 	// Delete source index, we need to first delete the index
 	// because there can be only one write index at a particular time
-	_, err := util.GetClient7().DeleteIndex(aliasConfig.OldIndex).
+	_, err := esClient.DeleteIndex(aliasConfig.OldIndex).
 		Do(context.Background())
+
 	if err != nil {
 		log.Errorln(logTag, ":", err)
 		return err
 	}
 	// Add the alias to destination index
-	_, err2 := util.GetClient7().Alias().Action(
+	_, err2 := esClient.Alias().Action(
 		es7.NewAliasAddAction(aliasConfig.AliasName).
 			Index(aliasConfig.NewIndex).
 			IsWriteIndex(aliasConfig.IsWriteIndex),
@@ -73,8 +83,16 @@ func SetAlias(aliasConfig SetAliasConfig) error {
 // To track a re-index task by taskID
 func IsTaskCompleted(ctx context.Context, taskID string) (bool, error) {
 	res := false
-
-	status, err := util.GetClient7().TasksGetTask().TaskId(taskID).Do(ctx)
+	// Get the client ready for the request
+	//
+	// If the request is for a multi-tenant setup and the backend
+	// is `system`, we need to use the system client to make the call.
+	esClient, clientFetchErr := util.GetESClientForTenant(ctx)
+	if clientFetchErr != nil {
+		log.Warnln(logTag, ": ", clientFetchErr)
+		return res, clientFetchErr
+	}
+	status, err := esClient.TasksGetTask().TaskId(taskID).Do(ctx)
 	if err != nil {
 		log.Errorln(logTag, " Get task status error", err)
 		return res, err

@@ -48,8 +48,17 @@ func postReIndex(ctx context.Context, sourceIndex, newIndexName string, operatio
 			return errors.New(`error setting alias for ` + newIndexName + "\n" + err.Error())
 		}
 	}
+	// Get the client ready for the request
+	//
+	// If the request is for a multi-tenant setup and the backend
+	// is `system`, we need to use the system client to make the call.
+	esClient, clientFetchErr := util.GetESClientForTenant(ctx)
+	if clientFetchErr != nil {
+		log.Warnln(logTag, ": ", clientFetchErr)
+		return clientFetchErr
+	}
 
-	_, err = util.GetClient7().IndexPutSettings(newIndexName).BodyString(fmt.Sprintf(`{"index.number_of_replicas": %v}`, replicas)).Do(ctx)
+	_, err = esClient.IndexPutSettings(newIndexName).BodyString(fmt.Sprintf(`{"index.number_of_replicas": %v}`, replicas)).Do(ctx)
 	if err != nil {
 		return err
 	}
@@ -57,7 +66,16 @@ func postReIndex(ctx context.Context, sourceIndex, newIndexName string, operatio
 }
 
 func postReIndexFailure(ctx context.Context, newIndexName string) error {
-	_, err := util.GetClient7().DeleteIndex(newIndexName).Do(ctx)
+	// Get the client ready for the request
+	//
+	// If the request is for a multi-tenant setup and the backend
+	// is `system`, we need to use the system client to make the call.
+	esClient, clientFetchErr := util.GetESClientForTenant(ctx)
+	if clientFetchErr != nil {
+		log.Warnln(logTag, ": ", clientFetchErr)
+		return clientFetchErr
+	}
+	_, err := esClient.DeleteIndex(newIndexName).Do(ctx)
 	if err != nil {
 		log.Errorln(logTag, "error deleting index", err)
 		return err
@@ -231,9 +249,17 @@ func Reindex(ctx context.Context, sourceIndex string, config *ReindexConfig, wai
 	// Configure reindex dest
 	dest := es7.NewReindexDestination().
 		Index(newIndexName)
-
+	// Get the client ready for the request
+	//
+	// If the request is for a multi-tenant setup and the backend
+	// is `system`, we need to use the system client to make the call.
+	esClient, clientFetchErr := util.GetESClientForTenant(ctx)
+	if clientFetchErr != nil {
+		log.Warnln(logTag, ": ", clientFetchErr)
+		return nil, clientFetchErr
+	}
 	// Reindex action
-	reindex := util.GetClient7().Reindex().
+	reindex := esClient.Reindex().
 		Source(src).
 		Destination(dest).
 		WaitForCompletion(waitForCompletion)
@@ -277,7 +303,17 @@ func Reindex(ctx context.Context, sourceIndex string, config *ReindexConfig, wai
 }
 
 func mappingsOf(ctx context.Context, indexName string) (map[string]interface{}, error) {
-	response, err := util.GetClient7().GetMapping().
+	// Get the client ready for the request
+	//
+	// If the request is for a multi-tenant setup and the backend
+	// is `system`, we need to use the system client to make the call.
+	esClient, clientFetchErr := util.GetESClientForTenant(ctx)
+	if clientFetchErr != nil {
+		log.Warnln(logTag, ": ", clientFetchErr)
+		return nil, clientFetchErr
+	}
+
+	response, err := esClient.GetMapping().
 		Index(indexName).
 		Do(ctx)
 	if err != nil {
@@ -306,7 +342,17 @@ func mappingsOf(ctx context.Context, indexName string) (map[string]interface{}, 
 }
 
 func settingsOf(ctx context.Context, indexName string) (map[string]interface{}, error) {
-	response, err := util.GetClient7().IndexGetSettings().
+	// Get the client ready for the request
+	//
+	// If the request is for a multi-tenant setup and the backend
+	// is `system`, we need to use the system client to make the call.
+	esClient, clientFetchErr := util.GetESClientForTenant(ctx)
+	if clientFetchErr != nil {
+		log.Warnln(logTag, ": ", clientFetchErr)
+		return nil, clientFetchErr
+	}
+
+	response, err := esClient.IndexGetSettings().
 		Index(indexName).
 		Do(ctx)
 	if err != nil {
@@ -344,7 +390,16 @@ func settingsOf(ctx context.Context, indexName string) (map[string]interface{}, 
 }
 
 func aliasesOf(ctx context.Context, indexName string) (string, error) {
-	response, err := util.GetClient7().CatAliases().
+	// Get the client ready for the request
+	//
+	// If the request is for a multi-tenant setup and the backend
+	// is `system`, we need to use the system client to make the call.
+	esClient, clientFetchErr := util.GetESClientForTenant(ctx)
+	if clientFetchErr != nil {
+		log.Warnln(logTag, ": ", clientFetchErr)
+		return "", clientFetchErr
+	}
+	response, err := esClient.CatAliases().
 		Pretty(true).
 		Do(ctx)
 	if err != nil {
@@ -368,7 +423,17 @@ func aliasesOf(ctx context.Context, indexName string) (string, error) {
 }
 
 func createIndex(ctx context.Context, indexName string, body map[string]interface{}) error {
-	response, err := util.GetClient7().CreateIndex(indexName).
+	// Get the client ready for the request
+	//
+	// If the request is for a multi-tenant setup and the backend
+	// is `system`, we need to use the system client to make the call.
+	esClient, clientFetchErr := util.GetESClientForTenant(ctx)
+	if clientFetchErr != nil {
+		log.Warnln(logTag, ": ", clientFetchErr)
+		return clientFetchErr
+	}
+
+	response, err := esClient.CreateIndex(indexName).
 		BodyJson(body).
 		Do(ctx)
 	if err != nil {
@@ -383,7 +448,17 @@ func createIndex(ctx context.Context, indexName string, body map[string]interfac
 }
 
 func deleteIndex(ctx context.Context, indexName string) error {
-	response, err := util.GetClient7().DeleteIndex(indexName).
+	// Get the client ready for the request
+	//
+	// If the request is for a multi-tenant setup and the backend
+	// is `system`, we need to use the system client to make the call.
+	esClient, clientFetchErr := util.GetESClientForTenant(ctx)
+	if clientFetchErr != nil {
+		log.Warnln(logTag, ": ", clientFetchErr)
+		return clientFetchErr
+	}
+
+	response, err := esClient.DeleteIndex(indexName).
 		Do(ctx)
 	if err != nil {
 		return err
@@ -403,8 +478,17 @@ func setAlias(ctx context.Context, indexName string, aliases ...string) error {
 			Index(indexName)
 		addAliasActions = append(addAliasActions, addAliasAction)
 	}
+	// Get the client ready for the request
+	//
+	// If the request is for a multi-tenant setup and the backend
+	// is `system`, we need to use the system client to make the call.
+	esClient, clientFetchErr := util.GetESClientForTenant(ctx)
+	if clientFetchErr != nil {
+		log.Warnln(logTag, ": ", clientFetchErr)
+		return clientFetchErr
+	}
 
-	response, err := util.GetClient7().Alias().
+	response, err := esClient.Alias().
 		Action(addAliasActions...).
 		Do(ctx)
 	if err != nil {
@@ -422,7 +506,17 @@ func setAlias(ctx context.Context, indexName string, aliases ...string) error {
 }
 
 func getIndicesByAlias(ctx context.Context, alias string) ([]string, error) {
-	response, err := util.GetClient7().Aliases().
+	// Get the client ready for the request
+	//
+	// If the request is for a multi-tenant setup and the backend
+	// is `system`, we need to use the system client to make the call.
+	esClient, clientFetchErr := util.GetESClientForTenant(ctx)
+	if clientFetchErr != nil {
+		log.Warnln(logTag, ": ", clientFetchErr)
+		return nil, clientFetchErr
+	}
+
+	response, err := esClient.Aliases().
 		Index(alias).
 		Do(ctx)
 	if err != nil {
@@ -447,7 +541,17 @@ func GetAliasedIndices(ctx context.Context) ([]AliasedIndices, error) {
 		Path:   "/_cat/indices",
 		Params: v,
 	}
-	response, err := util.GetClient7().PerformRequest(ctx, requestOptions)
+	// Get the client ready for the request
+	//
+	// If the request is for a multi-tenant setup and the backend
+	// is `system`, we need to use the system client to make the call.
+	esClient, clientFetchErr := util.GetESClientForTenant(ctx)
+	if clientFetchErr != nil {
+		log.Warnln(logTag, ": ", clientFetchErr)
+		return indicesList, clientFetchErr
+	}
+
+	response, err := esClient.PerformRequest(ctx, requestOptions)
 	if err != nil {
 		return indicesList, err
 	}
@@ -461,7 +565,7 @@ func GetAliasedIndices(ctx context.Context) ([]AliasedIndices, error) {
 		return indicesList, err
 	}
 
-	aliases, err := util.GetClient7().CatAliases().
+	aliases, err := esClient.CatAliases().
 		Pretty(true).
 		Do(ctx)
 	if err != nil {
@@ -508,7 +612,16 @@ func GetAliasedIndices(ctx context.Context) ([]AliasedIndices, error) {
 
 func GetAliasIndexMap(ctx context.Context) (map[string]string, error) {
 	var res = make(map[string]string)
-	aliases, err := util.GetClient7().CatAliases().
+	// Get the client ready for the request
+	//
+	// If the request is for a multi-tenant setup and the backend
+	// is `system`, we need to use the system client to make the call.
+	esClient, clientFetchErr := util.GetESClientForTenant(ctx)
+	if clientFetchErr != nil {
+		log.Warnln(logTag, ": ", clientFetchErr)
+		return res, clientFetchErr
+	}
+	aliases, err := esClient.CatAliases().
 		Pretty(true).
 		Do(ctx)
 	if err != nil {
@@ -591,7 +704,17 @@ func asyncReIndex(taskID, source, destination string, operation ReIndexOperation
 }
 
 func putSearchRelevancySettings(ctx context.Context, docID string, record map[string]interface{}) error {
-	_, err := util.GetClient7().
+	// Get the client ready for the request
+	//
+	// If the request is for a multi-tenant setup and the backend
+	// is `system`, we need to use the system client to make the call.
+	esClient, clientFetchErr := util.GetESClientForTenant(ctx)
+	if clientFetchErr != nil {
+		log.Warnln(logTag, ": ", clientFetchErr)
+		return clientFetchErr
+	}
+
+	_, err := esClient.
 		Index().
 		Refresh("wait_for").
 		Index(getSearchRelevancyIndex()).

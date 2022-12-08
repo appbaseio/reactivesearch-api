@@ -36,11 +36,10 @@ func (es *elasticsearch) Name() string {
 func (es *elasticsearch) InitFunc(mw []middleware.Middleware) error {
 	// Init the system ES client
 	var clientErr error
-	es.systemESClient, clientErr = initSystemESClient()
+	es.systemESClient, clientErr = util.GetSystemClient()
 	if clientErr != nil {
 		return clientErr
 	}
-
 	// Cache the indexes for the tenants
 	indexCacheErr := CacheIndexesForTenants(es.systemESClient, context.Background())
 	if indexCacheErr != nil {

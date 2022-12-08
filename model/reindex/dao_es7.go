@@ -9,8 +9,18 @@ import (
 )
 
 func updateSynonymsEs7(ctx context.Context, script string, index string, params map[string]interface{}) error {
+	// Get the client ready for the request
+	//
+	// If the request is for a multi-tenant setup and the backend
+	// is `system`, we need to use the system client to make the call.
+	esClient, clientFetchErr := util.GetESClientForTenant(ctx)
+	if clientFetchErr != nil {
+		log.Warnln(logTag, ": ", clientFetchErr)
+		return clientFetchErr
+	}
+
 	query := es7.NewTermQuery("index.keyword", index)
-	_, err := util.GetClient7().
+	_, err := esClient.
 		UpdateByQuery().
 		Query(query).
 		Index(getSynonymsIndex()).
