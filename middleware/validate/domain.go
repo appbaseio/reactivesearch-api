@@ -98,8 +98,12 @@ func ParseDomainWithValidation(req *http.Request) (*http.Request, *util.ErrorWit
 			return req.WithContext(ctx), nil
 		}
 	}
-
-	return req, nil
+	// set default tenant as domain name for single tenant SLS
+	ctx := domain.NewContext(req.Context(), domain.DomainInfo{
+		Encrypted: string(util.DefaultTenant),
+		Raw:       util.DefaultTenant,
+	})
+	return req.WithContext(ctx), nil
 }
 
 func Encrypt(key, text []byte) ([]byte, error) {
