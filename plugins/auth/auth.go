@@ -49,10 +49,12 @@ var CredentialCache = Cache{
 }
 
 type Auth struct {
-	mu              sync.Mutex
-	jwtRsaPublicKey *rsa.PublicKey
-	jwtRoleKey      string
-	es              authService
+	mu sync.Mutex
+	// Domain to public key map
+	jwtRsaPublicKey map[string]*rsa.PublicKey
+	// Domain to public key map
+	jwtRoleKey map[string]string
+	es         authService
 }
 
 // Instance returns the singleton instance of the auth plugin. Instance
@@ -60,7 +62,10 @@ type Auth struct {
 // the instance of the plugin, in order to avoid stateless duplicates.
 func Instance() *Auth {
 	once.Do(func() {
-		singleton = &Auth{}
+		singleton = &Auth{
+			jwtRsaPublicKey: make(map[string]*rsa.PublicKey),
+			jwtRoleKey:      make(map[string]string),
+		}
 	})
 	return singleton
 }
@@ -100,11 +105,10 @@ func (a *Auth) InitFunc() error {
 			return err
 		}
 	}
-
-	// Populate public key from ES
-	record, err := a.es.getPublicKey(context.Background())
-	if err != nil {
-		if !util.MultiTenant {
+	if !util.MultiTenant {
+		// Populate public key from ES
+		record, err := a.es.getPublicKey(context.Background())
+		if err != nil {
 			jwtRsaPublicKeyLoc := os.Getenv(envJwtRsaPublicKeyLoc)
 			if jwtRsaPublicKeyLoc != "" {
 				// Read file from location
@@ -115,7 +119,7 @@ func (a *Auth) InitFunc() error {
 				}
 				var record = publicKey{}
 				record.PublicKey = string(publicKeyBuf)
-				record.RoleKey = a.jwtRoleKey
+				record.RoleKey = a.jwtRoleKey[util.DefaultTenant]
 				jwtRsaPublicKey, err := getJWTPublickKey(record)
 				if err != nil {
 					log.Errorln(logTag, ":unable to save public key record from environment,", err)
@@ -125,21 +129,22 @@ func (a *Auth) InitFunc() error {
 						log.Errorln(logTag, ":unable to save public key record from environment,", err)
 					} else {
 						// Update local state
-						a.updateLocalPublicKey(jwtRsaPublicKey, record.RoleKey)
+						a.updateLocalPublicKey(util.DefaultTenant, jwtRsaPublicKey, record.RoleKey)
 					}
 				}
 			}
+		} else {
+			publicKeyBuf, err := util.DecodeBase64Key(record.PublicKey)
+			if err != nil {
+				log.Errorln(logTag, ":error parsing public key record,", err)
+			}
+			key, err := jwt.ParseRSAPublicKeyFromPEM(publicKeyBuf)
+			if err != nil {
+				log.Errorln(logTag, ":error parsing public key record,", err)
+			}
+			a.jwtRsaPublicKey[util.DefaultTenant] = key
+			a.jwtRoleKey[util.DefaultTenant] = record.RoleKey
 		}
-	} else {
-		publicKeyBuf, err := util.DecodeBase64Key(record.PublicKey)
-		if err != nil {
-			log.Errorln(logTag, ":error parsing public key record,", err)
-		}
-		a.jwtRsaPublicKey, err = jwt.ParseRSAPublicKeyFromPEM(publicKeyBuf)
-		if err != nil {
-			log.Errorln(logTag, ":error parsing public key record,", err)
-		}
-		a.jwtRoleKey = record.RoleKey
 	}
 
 	// Set plugin cache sync script

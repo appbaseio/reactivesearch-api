@@ -78,7 +78,12 @@ func BasicAuth() middleware.Middleware {
 func (a *Auth) basicAuth(h http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
 		ctx := req.Context()
-
+		tenantInfo, err := domain.FromContext(req.Context())
+		if err != nil {
+			log.Errorln("error while reading domain from context")
+			telemetry.WriteBackErrorWithTelemetry(req, w, "Please make sure that you're using a tenant Id. If the issue persists please contact support@appbase.io with your domain or registered e-mail address.", http.StatusBadRequest)
+			return
+		}
 		reqCategory, err := category.FromContext(ctx)
 		if err != nil {
 			log.Errorln(logTag, ": *category.Category not found in request context:", err)
@@ -118,8 +123,8 @@ func (a *Auth) basicAuth(h http.HandlerFunc) http.HandlerFunc {
 		role := ""
 		if !hasBasicAuth {
 			if claims, ok := jwtToken.Claims.(jwt.MapClaims); ok && jwtToken.Valid {
-				if a.jwtRoleKey != "" && claims[a.jwtRoleKey] != nil {
-					role = claims[a.jwtRoleKey].(string)
+				if a.jwtRoleKey[tenantInfo.Raw] != "" && claims[a.jwtRoleKey[tenantInfo.Raw]] != nil {
+					role = claims[a.jwtRoleKey[tenantInfo.Raw]].(string)
 				} else if u, ok := claims["role"]; ok {
 					role = u.(string)
 				} else {
@@ -157,13 +162,6 @@ func (a *Auth) basicAuth(h http.HandlerFunc) http.HandlerFunc {
 
 		var authenticated bool
 		var errorMsg = "invalid credentials provided"
-
-		tenantInfo, err := domain.FromContext(req.Context())
-		if err != nil {
-			log.Errorln("error while reading domain from context")
-			telemetry.WriteBackErrorWithTelemetry(req, w, "Please make sure that you're using a tenant Id. If the issue persists please contact support@appbase.io with your domain or registered e-mail address.", http.StatusBadRequest)
-			return
-		}
 
 		// since we are able to fetch a result with the given credentials, we
 		// do not need to validate the username and password.

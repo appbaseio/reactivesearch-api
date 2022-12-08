@@ -14,6 +14,8 @@ import (
 
 	"github.com/dgrijalva/jwt-go"
 
+	"github.com/appbaseio/reactivesearch-api/model/domain"
+	"github.com/appbaseio/reactivesearch-api/plugins/telemetry"
 	"github.com/appbaseio/reactivesearch-api/util"
 )
 
@@ -54,6 +56,12 @@ func (a *Auth) setPublicKey() http.HandlerFunc {
 			return
 		}
 		defer req.Body.Close()
+		tenantInfo, err := domain.FromContext(req.Context())
+		if err != nil {
+			log.Errorln("error while reading domain from context")
+			telemetry.WriteBackErrorWithTelemetry(req, w, "Please make sure that you're using a tenant Id. If the issue persists please contact support@appbase.io with your domain or registered e-mail address.", http.StatusBadRequest)
+			return
+		}
 
 		var body publicKey
 		err = json.Unmarshal(reqBody, &body)
@@ -78,7 +86,7 @@ func (a *Auth) setPublicKey() http.HandlerFunc {
 		isLocal := req.URL.Query().Get("local")
 		if isLocal == "true" {
 			// update public key locally
-			a.updateLocalPublicKey(jwtRsaPublicKey, body.RoleKey)
+			a.updateLocalPublicKey(tenantInfo.Raw, jwtRsaPublicKey, body.RoleKey)
 			util.WriteBackMessage(w, "Public key saved successfully.", http.StatusOK)
 			return
 		}
@@ -126,20 +134,20 @@ func (a *Auth) setPublicKey() http.HandlerFunc {
 			}
 		} else {
 			// Update local state
-			a.updateLocalPublicKey(jwtRsaPublicKey, body.RoleKey)
+			a.updateLocalPublicKey(tenantInfo.Raw, jwtRsaPublicKey, body.RoleKey)
 		}
 		util.WriteBackMessage(w, "Public key saved successfully.", http.StatusOK)
 	}
 }
 
-func (a *Auth) updateLocalPublicKey(jwtRsaPublicKey *rsa.PublicKey, role string) {
+func (a *Auth) updateLocalPublicKey(domain string, jwtRsaPublicKey *rsa.PublicKey, role string) {
 	if strings.TrimSpace(role) == "" {
 		role = "role"
 	}
 	// Update cached public key
 	if jwtRsaPublicKey != nil {
-		a.jwtRsaPublicKey = jwtRsaPublicKey
-		a.jwtRoleKey = role
+		a.jwtRsaPublicKey[domain] = jwtRsaPublicKey
+		a.jwtRoleKey[domain] = role
 	}
 }
 

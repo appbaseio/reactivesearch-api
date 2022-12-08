@@ -23,7 +23,7 @@ func (s CacheSyncScript) PluginName() string {
 
 func (s CacheSyncScript) SetCache(response *elastic.SearchResult) error {
 
-	var pubicKeyResponse *publicKey
+	var pubicKeyResponseByDomain map[string]*publicKey
 	publicKeys := util.GetHitsForIndex(response, s.index)
 
 	for _, hit := range publicKeys {
@@ -34,23 +34,25 @@ func (s CacheSyncScript) SetCache(response *elastic.SearchResult) error {
 				log.Errorln(logTag, ":", err)
 				return err
 			}
-			pubicKeyResponse = &publicKey
+			pubicKeyResponseByDomain[publicKey.Domain] = &publicKey
 			break
 		}
 	}
-
-	if pubicKeyResponse != nil {
-		// update public key to cache if found
-		publicKeyBuf, err := util.DecodeBase64Key(pubicKeyResponse.PublicKey)
-		if err != nil {
-			log.Errorln(logTag, ":error parsing public key record,", err)
-			return err
+	for domain, pubicKeyResponse := range pubicKeyResponseByDomain {
+		if pubicKeyResponse != nil {
+			// update public key to cache if found
+			publicKeyBuf, err := util.DecodeBase64Key(pubicKeyResponse.PublicKey)
+			if err != nil {
+				log.Errorln(logTag, ":error parsing public key record,", err)
+				return err
+			}
+			key, err := jwt.ParseRSAPublicKeyFromPEM(publicKeyBuf)
+			if err != nil {
+				log.Errorln(logTag, ":error parsing public key record,", err)
+			}
+			s.a.jwtRsaPublicKey[domain] = key
+			s.a.jwtRoleKey[domain] = pubicKeyResponse.RoleKey
 		}
-		s.a.jwtRsaPublicKey, err = jwt.ParseRSAPublicKeyFromPEM(publicKeyBuf)
-		if err != nil {
-			log.Errorln(logTag, ":error parsing public key record,", err)
-		}
-		s.a.jwtRoleKey = pubicKeyResponse.RoleKey
 	}
 
 	return nil

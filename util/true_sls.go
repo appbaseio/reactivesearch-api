@@ -12,6 +12,9 @@ import (
 	"github.com/prometheus/common/log"
 )
 
+// Use it to set the default value of tenant/domain in cache for single tenant
+const DefaultTenant = "reactivesearch.io"
+
 type slsInstanceDetails struct {
 	NodeCount               int64                  `json:"node_count"`
 	Description             string                 `json:"description"`
