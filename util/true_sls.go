@@ -203,3 +203,20 @@ func ValidateServiceWithAuth(s *es7.ValidateService, ctx context.Context) *es7.V
 	}
 	return s
 }
+
+func BulkServiceWithAuth(s *es7.BulkService, ctx context.Context) *es7.BulkService {
+	if MultiTenant {
+		if ctx == nil || ctx == context.Background() {
+			// user master creds if context is nil
+			s.Header("X-REACTIVESEARCH-TOKEN", os.Getenv("REACTIVESEARCH_AUTH_TOKEN"))
+		} else {
+			domainInfo, err := domain.FromContext(ctx)
+			if err != nil {
+				log.Errorln("error while reading domain from context")
+			} else {
+				s.Header("X-REACTIVESEARCH-DOMAIN", domainInfo.Encrypted)
+			}
+		}
+	}
+	return s
+}
