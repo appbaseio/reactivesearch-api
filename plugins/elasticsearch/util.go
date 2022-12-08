@@ -3,7 +3,6 @@ package elasticsearch
 import (
 	"context"
 	"fmt"
-	"os"
 
 	"github.com/appbaseio/reactivesearch-api/model/domain"
 	"github.com/appbaseio/reactivesearch-api/util"
@@ -25,13 +24,6 @@ func initSystemESClient() (*es7.Client, error) {
 		return nil, nil
 	}
 
-	// Get the system ES URL
-	systemESUrl := os.Getenv(systemESUrlKey)
-	if systemESUrl == "" {
-		// Throw an error
-		return nil, fmt.Errorf("`%s` not present in environment!", systemESUrlKey)
-	}
-
 	loggerT := log.New()
 	wrappedLoggerDebug := &util.WrapKitLoggerDebug{*loggerT}
 	wrappedLoggerError := &util.WrapKitLoggerError{*loggerT}
@@ -39,7 +31,7 @@ func initSystemESClient() (*es7.Client, error) {
 	esHttpClient := util.HTTPClient()
 
 	client7, err := es7.NewClient(
-		es7.SetURL(systemESUrl),
+		es7.SetURL(util.GetSystemESURL()),
 		es7.SetRetrier(util.NewRetrier()),
 		es7.SetSniff(util.IsSniffingEnabled()),
 		es7.SetHttpClient(esHttpClient),

@@ -21,9 +21,14 @@ var semanticVersion string
 var (
 	clientInit sync.Once
 	// External ES client
-	client7         *es7.Client
-	internalClient7 *es7.Client
-	client6         *es6.Client
+	client7          *es7.Client
+	internalClient7  *es7.Client
+	client6          *es6.Client
+	systemESUrlValue string
+)
+
+const (
+	systemESUrlKey = "SYSTEM_ES_URL"
 )
 
 // GetClient7 returns the es7 client
@@ -396,4 +401,26 @@ func NewClient() {
 // This should only be used if External ES is false.
 func CreateCustomTransport() {
 
+}
+
+// SetSystemESURL will set the system ES URL in vars during
+// startup so that it can be accessed in various places during execution.
+func SetSystemESURL() {
+	if IsSLSDisabled() || !MultiTenant {
+		return
+	}
+
+	// Get the system ES URL
+	systemESUrl := os.Getenv(systemESUrlKey)
+	if systemESUrl == "" {
+		// Throw an error
+		log.Fatal("`%s` not present in environment!", systemESUrlKey)
+	}
+
+	systemESUrlValue = systemESUrl
+}
+
+// GetSystemESURL will return the system ES URL value
+func GetSystemESURL() string {
+	return systemESUrlValue
 }

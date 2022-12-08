@@ -400,6 +400,9 @@ func main() {
 			}
 			// TODO: Set default backend as system
 			util.SetDefaultBackend()
+
+			// Set the system ES URL
+			util.SetSystemESURL()
 		} else {
 			if Billing == "true" {
 				log.Println("You're running ReactiveSearch with billing module enabled.")

@@ -11,8 +11,7 @@ import (
 )
 
 const (
-	logTag         = "[elasticsearch]"
-	systemESUrlKey = "SYSTEM_ES_URL"
+	logTag = "[elasticsearch]"
 )
 
 var (
