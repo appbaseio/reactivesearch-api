@@ -160,3 +160,37 @@ func DeleteServiceWithAuth(s *es7.DeleteService, ctx context.Context) *es7.Delet
 	}
 	return s
 }
+
+func GetServiceWithAuth(s *es7.GetService, ctx context.Context) *es7.GetService {
+	if MultiTenant {
+		if ctx == nil || ctx == context.Background() {
+			// user master creds if context is nil
+			s.Header("X-REACTIVESEARCH-TOKEN", os.Getenv("REACTIVESEARCH_AUTH_TOKEN"))
+		} else {
+			domainInfo, err := domain.FromContext(ctx)
+			if err != nil {
+				log.Errorln("error while reading domain from context")
+			} else {
+				s.Header("X-REACTIVESEARCH-DOMAIN", domainInfo.Encrypted)
+			}
+		}
+	}
+	return s
+}
+
+func ValidateServiceWithAuth(s *es7.ValidateService, ctx context.Context) *es7.ValidateService {
+	if MultiTenant {
+		if ctx == nil || ctx == context.Background() {
+			// user master creds if context is nil
+			s.Header("X-REACTIVESEARCH-TOKEN", os.Getenv("REACTIVESEARCH_AUTH_TOKEN"))
+		} else {
+			domainInfo, err := domain.FromContext(ctx)
+			if err != nil {
+				log.Errorln("error while reading domain from context")
+			} else {
+				s.Header("X-REACTIVESEARCH-DOMAIN", domainInfo.Encrypted)
+			}
+		}
+	}
+	return s
+}
