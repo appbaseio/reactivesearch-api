@@ -4,17 +4,16 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"net/http"
 
 	"github.com/appbaseio/reactivesearch-api/util"
 	es7 "github.com/olivere/elastic/v7"
 )
 
-func (es *elasticsearch) getRawUsersEs7(ctx context.Context, req *http.Request) ([]byte, error) {
+func (es *elasticsearch) getRawUsersEs7(ctx context.Context) ([]byte, error) {
 
 	response, err := util.SearchServiceWithAuth(util.GetInternalClient7().Search().
 		Index(es.indexName).
-		Size(1000), req).Do(ctx)
+		Size(1000), ctx).Do(ctx)
 
 	if err != nil {
 		return nil, err
@@ -28,9 +27,9 @@ func (es *elasticsearch) getRawUsersEs7(ctx context.Context, req *http.Request) 
 	return json.Marshal(users)
 }
 
-func (es *elasticsearch) patchUserEs7(ctx context.Context, req *http.Request, username string, patch map[string]interface{}) ([]byte, error) {
+func (es *elasticsearch) patchUserEs7(ctx context.Context, username string, patch map[string]interface{}) ([]byte, error) {
 	// Fetch the userID
-	userID, idFetchErr := es.getUserID(ctx, req, username)
+	userID, idFetchErr := es.getUserID(ctx, username)
 	if idFetchErr != nil {
 		return nil, idFetchErr
 	}
@@ -39,7 +38,7 @@ func (es *elasticsearch) patchUserEs7(ctx context.Context, req *http.Request, us
 		Refresh("wait_for").
 		Index(es.indexName).
 		Id(userID).
-		Doc(patch), req).Do(ctx)
+		Doc(patch), ctx).Do(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -51,14 +50,14 @@ func (es *elasticsearch) patchUserEs7(ctx context.Context, req *http.Request, us
 	return src, nil
 }
 
-func (es *elasticsearch) getRawUserEs7(ctx context.Context, req *http.Request, username string) ([]byte, error) {
+func (es *elasticsearch) getRawUserEs7(ctx context.Context, username string) ([]byte, error) {
 	// NOTE: Adding `tenant_id` to a get doc request is not possible
 	// but we want to be able to filter based on tenant_id and also
 	// remove the field accordingly so getting the user through search
 	// is a better idea.
 	usernameTermQuery := es7.NewTermQuery("username", username)
 
-	response, err := util.SearchServiceWithAuth(util.GetInternalClient7().Search().Index(es.indexName).Query(usernameTermQuery).FetchSource(true).Size(1), req).Do(ctx)
+	response, err := util.SearchServiceWithAuth(util.GetInternalClient7().Search().Index(es.indexName).Query(usernameTermQuery).FetchSource(true).Size(1), ctx).Do(ctx)
 
 	if err != nil {
 		return nil, err
@@ -84,14 +83,14 @@ func (es *elasticsearch) getRawUserEs7(ctx context.Context, req *http.Request, u
 }
 
 // getUserID will fetch the ID of the document for the username passed
-func (es *elasticsearch) getUserID(ctx context.Context, req *http.Request, username string) (string, error) {
+func (es *elasticsearch) getUserID(ctx context.Context, username string) (string, error) {
 	// NOTE: Adding `tenant_id` to a get doc request is not possible
 	// but we want to be able to filter based on tenant_id and also
 	// remove the field accordingly so getting the user through search
 	// is a better idea.
 	usernameTermQuery := es7.NewTermQuery("username.keyword", username)
 
-	response, err := util.SearchServiceWithAuth(util.GetInternalClient7().Search().Index(es.indexName).Query(usernameTermQuery).FetchSource(true).Size(1), req).Do(ctx)
+	response, err := util.SearchServiceWithAuth(util.GetInternalClient7().Search().Index(es.indexName).Query(usernameTermQuery).FetchSource(true).Size(1), ctx).Do(ctx)
 
 	if err != nil {
 		return "", err
@@ -111,9 +110,9 @@ func (es *elasticsearch) getUserID(ctx context.Context, req *http.Request, usern
 	return responseToUse.Id, nil
 }
 
-func (es *elasticsearch) deleteUserEs7(ctx context.Context, req *http.Request, username string) (bool, error) {
+func (es *elasticsearch) deleteUserEs7(ctx context.Context, username string) (bool, error) {
 	// Fetch the userID
-	userID, idFetchErr := es.getUserID(ctx, req, username)
+	userID, idFetchErr := es.getUserID(ctx, username)
 	if idFetchErr != nil {
 		return false, idFetchErr
 	}
@@ -121,7 +120,7 @@ func (es *elasticsearch) deleteUserEs7(ctx context.Context, req *http.Request, u
 	_, err := util.DeleteServiceWithAuth(util.GetInternalClient7().Delete().
 		Index(es.indexName).
 		Refresh("wait_for").
-		Id(userID), req).Do(ctx)
+		Id(userID), ctx).Do(ctx)
 	if err != nil {
 		return false, err
 	}

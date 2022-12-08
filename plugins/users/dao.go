@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"net/http"
 	"os"
 
 	"github.com/google/uuid"
@@ -71,7 +70,7 @@ func initPlugin(indexName, mapping string) (*elasticsearch, error) {
 
 func (es *elasticsearch) hashPasswords() error {
 	// get all users
-	rawUsers, err := es.getRawUsers(context.Background(), nil)
+	rawUsers, err := es.getRawUsers(context.Background())
 	if err != nil {
 		return err
 	}
@@ -97,7 +96,7 @@ func (es *elasticsearch) hashPasswords() error {
 		}
 
 		// patch the user
-		_, err = es.patchUser(context.Background(), nil, user.Username, map[string]interface{}{
+		_, err = es.patchUser(context.Background(), user.Username, map[string]interface{}{
 			"password":           string(hashedPassword),
 			"password_hash_type": "bcrypt",
 		})
@@ -134,14 +133,14 @@ func (es *elasticsearch) postMasterUser() error {
 
 	admin.PasswordHashType = "bcrypt"
 
-	if created, err := es.postUser(context.Background(), nil, *admin); !created || err != nil {
+	if created, err := es.postUser(context.Background(), *admin); !created || err != nil {
 		return fmt.Errorf("%s: error while creating a master user: %v", logTag, err)
 	}
 	return nil
 }
 
-func (es *elasticsearch) getUser(ctx context.Context, req *http.Request, username string) (*user.User, error) {
-	raw, err := es.getRawUser(ctx, req, username)
+func (es *elasticsearch) getUser(ctx context.Context, username string) (*user.User, error) {
+	raw, err := es.getRawUser(ctx, username)
 	if err != nil {
 		return nil, err
 	}
@@ -155,18 +154,18 @@ func (es *elasticsearch) getUser(ctx context.Context, req *http.Request, usernam
 	return &u, nil
 }
 
-func (es *elasticsearch) getRawUsers(ctx context.Context, req *http.Request) ([]byte, error) {
-	return es.getRawUsersEs7(ctx, req)
+func (es *elasticsearch) getRawUsers(ctx context.Context) ([]byte, error) {
+	return es.getRawUsersEs7(ctx)
 }
 
-func (es *elasticsearch) getRawUser(ctx context.Context, req *http.Request, username string) ([]byte, error) {
-	return es.getRawUserEs7(ctx, req, username)
+func (es *elasticsearch) getRawUser(ctx context.Context, username string) ([]byte, error) {
+	return es.getRawUserEs7(ctx, username)
 }
 
-func (es *elasticsearch) postUser(ctx context.Context, req *http.Request, u user.User) (bool, error) {
+func (es *elasticsearch) postUser(ctx context.Context, u user.User) (bool, error) {
 	// Check if the username already exists, if so, then return
 	// false.
-	olderUserID, _ := es.getUserID(ctx, req, u.Username)
+	olderUserID, _ := es.getUserID(ctx, u.Username)
 	if olderUserID != "" {
 		return false, nil
 	}
@@ -187,13 +186,13 @@ func (es *elasticsearch) postUser(ctx context.Context, req *http.Request, u user
 	return true, nil
 }
 
-func (es *elasticsearch) patchUser(ctx context.Context, req *http.Request, username string, patch map[string]interface{}) ([]byte, error) {
-	return es.patchUserEs7(ctx, req, username, patch)
+func (es *elasticsearch) patchUser(ctx context.Context, username string, patch map[string]interface{}) ([]byte, error) {
+	return es.patchUserEs7(ctx, username, patch)
 }
 
-func (es *elasticsearch) deleteUser(ctx context.Context, req *http.Request, username string) (bool, error) {
+func (es *elasticsearch) deleteUser(ctx context.Context, username string) (bool, error) {
 	// Fetch the userID
-	userID, idFetchErr := es.getUserID(ctx, req, username)
+	userID, idFetchErr := es.getUserID(ctx, username)
 	if idFetchErr != nil {
 		return false, idFetchErr
 	}

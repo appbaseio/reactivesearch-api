@@ -10,10 +10,12 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"github.com/appbaseio/reactivesearch-api/model/acl"
+	"github.com/appbaseio/reactivesearch-api/model/domain"
 	"github.com/appbaseio/reactivesearch-api/model/index"
 	"github.com/appbaseio/reactivesearch-api/model/permission"
 	"github.com/appbaseio/reactivesearch-api/model/user"
 	"github.com/appbaseio/reactivesearch-api/plugins/auth"
+	"github.com/appbaseio/reactivesearch-api/plugins/telemetry"
 	"github.com/appbaseio/reactivesearch-api/util"
 	"github.com/gorilla/mux"
 )
@@ -170,10 +172,16 @@ func (p *permissions) patchPermission() http.HandlerFunc {
 		vars := mux.Vars(req)
 		username := vars["username"]
 		// To decide whether to just update the local state
+		tenantInfo, err := domain.FromContext(req.Context())
+		if err != nil {
+			log.Errorln("error while reading domain from context")
+			telemetry.WriteBackErrorWithTelemetry(req, w, "Please make sure that you're using a tenant Id. If the issue persists please contact support@appbase.io with your domain or registered e-mail address.", http.StatusBadRequest)
+			return
+		}
 		isLocal := req.URL.Query().Get("local")
 		if isLocal == "true" {
 			// delete user details locally
-			auth.ClearLocalUser(username)
+			auth.ClearLocalUser(tenantInfo.Raw, username)
 			util.WriteBackMessage(w, "permission is updated successfully", http.StatusOK)
 			return
 		}
@@ -289,7 +297,7 @@ func (p *permissions) patchPermission() http.HandlerFunc {
 				}
 			} else {
 				// clear user details locally
-				auth.ClearLocalUser(username)
+				auth.ClearLocalUser(tenantInfo.Raw, username)
 			}
 			util.WriteBackMessage(w, "permission is updated successfully", http.StatusOK)
 			return
@@ -306,11 +314,17 @@ func (p *permissions) deletePermission() http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
 		vars := mux.Vars(req)
 		username := vars["username"]
+		tenantInfo, err := domain.FromContext(req.Context())
+		if err != nil {
+			log.Errorln("error while reading domain from context")
+			telemetry.WriteBackErrorWithTelemetry(req, w, "Please make sure that you're using a tenant Id. If the issue persists please contact support@appbase.io with your domain or registered e-mail address.", http.StatusBadRequest)
+			return
+		}
 		// To decide whether to just update the local state
 		isLocal := req.URL.Query().Get("local")
 		if isLocal == "true" {
 			// delete user details locally
-			auth.ClearLocalUser(username)
+			auth.ClearLocalUser(tenantInfo.Raw, username)
 			msg := fmt.Sprintf(`permission with "username"="%s" deleted`, username)
 			util.WriteBackMessage(w, msg, http.StatusOK)
 			return
@@ -348,7 +362,7 @@ func (p *permissions) deletePermission() http.HandlerFunc {
 				}
 			} else {
 				// clear user details locally
-				auth.ClearLocalUser(username)
+				auth.ClearLocalUser(tenantInfo.Raw, username)
 			}
 			msg := fmt.Sprintf(`permission with "username"="%s" deleted`, username)
 			util.WriteBackMessage(w, msg, http.StatusOK)
@@ -386,7 +400,7 @@ func (p *permissions) getPermissions() http.HandlerFunc {
 			util.WriteBackError(w, msg, http.StatusUnauthorized)
 			return
 		}
-		raw, err := p.es.getPermissions(ctx, req, indices)
+		raw, err := p.es.getPermissions(ctx, indices)
 		if err != nil {
 			msg := fmt.Sprintf(`an error occurred while fetching permissions`)
 			log.Errorln(logTag, ":", msg, ":", err)

@@ -24,37 +24,43 @@ func (s CacheSyncScript) PluginName() string {
 func (s CacheSyncScript) SetCache(response *elastic.SearchResult) error {
 	userHits := util.GetHitsForIndex(response, s.index)
 
-	// username to user map
-	var usersMap = make(map[string]*user.User)
+	// domain to username to permission map
+	var usersMap = make(map[string]map[string]*user.User)
 	for _, userHit := range userHits {
-		var user user.User
-		err := json.Unmarshal(userHit.Source, &user)
+		var userPermission user.User
+		err := json.Unmarshal(userHit.Source, &userPermission)
 		if err != nil {
 			log.Errorln(logTag, ":", err)
 			return err
 		}
-		usersMap[user.Username] = &user
-	}
-	// Update cached credentials
-	for _, credential := range auth.GetCachedCredentials() {
-		credentialAsUser, ok := credential.(*user.User)
-		if ok {
-			var ESuser = usersMap[credentialAsUser.Username]
-			if ESuser != nil {
-				// detect change in password and delete the cached password
-				if credentialAsUser.Password != ESuser.Password {
-					// clear cached valid password
-					auth.ClearPassword(credentialAsUser.Username)
-				}
-				// update user to cache
-				auth.SaveCredentialToCache(credentialAsUser.Username, usersMap[credentialAsUser.Username])
-			} else {
-				// delete user from cache
-				auth.RemoveCredentialFromCache(credentialAsUser.Username)
-				// clear cached valid password
-				auth.ClearPassword(credentialAsUser.Username)
+		if _, ok := usersMap[userPermission.Domain]; ok {
+			usersMap[userPermission.Domain][userPermission.Username] = &userPermission
+		} else {
+			usersMap[userPermission.Domain] = map[string](*user.User){
+				userPermission.Username: &userPermission,
 			}
 		}
+
 	}
+	// Update cached credentials
+	for domain, _ := range auth.GetCachedCredentials() {
+		for _, credential := range auth.GetCachedCredentialsByDomain(domain) {
+			credentialAsUser, ok := credential.(*user.User)
+			if ok {
+				if domainMap, ok := usersMap[domain]; ok {
+					if esUser, ok := domainMap[credentialAsUser.Username]; ok {
+						// update permission to cache
+						auth.SaveCredentialToCache(domain, credentialAsUser.Username, esUser)
+					} else {
+						// delete permission from cache
+						auth.RemoveCredentialFromCache(domain, credentialAsUser.Username)
+					}
+				}
+
+			}
+		}
+
+	}
+
 	return nil
 }

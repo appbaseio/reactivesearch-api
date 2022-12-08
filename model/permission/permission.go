@@ -61,6 +61,7 @@ type Permission struct {
 	Expired              bool                  `json:"expired"`
 	ReactiveSearchConfig *ReactiveSearchConfig `json:"reactivesearchConfig,omitempty"`
 	UpdatedAt            string                `json:"updated_at"`
+	Domain               string                `json:"domain,omitempty"`
 }
 
 // Limits defines the rate limits for each category.
