@@ -157,3 +157,9 @@ func (es *elasticsearch) pingES() http.HandlerFunc {
 		util.WriteBackRaw(w, responseInBytes, code)
 	}
 }
+
+func (es *elasticsearch) arcHealthCheck() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		util.WriteBackRaw(w, []byte(""), http.StatusOK)
+	}
+}

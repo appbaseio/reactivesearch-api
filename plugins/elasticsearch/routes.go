@@ -117,11 +117,21 @@ func (es *elasticsearch) preprocess(mw []middleware.Middleware) error {
 		HandlerFunc: (&chain{}).Adapt(es.pingES(), classifyCategory, classifyOp, auth.BasicAuth()),
 		Description: "You know, for search",
 	}
+
+	// Determine the healthCheck handler to use.
+	//
+	// For non-SLS, we can keep the older handler but for SLS, we will
+	// return a 200 OK because health check will be to check Arc.
+	healthCheckHandler := es.healthCheck()
+	if util.IsSLSEnabled() {
+		healthCheckHandler = es.arcHealthCheck()
+	}
+
 	healthCheckRoute := plugins.Route{
 		Name:        "health check",
 		Methods:     []string{http.MethodGet, http.MethodHead},
 		Path:        "/arc/health",
-		HandlerFunc: es.healthCheck(),
+		HandlerFunc: healthCheckHandler,
 		Description: "Retrieve the cluster health, both appbase.io and Elasticsearch",
 	}
 	routes = append(routes, indexRoute, healthCheckRoute)

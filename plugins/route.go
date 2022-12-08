@@ -258,7 +258,7 @@ func (h *RouterHealthCheck) Append(status bool) {
 //
 // This function should be run with a cron job to be effective.
 func (h *RouterHealthCheck) Check() {
-	endpoint := "/arc/_health"
+	endpoint := "/arc/health"
 
 	// Build the URL to hit
 	ssl := "http"
