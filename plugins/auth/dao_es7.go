@@ -20,7 +20,11 @@ func (es *elasticsearch) getPublicKeyEs7(ctx context.Context, publicKeyIndex, pu
 
 	resp, err := util.SearchServiceWithAuth(util.GetInternalClient7().Search().
 		Index(publicKeyIndex).Query(es7.NewTermQuery("_id", publicKeyDocID)), ctx).Do(ctx)
-	if len(resp.Hits.Hits) < 1 {
+	if err != nil {
+		log.Errorln(logTag, ": error retrieving publickey record", err)
+		return record, err
+	}
+	if resp != nil && len(resp.Hits.Hits) < 1 {
 		return record, errors.New("public key record not found")
 	}
 
