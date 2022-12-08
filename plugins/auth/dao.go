@@ -21,8 +21,9 @@ type elasticsearch struct {
 }
 
 type publicKey struct {
-	PublicKey string `json:"public_key"`
-	RoleKey   string `json:"role_key"`
+	PublicKey string  `json:"public_key"`
+	RoleKey   string  `json:"role_key"`
+	Domain    *string `json:"domain"`
 }
 
 func initPlugin(userIndex, permissionIndex string) (*elasticsearch, error) {

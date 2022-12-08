@@ -41,7 +41,7 @@ type User struct {
 	UpdatedAt        string              `json:"updated_at"`
 	Sources          *[]string           `json:"sources"`
 	SourcesXffValue  *int                `json:"sources_xff_value"`
-	Domain           string              `json:"domain"`
+	Domain           *string             `json:"domain"`
 }
 
 // Options is a function type used to define a user's properties.

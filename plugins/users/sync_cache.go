@@ -33,13 +33,16 @@ func (s CacheSyncScript) SetCache(response *elastic.SearchResult) error {
 			log.Errorln(logTag, ":", err)
 			return err
 		}
-		if _, ok := usersMap[userPermission.Domain]; ok {
-			usersMap[userPermission.Domain][userPermission.Username] = &userPermission
-		} else {
-			usersMap[userPermission.Domain] = map[string](*user.User){
-				userPermission.Username: &userPermission,
+		if userPermission.Domain != nil {
+			if _, ok := usersMap[*userPermission.Domain]; ok {
+				usersMap[*userPermission.Domain][userPermission.Username] = &userPermission
+			} else {
+				usersMap[*userPermission.Domain] = map[string](*user.User){
+					userPermission.Username: &userPermission,
+				}
 			}
 		}
+
 	}
 	// Update cached credentials
 	for domain, _ := range auth.GetCachedCredentials() {
