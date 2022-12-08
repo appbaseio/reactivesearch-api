@@ -13,6 +13,11 @@ type Error struct {
 	Err     error
 }
 
+type ErrorWithCode struct {
+	Code int
+	Err  error
+}
+
 type Migration interface {
 	// ConditionCheck method allows you to control the script
 	// execution only when a certain confition met
