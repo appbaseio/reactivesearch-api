@@ -23,7 +23,7 @@ func (s CacheSyncScript) PluginName() string {
 
 func (s CacheSyncScript) SetCache(response *elastic.SearchResult) error {
 
-	var pubicKeyResponseByDomain map[string]*publicKey
+	var pubicKeyResponseByDomain = make(map[string]*publicKey)
 	publicKeys := util.GetHitsForIndex(response, s.index)
 
 	for _, hit := range publicKeys {
