@@ -669,9 +669,9 @@ func syncPluginCache() {
 	// We need to make sure that different tenant's data stays
 	// separate so the request needs to be through the util
 	// methods for the tenant.
-	response, err := util.GetInternalClient7().
+	response, err := util.SearchServiceWithAuth(util.GetInternalClient7().
 		Search(indexToSearch).
-		Size(10000).Do(context.Background())
+		Size(10000), nil).Do(context.Background())
 
 	if err != nil {
 		log.Errorln(logTag, "Error while syncing plugin cache", err.Error())

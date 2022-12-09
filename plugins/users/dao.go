@@ -173,11 +173,11 @@ func (es *elasticsearch) postUser(ctx context.Context, u user.User) (bool, error
 	// Create an Unique ID
 	userID := uuid.New().String()
 
-	_, err := util.GetInternalClient7().Index().
+	_, err := util.IndexServiceWithAuth(util.GetInternalClient7().Index().
 		Refresh("wait_for").
 		Index(es.indexName).
 		Id(userID).
-		BodyJson(u).Do(ctx)
+		BodyJson(u), ctx).Do(ctx)
 
 	if err != nil {
 		return false, err
@@ -197,10 +197,10 @@ func (es *elasticsearch) deleteUser(ctx context.Context, username string) (bool,
 		return false, idFetchErr
 	}
 
-	_, err := util.GetInternalClient7().Delete().
+	_, err := util.DeleteServiceWithAuth(util.GetInternalClient7().Delete().
 		Refresh("wait_for").
 		Index(es.indexName).
-		Id(userID).Do(ctx)
+		Id(userID), ctx).Do(ctx)
 
 	if err != nil {
 		return false, err

@@ -62,11 +62,11 @@ func (es *elasticsearch) getRawLogsES7(ctx context.Context, logsFilter logsFilte
 		searchQuery.Filter(latencyRangeQuery)
 	}
 
-	searchRequest := util.GetInternalClient7().
+	searchRequest := util.SearchServiceWithAuth(util.GetInternalClient7().
 		Search(es.indexName).
 		Query(searchQuery).
 		From(logsFilter.Offset).
-		Size(logsFilter.Size)
+		Size(logsFilter.Size), ctx)
 
 	if logsFilter.OrderByLatency != "" {
 		ascending := false
@@ -115,8 +115,8 @@ func (es *elasticsearch) getRawLogES7(ctx context.Context, ID string, parseDiffs
 	// Create the query
 	searchQuery := es7.NewTermQuery("_id", ID)
 
-	searchRequest := util.GetInternalClient7().Search().
-		Index(es.indexName).Query(searchQuery).Size(1)
+	searchRequest := util.SearchServiceWithAuth(util.GetInternalClient7().Search().
+		Index(es.indexName).Query(searchQuery).Size(1), ctx)
 
 	response, err := searchRequest.Do(context.Background())
 
