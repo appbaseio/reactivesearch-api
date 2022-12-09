@@ -2,6 +2,7 @@ package util
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -57,7 +58,22 @@ func SetTier(plan *Plan) {
 }
 
 // GetTier returns the current tier
-func GetTier() *Plan {
+func GetTier(ctx context.Context) *Plan {
+	if MultiTenant {
+		if ctx == nil {
+			return nil
+		}
+		// Fetch the domain from context
+		domainUsed, domainFetchErr := domain.FromContext(ctx)
+		if domainFetchErr != nil {
+			return nil
+		}
+		planInfo := GetSLSInstanceByDomain(domainUsed.Raw)
+		if planInfo != nil {
+			return planInfo.Tier
+		}
+		return nil
+	}
 	return tier
 }
 
@@ -313,7 +329,7 @@ func getArcInstance(arcID string) (ArcInstance, error) {
 				log.Errorln("error while refreshing plan, please contact at support@appbase.io")
 				// If plan is not set already (that would be the case at the time of initialization)
 				// then set the highest appbase.io plan
-				plan := GetTier()
+				plan := GetTier(nil)
 				if plan == nil {
 					highestPlan := ArcEnterprise
 					plan = &highestPlan
@@ -394,7 +410,7 @@ func getArcClusterInstance(clusterID string) (ArcInstance, error) {
 				log.Errorln("error while refreshing plan, please contact at support@appbase.io")
 				// If plan is not set already (that would be the case at the time of initialization)
 				// then set the highest appbase.io plan
-				plan := GetTier()
+				plan := GetTier(nil)
 				if plan == nil {
 					highestPlan := HostedArcEnterprise2021
 					plan = &highestPlan
@@ -458,7 +474,7 @@ func getClusterPlan(clusterID string) (ClusterPlan, error) {
 			planDetails, err := GetCachedPlanDetails()
 			if err != nil {
 				log.Errorln("error while refreshing plan, please contact at support@appbase.io")
-				plan := GetTier()
+				plan := GetTier(nil)
 				if plan == nil {
 					highestPlan := ProductionThird2021
 					plan = &highestPlan
@@ -552,7 +568,7 @@ func reportUsageRequest(arcUsage ArcUsage) (ArcUsageResponse, error) {
 	res, err := HTTPClient().Do(req)
 	// If ACCAPI is down then set the plan
 	if (res != nil && res.StatusCode >= 500) || err != nil {
-		plan := GetTier()
+		plan := GetTier(nil)
 		// If plan is not set already (that would be the case at the time of initialization)
 		// then set the highest appbase.io plan
 		if plan == nil {
@@ -593,7 +609,7 @@ func reportClusterUsageRequest(arcUsage ArcUsage) (ArcUsageResponse, error) {
 	res, err := HTTPClient().Do(req)
 	// If ACCAPI is down then set the plan
 	if (res != nil && res.StatusCode >= 500) || err != nil {
-		plan := GetTier()
+		plan := GetTier(nil)
 		// If plan is not set already (that would be the case at the time of initialization)
 		// then set the highest hosted appbase.io plan
 		if plan == nil {

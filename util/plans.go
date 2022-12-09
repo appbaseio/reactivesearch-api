@@ -1,6 +1,7 @@
 package util
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 )
@@ -216,15 +217,15 @@ func (o Plan) MarshalJSON() ([]byte, error) {
 }
 
 // ValidatePlans validates the user's plan against the valid plans
-func ValidatePlans(validPlans []Plan, byPassValidation bool) bool {
+func ValidatePlans(ctx context.Context, validPlans []Plan, byPassValidation bool) bool {
 	if byPassValidation {
 		return true
 	}
-	if GetTier() == nil {
+	if GetTier(ctx) == nil {
 		return false
 	}
 	for _, validPlan := range validPlans {
-		if GetTier().String() == validPlan.String() {
+		if GetTier(ctx).String() == validPlan.String() {
 			return true
 		}
 	}
@@ -232,8 +233,12 @@ func ValidatePlans(validPlans []Plan, byPassValidation bool) bool {
 }
 
 // IsProductionPlan validates if the user's plan is a production plan
-func IsProductionPlan() bool {
-	switch GetTier().String() {
+func IsProductionPlan(ctx context.Context) bool {
+	tier := GetTier(ctx)
+	if tier == nil {
+		return false
+	}
+	switch tier.String() {
 	case ArcEnterprise.String(),
 		HostedArcEnterprise.String(),
 		ProductionFirst2019.String(),

@@ -1,6 +1,7 @@
 package validate
 
 import (
+	"context"
 	"net/http"
 
 	"github.com/appbaseio/reactivesearch-api/middleware"
@@ -10,8 +11,8 @@ import (
 
 // Plan returns a middleware that validates the user's plan.
 // For e.g `validate.Plan([]util.Plan{util.ArcEnterprise}),` restricts the route to only appbase.io enterprise users.
-func Plan(validPlans []util.Plan, byPassValidation bool, featureName string) middleware.Middleware {
-	if util.ValidatePlans(validPlans, byPassValidation) {
+func Plan(ctx context.Context, validPlans []util.Plan, byPassValidation bool, featureName string) middleware.Middleware {
+	if util.ValidatePlans(ctx, validPlans, byPassValidation) {
 		return validPlan
 	}
 	return invalidPlanMiddleware(featureName)
@@ -25,8 +26,9 @@ func invalidPlanMiddleware(featureName string) middleware.Middleware {
 		}
 		return func(w http.ResponseWriter, req *http.Request) {
 			msg := feature + " is not available for the free plan users, please upgrade to a paid plan."
-			if util.GetTier() != nil {
-				msg = feature + " is not available for the " + util.GetTier().String() + " plan users, please upgrade to a higher plan."
+			tier := util.GetTier(req.Context())
+			if tier != nil {
+				msg = feature + " is not available for the " + tier.String() + " plan users, please upgrade to a higher plan."
 			}
 			telemetry.WriteBackErrorWithTelemetry(req, w, msg, http.StatusPaymentRequired)
 		}

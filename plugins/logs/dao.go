@@ -125,7 +125,7 @@ func (es *elasticsearch) rolloverIndexJob(alias string) {
 	ctx := context.Background()
 	rolloverConditions := make(map[string]interface{})
 	rolloverConfiguration := fmt.Sprintf(rolloverConfig, "7d", 10000, "1gb")
-	if util.IsProductionPlan() {
+	if util.IsProductionPlan(nil) {
 		rolloverConfiguration = fmt.Sprintf(rolloverConfig, "30d", 1000000, "10gb")
 	}
 	json.Unmarshal([]byte(rolloverConfiguration), &rolloverConditions)

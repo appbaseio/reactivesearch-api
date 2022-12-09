@@ -24,7 +24,7 @@ type slsInstanceDetails struct {
 	Trial                   bool                   `json:"trial"`
 	TrialValidity           int64                  `json:"trial_validity"`
 	CreatedAt               int64                  `json:"created_at"`
-	Tier                    string                 `json:"tier"`
+	Tier                    *Plan                  `json:"tier"`
 	TierValidity            int64                  `json:"tier_validity"`
 	TimeValidity            int64                  `json:"time_validity"`
 	Metadata                map[string]interface{} `json:"metadata"`

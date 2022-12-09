@@ -121,8 +121,9 @@ func (t *Telemetry) recordTelemetry(w *httptest.ResponseRecorder, r *http.Reques
 	// ---- Start Server Mode and Plan Calculation: Required ----
 	serverMode := getServerMode()
 	var plan string
-	if util.GetTier() != nil {
-		plan = util.GetTier().String()
+	tier := util.GetTier(ctx)
+	if tier != nil {
+		plan = tier.String()
 	}
 	if serverMode == defaultServerMode {
 		plan = "opensource"

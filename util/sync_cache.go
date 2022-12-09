@@ -22,12 +22,16 @@ var syncScripts []SyncPluginCache
 var syncInterval *int
 
 func GetSyncInterval() int {
+	// Sync interval is 60s for multi-tenant images
+	if MultiTenant {
+		return 60
+	}
 	if syncInterval != nil {
 		return *syncInterval
 	}
 	if Billing == "true" {
 		// For Arc Enterprise plan
-		if GetTier() != nil && *GetTier() == ArcEnterprise {
+		if GetTier(nil) != nil && *GetTier(nil) == ArcEnterprise {
 			return 60
 		}
 	}

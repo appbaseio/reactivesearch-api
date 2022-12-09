@@ -11,7 +11,7 @@ func TestBilling(t *testing.T) {
 		Convey("Set Tier", func() {
 			var plan = Sandbox
 			SetTier(&plan)
-			So(GetTier().String(), ShouldEqual, Sandbox.String())
+			So(GetTier(nil).String(), ShouldEqual, Sandbox.String())
 		})
 		Convey("Set TimeValidity", func() {
 			var timeValidityMock = 1200000
