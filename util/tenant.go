@@ -78,3 +78,62 @@ func HideTenantID(bodyInBytes []byte, ctx context.Context) ([]byte, error) {
 	updatedBody := strings.Replace(string(bodyInBytes), tenantID, tenantIdReplacer, -1)
 	return []byte(updatedBody), nil
 }
+
+// addTenantIdFilterQuery adds a term query to filter documents by tenant Id
+func addTenantIdFilterQuery(rawQuery []byte, ctx context.Context) ([]byte, error) {
+	// Fetch the domain from the context and get the tenant ID using that.
+	domainFromCtx, domainFetchErr := domain.FromContext(ctx)
+	if domainFetchErr != nil {
+		return nil, domainFetchErr
+	}
+
+	tenantId := GetTenantForDomain(domainFromCtx.Raw)
+
+	if tenantId != "*" {
+		termQueryTenantId := map[string]interface{}{
+			"term": map[string]interface{}{
+				"tenant_id.keyword": tenantId,
+			},
+		}
+		// if request body is not empty then modify the request query
+		if len(rawQuery) > 0 {
+			var queryJSON map[string]interface{}
+			err := json.Unmarshal(rawQuery, &queryJSON)
+			if err != nil {
+				return nil, err
+			}
+
+			queryValue := queryJSON["query"]
+			if queryValue == nil {
+				queryValue = map[string]interface{}{
+					"match_all": map[string]interface{}{},
+				}
+			}
+			// check if query if filtering by `_id`
+			queryMap, ok := queryValue.(map[string]interface{})
+			if ok {
+				termMap, ok := queryMap["term"].(map[string]interface{})
+				if ok {
+					idString, ok := termMap["_id"].(string)
+					if ok {
+						termMap["_id"] = AppendTenantID(idString, tenantId)
+						queryMap["term"] = termMap
+						queryValue = queryMap
+					}
+				}
+			}
+			tenantIdFilterQuery := map[string]interface{}{
+				"bool": map[string]interface{}{
+					"must": []interface{}{
+						queryValue,
+						termQueryTenantId,
+					},
+				},
+			}
+			queryJSON["query"] = tenantIdFilterQuery
+			return json.Marshal(queryJSON)
+		}
+		return json.Marshal(map[string]interface{}{"query": termQueryTenantId})
+	}
+	return rawQuery, nil
+}
