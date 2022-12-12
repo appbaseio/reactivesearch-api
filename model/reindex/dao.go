@@ -580,8 +580,8 @@ func GetAliasedIndices(ctx context.Context) ([]AliasedIndices, error) {
 		indicesList[i].Rep, _ = strconv.Atoi(fmt.Sprintf("%v", index.Rep))
 		indicesList[i].DocsCount, _ = strconv.Atoi(fmt.Sprintf("%v", index.DocsCount))
 		indicesList[i].DocsDeleted, _ = strconv.Atoi(fmt.Sprintf("%v", index.DocsDeleted))
-		_, indicesList[i].Alias = util.RemoveTenantID(indicesList[i].Alias)
-		tenantId, indexName := util.RemoveTenantID(indicesList[i].Index)
+		indicesList[i].Alias, _ = util.RemoveTenantID(indicesList[i].Alias)
+		indexName, tenantId := util.RemoveTenantID(indicesList[i].Index)
 		if tenantId == "" {
 			continue
 		}
