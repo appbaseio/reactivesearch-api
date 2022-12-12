@@ -578,6 +578,8 @@ func GetAliasedIndices(ctx context.Context) ([]AliasedIndices, error) {
 		indicesList[i].Rep, _ = strconv.Atoi(fmt.Sprintf("%v", index.Rep))
 		indicesList[i].DocsCount, _ = strconv.Atoi(fmt.Sprintf("%v", index.DocsCount))
 		indicesList[i].DocsDeleted, _ = strconv.Atoi(fmt.Sprintf("%v", index.DocsDeleted))
+		_, indicesList[i].Alias = util.RemoveTenantID(indicesList[i].Alias)
+		_, indicesList[i].Index = util.RemoveTenantID(indicesList[i].Index)
 		var alias string
 		regex := ".*reindexed_[0-9]+"
 		rolloverPattern := ".*-[0-9]+"
@@ -599,7 +601,6 @@ func GetAliasedIndices(ctx context.Context) ([]AliasedIndices, error) {
 				alias = row.Alias
 				break
 			}
-
 		}
 		if err == nil && alias != "" {
 			indicesList[i].Alias = alias
