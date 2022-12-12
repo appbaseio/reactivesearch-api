@@ -28,13 +28,18 @@ var (
 	zincTag        string = "[zinc]"
 )
 
-// IndexService will be used to make index requests to Zinc
-type IndexService struct {
+// RequestService will be used to make requests to Zinc
+type RequestService struct {
 	Endpoint        string
 	Method          string
 	internalHeaders *http.Header
 	Body            []byte
 	clientToUse     *ZincClient
+}
+
+// IndexService will be used to make index requests to Zinc
+type IndexService struct {
+	RequestService
 }
 
 // GetZincData will return the zinc data from the
@@ -152,11 +157,13 @@ func (zc *ZincClient) Index(endpoint string, method string, body []byte) *IndexS
 	// Create a new index service object
 
 	newIndexService := IndexService{
-		Endpoint:        endpoint,
-		Method:          method,
-		Body:            body,
-		internalHeaders: nil,
-		clientToUse:     zc,
+		RequestService: RequestService{
+			Endpoint:        endpoint,
+			Method:          method,
+			Body:            body,
+			internalHeaders: nil,
+			clientToUse:     zc,
+		},
 	}
 
 	return &newIndexService
