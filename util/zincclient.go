@@ -5,6 +5,8 @@ import (
 	"context"
 	"encoding/base64"
 	"fmt"
+	"io"
+	"io/ioutil"
 	"net/http"
 	"os"
 	"strings"
@@ -98,7 +100,7 @@ func initZincClient() {
 }
 
 // MakeRequest will allow making a request to zinc index.
-func (zc *ZincClient) MakeRequest(endpoint string, method string, body []byte, headers *http.Header) (*http.Response, error) {
+func (zc *ZincClient) MakeRequest(endpoint string, method string, body []byte, headers *http.Header, ctx context.Context) (*http.Response, error) {
 	urlToHit := fmt.Sprintf("%s/%s", zc.URL, endpoint)
 
 	if headers == nil {
@@ -126,6 +128,21 @@ func (zc *ZincClient) MakeRequest(endpoint string, method string, body []byte, h
 
 	// Send the request now
 	response, responseErr := HTTPClient().Do(request)
+
+	// Read the body, remove tenant ID and then return it
+	responseBody, readErr := io.ReadAll(response.Body)
+
+	if readErr != nil {
+		return nil, fmt.Errorf("error while reading response to remove tenant_id: %s", readErr.Error())
+	}
+
+	updatedResponseBody, hideErr := HideTenantID(responseBody, ctx)
+	if hideErr != nil {
+		return nil, fmt.Errorf("error while hiding tenant_id from body: %s", hideErr.Error())
+	}
+
+	// TODO: Confirm that body is updated
+	response.Body = ioutil.NopCloser(bytes.NewBuffer(updatedResponseBody))
 
 	return response, responseErr
 }
@@ -161,7 +178,7 @@ func (is *IndexService) Do(ctx context.Context) (*http.Response, error) {
 		return nil, updateErr
 	}
 
-	return is.clientToUse.MakeRequest(is.Endpoint, is.Method, updatedBody, is.internalHeaders)
+	return is.clientToUse.MakeRequest(is.Endpoint, is.Method, updatedBody, is.internalHeaders, ctx)
 }
 
 // NewClient instantiates the Zinc Client
