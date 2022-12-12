@@ -24,6 +24,14 @@ var (
 	zincClient     *ZincClient
 )
 
+// IndexService will be used to make index requests to Zinc
+type IndexService struct {
+	Endpoint        string
+	Method          string
+	internalHeaders *http.Header
+	Body            []byte
+}
+
 // GetZincData will return the zinc data from the
 // environment.
 //
@@ -117,6 +125,26 @@ func (zc *ZincClient) MakeRequest(endpoint string, method string, body []byte, h
 	response, responseErr := HTTPClient().Do(request)
 
 	return response, responseErr
+}
+
+// Index will return an IndexService object with the passed details
+func (zc *ZincClient) Index(endpoint string, method string, body []byte) *IndexService {
+	// Create a new index service object
+
+	newIndexService := IndexService{
+		Endpoint:        endpoint,
+		Method:          method,
+		Body:            body,
+		internalHeaders: nil,
+	}
+
+	return &newIndexService
+}
+
+// Headers will allow adding headers to the request
+func (is *IndexService) Headers(headers *http.Header) *IndexService {
+	is.internalHeaders = headers
+	return is
 }
 
 // NewClient instantiates the Zinc Client
