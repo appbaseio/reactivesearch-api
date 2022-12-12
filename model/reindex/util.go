@@ -10,6 +10,7 @@ import (
 	"sync"
 
 	"github.com/appbaseio/reactivesearch-api/middleware/classify"
+	"github.com/appbaseio/reactivesearch-api/util"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -107,7 +108,9 @@ func InitIndexAliasCache() {
 
 	for _, aliasIndex := range indexAlias {
 		if aliasIndex.Alias != "" {
-			classify.SetIndexAlias(aliasIndex.Index, aliasIndex.Alias)
+			index, tenantId := util.RemoveTenantID(aliasIndex.Index)
+			alias, _ := util.RemoveTenantID(aliasIndex.Alias)
+			classify.SetIndexAlias(tenantId, index, alias)
 		}
 	}
 	log.Debugln(logTag, "=> Index Alias Cache", classify.GetIndexAliasCache())

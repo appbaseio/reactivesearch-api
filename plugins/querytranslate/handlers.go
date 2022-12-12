@@ -12,7 +12,9 @@ import (
 	"time"
 
 	"github.com/appbaseio/reactivesearch-api/middleware/classify"
+	"github.com/appbaseio/reactivesearch-api/model/domain"
 	"github.com/appbaseio/reactivesearch-api/model/index"
+	"github.com/appbaseio/reactivesearch-api/plugins/telemetry"
 	"github.com/appbaseio/reactivesearch-api/util"
 	"github.com/buger/jsonparser"
 	es7 "github.com/olivere/elastic/v7"
@@ -22,6 +24,23 @@ import (
 func (r *QueryTranslate) search() http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
 		ctx := req.Context()
+		// Disable this middleware if the backend is not system
+		// Fetch the domain from context
+		domainUsed, domainFetchErr := domain.FromContext(req.Context())
+		if domainFetchErr != nil {
+			errMsg := "Error while validating the domain!"
+			log.Warnln(logTag, ": ", errMsg)
+			telemetry.WriteBackErrorWithTelemetry(req, w, errMsg, http.StatusUnauthorized)
+			return
+		}
+		tenantDetails := util.GetSLSInstanceByDomain(domainUsed.Raw)
+		if tenantDetails == nil {
+			errMsg := "Error while validating the domain!"
+			log.Warnln(logTag, ": ", errMsg)
+			telemetry.WriteBackErrorWithTelemetry(req, w, errMsg, http.StatusUnauthorized)
+			return
+		}
+		tenantId := tenantDetails.TenantID
 
 		// Fetch the index value from context instead of vars
 		indexValue, fetchErr := FromIndexMsearchContext(ctx)
@@ -161,13 +180,13 @@ func (r *QueryTranslate) search() http.HandlerFunc {
 		}
 		// Replace indices to alias
 		for _, index := range indices {
-			alias := classify.GetIndexAlias(index)
+			alias := classify.GetIndexAlias(tenantId, index)
 			if alias != "" {
 				rsResponse = bytes.Replace(rsResponse, []byte(`"`+index+`"`), []byte(`"`+alias+`"`), -1)
 				continue
 			}
 			// if alias is present in url get index name from cache
-			indexName := classify.GetAliasIndex(index)
+			indexName := classify.GetAliasIndex(tenantId, index)
 			if indexName != "" {
 				rsResponse = bytes.Replace(rsResponse, []byte(`"`+indexName+`"`), []byte(`"`+index+`"`), -1)
 			}
