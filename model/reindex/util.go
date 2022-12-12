@@ -109,6 +109,9 @@ func InitIndexAliasCache() {
 	for _, aliasIndex := range indexAlias {
 		if aliasIndex.Alias != "" {
 			index, tenantId := util.RemoveTenantID(aliasIndex.Index)
+			if tenantId == "" {
+				tenantId = util.DefaultTenant
+			}
 			alias, _ := util.RemoveTenantID(aliasIndex.Alias)
 			classify.SetIndexAlias(tenantId, index, alias)
 		}
