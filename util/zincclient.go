@@ -52,6 +52,11 @@ type SearchService struct {
 	RequestService
 }
 
+// UpdateService will be used to make update requests to Zinc
+type UpdateService struct {
+	RequestService
+}
+
 // GetZincData will return the zinc data from the
 // environment.
 //
@@ -252,6 +257,24 @@ func (ss *SearchService) Do(ctx context.Context) (*http.Response, error) {
 	}
 
 	return ss.clientToUse.MakeRequest(ss.Endpoint, ss.Method, bodyToUse, ss.internalHeaders, ctx)
+}
+
+// Update will return a UpdateService object with the passed details
+func (zc *ZincClient) Update(endpoint string, method string, body []byte) *UpdateService {
+	return &UpdateService{
+		RequestService: *NewRequestService(endpoint, method, body, zc),
+	}
+}
+
+// Headers will add the passed headers to the request body
+func (us *UpdateService) Headers(headers *http.Header) *UpdateService {
+	us.RequestService = *us.RequestService.Headers(headers)
+	return us
+}
+
+// Do will make the update request and return the response
+func (us *UpdateService) Do(ctx context.Context) (*http.Response, error) {
+	return us.clientToUse.MakeRequest(us.Endpoint, us.Method, us.Body, us.internalHeaders, ctx)
 }
 
 // NewClient instantiates the Zinc Client
