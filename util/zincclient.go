@@ -50,6 +50,7 @@ type BulkService struct {
 // SearchService will be used to make search requests to Zinc
 type SearchService struct {
 	RequestService
+	DisableMultiTenancy bool
 }
 
 // UpdateService will be used to make update requests to Zinc
@@ -244,7 +245,7 @@ func (ss *SearchService) Do(ctx context.Context) (*http.Response, error) {
 		return response, responseErr
 	}
 
-	if MultiTenant {
+	if MultiTenant && !ss.DisableMultiTenancy {
 		// Read the body, remove tenant ID and then return it
 		responseBody, readErr := io.ReadAll(response.Body)
 
@@ -262,6 +263,14 @@ func (ss *SearchService) Do(ctx context.Context) (*http.Response, error) {
 	}
 
 	return response, nil
+}
+
+// NotMultiTenant will specify that this is not a multi-tenant request even if
+// the build flag is set to multi-tenant and will stop all multi-tenant related
+// work done in the search Do method like replacing the tenantID etc.
+func (ss *SearchService) NotMultiTenant() *SearchService {
+	ss.DisableMultiTenancy = true
+	return ss
 }
 
 // Update will return a UpdateService object with the passed details
