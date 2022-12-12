@@ -144,20 +144,22 @@ func (zc *ZincClient) MakeRequest(endpoint string, method string, body []byte, h
 	// Send the request now
 	response, responseErr := HTTPClient().Do(request)
 
-	// Read the body, remove tenant ID and then return it
-	responseBody, readErr := io.ReadAll(response.Body)
+	if MultiTenant {
+		// Read the body, remove tenant ID and then return it
+		responseBody, readErr := io.ReadAll(response.Body)
 
-	if readErr != nil {
-		return nil, fmt.Errorf("error while reading response to remove tenant_id: %s", readErr.Error())
+		if readErr != nil {
+			return nil, fmt.Errorf("error while reading response to remove tenant_id: %s", readErr.Error())
+		}
+
+		updatedResponseBody, hideErr := HideTenantID(responseBody, ctx)
+		if hideErr != nil {
+			return nil, fmt.Errorf("error while hiding tenant_id from body: %s", hideErr.Error())
+		}
+
+		// TODO: Confirm that body is updated
+		response.Body = ioutil.NopCloser(bytes.NewBuffer(updatedResponseBody))
 	}
-
-	updatedResponseBody, hideErr := HideTenantID(responseBody, ctx)
-	if hideErr != nil {
-		return nil, fmt.Errorf("error while hiding tenant_id from body: %s", hideErr.Error())
-	}
-
-	// TODO: Confirm that body is updated
-	response.Body = ioutil.NopCloser(bytes.NewBuffer(updatedResponseBody))
 
 	return response, responseErr
 }
@@ -197,15 +199,19 @@ func (is *IndexService) Headers(headers *http.Header) *IndexService {
 
 // Do will make the request to Zinc and return a response accordingly
 func (is *IndexService) Do(ctx context.Context) (*http.Response, error) {
-	// Add the `tenantID` to the request body
-	updatedBody, updateErr := AddTenantID(is.Body, ctx)
-	if updateErr != nil {
-		errMsg := fmt.Sprint("error while adding tenant_id to passed body: ", updateErr.Error())
-		log.Warnln(zincTag, ": ", errMsg)
-		return nil, updateErr
+	bodyToUse := is.Body
+	if MultiTenant {
+		// Add the `tenantID` to the request body
+		updatedBody, updateErr := AddTenantID(is.Body, ctx)
+		if updateErr != nil {
+			errMsg := fmt.Sprint("error while adding tenant_id to passed body: ", updateErr.Error())
+			log.Warnln(zincTag, ": ", errMsg)
+			return nil, updateErr
+		}
+		bodyToUse = updatedBody
 	}
 
-	return is.clientToUse.MakeRequest(is.Endpoint, is.Method, updatedBody, is.internalHeaders, ctx)
+	return is.clientToUse.MakeRequest(is.Endpoint, is.Method, bodyToUse, is.internalHeaders, ctx)
 }
 
 // Bulk will return a BulkService object with the passed details
@@ -236,12 +242,16 @@ func (ss *SearchService) Headers(headers *http.Header) *SearchService {
 
 // Do will make the search request and return the search response
 func (ss *SearchService) Do(ctx context.Context) (*http.Response, error) {
-	updatedBody, updateErr := addTenantIdFilterQuery(ss.Body, ctx)
-	if updateErr != nil {
-		return nil, updateErr
+	bodyToUse := ss.Body
+	if MultiTenant {
+		updatedBody, updateErr := addTenantIdFilterQuery(ss.Body, ctx)
+		if updateErr != nil {
+			return nil, updateErr
+		}
+		bodyToUse = updatedBody
 	}
 
-	return ss.clientToUse.MakeRequest(ss.Endpoint, ss.Method, updatedBody, ss.internalHeaders, ctx)
+	return ss.clientToUse.MakeRequest(ss.Endpoint, ss.Method, bodyToUse, ss.internalHeaders, ctx)
 }
 
 // NewClient instantiates the Zinc Client
