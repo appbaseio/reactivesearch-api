@@ -168,6 +168,12 @@ func NewRequestService(endpoint string, method string, body []byte, zc *ZincClie
 	}
 }
 
+// Headers will allow adding headers to the request
+func (rs *RequestService) Headers(headers *http.Header) *RequestService {
+	rs.internalHeaders = headers
+	return rs
+}
+
 // Index will return an IndexService object with the passed details
 func (zc *ZincClient) Index(endpoint string, method string, body []byte) *IndexService {
 	// Create a new index service object
@@ -178,9 +184,9 @@ func (zc *ZincClient) Index(endpoint string, method string, body []byte) *IndexS
 	return &newIndexService
 }
 
-// Headers will allow adding headers to the request
+// Headers will add the headers to the index service
 func (is *IndexService) Headers(headers *http.Header) *IndexService {
-	is.internalHeaders = headers
+	is.RequestService = *is.RequestService.Headers(headers)
 	return is
 }
 
@@ -202,6 +208,12 @@ func (zc *ZincClient) Bulk(endpoint string, method string, body []byte) *BulkSer
 	return &BulkService{
 		RequestService: *NewRequestService(endpoint, method, body, zc),
 	}
+}
+
+// Headers will add the passed headers to the bulk request
+func (bs *BulkService) Headers(headers *http.Header) *BulkService {
+	bs.RequestService = *bs.RequestService.Headers(headers)
+	return bs
 }
 
 // NewClient instantiates the Zinc Client
