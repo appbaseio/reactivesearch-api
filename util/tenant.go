@@ -11,6 +11,7 @@ import (
 
 const (
 	tenantIdSeparator = "_$_tenant_$_"
+	tenantIdReplacer  = "XXXXXX"
 )
 
 // AppendTenantID will append the tenant ID to the passed string if it
@@ -61,4 +62,19 @@ func AddTenantID(bodyInBytes []byte, ctx context.Context) ([]byte, error) {
 	bodyAsMap["tenant_id"] = tenantID
 
 	return json.Marshal(bodyAsMap)
+}
+
+// HideTenantID will replace all occurrences of the `tenant_id` with a special
+// string.
+func HideTenantID(bodyInBytes []byte, ctx context.Context) ([]byte, error) {
+	// Fetch the domain from the context and get the tenant ID using that.
+	domainFromCtx, domainFetchErr := domain.FromContext(ctx)
+	if domainFetchErr != nil {
+		return nil, domainFetchErr
+	}
+
+	tenantID := GetTenantForDomain(domainFromCtx.Raw)
+
+	updatedBody := strings.Replace(string(bodyInBytes), tenantID, tenantIdReplacer, -1)
+	return []byte(updatedBody), nil
 }
