@@ -149,23 +149,6 @@ func (zc *ZincClient) MakeRequest(endpoint string, method string, body []byte, h
 	// Send the request now
 	response, responseErr := HTTPClient().Do(request)
 
-	if MultiTenant {
-		// Read the body, remove tenant ID and then return it
-		responseBody, readErr := io.ReadAll(response.Body)
-
-		if readErr != nil {
-			return nil, fmt.Errorf("error while reading response to remove tenant_id: %s", readErr.Error())
-		}
-
-		updatedResponseBody, hideErr := HideTenantID(responseBody, ctx)
-		if hideErr != nil {
-			return nil, fmt.Errorf("error while hiding tenant_id from body: %s", hideErr.Error())
-		}
-
-		// TODO: Confirm that body is updated
-		response.Body = ioutil.NopCloser(bytes.NewBuffer(updatedResponseBody))
-	}
-
 	return response, responseErr
 }
 
@@ -256,7 +239,29 @@ func (ss *SearchService) Do(ctx context.Context) (*http.Response, error) {
 		bodyToUse = updatedBody
 	}
 
-	return ss.clientToUse.MakeRequest(ss.Endpoint, ss.Method, bodyToUse, ss.internalHeaders, ctx)
+	response, responseErr := ss.clientToUse.MakeRequest(ss.Endpoint, ss.Method, bodyToUse, ss.internalHeaders, ctx)
+	if responseErr != nil {
+		return response, responseErr
+	}
+
+	if MultiTenant {
+		// Read the body, remove tenant ID and then return it
+		responseBody, readErr := io.ReadAll(response.Body)
+
+		if readErr != nil {
+			return nil, fmt.Errorf("error while reading response to remove tenant_id: %s", readErr.Error())
+		}
+
+		updatedResponseBody, hideErr := HideTenantID(responseBody, ctx)
+		if hideErr != nil {
+			return nil, fmt.Errorf("error while hiding tenant_id from body: %s", hideErr.Error())
+		}
+
+		// TODO: Confirm that body is updated
+		response.Body = ioutil.NopCloser(bytes.NewBuffer(updatedResponseBody))
+	}
+
+	return response, nil
 }
 
 // Update will return a UpdateService object with the passed details
