@@ -572,6 +572,8 @@ func GetAliasedIndices(ctx context.Context) ([]AliasedIndices, error) {
 		return indicesList, err
 	}
 
+	res := make([]AliasedIndices, 0)
+
 	for i, index := range indicesList {
 		// oliver PerformRequest gives this values as string, but Frontend will need them as integers
 		indicesList[i].Pri, _ = strconv.Atoi(fmt.Sprintf("%v", index.Pri))
@@ -609,10 +611,10 @@ func GetAliasedIndices(ctx context.Context) ([]AliasedIndices, error) {
 		if err == nil && alias != "" {
 			indicesList[i].Alias = alias
 		}
-
+		res = append(res, indicesList[i])
 	}
 
-	return indicesList, nil
+	return res, nil
 }
 
 // Returns a map of tenantId => Alias => Index map
