@@ -2,6 +2,7 @@ package util
 
 import (
 	"bytes"
+	"context"
 	"encoding/base64"
 	"fmt"
 	"net/http"
@@ -22,6 +23,7 @@ type ZincClient struct {
 var (
 	zincClientInit sync.Once
 	zincClient     *ZincClient
+	zincTag        string = "[zinc]"
 )
 
 // IndexService will be used to make index requests to Zinc
@@ -30,6 +32,7 @@ type IndexService struct {
 	Method          string
 	internalHeaders *http.Header
 	Body            []byte
+	clientToUse     *ZincClient
 }
 
 // GetZincData will return the zinc data from the
@@ -136,6 +139,7 @@ func (zc *ZincClient) Index(endpoint string, method string, body []byte) *IndexS
 		Method:          method,
 		Body:            body,
 		internalHeaders: nil,
+		clientToUse:     zc,
 	}
 
 	return &newIndexService
@@ -145,6 +149,19 @@ func (zc *ZincClient) Index(endpoint string, method string, body []byte) *IndexS
 func (is *IndexService) Headers(headers *http.Header) *IndexService {
 	is.internalHeaders = headers
 	return is
+}
+
+// Do will make the request to Zinc and return a response accordingly
+func (is *IndexService) Do(ctx context.Context) (*http.Response, error) {
+	// Add the `tenantID` to the request body
+	updatedBody, updateErr := AddTenantID(is.Body, ctx)
+	if updateErr != nil {
+		errMsg := fmt.Sprint("error while adding tenant_id to passed body: ", updateErr.Error())
+		log.Warnln(zincTag, ": ", errMsg)
+		return nil, updateErr
+	}
+
+	return is.clientToUse.MakeRequest(is.Endpoint, is.Method, updatedBody, is.internalHeaders)
 }
 
 // NewClient instantiates the Zinc Client
