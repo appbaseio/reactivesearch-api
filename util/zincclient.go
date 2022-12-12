@@ -42,6 +42,11 @@ type IndexService struct {
 	RequestService
 }
 
+// BulkService will be used to make bulk requests to Zinc
+type BulkService struct {
+	RequestService
+}
+
 // GetZincData will return the zinc data from the
 // environment.
 //
@@ -152,18 +157,22 @@ func (zc *ZincClient) MakeRequest(endpoint string, method string, body []byte, h
 	return response, responseErr
 }
 
+// NewRequestService will initialize a new request service with the passed values
+func NewRequestService(endpoint string, method string, body []byte, zc *ZincClient) *RequestService {
+	return &RequestService{
+		Endpoint:        endpoint,
+		Method:          method,
+		Body:            body,
+		internalHeaders: nil,
+		clientToUse:     zc,
+	}
+}
+
 // Index will return an IndexService object with the passed details
 func (zc *ZincClient) Index(endpoint string, method string, body []byte) *IndexService {
 	// Create a new index service object
-
 	newIndexService := IndexService{
-		RequestService: RequestService{
-			Endpoint:        endpoint,
-			Method:          method,
-			Body:            body,
-			internalHeaders: nil,
-			clientToUse:     zc,
-		},
+		RequestService: *NewRequestService(endpoint, method, body, zc),
 	}
 
 	return &newIndexService
@@ -186,6 +195,13 @@ func (is *IndexService) Do(ctx context.Context) (*http.Response, error) {
 	}
 
 	return is.clientToUse.MakeRequest(is.Endpoint, is.Method, updatedBody, is.internalHeaders, ctx)
+}
+
+// Bulk will return a BulkService object with the passed details
+func (zc *ZincClient) Bulk(endpoint string, method string, body []byte) *BulkService {
+	return &BulkService{
+		RequestService: *NewRequestService(endpoint, method, body, zc),
+	}
 }
 
 // NewClient instantiates the Zinc Client
