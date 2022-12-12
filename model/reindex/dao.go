@@ -85,15 +85,15 @@ func postReIndexFailure(ctx context.Context, newIndexName string) error {
 
 // Reindex Inplace: https://www.elastic.co/guide/en/elasticsearch/reference/current/reindex-upgrade-inplace.html
 //
-// 1. Create a new index and copy the mappings and settings from the old index.
-// 2. Set the refresh_interval to -1 and the number_of_replicas to 0 for efficient reindexing.
-// 3. Reindex all documents from the old index into the new index using the reindex API.
-// 4. Reset the refresh_interval and number_of_replicas to the values used in the old index.
-// 5. Wait for the index status to change to green.
-// 6. In a single update aliases request:
-// 	  a. Delete the old index.
-//	  b. Add an alias with the old index name to the new index.
-// 	  c. Add any aliases that existed on the old index to the new index.
+//  1. Create a new index and copy the mappings and settings from the old index.
+//  2. Set the refresh_interval to -1 and the number_of_replicas to 0 for efficient reindexing.
+//  3. Reindex all documents from the old index into the new index using the reindex API.
+//  4. Reset the refresh_interval and number_of_replicas to the values used in the old index.
+//  5. Wait for the index status to change to green.
+//  6. In a single update aliases request:
+//     a. Delete the old index.
+//     b. Add an alias with the old index name to the new index.
+//     c. Add any aliases that existed on the old index to the new index.
 //
 // We accept a query param `wait_for_completion` which defaults to true, which when false, we don't create any aliases
 // and delete the old index, we instead return the tasks API response.
@@ -578,8 +578,8 @@ func GetAliasedIndices(ctx context.Context) ([]AliasedIndices, error) {
 		indicesList[i].Rep, _ = strconv.Atoi(fmt.Sprintf("%v", index.Rep))
 		indicesList[i].DocsCount, _ = strconv.Atoi(fmt.Sprintf("%v", index.DocsCount))
 		indicesList[i].DocsDeleted, _ = strconv.Atoi(fmt.Sprintf("%v", index.DocsDeleted))
-		_, indicesList[i].Alias = util.RemoveTenantID(indicesList[i].Alias)
-		_, indicesList[i].Index = util.RemoveTenantID(indicesList[i].Index)
+		indicesList[i].Alias, _ = util.RemoveTenantID(indicesList[i].Alias)
+		indicesList[i].Index, _ = util.RemoveTenantID(indicesList[i].Index)
 		var alias string
 		regex := ".*reindexed_[0-9]+"
 		rolloverPattern := ".*-[0-9]+"
