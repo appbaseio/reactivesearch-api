@@ -47,6 +47,11 @@ type BulkService struct {
 	RequestService
 }
 
+// SearchService will be used to make search requests to Zinc
+type SearchService struct {
+	RequestService
+}
+
 // GetZincData will return the zinc data from the
 // environment.
 //
@@ -214,6 +219,29 @@ func (zc *ZincClient) Bulk(endpoint string, method string, body []byte) *BulkSer
 func (bs *BulkService) Headers(headers *http.Header) *BulkService {
 	bs.RequestService = *bs.RequestService.Headers(headers)
 	return bs
+}
+
+// Search will return a SearchService object with the passed details
+func (zc *ZincClient) Search(endpoint string, method string, body []byte) *SearchService {
+	return &SearchService{
+		RequestService: *NewRequestService(endpoint, method, body, zc),
+	}
+}
+
+// Headers will add the passed headers to the request body
+func (ss *SearchService) Headers(headers *http.Header) *SearchService {
+	ss.RequestService = *ss.RequestService.Headers(headers)
+	return ss
+}
+
+// Do will make the search request and return the search response
+func (ss *SearchService) Do(ctx context.Context) (*http.Response, error) {
+	updatedBody, updateErr := addTenantIdFilterQuery(ss.Body, ctx)
+	if updateErr != nil {
+		return nil, updateErr
+	}
+
+	return ss.clientToUse.MakeRequest(ss.Endpoint, ss.Method, updatedBody, ss.internalHeaders, ctx)
 }
 
 // NewClient instantiates the Zinc Client
