@@ -79,7 +79,7 @@ func initPlugin(alias, config string) (*elasticsearch, error) {
 				Settings: settings,
 				Mappings: mappings,
 			}
-			taskDetails, err := reindex.Reindex(context.Background(), sourceIndex, &reIndexConfig, false, destinationIndex)
+			taskDetails, err := reindex.Reindex(util.DefaultTenant, context.Background(), sourceIndex, &reIndexConfig, false, destinationIndex)
 			if err != nil {
 				log.Errorln(logTag, ":", err)
 				return nil, fmt.Errorf("error while re-indexing logs index %v", err)
@@ -95,8 +95,8 @@ func initPlugin(alias, config string) (*elasticsearch, error) {
 
 		log.Println(logTag, ": successfully created index name", indexName)
 
-		classify.SetIndexAlias(indexName, alias)
-		classify.SetAliasIndex(alias, indexName)
+		classify.SetIndexAlias(util.DefaultTenant, indexName, alias)
+		classify.SetAliasIndex(util.DefaultTenant, alias, indexName)
 	}
 	return es, nil
 }
@@ -151,8 +151,8 @@ func (es *elasticsearch) rolloverIndexJob(alias string) {
 	log.Println(logTag, ": rollover res isRolledover", rolloverService.RolledOver)
 
 	if rolloverService.RolledOver {
-		classify.SetIndexAlias(rolloverService.NewIndex, alias)
-		classify.SetAliasIndex(alias, rolloverService.NewIndex)
+		classify.SetIndexAlias(util.DefaultTenant, rolloverService.NewIndex, alias)
+		classify.SetAliasIndex(util.DefaultTenant, alias, rolloverService.NewIndex)
 	}
 
 	// We cannot rely on rollover service response here,

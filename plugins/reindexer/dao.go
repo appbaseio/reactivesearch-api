@@ -9,15 +9,17 @@ import (
 	"github.com/prometheus/common/log"
 )
 
-func getIndexSize(ctx context.Context, indexName string) (int64, error) {
+func getIndexSize(tenantId string, ctx context.Context, indexName string) (int64, error) {
 	var res int64
 	index := indexName
 	aliasesIndexMap, err := reindex.GetAliasIndexMap(ctx)
 	if err != nil {
 		return res, err
 	}
-	if indexNameFromMap, ok := aliasesIndexMap[indexName]; ok {
-		index = indexNameFromMap
+	if domainFromMap, ok := aliasesIndexMap[tenantId]; ok {
+		if indexNameFromMap, ok := domainFromMap[indexName]; ok {
+			index = indexNameFromMap
+		}
 	}
 	// Get the client ready for the request
 	//

@@ -149,6 +149,23 @@ func intercept(h http.HandlerFunc) http.HandlerFunc {
 		if err != nil {
 			log.Errorln(logTag, ":", err)
 		}
+		// Disable this middleware if the backend is not system
+		// Fetch the domain from context
+		domainUsed, domainFetchErr := domain.FromContext(req.Context())
+		if domainFetchErr != nil {
+			errMsg := "Error while validating the domain!"
+			log.Warnln(logTag, ": ", errMsg)
+			telemetry.WriteBackErrorWithTelemetry(req, w, errMsg, http.StatusUnauthorized)
+			return
+		}
+		tenantDetails := util.GetSLSInstanceByDomain(domainUsed.Raw)
+		if tenantDetails == nil {
+			errMsg := "Error while validating the domain!"
+			log.Warnln(logTag, ": ", errMsg)
+			telemetry.WriteBackErrorWithTelemetry(req, w, errMsg, http.StatusUnauthorized)
+			return
+		}
+		tenantId := tenantDetails.TenantID
 		isMsearch := *reqACL == acl.Msearch
 		isSearch := *reqACL == acl.Search
 		if (isSearch || isMsearch) && !strings.Contains(req.URL.Path, "/scroll") {
@@ -343,13 +360,13 @@ func intercept(h http.HandlerFunc) http.HandlerFunc {
 			}
 		}
 		for _, index := range indices {
-			alias := classify.GetIndexAlias(index)
+			alias := classify.GetIndexAlias(tenantId, index)
 			if alias != "" {
 				body = bytes.Replace(body, []byte(`"`+index+`"`), []byte(`"`+alias+`"`), -1)
 				continue
 			}
 			// if alias is present in url get index name from cache
-			indexName := classify.GetAliasIndex(index)
+			indexName := classify.GetAliasIndex(tenantId, index)
 			if indexName != "" {
 				body = bytes.Replace(body, []byte(`"`+indexName+`"`), []byte(`"`+index+`"`), -1)
 			}
@@ -415,17 +432,6 @@ func (wh *WhitelistedRoute) UpdateIndexName(h http.HandlerFunc) http.HandlerFunc
 		indexWithTenant := util.AppendTenantID(indexPassed, tenantId)
 		req.URL.Path = strings.Replace(req.URL.Path, indexPassed, indexWithTenant, -1)
 
-		// If route is index and method is POST/DELETE, we need to update the tenant index cache
-		if wh.Path == "/{index}" {
-			if req.Method == http.MethodDelete {
-				// Remove the entry from the cache
-				DeleteIndexFromCache(tenantId, indexPassed)
-			} else if req.Method == http.MethodPut {
-				// Add the new entry in the cache
-				SetIndexToCache(tenantId, indexPassed)
-			}
-		}
-
 		// Serve using response recorder to capture the response
 		//
 		// We are doing this because we want to modify the outgoing response with
@@ -438,6 +444,17 @@ func (wh *WhitelistedRoute) UpdateIndexName(h http.HandlerFunc) http.HandlerFunc
 			w.Header()[k] = v
 		}
 		w.WriteHeader(respRecorder.Code)
+
+		// If route is index and method is POST/DELETE, we need to update the tenant index cache
+		if wh.Path == "/{index}" && respRecorder.Code == http.StatusOK {
+			if req.Method == http.MethodDelete {
+				// Remove the entry from the cache
+				DeleteIndexFromCache(tenantId, indexPassed)
+			} else if req.Method == http.MethodPut {
+				// Add the new entry in the cache
+				SetIndexToCache(tenantId, indexPassed)
+			}
+		}
 
 		// Before writing the response, replace the index name to the one
 		// that the user passed

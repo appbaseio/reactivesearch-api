@@ -4,7 +4,8 @@ import (
 	"context"
 
 	"github.com/appbaseio/reactivesearch-api/util"
-	es7 "github.com/olivere/elastic/v7"
+	"github.com/robfig/cron"
+	log "github.com/sirupsen/logrus"
 )
 
 // CacheIndexesForTenants will fetch all the indexes from the system
@@ -13,13 +14,13 @@ import (
 //
 // This function will only execute if SLS is enabled and Multi-Tenant
 // is enabled
-func CacheIndexesForTenants(systemESClient *es7.Client, ctx context.Context) error {
+func (es *elasticsearch) CacheIndexesForTenants() error {
 	if util.IsSLSDisabled() || !util.MultiTenant {
 		return nil
 	}
 
 	// Make a _cat/indices call to get all the indexes for the tenant
-	indices, indicesFetchErr := systemESClient.CatIndices().Do(ctx)
+	indices, indicesFetchErr := es.systemESClient.CatIndices().Do(context.Background())
 	if indicesFetchErr != nil {
 		return indicesFetchErr
 	}
@@ -38,6 +39,26 @@ func CacheIndexesForTenants(systemESClient *es7.Client, ctx context.Context) err
 
 		SetIndexToCache(tenantId, strippedIndexName)
 	}
+
+	return nil
+}
+
+// InitCacheIndexes cache the tenant to index map and
+// will run a cronjob to update the cache of tenant to index map
+func (es *elasticsearch) InitCacheIndexes() error {
+	firstCacheErr := es.CacheIndexesForTenants()
+	if firstCacheErr != nil {
+		return firstCacheErr
+	}
+
+	syncCronJob := cron.New()
+	syncCronJob.AddFunc("@every 60s", func() {
+		err := es.CacheIndexesForTenants()
+		if err != nil {
+			log.Warnln(": error while syncing tenant to index cache! ", err.Error())
+		}
+	})
+	syncCronJob.Start()
 
 	return nil
 }

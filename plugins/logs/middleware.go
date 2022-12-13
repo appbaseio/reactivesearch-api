@@ -15,6 +15,7 @@ import (
 	"github.com/appbaseio/reactivesearch-api/model/category"
 	"github.com/appbaseio/reactivesearch-api/model/console"
 	"github.com/appbaseio/reactivesearch-api/model/difference"
+	"github.com/appbaseio/reactivesearch-api/model/domain"
 	"github.com/appbaseio/reactivesearch-api/model/index"
 	"github.com/appbaseio/reactivesearch-api/model/request"
 	"github.com/appbaseio/reactivesearch-api/model/requestlogs"
@@ -183,7 +184,18 @@ func (l *Logs) recordResponse(w *httptest.ResponseRecorder, r *http.Request, req
 	}
 
 	var rec record
-	tenantId, _ := util.GetAppbaseID()
+	// Disable this middleware if the backend is not system
+	// Fetch the domain from context
+	domainUsed, domainFetchErr := domain.FromContext(ctx)
+	if domainFetchErr != nil {
+		log.Errorln(logTag, ":", domainFetchErr)
+		return
+	}
+	tenantId := util.GetTenantForDomain(domainUsed.Raw)
+	if tenantId == "" {
+		log.Errorln(logTag, ":", "tenant Id must be present")
+		return
+	}
 	rec.TenantId = tenantId
 	rec.Indices = reqIndices
 	rec.Category = reqCategory.String()

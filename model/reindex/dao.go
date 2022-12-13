@@ -21,7 +21,7 @@ import (
 	es7 "github.com/olivere/elastic/v7"
 )
 
-func postReIndex(ctx context.Context, sourceIndex, newIndexName string, operation ReIndexOperation, replicas interface{}) error {
+func postReIndex(tenantId string, ctx context.Context, sourceIndex, newIndexName string, operation ReIndexOperation, replicas interface{}) error {
 	// Fetch all the aliases of old index
 	alias, err := aliasesOf(ctx, sourceIndex)
 
@@ -43,7 +43,7 @@ func postReIndex(ctx context.Context, sourceIndex, newIndexName string, operatio
 			return errors.New(`error deleting source index ` + sourceIndex + "\n" + err.Error())
 		}
 		// Set aliases of old index to the new index.
-		err = setAlias(ctx, newIndexName, aliases...)
+		err = setAlias(tenantId, ctx, newIndexName, aliases...)
 		if err != nil {
 			return errors.New(`error setting alias for ` + newIndexName + "\n" + err.Error())
 		}
@@ -85,19 +85,19 @@ func postReIndexFailure(ctx context.Context, newIndexName string) error {
 
 // Reindex Inplace: https://www.elastic.co/guide/en/elasticsearch/reference/current/reindex-upgrade-inplace.html
 //
-// 1. Create a new index and copy the mappings and settings from the old index.
-// 2. Set the refresh_interval to -1 and the number_of_replicas to 0 for efficient reindexing.
-// 3. Reindex all documents from the old index into the new index using the reindex API.
-// 4. Reset the refresh_interval and number_of_replicas to the values used in the old index.
-// 5. Wait for the index status to change to green.
-// 6. In a single update aliases request:
-// 	  a. Delete the old index.
-//	  b. Add an alias with the old index name to the new index.
-// 	  c. Add any aliases that existed on the old index to the new index.
+//  1. Create a new index and copy the mappings and settings from the old index.
+//  2. Set the refresh_interval to -1 and the number_of_replicas to 0 for efficient reindexing.
+//  3. Reindex all documents from the old index into the new index using the reindex API.
+//  4. Reset the refresh_interval and number_of_replicas to the values used in the old index.
+//  5. Wait for the index status to change to green.
+//  6. In a single update aliases request:
+//     a. Delete the old index.
+//     b. Add an alias with the old index name to the new index.
+//     c. Add any aliases that existed on the old index to the new index.
 //
 // We accept a query param `wait_for_completion` which defaults to true, which when false, we don't create any aliases
 // and delete the old index, we instead return the tasks API response.
-func Reindex(ctx context.Context, sourceIndex string, config *ReindexConfig, waitForCompletion bool, destinationIndex string) ([]byte, error) {
+func Reindex(tenantId string, ctx context.Context, sourceIndex string, config *ReindexConfig, waitForCompletion bool, destinationIndex string) ([]byte, error) {
 	var err error
 
 	// We fetch the index name pointing to the given alias first.
@@ -278,7 +278,7 @@ func Reindex(ctx context.Context, sourceIndex string, config *ReindexConfig, wai
 		}
 
 		if operation == ReIndexWithDelete {
-			err = postReIndex(ctx, sourceIndex, newIndexName, ReIndexWithDelete, replicas)
+			err = postReIndex(tenantId, ctx, sourceIndex, newIndexName, ReIndexWithDelete, replicas)
 			if err != nil {
 				log.Errorln(logTag, " post re-indexing error: ", err)
 				postReIndexFailure(ctx, newIndexName)
@@ -296,7 +296,7 @@ func Reindex(ctx context.Context, sourceIndex string, config *ReindexConfig, wai
 	}
 	taskID := response.TaskId
 
-	go asyncReIndex(taskID, sourceIndex, newIndexName, operation, replicas)
+	go asyncReIndex(tenantId, taskID, sourceIndex, newIndexName, operation, replicas)
 
 	// TODO: Update the response in API Ref.
 	return json.Marshal(response)
@@ -471,7 +471,7 @@ func deleteIndex(ctx context.Context, indexName string) error {
 	return nil
 }
 
-func setAlias(ctx context.Context, indexName string, aliases ...string) error {
+func setAlias(tenantId string, ctx context.Context, indexName string, aliases ...string) error {
 	var addAliasActions []es7.AliasAction
 	for _, alias := range aliases {
 		addAliasAction := es7.NewAliasAddAction(alias).
@@ -500,8 +500,8 @@ func setAlias(ctx context.Context, indexName string, aliases ...string) error {
 	}
 
 	// We only have one alias per index.
-	classify.SetIndexAlias(indexName, aliases[0])
-	classify.SetAliasIndex(aliases[0], indexName)
+	classify.SetIndexAlias(tenantId, indexName, aliases[0])
+	classify.SetAliasIndex(tenantId, aliases[0], indexName)
 	return nil
 }
 
@@ -572,12 +572,20 @@ func GetAliasedIndices(ctx context.Context) ([]AliasedIndices, error) {
 		return indicesList, err
 	}
 
+	res := make([]AliasedIndices, 0)
+
 	for i, index := range indicesList {
 		// oliver PerformRequest gives this values as string, but Frontend will need them as integers
 		indicesList[i].Pri, _ = strconv.Atoi(fmt.Sprintf("%v", index.Pri))
 		indicesList[i].Rep, _ = strconv.Atoi(fmt.Sprintf("%v", index.Rep))
 		indicesList[i].DocsCount, _ = strconv.Atoi(fmt.Sprintf("%v", index.DocsCount))
 		indicesList[i].DocsDeleted, _ = strconv.Atoi(fmt.Sprintf("%v", index.DocsDeleted))
+		indicesList[i].Alias, _ = util.RemoveTenantID(indicesList[i].Alias)
+		indexName, tenantId := util.RemoveTenantID(indicesList[i].Index)
+		if tenantId == "" {
+			continue
+		}
+		indicesList[i].Index = indexName
 		var alias string
 		regex := ".*reindexed_[0-9]+"
 		rolloverPattern := ".*-[0-9]+"
@@ -599,19 +607,19 @@ func GetAliasedIndices(ctx context.Context) ([]AliasedIndices, error) {
 				alias = row.Alias
 				break
 			}
-
 		}
 		if err == nil && alias != "" {
 			indicesList[i].Alias = alias
 		}
-
+		res = append(res, indicesList[i])
 	}
 
-	return indicesList, nil
+	return res, nil
 }
 
-func GetAliasIndexMap(ctx context.Context) (map[string]string, error) {
-	var res = make(map[string]string)
+// Returns a map of tenantId => Alias => Index map
+func GetAliasIndexMap(ctx context.Context) (map[string]map[string]string, error) {
+	var res = make(map[string]map[string]string)
 	// Get the client ready for the request
 	//
 	// If the request is for a multi-tenant setup and the backend
@@ -629,7 +637,19 @@ func GetAliasIndexMap(ctx context.Context) (map[string]string, error) {
 	}
 
 	for _, alias := range aliases {
-		res[alias.Alias] = alias.Index
+		indexName, tenantId := util.RemoveTenantID(alias.Index)
+		if tenantId == "" {
+			continue
+		}
+		aliasName, _ := util.RemoveTenantID(alias.Alias)
+		if _, ok := res[tenantId]; ok {
+			res[tenantId][aliasName] = indexName
+		} else {
+			res[tenantId] = map[string]string{
+				aliasName: indexName,
+			}
+		}
+
 	}
 
 	return res, nil
@@ -666,7 +686,7 @@ func isTaskCompleted(ctx context.Context, taskID string) (bool, error) {
 
 // go routine to track async re-indexing process for a given source and destination index.
 // it checks every 30s if task is completed or not.
-func asyncReIndex(taskID, source, destination string, operation ReIndexOperation, replicas interface{}) {
+func asyncReIndex(tenantId string, taskID, source, destination string, operation ReIndexOperation, replicas interface{}) {
 	SetCurrentProcess(taskID, source, destination)
 	isCompleted := make(chan bool, 1)
 	ticker := time.Tick(30 * time.Second)
@@ -691,7 +711,7 @@ func asyncReIndex(taskID, source, destination string, operation ReIndexOperation
 			RemoveCurrentProcess(taskID)
 			if !hasError {
 				log.Println(logTag, taskID+" task completed successfully")
-				err := postReIndex(ctx, source, destination, operation, replicas)
+				err := postReIndex(tenantId, ctx, source, destination, operation, replicas)
 				if err != nil {
 					log.Errorln(logTag, " post re-indexing error: ", err)
 				}
