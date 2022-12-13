@@ -37,7 +37,7 @@ func getIndexSize(tenantId string, ctx context.Context, indexName string) (int64
 		return res, err
 	}
 
-	if val, ok := stats.Indices[index]; ok {
+	if val, ok := stats.Indices[util.AppendTenantID(index, tenantId)]; ok {
 		res = val.Primaries.Store.SizeInBytes
 		return res, nil
 	}
