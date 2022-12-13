@@ -25,12 +25,17 @@ func ClearUsage(domain string) {
 	delete(totalUsage, domain)
 }
 
-// Returns the total usage
+// Returns the total usage by domain
 func GetDataUsageByDomain(domain string) int {
 	if _, ok := totalUsage[domain]; ok {
 		return totalUsage[domain]
 	}
 	return 0
+}
+
+// Returns the total usage
+func GetDataUsage() map[string]int {
+	return totalUsage
 }
 
 func RecordUsageMiddleware(h http.Handler) http.Handler {
