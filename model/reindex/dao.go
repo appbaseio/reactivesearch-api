@@ -16,6 +16,7 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"github.com/appbaseio/reactivesearch-api/middleware/classify"
+	"github.com/appbaseio/reactivesearch-api/model/domain"
 	"github.com/appbaseio/reactivesearch-api/util"
 	"github.com/hashicorp/go-version"
 	es7 "github.com/olivere/elastic/v7"
@@ -57,7 +58,7 @@ func postReIndex(tenantId string, ctx context.Context, sourceIndex, newIndexName
 		log.Warnln(logTag, ": ", clientFetchErr)
 		return clientFetchErr
 	}
-
+	newIndexName = util.AppendTenantID(newIndexName, tenantId)
 	_, err = esClient.IndexPutSettings(newIndexName).BodyString(fmt.Sprintf(`{"index.number_of_replicas": %v}`, replicas)).Do(ctx)
 	if err != nil {
 		return err
@@ -66,6 +67,14 @@ func postReIndex(tenantId string, ctx context.Context, sourceIndex, newIndexName
 }
 
 func postReIndexFailure(ctx context.Context, newIndexName string) error {
+	domainInfo, err2 := domain.FromContext(ctx)
+	if err2 != nil {
+		log.Warnln(logTag, ": ", err2)
+		return err2
+	}
+	tenantId := util.GetTenantForDomain(domainInfo.Raw)
+
+	newIndexName = util.AppendTenantID(newIndexName, tenantId)
 	// Get the client ready for the request
 	//
 	// If the request is for a multi-tenant setup and the backend
@@ -240,6 +249,9 @@ func Reindex(tenantId string, ctx context.Context, sourceIndex string, config *R
 		return json.Marshal(make(map[string]interface{}))
 	}
 
+	sourceIndex = util.AppendTenantID(sourceIndex, tenantId)
+	newIndexName = util.AppendTenantID(newIndexName, tenantId)
+
 	// Configure reindex source
 	src := es7.NewReindexSource().
 		Index(sourceIndex).
@@ -258,6 +270,7 @@ func Reindex(tenantId string, ctx context.Context, sourceIndex string, config *R
 		log.Warnln(logTag, ": ", clientFetchErr)
 		return nil, clientFetchErr
 	}
+
 	// Reindex action
 	reindex := esClient.Reindex().
 		Source(src).
@@ -303,6 +316,13 @@ func Reindex(tenantId string, ctx context.Context, sourceIndex string, config *R
 }
 
 func mappingsOf(ctx context.Context, indexName string) (map[string]interface{}, error) {
+	domainInfo, err2 := domain.FromContext(ctx)
+	if err2 != nil {
+		log.Warnln(logTag, ": ", err2)
+		return nil, err2
+	}
+	tenantId := util.GetTenantForDomain(domainInfo.Raw)
+	indexName = util.AppendTenantID(indexName, tenantId)
 	// Get the client ready for the request
 	//
 	// If the request is for a multi-tenant setup and the backend
@@ -342,6 +362,13 @@ func mappingsOf(ctx context.Context, indexName string) (map[string]interface{}, 
 }
 
 func settingsOf(ctx context.Context, indexName string) (map[string]interface{}, error) {
+	domainInfo, err2 := domain.FromContext(ctx)
+	if err2 != nil {
+		log.Warnln(logTag, ": ", err2)
+		return nil, err2
+	}
+	tenantId := util.GetTenantForDomain(domainInfo.Raw)
+	indexName = util.AppendTenantID(indexName, tenantId)
 	// Get the client ready for the request
 	//
 	// If the request is for a multi-tenant setup and the backend
@@ -390,6 +417,13 @@ func settingsOf(ctx context.Context, indexName string) (map[string]interface{}, 
 }
 
 func aliasesOf(ctx context.Context, indexName string) (string, error) {
+	domainInfo, err2 := domain.FromContext(ctx)
+	if err2 != nil {
+		log.Warnln(logTag, ": ", err2)
+		return "", err2
+	}
+	tenantId := util.GetTenantForDomain(domainInfo.Raw)
+	indexName = util.AppendTenantID(indexName, tenantId)
 	// Get the client ready for the request
 	//
 	// If the request is for a multi-tenant setup and the backend
@@ -423,6 +457,13 @@ func aliasesOf(ctx context.Context, indexName string) (string, error) {
 }
 
 func createIndex(ctx context.Context, indexName string, body map[string]interface{}) error {
+	domainInfo, err2 := domain.FromContext(ctx)
+	if err2 != nil {
+		log.Warnln(logTag, ": ", err2)
+		return err2
+	}
+	tenantId := util.GetTenantForDomain(domainInfo.Raw)
+	indexName = util.AppendTenantID(indexName, tenantId)
 	// Get the client ready for the request
 	//
 	// If the request is for a multi-tenant setup and the backend
@@ -448,6 +489,13 @@ func createIndex(ctx context.Context, indexName string, body map[string]interfac
 }
 
 func deleteIndex(ctx context.Context, indexName string) error {
+	domainInfo, err2 := domain.FromContext(ctx)
+	if err2 != nil {
+		log.Warnln(logTag, ": ", err2)
+		return err2
+	}
+	tenantId := util.GetTenantForDomain(domainInfo.Raw)
+	indexName = util.AppendTenantID(indexName, tenantId)
 	// Get the client ready for the request
 	//
 	// If the request is for a multi-tenant setup and the backend
@@ -472,9 +520,10 @@ func deleteIndex(ctx context.Context, indexName string) error {
 }
 
 func setAlias(tenantId string, ctx context.Context, indexName string, aliases ...string) error {
+	indexName = util.AppendTenantID(indexName, tenantId)
 	var addAliasActions []es7.AliasAction
 	for _, alias := range aliases {
-		addAliasAction := es7.NewAliasAddAction(alias).
+		addAliasAction := es7.NewAliasAddAction(util.AppendTenantID(alias, tenantId)).
 			Index(indexName)
 		addAliasActions = append(addAliasActions, addAliasAction)
 	}
@@ -506,6 +555,13 @@ func setAlias(tenantId string, ctx context.Context, indexName string, aliases ..
 }
 
 func getIndicesByAlias(ctx context.Context, alias string) ([]string, error) {
+	domainInfo, err2 := domain.FromContext(ctx)
+	if err2 != nil {
+		log.Warnln(logTag, ": ", err2)
+		return nil, err2
+	}
+	tenantId := util.GetTenantForDomain(domainInfo.Raw)
+	alias = util.AppendTenantID(alias, tenantId)
 	// Get the client ready for the request
 	//
 	// If the request is for a multi-tenant setup and the backend

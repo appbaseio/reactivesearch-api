@@ -21,6 +21,7 @@ func getIndexSize(tenantId string, ctx context.Context, indexName string) (int64
 			index = indexNameFromMap
 		}
 	}
+	indexName = util.AppendTenantID(indexName, tenantId)
 	// Get the client ready for the request
 	//
 	// If the request is for a multi-tenant setup and the backend
