@@ -76,6 +76,9 @@ func GetWhitelistedRoutesForSystem() map[string][]string {
 		"/{index}/_bulk": {
 			http.MethodPost, http.MethodPut,
 		},
+		"/{index}/_doc": {
+			http.MethodPost, http.MethodPut,
+		},
 	}
 }
 
