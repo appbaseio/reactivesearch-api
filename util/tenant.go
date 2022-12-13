@@ -10,33 +10,58 @@ import (
 )
 
 const (
-	tenantIdSeparator = "_$_tenant_$_"
-	tenantIdReplacer  = "XXXXXX"
+	tenantIdSeparator     = "_$_tenant_$_"
+	tenantIdSeparatorZinc = "__tenant__"
+	tenantIdReplacer      = "XXXXXX"
 )
 
-// AppendTenantID will append the tenant ID to the passed string if it
+// InternalAppendTenantID will append the tenant ID to the passed string if it
 // is not present
-func AppendTenantID(appendTo string, tenantId string) string {
-	if !strings.Contains(appendTo, fmt.Sprintf("%s%s", tenantIdSeparator, tenantId)) {
-		return fmt.Sprintf("%s%s%s", appendTo, tenantIdSeparator, tenantId)
+func InternalAppendTenantID(appendTo string, tenantId string, separator string) string {
+	if !strings.Contains(appendTo, fmt.Sprintf("%s%s", separator, tenantId)) {
+		return fmt.Sprintf("%s%s%s", appendTo, separator, tenantId)
 	}
 	return appendTo
 }
 
-// RemoveTenantID will remove the tenantID from the string and return
+// InternalRemoveTenantID will remove the tenantID from the string and return
 // both the original string and tenantId separately
-func RemoveTenantID(removeFrom string) (string, string) {
-	if !strings.Contains(removeFrom, tenantIdSeparator) {
+func InternalRemoveTenantID(removeFrom string, separator string) (string, string) {
+	if !strings.Contains(removeFrom, separator) {
 		return removeFrom, ""
 	}
 
 	// Split the string using the separator
-	splittedRemoveFrom := strings.Split(removeFrom, tenantIdSeparator)
+	splittedRemoveFrom := strings.Split(removeFrom, separator)
 	if len(splittedRemoveFrom) < 2 {
 		return splittedRemoveFrom[0], ""
 	}
 
 	return splittedRemoveFrom[0], splittedRemoveFrom[1]
+}
+
+// AppendTenantID will append the tenantID to the passed string if it is not
+// present
+func AppendTenantID(appendTo string, tenantId string) string {
+	return InternalAppendTenantID(appendTo, tenantId, tenantIdSeparator)
+}
+
+// AppendTenantIDZinc will append the tenantID to the passed string using the
+// syntax supported by Zinc
+func AppendTenantIDZinc(appendTo string, tenantId string) string {
+	return InternalAppendTenantID(appendTo, tenantId, tenantIdSeparatorZinc)
+}
+
+// RemoveTenantID will remove the tenantID from the passed string and return the
+// raw string and the tenant ID
+func RemoveTenantID(removeFrom string) (string, string) {
+	return InternalRemoveTenantID(removeFrom, tenantIdSeparator)
+}
+
+// RemoveTenantIDZinc will remove the tenantID from the passed string using the
+// zinc tenant ID separator and return the raw string and the tenant ID
+func RemoveTenantIDZinc(removeFrom string) (string, string) {
+	return InternalRemoveTenantID(removeFrom, tenantIdSeparatorZinc)
 }
 
 // AddTenantID will add the tenant ID to the passed body.
