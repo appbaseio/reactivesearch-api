@@ -297,7 +297,7 @@ func GetESClientForTenant(ctx context.Context) (*es7.Client, error) {
 		return GetClient7(), nil
 	}
 	if ctx == nil || ctx == context.Background() {
-		return systemClient, nil
+		return GetSystemClient()
 	}
 	// Check the backend and accordingly determine the client.
 	domain, domainFetchErr := domain.FromContext(ctx)
@@ -308,7 +308,7 @@ func GetESClientForTenant(ctx context.Context) (*es7.Client, error) {
 
 	backend := GetBackendByDomain(domain.Raw)
 	if *backend == System {
-		return systemClient, nil
+		return GetSystemClient()
 	}
 
 	// If backend is not `system`, this route can be called for an ES
