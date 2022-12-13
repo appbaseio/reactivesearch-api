@@ -6,7 +6,9 @@ import (
 	"strings"
 
 	"github.com/appbaseio/reactivesearch-api/middleware"
+	"github.com/appbaseio/reactivesearch-api/model/domain"
 	"github.com/appbaseio/reactivesearch-api/model/index"
+	"github.com/appbaseio/reactivesearch-api/plugins/telemetry"
 	"github.com/appbaseio/reactivesearch-api/util"
 )
 
@@ -19,12 +21,24 @@ func indices(h http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
 		indices := util.IndicesFromRequest(req)
 		currentCache := GetIndexAliasCache()
-
+		domainUsed, domainFetchErr := domain.FromContext(req.Context())
+		if domainFetchErr != nil {
+			errMsg := "Error while validating the domain!"
+			telemetry.WriteBackErrorWithTelemetry(req, w, errMsg, http.StatusUnauthorized)
+			return
+		}
+		tenantDetails := util.GetSLSInstanceByDomain(domainUsed.Raw)
+		if tenantDetails == nil {
+			errMsg := "Error while validating the domain!"
+			telemetry.WriteBackErrorWithTelemetry(req, w, errMsg, http.StatusUnauthorized)
+			return
+		}
+		tenantId := tenantDetails.TenantID
 		for _, index := range indices {
 			// '*' in case of all indices put alias in context
 			if index == "*" {
 				for cachedItem := range currentCache {
-					alias := GetIndexAlias(cachedItem)
+					alias := GetIndexAlias(tenantId, cachedItem)
 					if alias != "" {
 						indices = append(indices, alias)
 					}
@@ -45,17 +59,16 @@ func indices(h http.HandlerFunc) http.HandlerFunc {
 				}
 				for _, val := range cachedIndices {
 					if r.MatchString(val) {
-						alias := GetIndexAlias(val)
+						alias := GetIndexAlias(tenantId, val)
 						if alias != "" {
 							indices = append(indices, alias)
 						}
 						break
 					}
 				}
-
 			} else {
 				// get alias for index and put in context
-				alias := GetIndexAlias(index)
+				alias := GetIndexAlias(tenantId, index)
 				if alias != "" {
 					indices = append(indices, alias)
 				}

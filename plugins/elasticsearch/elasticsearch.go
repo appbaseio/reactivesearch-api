@@ -1,7 +1,6 @@
 package elasticsearch
 
 import (
-	"context"
 	"sync"
 
 	"github.com/appbaseio/reactivesearch-api/middleware"
@@ -41,7 +40,7 @@ func (es *elasticsearch) InitFunc(mw []middleware.Middleware) error {
 		return clientErr
 	}
 	// Cache the indexes for the tenants
-	indexCacheErr := CacheIndexesForTenants(es.systemESClient, context.Background())
+	indexCacheErr := es.InitCacheIndexes()
 	if indexCacheErr != nil {
 		return indexCacheErr
 	}
