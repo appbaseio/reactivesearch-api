@@ -17,6 +17,7 @@ import (
 
 	"github.com/appbaseio/reactivesearch-api/model/acl"
 	"github.com/appbaseio/reactivesearch-api/model/category"
+	"github.com/appbaseio/reactivesearch-api/model/domain"
 	"github.com/appbaseio/reactivesearch-api/model/op"
 	"github.com/appbaseio/reactivesearch-api/plugins/telemetry"
 	"github.com/appbaseio/reactivesearch-api/util"
@@ -143,7 +144,62 @@ func (es *elasticsearch) healthCheck() http.HandlerFunc {
 
 func (es *elasticsearch) pingES() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		result, code, err := util.GetClient7().Ping(util.GetSearchClientESURL()).Do(context.Background())
+		// Get the client based on the type of tenancy
+		esClient := util.GetClient7()
+		if util.MultiTenant {
+			var clientFetchErr error
+			esClient, clientFetchErr = util.GetESClientForTenant(r.Context())
+			if clientFetchErr != nil {
+				errMsg := fmt.Sprint("error while fetching client from ctx: ", clientFetchErr.Error())
+				log.Errorln(logTag, ": ", errMsg)
+				util.WriteBackError(w, errMsg, http.StatusInternalServerError)
+				return
+			}
+		}
+
+		urlToPing := util.GetSearchClientESURL()
+		if util.MultiTenant {
+			// Fetch the backend and based on that determine the URL
+			domainFromCtx, domainFetchErr := domain.FromContext(r.Context())
+			if domainFetchErr != nil {
+				errMsg := fmt.Sprint("error while fetching domain from ctx: ", domainFetchErr.Error())
+				log.Warnln(logTag, ": ", errMsg)
+				util.WriteBackError(w, errMsg, http.StatusInternalServerError)
+				return
+			}
+
+			backend := util.GetBackendByDomain(domainFromCtx.Raw)
+
+			switch *backend {
+			case util.ElasticSearch, util.OpenSearch:
+				esAccess := util.GetESAccessForTenant(util.GetTenantForDomain(domainFromCtx.Raw))
+				if esAccess.URL == "" {
+					varKey := ""
+					if *backend == util.ElasticSearch {
+						varKey = "ES_URL"
+					} else {
+						varKey = "OS_URL"
+					}
+
+					errMsg := fmt.Sprintf("`%s` not present in global vars!", varKey)
+					log.Warnln(logTag, ": ", errMsg)
+					util.WriteBackError(w, errMsg, http.StatusBadRequest)
+					return
+				}
+
+				urlToPing = esAccess.URL
+				break
+			case util.System:
+				urlToPing = util.GetSystemESURL()
+				break
+			default:
+				// Report the endpoint as a 404
+				util.WriteBackError(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
+				return
+			}
+		}
+
+		result, code, err := esClient.Ping(urlToPing).Do(context.Background())
 		if err != nil {
 			log.Errorln(logTag, ": error fetching ES cluster health", err)
 			telemetry.WriteBackErrorWithTelemetry(r, w, err.Error(), http.StatusInternalServerError)
