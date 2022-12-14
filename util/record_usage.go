@@ -10,7 +10,7 @@ import (
 )
 
 // Domain to usage map
-var totalUsage map[string]int
+var totalUsage = make(map[string]int)
 
 func addToUsage(domain string, usage int) {
 	if _, ok := totalUsage[domain]; ok {
