@@ -10,6 +10,7 @@ import (
 	"net/url"
 	"regexp"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/olivere/elastic/v7"
@@ -23,6 +24,8 @@ import (
 )
 
 func postReIndex(tenantId string, ctx context.Context, sourceIndex, newIndexName string, operation ReIndexOperation, replicas interface{}) error {
+	sourceIndex = util.AppendTenantID(sourceIndex, tenantId)
+	newIndexName = util.AppendTenantID(newIndexName, tenantId)
 	// Fetch all the aliases of old index
 	alias, err := aliasesOf(ctx, sourceIndex)
 
@@ -248,9 +251,6 @@ func Reindex(tenantId string, ctx context.Context, sourceIndex string, config *R
 	if !(len(config.Action) == 0 || found) {
 		return json.Marshal(make(map[string]interface{}))
 	}
-
-	sourceIndex = util.AppendTenantID(sourceIndex, tenantId)
-	newIndexName = util.AppendTenantID(newIndexName, tenantId)
 
 	// Configure reindex source
 	src := es7.NewReindexSource().
@@ -597,6 +597,17 @@ func GetAliasedIndices(ctx context.Context) ([]AliasedIndices, error) {
 		Path:   "/_cat/indices",
 		Params: v,
 	}
+	var tenantId *string
+	if ctx != nil && ctx != context.Background() {
+		domainUsed, domainFetchErr := domain.FromContext(ctx)
+		if domainFetchErr != nil {
+			log.Errorln(logTag, ": ", domainFetchErr)
+			return indicesList, domainFetchErr
+		}
+		t := util.GetTenantForDomain(domainUsed.Raw)
+		tenantId = &t
+	}
+
 	// Get the client ready for the request
 	//
 	// If the request is for a multi-tenant setup and the backend
@@ -636,12 +647,6 @@ func GetAliasedIndices(ctx context.Context) ([]AliasedIndices, error) {
 		indicesList[i].Rep, _ = strconv.Atoi(fmt.Sprintf("%v", index.Rep))
 		indicesList[i].DocsCount, _ = strconv.Atoi(fmt.Sprintf("%v", index.DocsCount))
 		indicesList[i].DocsDeleted, _ = strconv.Atoi(fmt.Sprintf("%v", index.DocsDeleted))
-		indicesList[i].Alias, _ = util.RemoveTenantID(indicesList[i].Alias)
-		indexName, tenantId := util.RemoveTenantID(indicesList[i].Index)
-		if tenantId == "" {
-			continue
-		}
-		indicesList[i].Index = indexName
 		var alias string
 		regex := ".*reindexed_[0-9]+"
 		rolloverPattern := ".*-[0-9]+"
@@ -667,6 +672,37 @@ func GetAliasedIndices(ctx context.Context) ([]AliasedIndices, error) {
 		if err == nil && alias != "" {
 			indicesList[i].Alias = alias
 		}
+		log.Println("INDEX NAME: BEFORE", indicesList[i].Index)
+		log.Println("ALIAS NAME: BEFORE", indicesList[i].Alias)
+		if indicesList[i].Alias != "" {
+			if tenantId == nil || strings.Contains(indicesList[i].Alias, *tenantId) {
+				aliasName, tenantId := util.RemoveTenantID(indicesList[i].Alias)
+				if tenantId == "" {
+					indicesList[i].Alias = ""
+				} else {
+					indicesList[i].Alias = aliasName
+				}
+			} else {
+				indicesList[i].Alias = ""
+			}
+		}
+		if indicesList[i].Index != "" {
+			if tenantId == nil || strings.Contains(indicesList[i].Index, *tenantId) {
+				indexName, tenantId := util.RemoveTenantID(indicesList[i].Index)
+				if tenantId == "" {
+					indicesList[i].Index = ""
+				} else {
+					indicesList[i].Index = indexName
+				}
+			} else {
+				indicesList[i].Index = ""
+			}
+		}
+		if indicesList[i].Index == "" && indicesList[i].Alias == "" {
+			continue
+		}
+		log.Println("INDEX NAME: AFTER", indicesList[i].Index)
+		log.Println("ALIAS NAME: AFTER", indicesList[i].Alias)
 		res = append(res, indicesList[i])
 	}
 
