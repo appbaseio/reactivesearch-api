@@ -60,6 +60,11 @@ func GetSLSInstanceByDomain(domain string) *slsInstanceDetails {
 	return nil
 }
 
+// GetSLSInstances will return the domain to SLS instance details map
+func GetSLSInstances() map[string]slsInstanceDetails {
+	return slsInstancesByDomain
+}
+
 // GetTenantForDomain will get the tenantID for the passed domain
 func GetTenantForDomain(domain string) string {
 	instanceDetails := GetSLSInstanceByDomain(domain)
