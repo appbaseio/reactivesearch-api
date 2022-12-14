@@ -85,7 +85,7 @@ func initPlugin(alias, config string) (*elasticsearch, error) {
 				return nil, fmt.Errorf("error while re-indexing logs index %v", err)
 			}
 			// Re-index synchronously
-			reindex.TrackReindex(reindex.SetAliasConfig{
+			reindex.TrackReindex(util.DefaultTenant, reindex.SetAliasConfig{
 				AliasName:    sourceIndex,
 				NewIndex:     destinationIndex,
 				OldIndex:     sourceIndex,

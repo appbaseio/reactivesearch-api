@@ -21,6 +21,7 @@ func getIndexSize(tenantId string, ctx context.Context, indexName string) (int64
 			index = indexNameFromMap
 		}
 	}
+	indexName = util.AppendTenantID(indexName, tenantId)
 	// Get the client ready for the request
 	//
 	// If the request is for a multi-tenant setup and the backend
@@ -36,7 +37,7 @@ func getIndexSize(tenantId string, ctx context.Context, indexName string) (int64
 		return res, err
 	}
 
-	if val, ok := stats.Indices[index]; ok {
+	if val, ok := stats.Indices[util.AppendTenantID(index, tenantId)]; ok {
 		res = val.Primaries.Store.SizeInBytes
 		return res, nil
 	}

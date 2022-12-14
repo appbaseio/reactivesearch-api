@@ -22,7 +22,8 @@ const logTag = "[reindex]"
 
 const typeName = "_doc"
 
-func setAliasEs7(aliasConfig SetAliasConfig) error {
+func setAliasEs7(tenantId string, aliasConfig SetAliasConfig) error {
+	aliasConfig.OldIndex = util.AppendTenantID(aliasConfig.OldIndex, tenantId)
 	// Get the client ready for the request
 	//
 	// If the request is for a multi-tenant setup and the backend
@@ -76,8 +77,8 @@ func setAliasEs6(aliasConfig SetAliasConfig) error {
 }
 
 // Set alias to an index
-func SetAlias(aliasConfig SetAliasConfig) error {
-	return setAliasEs7(aliasConfig)
+func SetAlias(tenantId string, aliasConfig SetAliasConfig) error {
+	return setAliasEs7(tenantId, aliasConfig)
 }
 
 // To track a re-index task by taskID
@@ -103,7 +104,7 @@ func IsTaskCompleted(ctx context.Context, taskID string) (bool, error) {
 }
 
 // To track reindex process. Use it in a go routine to track asynchronously.
-func TrackReindex(aliasConfig SetAliasConfig, taskDetails []byte) {
+func TrackReindex(tenantId string, aliasConfig SetAliasConfig, taskDetails []byte) {
 	isCompleted := make(chan bool, 1)
 	ticker := time.Tick(30 * time.Second)
 	ctx := context.Background()
@@ -123,7 +124,7 @@ func TrackReindex(aliasConfig SetAliasConfig, taskDetails []byte) {
 			}
 		case <-isCompleted:
 			log.Println(logTag, taskId+" task completed successfully")
-			err := SetAlias(aliasConfig)
+			err := SetAlias(tenantId, aliasConfig)
 			if err != nil {
 				log.Errorln(logTag, " post re-indexing error: ", err)
 			}

@@ -4,6 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net/http"
+	"os"
 
 	es7 "github.com/olivere/elastic/v7"
 )
@@ -64,10 +66,15 @@ func GetIndexMapping(indexName string, ctx context.Context) (resp IndexMappingRe
 	// Keep a constant variable to store the URL
 	MappingBaseURL := "/%s/_mapping"
 
+	// Make a header with master creds
+	headers := make(http.Header)
+	headers.Add("X-REACTIVESEARCH-TOKEN", os.Getenv("REACTIVESEARCH_AUTH_TOKEN"))
+
 	// Create a perform request struct
 	requestOptions := es7.PerformRequestOptions{
-		Method: "GET",
-		Path:   fmt.Sprintf(MappingBaseURL, indexName),
+		Method:  "GET",
+		Path:    fmt.Sprintf(MappingBaseURL, indexName),
+		Headers: headers,
 	}
 
 	// Declare the mapping response variable
