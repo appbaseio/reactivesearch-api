@@ -672,8 +672,6 @@ func GetAliasedIndices(ctx context.Context) ([]AliasedIndices, error) {
 		if err == nil && alias != "" {
 			indicesList[i].Alias = alias
 		}
-		log.Println("INDEX NAME: BEFORE", indicesList[i].Index)
-		log.Println("ALIAS NAME: BEFORE", indicesList[i].Alias)
 		if indicesList[i].Alias != "" {
 			if tenantId == nil || strings.Contains(indicesList[i].Alias, *tenantId) {
 				aliasName, tenantId := util.RemoveTenantID(indicesList[i].Alias)
