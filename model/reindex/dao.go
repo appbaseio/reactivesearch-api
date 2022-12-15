@@ -203,7 +203,7 @@ func Reindex(tenantId string, ctx context.Context, sourceIndex string, config *R
 		operation = ReindexWithClone
 	}
 	if operation == ReIndexWithDelete {
-		newIndexName, err = reindexedName(sourceIndex)
+		newIndexName, err = reindexedName(sourceIndex, tenantId)
 	}
 
 	if err != nil {

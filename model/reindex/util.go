@@ -77,8 +77,8 @@ const IndexStoreSize = int64(100000000)
 // index named "foo_reindexed_3", the function returns "foo_reindexed_4". The
 // basic check here is to check if the index name ends with a suffix "reindexed_{x}",
 // and if it doesn't the function assumes the index has never been reindexed.
-func reindexedName(index string) (string, error) {
-	tenantId, indexName := util.RemoveTenantID(index)
+func reindexedName(index string, tenantId string) (string, error) {
+	indexName, _ := util.RemoveTenantID(index)
 	const pattern = `.*reindexed_[0-9]+`
 	matched, err := regexp.MatchString(pattern, indexName)
 	if err != nil {
