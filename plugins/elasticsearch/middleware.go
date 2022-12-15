@@ -23,6 +23,7 @@ import (
 	"github.com/appbaseio/reactivesearch-api/model/index"
 	"github.com/appbaseio/reactivesearch-api/model/op"
 	"github.com/appbaseio/reactivesearch-api/model/permission"
+	"github.com/appbaseio/reactivesearch-api/model/reindex"
 	"github.com/appbaseio/reactivesearch-api/model/sourcefilter"
 	"github.com/appbaseio/reactivesearch-api/plugins/auth"
 	"github.com/appbaseio/reactivesearch-api/plugins/logs"
@@ -460,6 +461,15 @@ func (wh *WhitelistedRoute) UpdateIndexName(h http.HandlerFunc) http.HandlerFunc
 		// that the user passed
 		responseFromES := respRecorder.Body.Bytes()
 		modifiedResponse := strings.Replace(string(responseFromES), indexWithTenant, indexPassed, -1)
+
+		aliasedIndices, _ := reindex.GetAliasedIndices(req.Context())
+
+		for _, aliasedIndex := range aliasedIndices {
+			if aliasedIndex.Alias == indexPassed {
+				indexMightBePresent := aliasedIndex.Index
+				modifiedResponse = strings.Replace(string(modifiedResponse), util.AppendTenantID(indexMightBePresent, tenantId), indexPassed, -1)
+			}
+		}
 
 		w.Write([]byte(modifiedResponse))
 	}
