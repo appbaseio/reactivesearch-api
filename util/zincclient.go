@@ -232,7 +232,7 @@ func (ss *SearchService) Headers(headers *http.Header) *SearchService {
 // Do will make the search request and return the search response
 func (ss *SearchService) Do(ctx context.Context) (*http.Response, error) {
 	bodyToUse := ss.Body
-	if MultiTenant {
+	if MultiTenant && !ss.DisableMultiTenancy {
 		updatedBody, updateErr := addTenantIdFilterQuery(ss.Body, ctx)
 		if updateErr != nil {
 			return nil, updateErr
