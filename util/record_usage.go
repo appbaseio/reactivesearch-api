@@ -4,38 +4,50 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/http/httputil"
+	"sync"
 
 	"github.com/appbaseio/reactivesearch-api/model/domain"
 	log "github.com/sirupsen/logrus"
 )
 
+type Usage struct {
+	Usage map[string]int
+	mu    sync.Mutex
+}
+
 // Domain to usage map
-var totalUsage = make(map[string]int)
+var totalUsage = Usage{Usage: make(map[string]int), mu: sync.Mutex{}}
 
 func addToUsage(domain string, usage int) {
-	if _, ok := totalUsage[domain]; ok {
-		totalUsage[domain] += usage
+	totalUsage.mu.Lock()
+	defer totalUsage.mu.Unlock()
+	if _, ok := totalUsage.Usage[domain]; ok {
+		totalUsage.Usage[domain] += usage
 	} else {
-		totalUsage[domain] = usage
+		totalUsage.Usage[domain] = usage
 	}
 }
 
 // Method to clear reported usage
 func ClearUsage(domain string) {
-	delete(totalUsage, domain)
+	totalUsage.mu.Lock()
+	defer totalUsage.mu.Unlock()
+	delete(totalUsage.Usage, domain)
 }
 
 // Returns the total usage by domain
 func GetDataUsageByDomain(domain string) int {
-	if _, ok := totalUsage[domain]; ok {
-		return totalUsage[domain]
+	totalUsage.mu.Lock()
+	defer totalUsage.mu.Unlock()
+	if _, ok := totalUsage.Usage[domain]; ok {
+		return totalUsage.Usage[domain]
 	}
 	return 0
 }
 
 // Returns the total usage
 func GetDataUsage() map[string]int {
-	return totalUsage
+	return totalUsage.Usage
 }
 
 func RecordUsageMiddleware(h http.Handler) http.Handler {
