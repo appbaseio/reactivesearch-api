@@ -317,7 +317,9 @@ func GetCachedCredentialsByDomain(domain string) []credential.AuthCredential {
 func RemoveCredentialFromCache(domain string, username string) {
 	CredentialCache.mu.Lock()
 	defer CredentialCache.mu.Unlock()
-	delete(CredentialCache.cache, username)
+	if _, ok := CredentialCache.cache[domain]; ok {
+		delete(CredentialCache.cache[domain], username)
+	}
 }
 
 // SaveCredentialToCache saves the credential to the cache
