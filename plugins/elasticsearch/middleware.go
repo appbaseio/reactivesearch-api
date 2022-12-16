@@ -433,6 +433,37 @@ func (wh *WhitelistedRoute) UpdateIndexName(h http.HandlerFunc) http.HandlerFunc
 		indexWithTenant := util.AppendTenantID(indexPassed, tenantId)
 		req.URL.Path = strings.Replace(req.URL.Path, indexPassed, indexWithTenant, -1)
 
+		// For _bulk requests, we will need to update the request body so that it cannot contain
+		// any index name that doesn't exist or is not allowed.
+		//
+		// We can just iterate over the cached indices list and update all possible entries in the bulk
+		// request, other than that, any index name passed will anyway throw a 404 so we don't need to
+		// worry about that.
+		isBulkUsed := wh.Path == "/_bulk" || wh.Path == "/{index}/_bulk" || wh.Path == "/{index}/{type}/_bulk"
+		indexesToUpdate := GetCachedIndices()
+		if isBulkUsed {
+			// Read the request body
+			reqBodyInBytes, readErr := ioutil.ReadAll(req.Body)
+			defer req.Body.Close()
+
+			if readErr != nil {
+				// Handle request body read error
+				errMsg := fmt.Sprint("error while reading the request body from request: ", readErr.Error())
+				log.Warnln(logTag, ": ", errMsg)
+				telemetry.WriteBackErrorWithTelemetry(req, w, errMsg, http.StatusBadRequest)
+				return
+			}
+
+			reqBodyAsStr := string(reqBodyInBytes)
+
+			for _, cachedIndex := range indexesToUpdate {
+				reqBodyAsStr = strings.Replace(reqBodyAsStr, cachedIndex, util.AppendTenantID(cachedIndex, tenantId), -1)
+			}
+
+			// Set the request body back in the request
+			req.Body = ioutil.NopCloser(bytes.NewBuffer([]byte(reqBodyAsStr)))
+		}
+
 		// Serve using response recorder to capture the response
 		//
 		// We are doing this because we want to modify the outgoing response with
@@ -468,6 +499,13 @@ func (wh *WhitelistedRoute) UpdateIndexName(h http.HandlerFunc) http.HandlerFunc
 			if aliasedIndex.Alias == indexPassed {
 				indexMightBePresent := aliasedIndex.Index
 				modifiedResponse = strings.Replace(string(modifiedResponse), util.AppendTenantID(indexMightBePresent, tenantId), indexPassed, -1)
+			}
+		}
+
+		// If _bulk request, then undo the cached indices update
+		if isBulkUsed {
+			for _, cachedIndex := range indexesToUpdate {
+				modifiedResponse = strings.Replace(string(modifiedResponse), util.AppendTenantID(cachedIndex, tenantId), cachedIndex, -1)
 			}
 		}
 
