@@ -14,6 +14,7 @@ import (
 	"github.com/appbaseio/reactivesearch-api/middleware/classify"
 	"github.com/appbaseio/reactivesearch-api/model/domain"
 	"github.com/appbaseio/reactivesearch-api/model/index"
+	"github.com/appbaseio/reactivesearch-api/plugins/elasticsearch"
 	"github.com/appbaseio/reactivesearch-api/plugins/telemetry"
 	"github.com/appbaseio/reactivesearch-api/util"
 	"github.com/buger/jsonparser"
@@ -70,6 +71,25 @@ func (r *QueryTranslate) search() http.HandlerFunc {
 		if len(reqBody) != 0 {
 			reqURL := "/" + *indexValue + "/_msearch"
 			start := time.Now()
+
+			tenantID := ""
+
+			if util.MultiTenant {
+				// Fetch the tenantID from domain
+				domainFromCtx, domainFetchErr := domain.FromContext(req.Context())
+				if domainFetchErr != nil {
+					errMsg := fmt.Sprint("error while fetching domain from ctx: ", domainFetchErr.Error())
+					log.Warnln(logTag, ": ", errMsg)
+					util.WriteBackError(w, errMsg, http.StatusBadRequest)
+					return
+				}
+
+				tenantID = util.GetTenantForDomain(domainFromCtx.Raw)
+
+				indicesToUpdate := elasticsearch.GetCachedIndices(tenantID)
+				reqBody = []byte(elasticsearch.UpdateNDJsonRequestBody(string(reqBody), indicesToUpdate, tenantID, false))
+			}
+
 			httpRes, err := makeESRequest(ctx, reqURL, http.MethodPost, reqBody, req.URL.Query())
 			if err != nil {
 				msg := err.Error()
@@ -90,6 +110,15 @@ func (r *QueryTranslate) search() http.HandlerFunc {
 				return
 			}
 			esResponseBody = httpRes.Body
+
+			// Update the response body to remove index names
+			if util.MultiTenant {
+				cachedIndices := elasticsearch.GetCachedIndices(tenantID)
+				for _, cachedIndex := range cachedIndices {
+					esResponseBody = []byte(strings.Replace(string(esResponseBody), util.AppendTenantID(cachedIndex, tenantID), cachedIndex, -1))
+				}
+			}
+
 			responseStatusCode = httpRes.StatusCode
 		}
 		rsResponse, err := TransformESResponse(esResponseBody, rsAPIRequest)
