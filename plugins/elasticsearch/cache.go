@@ -1,5 +1,7 @@
 package elasticsearch
 
+import "sort"
+
 // Store the indices for tenants using a tenant to index map
 //
 // The name of the index will be stored without the `tenant_id`
@@ -50,10 +52,17 @@ func DeleteIndexFromCache(tenantID string, index string) bool {
 
 // GetCachedIndices will return the cached indices so that all indices
 // can be iterated over in an O(n) instead of O(n2).
+//
+// The indexes will be sorted and returned in terms of length of
+// the index name where the longer index name should show up first.
 func GetCachedIndices(tenantID string) []string {
 	cachedIndices, exists := tenantToIndexMap[tenantID]
 	if !exists {
 		return make([]string, 0)
 	}
+
+	sort.Slice(cachedIndices, func(i, j int) bool {
+		return len(cachedIndices[i]) > len(cachedIndices[j])
+	})
 	return cachedIndices
 }
