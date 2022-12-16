@@ -440,7 +440,7 @@ func (wh *WhitelistedRoute) UpdateIndexName(h http.HandlerFunc) http.HandlerFunc
 		// request, other than that, any index name passed will anyway throw a 404 so we don't need to
 		// worry about that.
 		isBulkUsed := wh.Path == "/_bulk" || wh.Path == "/{index}/_bulk" || wh.Path == "/{index}/{type}/_bulk"
-		indexesToUpdate := GetCachedIndices()
+		indexesToUpdate := GetCachedIndices(tenantId)
 		if isBulkUsed {
 			// Read the request body
 			reqBodyInBytes, readErr := ioutil.ReadAll(req.Body)
