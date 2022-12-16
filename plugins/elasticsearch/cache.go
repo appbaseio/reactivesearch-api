@@ -9,7 +9,9 @@ var tenantToIndexMap map[string][]string = make(map[string][]string)
 // Store the list of indices without tenant ID map. This can be useful
 // for updating incoming requests like _msearch and _bulk with the index
 // names
-var cachedIndices []string = make([]string, 0)
+//
+// We will use a set to store the values to have unique values only.
+var cachedIndices = make(map[string]int)
 
 // SetIndexToCache will set the index into the cache map
 func SetIndexToCache(tenantID string, index string) {
@@ -59,20 +61,21 @@ func DeleteIndexFromCache(tenantID string, index string) bool {
 
 // SetCachedIndex will allow setting a cached index
 func SetCachedIndex(index string) {
-	cachedIndices = append(cachedIndices, index)
+	cachedIndices[index] = 1
 }
 
 // RemoveCachedIndex will remove the index from the cached array of indices
 func RemoveCachedIndex(index string) {
-	for indexPosition, cachedIndex := range cachedIndices {
-		if cachedIndex == index {
-			cachedIndices = append(cachedIndices[:indexPosition], cachedIndices[indexPosition+1:]...)
-		}
-	}
+	delete(cachedIndices, index)
 }
 
 // GetCachedIndices will return the cached indices so that all indices
 // can be iterated over in an O(n) instead of O(n2).
 func GetCachedIndices() []string {
-	return cachedIndices
+	indices := make([]string, 0)
+	for index := range cachedIndices {
+		indices = append(indices, index)
+	}
+
+	return indices
 }
