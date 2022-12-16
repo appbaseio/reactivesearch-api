@@ -6,6 +6,11 @@ package elasticsearch
 // appended in it.
 var tenantToIndexMap map[string][]string = make(map[string][]string)
 
+// Store the list of indices without tenant ID map. This can be useful
+// for updating incoming requests like _msearch and _bulk with the index
+// names
+var cachedIndices []string = make([]string, 0)
+
 // SetIndexToCache will set the index into the cache map
 func SetIndexToCache(tenantID string, index string) {
 	// Check if the entry for the tenantID already exists,
@@ -16,6 +21,8 @@ func SetIndexToCache(tenantID string, index string) {
 	}
 
 	tenantToIndexMap[tenantID] = append(tenantToIndexMap[tenantID], index)
+
+	SetCachedIndex(index)
 }
 
 // GetIndexLocFromCache will try to get the index by using
@@ -44,5 +51,28 @@ func DeleteIndexFromCache(tenantID string, index string) bool {
 	}
 
 	tenantToIndexMap[tenantID] = append(tenantToIndexMap[tenantID][:*location], tenantToIndexMap[tenantID][*location+1:]...)
+
+	RemoveCachedIndex(index)
+
 	return true
+}
+
+// SetCachedIndex will allow setting a cached index
+func SetCachedIndex(index string) {
+	cachedIndices = append(cachedIndices, index)
+}
+
+// RemoveCachedIndex will remove the index from the cached array of indices
+func RemoveCachedIndex(index string) {
+	for indexPosition, cachedIndex := range cachedIndices {
+		if cachedIndex == index {
+			cachedIndices = append(cachedIndices[:indexPosition], cachedIndices[indexPosition+1:]...)
+		}
+	}
+}
+
+// GetCachedIndices will return the cached indices so that all indices
+// can be iterated over in an O(n) instead of O(n2).
+func GetCachedIndices() []string {
+	return cachedIndices
 }
