@@ -2,6 +2,8 @@ package elasticsearch
 
 import (
 	"context"
+	"fmt"
+	"strings"
 
 	"github.com/appbaseio/reactivesearch-api/util"
 	"github.com/robfig/cron"
@@ -61,4 +63,27 @@ func (es *elasticsearch) InitCacheIndexes() error {
 	syncCronJob.Start()
 
 	return nil
+}
+
+// UpdateNDJsonRequestBody will update the nd-json body with the passed indices
+// so that all possible known indices have the tenant_id appended to the
+// name of the index.
+func UpdateNDJsonRequestBody(body string, indices []string, tenantID string, isBulk bool) string {
+	indexKey := `"index"`
+	if isBulk {
+		indexKey = `"_index"`
+	}
+
+	patternsToReplace := []string{
+		indexKey + `: "%s"`,
+		indexKey + `:"%s"`,
+	}
+
+	for _, cachedIndex := range indices {
+		for _, pattern := range patternsToReplace {
+			body = strings.Replace(string(body), fmt.Sprintf(pattern, cachedIndex), fmt.Sprintf(pattern, util.AppendTenantID(cachedIndex, tenantID)), -1)
+		}
+	}
+
+	return body
 }

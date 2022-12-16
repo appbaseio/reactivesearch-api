@@ -456,9 +456,7 @@ func (wh *WhitelistedRoute) UpdateIndexName(h http.HandlerFunc) http.HandlerFunc
 
 			reqBodyAsStr := string(reqBodyInBytes)
 
-			for _, cachedIndex := range indexesToUpdate {
-				reqBodyAsStr = strings.Replace(reqBodyAsStr, cachedIndex, util.AppendTenantID(cachedIndex, tenantId), -1)
-			}
+			reqBodyAsStr = UpdateNDJsonRequestBody(reqBodyAsStr, indexesToUpdate, tenantId, true)
 
 			// Set the request body back in the request
 			req.Body = ioutil.NopCloser(bytes.NewBuffer([]byte(reqBodyAsStr)))
