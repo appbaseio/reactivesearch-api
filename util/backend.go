@@ -40,6 +40,21 @@ func GetBackendByDomain(domain string) *Backend {
 	return slsInstanceDetails.Backend
 }
 
+// SetBackendByDomain will set the backend based on the passed domain
+//
+// This will update the local domain cache and AccAPI will not be updated
+// by this method. AccAPI update should be handled separately.
+func SetBackendByDomain(domain string, backend *Backend) error {
+	instanceDetails, ok := slsInstancesByDomain[domain]
+	if !ok {
+		return fmt.Errorf("instance details for domain `%s` do not exist", domain)
+	}
+
+	instanceDetails.Backend = backend
+	slsInstancesByDomain[domain] = instanceDetails
+	return nil
+}
+
 // IsExternalESRequired will indicate whether or
 // not external ES is required.
 //
