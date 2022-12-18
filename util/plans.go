@@ -39,6 +39,12 @@ const (
 	ProductionThird2021
 	HostedArcStandard2021
 	HostedArcEnterprise2021
+	ReactivesearchCloudHobby
+	ReactivesearchCloudProduction
+	ReactivesearchCloudEnterprise
+	ReactivesearchCloudHobbyTest
+	ReactivesearchCloudProductionTest
+	ReactivesearchCloudEnterpriseTest
 )
 
 // String is the implementation of Stringer interface that returns the string representation of Plan type.
@@ -73,6 +79,13 @@ func (o Plan) String() string {
 		"2021-production-3",
 		"2021-hosted-arc-standard",
 		"2021-hosted-arc-enterprise",
+		"reactivesearch-cloud-hobby",
+		"reactivesearch-cloud-production",
+		"reactivesearch-cloud-enterprise",
+		// Following values are test values
+		"price_0ME6d1t881Db6BmKECOseHZx",
+		"price_0ME6det881Db6BmKjBA844Yt",
+		"price_0ME6eSt881Db6BmKKawAqVCI",
 	}[o]
 }
 
@@ -142,6 +155,18 @@ func (o *Plan) UnmarshalJSON(bytes []byte) error {
 		*o = HostedArcStandard2021
 	case HostedArcEnterprise2021.String():
 		*o = HostedArcEnterprise2021
+	case ReactivesearchCloudHobby.String():
+		*o = ReactivesearchCloudHobby
+	case ReactivesearchCloudProduction.String():
+		*o = ReactivesearchCloudProduction
+	case ReactivesearchCloudEnterprise.String():
+		*o = ReactivesearchCloudEnterprise
+	case ReactivesearchCloudHobbyTest.String():
+		*o = ReactivesearchCloudHobbyTest
+	case ReactivesearchCloudProductionTest.String():
+		*o = ReactivesearchCloudProductionTest
+	case ReactivesearchCloudEnterpriseTest.String():
+		*o = ReactivesearchCloudEnterpriseTest
 	default:
 		return fmt.Errorf("invalid plan encountered: %v", plan)
 	}
@@ -210,6 +235,18 @@ func (o Plan) MarshalJSON() ([]byte, error) {
 		plan = HostedArcStandard2021.String()
 	case HostedArcEnterprise2021:
 		plan = HostedArcEnterprise2021.String()
+	case ReactivesearchCloudHobby:
+		plan = ReactivesearchCloudHobby.String()
+	case ReactivesearchCloudProduction:
+		plan = ReactivesearchCloudProduction.String()
+	case ReactivesearchCloudEnterprise:
+		plan = ReactivesearchCloudEnterprise.String()
+	case ReactivesearchCloudHobbyTest:
+		plan = ReactivesearchCloudHobbyTest.String()
+	case ReactivesearchCloudProductionTest:
+		plan = ReactivesearchCloudProductionTest.String()
+	case ReactivesearchCloudEnterpriseTest:
+		plan = ReactivesearchCloudEnterprise.String()
 	default:
 		return nil, fmt.Errorf("invalid plan encountered: %v", o)
 	}
