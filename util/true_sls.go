@@ -99,6 +99,24 @@ func UpdateSLSInstances() {
 			log.Errorln("error while un-marshalling res body:", err)
 			return
 		}
+
+		// Once the response is present in the list, remove all the instances
+		// that do not have a valid plan
+		indicesToRemove := make([]int, 0)
+		for instancePosition, instance := range response {
+			if *instance.Tier == InvalidValueEncountered {
+				log.Warnln("removing instance with domain `", instance.Domain, "` from sls instances since it has an invalid plan: ")
+				// Remove the element from the index
+				indicesToRemove = append(indicesToRemove, instancePosition)
+			}
+		}
+
+		// Remove all the indices that are to be removed
+		for _, instancePosition := range indicesToRemove {
+			response[instancePosition] = response[len(response)-1]
+			response = response[:len(response)-1]
+		}
+
 		var tempDomainToSLSMap = make(map[string]slsInstanceDetails)
 		for _, v := range response {
 			tempDomainToSLSMap[v.Domain] = v

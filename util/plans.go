@@ -45,6 +45,7 @@ const (
 	ReactivesearchCloudHobbyTest
 	ReactivesearchCloudProductionTest
 	ReactivesearchCloudEnterpriseTest
+	InvalidValueEncountered
 )
 
 // String is the implementation of Stringer interface that returns the string representation of Plan type.
@@ -86,6 +87,7 @@ func (o Plan) String() string {
 		"price_0ME6d1t881Db6BmKECOseHZx",
 		"price_0ME6det881Db6BmKjBA844Yt",
 		"price_0ME6eSt881Db6BmKKawAqVCI",
+		"invalid-value-encountered",
 	}[o]
 }
 
@@ -168,7 +170,7 @@ func (o *Plan) UnmarshalJSON(bytes []byte) error {
 	case ReactivesearchCloudEnterpriseTest.String():
 		*o = ReactivesearchCloudEnterpriseTest
 	default:
-		return fmt.Errorf("invalid plan encountered: %v", plan)
+		*o = InvalidValueEncountered
 	}
 	return nil
 }
@@ -247,6 +249,8 @@ func (o Plan) MarshalJSON() ([]byte, error) {
 		plan = ReactivesearchCloudProductionTest.String()
 	case ReactivesearchCloudEnterpriseTest:
 		plan = ReactivesearchCloudEnterprise.String()
+	case InvalidValueEncountered:
+		return nil, fmt.Errorf(InvalidValueEncountered.String(), " cannot be marshalled since it's not a valid plan!")
 	default:
 		return nil, fmt.Errorf("invalid plan encountered: %v", o)
 	}
