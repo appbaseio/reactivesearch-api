@@ -122,6 +122,9 @@ func UpdateSLSInstances() {
 		}
 
 		// Remove all the indices that are to be removed
+		//
+		// Empty the older map on sync
+		slsDomainsPaymentNeeded = make(map[string]int)
 		for _, instancePosition := range indicesToRemove {
 			// Before removing them from valid plans, we also want to
 			// keep them in a separate list so that we can throw a proper
