@@ -51,6 +51,10 @@ type slsInstanceDetails struct {
 
 var slsInstancesByDomain = make(map[string]slsInstanceDetails)
 
+// Store the domains where the payment is required. Essentially, store
+// all the domains where the `pricing_plan` field is not valid.
+var slsDomainsPaymentNeeded = make(map[string]int)
+
 // returns the SLS instance details for domain, domain must be in raw form
 func GetSLSInstanceByDomain(domain string) *slsInstanceDetails {
 	instanceDetails, ok := slsInstancesByDomain[domain]
@@ -58,6 +62,12 @@ func GetSLSInstanceByDomain(domain string) *slsInstanceDetails {
 		return &instanceDetails
 	}
 	return nil
+}
+
+// IsPaymentNeeded will check if the passed domain requires payment
+func IsPaymentNeeded(domain string) bool {
+	_, exists := slsDomainsPaymentNeeded[domain]
+	return exists
 }
 
 // GetSLSInstances will return the domain to SLS instance details map
@@ -113,6 +123,12 @@ func UpdateSLSInstances() {
 
 		// Remove all the indices that are to be removed
 		for _, instancePosition := range indicesToRemove {
+			// Before removing them from valid plans, we also want to
+			// keep them in a separate list so that we can throw a proper
+			// error to the user when they try to make a request
+			instanceDetails := response[instancePosition]
+			slsDomainsPaymentNeeded[instanceDetails.Domain] = 1
+
 			response[instancePosition] = response[len(response)-1]
 			response = response[:len(response)-1]
 		}
