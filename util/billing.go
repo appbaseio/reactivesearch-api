@@ -246,6 +246,12 @@ func BillingMiddleware(next http.Handler) http.Handler {
 			// Get instance details for domain
 			slsInstanceInfo := GetSLSInstanceByDomain(domainInfo.Raw)
 			if slsInstanceInfo == nil {
+				// Check if payment is required for this domain
+				if IsPaymentNeeded(domainInfo.Raw) {
+					WriteBackError(w, "Payment required to use the domain!", http.StatusPaymentRequired)
+					return
+				}
+
 				WriteBackError(w, "Please make sure that you're using a valid domain. If the issue persists please contact support@appbase.io with your domain or registered e-mail address.", http.StatusBadRequest)
 				return
 			}
