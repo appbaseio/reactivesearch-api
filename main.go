@@ -391,7 +391,7 @@ func main() {
 			log.Println("You're running ReactiveSearch with SLS multi-tenancy enabled.")
 			util.UpdateSLSInstances()
 			cronJob := cron.New()
-			cronJob.AddFunc("@every 60s", util.UpdateSLSInstances)
+			cronJob.AddFunc("@every 10s", util.UpdateSLSInstances)
 			cronJob.Start()
 			// Use validate domain middleware, it creates a context with domain
 			mainRouter.Use(validate.ValidateDomain)
