@@ -108,12 +108,13 @@ func RecordUsageMiddleware(h http.Handler) http.Handler {
 //
 // The usage will be fetched only for the current day by passing
 // timestamps.
-func FetchUsageForDay() {
+func FetchUsageForDay() error {
 	urlToHit := ACCAPI + "/sls/report_usage_multi_tenant"
 
 	req, err := http.NewRequest(http.MethodGet, urlToHit, nil)
 	if err != nil {
-		// TODO: Handle the error
+		// Handle the error
+		return err
 	}
 
 	req.Header.Add("X-REACTIVESEARCH-TOKEN", os.Getenv("REACTIVESEARCH_AUTH_TOKEN"))
@@ -140,7 +141,8 @@ func FetchUsageForDay() {
 	req.Header.Add("cache-control", "no-cache")
 	res, err := HTTPClient().Do(req)
 	if err != nil {
-		// TODO: Handle error
+		// Handle error
+		return err
 	}
 
 	// Read the body
@@ -148,14 +150,16 @@ func FetchUsageForDay() {
 	defer res.Body.Close()
 
 	if readErr != nil {
-		// TODO: Handle error
+		// Handle error
+		return readErr
 	}
 
 	usageResponse := make(map[string]interface{})
 	unmarshalErr := json.Unmarshal(resBody, &usageResponse)
 
 	if unmarshalErr != nil {
-		// TODO: Handle error
+		// Handle error
+		return unmarshalErr
 	}
 
 	domainToUsage := make(map[string]int)
@@ -198,5 +202,5 @@ func FetchUsageForDay() {
 	}
 
 	domainToUsageMap = domainToUsage
-
+	return nil
 }
