@@ -204,3 +204,17 @@ func FetchUsageForDay() error {
 	domainToUsageMap = domainToUsage
 	return nil
 }
+
+// GetUsageForTenant will return the usage for the passed
+// tenant value.
+//
+// If the entry doesn't exist, 0 will be returned for the
+// tenant
+func GetUsageForTenant(tenantID string) int {
+	usage, exists := domainToUsageMap[tenantID]
+	if !exists {
+		return 0
+	}
+
+	return usage
+}
