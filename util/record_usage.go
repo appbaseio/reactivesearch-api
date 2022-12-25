@@ -1,6 +1,9 @@
 package util
 
 import (
+	"encoding/json"
+	"fmt"
+	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"net/http/httputil"
@@ -116,12 +119,20 @@ func FetchUsageForDay() {
 	req.Header.Add("X-REACTIVESEARCH-TOKEN", os.Getenv("REACTIVESEARCH_AUTH_TOKEN"))
 
 	// Find the timestamp of the current day at 00:00:00
-	startTimestamp := time.Now()
+	beginningOfDay := time.Now().Truncate(24 * time.Hour)
+	startTimestamp := beginningOfDay.Unix()
+
+	// Adding a day to the beginning of the day would be the end of the
+	// day.
+	//
+	// Essentially adding 24 hours to the beginning of the day will be the
+	// end of the day.
+	endTimestamp := beginningOfDay.Add(1 * 24 * time.Hour).Unix()
 
 	// Apply query params
 	urlValues := make(url.Values)
-	urlValues["start_timestamp"] = []string{}
-	urlValues["end_timestamp"] = []string{}
+	urlValues["start_timestamp"] = []string{fmt.Sprintf("%d", startTimestamp)}
+	urlValues["end_timestamp"] = []string{fmt.Sprintf("%d", endTimestamp)}
 	q := urlValues
 	req.URL.RawQuery = q.Encode()
 
@@ -131,5 +142,61 @@ func FetchUsageForDay() {
 	if err != nil {
 		// TODO: Handle error
 	}
+
+	// Read the body
+	resBody, readErr := ioutil.ReadAll(res.Body)
+	defer res.Body.Close()
+
+	if readErr != nil {
+		// TODO: Handle error
+	}
+
+	usageResponse := make(map[string]interface{})
+	unmarshalErr := json.Unmarshal(resBody, &usageResponse)
+
+	if unmarshalErr != nil {
+		// TODO: Handle error
+	}
+
+	domainToUsage := make(map[string]int)
+
+	for clusterId, usageValue := range usageResponse {
+		// `usageValue` will be an array where there should be preferably
+		// one element but if there are more than one we will add up the
+		// `usage` value for all the elements.
+		//
+		// There should be technically one element because the usage is
+		// returned on a per-day basis and we will pass the timestamp for
+		// a day.
+		usageAsArr, asArr := usageValue.([]interface{})
+		if !asArr {
+			log.Warnln(": error while parsing response for usage for cluster ID: ", clusterId)
+			continue
+		}
+
+		totalUsage := 0
+		for _, usageEach := range usageAsArr {
+			usageEachAsMap, asMapOk := usageEach.(map[string]interface{})
+			if !asMapOk {
+				continue
+			}
+
+			usageAsInterface, isPresent := usageEachAsMap["usage"]
+			if !isPresent {
+				continue
+			}
+
+			usageAsFloat, asFloatOk := usageAsInterface.(float64)
+			if !asFloatOk {
+				continue
+			}
+
+			totalUsage += int(usageAsFloat)
+		}
+
+		domainToUsage[clusterId] = totalUsage
+	}
+
+	domainToUsageMap = domainToUsage
 
 }
