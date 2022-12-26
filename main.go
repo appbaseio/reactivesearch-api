@@ -398,6 +398,9 @@ func main() {
 				log.Fatalln(logTag, ": error while fetching plan limit: ", limitFetchErr.Error())
 			}
 
+			// Init the request counter
+			util.InitRequestMap()
+
 			cronJob := cron.New()
 			cronJob.AddFunc("@every 10s", util.UpdateSLSInstances)
 			cronJob.AddFunc("@every 24h", func() {

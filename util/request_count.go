@@ -83,3 +83,20 @@ func (t *TenantRequestCount) Increment() {
 // tenantToRequestsMap will contain the request count on a per tenant
 // basis.
 var tenantToRequestsMap = make(map[string]*TenantRequestCount)
+
+// InitRequestMap will initialize the request map counter for all tenants
+func InitRequestMap() {
+	slsInstances := GetSLSInstances()
+
+	// Iterate over all the valid SLS instances and add their counter
+	for _, instanceDetails := range slsInstances {
+		// Don't add the instances that are already present because
+		// this way we won't reset the counter
+		_, exists := tenantToRequestsMap[instanceDetails.TenantID]
+		if exists {
+			continue
+		}
+
+		tenantToRequestsMap[instanceDetails.TenantID] = NewTenantRequestCount()
+	}
+}
