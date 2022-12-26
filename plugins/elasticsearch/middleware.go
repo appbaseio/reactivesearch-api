@@ -510,3 +510,42 @@ func (wh *WhitelistedRoute) UpdateIndexName(h http.HandlerFunc) http.HandlerFunc
 		w.Write([]byte(modifiedResponse))
 	}
 }
+
+// IndexLimitCheck will check whether the allowed index limit for the
+// tenant has been exceeded and accordingly throw an error
+func IndexLimitCheck(h http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		// Read the index value
+		vars := mux.Vars(r)
+		indexValue := vars["index"]
+
+		if indexValue == "" {
+			h(w, r)
+			return
+		}
+
+		if r.Method != http.MethodPost && r.Method != http.MethodPut {
+			h(w, r)
+			return
+		}
+
+		domainUsed, domainFetchErr := domain.FromContext(r.Context())
+		if domainFetchErr != nil {
+			errMsg := "Error while validating the domain!"
+			log.Warnln(logTag, ": ", errMsg)
+			telemetry.WriteBackErrorWithTelemetry(r, w, errMsg, http.StatusUnauthorized)
+			return
+		}
+
+		// Finally seems like this might be a request related to index,
+		// we will need to check the limit
+		instanceDetails := util.GetSLSInstanceByDomain(domainUsed.Raw)
+		if IsIndexLimitExceeded(domainUsed.Raw, indexValue) {
+			log.Warnln(logTag, ": index limit has exceeded for the user!")
+			telemetry.WriteBackErrorWithTelemetry(r, w, "You have reached the maximum number of indexes allowed for the "+instanceDetails.Tier.String()+" plan", http.StatusBadRequest)
+			return
+		}
+
+		h(w, r)
+	}
+}
