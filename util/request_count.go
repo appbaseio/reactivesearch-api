@@ -153,11 +153,11 @@ func GetRequestCounterForTenant(tenantID string) *TenantRequestCount {
 }
 
 // CounterMiddleware will count the request on a per-tenant basis
-func CounterMiddleware(next http.HandlerFunc) http.HandlerFunc {
-	return func(w http.ResponseWriter, req *http.Request) {
+func CounterMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		// If not multi-tenant, we don't need to do anything
 		if !MultiTenant {
-			next(w, req)
+			next.ServeHTTP(w, req)
 			return
 		}
 
@@ -171,6 +171,6 @@ func CounterMiddleware(next http.HandlerFunc) http.HandlerFunc {
 
 		tenantID := GetTenantForDomain(domainFromCtx.Raw)
 		GetRequestCounterForTenant(tenantID).Increment()
-		next(w, req)
-	}
+		next.ServeHTTP(w, req)
+	})
 }

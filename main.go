@@ -411,6 +411,7 @@ func main() {
 			cronJob.Start()
 			// Use validate domain middleware, it creates a context with domain
 			mainRouter.Use(validate.ValidateDomain)
+			mainRouter.Use(util.CounterMiddleware)
 			if IgnoreBillingMiddleware != "true" {
 				mainRouter.Use(util.BillingMiddleware)
 			}
