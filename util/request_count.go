@@ -45,8 +45,8 @@ func (r *RequestCounter) SetResetInterval(interval string) error {
 
 // TenantRequestCount will store the requests of the tenant
 type TenantRequestCount struct {
-	CountPerMin  *RequestCounter
-	CountPerHour *RequestCounter
+	countPerMin  *RequestCounter
+	countPerHour *RequestCounter
 }
 
 // NewTenantRequestCount will return a new tenant request count that
@@ -61,8 +61,8 @@ func NewTenantRequestCount() *TenantRequestCount {
 	perHourCounter.SetResetInterval("@every 1h")
 
 	return &TenantRequestCount{
-		CountPerMin:  perMinCounter,
-		CountPerHour: perHourCounter,
+		countPerMin:  perMinCounter,
+		countPerHour: perHourCounter,
 	}
 }
 
