@@ -8,9 +8,10 @@ import (
 
 // RequestCounter will count the requests
 type RequestCounter struct {
-	Value      int
-	resetJob   *cron.Cron
-	writeMutex *sync.Mutex
+	Value        int
+	allowedValue int
+	resetJob     *cron.Cron
+	writeMutex   *sync.Mutex
 }
 
 // NewRequestCounter will create a new reset counter that will
@@ -31,6 +32,11 @@ func (r *RequestCounter) Increment() {
 	r.writeMutex.Lock()
 	defer r.writeMutex.Unlock()
 	r.Value += 1
+}
+
+// IsExceeded will return if the value has exceeded the allowed value
+func (r *RequestCounter) IsExceeded() bool {
+	return r.Value > r.allowedValue
 }
 
 // SetResetInterval will set the interval for resetting the counter
@@ -78,6 +84,12 @@ func NewTenantRequestCount() *TenantRequestCount {
 func (t *TenantRequestCount) Increment() {
 	t.countPerMin.Increment()
 	t.countPerHour.Increment()
+}
+
+// IsExceeded will check if any counter has exceeded the limit
+// allowed
+func (t *TenantRequestCount) IsExceeded() bool {
+	return t.countPerHour.IsExceeded() || t.countPerMin.IsExceeded()
 }
 
 // tenantToRequestsMap will contain the request count on a per tenant
