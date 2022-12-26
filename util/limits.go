@@ -8,6 +8,10 @@ import (
 	"os"
 )
 
+const (
+	MBToBytes = 1000000
+)
+
 var planToLimit = make(map[Plan]PlanLimit)
 
 // LimitValue will contain the limit value
@@ -100,6 +104,18 @@ func FetchLimitsPerPlan() error {
 		plan := PlanFromString(planName)
 		if plan == InvalidValueEncountered {
 			continue
+		}
+
+		// For `data_usage`, we need to set the unit as bytes
+		// and convert the values
+		if planLimit.DataUsage.Unit == "megabytes" {
+			planLimit.DataUsage.Value = planLimit.DataUsage.Value * MBToBytes
+			planLimit.DataUsage.Unit = "bytes"
+		}
+
+		if planLimit.Storage.Unit == "megabytes" {
+			planLimit.Storage.Value = planLimit.Storage.Value * MBToBytes
+			planLimit.Storage.Unit = "bytes"
 		}
 
 		planToLimitTemp[plan] = planLimit
