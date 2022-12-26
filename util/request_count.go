@@ -100,3 +100,15 @@ func InitRequestMap() {
 		tenantToRequestsMap[instanceDetails.TenantID] = NewTenantRequestCount()
 	}
 }
+
+// GetRequestCounterForTenant will get the request counter for
+// the passed tenantID.
+//
+// If it doesn't exist, we return a new counter
+func GetRequestCounterForTenant(tenantID string) *TenantRequestCount {
+	requestCounter, exists := tenantToRequestsMap[tenantID]
+	if !exists {
+		return NewTenantRequestCount()
+	}
+	return requestCounter
+}
