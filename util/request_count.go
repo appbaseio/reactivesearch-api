@@ -124,10 +124,12 @@ func InitRequestMap() {
 		// Don't add the instances that are already present because
 		// this way we won't reset the counter
 
-		// TODO: Handle situations where the plan is updated
+		// However, we might need to reset the limit since there is
+		// a possibility that the plan might change.
+
 		_, exists := tenantToRequestsMap[instanceDetails.TenantID]
 		if exists {
-			continue
+			tenantToRequestsMap[instanceDetails.TenantID].SetLimit(instanceDetails.Tier)
 		}
 
 		newTR := NewTenantRequestCount()
