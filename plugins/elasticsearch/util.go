@@ -87,3 +87,12 @@ func UpdateNDJsonRequestBody(body string, indices []string, tenantID string, isB
 
 	return body
 }
+
+// IsIndexLimitExceeded will check if the users index limit has exceeded
+// based on the passed index.
+//
+// The logic here is that if the passed index name exists in the cached
+// indices (which will be truncated based on size) then it can go ahead.
+//
+// However, if it is an unrecognized index and the number of new addable
+// indexes are 0 then limit exceeded will be considered.

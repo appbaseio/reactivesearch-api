@@ -1,6 +1,10 @@
 package elasticsearch
 
-import "sort"
+import (
+	"sort"
+
+	"github.com/appbaseio/reactivesearch-api/util"
+)
 
 // Store the indices for tenants using a tenant to index map
 //
@@ -32,7 +36,9 @@ func DeleteIndexFromCache(tenantID string, index string) bool {
 //
 // The indexes will be sorted and returned in terms of length of
 // the index name where the longer index name should show up first.
-func GetCachedIndices(tenantID string) []string {
+func GetCachedIndices(domain string) []string {
+	tenantID := util.GetTenantForDomain(domain)
+
 	cachedIndices, exists := tenantToIndexMap[tenantID]
 	if !exists {
 		return make([]string, 0)
