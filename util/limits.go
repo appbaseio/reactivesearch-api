@@ -108,3 +108,30 @@ func FetchLimitsPerPlan() error {
 	planToLimit = planToLimitTemp
 	return nil
 }
+
+// LimitForPlan will return the limit object for the passed
+// plan.
+//
+// If limit doesn't exist for plan, we need to return dummy values
+// though that's a very unlikely situation
+func (p Plan) LimitForPlan() PlanLimit {
+	planLimit, exists := planToLimit[p]
+	if !exists {
+		defaultValue := LimitValue{
+			Value:   0,
+			Unit:    "na",
+			NoLimit: false,
+		}
+		return PlanLimit{
+			DataUsage:           defaultValue,
+			AnalyticsAndLogsTTL: defaultValue,
+			Indexes:             defaultValue,
+			Pipelines:           defaultValue,
+			QueryRules:          defaultValue,
+			Storage:             defaultValue,
+			Requests:            defaultValue,
+		}
+	}
+
+	return planLimit
+}
