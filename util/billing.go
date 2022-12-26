@@ -243,6 +243,17 @@ func BillingMiddleware(next http.Handler) http.Handler {
 				return
 			}
 
+			// Fetch tenantID from the domain read
+			tenantID := GetTenantForDomain(domainInfo.Raw)
+
+			// Check the rate limit and throw errors accordingly
+			if GetRequestCounterForTenant(tenantID).IsExceeded() {
+				log.Errorln("request limit exceeded for the current minute!")
+				w.Header().Set("Retry-After", "60")
+				WriteBackError(w, "Too many requests, please try after a while!", http.StatusTooManyRequests)
+				return
+			}
+
 			// Get instance details for domain
 			slsInstanceInfo := GetSLSInstanceByDomain(domainInfo.Raw)
 			if slsInstanceInfo == nil {
