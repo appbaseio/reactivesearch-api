@@ -83,3 +83,14 @@ func FetchStorageFromES() error {
 	tenantToStorageMap = newTenantToStorageMap
 	return nil
 }
+
+// GetStorageUsedByTenant will return the storage used by the
+// passed tenant
+func GetStorageUsedByTenant(tenantID string) int {
+	storage, exists := tenantToStorageMap[tenantID]
+	if !exists {
+		return 0
+	}
+
+	return storage
+}

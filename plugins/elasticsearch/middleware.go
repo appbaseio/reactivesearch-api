@@ -546,6 +546,14 @@ func IndexLimitCheck(h http.HandlerFunc) http.HandlerFunc {
 			return
 		}
 
+		// We can also check for storage limit here
+		storageUsedByTenant := GetStorageUsedByTenant(util.GetTenantForDomain(domainUsed.Raw))
+		if instanceDetails.Tier.LimitForPlan().Storage.IsLimitExceeded(storageUsedByTenant) {
+			log.Warnln(logTag, ": index storage limit has exceeded for the user!")
+			telemetry.WriteBackErrorWithTelemetry(r, w, "You have reached the maximum storage of indexes allowed for the "+instanceDetails.Tier.String()+" plan", http.StatusBadRequest)
+			return
+		}
+
 		h(w, r)
 	}
 }
