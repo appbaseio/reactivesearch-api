@@ -49,8 +49,15 @@ func GetCachedIndices(domain string) []string {
 		indicesArr = append(indicesArr, cachedIndex)
 	}
 
+	// Get plan details using domain
+	instanceDetails := util.GetSLSInstanceByDomain(domain)
+	allowedLimit := 2
+	if instanceDetails != nil {
+		allowedLimit = instanceDetails.Tier.LimitForPlan().Indexes.Value
+	}
+
 	sort.Slice(indicesArr, func(i, j int) bool {
 		return len(indicesArr[i]) > len(indicesArr[j])
 	})
-	return indicesArr
+	return append([]string(nil), indicesArr[:allowedLimit]...)
 }
