@@ -1,6 +1,7 @@
 package elasticsearch
 
 import (
+	"math"
 	"sort"
 
 	"github.com/appbaseio/reactivesearch-api/util"
@@ -59,5 +60,8 @@ func GetCachedIndices(domain string) []string {
 	sort.Slice(indicesArr, func(i, j int) bool {
 		return len(indicesArr[i]) > len(indicesArr[j])
 	})
-	return append([]string(nil), indicesArr[:allowedLimit]...)
+
+	// There is a possibility that allowed limit might be higher than the
+	// length in which case it will lead to a panic
+	return append([]string(nil), indicesArr[:int(math.Max(float64(allowedLimit), float64(len(indicesArr))))]...)
 }
