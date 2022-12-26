@@ -26,7 +26,15 @@ func (r *RequestCounter) Reset() {
 	r.Value = 0
 }
 
-// SetResetInterval will set the interval for resetting the cronjob
+// Increment will increment the counter by 1
+func (r *RequestCounter) Increment() {
+	r.writeMutex.Lock()
+	defer r.writeMutex.Unlock()
+	r.Value += 1
+}
+
+// SetResetInterval will set the interval for resetting the counter
+// using a cronjob
 func (r *RequestCounter) SetResetInterval(interval string) error {
 	resetJob := cron.New()
 	jobInitErr := resetJob.AddFunc(interval, func() {
@@ -64,6 +72,12 @@ func NewTenantRequestCount() *TenantRequestCount {
 		countPerMin:  perMinCounter,
 		countPerHour: perHourCounter,
 	}
+}
+
+// Increment will increase the counter for both per-min and per-hour
+func (t *TenantRequestCount) Increment() {
+	t.countPerMin.Increment()
+	t.countPerHour.Increment()
 }
 
 // tenantToRequestsMap will contain the request count on a per tenant
