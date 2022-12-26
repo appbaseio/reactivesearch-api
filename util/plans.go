@@ -48,9 +48,8 @@ const (
 	InvalidValueEncountered
 )
 
-// String is the implementation of Stringer interface that returns the string representation of Plan type.
-func (o Plan) String() string {
-	return [...]string{
+func PlanStrings() []string {
+	return []string{
 		"arc-basic",
 		"arc-standard",
 		"arc-enterprise",
@@ -88,7 +87,12 @@ func (o Plan) String() string {
 		"price_0ME6det881Db6BmKjBA844Yt",
 		"price_0ME6eSt881Db6BmKKawAqVCI",
 		"invalid-value-encountered",
-	}[o]
+	}
+}
+
+// String is the implementation of Stringer interface that returns the string representation of Plan type.
+func (o Plan) String() string {
+	return PlanStrings()[o]
 }
 
 // UnmarshalJSON is the implementation of the Unmarshaler interface for unmarshaling Plan type.
@@ -294,4 +298,15 @@ func IsProductionPlan(ctx context.Context) bool {
 	default:
 		return false
 	}
+}
+
+// PlanFromString will return the plan name for the string passed
+func PlanFromString(pAsStr string) Plan {
+	for position, value := range PlanStrings() {
+		if value == pAsStr {
+			return Plan(position)
+		}
+	}
+
+	return InvalidValueEncountered
 }

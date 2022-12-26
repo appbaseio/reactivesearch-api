@@ -1,5 +1,15 @@
 package util
 
+import (
+	"encoding/json"
+	"fmt"
+	"io/ioutil"
+	"net/http"
+	"os"
+)
+
+var planToLimit = make(map[Plan]PlanLimit)
+
 // LimitValue will contain the limit value
 type LimitValue struct {
 	Value   int    `json:"value"`
@@ -27,4 +37,74 @@ func (l LimitValue) IsLimitExceeded(value int) bool {
 	}
 
 	return value > l.Value
+}
+
+// FetchLimitsPerPlan will fetch the limits on a per-plan basis
+// from AccAPI
+func FetchLimitsPerPlan() error {
+	urlToHit := ACCAPI + "/sls/plan_limits"
+
+	req, err := http.NewRequest(http.MethodGet, urlToHit, nil)
+	if err != nil {
+		// Handle the error
+		return err
+	}
+
+	req.Header.Add("X-REACTIVESEARCH-TOKEN", os.Getenv("REACTIVESEARCH_AUTH_TOKEN"))
+
+	req.Header.Add("Content-Type", "application/json")
+	req.Header.Add("cache-control", "no-cache")
+	res, err := HTTPClient().Do(req)
+	if err != nil {
+		// Handle error
+		return err
+	}
+
+	// Read the body
+	resBody, readErr := ioutil.ReadAll(res.Body)
+	defer res.Body.Close()
+
+	if readErr != nil {
+		// Handle error
+		return readErr
+	}
+
+	limitResponse := make(map[string]interface{})
+	unmarshalErr := json.Unmarshal(resBody, &limitResponse)
+
+	if unmarshalErr != nil {
+		// Handle error
+		return unmarshalErr
+	}
+
+	limitsAsMap, asMapOk := limitResponse["limits"].(map[string]interface{})
+	if !asMapOk {
+		return fmt.Errorf("error while extracting `limits` from AccAPI response!")
+	}
+
+	planToLimitTemp := make(map[Plan]PlanLimit)
+
+	for planName, limitAsInterface := range limitsAsMap {
+		// Extract the limitAsInterface into a custom limit type
+		marshalledLimits, marshalErr := json.Marshal(limitAsInterface)
+		if marshalErr != nil {
+			continue
+		}
+
+		var planLimit PlanLimit
+		unmarshalErr := json.Unmarshal(marshalledLimits, &planLimit)
+		if unmarshalErr != nil {
+			continue
+		}
+
+		plan := PlanFromString(planName)
+		if plan == InvalidValueEncountered {
+			continue
+		}
+
+		planToLimitTemp[plan] = planLimit
+	}
+
+	planToLimit = planToLimitTemp
+	return nil
 }
