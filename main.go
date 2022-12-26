@@ -389,7 +389,6 @@ func main() {
 		if util.MultiTenant {
 			// Maintain SLS instance details
 			log.Println("You're running ReactiveSearch with SLS multi-tenancy enabled.")
-			util.UpdateSLSInstances()
 
 			// Fetch the plan limits
 			log.Info("Fetching plan-limits for all the SLS plans from AccAPI")
@@ -398,8 +397,8 @@ func main() {
 				log.Fatalln(logTag, ": error while fetching plan limit: ", limitFetchErr.Error())
 			}
 
-			// Init the request counter
-			util.InitRequestMap()
+			// Fetch the instances that are multi-tenant
+			util.UpdateSLSInstances()
 
 			cronJob := cron.New()
 			cronJob.AddFunc("@every 10s", util.UpdateSLSInstances)

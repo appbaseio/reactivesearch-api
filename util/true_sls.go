@@ -143,6 +143,10 @@ func UpdateSLSInstances() {
 		slsInstancesByDomain = tempDomainToSLSMap
 	}
 	defer res.Body.Close()
+
+	// Update the request map in case new tenants are added or older tenants
+	// changed their plans
+	InitRequestMap()
 }
 
 func SearchServiceWithAuth(s *es7.SearchService, ctx context.Context) *es7.SearchService {

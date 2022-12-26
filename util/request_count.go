@@ -126,7 +126,6 @@ func InitRequestMap() {
 
 		// However, we might need to reset the limit since there is
 		// a possibility that the plan might change.
-
 		_, exists := tenantToRequestsMap[instanceDetails.TenantID]
 		if exists {
 			tenantToRequestsMap[instanceDetails.TenantID].SetLimit(instanceDetails.Tier)
