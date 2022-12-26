@@ -96,3 +96,16 @@ func UpdateNDJsonRequestBody(body string, indices []string, tenantID string, isB
 //
 // However, if it is an unrecognized index and the number of new addable
 // indexes are 0 then limit exceeded will be considered.
+func IsIndexLimitExceeded(domain string, index string) bool {
+	// Fetch the indexes for the tenant
+	cachedIndexes := GetCachedIndices(domain)
+	for _, indexName := range cachedIndexes {
+		if indexName == index {
+			return false
+		}
+	}
+
+	// Check if the length of indexes exceeds the allowed length
+	instanceDetails := util.GetSLSInstanceByDomain(domain)
+	return instanceDetails.Tier.LimitForPlan().Indexes.IsLimitExceeded(len(cachedIndexes))
+}

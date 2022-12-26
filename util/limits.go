@@ -40,7 +40,7 @@ func (l LimitValue) IsLimitExceeded(value int) bool {
 		return false
 	}
 
-	return value > l.Value
+	return value >= l.Value
 }
 
 // FetchLimitsPerPlan will fetch the limits on a per-plan basis
