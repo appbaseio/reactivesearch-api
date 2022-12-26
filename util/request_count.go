@@ -12,12 +12,13 @@ type RequestCounter struct {
 	allowedValue int
 	resetJob     *cron.Cron
 	writeMutex   *sync.Mutex
+	isLimit      bool
 }
 
 // NewRequestCounter will create a new reset counter that will
 // be initialized with 0
 func NewRequestCounter() *RequestCounter {
-	return &RequestCounter{Value: 0}
+	return &RequestCounter{Value: 0, allowedValue: 0, isLimit: true}
 }
 
 // Reset will reset the counter
@@ -36,7 +37,18 @@ func (r *RequestCounter) Increment() {
 
 // IsExceeded will return if the value has exceeded the allowed value
 func (r *RequestCounter) IsExceeded() bool {
-	return r.Value > r.allowedValue
+	return r.isLimit && r.Value > r.allowedValue
+}
+
+// SetLimit will set the limit for the counter
+func (r *RequestCounter) SetLimit(value int) {
+	r.allowedValue = value
+	r.isLimit = true
+}
+
+// SetNoLimit will set the no-limit flag as true for the counter
+func (r *RequestCounter) SetNoLimit() {
+	r.isLimit = false
 }
 
 // SetResetInterval will set the interval for resetting the counter
@@ -59,8 +71,7 @@ func (r *RequestCounter) SetResetInterval(interval string) error {
 
 // TenantRequestCount will store the requests of the tenant
 type TenantRequestCount struct {
-	countPerMin  *RequestCounter
-	countPerHour *RequestCounter
+	countPerMin *RequestCounter
 }
 
 // NewTenantRequestCount will return a new tenant request count that
@@ -71,25 +82,33 @@ func NewTenantRequestCount() *TenantRequestCount {
 	perMinCounter := NewRequestCounter()
 	perMinCounter.SetResetInterval("@every 1m")
 
-	perHourCounter := NewRequestCounter()
-	perHourCounter.SetResetInterval("@every 1h")
-
 	return &TenantRequestCount{
-		countPerMin:  perMinCounter,
-		countPerHour: perHourCounter,
+		countPerMin: perMinCounter,
 	}
 }
 
 // Increment will increase the counter for both per-min and per-hour
 func (t *TenantRequestCount) Increment() {
 	t.countPerMin.Increment()
-	t.countPerHour.Increment()
 }
 
 // IsExceeded will check if any counter has exceeded the limit
 // allowed
 func (t *TenantRequestCount) IsExceeded() bool {
-	return t.countPerHour.IsExceeded() || t.countPerMin.IsExceeded()
+	return t.countPerMin.IsExceeded()
+}
+
+// SetLimit will set the limit based on the passed plan
+func (t *TenantRequestCount) SetLimit(plan *Plan) {
+	// Fetch the limits based on the plan
+	requestLimit := plan.LimitForPlan().Requests
+
+	if requestLimit.NoLimit {
+		t.countPerMin.SetNoLimit()
+		return
+	}
+
+	t.countPerMin.SetLimit(requestLimit.Value)
 }
 
 // tenantToRequestsMap will contain the request count on a per tenant
@@ -104,12 +123,16 @@ func InitRequestMap() {
 	for _, instanceDetails := range slsInstances {
 		// Don't add the instances that are already present because
 		// this way we won't reset the counter
+
+		// TODO: Handle situations where the plan is updated
 		_, exists := tenantToRequestsMap[instanceDetails.TenantID]
 		if exists {
 			continue
 		}
 
-		tenantToRequestsMap[instanceDetails.TenantID] = NewTenantRequestCount()
+		newTR := NewTenantRequestCount()
+		newTR.SetLimit(instanceDetails.Tier)
+		tenantToRequestsMap[instanceDetails.TenantID] = newTR
 	}
 }
 
