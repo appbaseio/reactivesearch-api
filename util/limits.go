@@ -17,3 +17,14 @@ type PlanLimit struct {
 	Storage             LimitValue `json:"storage"`
 	Requests            LimitValue `json:"requests"`
 }
+
+// IsLimitExceeded will check if the passed limit exceeds the
+// allowed limit for the plan
+func (l LimitValue) IsLimitExceeded(value int) bool {
+	// If plan doesn't have a limit, always return false
+	if l.NoLimit || l.Value == -1 {
+		return false
+	}
+
+	return value > l.Value
+}
