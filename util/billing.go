@@ -254,6 +254,14 @@ func BillingMiddleware(next http.Handler) http.Handler {
 				return
 			}
 
+			// Check if data usage has exceeded the allowed limit
+			if IsDataUsageExceeded(domainInfo.Raw) {
+				log.Errorln("data-usage limit exceeded for the current day")
+				w.Header().Set("Retry-After", fmt.Sprintf("%d", 3600*24))
+				WriteBackError(w, "Data usage limit exceeded for the plan", http.StatusTooManyRequests)
+				return
+			}
+
 			// Get instance details for domain
 			slsInstanceInfo := GetSLSInstanceByDomain(domainInfo.Raw)
 			if slsInstanceInfo == nil {

@@ -218,3 +218,13 @@ func GetUsageForTenant(tenantID string) int {
 
 	return usage
 }
+
+// IsDataUsageExceeded will indicate true if the data usage
+// of the tenant has exceeded the allowed limit based on
+// their plan
+func IsDataUsageExceeded(domain string) bool {
+	// Fetch the plan for the passed tenant
+	instanceDetails := GetSLSInstanceByDomain(domain)
+	usageForTenant := GetUsageForTenant(GetTenantForDomain(domain))
+	return instanceDetails.Tier.LimitForPlan().DataUsage.IsLimitExceeded(usageForTenant)
+}
