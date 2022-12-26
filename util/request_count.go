@@ -1,8 +1,11 @@
 package util
 
 import (
+	"fmt"
+	"net/http"
 	"sync"
 
+	"github.com/appbaseio/reactivesearch-api/model/domain"
 	"github.com/robfig/cron"
 )
 
@@ -147,4 +150,27 @@ func GetRequestCounterForTenant(tenantID string) *TenantRequestCount {
 		return NewTenantRequestCount()
 	}
 	return requestCounter
+}
+
+// CounterMiddleware will count the request on a per-tenant basis
+func CounterMiddleware(next http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, req *http.Request) {
+		// If not multi-tenant, we don't need to do anything
+		if !MultiTenant {
+			next(w, req)
+			return
+		}
+
+		// Fetch the tenant from the context
+		domainFromCtx, domainFetchErr := domain.FromContext(req.Context())
+		if domainFetchErr != nil {
+			errMsg := fmt.Sprint("error while reading domain from context: ", domainFetchErr.Error())
+			WriteBackError(w, errMsg, http.StatusInternalServerError)
+			return
+		}
+
+		tenantID := GetTenantForDomain(domainFromCtx.Raw)
+		GetRequestCounterForTenant(tenantID).Increment()
+		next(w, req)
+	}
 }
