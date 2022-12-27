@@ -515,6 +515,21 @@ func (wh *WhitelistedRoute) UpdateIndexName(h http.HandlerFunc) http.HandlerFunc
 // tenant has been exceeded and accordingly throw an error
 func IndexLimitCheck(h http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		// Add this check only if backend of the tenant is `system`, else
+		// ignore
+		domainUsed, domainFetchErr := domain.FromContext(r.Context())
+		if domainFetchErr != nil {
+			errMsg := "Error while validating the domain!"
+			log.Warnln(logTag, ": ", errMsg)
+			telemetry.WriteBackErrorWithTelemetry(r, w, errMsg, http.StatusUnauthorized)
+			return
+		}
+
+		if *util.GetBackendByDomain(domainUsed.Raw) != util.System {
+			h(w, r)
+			return
+		}
+
 		// Read the index value
 		vars := mux.Vars(r)
 		indexValue := vars["index"]
@@ -526,14 +541,6 @@ func IndexLimitCheck(h http.HandlerFunc) http.HandlerFunc {
 
 		if r.Method != http.MethodPost && r.Method != http.MethodPut {
 			h(w, r)
-			return
-		}
-
-		domainUsed, domainFetchErr := domain.FromContext(r.Context())
-		if domainFetchErr != nil {
-			errMsg := "Error while validating the domain!"
-			log.Warnln(logTag, ": ", errMsg)
-			telemetry.WriteBackErrorWithTelemetry(r, w, errMsg, http.StatusUnauthorized)
 			return
 		}
 
