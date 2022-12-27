@@ -63,5 +63,5 @@ func GetCachedIndices(domain string) []string {
 
 	// There is a possibility that allowed limit might be higher than the
 	// length in which case it will lead to a panic
-	return append([]string(nil), indicesArr[:int(math.Max(float64(allowedLimit), float64(len(indicesArr))))]...)
+	return append([]string(nil), indicesArr[:int(math.Min(float64(allowedLimit), float64(len(indicesArr))))]...)
 }

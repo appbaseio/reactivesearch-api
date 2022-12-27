@@ -46,7 +46,7 @@ func (l LimitValue) IsLimitExceeded(value int) bool {
 // FetchLimitsPerPlan will fetch the limits on a per-plan basis
 // from AccAPI
 func FetchLimitsPerPlan() error {
-	urlToHit := ACCAPI + "/sls/plan_limits"
+	urlToHit := ACCAPI + "sls/plan_limits"
 
 	req, err := http.NewRequest(http.MethodGet, urlToHit, nil)
 	if err != nil {

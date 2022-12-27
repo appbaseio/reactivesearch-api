@@ -21,7 +21,7 @@ type RequestCounter struct {
 // NewRequestCounter will create a new reset counter that will
 // be initialized with 0
 func NewRequestCounter() *RequestCounter {
-	return &RequestCounter{Value: 0, allowedValue: 0, isLimit: true}
+	return &RequestCounter{Value: 0, allowedValue: 0, isLimit: true, writeMutex: new(sync.Mutex)}
 }
 
 // Reset will reset the counter
