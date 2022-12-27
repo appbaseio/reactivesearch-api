@@ -114,13 +114,13 @@ func IsIndexLimitExceeded(domain string, index string) bool {
 // VALID_INDEX_CREATE_ROUTES will contain the list of routes that can
 // create an index
 var VALID_INDEX_CREATE_ROUTES = map[string][]string{
-	"/${index}": {
+	"/{index}": {
 		http.MethodPut,
 	},
-	"/${index}/_doc/:id": {
+	"/{index}/_doc/{id}": {
 		http.MethodPost, http.MethodPut,
 	},
-	"/${index}/_doc/:id/_update": {
+	"/{index}/_doc/{id}/_update": {
 		http.MethodPost,
 	},
 }

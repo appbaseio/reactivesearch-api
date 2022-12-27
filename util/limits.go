@@ -17,7 +17,7 @@ var planToLimit = make(map[Plan]PlanLimit)
 // LimitValue will contain the limit value
 type LimitValue struct {
 	Value   int    `json:"value"`
-	Unit    string `json:"string"`
+	Unit    string `json:"unit"`
 	NoLimit bool   `json:"no_limit"`
 }
 
