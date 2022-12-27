@@ -25,7 +25,7 @@ type Usage struct {
 var totalUsage = Usage{Usage: make(map[string]int), mu: sync.Mutex{}}
 
 // Keep record of usage on a per domain basis
-var domainToUsageMap = make(map[string]int)
+var tenantToUsageMap = make(map[string]int)
 
 func addToUsage(domain string, usage int) {
 	totalUsage.mu.Lock()
@@ -109,7 +109,7 @@ func RecordUsageMiddleware(h http.Handler) http.Handler {
 // The usage will be fetched only for the current day by passing
 // timestamps.
 func FetchUsageForDay() error {
-	urlToHit := ACCAPI + "/sls/report_usage_multi_tenant"
+	urlToHit := ACCAPI + "sls/report_usage_multi_tenant"
 
 	req, err := http.NewRequest(http.MethodGet, urlToHit, nil)
 	if err != nil {
@@ -151,7 +151,7 @@ func FetchUsageForDay() error {
 
 	if readErr != nil {
 		// Handle error
-		return readErr
+		return fmt.Errorf("error while reading body for fetching usage: %s", readErr.Error())
 	}
 
 	usageResponse := make(map[string]interface{})
@@ -159,7 +159,7 @@ func FetchUsageForDay() error {
 
 	if unmarshalErr != nil {
 		// Handle error
-		return unmarshalErr
+		return fmt.Errorf("error while unmarshalling usage data: %s", unmarshalErr.Error())
 	}
 
 	domainToUsage := make(map[string]int)
@@ -201,7 +201,7 @@ func FetchUsageForDay() error {
 		domainToUsage[clusterId] = totalUsage
 	}
 
-	domainToUsageMap = domainToUsage
+	tenantToUsageMap = domainToUsage
 	return nil
 }
 
@@ -211,7 +211,7 @@ func FetchUsageForDay() error {
 // If the entry doesn't exist, 0 will be returned for the
 // tenant
 func GetUsageForTenant(tenantID string) int {
-	usage, exists := domainToUsageMap[tenantID]
+	usage, exists := tenantToUsageMap[tenantID]
 	if !exists {
 		return 0
 	}
