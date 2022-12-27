@@ -513,7 +513,7 @@ func (wh *WhitelistedRoute) UpdateIndexName(h http.HandlerFunc) http.HandlerFunc
 
 // IndexLimitCheck will check whether the allowed index limit for the
 // tenant has been exceeded and accordingly throw an error
-func IndexLimitCheck(h http.HandlerFunc) http.HandlerFunc {
+func (wh *WhitelistedRoute) IndexLimitCheck(h http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		// Add this check only if backend of the tenant is `system`, else
 		// ignore
@@ -526,6 +526,14 @@ func IndexLimitCheck(h http.HandlerFunc) http.HandlerFunc {
 		}
 
 		if *util.GetBackendByDomain(domainUsed.Raw) != util.System {
+			h(w, r)
+			return
+		}
+
+		// Check if it is a route that can create an index
+		//
+		// If it is not then we can ignore this mw
+		if !wh.IsIndexRoute(r) {
 			h(w, r)
 			return
 		}
