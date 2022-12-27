@@ -22,9 +22,9 @@ const ClusterIDEnvName = "CLUSTER_ID"
 const AppbaseIDEnvName = "APPBASE_ID"
 
 // ACCAPI URL
-var ACCAPI = "https://accapi-staging.reactivesearch.io/"
+// var ACCAPI = "https://accapi-staging.reactivesearch.io/"
 
-// var ACCAPI = "http://localhost:3000/"
+var ACCAPI = "http://localhost:3000/"
 
 var planDetailsHook *func([]byte)
 
@@ -240,6 +240,25 @@ func BillingMiddleware(next http.Handler) http.Handler {
 			if err != nil {
 				log.Errorln("error while reading domain from context")
 				WriteBackError(w, "Please make sure that you're using a valid domain. If the issue persists please contact support@appbase.io with your domain or registered e-mail address.", http.StatusBadRequest)
+				return
+			}
+
+			// Fetch tenantID from the domain read
+			tenantID := GetTenantForDomain(domainInfo.Raw)
+
+			// Check the rate limit and throw errors accordingly
+			if GetRequestCounterForTenant(tenantID).IsExceeded() {
+				log.Errorln("request limit exceeded for the current minute!")
+				w.Header().Set("Retry-After", "60")
+				WriteBackError(w, "Too many requests, please try after a while!", http.StatusTooManyRequests)
+				return
+			}
+
+			// Check if data usage has exceeded the allowed limit
+			if IsDataUsageExceeded(domainInfo.Raw) {
+				log.Errorln("data-usage limit exceeded for the current day")
+				w.Header().Set("Retry-After", fmt.Sprintf("%d", 3600*24))
+				WriteBackError(w, "Data usage limit exceeded for the plan", http.StatusTooManyRequests)
 				return
 			}
 

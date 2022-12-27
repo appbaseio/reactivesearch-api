@@ -1,6 +1,11 @@
 package elasticsearch
 
-import "sort"
+import (
+	"math"
+	"sort"
+
+	"github.com/appbaseio/reactivesearch-api/util"
+)
 
 // Store the indices for tenants using a tenant to index map
 //
@@ -32,7 +37,9 @@ func DeleteIndexFromCache(tenantID string, index string) bool {
 //
 // The indexes will be sorted and returned in terms of length of
 // the index name where the longer index name should show up first.
-func GetCachedIndices(tenantID string) []string {
+func GetCachedIndices(domain string) []string {
+	tenantID := util.GetTenantForDomain(domain)
+
 	cachedIndices, exists := tenantToIndexMap[tenantID]
 	if !exists {
 		return make([]string, 0)
@@ -43,8 +50,18 @@ func GetCachedIndices(tenantID string) []string {
 		indicesArr = append(indicesArr, cachedIndex)
 	}
 
+	// Get plan details using domain
+	instanceDetails := util.GetSLSInstanceByDomain(domain)
+	allowedLimit := 2
+	if instanceDetails != nil {
+		allowedLimit = instanceDetails.Tier.LimitForPlan().Indexes.Value
+	}
+
 	sort.Slice(indicesArr, func(i, j int) bool {
 		return len(indicesArr[i]) > len(indicesArr[j])
 	})
-	return indicesArr
+
+	// There is a possibility that allowed limit might be higher than the
+	// length in which case it will lead to a panic
+	return append([]string(nil), indicesArr[:int(math.Min(float64(allowedLimit), float64(len(indicesArr))))]...)
 }

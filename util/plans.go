@@ -42,15 +42,11 @@ const (
 	ReactivesearchCloudHobby
 	ReactivesearchCloudProduction
 	ReactivesearchCloudEnterprise
-	ReactivesearchCloudHobbyTest
-	ReactivesearchCloudProductionTest
-	ReactivesearchCloudEnterpriseTest
 	InvalidValueEncountered
 )
 
-// String is the implementation of Stringer interface that returns the string representation of Plan type.
-func (o Plan) String() string {
-	return [...]string{
+func PlanStrings() []string {
+	return []string{
 		"arc-basic",
 		"arc-standard",
 		"arc-enterprise",
@@ -83,12 +79,13 @@ func (o Plan) String() string {
 		"reactivesearch-cloud-hobby",
 		"reactivesearch-cloud-production",
 		"reactivesearch-cloud-enterprise",
-		// Following values are test values
-		"price_0ME6d1t881Db6BmKECOseHZx",
-		"price_0ME6det881Db6BmKjBA844Yt",
-		"price_0ME6eSt881Db6BmKKawAqVCI",
 		"invalid-value-encountered",
-	}[o]
+	}
+}
+
+// String is the implementation of Stringer interface that returns the string representation of Plan type.
+func (o Plan) String() string {
+	return PlanStrings()[o]
 }
 
 // UnmarshalJSON is the implementation of the Unmarshaler interface for unmarshaling Plan type.
@@ -163,12 +160,6 @@ func (o *Plan) UnmarshalJSON(bytes []byte) error {
 		*o = ReactivesearchCloudProduction
 	case ReactivesearchCloudEnterprise.String():
 		*o = ReactivesearchCloudEnterprise
-	case ReactivesearchCloudHobbyTest.String():
-		*o = ReactivesearchCloudHobbyTest
-	case ReactivesearchCloudProductionTest.String():
-		*o = ReactivesearchCloudProductionTest
-	case ReactivesearchCloudEnterpriseTest.String():
-		*o = ReactivesearchCloudEnterpriseTest
 	default:
 		*o = InvalidValueEncountered
 	}
@@ -243,12 +234,6 @@ func (o Plan) MarshalJSON() ([]byte, error) {
 		plan = ReactivesearchCloudProduction.String()
 	case ReactivesearchCloudEnterprise:
 		plan = ReactivesearchCloudEnterprise.String()
-	case ReactivesearchCloudHobbyTest:
-		plan = ReactivesearchCloudHobbyTest.String()
-	case ReactivesearchCloudProductionTest:
-		plan = ReactivesearchCloudProductionTest.String()
-	case ReactivesearchCloudEnterpriseTest:
-		plan = ReactivesearchCloudEnterprise.String()
 	case InvalidValueEncountered:
 		return nil, fmt.Errorf(InvalidValueEncountered.String(), " cannot be marshalled since it's not a valid plan!")
 	default:
@@ -294,4 +279,15 @@ func IsProductionPlan(ctx context.Context) bool {
 	default:
 		return false
 	}
+}
+
+// PlanFromString will return the plan name for the string passed
+func PlanFromString(pAsStr string) Plan {
+	for position, value := range PlanStrings() {
+		if value == pAsStr {
+			return Plan(position)
+		}
+	}
+
+	return InvalidValueEncountered
 }
