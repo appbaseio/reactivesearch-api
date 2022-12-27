@@ -3,6 +3,7 @@ package elasticsearch
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"strings"
 
 	"github.com/appbaseio/reactivesearch-api/util"
@@ -108,4 +109,36 @@ func IsIndexLimitExceeded(domain string, index string) bool {
 	// Check if the length of indexes exceeds the allowed length
 	instanceDetails := util.GetSLSInstanceByDomain(domain)
 	return instanceDetails.Tier.LimitForPlan().Indexes.IsLimitExceeded(len(cachedIndexes))
+}
+
+// VALID_INDEX_CREATE_ROUTES will contain the list of routes that can
+// create an index
+var VALID_INDEX_CREATE_ROUTES = map[string][]string{
+	"/${index}": {
+		http.MethodPut,
+	},
+	"/${index}/_doc/:id": {
+		http.MethodPost, http.MethodPut,
+	},
+	"/${index}/_doc/:id/_update": {
+		http.MethodPost,
+	},
+}
+
+// IsIndexRoute will check if the passed path is an index path
+func (wh *WhitelistedRoute) IsIndexRoute(req *http.Request) bool {
+	methods, exists := VALID_INDEX_CREATE_ROUTES[wh.Path]
+	if !exists {
+		return false
+	}
+
+	methodUsed := req.Method
+
+	for _, method := range methods {
+		if methodUsed == method {
+			return true
+		}
+	}
+
+	return false
 }
