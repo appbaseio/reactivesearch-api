@@ -22,9 +22,9 @@ const ClusterIDEnvName = "CLUSTER_ID"
 const AppbaseIDEnvName = "APPBASE_ID"
 
 // ACCAPI URL
-var ACCAPI = "https://accapi-staging.reactivesearch.io/"
+// var ACCAPI = "https://accapi-staging.reactivesearch.io/"
 
-// var ACCAPI = "http://localhost:3000/"
+var ACCAPI = "http://localhost:3000/"
 
 var planDetailsHook *func([]byte)
 
