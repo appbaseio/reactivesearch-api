@@ -113,31 +113,42 @@ func UpdateSLSInstances() {
 		// Once the response is present in the list, remove all the instances
 		// that do not have a valid plan
 		indicesToRemove := make([]int, 0)
+
+		// Empty the older map on sync
+		slsDomainsPaymentNeeded = make(map[string]int)
 		for instancePosition, instance := range response {
 			if *instance.Tier == InvalidValueEncountered {
 				log.Warnln("removing instance with domain `", instance.Domain, "` from sls instances since it has an invalid plan: ")
 				// Remove the element from the index
 				indicesToRemove = append(indicesToRemove, instancePosition)
+
+				// Before removing them from valid plans, we also want to
+				// keep them in a separate list so that we can throw a proper
+				// error to the user when they try to make a request
+				slsDomainsPaymentNeeded[instance.Domain] = 1
 			}
 		}
 
 		// Remove all the indices that are to be removed
-		//
-		// Empty the older map on sync
-		slsDomainsPaymentNeeded = make(map[string]int)
-		for _, instancePosition := range indicesToRemove {
-			// Before removing them from valid plans, we also want to
-			// keep them in a separate list so that we can throw a proper
-			// error to the user when they try to make a request
-			instanceDetails := response[instancePosition]
-			slsDomainsPaymentNeeded[instanceDetails.Domain] = 1
+		updatedResponseArr := make([]slsInstanceDetails, 0)
+		for index, value := range response {
+			shouldContinue := false
+			for _, indexToRemove := range indicesToRemove {
+				if indexToRemove == index {
+					shouldContinue = true
+					break
+				}
+			}
 
-			response[instancePosition] = response[len(response)-1]
-			response = response[:len(response)-1]
+			if shouldContinue {
+				continue
+			}
+
+			updatedResponseArr = append(updatedResponseArr, value)
 		}
 
 		var tempDomainToSLSMap = make(map[string]slsInstanceDetails)
-		for _, v := range response {
+		for _, v := range updatedResponseArr {
 			tempDomainToSLSMap[v.Domain] = v
 		}
 		slsInstancesByDomain = tempDomainToSLSMap
