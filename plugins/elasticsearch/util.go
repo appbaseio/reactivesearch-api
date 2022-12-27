@@ -123,6 +123,9 @@ var VALID_INDEX_CREATE_ROUTES = map[string][]string{
 	"/{index}/_doc/{id}/_update": {
 		http.MethodPost,
 	},
+	"/{index}/_bulk": {
+		http.MethodPut, http.MethodPost,
+	},
 }
 
 // IsIndexRoute will check if the passed path is an index path
