@@ -155,6 +155,12 @@ func GetRequestCounterForTenant(tenantID string) *TenantRequestCount {
 // CounterMiddleware will count the request on a per-tenant basis
 func CounterMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		// If domain is whitelisted, we don't need to do anything
+		if !ShouldRecordUsage(req.RequestURI) {
+			next.ServeHTTP(w, req)
+			return
+		}
+
 		// If not multi-tenant, we don't need to do anything
 		if !MultiTenant {
 			next.ServeHTTP(w, req)
