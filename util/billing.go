@@ -231,7 +231,11 @@ func BillingMiddleware(next http.Handler) http.Handler {
 			requestURI := r.RequestURI
 			for _, route := range BillingBlacklistedPaths() {
 				if strings.HasPrefix(requestURI, route) {
-					RecordUsageMiddleware(next).ServeHTTP(w, r)
+					if ShouldRecordUsage(route) {
+						RecordUsageMiddleware(next).ServeHTTP(w, r)
+					} else {
+						next.ServeHTTP(w, r)
+					}
 					return
 				}
 			}
@@ -788,4 +792,25 @@ func BillingBlacklistedPaths() []string {
 		"/arc/_health",
 		"/reactivesearch/endpoints",
 	}
+}
+
+// UsageBlacklistedPaths will return an array of paths
+// that should not be considered if recording is enabled.
+func UsageBlacklistedPaths() []string {
+	return []string{
+		"/arc/health",
+		"/arc/_health",
+	}
+}
+
+// ShouldRecordUsage will check if the usage should be
+// recorded for the passed path
+func ShouldRecordUsage(path string) bool {
+	for _, blacklistedPath := range UsageBlacklistedPaths() {
+		if strings.HasPrefix(path, blacklistedPath) {
+			return false
+		}
+	}
+
+	return true
 }
