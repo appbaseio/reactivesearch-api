@@ -64,6 +64,13 @@ func GetSLSInstanceByDomain(domain string) *slsInstanceDetails {
 	return nil
 }
 
+func SetSLSInstanceForDefaultDomain() {
+	appbaseId, _ := GetAppbaseID()
+	slsInstancesByDomain[DefaultTenant] = slsInstanceDetails{
+		TenantID: appbaseId,
+	}
+}
+
 // IsPaymentNeeded will check if the passed domain requires payment
 func IsPaymentNeeded(domain string) bool {
 	_, exists := slsDomainsPaymentNeeded[domain]

@@ -386,6 +386,9 @@ func main() {
 			mainRouter.Use(util.BillingMiddlewareOffline)
 		}
 	} else {
+		// Use validate domain middleware, it creates a context with domain
+		// In case of single tenant it would use default domain
+		mainRouter.Use(validate.ValidateDomain)
 		if util.MultiTenant {
 			// Maintain SLS instance details
 			log.Println("You're running ReactiveSearch with SLS multi-tenancy enabled.")
@@ -393,8 +396,6 @@ func main() {
 			cronJob := cron.New()
 			cronJob.AddFunc("@every 10s", util.UpdateSLSInstances)
 			cronJob.Start()
-			// Use validate domain middleware, it creates a context with domain
-			mainRouter.Use(validate.ValidateDomain)
 			if IgnoreBillingMiddleware != "true" {
 				mainRouter.Use(util.BillingMiddleware)
 			}
@@ -404,6 +405,7 @@ func main() {
 			// Set the system ES URL
 			util.SetSystemESURL()
 		} else {
+			util.SetSLSInstanceForDefaultDomain()
 			if Billing == "true" {
 				log.Println("You're running ReactiveSearch with billing module enabled.")
 				util.ReportUsage()

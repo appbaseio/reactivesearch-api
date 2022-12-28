@@ -7,7 +7,7 @@ PLUGIN_BUILD_DIR=$(BUILD_DIR)/plugins
 DEFAULT_VERSION=8.9.0
 VERSION := $(or $(VERSION),$(DEFAULT_VERSION))
  
-PLUGINS=auth users permissions elasticsearch telemetry querytranslate reindexer
+PLUGINS=$(shell ls -l plugins | grep ^d | awk '{ print $$9 }')
 PLUGIN_MAIN_LOC_FUNC=plugins/$(1)/main/$(1).$(2)
 PLUGIN_LOC_FUNC=$(foreach PLUGIN,$(PLUGINS),$(call PLUGIN_MAIN_LOC_FUNC,$(PLUGIN),$(1)))
 
