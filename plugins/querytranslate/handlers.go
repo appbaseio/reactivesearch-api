@@ -73,6 +73,7 @@ func (r *QueryTranslate) search() http.HandlerFunc {
 			start := time.Now()
 
 			tenantID := ""
+			domainValue := ""
 
 			if util.MultiTenant {
 				// Fetch the tenantID from domain
@@ -85,8 +86,9 @@ func (r *QueryTranslate) search() http.HandlerFunc {
 				}
 
 				tenantID = util.GetTenantForDomain(domainFromCtx.Raw)
+				domainValue = domainFromCtx.Raw
 
-				indicesToUpdate := elasticsearch.GetCachedIndices(tenantID)
+				indicesToUpdate := elasticsearch.GetCachedIndices(domainFromCtx.Raw)
 				reqBody = []byte(elasticsearch.UpdateNDJsonRequestBody(string(reqBody), indicesToUpdate, tenantID, false))
 			}
 
@@ -113,7 +115,7 @@ func (r *QueryTranslate) search() http.HandlerFunc {
 
 			// Update the response body to remove index names
 			if util.MultiTenant {
-				cachedIndices := elasticsearch.GetCachedIndices(tenantID)
+				cachedIndices := elasticsearch.GetCachedIndices(domainValue)
 				for _, cachedIndex := range cachedIndices {
 					esResponseBody = []byte(strings.Replace(string(esResponseBody), util.AppendTenantID(cachedIndex, tenantID), cachedIndex, -1))
 				}

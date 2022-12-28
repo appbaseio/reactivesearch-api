@@ -7,6 +7,8 @@ import (
 	"github.com/appbaseio/reactivesearch-api/plugins"
 	"github.com/appbaseio/reactivesearch-api/util"
 	es7 "github.com/olivere/elastic/v7"
+	"github.com/robfig/cron"
+	log "github.com/sirupsen/logrus"
 )
 
 const (
@@ -44,6 +46,21 @@ func (es *elasticsearch) InitFunc(mw []middleware.Middleware) error {
 	if indexCacheErr != nil {
 		return indexCacheErr
 	}
+
+	storageCacheErr := FetchStorageFromES()
+	if storageCacheErr != nil {
+		return storageCacheErr
+	}
+
+	// Add a cronjob to update it every 60seconds
+	storageSyncCron := cron.New()
+	storageSyncCron.AddFunc("@every 60s", func() {
+		err := FetchStorageFromES()
+		if err != nil {
+			log.Warnln(logTag, ": ", err.Error())
+		}
+	})
+	storageSyncCron.Start()
 
 	return es.preprocess(mw)
 }

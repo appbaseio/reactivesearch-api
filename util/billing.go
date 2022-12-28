@@ -22,9 +22,9 @@ const ClusterIDEnvName = "CLUSTER_ID"
 const AppbaseIDEnvName = "APPBASE_ID"
 
 // ACCAPI URL
-// var ACCAPI = "https://accapi.appbase.io/"
+var ACCAPI = "https://accapi-staging.reactivesearch.io/"
 
-var ACCAPI = "http://localhost:3000/"
+// var ACCAPI = "http://localhost:3000/"
 
 var planDetailsHook *func([]byte)
 
@@ -231,7 +231,11 @@ func BillingMiddleware(next http.Handler) http.Handler {
 			requestURI := r.RequestURI
 			for _, route := range BillingBlacklistedPaths() {
 				if strings.HasPrefix(requestURI, route) {
-					RecordUsageMiddleware(next).ServeHTTP(w, r)
+					if ShouldRecordUsage(route) {
+						RecordUsageMiddleware(next).ServeHTTP(w, r)
+					} else {
+						next.ServeHTTP(w, r)
+					}
 					return
 				}
 			}
@@ -240,6 +244,25 @@ func BillingMiddleware(next http.Handler) http.Handler {
 			if err != nil {
 				log.Errorln("error while reading domain from context")
 				WriteBackError(w, "Please make sure that you're using a valid domain. If the issue persists please contact support@appbase.io with your domain or registered e-mail address.", http.StatusBadRequest)
+				return
+			}
+
+			// Fetch tenantID from the domain read
+			tenantID := GetTenantForDomain(domainInfo.Raw)
+
+			// Check the rate limit and throw errors accordingly
+			if GetRequestCounterForTenant(tenantID).IsExceeded() {
+				log.Errorln("request limit exceeded for the current minute!")
+				w.Header().Set("Retry-After", "60")
+				WriteBackError(w, "Too many requests, please try after a while!", http.StatusTooManyRequests)
+				return
+			}
+
+			// Check if data usage has exceeded the allowed limit
+			if IsDataUsageExceeded(domainInfo.Raw) {
+				log.Errorln("data-usage limit exceeded for the current day")
+				w.Header().Set("Retry-After", fmt.Sprintf("%d", 3600*24))
+				WriteBackError(w, "Data usage limit exceeded for the plan", http.StatusTooManyRequests)
 				return
 			}
 
@@ -769,4 +792,25 @@ func BillingBlacklistedPaths() []string {
 		"/arc/_health",
 		"/reactivesearch/endpoints",
 	}
+}
+
+// UsageBlacklistedPaths will return an array of paths
+// that should not be considered if recording is enabled.
+func UsageBlacklistedPaths() []string {
+	return []string{
+		"/arc/health",
+		"/arc/_health",
+	}
+}
+
+// ShouldRecordUsage will check if the usage should be
+// recorded for the passed path
+func ShouldRecordUsage(path string) bool {
+	for _, blacklistedPath := range UsageBlacklistedPaths() {
+		if strings.HasPrefix(path, blacklistedPath) {
+			return false
+		}
+	}
+
+	return true
 }

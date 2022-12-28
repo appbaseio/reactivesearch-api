@@ -440,7 +440,7 @@ func (wh *WhitelistedRoute) UpdateIndexName(h http.HandlerFunc) http.HandlerFunc
 		// request, other than that, any index name passed will anyway throw a 404 so we don't need to
 		// worry about that.
 		isBulkUsed := wh.Path == "/_bulk" || wh.Path == "/{index}/_bulk" || wh.Path == "/{index}/{type}/_bulk"
-		indexesToUpdate := GetCachedIndices(tenantId)
+		indexesToUpdate := GetCachedIndices(domainUsed.Raw)
 		if isBulkUsed {
 			// Read the request body
 			reqBodyInBytes, readErr := ioutil.ReadAll(req.Body)
@@ -508,5 +508,67 @@ func (wh *WhitelistedRoute) UpdateIndexName(h http.HandlerFunc) http.HandlerFunc
 		}
 
 		w.Write([]byte(modifiedResponse))
+	}
+}
+
+// IndexLimitCheck will check whether the allowed index limit for the
+// tenant has been exceeded and accordingly throw an error
+func (wh *WhitelistedRoute) IndexLimitCheck(h http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		// Add this check only if backend of the tenant is `system`, else
+		// ignore
+		domainUsed, domainFetchErr := domain.FromContext(r.Context())
+		if domainFetchErr != nil {
+			errMsg := "Error while validating the domain!"
+			log.Warnln(logTag, ": ", errMsg)
+			telemetry.WriteBackErrorWithTelemetry(r, w, errMsg, http.StatusUnauthorized)
+			return
+		}
+
+		if *util.GetBackendByDomain(domainUsed.Raw) != util.System {
+			h(w, r)
+			return
+		}
+
+		// Check if it is a route that can create an index
+		//
+		// If it is not then we can ignore this mw
+		if !wh.IsIndexRoute(r) {
+			h(w, r)
+			return
+		}
+
+		// Read the index value
+		vars := mux.Vars(r)
+		indexValue := vars["index"]
+
+		if indexValue == "" {
+			h(w, r)
+			return
+		}
+
+		if r.Method != http.MethodPost && r.Method != http.MethodPut {
+			h(w, r)
+			return
+		}
+
+		// Finally seems like this might be a request related to index,
+		// we will need to check the limit
+		instanceDetails := util.GetSLSInstanceByDomain(domainUsed.Raw)
+		if IsIndexLimitExceeded(domainUsed.Raw, indexValue) {
+			log.Warnln(logTag, ": index limit has exceeded for the user!")
+			telemetry.WriteBackErrorWithTelemetry(r, w, "You have reached the maximum number of indexes allowed for the "+instanceDetails.Tier.String()+" plan", http.StatusBadRequest)
+			return
+		}
+
+		// We can also check for storage limit here
+		storageUsedByTenant := GetStorageUsedByTenant(util.GetTenantForDomain(domainUsed.Raw))
+		if instanceDetails.Tier.LimitForPlan().Storage.IsLimitExceeded(storageUsedByTenant) {
+			log.Warnln(logTag, ": index storage limit has exceeded for the user!")
+			telemetry.WriteBackErrorWithTelemetry(r, w, "You have reached the maximum storage of indexes allowed for the "+instanceDetails.Tier.String()+" plan", http.StatusBadRequest)
+			return
+		}
+
+		h(w, r)
 	}
 }

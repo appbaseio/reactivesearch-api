@@ -392,10 +392,29 @@ func main() {
 		if util.MultiTenant {
 			// Maintain SLS instance details
 			log.Println("You're running ReactiveSearch with SLS multi-tenancy enabled.")
+
+			// Fetch the plan limits
+			log.Info("Fetching plan-limits for all the SLS plans from AccAPI")
+			limitFetchErr := util.FetchLimitsPerPlan()
+			if limitFetchErr != nil {
+				log.Fatalln(logTag, ": error while fetching plan limit: ", limitFetchErr.Error())
+			}
+
+			// Fetch the instances that are multi-tenant
 			util.UpdateSLSInstances()
+
 			cronJob := cron.New()
 			cronJob.AddFunc("@every 10s", util.UpdateSLSInstances)
+			cronJob.AddFunc("@every 24h", func() {
+				limitFetchErr := util.FetchLimitsPerPlan()
+				if limitFetchErr != nil {
+					log.Errorln(logTag, ": error while fetching plan limit: ", limitFetchErr.Error())
+				}
+			})
 			cronJob.Start()
+			// Use validate domain middleware, it creates a context with domain
+			mainRouter.Use(validate.ValidateDomain)
+			mainRouter.Use(util.CounterMiddleware)
 			if IgnoreBillingMiddleware != "true" {
 				mainRouter.Use(util.BillingMiddleware)
 			}
