@@ -226,5 +226,13 @@ func IsDataUsageExceeded(domain string) bool {
 	// Fetch the plan for the passed tenant
 	instanceDetails := GetSLSInstanceByDomain(domain)
 	usageForTenant := GetUsageForTenant(GetTenantForDomain(domain))
+
+	// Add a check to make sure that the instance details being
+	// fetched are not invalid, if invalid, return the data usage
+	// exceeded as `false`
+	if instanceDetails == nil || instanceDetails.Tier == nil {
+		return false
+	}
+
 	return instanceDetails.Tier.LimitForPlan().DataUsage.IsLimitExceeded(usageForTenant)
 }
