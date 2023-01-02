@@ -35,32 +35,34 @@ func (es *elasticsearch) Name() string {
 }
 
 func (es *elasticsearch) InitFunc(mw []middleware.Middleware) error {
-	// Init the system ES client
-	var clientErr error
-	es.systemESClient, clientErr = util.GetSystemClient()
-	if clientErr != nil {
-		return clientErr
-	}
-	// Cache the indexes for the tenants
-	indexCacheErr := es.InitCacheIndexes()
-	if indexCacheErr != nil {
-		return indexCacheErr
-	}
-
-	storageCacheErr := FetchStorageFromES()
-	if storageCacheErr != nil {
-		return storageCacheErr
-	}
-
-	// Add a cronjob to update it every 60seconds
-	storageSyncCron := cron.New()
-	storageSyncCron.AddFunc("@every 60s", func() {
-		err := FetchStorageFromES()
-		if err != nil {
-			log.Warnln(logTag, ": ", err.Error())
+	if util.MultiTenant {
+		// Init the system ES client
+		var clientErr error
+		es.systemESClient, clientErr = util.GetSystemClient()
+		if clientErr != nil {
+			return clientErr
 		}
-	})
-	storageSyncCron.Start()
+		// Cache the indexes for the tenants
+		indexCacheErr := es.InitCacheIndexes()
+		if indexCacheErr != nil {
+			return indexCacheErr
+		}
+
+		storageCacheErr := FetchStorageFromES()
+		if storageCacheErr != nil {
+			return storageCacheErr
+		}
+
+		// Add a cronjob to update it every 60seconds
+		storageSyncCron := cron.New()
+		storageSyncCron.AddFunc("@every 60s", func() {
+			err := FetchStorageFromES()
+			if err != nil {
+				log.Warnln(logTag, ": ", err.Error())
+			}
+		})
+		storageSyncCron.Start()
+	}
 
 	return es.preprocess(mw)
 }
