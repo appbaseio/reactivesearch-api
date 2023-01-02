@@ -16,7 +16,7 @@ import (
 	"github.com/appbaseio/reactivesearch-api/util"
 )
 
-const testDomain = "reactivesearch.test.io"
+const testDomain = "test-sls-es-teibcod.sls.reactivesearch.io"
 
 // DomainWhitelistedPaths will return an array of paths that do
 // not require domain validation
