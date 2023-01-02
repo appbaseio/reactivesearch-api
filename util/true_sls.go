@@ -359,9 +359,9 @@ func IndicesGetMappingServiceWithAuth(s *es7.IndicesGetMappingService, ctx conte
 func GetESClientForTenant(ctx context.Context) (*es7.Client, error) {
 	if !MultiTenant {
 		if IsSLSEnabled() {
-			return GetInternalClient7(), nil
-		} else {
 			return GetClient7(), nil
+		} else {
+			return GetInternalClient7(), nil
 		}
 	}
 	if ctx == nil || ctx == context.Background() {
