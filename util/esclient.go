@@ -157,6 +157,8 @@ func GetSearchClientESURL() string {
 			if parseErr != nil {
 				log.Fatal("Error encountered: ", parseErr.Error())
 			}
+
+			return esURL
 		}
 	}
 	return ""
