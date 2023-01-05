@@ -17,7 +17,7 @@ type ESAccess struct {
 
 // tenantToESAccess will be a map of the raw tenantID
 // to the ESAccess credentials
-var tenantToESAccess map[string]ESAccess
+var tenantToESAccess map[string]ESAccess = make(map[string]ESAccess, 0)
 
 // SetESAccessForTenant will set the ESAccess values for
 // the passed `tenantId`
