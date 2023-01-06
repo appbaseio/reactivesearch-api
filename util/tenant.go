@@ -2,8 +2,14 @@ package util
 
 import (
 	"context"
+	"crypto/aes"
+	"crypto/cipher"
+	"crypto/rand"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"io"
+	"os"
 	"strings"
 
 	"github.com/appbaseio/reactivesearch-api/model/domain"
@@ -161,4 +167,20 @@ func addTenantIdFilterQuery(rawQuery []byte, ctx context.Context) ([]byte, error
 		return json.Marshal(map[string]interface{}{"query": termQueryTenantId})
 	}
 	return rawQuery, nil
+}
+
+func EncryptAppbaseID(text []byte) ([]byte, error) {
+	block, err := aes.NewCipher([]byte(os.Getenv("ARC_CLUSTER_NAME_ENCRYPTION_KEY")))
+	if err != nil {
+		return nil, err
+	}
+	b := base64.StdEncoding.EncodeToString(text)
+	ciphertext := make([]byte, aes.BlockSize+len(b))
+	iv := ciphertext[:aes.BlockSize]
+	if _, err := io.ReadFull(rand.Reader, iv); err != nil {
+		return nil, err
+	}
+	cfb := cipher.NewCFBEncrypter(block, iv)
+	cfb.XORKeyStream(ciphertext[aes.BlockSize:], []byte(b))
+	return ciphertext, nil
 }
