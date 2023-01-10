@@ -119,13 +119,94 @@
             "properties": {
               "acl": {
                 "description": "It a sub-category of category.\n\nThis can be thought of as narrowing down the type of route. For eg, if category is the type of fruits, sub category can be type of a particular fruit. So Apple can be considered a category and Red or Green apples can be considered ACL's of Apple.",
+                "enum": [
+                  "cat",
+                  "bulk",
+                  "cluster",
+                  "search",
+                  "remote",
+                  "create",
+                  "count",
+                  "scripts",
+                  "delete",
+                  "doc",
+                  "source",
+                  "field_caps",
+                  "close",
+                  "analyze",
+                  "exists",
+                  "get",
+                  "template",
+                  "explain",
+                  "indices",
+                  "alias",
+                  "aliases",
+                  "delete_by_query",
+                  "cache",
+                  "index",
+                  "mapping",
+                  "flush",
+                  "forcemerge",
+                  "upgrade",
+                  "settings",
+                  "open",
+                  "recovery",
+                  "mappings",
+                  "rollover",
+                  "refresh",
+                  "segments",
+                  "shrink",
+                  "split",
+                  "shard_stores",
+                  "stats",
+                  "ingest",
+                  "validate",
+                  "msearch",
+                  "mget",
+                  "nodes",
+                  "mtermvectors",
+                  "reindex",
+                  "update_by_query",
+                  "render",
+                  "rank_eval",
+                  "search_shards",
+                  "snapshot",
+                  "tasks",
+                  "termvectors",
+                  "update"
+                ],
                 "title": "ACL",
-                "type": "integer"
+                "type": "string"
               },
               "category": {
                 "description": "Route category.\n\nThis indicates the category of the route. This is useful for the internal functioning of the pipeline.",
+                "enum": [
+                  "docs",
+                  "search",
+                  "indices",
+                  "cat",
+                  "clusters",
+                  "misc",
+                  "user",
+                  "permission",
+                  "analytics",
+                  "streams",
+                  "rules",
+                  "suggestions",
+                  "auth",
+                  "reactivesearch",
+                  "searchrelevancy",
+                  "synonyms",
+                  "searchgrader",
+                  "uibuilder",
+                  "logs",
+                  "cache",
+                  "storedquery",
+                  "sync",
+                  "pipelines"
+                ],
                 "title": "Category",
-                "type": "integer"
+                "type": "string"
               }
             },
             "required": [
@@ -1137,6 +1218,14 @@
                           },
                           "title": "queryVector",
                           "type": "array"
+                        },
+                        "range": {
+                          "description": "range value to filter the histogram aggregations",
+                          "engine": [
+                            "elasticsearch",
+                            "opensearch"
+                          ],
+                          "title": "range"
                         },
                         "rankFeature": {
                           "description": "boost relevant score of documents based on rank_feature fields",
@@ -2242,6 +2331,14 @@
                           "title": "queryVector",
                           "type": "array"
                         },
+                        "range": {
+                          "description": "range value to filter the histogram aggregations",
+                          "engine": [
+                            "elasticsearch",
+                            "opensearch"
+                          ],
+                          "title": "range"
+                        },
                         "rankFeature": {
                           "description": "boost relevant score of documents based on rank_feature fields",
                           "engine": [
@@ -3114,6 +3211,14 @@
                           },
                           "title": "queryVector",
                           "type": "array"
+                        },
+                        "range": {
+                          "description": "range value to filter the histogram aggregations",
+                          "engine": [
+                            "elasticsearch",
+                            "opensearch"
+                          ],
+                          "title": "range"
                         },
                         "rankFeature": {
                           "description": "boost relevant score of documents based on rank_feature fields",
@@ -3988,6 +4093,14 @@
                           "title": "queryVector",
                           "type": "array"
                         },
+                        "range": {
+                          "description": "range value to filter the histogram aggregations",
+                          "engine": [
+                            "elasticsearch",
+                            "opensearch"
+                          ],
+                          "title": "range"
+                        },
                         "rankFeature": {
                           "description": "boost relevant score of documents based on rank_feature fields",
                           "engine": [
@@ -4860,6 +4973,14 @@
                           },
                           "title": "queryVector",
                           "type": "array"
+                        },
+                        "range": {
+                          "description": "range value to filter the histogram aggregations",
+                          "engine": [
+                            "elasticsearch",
+                            "opensearch"
+                          ],
+                          "title": "range"
                         },
                         "rankFeature": {
                           "description": "boost relevant score of documents based on rank_feature fields",
@@ -5734,6 +5855,14 @@
                           "title": "queryVector",
                           "type": "array"
                         },
+                        "range": {
+                          "description": "range value to filter the histogram aggregations",
+                          "engine": [
+                            "elasticsearch",
+                            "opensearch"
+                          ],
+                          "title": "range"
+                        },
                         "rankFeature": {
                           "description": "boost relevant score of documents based on rank_feature fields",
                           "engine": [
@@ -6067,9 +6196,14 @@
                       "type": "string"
                     },
                     "queryString": {
-                      "description": "Query String pass in the final query along with the built query. Example: 'extraParams=debug'",
+                      "description": "Query string to pass in the final query along with the built query. Should be an object with key value pairs. Example: 'extraParams=debug'",
+                      "patternProperties": {
+                        ".*": {
+                          "type": "string"
+                        }
+                      },
                       "title": "Query String",
-                      "type": "string"
+                      "type": "object"
                     },
                     "suggestionProfile": {
                       "description": "Profile in Fusion to send the request to for suggestion type of query. Example: 'popular-searches'",
