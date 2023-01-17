@@ -87,7 +87,7 @@ jobs:
           command_timeout: 3600s
           envs: VERSION
           script: |
-            sh sls-build.sh ${VERSION}
+            sh sls-build.sh ${VERSION} feat/true-sls
 
   send-packer-event-arc:
     name: Send Packer Event
