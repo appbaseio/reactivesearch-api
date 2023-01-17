@@ -20,7 +20,7 @@ type WhitelistedRoute struct {
 func GetWhitelistedRoutesForSystem() map[string][]string {
 	return map[string][]string{
 		"/{index}": {
-			http.MethodGet, http.MethodPut,
+			http.MethodGet, http.MethodPut, http.MethodDelete
 		},
 		"/{index}/_analyze": {
 			http.MethodGet, http.MethodPost,
