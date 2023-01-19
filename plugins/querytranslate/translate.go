@@ -76,15 +76,16 @@ func translateQuery(rsQuery RSQuery, userIP string, queryForId *string, preferen
 		}
 
 		// Validate the endpoint property
-		if query.Endpoint != nil {
-			if query.Endpoint.URL == nil || *query.Endpoint.URL == "" {
-				return "", nil, errors.New("`endpoint.url` is a required property when `endpoint` is passed. Remove the `endpoint` property if it's not used.")
+		if query.EnableEndpointSuggestions == nil || *query.EnableEndpointSuggestions {
+			if query.Endpoint != nil {
+				if query.Endpoint.URL == nil || *query.Endpoint.URL == "" {
+					return "", nil, errors.New("`endpoint.url` is a required property when `endpoint` is passed. Remove the `endpoint` property if it's not used.")
+				}
+
+				// Setting the default method etc will be done during
+				// sending the independent queries and not in this part of the code.
 			}
-
-			// Setting the default method etc will be done during
-			// sending the independent queries and not in this part of the code.
 		}
-
 	}
 
 	// If no backend is passed for kNN, set it as `elasticsearch`
