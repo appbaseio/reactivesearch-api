@@ -19,6 +19,7 @@ import (
 	"time"
 
 	appbase_errors "github.com/appbaseio/reactivesearch-api/errors"
+	"github.com/appbaseio/reactivesearch-api/model/domain"
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 	log "github.com/sirupsen/logrus"
@@ -349,12 +350,25 @@ func MakeRequestWithHeader(url, method string, reqBody []byte, headers http.Head
 }
 
 func CheckIfIndexExists(ctx context.Context, indexName string) bool {
+	indexWithTenantId := indexName
+	if MultiTenant {
+		domainUsed, domainFetchErr := domain.FromContext(ctx)
+		if domainFetchErr != nil {
+			errMsg := "Error while validating the domain!"
+			log.Errorln(errMsg)
+			return false
+		}
+		tenantId := GetTenantForDomain(domainUsed.Raw)
+		indexWithTenantId = AppendTenantID(indexName, tenantId)
+	}
+
 	esClient, clientFetchErr := GetESClientForTenant(ctx)
 	if clientFetchErr != nil {
 		log.Errorln(clientFetchErr)
 		return false
 	}
-	exists, err := esClient.IndexExists(indexName).Do(ctx)
+
+	exists, err := esClient.IndexExists(indexWithTenantId).Do(ctx)
 
 	if err != nil {
 		aliases, err := esClient.CatAliases().Pretty(true).Do(ctx)
@@ -363,7 +377,7 @@ func CheckIfIndexExists(ctx context.Context, indexName string) bool {
 			return false
 		}
 		for _, alias := range aliases {
-			if alias.Alias == indexName {
+			if alias.Alias == indexWithTenantId {
 				return true
 			}
 		}
