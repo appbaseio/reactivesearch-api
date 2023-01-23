@@ -16,8 +16,6 @@ import (
 	"github.com/appbaseio/reactivesearch-api/util"
 )
 
-const testDomain = "test-sls-es-teibcod.sls.reactivesearch.io"
-
 // DomainWhitelistedPaths will return an array of paths that do
 // not require domain validation
 func DomainWhitelistedPaths() []string {
@@ -72,7 +70,7 @@ func ParseDomainWithValidation(req *http.Request) (*http.Request, *util.ErrorWit
 	if util.MultiTenant {
 		domainName := req.Header.Get("X_REACTIVESEARCH_DOMAIN")
 		if util.IsDevelopmentEnv && strings.TrimSpace(domainName) == "" {
-			domainName = testDomain
+			domainName = util.TestDomain
 		}
 
 		if strings.TrimSpace(domainName) == "" {

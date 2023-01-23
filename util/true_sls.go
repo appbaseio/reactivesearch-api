@@ -13,8 +13,10 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+var TestDomain = "test-sls-es-teibcod.sls.reactivesearch.io"
+
 // Use it to set the default value of tenant/domain in cache for single tenant
-const DefaultTenant = "reactivesearch.io"
+var DefaultTenant = "reactivesearch.io"
 
 type slsInstanceDetails struct {
 	NodeCount               int64                  `json:"node_count"`
@@ -125,7 +127,7 @@ func UpdateSLSInstances() {
 		slsDomainsPaymentNeeded = make(map[string]int)
 		for instancePosition, instance := range response {
 			if *instance.Tier == InvalidValueEncountered {
-				log.Warnln("removing instance with domain `", instance.Domain, "` from sls instances since it has an invalid plan: ")
+				log.Debugln("removing instance with domain `", instance.Domain, "` from sls instances since it has an invalid plan: ")
 				// Remove the element from the index
 				indicesToRemove = append(indicesToRemove, instancePosition)
 

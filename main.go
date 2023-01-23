@@ -47,6 +47,7 @@ const logTag = "[cmd]"
 var (
 	envFile               string
 	logMode               string
+	testTenant            string
 	licenseKeyPath        string
 	listPlugins           bool
 	address               string
@@ -130,6 +131,7 @@ func init() {
 	flag.StringVar(&envFile, "env", ".env", "Path to file with environment variables to load in KEY=VALUE format")
 	flag.StringVar(&logMode, "log", "", "Define to change the default log mode(error), other options are: debug(most verbose) and info")
 	flag.StringVar(&licenseKeyPath, "license-key-file", "", "Path to file with license key")
+	flag.StringVar(&testTenant, "test-tenant", "", "Set default tenant to be used")
 	flag.BoolVar(&listPlugins, "plugins", false, "List currently registered plugins")
 	flag.StringVar(&address, "addr", "0.0.0.0", "Address to serve on")
 	flag.BoolVar(&disableHealthCheck, "disable-health-check", false, "Set as `true` to disable health check")
@@ -151,6 +153,10 @@ func init() {
 	flag.BoolVar(&cpuprofile, "cpuprofile", false, "write cpu profile to `file`")
 	flag.BoolVar(&memprofile, "memprofile", false, "write mem profile to `file`")
 	flag.Parse()
+
+	if testTenant != "" {
+		util.TestDomain = testTenant
+	}
 
 	if enableDevelopmentMode {
 		util.IsDevelopmentEnv = true
