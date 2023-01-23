@@ -4,8 +4,25 @@ on:
     types: [published]
 
 jobs:
-  build:
-    name: Build
+  determine_whether_to_run:
+    runs-on: ubuntu-latest
+    outputs:
+      build_arc: ${{ steps.check-build-arc.outputs.run_jobs }}
+      build_sls: ${{ steps.check-build-sls.outputs.run_jobs }}
+
+    steps:
+      - name: Check if Arc binary should be built
+        id: check-build-arc
+        run: (echo "${{ github.ref }}" | grep -Eq  '^refs\/tags\/8\.[0-9]+\.[0-9]+$') && echo "run_jobs=true" >> $GITHUB_OUTPUT || echo "run_jobs==false" >> $GITHUB_OUTPUT
+
+      - name: Check if SLS binary should be built
+        id: check-build-sls
+        run: (echo "${{ github.ref }}" | grep -Eq  '^refs\/tags\/1\.[0-9]+\.[0-9]+$') && echo "run_jobs=true" >> $GITHUB_OUTPUT || echo "run_jobs==false" >> $GITHUB_OUTPUT
+
+  build-arc:
+    name: Build ARC binary
+    needs: determine_whether_to_run
+    if: needs.determine_whether_to_run.outputs.build_arc == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
@@ -48,11 +65,46 @@ jobs:
           script: |
             sh build.sh ${VERSION}
 
-  send-packer-event:
+  build-sls:
+    name: Build SLS binary
+    needs: determine_whether_to_run
+    if: needs.determine_whether_to_run.outputs.build_sls == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v2
+      - name: building binaries for eaas deployments
+        uses: appleboy/ssh-action@master
+        env:
+          VERSION: ${{ github.event.release.tag_name }}
+        with:
+          host: ${{ secrets.GCLOUD_BUILD_HOST }}
+          username: ${{ secrets.GCLOUD_BUILD_USERNAME }}
+          key: ${{ secrets.GCLOUD_BUILD_KEY }}
+          port: 22
+          timeout: 3600s
+          command_timeout: 3600s
+          envs: VERSION
+          script: |
+            sh sls-build.sh ${VERSION} feat/true-sls
+
+  send-packer-event-arc:
     name: Send Packer Event
-    needs: build
+    needs: build-arc
     uses: ./.github/workflows/build_images.yml
     with:
       ref: ${{ github.ref }}
+      event_name: new_release
+    secrets:
+      token: ${{ secrets.REPO_ACCESS_TOKEN }}
+
+  send-packer-event-sls:
+    name: Send Packer Event
+    needs: build-sls
+    uses: ./.github/workflows/build_images.yml
+    with:
+      ref: ${{ github.ref }}
+      event_name: new_sls_release
     secrets:
       token: ${{ secrets.REPO_ACCESS_TOKEN }}
