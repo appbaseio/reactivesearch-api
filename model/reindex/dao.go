@@ -123,7 +123,6 @@ func Reindex(tenantId string, ctx context.Context, sourceIndex string, config *R
 	if err != nil {
 		log.Errorln(err)
 	}
-	log.Println("CHECKPOINT 0", indices)
 	if len(indices) > 1 {
 		return nil, fmt.Errorf(`multiple indices pointing to alias "%s"`, sourceIndex)
 	}
@@ -141,7 +140,6 @@ func Reindex(tenantId string, ctx context.Context, sourceIndex string, config *R
 			}
 		}
 	}
-	log.Println("CHECKPOINT 1", indices)
 
 	// original index settings
 	originalSettings, err := settingsOf(ctx, sourceIndex)
@@ -149,7 +147,6 @@ func Reindex(tenantId string, ctx context.Context, sourceIndex string, config *R
 		return nil, fmt.Errorf(`error fetching settings of index "%s": %v`, sourceIndex, err)
 	}
 
-	log.Println("CHECKPOINT 2")
 	replicas := originalSettings["index.number_of_replicas"]
 	// If settings are not passed, we use the settings of the original index
 	if config.Settings == nil {
@@ -159,7 +156,6 @@ func Reindex(tenantId string, ctx context.Context, sourceIndex string, config *R
 		}
 	}
 
-	log.Println("CHECKPOINT 3")
 	// initialize the map with passed index settings with a fallback to using the source index settings
 	indexSettingsAsMap, ok := config.Settings["index"].(map[string]interface{})
 	if !ok {
@@ -172,7 +168,6 @@ func Reindex(tenantId string, ctx context.Context, sourceIndex string, config *R
 	delete(indexSettingsAsMap, "provided_name")
 	delete(indexSettingsAsMap, "uuid")
 	delete(indexSettingsAsMap, "version")
-	log.Println("CHECKPOINT 4")
 	// update replicas if passed by frontend
 	if replicasVal, ok := indexSettingsAsMap["number_of_replicas"]; ok {
 		replicas = replicasVal
@@ -190,7 +185,6 @@ func Reindex(tenantId string, ctx context.Context, sourceIndex string, config *R
 	if config.Settings == nil {
 		config.Settings = make(map[string]interface{})
 	}
-	log.Println("CHECKPOINT 5")
 	config.Settings["index"] = indexSettingsAsMap
 
 	// Setup the destination index prior to running the _reindex action.
@@ -202,7 +196,6 @@ func Reindex(tenantId string, ctx context.Context, sourceIndex string, config *R
 		body["settings"] = config.Settings
 	}
 
-	log.Println("CHECKPOINT 6")
 	newIndexName := util.AppendTenantID(destinationIndex, tenantId)
 	operation := ReIndexWithDelete
 	if destinationIndex != "" {
@@ -211,11 +204,9 @@ func Reindex(tenantId string, ctx context.Context, sourceIndex string, config *R
 	if operation == ReIndexWithDelete {
 		newIndexName, err = reindexedName(sourceIndex, tenantId)
 	}
-	log.Println("CHECKPOINT 7")
 	if err != nil {
 		return nil, fmt.Errorf(`error generating a new index name for index "%s": %v`, sourceIndex, err)
 	}
-	log.Println("CHECKPOINT 8")
 
 	// Create the new index.
 	err = createIndex(ctx, newIndexName, body)
@@ -229,7 +220,6 @@ func Reindex(tenantId string, ctx context.Context, sourceIndex string, config *R
 			return nil, err
 		}
 	}
-	log.Println("CHECKPOINT 9")
 
 	/* Copy search relevancy settings if
 	- `search_relevancy_settings` object is present
@@ -243,7 +233,6 @@ func Reindex(tenantId string, ctx context.Context, sourceIndex string, config *R
 		}
 	}
 
-	log.Println("CHECKPOINT 10")
 	/* Copy Synonyms if `synonyms` action is set in the action array
 	 */
 	if util.IsExists(Synonyms.String(), config.Action) {
@@ -253,7 +242,6 @@ func Reindex(tenantId string, ctx context.Context, sourceIndex string, config *R
 			return nil, fmt.Errorf(`error while updating the synonyms: %v`, err)
 		}
 	}
-	log.Println("CHECKPOINT 11")
 
 	found := util.IsExists(Data.String(), config.Action)
 
@@ -262,7 +250,6 @@ func Reindex(tenantId string, ctx context.Context, sourceIndex string, config *R
 		return json.Marshal(make(map[string]interface{}))
 	}
 
-	log.Println("CHECKPOINT 12")
 	// Configure reindex source
 	src := es7.NewReindexSource().
 		Index(util.AppendTenantID(sourceIndex, tenantId)).
@@ -282,7 +269,6 @@ func Reindex(tenantId string, ctx context.Context, sourceIndex string, config *R
 		return nil, clientFetchErr
 	}
 
-	log.Println("CHECKPOINT 13")
 	// Reindex action
 	reindex := esClient.Reindex().
 		Source(src).
@@ -294,7 +280,6 @@ func Reindex(tenantId string, ctx context.Context, sourceIndex string, config *R
 		script := elastic.NewScript(config.Script)
 		reindex.Script(script)
 	}
-	log.Println("CHECKPOINT 14")
 
 	if waitForCompletion {
 		response, err := reindex.Do(ctx)
@@ -312,7 +297,6 @@ func Reindex(tenantId string, ctx context.Context, sourceIndex string, config *R
 				return nil, err
 			}
 		}
-		log.Println("CHECKPOINT 15")
 
 		return json.Marshal(response)
 	}
@@ -323,7 +307,6 @@ func Reindex(tenantId string, ctx context.Context, sourceIndex string, config *R
 		log.Errorln(logTag, "async reindex failed", err.Error())
 		return nil, err
 	}
-	log.Println("CHECKPOINT 16")
 	taskID := response.TaskId
 
 	go asyncReIndex(tenantId, taskID, sourceIndex, newIndexName, operation, replicas)
