@@ -29,7 +29,7 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v2
       - name: building binaries for ami
-        uses: appleboy/ssh-action@master
+        uses: appleboy/ssh-action@v0.1.7
         env:
           VERSION: ${{ github.event.release.tag_name }}
         with:
@@ -51,7 +51,7 @@ jobs:
           AWS_SECRET_KEY: ${{ secrets.AWS_SECRET_KEY }}
           VERSION: ${{ github.event.release.tag_name }}
       - name: building binaries for eaas deployments
-        uses: appleboy/ssh-action@master
+        uses: appleboy/ssh-action@v0.1.7
         env:
           VERSION: ${{ github.event.release.tag_name }}
         with:
@@ -75,7 +75,7 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v2
       - name: building binaries for eaas deployments
-        uses: appleboy/ssh-action@master
+        uses: appleboy/ssh-action@v0.1.7
         env:
           VERSION: ${{ github.event.release.tag_name }}
         with:
