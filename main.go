@@ -13,6 +13,7 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
+	_ "net/http/pprof"
 	"os"
 	"os/exec"
 	"path"
@@ -298,6 +299,8 @@ func main() {
 	}
 
 	router := mux.NewRouter().StrictSlash(true)
+
+	router.PathPrefix("/debug/pprof").Handler(http.DefaultServeMux)
 
 	mainRouter := router.PathPrefix("").Subrouter()
 
