@@ -214,11 +214,11 @@ func init() {
 func main() {
 	// add cpu profilling
 	if cpuprofile {
-		defer profile.Start(profile.NoShutdownHook).Stop()
+		defer profile.Start(profile.CPUProfile, profile.NoShutdownHook).Stop()
 	}
 	// add mem profilling
 	if memprofile {
-		defer profile.Start(profile.MemProfile).Stop()
+		defer profile.Start(profile.MemProfile, profile.NoShutdownHook).Stop()
 	}
 
 	log.SetReportCaller(true)
