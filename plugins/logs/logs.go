@@ -46,8 +46,9 @@ var (
 
 // Logs plugin records an elasticsearch request and its response.
 type Logs struct {
-	es         logsService
-	lumberjack lumberjack.Logger
+	es            logsService
+	lumberjack    lumberjack.Logger
+	enableDiffing bool
 }
 
 // Instance returns the singleton instance of Logs plugin.
@@ -100,6 +101,23 @@ func (l *Logs) InitFunc() error {
 	cronjob := cron.New()
 	cronjob.AddFunc("@midnight", func() { l.es.rolloverIndexJob(indexName) })
 	cronjob.Start()
+
+	// Set the value for enableDiffing
+	//
+	// We will read the value from an environment variable
+	// though it is passes as a commandline flag.
+	//
+	// NOTE: It is probably not the trivial way to read the value
+	// but as of now there is no way to pass a variable from
+	// main to the InitFunc of plugins and will require a lot
+	// of structural changes
+	shouldEnableDiffing := os.Getenv("SHOULD_ENABLE_DIFFING")
+	if shouldEnableDiffing == "true" {
+		l.enableDiffing = true
+	} else {
+		l.enableDiffing = false
+	}
+	log.Debug(logTag, ": Diffing is enabled: ", l.enableDiffing)
 
 	return nil
 }
