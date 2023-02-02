@@ -153,6 +153,23 @@ func (es *elasticsearch) getRawLogES7(ctx context.Context, ID string, parseDiffs
 		}
 	}
 
+	var logRecord record
+	unmarshalErr := json.Unmarshal(rawLog, &logRecord)
+	if unmarshalErr != nil {
+		errMsg := fmt.Sprint("error occurred while parsing log to log, ", err)
+		return nil, &LogError{
+			Err:  errors.New(errMsg),
+			Code: http.StatusInternalServerError,
+		}
+	}
+
+	// Check if diffLogs is `false`. If it is, then parseDiffs
+	// flag will be ignored since the logs are stored
+	// raw and need to be returned right away.
+	if !logRecord.DiffLogs {
+		return rawLog, nil
+	}
+
 	// If the user passed a flag to parse the diffs, we need to
 	if parseDiffs {
 		rawLog, err = parseStageDiffs(rawLog)
