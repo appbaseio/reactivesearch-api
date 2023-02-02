@@ -59,6 +59,7 @@ var (
 	disableHealthCheck bool
 	showVersion        bool
 	createSchema       bool
+	enableProfiling    bool
 	// Version Reactivesearch version set during build
 	Version string
 	// PlanRefreshInterval can be used to define the custom interval to refresh the plan
@@ -142,6 +143,7 @@ func init() {
 	flag.BoolVar(&https, "https", false, "Starts a https server instead of a http server if true")
 	flag.BoolVar(&cpuprofile, "cpuprofile", false, "write cpu profile to `file`")
 	flag.BoolVar(&memprofile, "memprofile", false, "write mem profile to `file`")
+	flag.BoolVar(&enableProfiling, "profiling", false, "enable route for pprof through the API")
 	flag.Parse()
 
 	// If showVersion is passed, show the version and do
@@ -300,7 +302,10 @@ func main() {
 
 	router := mux.NewRouter().StrictSlash(true)
 
-	router.PathPrefix("/debug/pprof").Handler(http.DefaultServeMux)
+	if enableProfiling {
+		log.Debugln(logTag, ": enabling route for profiling since flag is passed as true")
+		router.PathPrefix("/debug/pprof").Handler(http.DefaultServeMux)
+	}
 
 	mainRouter := router.PathPrefix("").Subrouter()
 
