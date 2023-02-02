@@ -97,6 +97,7 @@ type record struct {
 	ResponseChanges []difference.Difference `json:"responseChanges"`
 	Timestamp       time.Time               `json:"timestamp"`
 	Console         []string                `json:"console_logs"`
+	DiffLogs        bool                    `json:"diffLogs"`
 }
 
 // Recorder records a log "record" for every request.
@@ -297,28 +298,7 @@ func (l *Logs) recordResponse(w *httptest.ResponseRecorder, r *http.Request, req
 				}
 			}
 			// calculate diffing
-			requestChanges := make([]difference.Difference, 0)
-			for stage, changes := range requestChangesByStage {
-				requestChanges = append(requestChanges, difference.Difference{
-					Body:    util.CalculateBodyStringDiff(changes.Before.Data.Body, changes.After.Data.Body),
-					Headers: util.CalculateHeaderDiff(changes.Before.Data.Headers, changes.After.Data.Headers),
-					URI:     util.CalculateStringDiff(changes.Before.Data.URL, changes.After.Data.URL),
-					Method:  util.CalculateMethodStringDiff(changes.Before.Data.Method, changes.After.Data.Method),
-					Stage:   stage,
-					Took:    &changes.After.TimeTaken,
-				})
-			}
-			rec.RequestChanges = requestChanges
-			responseChanges := make([]difference.Difference, 0)
-			for stage, changes := range responseChangesByStage {
-				responseChanges = append(responseChanges, difference.Difference{
-					Body:    util.CalculateBodyStringDiff(changes.Before.Data.Body, changes.After.Data.Body),
-					Headers: util.CalculateHeaderDiff(changes.Before.Data.Headers, changes.After.Data.Headers),
-					Stage:   stage,
-					Took:    &changes.After.TimeTaken,
-				})
-			}
-			rec.ResponseChanges = responseChanges
+			rec = l.captureStageChanges(rec, requestChangesByStage, responseChangesByStage)
 
 			// Delete request logs
 			requestlogs.Delete(requestId)
@@ -346,4 +326,70 @@ func (l *Logs) recordResponse(w *httptest.ResponseRecorder, r *http.Request, req
 	// Add new line character so filebeat can sync it with ES
 	l.lumberjack.Write([]byte("\n"))
 	log.Println(logTag, "logged request successfully", n)
+}
+
+// captureStageChanges will capture the stage changes on a per-stage
+// basis for the logs to be written
+func (l *Logs) captureStageChanges(rec record, requestChangesByStage map[string]RequestChange, responseChangesByStage map[string]RequestChange) record {
+	// Capture the request changes
+	//
+	// We want to store the diffs of each stage if diffing flag is enabled.
+	// If the flag is disabled, we then store the request bodies in order
+	requestChanges := make([]difference.Difference, 0)
+	for stage, changes := range requestChangesByStage {
+		var differenceEach difference.Difference
+		if l.enableDiffing {
+			differenceEach = difference.Difference{
+				Body:    util.CalculateBodyStringDiff(changes.Before.Data.Body, changes.After.Data.Body),
+				Headers: util.CalculateHeaderDiff(changes.Before.Data.Headers, changes.After.Data.Headers),
+				URI:     util.CalculateStringDiff(changes.Before.Data.URL, changes.After.Data.URL),
+				Method:  util.CalculateMethodStringDiff(changes.Before.Data.Method, changes.After.Data.Method),
+				Stage:   stage,
+				Took:    &changes.After.TimeTaken,
+			}
+		} else {
+			headersAsBytes, _ := json.Marshal(changes.After.Data.Headers)
+			differenceEach = difference.Difference{
+				Body:    changes.After.Data.Body,
+				Headers: string(headersAsBytes),
+				URI:     changes.After.Data.URL,
+				Method:  changes.After.Data.Method,
+				Stage:   stage,
+				Took:    &changes.After.TimeTaken,
+			}
+		}
+		requestChanges = append(requestChanges, differenceEach)
+	}
+	rec.RequestChanges = requestChanges
+
+	responseChanges := make([]difference.Difference, 0)
+	for stage, changes := range responseChangesByStage {
+		var differenceEach difference.Difference
+		if l.enableDiffing {
+			differenceEach = difference.Difference{
+				Body:    util.CalculateBodyStringDiff(changes.Before.Data.Body, changes.After.Data.Body),
+				Headers: util.CalculateHeaderDiff(changes.Before.Data.Headers, changes.After.Data.Headers),
+				Stage:   stage,
+				Took:    &changes.After.TimeTaken,
+			}
+		} else {
+			// We are already capturing the final response in the top level
+			// so we will need to capture the before of every stage here.
+
+			headersAsBytes, _ := json.Marshal(changes.After.Data.Headers)
+			differenceEach = difference.Difference{
+				Body:    changes.Before.Data.Body,
+				Headers: string(headersAsBytes),
+				Stage:   stage,
+				Took:    &changes.After.TimeTaken,
+			}
+		}
+
+		responseChanges = append(responseChanges, differenceEach)
+	}
+	rec.ResponseChanges = responseChanges
+
+	rec.DiffLogs = l.enableDiffing
+
+	return rec
 }
