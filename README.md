@@ -106,11 +106,23 @@ Prints the basic information
 #### error (default)
 Only log the errors
 
-### CPU Profile
-Set the `cpuprofile` flag to `true` at runtime to enable CPU profiling. Read this article to know more about the usage https://flaviocopes.com/golang-profiling/.
+#### profiling
 
-### Mem Profile
-Set the `memprofile` flag to `true` at runtime to enable memory profiling.
+Set the `profiling` flag to `true` at runtime to enable net profiling endpoints. Profiling endpoints are exposed at `/debug/pprof` route.
+
+Profiling CPU (time taken):
+
+An example of profiling for CPU usage is: /debug/pprof/profile (will wait for 30s and return a profile), or
+You can directly hit go tool pprof -http=":8080" http://localhost:8000/debug/pprof/profile to get a profile UI (top, graph, flamegraph) for time taken.
+
+Profiling Heap:
+
+An example for profiling for heap usage is: /debug/pprof/heap (will return a profile for the point in time), or
+You can directly hit go tool pprof -http=":8080" http://localhost:8000/debug/pprof/heap to get a profile UI (top, graph, flamegraph) of heap usage.
+
+#### diff-logs
+
+Set the `diff-logs` flag to `false` (defaults to `true`) at runtime to disable the use of log diffing algorithm. For high-throughput use-cases (100 requests/sec or above), the log diffing algorithm consumes signficant CPU usage (about ~2 CPU cores per 100 requests/sec) that can be saved by turning off log diffing.
 
 #### TLS Support
 

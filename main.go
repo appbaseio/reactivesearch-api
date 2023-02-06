@@ -59,6 +59,8 @@ var (
 	disableHealthCheck bool
 	showVersion        bool
 	createSchema       bool
+	enableProfiling    bool
+	enableDiffing      bool
 	// Version Reactivesearch version set during build
 	Version string
 	// PlanRefreshInterval can be used to define the custom interval to refresh the plan
@@ -142,6 +144,8 @@ func init() {
 	flag.BoolVar(&https, "https", false, "Starts a https server instead of a http server if true")
 	flag.BoolVar(&cpuprofile, "cpuprofile", false, "write cpu profile to `file`")
 	flag.BoolVar(&memprofile, "memprofile", false, "write mem profile to `file`")
+	flag.BoolVar(&enableProfiling, "profiling", false, "enable route for pprof through the API")
+	flag.BoolVar(&enableDiffing, "diff-logs", true, "Store logs by calculating the diff instead of storing the raw body")
 	flag.Parse()
 
 	// If showVersion is passed, show the version and do
@@ -222,6 +226,13 @@ func main() {
 		defer profile.Start(profile.MemProfile, profile.NoShutdownHook).Stop()
 	}
 
+	// Set the enable-diffing value in environments
+	shouldEnableDiffing := "true"
+	if !enableDiffing {
+		shouldEnableDiffing = "false"
+	}
+	os.Setenv("SHOULD_ENABLE_DIFFING", shouldEnableDiffing)
+
 	log.SetReportCaller(true)
 	log.SetFormatter(&log.TextFormatter{
 		FullTimestamp:          true,
@@ -300,7 +311,10 @@ func main() {
 
 	router := mux.NewRouter().StrictSlash(true)
 
-	router.PathPrefix("/debug/pprof").Handler(http.DefaultServeMux)
+	if enableProfiling {
+		log.Debugln(logTag, ": enabling route for profiling since flag is passed as true")
+		router.PathPrefix("/debug/pprof").Handler(http.DefaultServeMux)
+	}
 
 	mainRouter := router.PathPrefix("").Subrouter()
 
