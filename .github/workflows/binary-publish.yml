@@ -9,6 +9,7 @@ jobs:
     outputs:
       build_arc: ${{ steps.check-build-arc.outputs.run_jobs }}
       build_sls: ${{ steps.check-build-sls.outputs.run_jobs }}
+      version: ${{ steps.get-version.version }}
 
     steps:
       - name: Check if Arc binary should be built
@@ -18,6 +19,10 @@ jobs:
       - name: Check if SLS binary should be built
         id: check-build-sls
         run: (echo "${{ github.ref }}" | grep -Eq  '^refs\/tags\/1\.[0-9]+\.[0-9]+$') && echo "run_jobs=true" >> $GITHUB_OUTPUT || echo "run_jobs==false" >> $GITHUB_OUTPUT
+
+      - name: Get the version from the tag
+        id: get-version
+        run: echo "version=$( echo "v${{ github.event.release.tag_name }}" )" >> $GITHUB_OUTPUT
 
   build-arc:
     name: Build ARC binary
@@ -108,3 +113,13 @@ jobs:
       event_name: new_sls_release
     secrets:
       token: ${{ secrets.REPO_ACCESS_TOKEN }}
+  
+  send-docker-event-arc:
+    name: Send Docker Event
+    needs: [build-arc, determine_whether_to_run]
+    uses: peter-evans/repository-dispatch@v2
+    with:
+        token: ${{ secrets.REPO_ACCESS_TOKEN }}
+        repository: appbaseio-confidential/rs-api-server
+        event-type: publish_docker
+        client-payload: '{"version": ${{ needs.determine_whether_to_run.outputs.version }} }'
