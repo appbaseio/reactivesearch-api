@@ -22,7 +22,7 @@ jobs:
 
       - name: Get the version from the tag
         id: get-version
-        run: echo "version=$( echo "v${{ github.event.release.tag_name }}" )" >> $GITHUB_OUTPUT
+        run: echo "version=v${{ github.event.release.tag_name }}" >> $GITHUB_OUTPUT
 
   build-arc:
     name: Build ARC binary
