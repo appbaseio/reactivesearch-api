@@ -117,9 +117,11 @@ jobs:
   send-docker-event-arc:
     name: Send Docker Event
     needs: [build-arc, determine_whether_to_run]
-    uses: peter-evans/repository-dispatch@v2
-    with:
-        token: ${{ secrets.REPO_ACCESS_TOKEN }}
-        repository: appbaseio-confidential/rs-api-server
-        event-type: publish_docker
-        client-payload: '{"version": ${{ needs.determine_whether_to_run.outputs.version }} }'
+    steps:
+      - name: Send repo dispatch
+        uses: peter-evans/repository-dispatch@v2
+        with:
+            token: ${{ secrets.REPO_ACCESS_TOKEN }}
+            repository: appbaseio-confidential/rs-api-server
+            event-type: publish_docker
+            client-payload: '{"version": ${{ needs.determine_whether_to_run.outputs.version }} }'
