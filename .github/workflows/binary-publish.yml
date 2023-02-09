@@ -117,6 +117,7 @@ jobs:
   send-docker-event-arc:
     name: Send Docker Event
     needs: [build-arc, determine_whether_to_run]
+    runs-on: ubuntu-latest
     steps:
       - name: Send repo dispatch
         uses: peter-evans/repository-dispatch@v2
