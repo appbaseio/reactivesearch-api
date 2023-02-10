@@ -1,5 +1,5 @@
 {
-  "$id": "https://github.com/appbaseio-confidential/reactivesearch/plugins/pipelines/es-pipeline-doc-in",
+  "$id": "https://github.com/appbaseio-confidential/arc-noss/plugins/pipelines/es-pipeline-doc-in",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "preservedOrder": [
     "id",
@@ -344,13 +344,14 @@
               "recordFavorite",
               "recordSaveSearch",
               "searchboxPreferences",
-              "boost"
+              "boost",
+              "marklogicQuery"
             ],
             "stages": {
               "addFilter": {
                 "description": "Add Filter action allows you to define the term filters that will get applied on the search type of queries. For example, if somebody searches for iphone then you may want to apply a brand filter with value as apple.",
                 "inputs": {
-                  "$id": "https://github.com/appbaseio-confidential/reactivesearch/plugins/pipelines/add-filter-input",
+                  "$id": "https://github.com/appbaseio-confidential/arc-noss/plugins/pipelines/add-filter-input",
                   "$schema": "https://json-schema.org/draft/2020-12/schema",
                   "properties": {
                     "data": {
@@ -374,7 +375,7 @@
               "boost": {
                 "description": "Boost stage is useful to boost search results by a specific field’s value, for example, show items with 'holiday-sale' and 'premium' values for 'tag' field above other items.",
                 "inputs": {
-                  "$id": "https://github.com/appbaseio-confidential/reactivesearch/plugins/pipelines/boost-stage-input-struct",
+                  "$id": "https://github.com/appbaseio-confidential/arc-noss/plugins/pipelines/boost-stage-input-struct",
                   "$schema": "https://json-schema.org/draft/2020-12/schema",
                   "properties": {
                     "boostFactor": {
@@ -440,7 +441,7 @@
               "customData": {
                 "description": "Helps in sending the custom JSON data in the search response. This will be helpful when you want to send some extra information to the frontend, which can help in rendering more specific information.",
                 "inputs": {
-                  "$id": "https://github.com/appbaseio-confidential/reactivesearch/plugins/pipelines/custom-data-input",
+                  "$id": "https://github.com/appbaseio-confidential/arc-noss/plugins/pipelines/custom-data-input",
                   "$schema": "https://json-schema.org/draft/2020-12/schema",
                   "properties": {
                     "data": {
@@ -458,7 +459,7 @@
               "elasticsearchQuery": {
                 "description": "To perform a request to Elasticsearch Backend.\n\nElasticsearch stage supports async execution. In case of asynchronous execution, you're expected to write a merge script to consume the response from elasticsearch.\nThe elasticsearch response would be present in global script context with stage Id (defaults to elasticsearchQuery) as key.",
                 "inputs": {
-                  "$id": "https://github.com/appbaseio-confidential/reactivesearch/plugins/pipelines/elasticsearch-query-input",
+                  "$id": "https://github.com/appbaseio-confidential/arc-noss/plugins/pipelines/elasticsearch-query-input",
                   "$schema": "https://json-schema.org/draft/2020-12/schema",
                   "properties": {
                     "body": {
@@ -519,7 +520,7 @@
               "hideResults": {
                 "description": "It helps in hiding certain results from getting included in the actual search results. For example, you want to hide products that not available in the store, or you want to hide results that contain irrelevant data.",
                 "inputs": {
-                  "$id": "https://github.com/appbaseio-confidential/reactivesearch/plugins/pipelines/hide-result-input",
+                  "$id": "https://github.com/appbaseio-confidential/arc-noss/plugins/pipelines/hide-result-input",
                   "$schema": "https://json-schema.org/draft/2020-12/schema",
                   "properties": {
                     "data": {
@@ -541,7 +542,7 @@
               "httpRequest": {
                 "description": "This stage is useful to perform HTTP requests.",
                 "inputs": {
-                  "$id": "https://github.com/appbaseio-confidential/reactivesearch/plugins/pipelines/http-request-input",
+                  "$id": "https://github.com/appbaseio-confidential/arc-noss/plugins/pipelines/http-request-input",
                   "$schema": "https://json-schema.org/draft/2020-12/schema",
                   "properties": {
                     "body": {
@@ -590,7 +591,7 @@
               "kNN": {
                 "description": "k Nearest Neighbor (kNN) modifies the ElasticSearch Query with a script_score condition to re-rank the top n results.",
                 "inputs": {
-                  "$id": "https://github.com/appbaseio-confidential/reactivesearch/plugins/pipelines/knn-struct",
+                  "$id": "https://github.com/appbaseio-confidential/arc-noss/plugins/pipelines/knn-struct",
                   "$schema": "https://json-schema.org/draft/2020-12/schema",
                   "properties": {
                     "backend": {
@@ -600,7 +601,8 @@
                         "opensearch",
                         "mongodb",
                         "solr",
-                        "zinc"
+                        "zinc",
+                        "marklogic"
                       ],
                       "title": "Search Backend",
                       "type": "string"
@@ -1489,10 +1491,51 @@
                 },
                 "title": "kNN Response"
               },
+              "marklogicQuery": {
+                "description": "To perform a request to MarkLogic.",
+                "inputs": {
+                  "$id": "https://github.com/appbaseio-confidential/arc-noss/plugins/pipelines/mark-logic-input",
+                  "$schema": "https://json-schema.org/draft/2020-12/schema",
+                  "properties": {
+                    "headers": {
+                      "description": "Headers to be passed in the Solr query request.",
+                      "patternProperties": {
+                        ".*": {
+                          "type": "string"
+                        }
+                      },
+                      "title": "Headers",
+                      "type": "object"
+                    },
+                    "password": {
+                      "description": "Password to access the URI passed",
+                      "title": "Password",
+                      "type": "string"
+                    },
+                    "type": {
+                      "description": "Type of request to make to MarkLogic. Valid options are sparql, search or optic",
+                      "title": "Type",
+                      "type": "string"
+                    },
+                    "uri": {
+                      "description": "URI to connect to the fusion instance. If passed, host, app, profile and credentials will be ignored and not required. Example: 'http://username:password@localhost:6764/api/apps/appbase/query/appbase'",
+                      "title": "URI",
+                      "type": "string"
+                    },
+                    "username": {
+                      "description": "Username to access the URI passed",
+                      "title": "Username",
+                      "type": "string"
+                    }
+                  },
+                  "type": "object"
+                },
+                "title": "MarkLogic"
+              },
               "mongoDBQuery": {
                 "description": "To perform a request to MongoDB.\n\nMongoDB stage supports async execution. In case of asynchronous execution, you're expected to write a merge script to consume the response from mongoDB.\nThe mongoDB response would be present in global script context with stage Id (defaults to mongoDBQuery) as key.",
                 "inputs": {
-                  "$id": "https://github.com/appbaseio-confidential/reactivesearch/plugins/pipelines/mongo-db-input",
+                  "$id": "https://github.com/appbaseio-confidential/arc-noss/plugins/pipelines/mongo-db-input",
                   "$schema": "https://json-schema.org/draft/2020-12/schema",
                   "properties": {
                     "body": {
@@ -1547,7 +1590,7 @@
               "promoteResults": {
                 "description": "Helps in promoting results at a certain position in your result set. For example, when a user searches for iphone you want to promote air pods.",
                 "inputs": {
-                  "$id": "https://github.com/appbaseio-confidential/reactivesearch/plugins/pipelines/promoted-result-input",
+                  "$id": "https://github.com/appbaseio-confidential/arc-noss/plugins/pipelines/promoted-result-input",
                   "$schema": "https://json-schema.org/draft/2020-12/schema",
                   "properties": {
                     "data": {
@@ -1607,7 +1650,7 @@
               "removeWords": {
                 "description": "Removing words is the progressive loosening of query constraints to include more results when none are initially found.\n\nFor example, imagine an online smartphone shop that sold a limited inventory of iPhones in only 16GB and 32GB varieties. Users searching for “iphone 5 64gb” would see no results. This is not ideal behavior - it would be far better to show users some iPhone 5 results instead of a blank page.",
                 "inputs": {
-                  "$id": "https://github.com/appbaseio-confidential/reactivesearch/plugins/pipelines/remove-words-input",
+                  "$id": "https://github.com/appbaseio-confidential/arc-noss/plugins/pipelines/remove-words-input",
                   "$schema": "https://json-schema.org/draft/2020-12/schema",
                   "properties": {
                     "data": {
@@ -1629,7 +1672,7 @@
               "replaceSearchTerm": {
                 "description": "It helps in replacing the user's entire search query with another query. Helps in showing relevant results to users, especially when you are aware of the analytics that certain search term is returning no results.",
                 "inputs": {
-                  "$id": "https://github.com/appbaseio-confidential/reactivesearch/plugins/pipelines/replace-search-input",
+                  "$id": "https://github.com/appbaseio-confidential/arc-noss/plugins/pipelines/replace-search-input",
                   "$schema": "https://json-schema.org/draft/2020-12/schema",
                   "properties": {
                     "data": {
@@ -1648,7 +1691,7 @@
               "replaceWords": {
                 "description": "It allows you to replace words in search query. For example, if you make tv a synonym for television, the stage can replace tv with television so that only television is used to search.",
                 "inputs": {
-                  "$id": "https://github.com/appbaseio-confidential/reactivesearch/plugins/pipelines/replace-words-input",
+                  "$id": "https://github.com/appbaseio-confidential/arc-noss/plugins/pipelines/replace-words-input",
                   "$schema": "https://json-schema.org/draft/2020-12/schema",
                   "properties": {
                     "data": {
@@ -1672,7 +1715,7 @@
               "searchRelevancy": {
                 "description": "Search Relevancy stage is useful to define the default settings for search queries. For example, to set the default size as 10 for search queries.",
                 "inputs": {
-                  "$id": "https://github.com/appbaseio-confidential/reactivesearch/plugins/pipelines/search-relevancy-struct",
+                  "$id": "https://github.com/appbaseio-confidential/arc-noss/plugins/pipelines/search-relevancy-struct",
                   "$schema": "https://json-schema.org/draft/2020-12/schema",
                   "properties": {
                     "geo": {
@@ -6088,7 +6131,7 @@
               "searchboxPreferences": {
                 "description": "Searchbox Preferences stage is useful to specify the searchbox preference id for making suggestion queries. A searchbox id represents the design + layout, popular, recent, and endpoint settings for a suggestions experience, configurable from the ReactiveSearch dashboard",
                 "inputs": {
-                  "$id": "https://github.com/appbaseio-confidential/reactivesearch/plugins/pipelines/searchbox-preferences-struct",
+                  "$id": "https://github.com/appbaseio-confidential/arc-noss/plugins/pipelines/searchbox-preferences-struct",
                   "$schema": "https://json-schema.org/draft/2020-12/schema",
                   "properties": {
                     "id": {
@@ -6104,7 +6147,7 @@
               "solrQuery": {
                 "description": "To perform a request to a Solr search engine",
                 "inputs": {
-                  "$id": "https://github.com/appbaseio-confidential/reactivesearch/plugins/pipelines/solr-input",
+                  "$id": "https://github.com/appbaseio-confidential/arc-noss/plugins/pipelines/solr-input",
                   "$schema": "https://json-schema.org/draft/2020-12/schema",
                   "properties": {
                     "app": {
@@ -6185,7 +6228,7 @@
               "zincQuery": {
                 "description": "To perform a request to Zinc",
                 "inputs": {
-                  "$id": "https://github.com/appbaseio-confidential/reactivesearch/plugins/pipelines/zinc-input",
+                  "$id": "https://github.com/appbaseio-confidential/arc-noss/plugins/pipelines/zinc-input",
                   "$schema": "https://json-schema.org/draft/2020-12/schema",
                   "properties": {
                     "credentials": {

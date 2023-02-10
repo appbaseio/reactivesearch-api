@@ -1,5 +1,5 @@
 {
-  "$id": "https://github.com/appbaseio-confidential/reactivesearch/plugins/querytranslate/rs-query",
+  "$id": "https://github.com/appbaseio/reactivesearch-api/plugins/querytranslate/rs-query",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
   "preservedOrder": [
@@ -1272,7 +1272,8 @@
             "opensearch",
             "mongodb",
             "solr",
-            "zinc"
+            "zinc",
+            "marklogic"
           ],
           "markdownDescription": "This field indicates the backend of ReactiveSearch. Backend implies the search service being used to store the data.\n\nAs of now, the `backend` field supports the following values:\n\n1. `elasticsearch`: ElasticSearch\n2. `opensearch`: OpenSearch\n\nwhere `elasticsearch` is the default value.\n\n\u003e This field is necessary if backend is OpenSearch and the kNN reordering of scripts are to be used.\n\nFollowing example indicates how to use this field to use kNN reordering with OpenSearch as backend:\n\n```json\n{\n    \"query\": [\n        {\n            \"value\": \"sudoku\",\n            \"vectorDataField\": \"name_vector\",\n            \"queryVector\": [1.0, -0.2],\n        }\n    ],\n    \"settings\": {\n        \"backend\": \"opensearch\"\n    }\n}\n```",
           "title": "backend",
