@@ -9,7 +9,7 @@ jobs:
     outputs:
       build_arc: ${{ steps.check-build-arc.outputs.run_jobs }}
       build_sls: ${{ steps.check-build-sls.outputs.run_jobs }}
-      version: ${{ steps.get-version.version }}
+      version: ${{ steps.get-version.outputs.version }}
 
     steps:
       - name: Check if Arc binary should be built
