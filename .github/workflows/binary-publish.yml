@@ -125,4 +125,4 @@ jobs:
             token: ${{ secrets.REPO_ACCESS_TOKEN }}
             repository: appbaseio-confidential/rs-api-server
             event-type: publish_docker
-            client-payload: '{"version": ${{ needs.determine_whether_to_run.outputs.version }} }'
+            client-payload: '{"version": "${{ needs.determine_whether_to_run.outputs.version }}" }'
