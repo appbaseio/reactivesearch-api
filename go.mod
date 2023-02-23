@@ -33,10 +33,9 @@ require (
 	github.com/sirupsen/logrus v1.4.2
 	github.com/smartystreets/goconvey v1.6.4
 	github.com/ulule/limiter v2.2.0+incompatible
-	golang.org/x/crypto v0.0.0-20210813211128-0a44fdfbc16e
-	golang.org/x/net v0.0.0-20211007125505-59d4e928ea9d // indirect
-	golang.org/x/sys v0.0.0-20210630005230-0f9fa26af87c
-	golang.org/x/text v0.3.7
+	golang.org/x/crypto v0.0.0-20210921155107-089bfa567519
+	golang.org/x/sys v0.0.0-20220722155257-8c9f86f7a55f
+	golang.org/x/text v0.3.8
 	gopkg.in/natefinch/lumberjack.v2 v2.0.0 // indirect
 	gopkg.in/olivere/elastic.v6 v6.2.26
 )
