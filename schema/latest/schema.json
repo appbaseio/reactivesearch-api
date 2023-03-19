@@ -86,9 +86,39 @@
           "includeValues",
           "excludeValues",
           "searchboxId",
-          "range"
+          "range",
+          "enableAI",
+          "AIConfig"
         ],
         "properties": {
+          "AIConfig": {
+            "additionalProperties": false,
+            "description": "Configuration for the AnswerAI part of the query. This will only be considered if 'enableAI' is set to 'true'",
+            "engine": "opensearch",
+            "markdownDescription": "This field adds support for passing various details for the AIAnswer functionality. There are multiple fields accepted in this object. Following is an example body: ```json { 'docTemplate': '${source.title} is ${source.overview} with url ${source.backdrop_path}', 'queryTemplate': 'Can you tell me about ${value}', } ``` The fields supported by the AIConfig object are: - **docTemplate**: Template to use for building the message sent to ChatGPT for every hit of the response - **queryTemplate**: Template to use for building the message that is sent to ChatGPT as the final question. Defaults to `Can you tell me about ${value}` where `value` is the `query.value`. - **topDocsForContext**: Number of docs to use to build the context. This has an upper limit of the total number of hits returned. - **systemPrompt**: The system prompt to send as the first message to ChatGPT. Defaults to `You are a helpful assistant` - **maxTokens**: Value of `max_tokens` to be passed in the ChatGPT request body. - **temperature**: Value of `temperature` to be passed in the ChatGPT request body. #### Dynamic values in `docTemplate` The `docTemplate` string supports dynamic values using the special syntax `${}`. These values are resolved while the ChatGPT request body is built. It supports keys that are present in the `_source` field in the response hits. As an example, `source.title` will resolve to `_source.title`. If values are not found, defaults to an empty string. #### Dynamic values in `queryTemplate` The querytemplate string supports a dynamic value of `value` which is the query.value of the query.",
+            "properties": {
+              "docTemplate": {
+                "type": "string"
+              },
+              "maxTokens": {
+                "type": "integer"
+              },
+              "queryTemplate": {
+                "type": "string"
+              },
+              "systemPrompt": {
+                "type": "string"
+              },
+              "temperature": {
+                "type": "number"
+              },
+              "topDocsForContext": {
+                "type": "integer"
+              }
+            },
+            "title": "AI Config",
+            "type": "object"
+          },
           "after": {
             "description": "pagination for aggregations",
             "engine": [
@@ -351,6 +381,13 @@
             "title": "distinctFieldConfig",
             "type": "object"
           },
+          "enableAI": {
+            "description": "Whether or not to enable Answer AI to inject AI based answer in the response",
+            "engine": "opensearch",
+            "markdownDescription": "This field indicates whether the query should use AIAnswer functionality to inject an answer response to the value",
+            "title": "enableAI",
+            "type": "boolean"
+          },
           "enableEndpointSuggestions": {
             "description": "whether or not to enable endpoint suggestions",
             "engine": [
@@ -522,7 +559,7 @@
               "solr",
               "opensearch"
             ],
-            "markdownDescription": "To define options to apply featured suggestions. It can accept the following keys:\n\n- **featuredSuggestionsGroupId**: `string` The featured suggestions group id is required to apply the featured suggestions. A featured suggestion group is a collection of featured suggestions.\nEndpoint to create a featured suggestions group: https://api.reactivesearch.io/#bdf8961b-322f-48f9-9562-c3e507fd0508\n\n- **maxSuggestionsPerSection**: `int` To restrict the number of featured suggestions per section.\n\n- **sectionsOrder**: `Array\u003cstring\u003e` To define the order of sections to be displayed in UI. For e.g, `[\\'document\\', \\'pages\\', \\'help\\']`.\n\n\n| \u003cp style=\"margin: 0px;\" class=\"table-header-text\"\u003eType\u003c/p\u003e     | \u003cp style=\"margin: 0px;\" class=\"table-header-text\"\u003eApplicable on query of type\u003c/p\u003e | \u003cp style=\"margin: 0px;\" class=\"table-header-text\"\u003eRequired\u003c/p\u003e |\n| ------   | --------------------------- | -------- |\n| `Object`   | `suggestion`                | false    |",
+            "markdownDescription": "To define options to apply featured suggestions. It can accept the following keys:\n\n- **maxSuggestionsPerSection**: `int` To restrict the number of featured suggestions per section.\n\n- **sectionsOrder**: `Array\u003cstring\u003e` To define the order of sections to be displayed in UI. For e.g, `[\\'document\\', \\'pages\\', \\'help\\']`.\n\n\n| \u003cp style=\"margin: 0px;\" class=\"table-header-text\"\u003eType\u003c/p\u003e     | \u003cp style=\"margin: 0px;\" class=\"table-header-text\"\u003eApplicable on query of type\u003c/p\u003e | \u003cp style=\"margin: 0px;\" class=\"table-header-text\"\u003eRequired\u003c/p\u003e |\n| ------   | --------------------------- | -------- |\n| `Object`   | `suggestion`                | false    |",
             "properties": {
               "maxSuggestionsPerSection": {
                 "type": "integer"
@@ -1082,6 +1119,7 @@
               "elasticsearch",
               "opensearch"
             ],
+            "markdownDescription": "When featured suggestions are enabled, set the value of the `searchboxId` to use for fetching them. This is configurable via ReactiveSearch dashboard and the following [API endpoint](https://api.reactivesearch.io/#bdf8961b-322f-48f9-9562-c3e507fd0508).\n\n| \u003cp style=\"margin: 0px;\" class=\"table-header-text\"\u003eType\u003c/p\u003e     | \u003cp style=\"margin: 0px;\" class=\"table-header-text\"\u003eApplicable on query of type\u003c/p\u003e | \u003cp style=\"margin: 0px;\" class=\"table-header-text\"\u003eRequired\u003c/p\u003e |\n| ------   | --------------------------- | -------- |\n| `string`   | `suggestion`                | true*    |",
             "title": "searchboxId",
             "type": "string"
           },
