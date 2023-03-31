@@ -382,7 +382,7 @@
                       "type": "string"
                     },
                     "queryTemplate": {
-                      "description": "(optional) Template for the query that is passed to ChatGPT as the question. Supports special character 'value' that refers to the 'value' field passed in the query object. Eg: 'Answer the following: ${value}'",
+                      "description": "(optional) Template for the query that is passed to ChatGPT as the question. Supports special character 'value' that refers to the 'value' field passed in the query object, e.g. Answer the query: '${value}'. Think step-by-step, cite the source after the answer and ensure the source is from the provided context.",
                       "title": "Query Template",
                       "type": "string"
                     },
