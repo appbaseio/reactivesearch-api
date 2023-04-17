@@ -203,7 +203,8 @@
                   "cache",
                   "storedquery",
                   "sync",
-                  "pipelines"
+                  "pipelines",
+                  "ai"
                 ],
                 "title": "Category",
                 "type": "string"
