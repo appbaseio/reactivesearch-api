@@ -693,6 +693,23 @@
                           "title": "AI Config",
                           "type": "object"
                         },
+                        "FAQSuggestionsConfig": {
+                          "description": "additional options for getting FAQ suggestions",
+                          "engine": [
+                            "elasticsearch",
+                            "opensearch"
+                          ],
+                          "properties": {
+                            "sectionLabel": {
+                              "type": "string"
+                            },
+                            "size": {
+                              "type": "integer"
+                            }
+                          },
+                          "title": "FAQSuggestionsConfig",
+                          "type": "object"
+                        },
                         "after": {
                           "description": "pagination for aggregations",
                           "engine": [
@@ -894,6 +911,15 @@
                             "opensearch"
                           ],
                           "title": "enableEndpointSuggestions",
+                          "type": "boolean"
+                        },
+                        "enableFAQSuggestions": {
+                          "description": "whether or not to enable FAQ suggestions",
+                          "engine": [
+                            "elasticsearch",
+                            "opensearch"
+                          ],
+                          "title": "enableFAQSuggestions",
                           "type": "boolean"
                         },
                         "enableFeaturedSuggestions": {
@@ -1861,6 +1887,23 @@
                           "title": "AI Config",
                           "type": "object"
                         },
+                        "FAQSuggestionsConfig": {
+                          "description": "additional options for getting FAQ suggestions",
+                          "engine": [
+                            "elasticsearch",
+                            "opensearch"
+                          ],
+                          "properties": {
+                            "sectionLabel": {
+                              "type": "string"
+                            },
+                            "size": {
+                              "type": "integer"
+                            }
+                          },
+                          "title": "FAQSuggestionsConfig",
+                          "type": "object"
+                        },
                         "after": {
                           "description": "pagination for aggregations",
                           "engine": [
@@ -2062,6 +2105,15 @@
                             "opensearch"
                           ],
                           "title": "enableEndpointSuggestions",
+                          "type": "boolean"
+                        },
+                        "enableFAQSuggestions": {
+                          "description": "whether or not to enable FAQ suggestions",
+                          "engine": [
+                            "elasticsearch",
+                            "opensearch"
+                          ],
+                          "title": "enableFAQSuggestions",
                           "type": "boolean"
                         },
                         "enableFeaturedSuggestions": {
@@ -2774,6 +2826,23 @@
                           "title": "AI Config",
                           "type": "object"
                         },
+                        "FAQSuggestionsConfig": {
+                          "description": "additional options for getting FAQ suggestions",
+                          "engine": [
+                            "elasticsearch",
+                            "opensearch"
+                          ],
+                          "properties": {
+                            "sectionLabel": {
+                              "type": "string"
+                            },
+                            "size": {
+                              "type": "integer"
+                            }
+                          },
+                          "title": "FAQSuggestionsConfig",
+                          "type": "object"
+                        },
                         "after": {
                           "description": "pagination for aggregations",
                           "engine": [
@@ -2975,6 +3044,15 @@
                             "opensearch"
                           ],
                           "title": "enableEndpointSuggestions",
+                          "type": "boolean"
+                        },
+                        "enableFAQSuggestions": {
+                          "description": "whether or not to enable FAQ suggestions",
+                          "engine": [
+                            "elasticsearch",
+                            "opensearch"
+                          ],
+                          "title": "enableFAQSuggestions",
                           "type": "boolean"
                         },
                         "enableFeaturedSuggestions": {
@@ -3687,6 +3765,23 @@
                           "title": "AI Config",
                           "type": "object"
                         },
+                        "FAQSuggestionsConfig": {
+                          "description": "additional options for getting FAQ suggestions",
+                          "engine": [
+                            "elasticsearch",
+                            "opensearch"
+                          ],
+                          "properties": {
+                            "sectionLabel": {
+                              "type": "string"
+                            },
+                            "size": {
+                              "type": "integer"
+                            }
+                          },
+                          "title": "FAQSuggestionsConfig",
+                          "type": "object"
+                        },
                         "after": {
                           "description": "pagination for aggregations",
                           "engine": [
@@ -3888,6 +3983,15 @@
                             "opensearch"
                           ],
                           "title": "enableEndpointSuggestions",
+                          "type": "boolean"
+                        },
+                        "enableFAQSuggestions": {
+                          "description": "whether or not to enable FAQ suggestions",
+                          "engine": [
+                            "elasticsearch",
+                            "opensearch"
+                          ],
+                          "title": "enableFAQSuggestions",
                           "type": "boolean"
                         },
                         "enableFeaturedSuggestions": {
@@ -4600,6 +4704,23 @@
                           "title": "AI Config",
                           "type": "object"
                         },
+                        "FAQSuggestionsConfig": {
+                          "description": "additional options for getting FAQ suggestions",
+                          "engine": [
+                            "elasticsearch",
+                            "opensearch"
+                          ],
+                          "properties": {
+                            "sectionLabel": {
+                              "type": "string"
+                            },
+                            "size": {
+                              "type": "integer"
+                            }
+                          },
+                          "title": "FAQSuggestionsConfig",
+                          "type": "object"
+                        },
                         "after": {
                           "description": "pagination for aggregations",
                           "engine": [
@@ -4801,6 +4922,15 @@
                             "opensearch"
                           ],
                           "title": "enableEndpointSuggestions",
+                          "type": "boolean"
+                        },
+                        "enableFAQSuggestions": {
+                          "description": "whether or not to enable FAQ suggestions",
+                          "engine": [
+                            "elasticsearch",
+                            "opensearch"
+                          ],
+                          "title": "enableFAQSuggestions",
                           "type": "boolean"
                         },
                         "enableFeaturedSuggestions": {
@@ -5513,6 +5643,23 @@
                           "title": "AI Config",
                           "type": "object"
                         },
+                        "FAQSuggestionsConfig": {
+                          "description": "additional options for getting FAQ suggestions",
+                          "engine": [
+                            "elasticsearch",
+                            "opensearch"
+                          ],
+                          "properties": {
+                            "sectionLabel": {
+                              "type": "string"
+                            },
+                            "size": {
+                              "type": "integer"
+                            }
+                          },
+                          "title": "FAQSuggestionsConfig",
+                          "type": "object"
+                        },
                         "after": {
                           "description": "pagination for aggregations",
                           "engine": [
@@ -5714,6 +5861,15 @@
                             "opensearch"
                           ],
                           "title": "enableEndpointSuggestions",
+                          "type": "boolean"
+                        },
+                        "enableFAQSuggestions": {
+                          "description": "whether or not to enable FAQ suggestions",
+                          "engine": [
+                            "elasticsearch",
+                            "opensearch"
+                          ],
+                          "title": "enableFAQSuggestions",
                           "type": "boolean"
                         },
                         "enableFeaturedSuggestions": {

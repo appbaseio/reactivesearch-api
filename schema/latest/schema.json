@@ -63,6 +63,8 @@
           "recentSuggestionsConfig",
           "enablePopularSuggestions",
           "popularSuggestionsConfig",
+          "enableFAQSuggestions",
+          "FAQSuggestionsConfig",
           "showDistinctSuggestions",
           "enablePredictiveSuggestions",
           "maxPredictedWords",
@@ -117,6 +119,24 @@
               }
             },
             "title": "AI Config",
+            "type": "object"
+          },
+          "FAQSuggestionsConfig": {
+            "additionalProperties": false,
+            "description": "additional options for getting FAQ suggestions",
+            "engine": [
+              "elasticsearch",
+              "opensearch"
+            ],
+            "properties": {
+              "sectionLabel": {
+                "type": "string"
+              },
+              "size": {
+                "type": "integer"
+              }
+            },
+            "title": "FAQSuggestionsConfig",
             "type": "object"
           },
           "after": {
@@ -396,6 +416,15 @@
               "opensearch"
             ],
             "title": "enableEndpointSuggestions",
+            "type": "boolean"
+          },
+          "enableFAQSuggestions": {
+            "description": "whether or not to enable FAQ suggestions",
+            "engine": [
+              "elasticsearch",
+              "opensearch"
+            ],
+            "title": "enableFAQSuggestions",
             "type": "boolean"
           },
           "enableFeaturedSuggestions": {
