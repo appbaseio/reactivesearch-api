@@ -108,6 +108,9 @@
               "queryTemplate": {
                 "type": "string"
               },
+              "strictSelection": {
+                "type": "boolean"
+              },
               "systemPrompt": {
                 "type": "string"
               },

@@ -680,6 +680,9 @@
                             "queryTemplate": {
                               "type": "string"
                             },
+                            "strictSelection": {
+                              "type": "boolean"
+                            },
                             "systemPrompt": {
                               "type": "string"
                             },
@@ -1874,6 +1877,9 @@
                             "queryTemplate": {
                               "type": "string"
                             },
+                            "strictSelection": {
+                              "type": "boolean"
+                            },
                             "systemPrompt": {
                               "type": "string"
                             },
@@ -2812,6 +2818,9 @@
                             },
                             "queryTemplate": {
                               "type": "string"
+                            },
+                            "strictSelection": {
+                              "type": "boolean"
                             },
                             "systemPrompt": {
                               "type": "string"
@@ -3752,6 +3761,9 @@
                             "queryTemplate": {
                               "type": "string"
                             },
+                            "strictSelection": {
+                              "type": "boolean"
+                            },
                             "systemPrompt": {
                               "type": "string"
                             },
@@ -4691,6 +4703,9 @@
                             "queryTemplate": {
                               "type": "string"
                             },
+                            "strictSelection": {
+                              "type": "boolean"
+                            },
                             "systemPrompt": {
                               "type": "string"
                             },
@@ -5629,6 +5644,9 @@
                             },
                             "queryTemplate": {
                               "type": "string"
+                            },
+                            "strictSelection": {
+                              "type": "boolean"
                             },
                             "systemPrompt": {
                               "type": "string"
