@@ -677,6 +677,9 @@
                             "maxTokens": {
                               "type": "integer"
                             },
+                            "minTokens": {
+                              "type": "integer"
+                            },
                             "queryTemplate": {
                               "type": "string"
                             },
@@ -1874,6 +1877,9 @@
                             "maxTokens": {
                               "type": "integer"
                             },
+                            "minTokens": {
+                              "type": "integer"
+                            },
                             "queryTemplate": {
                               "type": "string"
                             },
@@ -2814,6 +2820,9 @@
                               "type": "string"
                             },
                             "maxTokens": {
+                              "type": "integer"
+                            },
+                            "minTokens": {
                               "type": "integer"
                             },
                             "queryTemplate": {
@@ -3758,6 +3767,9 @@
                             "maxTokens": {
                               "type": "integer"
                             },
+                            "minTokens": {
+                              "type": "integer"
+                            },
                             "queryTemplate": {
                               "type": "string"
                             },
@@ -4700,6 +4712,9 @@
                             "maxTokens": {
                               "type": "integer"
                             },
+                            "minTokens": {
+                              "type": "integer"
+                            },
                             "queryTemplate": {
                               "type": "string"
                             },
@@ -5640,6 +5655,9 @@
                               "type": "string"
                             },
                             "maxTokens": {
+                              "type": "integer"
+                            },
+                            "minTokens": {
                               "type": "integer"
                             },
                             "queryTemplate": {
