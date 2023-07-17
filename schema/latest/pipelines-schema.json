@@ -10,7 +10,8 @@
     "envs",
     "trigger",
     "stages",
-    "global_envs"
+    "global_envs",
+    "validateContext"
   ],
   "properties": {
     "description": {
@@ -6783,6 +6784,9 @@
       },
       "title": "Trigger Expression",
       "type": "object"
+    },
+    "validateContext": {
+      "type": "string"
     }
   },
   "required": [
