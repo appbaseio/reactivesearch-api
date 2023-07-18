@@ -90,7 +90,8 @@
           "searchboxId",
           "range",
           "enableAI",
-          "AIConfig"
+          "AIConfig",
+          "compoundClause"
         ],
         "properties": {
           "AIConfig": {
@@ -274,6 +275,12 @@
               "opensearch": "https://play.reactivesearch.io/embed/9MswTJYI7pne7Awi5vWT"
             },
             "title": "categoryValue"
+          },
+          "compoundClause": {
+            "description": "Configure whether the DSL query is generated with the compound clause of 'must' (default for 'search' and 'geo') or 'filter' (default for 'range' and 'term'). Setting the compound clause to filter allows search engine to cache and allows for higher throughput in cases where scoring isn't relevant (e.g. term",
+            "engine": "opensearch",
+            "title": "Compound Clause",
+            "type": "integer"
           },
           "customHighlight": {
             "description": "(deprecated) same as highlightConfig",

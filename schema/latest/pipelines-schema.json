@@ -807,6 +807,12 @@
                           ],
                           "title": "categoryValue"
                         },
+                        "compoundClause": {
+                          "description": "Configure whether the DSL query is generated with the compound clause of 'must' (default for 'search' and 'geo') or 'filter' (default for 'range' and 'term'). Setting the compound clause to filter allows search engine to cache and allows for higher throughput in cases where scoring isn't relevant (e.g. term",
+                          "engine": "opensearch",
+                          "title": "Compound Clause",
+                          "type": "integer"
+                        },
                         "customHighlight": {
                           "description": "(deprecated) same as highlightConfig",
                           "engine": [
@@ -2007,6 +2013,12 @@
                           ],
                           "title": "categoryValue"
                         },
+                        "compoundClause": {
+                          "description": "Configure whether the DSL query is generated with the compound clause of 'must' (default for 'search' and 'geo') or 'filter' (default for 'range' and 'term'). Setting the compound clause to filter allows search engine to cache and allows for higher throughput in cases where scoring isn't relevant (e.g. term",
+                          "engine": "opensearch",
+                          "title": "Compound Clause",
+                          "type": "integer"
+                        },
                         "customHighlight": {
                           "description": "(deprecated) same as highlightConfig",
                           "engine": [
@@ -2951,6 +2963,12 @@
                             "opensearch"
                           ],
                           "title": "categoryValue"
+                        },
+                        "compoundClause": {
+                          "description": "Configure whether the DSL query is generated with the compound clause of 'must' (default for 'search' and 'geo') or 'filter' (default for 'range' and 'term'). Setting the compound clause to filter allows search engine to cache and allows for higher throughput in cases where scoring isn't relevant (e.g. term",
+                          "engine": "opensearch",
+                          "title": "Compound Clause",
+                          "type": "integer"
                         },
                         "customHighlight": {
                           "description": "(deprecated) same as highlightConfig",
@@ -3897,6 +3915,12 @@
                           ],
                           "title": "categoryValue"
                         },
+                        "compoundClause": {
+                          "description": "Configure whether the DSL query is generated with the compound clause of 'must' (default for 'search' and 'geo') or 'filter' (default for 'range' and 'term'). Setting the compound clause to filter allows search engine to cache and allows for higher throughput in cases where scoring isn't relevant (e.g. term",
+                          "engine": "opensearch",
+                          "title": "Compound Clause",
+                          "type": "integer"
+                        },
                         "customHighlight": {
                           "description": "(deprecated) same as highlightConfig",
                           "engine": [
@@ -4842,6 +4866,12 @@
                           ],
                           "title": "categoryValue"
                         },
+                        "compoundClause": {
+                          "description": "Configure whether the DSL query is generated with the compound clause of 'must' (default for 'search' and 'geo') or 'filter' (default for 'range' and 'term'). Setting the compound clause to filter allows search engine to cache and allows for higher throughput in cases where scoring isn't relevant (e.g. term",
+                          "engine": "opensearch",
+                          "title": "Compound Clause",
+                          "type": "integer"
+                        },
                         "customHighlight": {
                           "description": "(deprecated) same as highlightConfig",
                           "engine": [
@@ -5786,6 +5816,12 @@
                             "opensearch"
                           ],
                           "title": "categoryValue"
+                        },
+                        "compoundClause": {
+                          "description": "Configure whether the DSL query is generated with the compound clause of 'must' (default for 'search' and 'geo') or 'filter' (default for 'range' and 'term'). Setting the compound clause to filter allows search engine to cache and allows for higher throughput in cases where scoring isn't relevant (e.g. term",
+                          "engine": "opensearch",
+                          "title": "Compound Clause",
+                          "type": "integer"
                         },
                         "customHighlight": {
                           "description": "(deprecated) same as highlightConfig",
