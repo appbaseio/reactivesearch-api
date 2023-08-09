@@ -91,7 +91,9 @@
           "range",
           "enableAI",
           "AIConfig",
-          "compoundClause"
+          "compoundClause",
+          "enableDocumentSuggestions",
+          "documentSuggestionsConfig"
         ],
         "properties": {
           "AIConfig": {
@@ -278,7 +280,10 @@
           },
           "compoundClause": {
             "description": "Configure whether the DSL query is generated with the compound clause of 'must' (default for 'search' and 'geo') or 'filter' (default for 'range' and 'term'). Setting the compound clause to filter allows search engine to cache and allows for higher throughput in cases where scoring isn't relevant (e.g. term",
-            "engine": "opensearch",
+            "engine": [
+              "opensearch",
+              "elasticsearch"
+            ],
             "title": "Compound Clause",
             "type": "integer"
           },
@@ -414,11 +419,44 @@
             "title": "distinctFieldConfig",
             "type": "object"
           },
+          "documentSuggestionsConfig": {
+            "additionalProperties": false,
+            "description": "additional options to specify for document suggestions",
+            "engine": [
+              "elasticsearch",
+              "opensearch"
+            ],
+            "properties": {
+              "from": {
+                "type": "integer"
+              },
+              "maxChars": {
+                "type": "integer"
+              },
+              "sectionLabel": {
+                "type": "string"
+              },
+              "size": {
+                "type": "integer"
+              }
+            },
+            "title": "documentSuggestionsConfig",
+            "type": "object"
+          },
           "enableAI": {
             "description": "Whether or not to enable Answer AI to inject AI based answer in the response",
             "engine": "opensearch",
             "markdownDescription": "This field indicates whether the query should use AIAnswer functionality to inject an answer response to the value",
             "title": "enableAI",
+            "type": "boolean"
+          },
+          "enableDocumentSuggestions": {
+            "description": "whether or not to enable document suggestions",
+            "engine": [
+              "elasticsearch",
+              "opensearch"
+            ],
+            "title": "enableDocumentSuggestions",
             "type": "boolean"
           },
           "enableEndpointSuggestions": {
@@ -628,7 +666,7 @@
             "items": {
               "type": "number"
             },
-            "markdownDescription": "To set the search weight for the database fields, useful when you are using more than one [dataField](/docs/search/reactivesearch-api/reference/#datafield). This prop accepts an array of `floats`. A higher number implies a higher relevance weight for the corresponding field in the search results.\n\nFor example, the below query has two data fields defined and each field has a different field weight.\n\n```js\n{\n    query: [{\n        id: \"book-search\",\n        dataField: [\"original_title\", \"description\"],\n        fieldWeights: [3, 1],\n        value: \"harry\"\n    }]\n}\n```\n\n| \u003cp style=\"margin: 0px;\" class=\"table-header-text\"\u003eType\u003c/p\u003e         | \u003cp style=\"margin: 0px;\" class=\"table-header-text\"\u003eApplicable on query of type\u003c/p\u003e | \u003cp style=\"margin: 0px;\" class=\"table-header-text\"\u003eRequired\u003c/p\u003e |\n| ------------ | --------------------------- | -------- |\n| `Array\u003cint\u003e` | `search`,`suggestion`       | false    |\n\n\u003e Note: The `fieldWeights` property has been marked as deprecated in \u003cb\u003ev7.47.0\u003c/b\u003e and would be removed in the next major version of appbase.io. We recommend you to use the [dataField](/docs/search/reactivesearch-api/reference/#datafield) property to define the weights.",
+            "markdownDescription": "To set the search weight for the database fields, useful when you are using more than one [dataField](/docs/search/reactivesearch-api/reference/#datafield). This prop accepts an array of `floats`. A higher number implies a higher relevance weight for the corresponding field in the search results.\n\nFor example, the below query has two data fields defined and each field has a different field weight.\n\n```js\n{\n    query: [{\n        id: \"book-search\",\n        dataField: [\"original_title\", \"description\"],\n        fieldWeights: [3, 1],\n        value: \"harry\"\n    }]\n}\n```\n\n| \u003cp style=\"margin: 0px;\" class=\"table-header-text\"\u003eType\u003c/p\u003e         | \u003cp style=\"margin: 0px;\" class=\"table-header-text\"\u003eApplicable on query of type\u003c/p\u003e | \u003cp style=\"margin: 0px;\" class=\"table-header-text\"\u003eRequired\u003c/p\u003e |\n| ------------ | --------------------------- | -------- |\n| `Array\u003cint\u003e` | `search`,`suggestion`       | false    |\n\n\u003e Note: The `fieldWeights` property has been marked as deprecated in \u003cb\u003ev7.47.0\u003c/b\u003e and would be removed in the next major version of reactivesearch.io. We recommend you to use the [dataField](/docs/search/reactivesearch-api/reference/#datafield) property to define the weights.",
             "title": "fieldWeights",
             "type": "array"
           },
@@ -657,7 +695,7 @@
               "mongodb",
               "opensearch"
             ],
-            "markdownDescription": "Useful for showing the correct results for an incorrect search parameter by taking the fuzziness into account. For example, with a substitution of one character, `fox` can become `box`. Read more about it in the elastic search https://www.elastic.co/guide/en/elasticsearch/guide/current/fuzziness.html.\n\n| \u003cp style=\"margin: 0px;\" class=\"table-header-text\"\u003eType\u003c/p\u003e           | \u003cp style=\"margin: 0px;\" class=\"table-header-text\"\u003eApplicable on query of type\u003c/p\u003e | \u003cp style=\"margin: 0px;\" class=\"table-header-text\"\u003eRequired\u003c/p\u003e |\n| -------------- | --------------------------- | -------- |\n| `int | string` | `search`, `suggestion`      | false    |\n\n\u003e Note:\n\u003e\n\u003e This property doesn\\'t work when the value of [queryFormat](/docs/search/reactivesearch-api/reference/#queryformat) property is set to `and`.\"",
+            "markdownDescription": "Useful for showing the correct results for an incorrect search parameter by taking the fuzziness into account. For example, with a substitution of one character, `fox` can become `box`. Read more about it in the elastic search https://www.elastic.co/guide/en/elasticsearch/guide/current/fuzziness.html.\n\n| \u003cp style=\"margin: 0px;\" class=\"table-header-text\"\u003eType\u003c/p\u003e           | \u003cp style=\"margin: 0px;\" class=\"table-header-text\"\u003eApplicable on query of type\u003c/p\u003e | \u003cp style=\"margin: 0px;\" class=\"table-header-text\"\u003eRequired\u003c/p\u003e |\n| -------------- | --------------------------- | -------- |\n| `int, string` | `search`, `suggestion`      | false    |\n\n\u003e Note:\n\u003e\n\u003e This property doesn\\'t work when the value of [queryFormat](/docs/search/reactivesearch-api/reference/#queryformat) property is set to `and`.\"",
             "playgroundURL": {
               "elasticsearch": "https://play.reactivesearch.io/embed/FfBZDt4981lxD2At3KuK",
               "mongodb": "https://play.reactivesearch.io/embed/CGaSSGlTPUOPmL4wv6Xb",
@@ -1364,7 +1402,7 @@
             "elasticsearch",
             "opensearch"
           ],
-          "markdownDescription": "`Object` It allows you to set the custom events which can be used to build your own analytics on top of the Appbase.io analytics. Further, these events can be used to filter the analytics stats from the Appbase.io dashboard. In the below example, we\\'re setting up two custom events that will be recorded with each search request.\n\n```js\n{\n    query: [...],\n    settings: {\n        customEvents: {\n            platform: \"android\",\n            user_segment: \"paid\"\n        }\n    }\n}\n```",
+          "markdownDescription": "`Object` It allows you to set the custom events which can be used to build your own analytics on top of the ReactiveSearch.io analytics. Further, these events can be used to filter the analytics stats from the ReactiveSearch.io dashboard. In the below example, we\\'re setting up two custom events that will be recorded with each search request.\n\n```js\n{\n    query: [...],\n    settings: {\n        customEvents: {\n            platform: \"android\",\n            user_segment: \"paid\"\n        }\n    }\n}\n```",
           "title": "customEvents",
           "type": "object"
         },
@@ -1403,7 +1441,7 @@
             "solr",
             "opensearch"
           ],
-          "markdownDescription": "`bool` defaults to `false`. If `true` then it'll enable the recording of Appbase.io analytics.",
+          "markdownDescription": "`bool` defaults to `false`. If `true` then it'll enable the recording of ReactiveSearch.io analytics.",
           "title": "recordAnalytics",
           "type": "boolean"
         },
@@ -1429,7 +1467,7 @@
             "elasticsearch",
             "opensearch"
           ],
-          "markdownDescription": "`String` It allows you to define the user id which will be used to record the Appbase.io analytics.",
+          "markdownDescription": "`String` It allows you to define the user id which will be used to record the ReactiveSearch.io analytics.",
           "title": "userId",
           "type": "string"
         }
