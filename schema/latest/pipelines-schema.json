@@ -349,7 +349,8 @@
               "boost",
               "openAIEmbeddings",
               "openAIEmbeddingsIndex",
-              "AIAnswer"
+              "AIAnswer",
+              "validateQuery"
             ],
             "stages": {
               "AIAnswer": {
@@ -6951,6 +6952,11 @@
                 "description": "To apply the cached response. It is recommended to apply cached response after authentication.",
                 "inputs": null,
                 "title": "Apply Cached Response"
+              },
+              "validateQuery": {
+                "description": "This stage will generate the validate response of the request body and return that in the response. This stage, when triggered will stop the execution of the pipeline.",
+                "inputs": null,
+                "title": "Validate Query"
               },
               "zincQuery": {
                 "description": "To perform a request to Zinc",
