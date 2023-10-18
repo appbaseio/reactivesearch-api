@@ -10,8 +10,7 @@
     "envs",
     "trigger",
     "stages",
-    "global_envs",
-    "validateContext"
+    "global_envs"
   ],
   "properties": {
     "description": {
@@ -204,8 +203,7 @@
                   "cache",
                   "storedquery",
                   "sync",
-                  "pipelines",
-                  "ai"
+                  "pipelines"
                 ],
                 "title": "Category",
                 "type": "string"
@@ -347,68 +345,9 @@
               "recordSaveSearch",
               "searchboxPreferences",
               "boost",
-              "openAIEmbeddings",
-              "openAIEmbeddingsIndex",
-              "AIAnswer",
-              "validateQuery"
+              "marklogicQuery"
             ],
             "stages": {
-              "AIAnswer": {
-                "description": "This stage will generate answers based on the top results from the request query and return them",
-                "inputs": {
-                  "$id": "https://github.com/appbaseio-confidential/reactivesearch/plugins/pipelines/ai-answer-input",
-                  "$schema": "https://json-schema.org/draft/2020-12/schema",
-                  "properties": {
-                    "apiKey": {
-                      "description": "(mandatory) OpenAI API key to access the API",
-                      "title": "API Key",
-                      "type": "string"
-                    },
-                    "docTemplate": {
-                      "description": "(optional) Template for building the context message for each hit. Supports special character 'source' that refers to the document '_source' field. Eg: '${source.text} is ${source.summary} with url as ${source.url}'",
-                      "title": "Doc Template",
-                      "type": "string"
-                    },
-                    "maxTokens": {
-                      "description": "(optional) Maximum number of tokens to pass to ChatGPT. Read more about it here: https://platform.openai.com/docs/api-reference/chat/create#chat/create-max_tokens",
-                      "title": "Maximum Tokens",
-                      "type": "integer"
-                    },
-                    "model": {
-                      "description": "Model to use for getting the vector embeddings. Options can be found at https://platform.openai.com/docs/models. Defaults to 'gpt-3.5-turbo'",
-                      "title": "Model",
-                      "type": "string"
-                    },
-                    "queryId": {
-                      "description": "(optional) ID of the query where hits are going to be extracted from. This should be rarely needed, as it is picked from the ReactiveSearch query body to a 'search' type of query, with a fallback to a 'suggestion' type of query.",
-                      "title": "Query ID",
-                      "type": "string"
-                    },
-                    "queryTemplate": {
-                      "description": "(optional) Template for the query that is passed to ChatGPT as the question. Supports special character 'value' that refers to the 'value' field passed in the query object, e.g. Answer the query: '${value}'. Think step-by-step, cite the source after the answer and ensure the source is from the provided context.",
-                      "title": "Query Template",
-                      "type": "string"
-                    },
-                    "systemPrompt": {
-                      "description": "(optional) First message that will be sent to ChatGPT from the system. Defaults to: You are a helpful assistant",
-                      "title": "System Prompt",
-                      "type": "string"
-                    },
-                    "temperature": {
-                      "description": "(optional) Temperature to pass to ChatGPT. Defaults to 1. Read more about it here: https://platform.openai.com/docs/api-reference/chat/create#chat/create-temperature",
-                      "title": "Temperature",
-                      "type": "number"
-                    },
-                    "topDocsForContext": {
-                      "description": "Number of documents from the top hits to pass to ChatGPT as context for the query. This value is capped to the minimum value of size (hits fetched in a request) and 100. Defaults to 3",
-                      "title": "Top Docs For Context",
-                      "type": "integer"
-                    }
-                  },
-                  "type": "object"
-                },
-                "title": "Answer AI"
-              },
               "addFilter": {
                 "description": "Add Filter action allows you to define the term filters that will get applied on the search type of queries. For example, if somebody searches for iphone then you may want to apply a brand filter with value as apple.",
                 "inputs": {
@@ -487,8 +426,12 @@
                       "type": "string"
                     },
                     "value": {
-                      "description": "To define the matching values to boost results, for e.g show items with '['holiday-sale', 'premium values']' for 'tag' data field above other items. This key also supports other types of values in order to support `range` and `geo` type of queries.\n\nTo use with `geo` for boosting, value can be ```yaml\nlocation: '23.7555,76.4444'\ndistance: 100\nunit:'km'\n```\n\nTo use with `range` for boosting, value can be ```yaml\nstart: 23\nend: 45\n```",
-                      "title": "Value"
+                      "description": "To define the matching values to boost results, for e.g show items with '['holiday-sale', 'premium values']' for 'tag' data field above other items.",
+                      "items": {
+                        "type": "string"
+                      },
+                      "title": "Value",
+                      "type": "array"
                     }
                   },
                   "type": "object"
@@ -658,62 +601,14 @@
                         "opensearch",
                         "mongodb",
                         "solr",
-                        "zinc"
+                        "zinc",
+                        "marklogic"
                       ],
                       "title": "Search Backend",
                       "type": "string"
                     },
                     "search": {
                       "properties": {
-                        "AIConfig": {
-                          "description": "Configuration for the AnswerAI part of the query. This will only be considered if 'enableAI' is set to 'true'",
-                          "engine": "opensearch",
-                          "properties": {
-                            "docTemplate": {
-                              "type": "string"
-                            },
-                            "maxTokens": {
-                              "type": "integer"
-                            },
-                            "minTokens": {
-                              "type": "integer"
-                            },
-                            "queryTemplate": {
-                              "type": "string"
-                            },
-                            "strictSelection": {
-                              "type": "boolean"
-                            },
-                            "systemPrompt": {
-                              "type": "string"
-                            },
-                            "temperature": {
-                              "type": "number"
-                            },
-                            "topDocsForContext": {
-                              "type": "integer"
-                            }
-                          },
-                          "title": "AI Config",
-                          "type": "object"
-                        },
-                        "FAQSuggestionsConfig": {
-                          "description": "additional options for getting FAQ suggestions",
-                          "engine": [
-                            "elasticsearch",
-                            "opensearch"
-                          ],
-                          "properties": {
-                            "sectionLabel": {
-                              "type": "string"
-                            },
-                            "size": {
-                              "type": "integer"
-                            }
-                          },
-                          "title": "FAQSuggestionsConfig",
-                          "type": "object"
-                        },
                         "after": {
                           "description": "pagination for aggregations",
                           "engine": [
@@ -803,15 +698,6 @@
                             "opensearch"
                           ],
                           "title": "categoryValue"
-                        },
-                        "compoundClause": {
-                          "description": "Configure whether the DSL query is generated with the compound clause of 'must' (default for 'search' and 'geo') or 'filter' (default for 'range' and 'term'). Setting the compound clause to filter allows search engine to cache and allows for higher throughput in cases where scoring isn't relevant (e.g. term",
-                          "engine": [
-                            "opensearch",
-                            "elasticsearch"
-                          ],
-                          "title": "Compound Clause",
-                          "type": "integer"
                         },
                         "customHighlight": {
                           "description": "(deprecated) same as highlightConfig",
@@ -910,44 +796,6 @@
                           "title": "distinctFieldConfig",
                           "type": "object"
                         },
-                        "documentSuggestionsConfig": {
-                          "description": "additional options to specify for document suggestions",
-                          "engine": [
-                            "elasticsearch",
-                            "opensearch"
-                          ],
-                          "properties": {
-                            "from": {
-                              "type": "integer"
-                            },
-                            "maxChars": {
-                              "type": "integer"
-                            },
-                            "sectionLabel": {
-                              "type": "string"
-                            },
-                            "size": {
-                              "type": "integer"
-                            }
-                          },
-                          "title": "documentSuggestionsConfig",
-                          "type": "object"
-                        },
-                        "enableAI": {
-                          "description": "Whether or not to enable Answer AI to inject AI based answer in the response",
-                          "engine": "opensearch",
-                          "title": "enableAI",
-                          "type": "boolean"
-                        },
-                        "enableDocumentSuggestions": {
-                          "description": "whether or not to enable document suggestions",
-                          "engine": [
-                            "elasticsearch",
-                            "opensearch"
-                          ],
-                          "title": "enableDocumentSuggestions",
-                          "type": "boolean"
-                        },
                         "enableEndpointSuggestions": {
                           "description": "whether or not to enable endpoint suggestions",
                           "engine": [
@@ -956,15 +804,6 @@
                             "opensearch"
                           ],
                           "title": "enableEndpointSuggestions",
-                          "type": "boolean"
-                        },
-                        "enableFAQSuggestions": {
-                          "description": "whether or not to enable FAQ suggestions",
-                          "engine": [
-                            "elasticsearch",
-                            "opensearch"
-                          ],
-                          "title": "enableFAQSuggestions",
                           "type": "boolean"
                         },
                         "enableFeaturedSuggestions": {
@@ -1038,7 +877,6 @@
                           "properties": {
                             "body": true,
                             "headers": {
-                              "description": "Headers can be essential to alter the response received from hitting a particular URL. Headers can be passed during validating by using the `headers` field.\n\nFor eg, a `Content-Type` header can be passed in the following way:\n\n```yml\nglobal_envs:\n  - label: ES URL\n    key: ES_URL\n    value: http://localhost:9200\n    validate:\n      headers:\n        \"Content-Type\": \"application/json\"\n```",
                               "patternProperties": {
                                 ".*": {
                                   "type": "string"
@@ -1047,11 +885,9 @@
                               "type": "object"
                             },
                             "method": {
-                              "description": "It might be important to specify the method field in order to get the `expected_status`. This can be done by passing the method as a string. By default the value is set to `GET`.\n\nSome of the other valid options are:\n\n- `POST`\n- `PUT`\n- `PATCH`",
                               "type": "string"
                             },
                             "url": {
-                              "description": "The `url` field is used to specify the URL that is supposed to be hit during validating the global environment before adding it.",
                               "type": "string"
                             }
                           },
@@ -1655,6 +1491,47 @@
                 },
                 "title": "kNN Response"
               },
+              "marklogicQuery": {
+                "description": "To perform a request to MarkLogic.",
+                "inputs": {
+                  "$id": "https://github.com/appbaseio-confidential/reactivesearch/plugins/pipelines/mark-logic-input",
+                  "$schema": "https://json-schema.org/draft/2020-12/schema",
+                  "properties": {
+                    "headers": {
+                      "description": "Headers to be passed in the Solr query request.",
+                      "patternProperties": {
+                        ".*": {
+                          "type": "string"
+                        }
+                      },
+                      "title": "Headers",
+                      "type": "object"
+                    },
+                    "password": {
+                      "description": "Password to access the URI passed",
+                      "title": "Password",
+                      "type": "string"
+                    },
+                    "type": {
+                      "description": "Type of request to make to MarkLogic. Valid options are sparql, search or optic",
+                      "title": "Type",
+                      "type": "string"
+                    },
+                    "uri": {
+                      "description": "URI to connect to the fusion instance. If passed, host, app, profile and credentials will be ignored and not required. Example: 'http://username:password@localhost:6764/api/apps/appbase/query/appbase'",
+                      "title": "URI",
+                      "type": "string"
+                    },
+                    "username": {
+                      "description": "Username to access the URI passed",
+                      "title": "Username",
+                      "type": "string"
+                    }
+                  },
+                  "type": "object"
+                },
+                "title": "MarkLogic"
+              },
               "mongoDBQuery": {
                 "description": "To perform a request to MongoDB.\n\nMongoDB stage supports async execution. In case of asynchronous execution, you're expected to write a merge script to consume the response from mongoDB.\nThe mongoDB response would be present in global script context with stage Id (defaults to mongoDBQuery) as key.",
                 "inputs": {
@@ -1709,71 +1586,6 @@
                   "type": "object"
                 },
                 "title": "MongoDB"
-              },
-              "openAIEmbeddings": {
-                "description": "Get vector embeddings from OpenAI based on the passed text value",
-                "inputs": {
-                  "$id": "https://github.com/appbaseio-confidential/reactivesearch/plugins/pipelines/open-ai-embeddings-input",
-                  "$schema": "https://json-schema.org/draft/2020-12/schema",
-                  "properties": {
-                    "apiKey": {
-                      "description": "OpenAI API key to be able to access the API",
-                      "title": "API Key",
-                      "type": "string"
-                    },
-                    "model": {
-                      "description": "Model to use for getting the vector embeddings. Options can be found at https://platform.openai.com/docs/models. Defaults to 'text-embedding-ada-002'",
-                      "title": "Model",
-                      "type": "string"
-                    },
-                    "text": {
-                      "description": "Text to get the vector for. Eg: 'test string'",
-                      "title": "Text",
-                      "type": "string"
-                    },
-                    "useWithReactiveSearchQuery": {
-                      "description": "When set as true, the output vector will be populated into the ReactiveSearch query where vectorDataField key is present. Defaults to 'false'",
-                      "title": "Use With ReactiveSearch Query",
-                      "type": "boolean"
-                    }
-                  },
-                  "type": "object"
-                },
-                "title": "Open AI Embeddings"
-              },
-              "openAIEmbeddingsIndex": {
-                "description": "This stage will generate the vector embedding of the inputKeys passed and inject the output to the request body",
-                "inputs": {
-                  "$id": "https://github.com/appbaseio-confidential/reactivesearch/plugins/pipelines/open-ai-embeddings-index-input",
-                  "$schema": "https://json-schema.org/draft/2020-12/schema",
-                  "properties": {
-                    "apiKey": {
-                      "description": "OpenAI API key to be able to access the API",
-                      "title": "API Key",
-                      "type": "string"
-                    },
-                    "inputKeys": {
-                      "description": "Keys from the request body that should be used for getting the embedding.",
-                      "items": {
-                        "type": "string"
-                      },
-                      "title": "Input Keys",
-                      "type": "array"
-                    },
-                    "model": {
-                      "description": "Model to use for getting the vector embeddings. Options can be found at https://platform.openai.com/docs/models. Defaults to 'text-embedding-ada-002'",
-                      "title": "Model",
-                      "type": "string"
-                    },
-                    "outputKey": {
-                      "description": "Key to write the vector data to in the request body",
-                      "title": "Output Key",
-                      "type": "string"
-                    }
-                  },
-                  "type": "object"
-                },
-                "title": "Open AI Embeddings Index"
               },
               "promoteResults": {
                 "description": "Helps in promoting results at a certain position in your result set. For example, when a user searches for iphone you want to promote air pods.",
@@ -1909,55 +1721,6 @@
                     "geo": {
                       "description": "Default query settings applicable to 'geo' type of queries. You can find all the properties at [here](https://docs.reactivesearch.io/docs/search/reactivesearch-api/reference).",
                       "properties": {
-                        "AIConfig": {
-                          "description": "Configuration for the AnswerAI part of the query. This will only be considered if 'enableAI' is set to 'true'",
-                          "engine": "opensearch",
-                          "properties": {
-                            "docTemplate": {
-                              "type": "string"
-                            },
-                            "maxTokens": {
-                              "type": "integer"
-                            },
-                            "minTokens": {
-                              "type": "integer"
-                            },
-                            "queryTemplate": {
-                              "type": "string"
-                            },
-                            "strictSelection": {
-                              "type": "boolean"
-                            },
-                            "systemPrompt": {
-                              "type": "string"
-                            },
-                            "temperature": {
-                              "type": "number"
-                            },
-                            "topDocsForContext": {
-                              "type": "integer"
-                            }
-                          },
-                          "title": "AI Config",
-                          "type": "object"
-                        },
-                        "FAQSuggestionsConfig": {
-                          "description": "additional options for getting FAQ suggestions",
-                          "engine": [
-                            "elasticsearch",
-                            "opensearch"
-                          ],
-                          "properties": {
-                            "sectionLabel": {
-                              "type": "string"
-                            },
-                            "size": {
-                              "type": "integer"
-                            }
-                          },
-                          "title": "FAQSuggestionsConfig",
-                          "type": "object"
-                        },
                         "after": {
                           "description": "pagination for aggregations",
                           "engine": [
@@ -2047,15 +1810,6 @@
                             "opensearch"
                           ],
                           "title": "categoryValue"
-                        },
-                        "compoundClause": {
-                          "description": "Configure whether the DSL query is generated with the compound clause of 'must' (default for 'search' and 'geo') or 'filter' (default for 'range' and 'term'). Setting the compound clause to filter allows search engine to cache and allows for higher throughput in cases where scoring isn't relevant (e.g. term",
-                          "engine": [
-                            "opensearch",
-                            "elasticsearch"
-                          ],
-                          "title": "Compound Clause",
-                          "type": "integer"
                         },
                         "customHighlight": {
                           "description": "(deprecated) same as highlightConfig",
@@ -2154,44 +1908,6 @@
                           "title": "distinctFieldConfig",
                           "type": "object"
                         },
-                        "documentSuggestionsConfig": {
-                          "description": "additional options to specify for document suggestions",
-                          "engine": [
-                            "elasticsearch",
-                            "opensearch"
-                          ],
-                          "properties": {
-                            "from": {
-                              "type": "integer"
-                            },
-                            "maxChars": {
-                              "type": "integer"
-                            },
-                            "sectionLabel": {
-                              "type": "string"
-                            },
-                            "size": {
-                              "type": "integer"
-                            }
-                          },
-                          "title": "documentSuggestionsConfig",
-                          "type": "object"
-                        },
-                        "enableAI": {
-                          "description": "Whether or not to enable Answer AI to inject AI based answer in the response",
-                          "engine": "opensearch",
-                          "title": "enableAI",
-                          "type": "boolean"
-                        },
-                        "enableDocumentSuggestions": {
-                          "description": "whether or not to enable document suggestions",
-                          "engine": [
-                            "elasticsearch",
-                            "opensearch"
-                          ],
-                          "title": "enableDocumentSuggestions",
-                          "type": "boolean"
-                        },
                         "enableEndpointSuggestions": {
                           "description": "whether or not to enable endpoint suggestions",
                           "engine": [
@@ -2200,15 +1916,6 @@
                             "opensearch"
                           ],
                           "title": "enableEndpointSuggestions",
-                          "type": "boolean"
-                        },
-                        "enableFAQSuggestions": {
-                          "description": "whether or not to enable FAQ suggestions",
-                          "engine": [
-                            "elasticsearch",
-                            "opensearch"
-                          ],
-                          "title": "enableFAQSuggestions",
                           "type": "boolean"
                         },
                         "enableFeaturedSuggestions": {
@@ -2282,7 +1989,6 @@
                           "properties": {
                             "body": true,
                             "headers": {
-                              "description": "Headers can be essential to alter the response received from hitting a particular URL. Headers can be passed during validating by using the `headers` field.\n\nFor eg, a `Content-Type` header can be passed in the following way:\n\n```yml\nglobal_envs:\n  - label: ES URL\n    key: ES_URL\n    value: http://localhost:9200\n    validate:\n      headers:\n        \"Content-Type\": \"application/json\"\n```",
                               "patternProperties": {
                                 ".*": {
                                   "type": "string"
@@ -2291,11 +1997,9 @@
                               "type": "object"
                             },
                             "method": {
-                              "description": "It might be important to specify the method field in order to get the `expected_status`. This can be done by passing the method as a string. By default the value is set to `GET`.\n\nSome of the other valid options are:\n\n- `POST`\n- `PUT`\n- `PATCH`",
                               "type": "string"
                             },
                             "url": {
-                              "description": "The `url` field is used to specify the URL that is supposed to be hit during validating the global environment before adding it.",
                               "type": "string"
                             }
                           },
@@ -2898,55 +2602,6 @@
                     "range": {
                       "description": "Default query settings applicable to 'range' type of queries. You can find all the properties at [here](https://docs.reactivesearch.io/docs/search/reactivesearch-api/reference).",
                       "properties": {
-                        "AIConfig": {
-                          "description": "Configuration for the AnswerAI part of the query. This will only be considered if 'enableAI' is set to 'true'",
-                          "engine": "opensearch",
-                          "properties": {
-                            "docTemplate": {
-                              "type": "string"
-                            },
-                            "maxTokens": {
-                              "type": "integer"
-                            },
-                            "minTokens": {
-                              "type": "integer"
-                            },
-                            "queryTemplate": {
-                              "type": "string"
-                            },
-                            "strictSelection": {
-                              "type": "boolean"
-                            },
-                            "systemPrompt": {
-                              "type": "string"
-                            },
-                            "temperature": {
-                              "type": "number"
-                            },
-                            "topDocsForContext": {
-                              "type": "integer"
-                            }
-                          },
-                          "title": "AI Config",
-                          "type": "object"
-                        },
-                        "FAQSuggestionsConfig": {
-                          "description": "additional options for getting FAQ suggestions",
-                          "engine": [
-                            "elasticsearch",
-                            "opensearch"
-                          ],
-                          "properties": {
-                            "sectionLabel": {
-                              "type": "string"
-                            },
-                            "size": {
-                              "type": "integer"
-                            }
-                          },
-                          "title": "FAQSuggestionsConfig",
-                          "type": "object"
-                        },
                         "after": {
                           "description": "pagination for aggregations",
                           "engine": [
@@ -3036,15 +2691,6 @@
                             "opensearch"
                           ],
                           "title": "categoryValue"
-                        },
-                        "compoundClause": {
-                          "description": "Configure whether the DSL query is generated with the compound clause of 'must' (default for 'search' and 'geo') or 'filter' (default for 'range' and 'term'). Setting the compound clause to filter allows search engine to cache and allows for higher throughput in cases where scoring isn't relevant (e.g. term",
-                          "engine": [
-                            "opensearch",
-                            "elasticsearch"
-                          ],
-                          "title": "Compound Clause",
-                          "type": "integer"
                         },
                         "customHighlight": {
                           "description": "(deprecated) same as highlightConfig",
@@ -3143,44 +2789,6 @@
                           "title": "distinctFieldConfig",
                           "type": "object"
                         },
-                        "documentSuggestionsConfig": {
-                          "description": "additional options to specify for document suggestions",
-                          "engine": [
-                            "elasticsearch",
-                            "opensearch"
-                          ],
-                          "properties": {
-                            "from": {
-                              "type": "integer"
-                            },
-                            "maxChars": {
-                              "type": "integer"
-                            },
-                            "sectionLabel": {
-                              "type": "string"
-                            },
-                            "size": {
-                              "type": "integer"
-                            }
-                          },
-                          "title": "documentSuggestionsConfig",
-                          "type": "object"
-                        },
-                        "enableAI": {
-                          "description": "Whether or not to enable Answer AI to inject AI based answer in the response",
-                          "engine": "opensearch",
-                          "title": "enableAI",
-                          "type": "boolean"
-                        },
-                        "enableDocumentSuggestions": {
-                          "description": "whether or not to enable document suggestions",
-                          "engine": [
-                            "elasticsearch",
-                            "opensearch"
-                          ],
-                          "title": "enableDocumentSuggestions",
-                          "type": "boolean"
-                        },
                         "enableEndpointSuggestions": {
                           "description": "whether or not to enable endpoint suggestions",
                           "engine": [
@@ -3189,15 +2797,6 @@
                             "opensearch"
                           ],
                           "title": "enableEndpointSuggestions",
-                          "type": "boolean"
-                        },
-                        "enableFAQSuggestions": {
-                          "description": "whether or not to enable FAQ suggestions",
-                          "engine": [
-                            "elasticsearch",
-                            "opensearch"
-                          ],
-                          "title": "enableFAQSuggestions",
                           "type": "boolean"
                         },
                         "enableFeaturedSuggestions": {
@@ -3271,7 +2870,6 @@
                           "properties": {
                             "body": true,
                             "headers": {
-                              "description": "Headers can be essential to alter the response received from hitting a particular URL. Headers can be passed during validating by using the `headers` field.\n\nFor eg, a `Content-Type` header can be passed in the following way:\n\n```yml\nglobal_envs:\n  - label: ES URL\n    key: ES_URL\n    value: http://localhost:9200\n    validate:\n      headers:\n        \"Content-Type\": \"application/json\"\n```",
                               "patternProperties": {
                                 ".*": {
                                   "type": "string"
@@ -3280,11 +2878,9 @@
                               "type": "object"
                             },
                             "method": {
-                              "description": "It might be important to specify the method field in order to get the `expected_status`. This can be done by passing the method as a string. By default the value is set to `GET`.\n\nSome of the other valid options are:\n\n- `POST`\n- `PUT`\n- `PATCH`",
                               "type": "string"
                             },
                             "url": {
-                              "description": "The `url` field is used to specify the URL that is supposed to be hit during validating the global environment before adding it.",
                               "type": "string"
                             }
                           },
@@ -3887,55 +3483,6 @@
                     "search": {
                       "description": "Default query settings applicable to 'search' type of queries. You can find all the properties at [here](https://docs.reactivesearch.io/docs/search/reactivesearch-api/reference).",
                       "properties": {
-                        "AIConfig": {
-                          "description": "Configuration for the AnswerAI part of the query. This will only be considered if 'enableAI' is set to 'true'",
-                          "engine": "opensearch",
-                          "properties": {
-                            "docTemplate": {
-                              "type": "string"
-                            },
-                            "maxTokens": {
-                              "type": "integer"
-                            },
-                            "minTokens": {
-                              "type": "integer"
-                            },
-                            "queryTemplate": {
-                              "type": "string"
-                            },
-                            "strictSelection": {
-                              "type": "boolean"
-                            },
-                            "systemPrompt": {
-                              "type": "string"
-                            },
-                            "temperature": {
-                              "type": "number"
-                            },
-                            "topDocsForContext": {
-                              "type": "integer"
-                            }
-                          },
-                          "title": "AI Config",
-                          "type": "object"
-                        },
-                        "FAQSuggestionsConfig": {
-                          "description": "additional options for getting FAQ suggestions",
-                          "engine": [
-                            "elasticsearch",
-                            "opensearch"
-                          ],
-                          "properties": {
-                            "sectionLabel": {
-                              "type": "string"
-                            },
-                            "size": {
-                              "type": "integer"
-                            }
-                          },
-                          "title": "FAQSuggestionsConfig",
-                          "type": "object"
-                        },
                         "after": {
                           "description": "pagination for aggregations",
                           "engine": [
@@ -4025,15 +3572,6 @@
                             "opensearch"
                           ],
                           "title": "categoryValue"
-                        },
-                        "compoundClause": {
-                          "description": "Configure whether the DSL query is generated with the compound clause of 'must' (default for 'search' and 'geo') or 'filter' (default for 'range' and 'term'). Setting the compound clause to filter allows search engine to cache and allows for higher throughput in cases where scoring isn't relevant (e.g. term",
-                          "engine": [
-                            "opensearch",
-                            "elasticsearch"
-                          ],
-                          "title": "Compound Clause",
-                          "type": "integer"
                         },
                         "customHighlight": {
                           "description": "(deprecated) same as highlightConfig",
@@ -4132,44 +3670,6 @@
                           "title": "distinctFieldConfig",
                           "type": "object"
                         },
-                        "documentSuggestionsConfig": {
-                          "description": "additional options to specify for document suggestions",
-                          "engine": [
-                            "elasticsearch",
-                            "opensearch"
-                          ],
-                          "properties": {
-                            "from": {
-                              "type": "integer"
-                            },
-                            "maxChars": {
-                              "type": "integer"
-                            },
-                            "sectionLabel": {
-                              "type": "string"
-                            },
-                            "size": {
-                              "type": "integer"
-                            }
-                          },
-                          "title": "documentSuggestionsConfig",
-                          "type": "object"
-                        },
-                        "enableAI": {
-                          "description": "Whether or not to enable Answer AI to inject AI based answer in the response",
-                          "engine": "opensearch",
-                          "title": "enableAI",
-                          "type": "boolean"
-                        },
-                        "enableDocumentSuggestions": {
-                          "description": "whether or not to enable document suggestions",
-                          "engine": [
-                            "elasticsearch",
-                            "opensearch"
-                          ],
-                          "title": "enableDocumentSuggestions",
-                          "type": "boolean"
-                        },
                         "enableEndpointSuggestions": {
                           "description": "whether or not to enable endpoint suggestions",
                           "engine": [
@@ -4178,15 +3678,6 @@
                             "opensearch"
                           ],
                           "title": "enableEndpointSuggestions",
-                          "type": "boolean"
-                        },
-                        "enableFAQSuggestions": {
-                          "description": "whether or not to enable FAQ suggestions",
-                          "engine": [
-                            "elasticsearch",
-                            "opensearch"
-                          ],
-                          "title": "enableFAQSuggestions",
                           "type": "boolean"
                         },
                         "enableFeaturedSuggestions": {
@@ -4260,7 +3751,6 @@
                           "properties": {
                             "body": true,
                             "headers": {
-                              "description": "Headers can be essential to alter the response received from hitting a particular URL. Headers can be passed during validating by using the `headers` field.\n\nFor eg, a `Content-Type` header can be passed in the following way:\n\n```yml\nglobal_envs:\n  - label: ES URL\n    key: ES_URL\n    value: http://localhost:9200\n    validate:\n      headers:\n        \"Content-Type\": \"application/json\"\n```",
                               "patternProperties": {
                                 ".*": {
                                   "type": "string"
@@ -4269,11 +3759,9 @@
                               "type": "object"
                             },
                             "method": {
-                              "description": "It might be important to specify the method field in order to get the `expected_status`. This can be done by passing the method as a string. By default the value is set to `GET`.\n\nSome of the other valid options are:\n\n- `POST`\n- `PUT`\n- `PATCH`",
                               "type": "string"
                             },
                             "url": {
-                              "description": "The `url` field is used to specify the URL that is supposed to be hit during validating the global environment before adding it.",
                               "type": "string"
                             }
                           },
@@ -4876,55 +4364,6 @@
                     "suggestion": {
                       "description": "Default query settings applicable to 'suggestion' type of queries. You can find all the properties at [here](https://docs.reactivesearch.io/docs/search/reactivesearch-api/reference).",
                       "properties": {
-                        "AIConfig": {
-                          "description": "Configuration for the AnswerAI part of the query. This will only be considered if 'enableAI' is set to 'true'",
-                          "engine": "opensearch",
-                          "properties": {
-                            "docTemplate": {
-                              "type": "string"
-                            },
-                            "maxTokens": {
-                              "type": "integer"
-                            },
-                            "minTokens": {
-                              "type": "integer"
-                            },
-                            "queryTemplate": {
-                              "type": "string"
-                            },
-                            "strictSelection": {
-                              "type": "boolean"
-                            },
-                            "systemPrompt": {
-                              "type": "string"
-                            },
-                            "temperature": {
-                              "type": "number"
-                            },
-                            "topDocsForContext": {
-                              "type": "integer"
-                            }
-                          },
-                          "title": "AI Config",
-                          "type": "object"
-                        },
-                        "FAQSuggestionsConfig": {
-                          "description": "additional options for getting FAQ suggestions",
-                          "engine": [
-                            "elasticsearch",
-                            "opensearch"
-                          ],
-                          "properties": {
-                            "sectionLabel": {
-                              "type": "string"
-                            },
-                            "size": {
-                              "type": "integer"
-                            }
-                          },
-                          "title": "FAQSuggestionsConfig",
-                          "type": "object"
-                        },
                         "after": {
                           "description": "pagination for aggregations",
                           "engine": [
@@ -5014,15 +4453,6 @@
                             "opensearch"
                           ],
                           "title": "categoryValue"
-                        },
-                        "compoundClause": {
-                          "description": "Configure whether the DSL query is generated with the compound clause of 'must' (default for 'search' and 'geo') or 'filter' (default for 'range' and 'term'). Setting the compound clause to filter allows search engine to cache and allows for higher throughput in cases where scoring isn't relevant (e.g. term",
-                          "engine": [
-                            "opensearch",
-                            "elasticsearch"
-                          ],
-                          "title": "Compound Clause",
-                          "type": "integer"
                         },
                         "customHighlight": {
                           "description": "(deprecated) same as highlightConfig",
@@ -5121,44 +4551,6 @@
                           "title": "distinctFieldConfig",
                           "type": "object"
                         },
-                        "documentSuggestionsConfig": {
-                          "description": "additional options to specify for document suggestions",
-                          "engine": [
-                            "elasticsearch",
-                            "opensearch"
-                          ],
-                          "properties": {
-                            "from": {
-                              "type": "integer"
-                            },
-                            "maxChars": {
-                              "type": "integer"
-                            },
-                            "sectionLabel": {
-                              "type": "string"
-                            },
-                            "size": {
-                              "type": "integer"
-                            }
-                          },
-                          "title": "documentSuggestionsConfig",
-                          "type": "object"
-                        },
-                        "enableAI": {
-                          "description": "Whether or not to enable Answer AI to inject AI based answer in the response",
-                          "engine": "opensearch",
-                          "title": "enableAI",
-                          "type": "boolean"
-                        },
-                        "enableDocumentSuggestions": {
-                          "description": "whether or not to enable document suggestions",
-                          "engine": [
-                            "elasticsearch",
-                            "opensearch"
-                          ],
-                          "title": "enableDocumentSuggestions",
-                          "type": "boolean"
-                        },
                         "enableEndpointSuggestions": {
                           "description": "whether or not to enable endpoint suggestions",
                           "engine": [
@@ -5167,15 +4559,6 @@
                             "opensearch"
                           ],
                           "title": "enableEndpointSuggestions",
-                          "type": "boolean"
-                        },
-                        "enableFAQSuggestions": {
-                          "description": "whether or not to enable FAQ suggestions",
-                          "engine": [
-                            "elasticsearch",
-                            "opensearch"
-                          ],
-                          "title": "enableFAQSuggestions",
                           "type": "boolean"
                         },
                         "enableFeaturedSuggestions": {
@@ -5249,7 +4632,6 @@
                           "properties": {
                             "body": true,
                             "headers": {
-                              "description": "Headers can be essential to alter the response received from hitting a particular URL. Headers can be passed during validating by using the `headers` field.\n\nFor eg, a `Content-Type` header can be passed in the following way:\n\n```yml\nglobal_envs:\n  - label: ES URL\n    key: ES_URL\n    value: http://localhost:9200\n    validate:\n      headers:\n        \"Content-Type\": \"application/json\"\n```",
                               "patternProperties": {
                                 ".*": {
                                   "type": "string"
@@ -5258,11 +4640,9 @@
                               "type": "object"
                             },
                             "method": {
-                              "description": "It might be important to specify the method field in order to get the `expected_status`. This can be done by passing the method as a string. By default the value is set to `GET`.\n\nSome of the other valid options are:\n\n- `POST`\n- `PUT`\n- `PATCH`",
                               "type": "string"
                             },
                             "url": {
-                              "description": "The `url` field is used to specify the URL that is supposed to be hit during validating the global environment before adding it.",
                               "type": "string"
                             }
                           },
@@ -5865,55 +5245,6 @@
                     "term": {
                       "description": "Default query settings applicable to 'term' type of queries. You can find all the properties at [here](https://docs.reactivesearch.io/docs/search/reactivesearch-api/reference).",
                       "properties": {
-                        "AIConfig": {
-                          "description": "Configuration for the AnswerAI part of the query. This will only be considered if 'enableAI' is set to 'true'",
-                          "engine": "opensearch",
-                          "properties": {
-                            "docTemplate": {
-                              "type": "string"
-                            },
-                            "maxTokens": {
-                              "type": "integer"
-                            },
-                            "minTokens": {
-                              "type": "integer"
-                            },
-                            "queryTemplate": {
-                              "type": "string"
-                            },
-                            "strictSelection": {
-                              "type": "boolean"
-                            },
-                            "systemPrompt": {
-                              "type": "string"
-                            },
-                            "temperature": {
-                              "type": "number"
-                            },
-                            "topDocsForContext": {
-                              "type": "integer"
-                            }
-                          },
-                          "title": "AI Config",
-                          "type": "object"
-                        },
-                        "FAQSuggestionsConfig": {
-                          "description": "additional options for getting FAQ suggestions",
-                          "engine": [
-                            "elasticsearch",
-                            "opensearch"
-                          ],
-                          "properties": {
-                            "sectionLabel": {
-                              "type": "string"
-                            },
-                            "size": {
-                              "type": "integer"
-                            }
-                          },
-                          "title": "FAQSuggestionsConfig",
-                          "type": "object"
-                        },
                         "after": {
                           "description": "pagination for aggregations",
                           "engine": [
@@ -6003,15 +5334,6 @@
                             "opensearch"
                           ],
                           "title": "categoryValue"
-                        },
-                        "compoundClause": {
-                          "description": "Configure whether the DSL query is generated with the compound clause of 'must' (default for 'search' and 'geo') or 'filter' (default for 'range' and 'term'). Setting the compound clause to filter allows search engine to cache and allows for higher throughput in cases where scoring isn't relevant (e.g. term",
-                          "engine": [
-                            "opensearch",
-                            "elasticsearch"
-                          ],
-                          "title": "Compound Clause",
-                          "type": "integer"
                         },
                         "customHighlight": {
                           "description": "(deprecated) same as highlightConfig",
@@ -6110,44 +5432,6 @@
                           "title": "distinctFieldConfig",
                           "type": "object"
                         },
-                        "documentSuggestionsConfig": {
-                          "description": "additional options to specify for document suggestions",
-                          "engine": [
-                            "elasticsearch",
-                            "opensearch"
-                          ],
-                          "properties": {
-                            "from": {
-                              "type": "integer"
-                            },
-                            "maxChars": {
-                              "type": "integer"
-                            },
-                            "sectionLabel": {
-                              "type": "string"
-                            },
-                            "size": {
-                              "type": "integer"
-                            }
-                          },
-                          "title": "documentSuggestionsConfig",
-                          "type": "object"
-                        },
-                        "enableAI": {
-                          "description": "Whether or not to enable Answer AI to inject AI based answer in the response",
-                          "engine": "opensearch",
-                          "title": "enableAI",
-                          "type": "boolean"
-                        },
-                        "enableDocumentSuggestions": {
-                          "description": "whether or not to enable document suggestions",
-                          "engine": [
-                            "elasticsearch",
-                            "opensearch"
-                          ],
-                          "title": "enableDocumentSuggestions",
-                          "type": "boolean"
-                        },
                         "enableEndpointSuggestions": {
                           "description": "whether or not to enable endpoint suggestions",
                           "engine": [
@@ -6156,15 +5440,6 @@
                             "opensearch"
                           ],
                           "title": "enableEndpointSuggestions",
-                          "type": "boolean"
-                        },
-                        "enableFAQSuggestions": {
-                          "description": "whether or not to enable FAQ suggestions",
-                          "engine": [
-                            "elasticsearch",
-                            "opensearch"
-                          ],
-                          "title": "enableFAQSuggestions",
                           "type": "boolean"
                         },
                         "enableFeaturedSuggestions": {
@@ -6238,7 +5513,6 @@
                           "properties": {
                             "body": true,
                             "headers": {
-                              "description": "Headers can be essential to alter the response received from hitting a particular URL. Headers can be passed during validating by using the `headers` field.\n\nFor eg, a `Content-Type` header can be passed in the following way:\n\n```yml\nglobal_envs:\n  - label: ES URL\n    key: ES_URL\n    value: http://localhost:9200\n    validate:\n      headers:\n        \"Content-Type\": \"application/json\"\n```",
                               "patternProperties": {
                                 ".*": {
                                   "type": "string"
@@ -6247,11 +5521,9 @@
                               "type": "object"
                             },
                             "method": {
-                              "description": "It might be important to specify the method field in order to get the `expected_status`. This can be done by passing the method as a string. By default the value is set to `GET`.\n\nSome of the other valid options are:\n\n- `POST`\n- `PUT`\n- `PATCH`",
                               "type": "string"
                             },
                             "url": {
-                              "description": "The `url` field is used to specify the URL that is supposed to be hit during validating the global environment before adding it.",
                               "type": "string"
                             }
                           },
@@ -6953,11 +6225,6 @@
                 "inputs": null,
                 "title": "Apply Cached Response"
               },
-              "validateQuery": {
-                "description": "This stage will generate the validate response of the request body and return that in the response. This stage, when triggered will stop the execution of the pipeline.",
-                "inputs": null,
-                "title": "Validate Query"
-              },
               "zincQuery": {
                 "description": "To perform a request to Zinc",
                 "inputs": {
@@ -7050,9 +6317,6 @@
       },
       "title": "Trigger Expression",
       "type": "object"
-    },
-    "validateContext": {
-      "type": "string"
     }
   },
   "required": [

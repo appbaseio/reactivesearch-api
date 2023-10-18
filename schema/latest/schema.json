@@ -88,6 +88,7 @@
           "includeValues",
           "excludeValues",
           "searchboxId",
+          "faqSearchboxId",
           "range",
           "enableAI",
           "AIConfig",
@@ -630,6 +631,15 @@
             },
             "title": "execute",
             "type": "boolean"
+          },
+          "faqSearchboxId": {
+            "description": "searchbox id for a faq suggestion query",
+            "engine": [
+              "elasticsearch",
+              "opensearch"
+            ],
+            "title": "faqSearchboxId",
+            "type": "string"
           },
           "featuredSuggestionsConfig": {
             "additionalProperties": false,
