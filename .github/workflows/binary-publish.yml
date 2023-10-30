@@ -33,30 +33,8 @@ jobs:
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v2
-      - name: building binaries for ami
-        uses: appleboy/ssh-action@v0.1.7
-        env:
-          VERSION: ${{ github.event.release.tag_name }}
-        with:
-          host: ${{ secrets.AWS_BUILD_HOST }}
-          username: ${{ secrets.AWS_BUILD_USERNAME }}
-          key: ${{ secrets.AWS_BUILD_KEY }}
-          port: 22
-          envs: VERSION
-          script: |
-            export PATH=$PATH:/usr/local/go/bin && sh build.sh ${VERSION}
-      - name: Build AMI
-        uses: hashicorp/packer-github-actions@master
-        with:
-          command: build
-          target: "./ami.json"
-        env:
-          PACKER_LOG: 1
-          AWS_ACCESS_KEY: ${{ secrets.AWS_ACCESS_KEY }}
-          AWS_SECRET_KEY: ${{ secrets.AWS_SECRET_KEY }}
-          VERSION: ${{ github.event.release.tag_name }}
       - name: building binaries for eaas deployments
-        uses: appleboy/ssh-action@v1.0.0
+        uses: appleboy/ssh-action@v0.1.7
         env:
           VERSION: ${{ github.event.release.tag_name }}
         with:
@@ -68,9 +46,7 @@ jobs:
           command_timeout: 3600s
           envs: VERSION
           script: |
-            echo $SHELL
             source ~/.bashrc
-            echo $PATH
             sh build.sh ${VERSION}
 
   build-sls:
