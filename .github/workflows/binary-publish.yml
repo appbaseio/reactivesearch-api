@@ -56,7 +56,7 @@ jobs:
           AWS_SECRET_KEY: ${{ secrets.AWS_SECRET_KEY }}
           VERSION: ${{ github.event.release.tag_name }}
       - name: building binaries for eaas deployments
-        uses: appleboy/ssh-action@v1.0.0
+        uses: appleboy/ssh-action@v0.1.7
         env:
           VERSION: ${{ github.event.release.tag_name }}
         with:
@@ -69,6 +69,8 @@ jobs:
           envs: VERSION
           script: |
             source ~/.bashrc
+            export PATH=$PATH:/usr/local/go/bin:/usr/bin
+            export GOPATH=/home/centos/go
             ./build.sh ${VERSION}
 
   build-sls:
@@ -94,6 +96,8 @@ jobs:
           envs: VERSION
           script: |
             source ~/.bashrc
+            export PATH=$PATH:/usr/local/go/bin:/usr/bin
+            export GOPATH=/home/centos/go
             ./sls-build.sh ${VERSION} feat/true-sls
 
   send-packer-event-arc:
