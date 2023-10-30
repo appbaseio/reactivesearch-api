@@ -47,7 +47,9 @@ jobs:
           envs: VERSION
           script: |
             source ~/.bashrc
-            sh build.sh ${VERSION}
+            export PATH=$PATH:/usr/local/go/bin:/usr/bin
+            export GOPATH=/home/centos/go
+            ./build.sh ${VERSION}
 
   build-sls:
     name: Build SLS binary
@@ -71,7 +73,9 @@ jobs:
           command_timeout: 3600s
           envs: VERSION
           script: |
-            exec bash
+            source ~/.bashrc
+            export PATH=$PATH:/usr/local/go/bin:/usr/bin
+            export GOPATH=/home/centos/go
             ./sls-build.sh ${VERSION} feat/true-sls
 
   send-packer-event-arc:
