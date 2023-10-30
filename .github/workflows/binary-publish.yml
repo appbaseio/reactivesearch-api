@@ -68,7 +68,7 @@ jobs:
           command_timeout: 3600s
           envs: VERSION
           script: |
-            source ~/.bashrc
+            exec bash
             ./build.sh ${VERSION}
 
   build-sls:
@@ -93,7 +93,7 @@ jobs:
           command_timeout: 3600s
           envs: VERSION
           script: |
-            source ~/.bashrc
+            exec bash
             ./sls-build.sh ${VERSION} feat/true-sls
 
   send-packer-event-arc:
