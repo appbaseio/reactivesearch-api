@@ -68,7 +68,8 @@ jobs:
           command_timeout: 3600s
           envs: VERSION
           script: |
-            sh build.sh ${VERSION}
+            source ~/.bashrc
+            ./build.sh ${VERSION}
 
   build-sls:
     name: Build SLS binary
@@ -92,7 +93,8 @@ jobs:
           command_timeout: 3600s
           envs: VERSION
           script: |
-            sh sls-build.sh ${VERSION} feat/true-sls
+            source ~/.bashrc
+            ./sls-build.sh ${VERSION} feat/true-sls
 
   send-packer-event-arc:
     name: Send Packer Event
