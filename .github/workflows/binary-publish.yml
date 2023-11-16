@@ -14,11 +14,17 @@ jobs:
     steps:
       - name: Check if Arc binary should be built
         id: check-build-arc
-        run: (echo "${{ github.ref }}" | grep -Eq  '^refs\/tags\/8\.[0-9]+\.[0-9]+$') && echo "run_jobs=true" >> $GITHUB_OUTPUT || echo "run_jobs==false" >> $GITHUB_OUTPUT
-
+        run: |
+          TAG_NAME="${{ github.event.release.tag_name }}"
+          echo "Checking tag $TAG_NAME for ARC build"
+          (echo "$TAG_NAME" | grep -Eq  '^8\.[0-9]+\.[0-9]+$') && echo "run_jobs=true" >> $GITHUB_OUTPUT || echo "run_jobs=false" >> $GITHUB_OUTPUT
+      
       - name: Check if SLS binary should be built
         id: check-build-sls
-        run: (echo "${{ github.ref }}" | grep -Eq  '^refs\/tags\/1\.[0-9]+\.[0-9]+$') && echo "run_jobs=true" >> $GITHUB_OUTPUT || echo "run_jobs==false" >> $GITHUB_OUTPUT
+        run: |
+          TAG_NAME="${{ github.event.release.tag_name }}"
+          echo "Checking tag $TAG_NAME for SLS build"
+          (echo "$TAG_NAME" | grep -Eq  '^1\.[0-9]+\.[0-9]+$') && echo "run_jobs=true" >> $GITHUB_OUTPUT || echo "run_jobs=false" >> $GITHUB_OUTPUT
 
       - name: Get the version from the tag
         id: get-version
