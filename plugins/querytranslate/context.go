@@ -1,0 +1,76 @@
+package querytranslate
+
+import (
+	"context"
+
+	"github.com/appbaseio-confidential/reactivesearch/errors"
+)
+
+// ctxKey is a key against which rs api request will get stored in the context.
+type contextKey string
+
+// CtxKey is a key against which api request will get stored in the context.
+const ctxKey = contextKey("request")
+
+const independentReqCtxKey = contextKey("independent-request")
+
+const sessionIdCtxKey = contextKey("aianswer-session-id")
+
+const mSearchQueryDetailsCtxKey = contextKey("msearch-query-details")
+
+// NewContext returns a new context with the given request body.
+func NewContext(ctx context.Context, rsQuery RSQuery) context.Context {
+	return context.WithValue(ctx, ctxKey, rsQuery)
+}
+
+// FromContext retrieves the rs ap request stored against the querytranslate.ctxKey from the context.
+func FromContext(ctx context.Context) (*RSQuery, error) {
+	ctxRequest := ctx.Value(ctxKey)
+	if ctxRequest == nil {
+		return nil, errors.NewNotFoundInContextError("RSQuery")
+	}
+	reqQuery, ok := ctxRequest.(RSQuery)
+	if !ok {
+		return nil, errors.NewInvalidCastError("ctxRequest", "RSQuery")
+	}
+	return &reqQuery, nil
+}
+
+// NewIndependentRequestContext returns a new context with the
+// given independent request body.
+func NewIndependentRequestContext(ctx context.Context, independentRequests []map[string]interface{}) context.Context {
+	return context.WithValue(ctx, independentReqCtxKey, independentRequests)
+}
+
+// FromIndependentRequestContext retrieves the rs api request stored
+// against the querytranslate.ctxKey from the context.
+func FromIndependentRequestContext(ctx context.Context) (*[]map[string]interface{}, error) {
+	ctxRequest := ctx.Value(independentReqCtxKey)
+	if ctxRequest == nil {
+		return nil, errors.NewNotFoundInContextError("Independent RSQuery")
+	}
+	reqQuery, ok := ctxRequest.([]map[string]interface{})
+	if !ok {
+		return nil, errors.NewInvalidCastError("ctxRequest", "Independent RSQuery")
+	}
+	return &reqQuery, nil
+}
+
+// NewMSearchDetailsRequestContext returns a new context with the
+// given msearch details request body.
+func NewMSearchDetailsRequestContext(ctx context.Context, mSearchDetails []MSearchDetails) context.Context {
+	return context.WithValue(ctx, mSearchQueryDetailsCtxKey, mSearchDetails)
+}
+
+// FromMSearchDetailsRequestContext retrieves the msearch details from the context.
+func FromMSearchDetailsRequestContext(ctx context.Context) (*[]MSearchDetails, error) {
+	ctxRequest := ctx.Value(mSearchQueryDetailsCtxKey)
+	if ctxRequest == nil {
+		return nil, errors.NewNotFoundInContextError("MSearch Query Details")
+	}
+	reqQuery, ok := ctxRequest.([]MSearchDetails)
+	if !ok {
+		return nil, errors.NewInvalidCastError("ctxRequest", "MSearch Query Details")
+	}
+	return &reqQuery, nil
+}

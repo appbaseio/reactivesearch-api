@@ -1,0 +1,6 @@
+package proxy
+
+type proxyService interface {
+	sendRequest(url, method string, reqBody []byte) ([]byte, int, error)
+	getArcID() (string, error)
+}

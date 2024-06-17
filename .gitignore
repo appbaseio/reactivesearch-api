@@ -1,0 +1,10 @@
+build/
+config/
+*.log
+.idea
+.DS_Store
+log
+telemetrylog
+.vscode
+indices
+data

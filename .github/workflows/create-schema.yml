@@ -1,0 +1,48 @@
+name: Create Schema for latest release
+
+on:
+  repository_dispatch:
+    types: [create_schema]
+  workflow_dispatch:
+
+jobs:
+  create_schema:
+    runs-on: ubuntu-latest
+    name: Create Schema
+
+    steps:
+      - name: Checkout noss Repo
+        uses: actions/checkout@v3
+        with:
+          path: noss
+
+      - name: Checkout oss repo
+        uses: actions/checkout@v3
+        with:
+          repository: appbaseio/reactivesearch-api
+          path: oss
+          token: ${{ secrets.REPO_ACCESS_TOKEN }}
+
+      - name: Make clean and build
+        run: make clean && make
+        working-directory: ./noss
+
+      - name: Generate the latest schema
+        run: ./build/reactivesearch --create-schema
+        working-directory: ./noss
+
+      - name: Remove older schema
+        run: rm schema -rf
+        working-directory: ./oss
+
+      - name: Copy the built schema to oss
+        run: cp -r noss/schema oss/
+
+      - name: Add and Commit changes
+        uses: EndBug/add-and-commit@v9
+        with:
+          add: schema
+          default_author: github_actions
+          message: Update schema for latest release
+          push: true
+          cwd: ./oss
