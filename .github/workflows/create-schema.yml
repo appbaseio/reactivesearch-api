@@ -3,6 +3,7 @@ name: Create Schema for latest release
 on:
   release:
     types: [published]
+  workflow_dispatch:
 
 jobs:
   determine_whether_to_run:
@@ -14,6 +15,7 @@ jobs:
       - name: Check if event should be sent
         id: check-update-schema
         run: (echo "${{ github.ref }}" | grep -Eq  '^refs\/tags\/[0-9]+\.[0-9]+\.[0-9]+$') && echo "::set-output name=run_jobs::true" || echo "::set-output name=run_jobs::false"
+  
   create_schema:
     runs-on: ubuntu-latest
     needs: determine_whether_to_run
@@ -21,8 +23,10 @@ jobs:
     name: Create Schema
 
     steps:
-      - name: Checkout noss Repo
+      - name: Checkout oss Repo
         uses: actions/checkout@v3
+        with:
+          ref: next
 
       - name: Make clean and build
         run: make clean && make
