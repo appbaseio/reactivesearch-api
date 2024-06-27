@@ -1,0 +1,140 @@
+name: build binary
+on:
+  release:
+    types: [published]
+
+jobs:
+  determine_whether_to_run:
+    runs-on: ubuntu-latest
+    outputs:
+      build_arc: ${{ steps.check-build-arc.outputs.run_jobs }}
+      build_sls: ${{ steps.check-build-sls.outputs.run_jobs }}
+      version: ${{ steps.get-version.outputs.version }}
+
+    steps:
+      - name: Check if Arc binary should be built
+        id: check-build-arc
+        run: |
+          TAG_NAME="${{ github.event.release.tag_name }}"
+          echo "Checking tag $TAG_NAME for ARC build"
+          (echo "$TAG_NAME" | grep -Eq  '^8\.[0-9]+\.[0-9]+$') && echo "run_jobs=true" >> $GITHUB_OUTPUT || echo "run_jobs=false" >> $GITHUB_OUTPUT
+      
+      - name: Check if SLS binary should be built
+        id: check-build-sls
+        run: |
+          TAG_NAME="${{ github.event.release.tag_name }}"
+          echo "Checking tag $TAG_NAME for SLS build"
+          (echo "$TAG_NAME" | grep -Eq  '^1\.[0-9]+\.[0-9]+$') && echo "run_jobs=true" >> $GITHUB_OUTPUT || echo "run_jobs=false" >> $GITHUB_OUTPUT
+
+      - name: Get the version from the tag
+        id: get-version
+        run: echo "version=${{ github.event.release.tag_name }}" >> $GITHUB_OUTPUT
+
+  build-arc:
+    name: Build ARC binary
+    needs: determine_whether_to_run
+    if: needs.determine_whether_to_run.outputs.build_arc == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v2
+      - name: building binaries for ami
+        uses: appleboy/ssh-action@v0.1.7
+        env:
+          VERSION: ${{ github.event.release.tag_name }}
+        with:
+          host: ${{ secrets.AWS_BUILD_HOST }}
+          username: ${{ secrets.AWS_BUILD_USERNAME }}
+          key: ${{ secrets.AWS_BUILD_KEY }}
+          port: 22
+          envs: VERSION
+          script: |
+            export PATH=$PATH:/usr/local/go/bin && sh build.sh ${VERSION}
+      - name: Build AMI
+        uses: hashicorp/packer-github-actions@master
+        with:
+          command: build
+          target: "./ami.json"
+        env:
+          PACKER_LOG: 1
+          AWS_ACCESS_KEY: ${{ secrets.AWS_ACCESS_KEY }}
+          AWS_SECRET_KEY: ${{ secrets.AWS_SECRET_KEY }}
+          VERSION: ${{ github.event.release.tag_name }}
+      - name: building binaries for eaas deployments
+        uses: appleboy/ssh-action@v0.1.7
+        env:
+          VERSION: ${{ github.event.release.tag_name }}
+        with:
+          host: ${{ secrets.GCLOUD_BUILD_HOST }}
+          username: ${{ secrets.GCLOUD_BUILD_USERNAME }}
+          key: ${{ secrets.GCLOUD_BUILD_KEY }}
+          port: 22
+          timeout: 3600s
+          command_timeout: 3600s
+          envs: VERSION
+          script: |
+            source ~/.bashrc
+            export PATH=$PATH:/usr/local/go/bin:/usr/bin
+            export GOPATH=/home/centos/go
+            ./build.sh ${VERSION}
+
+  build-sls:
+    name: Build SLS binary
+    needs: determine_whether_to_run
+    if: needs.determine_whether_to_run.outputs.build_sls == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v2
+      - name: building binaries for eaas deployments
+        uses: appleboy/ssh-action@v0.1.7
+        env:
+          VERSION: ${{ github.event.release.tag_name }}
+        with:
+          host: ${{ secrets.GCLOUD_BUILD_HOST }}
+          username: ${{ secrets.GCLOUD_BUILD_USERNAME }}
+          key: ${{ secrets.GCLOUD_BUILD_KEY }}
+          port: 22
+          timeout: 3600s
+          command_timeout: 3600s
+          envs: VERSION
+          script: |
+            source ~/.bashrc
+            export PATH=$PATH:/usr/local/go/bin:/usr/bin
+            export GOPATH=/home/centos/go
+            ./sls-build.sh ${VERSION} feat/true-sls
+
+  send-packer-event-arc:
+    name: Send Packer Event
+    needs: build-arc
+    uses: ./.github/workflows/build_images.yml
+    with:
+      ref: ${{ github.ref }}
+      event_name: new_release
+    secrets:
+      token: ${{ secrets.REPO_ACCESS_TOKEN }}
+
+  send-packer-event-sls:
+    name: Send Packer Event
+    needs: build-sls
+    uses: ./.github/workflows/build_images.yml
+    with:
+      ref: ${{ github.ref }}
+      event_name: new_sls_release
+    secrets:
+      token: ${{ secrets.REPO_ACCESS_TOKEN }}
+
+  send-docker-event-arc:
+    name: Send Docker Event
+    needs: [build-arc, determine_whether_to_run]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send repo dispatch
+        uses: peter-evans/repository-dispatch@v2
+        with:
+          token: ${{ secrets.REPO_ACCESS_TOKEN }}
+          repository: appbaseio-confidential/rs-api-server
+          event-type: publish_docker
+          client-payload: '{"version": "${{ needs.determine_whether_to_run.outputs.version }}" }'
