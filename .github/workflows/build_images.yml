@@ -1,0 +1,38 @@
+name: Send Build Image Event
+
+on:
+  workflow_call:
+    inputs:
+      ref:
+        required: true
+        type: string
+      event_name:
+        required: true
+        type: string
+    secrets:
+      token:
+        required: true
+
+jobs:
+  determine_whether_to_run:
+    runs-on: ubuntu-latest
+    outputs:
+      send_event: ${{ steps.check-send-event.outputs.run_jobs }}
+
+    steps:
+      - name: Check if event should be sent
+        id: check-send-event
+        run: (echo "${{ inputs.ref }}" | grep -Eq  '^refs\/tags\/[0-9]+\.[0-9]+\.[0-9]+$') && echo "::set-output name=run_jobs::true" || echo "::set-output name=run_jobs::false"
+
+  send_event:
+    needs: determine_whether_to_run
+    runs-on: ubuntu-latest
+    if: needs.determine_whether_to_run.outputs.send_event == 'true'
+
+    steps:
+      - name: Send Repo Dispatch Event
+        uses: peter-evans/repository-dispatch@v2
+        with:
+          token: ${{ secrets.token }}
+          repository: appbaseio-confidential/elasticsearch-packer-build
+          event-type: ${{ inputs.event_name }}
