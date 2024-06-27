@@ -504,6 +504,10 @@ func UnOptimizeResponse(response []byte, queryIdToMSearchDetails []MSearchDetail
 		return response, nil
 	}
 
+	if len(queryIdToMSearchDetails) == 0 {
+		return response, nil
+	}
+
 	for _, mSearchDetails := range queryIdToMSearchDetails {
 		queryReferenced, queryValueType, _, getErr := jsonparser.Get(response, "responses", fmt.Sprintf("[%d]", mSearchDetails.index))
 		if getErr != nil {
@@ -553,7 +557,12 @@ func UnOptimizeResponse(response []byte, queryIdToMSearchDetails []MSearchDetail
 
 	// Reset the older response to an array with size of the un-optimized
 	// responses array.
-	emptyArrStr := []byte("[" + strings.Repeat("{},", len(unOptimizedResponses)-1) + "{}" + "]")
+	repetitions := ""
+	if len(unOptimizedResponses) > 0 {
+		repetitions = strings.Repeat("{},", len(unOptimizedResponses)-1)
+	}
+
+	emptyArrStr := []byte("[" + repetitions + "{}" + "]")
 	olderResponsesReset, resetErr := jsonparser.Set(response, emptyArrStr, "responses")
 	if resetErr != nil {
 		return nil, fmt.Errorf("error while setting responses key as empty array: %s", resetErr.Error())

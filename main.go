@@ -499,7 +499,7 @@ func main() {
 			}
 		} else {
 			util.SetDefaultTier()
-			log.Println("You're running ReactiveSearch in open-source mode.")
+			log.Println("You're running ReactiveSearch with billing module disabled.")
 		}
 	}
 

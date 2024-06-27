@@ -94,7 +94,7 @@ func TestExecutePipeline(t *testing.T) {
 		res, _ := pipeline.executePipeline(pipelineExecutionContext, nil, false, nil, false, false, false, nil)
 		resInBytes, _ := json.Marshal(res)
 
-		expectedResponse := "{\"console_logs\":[],\"envs\":{},\"request\":{\"body\":\"{\\\"query\\\":[{\\\"id\\\":\\\"search\\\"}]}\",\"headers\":{},\"method\":\"\",\"url\":\"\"},\"response\":{\"body\":\"{\\\"settings\\\":{\\\"took\\\":1,\\\"script_took\\\":0},\\\"search\\\":{\\\"took\\\":1,\\\"timed_out\\\":false,\\\"_shards\\\":{\\\"total\\\":1,\\\"successful\\\":1,\\\"skipped\\\":0,\\\"failed\\\":0},\\\"hits\\\":{\\\"total\\\":{\\\"value\\\":1,\\\"relation\\\":\\\"eq\\\"},\\\"max_score\\\":1,\\\"hits\\\":[{\\\"_index\\\":\\\"test\\\",\\\"_type\\\":\\\"_doc\\\",\\\"_id\\\":\\\"1\\\",\\\"_score\\\":1,\\\"_source\\\":{\\\"queryLength\\\":6,\\\"query\\\":\\\"value1\\\"}}]},\\\"status\\\":200,\\\"promoted\\\":[{\\\"doc\\\":{\\\"_id\\\":\\\"id_1\\\",\\\"_source\\\":{}},\\\"position\\\":10},{\\\"doc\\\":{\\\"_id\\\":\\\"id_2\\\",\\\"_source\\\":{}},\\\"position\\\":3}]}}\",\"code\":200,\"headers\":null}}"
+		expectedResponse := "{\"console_logs\":[],\"envs\":{},\"request\":{\"body\":\"{\\\"query\\\":[{\\\"id\\\":\\\"search\\\",\\\"type\\\":\\\"search\\\"}]}\",\"headers\":{},\"method\":\"\",\"url\":\"\"},\"response\":{\"body\":\"{\\\"settings\\\":{\\\"took\\\":1,\\\"script_took\\\":0},\\\"search\\\":{\\\"took\\\":1,\\\"timed_out\\\":false,\\\"_shards\\\":{\\\"total\\\":1,\\\"successful\\\":1,\\\"skipped\\\":0,\\\"failed\\\":0},\\\"hits\\\":{\\\"total\\\":{\\\"value\\\":1,\\\"relation\\\":\\\"eq\\\"},\\\"max_score\\\":1,\\\"hits\\\":[{\\\"_index\\\":\\\"test\\\",\\\"_type\\\":\\\"_doc\\\",\\\"_id\\\":\\\"1\\\",\\\"_score\\\":1,\\\"_source\\\":{\\\"queryLength\\\":6,\\\"query\\\":\\\"value1\\\"}}]},\\\"status\\\":200,\\\"promoted\\\":[{\\\"doc\\\":{\\\"_id\\\":\\\"id_1\\\",\\\"_source\\\":{}},\\\"position\\\":10},{\\\"doc\\\":{\\\"_id\\\":\\\"id_2\\\",\\\"_source\\\":{}},\\\"position\\\":3}]}}\",\"code\":200,\"headers\":null}}"
 		So(string(resInBytes), ShouldResemble, expectedResponse)
 	})
 
@@ -138,7 +138,7 @@ func TestExecutePipeline(t *testing.T) {
 		res, _ := pipeline.executePipeline(pipelineExecutionContext, nil, false, nil, false, false, false, nil)
 		resInBytes, _ := json.Marshal(res)
 
-		expectedResponse := "{\"console_logs\":[],\"envs\":{},\"request\":{\"body\":\"{\\\"query\\\":[{\\\"id\\\":\\\"search\\\"}]}\",\"headers\":{},\"method\":\"\",\"url\":\"\"},\"response\":{\"body\":\"{\\\"settings\\\":{\\\"took\\\":1,\\\"script_took\\\":0},\\\"search\\\":{\\\"took\\\":1,\\\"timed_out\\\":false,\\\"_shards\\\":{\\\"total\\\":1,\\\"successful\\\":1,\\\"skipped\\\":0,\\\"failed\\\":0},\\\"hits\\\":{\\\"total\\\":{\\\"value\\\":1,\\\"relation\\\":\\\"eq\\\"},\\\"max_score\\\":1,\\\"hits\\\":[]},\\\"status\\\":200,\\\"hidden\\\":1}}\",\"code\":200,\"headers\":null}}"
+		expectedResponse := "{\"console_logs\":[],\"envs\":{},\"request\":{\"body\":\"{\\\"query\\\":[{\\\"id\\\":\\\"search\\\",\\\"type\\\":\\\"search\\\"}]}\",\"headers\":{},\"method\":\"\",\"url\":\"\"},\"response\":{\"body\":\"{\\\"settings\\\":{\\\"took\\\":1,\\\"script_took\\\":0},\\\"search\\\":{\\\"took\\\":1,\\\"timed_out\\\":false,\\\"_shards\\\":{\\\"total\\\":1,\\\"successful\\\":1,\\\"skipped\\\":0,\\\"failed\\\":0},\\\"hits\\\":{\\\"total\\\":{\\\"value\\\":1,\\\"relation\\\":\\\"eq\\\"},\\\"max_score\\\":1,\\\"hits\\\":[]},\\\"status\\\":200,\\\"hidden\\\":1}}\",\"code\":200,\"headers\":null}}"
 		So(string(resInBytes), ShouldResemble, expectedResponse)
 	})
 
@@ -188,7 +188,7 @@ func TestExecutePipeline(t *testing.T) {
 		res, _ := pipeline.executePipeline(pipelineExecutionContext, nil, false, nil, false, false, false, nil)
 		resInBytes, _ := json.Marshal(res)
 
-		expectedResponse := "{\"console_logs\":[],\"envs\":{},\"request\":{\"body\":\"{\\\"query\\\":[{\\\"id\\\":\\\"search\\\"}]}\",\"headers\":{},\"method\":\"\",\"url\":\"\"},\"response\":{\"body\":\"{\\\"settings\\\":{\\\"took\\\":1,\\\"script_took\\\":0},\\\"search\\\":{\\\"took\\\":1,\\\"timed_out\\\":false,\\\"_shards\\\":{\\\"total\\\":1,\\\"successful\\\":1,\\\"skipped\\\":0,\\\"failed\\\":0},\\\"hits\\\":{\\\"total\\\":{\\\"value\\\":1,\\\"relation\\\":\\\"eq\\\"},\\\"max_score\\\":1,\\\"hits\\\":[{\\\"_index\\\":\\\"test\\\",\\\"_type\\\":\\\"_doc\\\",\\\"_id\\\":\\\"1\\\",\\\"_score\\\":1,\\\"_source\\\":{\\\"queryLength\\\":6,\\\"query\\\":\\\"value1\\\"}}]},\\\"status\\\":200,\\\"customData\\\":[{\\\"doc\\\":{\\\"_id\\\":\\\"id_12\\\",\\\"_source\\\":{}},\\\"position\\\":12}]}}\",\"code\":200,\"headers\":null}}"
+		expectedResponse := "{\"console_logs\":[],\"envs\":{},\"request\":{\"body\":\"{\\\"query\\\":[{\\\"id\\\":\\\"search\\\",\\\"type\\\":\\\"search\\\"}]}\",\"headers\":{},\"method\":\"\",\"url\":\"\"},\"response\":{\"body\":\"{\\\"settings\\\":{\\\"took\\\":1,\\\"script_took\\\":0},\\\"search\\\":{\\\"took\\\":1,\\\"timed_out\\\":false,\\\"_shards\\\":{\\\"total\\\":1,\\\"successful\\\":1,\\\"skipped\\\":0,\\\"failed\\\":0},\\\"hits\\\":{\\\"total\\\":{\\\"value\\\":1,\\\"relation\\\":\\\"eq\\\"},\\\"max_score\\\":1,\\\"hits\\\":[{\\\"_index\\\":\\\"test\\\",\\\"_type\\\":\\\"_doc\\\",\\\"_id\\\":\\\"1\\\",\\\"_score\\\":1,\\\"_source\\\":{\\\"queryLength\\\":6,\\\"query\\\":\\\"value1\\\"}}]},\\\"status\\\":200,\\\"customData\\\":[{\\\"doc\\\":{\\\"_id\\\":\\\"id_12\\\",\\\"_source\\\":{}},\\\"position\\\":12}]}}\",\"code\":200,\"headers\":null}}"
 		So(string(resInBytes), ShouldResemble, expectedResponse)
 	})
 
@@ -235,7 +235,7 @@ func TestExecutePipeline(t *testing.T) {
 		res, _ := pipeline.executePipeline(pipelineExecutionContext, nil, false, nil, false, false, false, nil)
 		resInBytes, _ := json.Marshal(res)
 
-		expectedResponse := "{\"console_logs\":[],\"envs\":{},\"request\":{\"body\":\"{\\\"query\\\":[{\\\"id\\\":\\\"search\\\",\\\"value\\\":\\\"\\\\\\\"iphoneX\\\\\\\"\\\"}]}\",\"headers\":{},\"method\":\"\",\"url\":\"\"},\"response\":{\"body\":\"{\\\"settings\\\":{\\\"took\\\":1,\\\"script_took\\\":0},\\\"search\\\":{\\\"took\\\":1,\\\"timed_out\\\":false,\\\"_shards\\\":{\\\"total\\\":1,\\\"successful\\\":1,\\\"skipped\\\":0,\\\"failed\\\":0},\\\"hits\\\":{\\\"total\\\":{\\\"value\\\":1,\\\"relation\\\":\\\"eq\\\"},\\\"max_score\\\":1,\\\"hits\\\":[{\\\"_index\\\":\\\"test\\\",\\\"_type\\\":\\\"_doc\\\",\\\"_id\\\":\\\"1\\\",\\\"_score\\\":1,\\\"_source\\\":{\\\"queryLength\\\":6,\\\"query\\\":\\\"value1\\\"}}]},\\\"status\\\":200}}\",\"code\":200,\"headers\":null}}"
+		expectedResponse := "{\"console_logs\":[],\"envs\":{},\"request\":{\"body\":\"{\\\"query\\\":[{\\\"id\\\":\\\"search\\\",\\\"type\\\":\\\"search\\\",\\\"value\\\":\\\"\\\\\\\"iphoneX\\\\\\\"\\\"}]}\",\"headers\":{},\"method\":\"\",\"url\":\"\"},\"response\":{\"body\":\"{\\\"settings\\\":{\\\"took\\\":1,\\\"script_took\\\":0},\\\"search\\\":{\\\"took\\\":1,\\\"timed_out\\\":false,\\\"_shards\\\":{\\\"total\\\":1,\\\"successful\\\":1,\\\"skipped\\\":0,\\\"failed\\\":0},\\\"hits\\\":{\\\"total\\\":{\\\"value\\\":1,\\\"relation\\\":\\\"eq\\\"},\\\"max_score\\\":1,\\\"hits\\\":[{\\\"_index\\\":\\\"test\\\",\\\"_type\\\":\\\"_doc\\\",\\\"_id\\\":\\\"1\\\",\\\"_score\\\":1,\\\"_source\\\":{\\\"queryLength\\\":6,\\\"query\\\":\\\"value1\\\"}}]},\\\"status\\\":200}}\",\"code\":200,\"headers\":null}}"
 		So(string(resInBytes), ShouldResemble, expectedResponse)
 	})
 
@@ -284,7 +284,7 @@ func TestExecutePipeline(t *testing.T) {
 		res, _ := pipeline.executePipeline(pipelineExecutionContext, nil, false, nil, false, false, false, nil)
 		resInBytes, _ := json.Marshal(res)
 
-		expectedResponse := "{\"console_logs\":[],\"envs\":{},\"request\":{\"body\":\"{\\\"query\\\":[{\\\"id\\\":\\\"search\\\",\\\"react\\\":{\\\"and\\\":\\\"query_rule_filter_year\\\"},\\\"value\\\":\\\"someData\\\"},{\\\"id\\\":\\\"query_rule_filter_year\\\",\\\"type\\\":\\\"term\\\",\\\"dataField\\\":[\\\"year\\\"],\\\"value\\\":\\\"2011\\\",\\\"execute\\\":false}]}\",\"headers\":{},\"method\":\"\",\"url\":\"\"},\"response\":{\"body\":\"{\\\"settings\\\":{\\\"took\\\":1,\\\"script_took\\\":0},\\\"search\\\":{\\\"took\\\":1,\\\"timed_out\\\":false,\\\"_shards\\\":{\\\"total\\\":1,\\\"successful\\\":1,\\\"skipped\\\":0,\\\"failed\\\":0},\\\"hits\\\":{\\\"total\\\":{\\\"value\\\":1,\\\"relation\\\":\\\"eq\\\"},\\\"max_score\\\":1,\\\"hits\\\":[{\\\"_index\\\":\\\"test\\\",\\\"_type\\\":\\\"_doc\\\",\\\"_id\\\":\\\"1\\\",\\\"_score\\\":1,\\\"_source\\\":{\\\"queryLength\\\":6,\\\"query\\\":\\\"value1\\\"}}]},\\\"status\\\":200}}\",\"code\":200,\"headers\":null}}"
+		expectedResponse := "{\"console_logs\":[],\"envs\":{},\"request\":{\"body\":\"{\\\"query\\\":[{\\\"id\\\":\\\"search\\\",\\\"type\\\":\\\"search\\\",\\\"react\\\":{\\\"and\\\":\\\"query_rule_filter_year\\\"},\\\"value\\\":\\\"someData\\\"},{\\\"id\\\":\\\"query_rule_filter_year\\\",\\\"type\\\":\\\"term\\\",\\\"dataField\\\":[\\\"year\\\"],\\\"value\\\":\\\"2011\\\",\\\"execute\\\":false}]}\",\"headers\":{},\"method\":\"\",\"url\":\"\"},\"response\":{\"body\":\"{\\\"settings\\\":{\\\"took\\\":1,\\\"script_took\\\":0},\\\"search\\\":{\\\"took\\\":1,\\\"timed_out\\\":false,\\\"_shards\\\":{\\\"total\\\":1,\\\"successful\\\":1,\\\"skipped\\\":0,\\\"failed\\\":0},\\\"hits\\\":{\\\"total\\\":{\\\"value\\\":1,\\\"relation\\\":\\\"eq\\\"},\\\"max_score\\\":1,\\\"hits\\\":[{\\\"_index\\\":\\\"test\\\",\\\"_type\\\":\\\"_doc\\\",\\\"_id\\\":\\\"1\\\",\\\"_score\\\":1,\\\"_source\\\":{\\\"queryLength\\\":6,\\\"query\\\":\\\"value1\\\"}}]},\\\"status\\\":200}}\",\"code\":200,\"headers\":null}}"
 		So(string(resInBytes), ShouldResemble, expectedResponse)
 	})
 
@@ -333,7 +333,7 @@ func TestExecutePipeline(t *testing.T) {
 		res, _ := pipeline.executePipeline(pipelineExecutionContext, nil, false, nil, false, false, false, nil)
 		resInBytes, _ := json.Marshal(res)
 
-		expectedResponse := "{\"console_logs\":[],\"envs\":{},\"request\":{\"body\":\"{\\\"query\\\":[{\\\"id\\\":\\\"search\\\",\\\"value\\\":\\\"some  are better than  and iphoneX\\\"}]}\",\"headers\":{},\"method\":\"\",\"url\":\"\"},\"response\":{\"body\":\"{\\\"settings\\\":{\\\"took\\\":1,\\\"script_took\\\":0},\\\"search\\\":{\\\"took\\\":1,\\\"timed_out\\\":false,\\\"_shards\\\":{\\\"total\\\":1,\\\"successful\\\":1,\\\"skipped\\\":0,\\\"failed\\\":0},\\\"hits\\\":{\\\"total\\\":{\\\"value\\\":1,\\\"relation\\\":\\\"eq\\\"},\\\"max_score\\\":1,\\\"hits\\\":[{\\\"_index\\\":\\\"test\\\",\\\"_type\\\":\\\"_doc\\\",\\\"_id\\\":\\\"1\\\",\\\"_score\\\":1,\\\"_source\\\":{\\\"queryLength\\\":6,\\\"query\\\":\\\"value1\\\"}}]},\\\"status\\\":200}}\",\"code\":200,\"headers\":null}}"
+		expectedResponse := "{\"console_logs\":[],\"envs\":{},\"request\":{\"body\":\"{\\\"query\\\":[{\\\"id\\\":\\\"search\\\",\\\"type\\\":\\\"search\\\",\\\"value\\\":\\\"some  are better than  and iphoneX\\\"}]}\",\"headers\":{},\"method\":\"\",\"url\":\"\"},\"response\":{\"body\":\"{\\\"settings\\\":{\\\"took\\\":1,\\\"script_took\\\":0},\\\"search\\\":{\\\"took\\\":1,\\\"timed_out\\\":false,\\\"_shards\\\":{\\\"total\\\":1,\\\"successful\\\":1,\\\"skipped\\\":0,\\\"failed\\\":0},\\\"hits\\\":{\\\"total\\\":{\\\"value\\\":1,\\\"relation\\\":\\\"eq\\\"},\\\"max_score\\\":1,\\\"hits\\\":[{\\\"_index\\\":\\\"test\\\",\\\"_type\\\":\\\"_doc\\\",\\\"_id\\\":\\\"1\\\",\\\"_score\\\":1,\\\"_source\\\":{\\\"queryLength\\\":6,\\\"query\\\":\\\"value1\\\"}}]},\\\"status\\\":200}}\",\"code\":200,\"headers\":null}}"
 		So(string(resInBytes), ShouldResemble, expectedResponse)
 	})
 
@@ -383,9 +383,67 @@ func TestExecutePipeline(t *testing.T) {
 		res, _ := pipeline.executePipeline(pipelineExecutionContext, nil, false, nil, false, false, false, nil)
 		resInBytes, _ := json.Marshal(res)
 
-		expectedResponse := "{\"console_logs\":[],\"envs\":{},\"request\":{\"body\":\"{\\\"query\\\":[{\\\"id\\\":\\\"search\\\",\\\"value\\\":\\\"some batman movies better than iphoneX5 and iphoneX\\\"}]}\",\"headers\":{},\"method\":\"\",\"url\":\"\"},\"response\":{\"body\":\"{\\\"settings\\\":{\\\"took\\\":1,\\\"script_took\\\":0},\\\"search\\\":{\\\"took\\\":1,\\\"timed_out\\\":false,\\\"_shards\\\":{\\\"total\\\":1,\\\"successful\\\":1,\\\"skipped\\\":0,\\\"failed\\\":0},\\\"hits\\\":{\\\"total\\\":{\\\"value\\\":1,\\\"relation\\\":\\\"eq\\\"},\\\"max_score\\\":1,\\\"hits\\\":[{\\\"_index\\\":\\\"test\\\",\\\"_type\\\":\\\"_doc\\\",\\\"_id\\\":\\\"1\\\",\\\"_score\\\":1,\\\"_source\\\":{\\\"queryLength\\\":6,\\\"query\\\":\\\"value1\\\"}}]},\\\"status\\\":200}}\",\"code\":200,\"headers\":null}}"
+		expectedResponse := "{\"console_logs\":[],\"envs\":{},\"request\":{\"body\":\"{\\\"query\\\":[{\\\"id\\\":\\\"search\\\",\\\"type\\\":\\\"search\\\",\\\"value\\\":\\\"some batman movies better than iphoneX5 and iphoneX\\\"}]}\",\"headers\":{},\"method\":\"\",\"url\":\"\"},\"response\":{\"body\":\"{\\\"settings\\\":{\\\"took\\\":1,\\\"script_took\\\":0},\\\"search\\\":{\\\"took\\\":1,\\\"timed_out\\\":false,\\\"_shards\\\":{\\\"total\\\":1,\\\"successful\\\":1,\\\"skipped\\\":0,\\\"failed\\\":0},\\\"hits\\\":{\\\"total\\\":{\\\"value\\\":1,\\\"relation\\\":\\\"eq\\\"},\\\"max_score\\\":1,\\\"hits\\\":[{\\\"_index\\\":\\\"test\\\",\\\"_type\\\":\\\"_doc\\\",\\\"_id\\\":\\\"1\\\",\\\"_score\\\":1,\\\"_source\\\":{\\\"queryLength\\\":6,\\\"query\\\":\\\"value1\\\"}}]},\\\"status\\\":200}}\",\"code\":200,\"headers\":null}}"
 		So(string(resInBytes), ShouldResemble, expectedResponse)
 	})
+
+	//TODO: Mock knowledge graph response
+	// Convey("async stage with needs", t, func() {
+	// 	use1 := ReactiveSearchQuery
+
+	// 	knowledgeGraphId := "google_knowledge_graph"
+	// 	knowledgeGraphScript := "async function handleRequest() { try { const URL = `https://kgsearch.googleapis.com/v1/entities:search?query=${context.envs.query}&key=${context.envs.knowledgeGraphAPIKey}&limit=1&indent=True`; const responseBody = await fetch(URL); const response = JSON.parse(responseBody); return { knowledge_graph: response }} catch(e) {} return context; }"
+	// 	isAsync := true
+
+	// 	mergeResponseId := "merge_response"
+	// 	mergeResponseScript := "function handleRequest() { const knowledgeGraph = context['knowledge_graph']; return { response: { body: JSON.stringify(knowledgeGraph), code: 200 }}; }"
+	// 	mergeResponseNeeds := []string{"google_knowledge_graph"}
+
+	// 	stages := []ESPipelineStage{
+	// 		{
+	// 			Use: &use1,
+	// 		},
+	// 		{
+	// 			ID:     &knowledgeGraphId,
+	// 			Async:  &isAsync,
+	// 			Script: &knowledgeGraphScript,
+	// 		},
+	// 		{
+	// 			ID:     &mergeResponseId,
+	// 			Needs:  &mergeResponseNeeds,
+	// 			Script: &mergeResponseScript,
+	// 		},
+	// 	}
+	// 	PipelineId := "knowledge_graph"
+	// 	pipeline := ESPipelineDoc{
+	// 		ID:     &PipelineId,
+	// 		Stages: &stages,
+	// 	}
+	// 	queryId := "search"
+	// 	requestBody := querytranslate.RSQuery{
+	// 		Query: []querytranslate.Query{
+	// 			{
+	// 				ID:        &queryId,
+	// 				DataField: "ded",
+	// 			},
+	// 		},
+	// 	}
+	// 	requestBodyInBytes, _ := json.Marshal(requestBody)
+	// 	pipelineExecutionContext := PipelineExecutionContext{
+	// 		envs: map[string]interface{}{
+	// 			"category":             "reactivesearch",
+	// 			"index":                []string{"test"},
+	// 			"knowledgeGraphAPIKey": "AIzaSyAvTLlcYHNRzKAmaxB9iXPmTTeqKp547uo",
+	// 			"query":                "harry",
+	// 		},
+	// 		request: PipelineExecutionRequest{Body: requestBodyInBytes},
+	// 	}
+	// 	res, _ := pipeline.executePipeline(pipelineExecutionContext, nil, false, nil, false)
+	// 	resInBytes, _ := json.Marshal(res)
+
+	// 	expectedResponse := "{\"console_logs\":[],\"envs\":{\"category\":\"reactivesearch\",\"index\":[\"test\"],\"knowledgeGraphAPIKey\":\"AIzaSyAvTLlcYHNRzKAmaxB9iXPmTTeqKp547uo\",\"query\":\"harry\"},\"knowledge_graph\":{\"@context\":{\"@vocab\":\"http://schema.org/\",\"EntitySearchResult\":\"goog:EntitySearchResult\",\"detailedDescription\":\"goog:detailedDescription\",\"goog\":\"http://schema.googleapis.com/\",\"kg\":\"http://g.co/kg\",\"resultScore\":\"goog:resultScore\"},\"@type\":\"ItemList\",\"itemListElement\":[{\"@type\":\"EntitySearchResult\",\"result\":{\"@id\":\"kg:/m/0c0k1\",\"@type\":[\"Person\",\"Thing\"],\"description\":\"American actor\",\"detailedDescription\":{\"articleBody\":\"Harrison Ford is an American actor. His films have grossed more than $5.4 billion in North America and more than $9.3 billion worldwide, making him the seventh-highest-grossing actor in North America. \",\"license\":\"https://en.wikipedia.org/wiki/Wikipedia:Text_of_Creative_Commons_Attribution-ShareAlike_3.0_Unported_License\",\"url\":\"https://en.wikipedia.org/wiki/Harrison_Ford\"},\"image\":{\"contentUrl\":\"https://encrypted-tbn1.gstatic.com/images?q=tbn:ANd9GcTgOyYe7kODQmFyB3PcYpIgRCcBnaUUFqO2mc9p5L42GF28_0We\",\"url\":\"https://commons.wikimedia.org/wiki/File:Harrison_Ford_by_Gage_Skidmore.jpg\"},\"name\":\"Harrison Ford\"},\"resultScore\":5825.0634765625}]},\"request\":{\"body\":\"{\\\"preference\\\":\\\"search_\\\"}\\n{\\\"_source\\\":{\\\"excludes\\\":[],\\\"includes\\\":[\\\"*\\\"]},\\\"query\\\":{\\\"match_all\\\":{}}}\\n\",\"headers\":null},\"response\":{\"body\":\"{\\\"@context\\\":{\\\"@vocab\\\":\\\"http://schema.org/\\\",\\\"EntitySearchResult\\\":\\\"goog:EntitySearchResult\\\",\\\"detailedDescription\\\":\\\"goog:detailedDescription\\\",\\\"goog\\\":\\\"http://schema.googleapis.com/\\\",\\\"kg\\\":\\\"http://g.co/kg\\\",\\\"resultScore\\\":\\\"goog:resultScore\\\"},\\\"@type\\\":\\\"ItemList\\\",\\\"itemListElement\\\":[{\\\"@type\\\":\\\"EntitySearchResult\\\",\\\"result\\\":{\\\"@id\\\":\\\"kg:/m/0c0k1\\\",\\\"@type\\\":[\\\"Person\\\",\\\"Thing\\\"],\\\"description\\\":\\\"American actor\\\",\\\"detailedDescription\\\":{\\\"articleBody\\\":\\\"Harrison Ford is an American actor. His films have grossed more than $5.4 billion in North America and more than $9.3 billion worldwide, making him the seventh-highest-grossing actor in North America. \\\",\\\"license\\\":\\\"https://en.wikipedia.org/wiki/Wikipedia:Text_of_Creative_Commons_Attribution-ShareAlike_3.0_Unported_License\\\",\\\"url\\\":\\\"https://en.wikipedia.org/wiki/Harrison_Ford\\\"},\\\"image\\\":{\\\"contentUrl\\\":\\\"https://encrypted-tbn1.gstatic.com/images?q=tbn:ANd9GcTgOyYe7kODQmFyB3PcYpIgRCcBnaUUFqO2mc9p5L42GF28_0We\\\",\\\"url\\\":\\\"https://commons.wikimedia.org/wiki/File:Harrison_Ford_by_Gage_Skidmore.jpg\\\"},\\\"name\\\":\\\"Harrison Ford\\\"},\\\"resultScore\\\":5825.0634765625}]}\",\"code\":200}}"
+	// 	So(string(resInBytes), ShouldResemble, expectedResponse)
+	// })
 
 	Convey("caching", t, func() {
 		modifyRequest := "modify_request"
@@ -445,7 +503,7 @@ func TestExecutePipeline(t *testing.T) {
 			}
 		}
 		cachedResInBytes, _ := json.Marshal(cachedRes)
-		expectedResponse := "{\"console_logs\":[],\"envs\":{\"category\":\"reactivesearch\",\"index\":[\"test\"],\"path\":\"/test/_reactivesearch\"},\"request\":{\"body\":\"{\\\"query\\\":[{\\\"id\\\":\\\"search\\\",\\\"dataField\\\":\\\"ded\\\"},{\\\"id\\\":\\\"search2\\\"}]}\",\"headers\":{},\"method\":\"\",\"url\":\"\"},\"response\":{\"body\":\"{\\\"settings\\\":{\\\"took\\\":0,\\\"script_took\\\":0,\\\"cached\\\":true},\\\"search\\\":{\\\"took\\\":1,\\\"timed_out\\\":false,\\\"_shards\\\":{\\\"total\\\":1,\\\"successful\\\":1,\\\"skipped\\\":0,\\\"failed\\\":0},\\\"hits\\\":{\\\"total\\\":{\\\"value\\\":1,\\\"relation\\\":\\\"eq\\\"},\\\"max_score\\\":1,\\\"hits\\\":[{\\\"_index\\\":\\\"test\\\",\\\"_type\\\":\\\"_doc\\\",\\\"_id\\\":\\\"1\\\",\\\"_score\\\":1,\\\"_source\\\":{\\\"queryLength\\\":6,\\\"query\\\":\\\"value1\\\"}}]},\\\"status\\\":200}}\",\"code\":200,\"headers\":{\"X-request-Cache\":\"true\",\"x-pipeline-id\":\"cache_test\"}}}"
+		expectedResponse := "{\"console_logs\":[],\"envs\":{\"category\":\"reactivesearch\",\"index\":[\"test\"],\"path\":\"/test/_reactivesearch\"},\"request\":{\"body\":\"{\\\"query\\\":[{\\\"id\\\":\\\"search\\\",\\\"type\\\":\\\"search\\\",\\\"dataField\\\":\\\"ded\\\"},{\\\"id\\\":\\\"search2\\\"}]}\",\"headers\":{},\"method\":\"\",\"url\":\"\"},\"response\":{\"body\":\"{\\\"settings\\\":{\\\"took\\\":0,\\\"script_took\\\":0,\\\"cached\\\":true},\\\"search\\\":{\\\"took\\\":1,\\\"timed_out\\\":false,\\\"_shards\\\":{\\\"total\\\":1,\\\"successful\\\":1,\\\"skipped\\\":0,\\\"failed\\\":0},\\\"hits\\\":{\\\"total\\\":{\\\"value\\\":1,\\\"relation\\\":\\\"eq\\\"},\\\"max_score\\\":1,\\\"hits\\\":[{\\\"_index\\\":\\\"test\\\",\\\"_type\\\":\\\"_doc\\\",\\\"_id\\\":\\\"1\\\",\\\"_score\\\":1,\\\"_source\\\":{\\\"queryLength\\\":6,\\\"query\\\":\\\"value1\\\"}}]},\\\"status\\\":200}}\",\"code\":200,\"headers\":{\"X-request-Cache\":\"true\",\"x-pipeline-id\":\"cache_test\"}}}"
 		So(string(cachedResInBytes), ShouldResemble, expectedResponse)
 	})
 
@@ -541,7 +599,7 @@ func TestExecutePipeline(t *testing.T) {
 		res, _ := pipeline.executePipeline(pipelineExecutionContext, nil, false, nil, false, false, false, nil)
 		resInBytes, _ := json.Marshal(res)
 
-		expectedResponse := "{\"console_logs\":[],\"envs\":{},\"request\":{\"body\":\"{\\\"query\\\":[{\\\"id\\\":\\\"query-1\\\",\\\"dataField\\\":[\\\"original_title\\\"],\\\"size\\\":10},{\\\"id\\\":\\\"query-2\\\",\\\"type\\\":\\\"suggestion\\\",\\\"dataField\\\":[\\\"original_title\\\"],\\\"categoryField\\\":\\\"authors\\\",\\\"size\\\":4,\\\"enableRecentSuggestions\\\":true,\\\"recentSuggestionsConfig\\\":{\\\"size\\\":2},\\\"enablePopularSuggestions\\\":true,\\\"popularSuggestionsConfig\\\":{\\\"size\\\":2},\\\"urlField\\\":\\\"url\\\"},{\\\"id\\\":\\\"query-3\\\",\\\"type\\\":\\\"geo\\\",\\\"defaultQuery\\\":{\\\"query\\\":{\\\"geo\\\":{\\\"field\\\":\\\"location\\\"}}}},{\\\"id\\\":\\\"query-4\\\",\\\"type\\\":\\\"term\\\",\\\"dataField\\\":\\\"authors\\\",\\\"aggregationSize\\\":5},{\\\"id\\\":\\\"query-5\\\",\\\"type\\\":\\\"range\\\",\\\"dataField\\\":\\\"price\\\",\\\"includeNullValues\\\":true}]}\",\"headers\":{},\"method\":\"\",\"url\":\"\"},\"response\":{\"body\":\"\",\"code\":200,\"headers\":{}}}"
+		expectedResponse := "{\"console_logs\":[],\"envs\":{},\"request\":{\"body\":\"{\\\"query\\\":[{\\\"id\\\":\\\"query-1\\\",\\\"type\\\":\\\"search\\\",\\\"dataField\\\":[\\\"original_title\\\"],\\\"size\\\":10},{\\\"id\\\":\\\"query-2\\\",\\\"type\\\":\\\"suggestion\\\",\\\"dataField\\\":[\\\"original_title\\\"],\\\"categoryField\\\":\\\"authors\\\",\\\"size\\\":4,\\\"enableRecentSuggestions\\\":true,\\\"recentSuggestionsConfig\\\":{\\\"size\\\":2},\\\"enablePopularSuggestions\\\":true,\\\"popularSuggestionsConfig\\\":{\\\"size\\\":2},\\\"urlField\\\":\\\"url\\\"},{\\\"id\\\":\\\"query-3\\\",\\\"type\\\":\\\"geo\\\",\\\"defaultQuery\\\":{\\\"query\\\":{\\\"geo\\\":{\\\"field\\\":\\\"location\\\"}}}},{\\\"id\\\":\\\"query-4\\\",\\\"type\\\":\\\"term\\\",\\\"dataField\\\":\\\"authors\\\",\\\"aggregationSize\\\":5},{\\\"id\\\":\\\"query-5\\\",\\\"type\\\":\\\"range\\\",\\\"dataField\\\":\\\"price\\\",\\\"includeNullValues\\\":true}]}\",\"headers\":{},\"method\":\"\",\"url\":\"\"},\"response\":{\"body\":\"\",\"code\":200,\"headers\":{}}}"
 		So(string(resInBytes), ShouldResemble, expectedResponse)
 	})
 
