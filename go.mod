@@ -43,10 +43,10 @@ require (
 	github.com/ulule/limiter v2.2.2+incompatible
 	go.kuoruan.net/v8go-polyfills v0.5.0
 	go.mongodb.org/mongo-driver v1.12.0
-	golang.org/x/crypto v0.21.0
-	golang.org/x/net v0.23.0
-	golang.org/x/sys v0.18.0
-	golang.org/x/text v0.14.0
+	golang.org/x/crypto v0.35.0
+	golang.org/x/net v0.36.0
+	golang.org/x/sys v0.30.0
+	golang.org/x/text v0.22.0
 	gopkg.in/DataDog/dd-trace-go.v1 v1.52.0
 	gopkg.in/natefinch/lumberjack.v2 v2.0.0
 	gopkg.in/olivere/elastic.v6 v6.2.26
