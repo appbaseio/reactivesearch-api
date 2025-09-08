@@ -8,7 +8,6 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       build_arc: ${{ steps.check-build-arc.outputs.run_jobs }}
-      build_sls: ${{ steps.check-build-sls.outputs.run_jobs }}
       version: ${{ steps.get-version.outputs.version }}
 
     steps:
@@ -18,13 +17,6 @@ jobs:
           TAG_NAME="${{ github.event.release.tag_name }}"
           echo "Checking tag $TAG_NAME for ARC build"
           (echo "$TAG_NAME" | grep -Eq  '^8\.[0-9]+\.[0-9]+$') && echo "run_jobs=true" >> $GITHUB_OUTPUT || echo "run_jobs=false" >> $GITHUB_OUTPUT
-      
-      - name: Check if SLS binary should be built
-        id: check-build-sls
-        run: |
-          TAG_NAME="${{ github.event.release.tag_name }}"
-          echo "Checking tag $TAG_NAME for SLS build"
-          (echo "$TAG_NAME" | grep -Eq  '^1\.[0-9]+\.[0-9]+$') && echo "run_jobs=true" >> $GITHUB_OUTPUT || echo "run_jobs=false" >> $GITHUB_OUTPUT
 
       - name: Get the version from the tag
         id: get-version
@@ -39,18 +31,135 @@ jobs:
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v2
+
+      # Build AMI zip on AWS host and upload to this release by tag
       - name: building binaries for ami
         uses: appleboy/ssh-action@v0.1.7
         env:
           VERSION: ${{ github.event.release.tag_name }}
+          PAT_ACCESS_TOKEN: ${{ secrets.PAT_ACCESS_TOKEN }}
         with:
           host: ${{ secrets.AWS_BUILD_HOST }}
           username: ${{ secrets.AWS_BUILD_USERNAME }}
           key: ${{ secrets.AWS_BUILD_KEY }}
           port: 22
-          envs: VERSION
+          envs: VERSION,PAT_ACCESS_TOKEN
           script: |
-            export PATH=$PATH:/usr/local/go/bin && sh build.sh ${VERSION}
+            set -euo pipefail
+            export PATH=$PATH:/usr/local/go/bin:/usr/bin
+            export GOPATH=$HOME/go
+
+            # Write build helper script on the remote host
+            cat > "$HOME/rs_build.sh" <<'EOS'
+            #!/usr/bin/env bash
+            # Usage: rs_build.sh <version> <mode> [branch_or_tag]
+            #   mode: ami | cluster
+            set -euo pipefail
+
+            version="${1:?version required}"
+            mode="${2:-ami}"
+            branch="${3:-$version}"
+
+            # ----- Token resolution -----
+            # Use env PAT_ACCESS_TOKEN or ~/.rs_pat if present.
+            PAT_ACCESS_TOKEN="${PAT_ACCESS_TOKEN:-}"
+            if [[ -z "${PAT_ACCESS_TOKEN}" && -f "${HOME}/.rs_pat" ]]; then
+              PAT_ACCESS_TOKEN="$(cat "${HOME}/.rs_pat")"
+            fi
+            : "${PAT_ACCESS_TOKEN:?PAT_ACCESS_TOKEN missing (export it or place it in ~/.rs_pat)}"
+
+            if [[ "${mode}" != "ami" && "${mode}" != "cluster" ]]; then
+              echo "mode must be 'ami' or 'cluster'"; exit 1
+            fi
+
+            # ----- Prereqs -----
+            command -v go >/dev/null || { echo "go not found on builder"; exit 1; }
+            command -v zip >/dev/null || { echo "zip not found on builder"; exit 1; }
+            command -v curl >/dev/null || { echo "curl not found on builder"; exit 1; }
+            command -v git >/dev/null || { echo "git not found on builder"; exit 1; }
+
+            export GO111MODULE=on
+            export CGO_ENABLED=1
+            export PATH="$PATH:/usr/local/go/bin:/usr/bin"
+
+            # ----- Clone & build -----
+            rm -rf arc-noss build out || true
+            echo "Cloning appbaseio-confidential/rs-api-server @ ${branch}"
+            git clone --depth=1 -b "${branch}" "https://${PAT_ACCESS_TOKEN}@github.com/appbaseio-confidential/rs-api-server" arc-noss
+
+            pushd arc-noss >/dev/null
+              make clean
+              if [[ "${mode}" == "ami" ]]; then
+                BILLING=true CLUSTER_BILLING= VERSION="${version}" make
+              else
+                BILLING= CLUSTER_BILLING=true VERSION="${version}" make
+              fi
+            popd >/dev/null
+
+            mkdir -p out
+            zip -r "out/rs-linux-${mode}.zip" arc-noss/build arc-noss/go >/dev/null
+            echo "Packaged out/rs-linux-${mode}.zip"
+
+            # ----- Upload to GitHub release (by tag) -----
+            owner="appbaseio"
+            repo="reactivesearch-api"
+            tag="${version}"
+
+            release_json="$(curl -fsSL -H "Authorization: token ${PAT_ACCESS_TOKEN}" \
+              "https://api.github.com/repos/${owner}/${repo}/releases/tags/${tag}")" || {
+                echo "Failed to fetch release for tag ${tag}"; exit 1; }
+
+            # First id field is the release id
+            release_id="$(printf '%s' "${release_json}" | awk -F: '/"id":/{gsub(/[ ,]/,"",$2); print $2; exit}')" || true
+            if [[ -z "${release_id}" ]]; then
+              echo "Could not parse release id for tag ${tag}"; exit 1
+            fi
+
+            asset_path="out/rs-linux-${mode}.zip"
+            asset_name="$(basename "${asset_path}")"
+            upload_url="https://uploads.github.com/repos/${owner}/${repo}/releases/${release_id}/assets?name=${asset_name}"
+
+            echo "Uploading ${asset_name} to ${owner}/${repo} (release ${tag})..."
+            http_code="$(curl -sS -w '%{http_code}' -o /tmp/upload_resp.json \
+              -X POST -H "Authorization: token ${PAT_ACCESS_TOKEN}" \
+              -H "Content-Type: application/octet-stream" \
+              --data-binary @"${asset_path}" \
+              "${upload_url}")"
+
+            if [[ "${http_code}" == "201" ]]; then
+              echo "Upload successful: ${asset_name}"
+            elif [[ "${http_code}" == "422" ]]; then
+              echo "Asset exists; attempting replace…"
+              if command -v jq >/dev/null 2>&1; then
+                assets_url="$(printf '%s' "${release_json}" | jq -r '.assets_url')"
+                assets_json="$(curl -fsSL -H "Authorization: token ${PAT_ACCESS_TOKEN}" "${assets_url}")"
+                existing_id="$(printf '%s' "${assets_json}" | jq -r ".[] | select(.name==\"${asset_name}\") | .id")" || true
+                if [[ -n "${existing_id}" && "${existing_id}" != "null" ]]; then
+                  curl -fsSL -X DELETE -H "Authorization: token ${PAT_ACCESS_TOKEN}" \
+                    "https://api.github.com/repos/${owner}/${repo}/releases/assets/${existing_id}" || true
+                  http_code2="$(curl -sS -w '%{http_code}' -o /tmp/upload_resp2.json \
+                    -X POST -H "Authorization: token ${PAT_ACCESS_TOKEN}" \
+                    -H "Content-Type: application/octet-stream" \
+                    --data-binary @"${asset_path}" \
+                    "${upload_url}")"
+                  [[ "${http_code2}" == "201" ]] && echo "Re-upload successful" || { echo "Re-upload failed (${http_code2})"; cat /tmp/upload_resp2.json; exit 1; }
+                else
+                  echo "Could not find existing asset id to delete."; cat /tmp/upload_resp.json; exit 1
+                fi
+              else
+                echo "jq not available; cannot replace existing asset automatically."; cat /tmp/upload_resp.json; exit 1
+              fi
+            else
+              echo "Upload failed (${http_code})."; cat /tmp/upload_resp.json; exit 1
+            fi
+
+            echo "Done."
+            EOS
+            chmod +x "$HOME/rs_build.sh"
+
+            # Build AMI artifact first so Packer can fetch it
+            "$HOME/rs_build.sh" "${VERSION}" ami "${VERSION}"
+
       - name: Build AMI
         uses: hashicorp/packer-github-actions@master
         with:
@@ -61,50 +170,27 @@ jobs:
           AWS_ACCESS_KEY: ${{ secrets.AWS_ACCESS_KEY }}
           AWS_SECRET_KEY: ${{ secrets.AWS_SECRET_KEY }}
           VERSION: ${{ github.event.release.tag_name }}
-      - name: building binaries for eaas deployments
-        uses: appleboy/ssh-action@v0.1.7
-        env:
-          VERSION: ${{ github.event.release.tag_name }}
-        with:
-          host: ${{ secrets.GCLOUD_BUILD_HOST }}
-          username: ${{ secrets.GCLOUD_BUILD_USERNAME }}
-          key: ${{ secrets.GCLOUD_BUILD_KEY }}
-          port: 22
-          timeout: 3600s
-          command_timeout: 3600s
-          envs: VERSION
-          script: |
-            source ~/.bashrc
-            export PATH=$PATH:/usr/local/go/bin:/usr/bin
-            export GOPATH=/home/centos/go
-            ./build.sh ${VERSION}
 
-  build-sls:
-    name: Build SLS binary
-    needs: determine_whether_to_run
-    if: needs.determine_whether_to_run.outputs.build_sls == 'true'
-    runs-on: ubuntu-latest
-    timeout-minutes: 60
-    steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v2
-      - name: building binaries for eaas deployments
+      # Reuse the same AWS host to build the cluster zip and upload it
+      - name: building binaries for cluster (linux/amd64)
         uses: appleboy/ssh-action@v0.1.7
         env:
           VERSION: ${{ github.event.release.tag_name }}
+          PAT_ACCESS_TOKEN: ${{ secrets.PAT_ACCESS_TOKEN }}
         with:
-          host: ${{ secrets.GCLOUD_BUILD_HOST }}
-          username: ${{ secrets.GCLOUD_BUILD_USERNAME }}
-          key: ${{ secrets.GCLOUD_BUILD_KEY }}
+          host: ${{ secrets.AWS_BUILD_HOST }}
+          username: ${{ secrets.AWS_BUILD_USERNAME }}
+          key: ${{ secrets.AWS_BUILD_KEY }}
           port: 22
-          timeout: 3600s
-          command_timeout: 3600s
-          envs: VERSION
+          envs: VERSION,PAT_ACCESS_TOKEN
           script: |
-            source ~/.bashrc
+            set -euo pipefail
             export PATH=$PATH:/usr/local/go/bin:/usr/bin
-            export GOPATH=/home/centos/go
-            ./sls-build.sh ${VERSION} feat/true-sls
+            export GOPATH=$HOME/go
+            if [[ ! -x "$HOME/rs_build.sh" ]]; then
+              echo "Missing build helper; abort."; exit 1
+            fi
+            "$HOME/rs_build.sh" "${VERSION}" cluster "${VERSION}"
 
   send-packer-event-arc:
     name: Send Packer Event
@@ -113,16 +199,6 @@ jobs:
     with:
       ref: ${{ github.ref }}
       event_name: new_release
-    secrets:
-      token: ${{ secrets.REPO_ACCESS_TOKEN }}
-
-  send-packer-event-sls:
-    name: Send Packer Event
-    needs: build-sls
-    uses: ./.github/workflows/build_images.yml
-    with:
-      ref: ${{ github.ref }}
-      event_name: new_sls_release
     secrets:
       token: ${{ secrets.REPO_ACCESS_TOKEN }}
 
