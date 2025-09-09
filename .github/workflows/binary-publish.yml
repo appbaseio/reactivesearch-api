@@ -16,7 +16,7 @@ jobs:
         run: |
           TAG_NAME="${{ github.event.release.tag_name }}"
           echo "Checking tag $TAG_NAME for ARC build"
-          (echo "$TAG_NAME" | grep -Eq  '^8\.[0-9]+\.[0-9]+$') && echo "run_jobs=true" >> $GITHUB_OUTPUT || echo "run_jobs=false" >> $GITHUB_OUTPUT
+            (echo "$TAG_NAME" | grep -Eq  '^([8-9]|[1-9][0-9]+)\.[0-9]+\.[0-9]+$') && echo "run_jobs=true" >> $GITHUB_OUTPUT || echo "run_jobs=false" >> $GITHUB_OUTPUT
 
       - name: Get the version from the tag
         id: get-version
