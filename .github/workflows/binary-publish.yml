@@ -2,6 +2,12 @@ name: build binary
 on:
   release:
     types: [published]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version tag to build (e.g., 9.0.0)"
+        required: true
+        type: string
 
 jobs:
   determine_whether_to_run:
@@ -13,14 +19,26 @@ jobs:
     steps:
       - name: Check if Arc binary should be built
         id: check-build-arc
+        env:
+          INPUT_VERSION: ${{ inputs.version }}
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
         run: |
-          TAG_NAME="${{ github.event.release.tag_name }}"
+          TAG_NAME="${INPUT_VERSION:-${RELEASE_TAG}}"
           echo "Checking tag $TAG_NAME for ARC build"
-            (echo "$TAG_NAME" | grep -Eq  '^([8-9]|[1-9][0-9]+)\.[0-9]+\.[0-9]+$') && echo "run_jobs=true" >> $GITHUB_OUTPUT || echo "run_jobs=false" >> $GITHUB_OUTPUT
+          if echo "$TAG_NAME" | grep -Eq  '^([8-9]|[1-9][0-9]+)\.[0-9]+\.[0-9]+$'; then
+            echo "run_jobs=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "run_jobs=false" >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Get the version from the tag
         id: get-version
-        run: echo "version=${{ github.event.release.tag_name }}" >> $GITHUB_OUTPUT
+        env:
+          INPUT_VERSION: ${{ inputs.version }}
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+        run: |
+          VERSION="${INPUT_VERSION:-${RELEASE_TAG}}"
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
 
   build-arc:
     name: Build ARC binary
@@ -36,7 +54,7 @@ jobs:
       - name: building binaries for ami
         uses: appleboy/ssh-action@v0.1.7
         env:
-          VERSION: ${{ github.event.release.tag_name }}
+          VERSION: ${{ needs.determine_whether_to_run.outputs.version }}
           PAT_ACCESS_TOKEN: ${{ secrets.PAT_ACCESS_TOKEN }}
         with:
           host: ${{ secrets.AWS_BUILD_HOST }}
@@ -97,8 +115,11 @@ jobs:
             popd >/dev/null
 
             mkdir -p out
-            zip -r "out/rs-linux-${mode}.zip" arc-noss/build arc-noss/go >/dev/null
-            echo "Packaged out/rs-linux-${mode}.zip"
+            # Zip without the leading arc-noss/ so the archive has build/ and go/ at root
+            pushd arc-noss >/dev/null
+              zip -r "../out/rs-linux-${mode}.zip" build go >/dev/null
+            popd >/dev/null
+            echo "Packaged out/rs-linux-${mode}.zip (root: build/, go/)"
 
             # ----- Upload to GitHub release (by tag) -----
             owner="appbaseio"
@@ -169,13 +190,13 @@ jobs:
           PACKER_LOG: 1
           AWS_ACCESS_KEY: ${{ secrets.AWS_ACCESS_KEY }}
           AWS_SECRET_KEY: ${{ secrets.AWS_SECRET_KEY }}
-          VERSION: ${{ github.event.release.tag_name }}
+          VERSION: ${{ needs.determine_whether_to_run.outputs.version }}
 
       # Reuse the same AWS host to build the cluster zip and upload it
       - name: building binaries for cluster (linux/amd64)
         uses: appleboy/ssh-action@v0.1.7
         env:
-          VERSION: ${{ github.event.release.tag_name }}
+          VERSION: ${{ needs.determine_whether_to_run.outputs.version }}
           PAT_ACCESS_TOKEN: ${{ secrets.PAT_ACCESS_TOKEN }}
         with:
           host: ${{ secrets.AWS_BUILD_HOST }}
