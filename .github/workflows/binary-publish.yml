@@ -117,9 +117,9 @@ jobs:
             mkdir -p out
             # Zip without the leading arc-noss/ so the archive has build/ and go/ at root
             pushd arc-noss >/dev/null
-              zip -r "../out/rs-linux-${mode}.zip" build go >/dev/null
+              zip -r "../out/arc-linux-${mode}.zip" build go >/dev/null
             popd >/dev/null
-            echo "Packaged out/rs-linux-${mode}.zip (root: build/, go/)"
+            echo "Packaged out/arc-linux-${mode}.zip (root: build/, go/)"
 
             # ----- Upload to GitHub release (by tag) -----
             owner="appbaseio"
@@ -136,7 +136,7 @@ jobs:
               echo "Could not parse release id for tag ${tag}"; exit 1
             fi
 
-            asset_path="out/rs-linux-${mode}.zip"
+            asset_path="out/arc-linux-${mode}.zip"
             asset_name="$(basename "${asset_path}")"
             upload_url="https://uploads.github.com/repos/${owner}/${repo}/releases/${release_id}/assets?name=${asset_name}"
 
@@ -218,7 +218,8 @@ jobs:
     needs: build-arc
     uses: ./.github/workflows/build_images.yml
     with:
-      ref: ${{ github.ref }}
+      # Pass a tag-style ref so the called workflow's regex gate passes on manual runs
+      ref: "refs/tags/${{ needs.determine_whether_to_run.outputs.version }}"
       event_name: new_release
     secrets:
       token: ${{ secrets.REPO_ACCESS_TOKEN }}
