@@ -101,7 +101,7 @@ jobs:
             export PATH="$PATH:/usr/local/go/bin:/usr/bin"
 
             # ----- Clone & build -----
-            rm -rf arc-noss build out || true
+            sudo rm -rf arc-noss build out 2>/dev/null || true
             echo "Cloning appbaseio-confidential/rs-api-server @ ${branch}"
             git clone --depth=1 -b "${branch}" "https://${PAT_ACCESS_TOKEN}@github.com/appbaseio-confidential/rs-api-server" arc-noss
 
