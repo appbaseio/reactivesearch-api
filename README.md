@@ -1,6 +1,6 @@
 # ReactiveSearch API
 
-[![Tests](https://github.com/appbaseio/reactivesearch-api/actions/workflows/tests.yml/badge.svg)](https://github.com/appbaseio/reactivesearch-api/actions/workflows/tests.yml) [![Docker](https://github.com/appbaseio/reactivesearch-api/actions/workflows/docker-publish.yml/badge.svg)](https://github.com/appbaseio/reactivesearch-api/actions/workflows/docker-publish.yml)
+[![Tests](https://github.com/appbaseio/reactivesearch-api/actions/workflows/tests.yml/badge.svg)](https://github.com/appbaseio/reactivesearch-api/actions/workflows/tests.yml) [![Docker](https://github.com/appbaseio/reactivesearch-api/actions/workflows/docker-image.yml/badge.svg)](https://github.com/appbaseio/reactivesearch-api/actions/workflows/docker-image.yml)
 
 ReactiveSearch API is a declarative, open-source API for querying Elasticsearch, OpenSearch, Solr, MongoDB Atlas Search and OpenAI. It also acts as a reverse proxy and API gateway for Elasticsearch and OpenSearch. ReactiveSearch API is best suited for site search, app search and e-commerce search use-cases.
 

@@ -1,7 +1,7 @@
 GC=go build
 
 BUILD_DIR=build
-DEFAULT_VERSION=8.22.0
+DEFAULT_VERSION=8.22.2
 VERSION := $(or $(VERSION),$(DEFAULT_VERSION))
 
 cmd: build
