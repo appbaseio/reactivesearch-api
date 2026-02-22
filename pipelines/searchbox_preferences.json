@@ -1,0 +1,35 @@
+{
+    "enabled": true,
+    "routes": [
+        {
+            "path": "/basic-json/_reactivesearch",
+            "method": "POST",
+            "classify": {
+                "category": "reactivesearch"
+            }
+        }
+    ],
+    "stages": [
+        {
+            "id": "auth",
+            "use": "authorization"
+        },
+        {
+            "use": "searchboxPreferences",
+            "inputs": {
+                "id": "testing_endpoint"
+            }
+        },
+        {
+            "use": "reactivesearchQuery"
+        },
+        {
+            "use": "elasticsearchQuery",
+            "inputs": {
+                "method": "POST",
+                "url": "https://HBuZlvcqQ:43435aeb-7aab-4980-8c7b-063bff449f3d@appbase-demo-ansible-abxiydt-es.searchbase.io/good-books-ds/_msearch",
+                "parseResponseToReactivesearch": true
+              }
+        }
+    ]
+}

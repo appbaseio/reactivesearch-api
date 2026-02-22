@@ -10,23 +10,23 @@ import (
 	"sync"
 	"time"
 
-	"github.com/appbaseio-confidential/reactivesearch/middleware"
-	"github.com/appbaseio-confidential/reactivesearch/middleware/classify"
-	"github.com/appbaseio-confidential/reactivesearch/middleware/validate"
-	"github.com/appbaseio-confidential/reactivesearch/model/category"
-	"github.com/appbaseio-confidential/reactivesearch/model/difference"
-	"github.com/appbaseio-confidential/reactivesearch/model/index"
-	"github.com/appbaseio-confidential/reactivesearch/model/request"
-	"github.com/appbaseio-confidential/reactivesearch/model/requestlogs"
-	"github.com/appbaseio-confidential/reactivesearch/model/trackplugin"
-	"github.com/appbaseio-confidential/reactivesearch/plugins/auth"
-	"github.com/appbaseio-confidential/reactivesearch/plugins/logs"
-	"github.com/appbaseio-confidential/reactivesearch/plugins/querytranslate"
-	"github.com/appbaseio-confidential/reactivesearch/plugins/rules"
-	"github.com/appbaseio-confidential/reactivesearch/plugins/telemetry"
-	"github.com/appbaseio-confidential/reactivesearch/plugins/uibuilder"
-	"github.com/appbaseio-confidential/reactivesearch/util"
-	"github.com/appbaseio-confidential/reactivesearch/util/iplookup"
+	"github.com/appbaseio/reactivesearch-api/middleware"
+	"github.com/appbaseio/reactivesearch-api/middleware/classify"
+	"github.com/appbaseio/reactivesearch-api/middleware/validate"
+	"github.com/appbaseio/reactivesearch-api/model/category"
+	"github.com/appbaseio/reactivesearch-api/model/difference"
+	"github.com/appbaseio/reactivesearch-api/model/index"
+	"github.com/appbaseio/reactivesearch-api/model/request"
+	"github.com/appbaseio/reactivesearch-api/model/requestlogs"
+	"github.com/appbaseio/reactivesearch-api/model/trackplugin"
+	"github.com/appbaseio/reactivesearch-api/plugins/auth"
+	"github.com/appbaseio/reactivesearch-api/plugins/logs"
+	"github.com/appbaseio/reactivesearch-api/plugins/querytranslate"
+	"github.com/appbaseio/reactivesearch-api/plugins/rules"
+	"github.com/appbaseio/reactivesearch-api/plugins/telemetry"
+	"github.com/appbaseio/reactivesearch-api/plugins/uibuilder"
+	"github.com/appbaseio/reactivesearch-api/util"
+	"github.com/appbaseio/reactivesearch-api/util/iplookup"
 	"github.com/buger/jsonparser"
 	log "github.com/sirupsen/logrus"
 )
@@ -255,19 +255,39 @@ func (rx *suggestions) intercept(h http.HandlerFunc) http.HandlerFunc {
 				w.Header()[k] = v
 			}
 
+			// Check if error was already processed
+			if resp.Header().Get("X-Error-Processed") == "true" {
+				// Remove the header before writing
+				resp.Header().Del("X-Error-Processed")
+				w.WriteHeader(resp.Code)
+				w.Write(resp.Body.Bytes())
+				return
+			}
 			response := resp.Body.Bytes()
 
 			// Modify the response here
 
 			// Since the response is an array of objects, we will unmarshal
-			// and use it like that.
+			// Try to unmarshal as an array first
 			responseAsArr := make([]interface{}, 0)
 			unmarshalErr := json.Unmarshal(response, &responseAsArr)
+
+			// If it fails, try to unmarshal as an object and convert to an array
 			if unmarshalErr != nil {
-				errMsg := fmt.Sprint("error while unmarshaling response into an array of objects: ", unmarshalErr.Error())
-				log.Errorln(logTag, ": ", errMsg)
-				telemetry.WriteBackErrorWithTelemetry(req, w, errMsg, http.StatusInternalServerError)
-				return
+				log.Debugln(logTag, ": Failed to unmarshal as array, trying as object: ", unmarshalErr.Error())
+
+				// Try to unmarshal as object instead
+				responseAsObj := make(map[string]interface{})
+				objUnmarshalErr := json.Unmarshal(response, &responseAsObj)
+				if objUnmarshalErr != nil {
+					errMsg := fmt.Sprintf("error unmarshaling response as array or object: %v", objUnmarshalErr.Error())
+					log.Errorln(logTag, ": ", errMsg)
+					telemetry.WriteBackErrorWithTelemetry(req, w, errMsg, http.StatusInternalServerError)
+					return
+				}
+
+				// Convert the object to a single-element array
+				responseAsArr = []interface{}{responseAsObj}
 			}
 			originalResponseLen := len(responseAsArr)
 

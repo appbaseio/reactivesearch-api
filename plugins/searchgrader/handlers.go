@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/appbaseio-confidential/reactivesearch/util"
+	"github.com/appbaseio/reactivesearch-api/util"
 	"github.com/gorilla/mux"
 	log "github.com/sirupsen/logrus"
 )

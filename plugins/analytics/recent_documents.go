@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/appbaseio-confidential/reactivesearch/util"
+	"github.com/appbaseio/reactivesearch-api/util"
 	es7 "github.com/olivere/elastic/v7"
 	log "github.com/sirupsen/logrus"
 )

@@ -2,29 +2,28 @@ package applycache
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"net/http"
 	"strconv"
 	"strings"
 	"time"
 
-	"github.com/appbaseio-confidential/reactivesearch/middleware"
-	"github.com/appbaseio-confidential/reactivesearch/middleware/classify"
-	"github.com/appbaseio-confidential/reactivesearch/middleware/validate"
-	"github.com/appbaseio-confidential/reactivesearch/model/category"
-	"github.com/appbaseio-confidential/reactivesearch/model/index"
-	"github.com/appbaseio-confidential/reactivesearch/model/trackplugin"
-	"github.com/appbaseio-confidential/reactivesearch/model/tracktime"
-	"github.com/appbaseio-confidential/reactivesearch/plugins/analytics"
-	"github.com/appbaseio-confidential/reactivesearch/plugins/auth"
-	"github.com/appbaseio-confidential/reactivesearch/plugins/cache"
-	"github.com/appbaseio-confidential/reactivesearch/plugins/logs"
-	"github.com/appbaseio-confidential/reactivesearch/plugins/openai"
-	"github.com/appbaseio-confidential/reactivesearch/plugins/querytranslate"
-	"github.com/appbaseio-confidential/reactivesearch/plugins/telemetry"
-	"github.com/appbaseio-confidential/reactivesearch/util"
-	"github.com/appbaseio-confidential/reactivesearch/util/iplookup"
+	"github.com/appbaseio/reactivesearch-api/middleware"
+	"github.com/appbaseio/reactivesearch-api/middleware/classify"
+	"github.com/appbaseio/reactivesearch-api/middleware/validate"
+	"github.com/appbaseio/reactivesearch-api/model/category"
+	"github.com/appbaseio/reactivesearch-api/model/index"
+	"github.com/appbaseio/reactivesearch-api/model/trackplugin"
+	"github.com/appbaseio/reactivesearch-api/model/tracktime"
+	"github.com/appbaseio/reactivesearch-api/plugins/analytics"
+	"github.com/appbaseio/reactivesearch-api/plugins/auth"
+	"github.com/appbaseio/reactivesearch-api/plugins/cache"
+	"github.com/appbaseio/reactivesearch-api/plugins/logs"
+	"github.com/appbaseio/reactivesearch-api/plugins/openai"
+	"github.com/appbaseio/reactivesearch-api/plugins/querytranslate"
+	"github.com/appbaseio/reactivesearch-api/plugins/telemetry"
+	"github.com/appbaseio/reactivesearch-api/util"
+	"github.com/appbaseio/reactivesearch-api/util/iplookup"
 	"github.com/buger/jsonparser"
 	log "github.com/sirupsen/logrus"
 )
@@ -194,8 +193,18 @@ type CachedResponse struct {
 	PerformanceSave int64
 }
 
-func ApplyCache(urlPath string, rsAPIBody *querytranslate.RSQuery, requestBody []byte, startTime *time.Time, userId string, indices []string) (*CachedResponse, error) {
-	out := string(requestBody)
+func ApplyCache(
+	urlPath string,
+	rsAPIBody *querytranslate.RSQuery,
+	requestBody []byte,
+	startTime *time.Time,
+	userId string,
+	indices []string,
+) (*CachedResponse, error) {
+	// Initialize 'out' with the request body
+	out := requestBody
+
+	// If 'rsAPIBody' is provided, sanitize and marshal it
 	if rsAPIBody != nil {
 		sanitizedRequest := cache.SanitizeRequest(*rsAPIBody)
 		output, err := json.Marshal(sanitizedRequest)
@@ -203,168 +212,140 @@ func ApplyCache(urlPath string, rsAPIBody *querytranslate.RSQuery, requestBody [
 			log.Errorln(logTag, ":", err)
 			return nil, err
 		}
-		out = string(output)
+		out = output
 	}
 
 	var performanceSave int
 
-	value := cache.ReadResponseFromCache(urlPath, out)
-	if value != nil {
-		ValueAsByte, ok := value.([]byte)
-		if !ok {
-			valueAsString, ok := value.(string)
-			if !ok {
-				log.Errorln(logTag, ":", value.(string))
-				return nil, errors.New("error occurred while reading the cached response")
-			}
-			ValueAsByte = []byte(valueAsString)
+	// Generate the cache key and attempt to read from cache
+	cacheKey, valueAsByte := cache.ReadResponseFromCache(urlPath, out)
+	if valueAsByte != nil {
+		headers := map[string]string{
+			cache.CachedRequestHeader: "true",
 		}
-		headers := map[string]string{}
-		// Set cache header
-		headers[cache.CachedRequestHeader] = "true"
 		var responseToWrite []byte
+		modifiedValue := valueAsByte // Start with the original cached response
 
-		// Before checking if OpenAI session replacement should happen, we will
-		// need to make some checks to see if OpenAI is even enabled in the cluster.
+		// Check if OpenAI is enabled for the given indices
 		if IsOpenAIEnabled(indices) {
-			log.Println("ERROR: openAI is marked as available.. debug more")
-			// Iterate the objects and parse the sessionId. If found, replace the sessionId
-			// with a new one.
-			copiedResponse := make([]byte, len(ValueAsByte))
-			copy(copiedResponse, ValueAsByte)
 			sessionMap := openai.SessionInstance()
-			sessionIdUpdateErr := jsonparser.ObjectEach(copiedResponse, func(key, value []byte, dataType jsonparser.ValueType, offset int) error {
-				if !util.Contains(querytranslate.RESERVED_KEYS_IN_RESPONSE, string(key)) {
-					// Check if sessionId is present
-					sessionDetails, valueType, _, sessionIdParseErr := jsonparser.Get(ValueAsByte, string(key), querytranslate.SessionIDKeyToInject)
+
+			// Iterate over the cached response to update session IDs
+			sessionIdUpdateErr := jsonparser.ObjectEach(valueAsByte, func(key, value []byte, dataType jsonparser.ValueType, offset int) error {
+				// Skip reserved keys
+				if !util.ContainsBytes(querytranslate.RESERVED_KEYS_IN_RESPONSE_BYTES, key) {
+					// Attempt to retrieve the session ID from the cached response
+					sessionDetails, valueType, _, sessionIdParseErr := jsonparser.Get(valueAsByte, string(key), querytranslate.SessionIDKeyToInject)
 					if sessionIdParseErr != nil {
-						// Ignore if not found error is reported
 						if sessionIdParseErr == jsonparser.KeyPathNotFoundError {
 							log.Warnln(logTag, ": error finding sessionId in object: ", sessionIdParseErr.Error())
 							return nil
 						}
-
-						errMsg := fmt.Sprint("error while parsing sessionId from cached response: ", sessionIdParseErr.Error())
-						return fmt.Errorf(errMsg)
+						return fmt.Errorf("error while parsing sessionId from cached response: %w", sessionIdParseErr)
 					}
 
 					var newSessionId string
 
-					// If the value is not an object, it means that the cache was not updated
-					// indicating that the OpenAI call had failed.
+					// Check if the session details are valid
 					if valueType != jsonparser.Object {
-						// Delete the older sessionId since a new one will be injected
-						// responseWithoutOlderSessionId := jsonparser.Delete(responseToWrite, string(key), querytranslate.SessionIDKeyToInject)
-
-						updatedRSResponse, AIAnswerErr := querytranslate.ExecuteAIAnswerInQuery(rsAPIBody, responseToWrite, indices, openai.SessionInstance(), userId)
+						// Execute the AI Answer query since the previous call failed
+						updatedRSResponse, AIAnswerErr := querytranslate.ExecuteAIAnswerInQuery(rsAPIBody, responseToWrite, indices, sessionMap, userId)
 						if AIAnswerErr != nil {
-							errMsg := ": error while executing AI Answer query: " + AIAnswerErr.Error()
+							errMsg := fmt.Sprintf(": error while executing AI Answer query: %v", AIAnswerErr)
 							log.Warnln(logTag, errMsg)
 							return fmt.Errorf(errMsg)
 						}
 						responseToWrite = updatedRSResponse
 
-						// Extract the sessionId so that we can wait for it to resolve
+						// Extract the new session ID
 						extractedSessionId, readErr := jsonparser.GetString(updatedRSResponse, string(key), querytranslate.SessionIDKeyToInject)
 						if readErr != nil {
-							errMsg := "sessionId not injected, cannot continue with cache hit: " + readErr.Error()
+							errMsg := fmt.Sprintf("sessionId not injected, cannot continue with cache hit: %v", readErr)
 							log.Warnln(logTag, ": ", errMsg)
 							return fmt.Errorf(errMsg)
 						}
 
 						newSessionId = extractedSessionId
 
-						// // Update the cache with the new session ID and the updated
-						// // response
+						// Update the cache with the new session ID and response asynchronously
 						go func(key string, value []byte) {
 							responseDetails := sessionMap.GetResponse(newSessionId)
-
 							if responseDetails == nil {
 								log.Warnln(logTag, ": not updating cache since response is nil!")
 								return
 							}
 
+							// Wait for the response to be ready
 							for !responseDetails.GetIsReady() {
 								time.Sleep(5 * time.Second)
-								continue
 							}
 
-							// If the response failed then we don't need to update
 							if responseDetails.GetIsFailed() {
-								log.Debug(logTag, ": not updating cache since AI response failed!")
+								log.Debugln(logTag, ": not updating cache since AI response failed!")
 								return
 							}
 
-							// It should have resolved now
-
-							// We can specify any maxDuration here since it will never actually
-							// be used. The following call is explicitly to update an already existing
-							// cache and thus we will not use the maxDuration.
+							// Update the cache with the AI answer
 							defaultMaxDuration := int64(0)
-
-							// Calculate the item cost.
-							cacheKey := cache.GetCacheKey(urlPath, out)
-							// cost to store request (cache key)
-							requestSize := int64(len([]byte(cacheKey)))
-							// cost to store response
+							requestSize := int64(len(cacheKey))
 							responseSize := int64(len(value))
 							itemCost := requestSize + responseSize
 
 							cache.UpdateValueWithAIAnswer(cacheKey, key, responseDetails.Response(), responseDetails, value, defaultMaxDuration, itemCost)
 						}(string(key), value)
-
 					} else {
-						// Generate new sessionId based on the older one
+						// Generate a new session ID based on the existing session details
 						var newSessionGenerateErr error
 						newSessionId, newSessionGenerateErr = sessionMap.SessionFromBytes(sessionDetails, userId)
 						if newSessionGenerateErr != nil {
-							errMsg := fmt.Sprint("error while generating new session Id from details: ", newSessionGenerateErr.Error())
+							errMsg := fmt.Sprintf("error while generating new session Id from details: %v", newSessionGenerateErr)
 							log.Warnln(logTag, ": ", errMsg)
-							return errors.New(errMsg)
+							return fmt.Errorf(errMsg)
 						}
 					}
 
-					bodyWithNewSessionId, injectErr := jsonparser.Set(ValueAsByte, []byte(fmt.Sprintf(`"%s"`, newSessionId)), string(key), querytranslate.SessionIDKeyToInject)
+					// Inject the new session ID into the modified response
+					bodyWithNewSessionId, injectErr := jsonparser.Set(modifiedValue, []byte(fmt.Sprintf(`"%s"`, newSessionId)), string(key), querytranslate.SessionIDKeyToInject)
 					if injectErr != nil {
-						errMsg := fmt.Sprint("error while injecting new sessionId: ", injectErr.Error())
+						errMsg := fmt.Sprintf("error while injecting new sessionId: %v", injectErr)
 						log.Warnln(logTag, ": ", errMsg)
 						return fmt.Errorf(errMsg)
 					}
 
-					ValueAsByte = bodyWithNewSessionId
+					modifiedValue = bodyWithNewSessionId
 					return nil
 				}
 				return nil
 			})
 
 			if sessionIdUpdateErr != nil {
-				errMsg := fmt.Sprint("error while updating sessionId in cached response: ", sessionIdUpdateErr.Error())
+				errMsg := fmt.Sprintf("error while updating sessionId in cached response: %v", sessionIdUpdateErr)
 				log.Warnln(logTag, ": ", errMsg)
 				return nil, fmt.Errorf(errMsg)
 			}
 		}
 
+		// Proceed to modify the 'took' and 'cached' values in the response
 		if rsAPIBody != nil {
 			took := time.Since(*startTime).Milliseconds()
 
-			// Get the older took value
-			originalTook, _, _, err := jsonparser.Get(ValueAsByte, "settings", "took")
+			// Retrieve the original 'took' value
+			originalTook, _, _, err := jsonparser.Get(modifiedValue, "settings", "took")
 			if err == nil {
-				// Calculate the performance save
 				originalTookAsInt, tookToIntErr := strconv.Atoi(string(originalTook))
 				if tookToIntErr != nil {
-					log.Warnln(logTag, ": error while converting original took to int, ", tookToIntErr)
+					log.Warnln(logTag, ": error while converting original took to int: ", tookToIntErr)
 				} else {
 					performanceSave = originalTookAsInt - int(took)
 				}
 			}
 
-			// Modify `took` value for Cached responses
-			responseBody, err := jsonparser.Set(ValueAsByte, []byte(fmt.Sprintf("%d", took)), "settings", "took")
+			// Update the 'took' value in the response
+			responseBody, err := jsonparser.Set(modifiedValue, []byte(fmt.Sprintf("%d", took)), "settings", "took")
 			if err != nil {
-				responseBody2, err2 := jsonparser.Set(ValueAsByte, []byte(fmt.Sprintf(`{ "took": %d }`, took)), "settings")
+				responseBody2, err2 := jsonparser.Set(modifiedValue, []byte(fmt.Sprintf(`{ "took": %d }`, took)), "settings")
 				if err2 != nil {
-					log.Warnln(logTag, "unable to set settings.took key", err2)
+					log.Warnln(logTag, "unable to set settings.took key: ", err2)
 				} else {
 					responseToWrite = responseBody2
 				}
@@ -372,23 +353,25 @@ func ApplyCache(urlPath string, rsAPIBody *querytranslate.RSQuery, requestBody [
 				responseToWrite = responseBody
 			}
 
-			// write `cached` key to settings object
-			responseToWrite, err = jsonparser.Set(responseToWrite, []byte(fmt.Sprintf(`%t`, true)), "settings", "cached")
+			// Add the 'cached' flag to the settings
+			responseToWrite, err = jsonparser.Set(responseToWrite, []byte("true"), "settings", "cached")
 			if err != nil {
-				responseToWrite, err = jsonparser.Set(responseToWrite, []byte(fmt.Sprintf(`{ "cached": %t }`, true)), "settings")
+				responseToWrite, err = jsonparser.Set(responseToWrite, []byte(`{ "cached": true }`), "settings")
 				if err != nil {
-					log.Warnln(logTag, "unable to set settings.cached key", err)
+					log.Warnln(logTag, "unable to set settings.cached key: ", err)
 				}
 			}
 		} else {
-			responseToWrite = ValueAsByte
+			responseToWrite = modifiedValue
 		}
 
+		// Return the cached response
 		return &CachedResponse{
 			Body:            responseToWrite,
 			Headers:         headers,
 			PerformanceSave: int64(performanceSave),
 		}, nil
 	}
+	// Return nil if no cached response is available
 	return nil, nil
 }

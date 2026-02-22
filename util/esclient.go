@@ -80,17 +80,45 @@ func GetESURL() string {
 func GetVersion() int {
 	// Get the version if not present
 	if version == 0 {
-		esVersion, err := client7.ElasticsearchVersion(GetESURL())
+		esURL := GetESURL()
+		esVersion, err := client7.ElasticsearchVersion(esURL)
 		if err != nil {
 			log.Fatal("Error encountered: ", fmt.Errorf("error while retrieving the elastic version: %v", err))
 		}
-		var splitStr = strings.Split(esVersion, ".")
-		if len(splitStr) > 0 && splitStr[0] != "" {
-			version, _ = strconv.Atoi(splitStr[0])
-			if err != nil {
-				log.Errorln("Error encountered: error while calculating the elastic version", err)
+		log.Infof("Raw version string from cluster: %s", esVersion)
+
+		// Check cluster type first
+		clusterType := GetClusterType()
+		if clusterType != nil && *clusterType == OpenSearch {
+			// For OpenSearch, parse version differently since it uses its own versioning
+			// OpenSearch 2.x should be treated as ES 7.x compatible
+			splitStr := strings.Split(esVersion, ".")
+			if len(splitStr) > 0 && splitStr[0] != "" {
+				majorVersion, err := strconv.Atoi(splitStr[0])
+				if err != nil {
+					log.Errorf("Error parsing OpenSearch major version: %v", err)
+					return 7 // default to 7 for OpenSearch
+				}
+				// Map OpenSearch versions to ES compatibility versions
+				if majorVersion == 1 || majorVersion == 2 {
+					version = 7
+				} else {
+					log.Warnf("Unknown OpenSearch major version %d, defaulting to ES 7 compatibility", majorVersion)
+					version = 7
+				}
+			}
+		} else {
+			// Regular ES version parsing
+			splitStr := strings.Split(esVersion, ".")
+			if len(splitStr) > 0 && splitStr[0] != "" {
+				var err error
+				version, err = strconv.Atoi(splitStr[0])
+				if err != nil {
+					log.Errorln("Error encountered: error while calculating the elastic version", err)
+				}
 			}
 		}
+		log.Infof("Detected version: %d (cluster type: %v)", version, clusterType)
 	}
 	return version
 }
@@ -129,18 +157,18 @@ func GetClusterType() *ClusterType {
 			statusMap := make(map[string]interface{})
 			unmarshalErr := json.Unmarshal(response.Body, &statusMap)
 			if unmarshalErr != nil {
-				log.Fatal("Error encountered: ", fmt.Errorf("error while retrieving the cluster type, error while unmarshalling: %s", unmarshalErr.Error()))
+				log.Fatal("Error encountered: ", fmt.Errorf("error while retrieving the cluster type, error while unmarshaling: %s", unmarshalErr.Error()))
 			}
 
 			// Parse the tagline
 			tagLine, taglinePresent := statusMap["tagline"]
 			if !taglinePresent {
-				log.Fatal("Error encountered: ", fmt.Errorf("error while retrieving the cluster type, no tagline present!"))
+				log.Fatal("Error encountered: ", fmt.Errorf("error while retrieving the cluster type, no tagline present"))
 			}
 
 			taglineAsStr, asStrOk := tagLine.(string)
 			if !asStrOk {
-				log.Fatal("Error encountered: ", fmt.Errorf("error while retrieving the cluster type, tagline is not string!"))
+				log.Fatal("Error encountered: ", fmt.Errorf("error while retrieving the cluster type, tagline is not string"))
 			}
 
 			clusterTypeRead := ElasticSearch

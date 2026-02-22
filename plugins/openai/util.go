@@ -5,13 +5,14 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"strings"
 	"sync"
 	"time"
 
-	"github.com/appbaseio-confidential/reactivesearch/util"
+	"github.com/appbaseio/reactivesearch-api/util"
 	"github.com/buger/jsonparser"
 	"github.com/lithammer/shortuuid/v4"
 	"github.com/robfig/cron"
@@ -31,6 +32,20 @@ const (
 	defaultMaxTokens int    = 300
 	defaultMinTokens int    = 100
 )
+
+type OpenAIConfig struct {
+	Enable                *bool           `json:"enable,omitempty"`
+	OpenAIKey             *string         `json:"open_ai_key,omitempty"`
+	Model                 *string         `json:"model,omitempty"`
+	DefaultEmbeddingModel *EmbeddingModel `json:"embeddingModel"`
+	SystemPrompt          *string         `json:"systemPrompt,omitempty"`
+	MaxTokens             *int            `json:"maxTokens,omitempty"`
+	MinTokens             *int            `json:"minTokens,omitempty"`
+	Indexes               *[]string       `json:"enabledIndexes,omitempty"`
+	APIType               *APIType        `json:"apiType,omitempty"`
+	AzureBaseURL          *string         `json:"azureBaseURL"`
+	AzureVersion          *string         `json:"azureVersion"`
+}
 
 // Store the OpenAI Config cached value. This should be the source
 // of truth.
@@ -796,19 +811,6 @@ func (r *OpenAI) IsOpenAIEnabled() bool {
 	return *isEnabled
 }
 
-type OpenAIConfig struct {
-	Enable       *bool     `json:"enable,omitempty"`
-	OpenAIKey    *string   `json:"open_ai_key,omitempty"`
-	Model        *string   `json:"model,omitempty"`
-	SystemPrompt *string   `json:"systemPrompt,omitempty"`
-	MaxTokens    *int      `json:"maxTokens,omitempty"`
-	MinTokens    *int      `json:"minTokens,omitempty"`
-	Indexes      *[]string `json:"enabledIndexes,omitempty"`
-	APIType      *APIType  `json:"apiType,omitempty"`
-	AzureBaseURL *string   `json:"azureBaseURL"`
-	AzureVersion *string   `json:"azureVersion"`
-}
-
 // IsKeyValid returns a bool indicating whether or not the
 // key is valid.
 func (o OpenAIConfig) IsKeyValid() bool {
@@ -922,6 +924,7 @@ func (o OpenAIConfig) GetAzureVersion() string {
 // GetDefaultConfig will return the default config for OpenAI
 func GetDefaultConfig() OpenAIConfig {
 	defaultModel := defaultModel
+	defaultEmbeddingModel := TextEmbedding3Small
 	defaultPrompt := defaultPrompt
 	indexes := make([]string, 0)
 	defaultEnabled := false
@@ -931,17 +934,77 @@ func GetDefaultConfig() OpenAIConfig {
 	defaultAzureURL := ""
 
 	return OpenAIConfig{
-		Enable:       &defaultEnabled,
-		OpenAIKey:    nil,
-		SystemPrompt: &defaultPrompt,
-		Model:        &defaultModel,
-		MaxTokens:    &defaultMaxTokens,
-		MinTokens:    &defaultMinTokens,
-		Indexes:      &indexes,
-		APIType:      &defaultAPIType,
-		AzureBaseURL: &defaultAzureURL,
-		AzureVersion: &defaultAzureURL,
+		Enable:                &defaultEnabled,
+		OpenAIKey:             nil,
+		SystemPrompt:          &defaultPrompt,
+		Model:                 &defaultModel,
+		DefaultEmbeddingModel: &defaultEmbeddingModel,
+		MaxTokens:             &defaultMaxTokens,
+		MinTokens:             &defaultMinTokens,
+		Indexes:               &indexes,
+		APIType:               &defaultAPIType,
+		AzureBaseURL:          &defaultAzureURL,
+		AzureVersion:          &defaultAzureURL,
 	}
+}
+
+type EmbeddingModel int
+
+const (
+	TextEmbedding3Small EmbeddingModel = iota
+	TextEmbedding3Large
+	TextEmbeddingAda002
+)
+
+// String is the implementation of stringer interface that returns the
+// string representation of EmbeddingModel
+func (a EmbeddingModel) String() string {
+	return [...]string{
+		"text-embedding-3-small",
+		"text-embedding-3-large",
+		"text-embedding-ada-002",
+	}[a]
+}
+
+// UnmarshalJSON is the implementation of the Unmarshaler interface for
+// unmarshalling EmbeddingModel.
+func (a *EmbeddingModel) UnmarshalJSON(bytes []byte) error {
+	var embeddingModel string
+	err := json.Unmarshal(bytes, &embeddingModel)
+	if err != nil {
+		return err
+	}
+
+	switch embeddingModel {
+	case TextEmbedding3Small.String():
+		*a = TextEmbedding3Small
+	case TextEmbedding3Large.String():
+		*a = TextEmbedding3Large
+	case TextEmbeddingAda002.String():
+		*a = TextEmbeddingAda002
+	default:
+		return fmt.Errorf("invalid text embedding value encountered: %v. Should be one of 'text-embedding-3-small', 'text-embedding-3-large', 'text-embedding-ada-002'", embeddingModel)
+	}
+
+	return nil
+}
+
+// MarshalJSON is the implementation of the Marshaler interface
+// for marshaling EmbeddingModel
+func (a EmbeddingModel) MarshalJSON() ([]byte, error) {
+	var embeddingModel string
+	switch a {
+	case TextEmbedding3Small:
+		embeddingModel = TextEmbedding3Small.String()
+	case TextEmbedding3Large:
+		embeddingModel = TextEmbedding3Large.String()
+	case TextEmbeddingAda002:
+		embeddingModel = TextEmbeddingAda002.String()
+	default:
+		return nil, fmt.Errorf("invalid text embedding encountered: %v. Should be one of 'text-embedding-3-small', 'text-embedding-3-large', 'text-embedding-ada-002'", a)
+	}
+
+	return json.Marshal(embeddingModel)
 }
 
 type APIType int
@@ -1000,16 +1063,17 @@ func (a APIType) MarshalJSON() ([]byte, error) {
 // ConfigIn will contain details of the configuration
 // passed by the user
 type ConfigDetails struct {
-	Enable              *bool     `json:"enable,omitempty"`
-	ApiKey              *string   `json:"apiKey,omitempty"`
-	DefaultModel        *string   `json:"defaultModel,omitempty"`
-	DefaultSystemPrompt *string   `json:"defaultSystemPrompt,omitempty"`
-	DefaultMaxTokens    *int      `json:"defaultMaxTokens,omitempty"`
-	DefaultMinTokens    *int      `json:"defaultMinTokens,omitempty"`
-	EnabledIndexes      *[]string `json:"enabledIndexes,omitempty"`
-	APIType             *APIType  `json:"apiType,omitempty"`
-	AzureBaseURL        *string   `json:"azureBaseURL,omitempty"`
-	AzureVersion        *string   `json:"apiVersion,omitempty"`
+	Enable                *bool           `json:"enable,omitempty"`
+	ApiKey                *string         `json:"apiKey,omitempty"`
+	DefaultModel          *string         `json:"defaultModel,omitempty"`
+	DefaultEmbeddingModel *EmbeddingModel `json:"defaultEmbeddingModel,omitempty"`
+	DefaultSystemPrompt   *string         `json:"defaultSystemPrompt,omitempty"`
+	DefaultMaxTokens      *int            `json:"defaultMaxTokens,omitempty"`
+	DefaultMinTokens      *int            `json:"defaultMinTokens,omitempty"`
+	EnabledIndexes        *[]string       `json:"enabledIndexes,omitempty"`
+	APIType               *APIType        `json:"apiType,omitempty"`
+	AzureBaseURL          *string         `json:"azureBaseURL,omitempty"`
+	AzureVersion          *string         `json:"apiVersion,omitempty"`
 }
 
 // ToInternalConfig will return the config details in the internal
@@ -1028,6 +1092,11 @@ func (c ConfigDetails) ToInternalConfig() OpenAIConfig {
 	if c.DefaultModel == nil {
 		defaultModelStr := defaultModel
 		c.DefaultModel = &defaultModelStr
+	}
+
+	if c.DefaultEmbeddingModel == nil {
+		defaultEmbeddingModel := TextEmbedding3Small
+		c.DefaultEmbeddingModel = &defaultEmbeddingModel
 	}
 
 	if c.DefaultSystemPrompt == nil {
@@ -1061,16 +1130,17 @@ func (c ConfigDetails) ToInternalConfig() OpenAIConfig {
 	}
 
 	return OpenAIConfig{
-		Enable:       c.Enable,
-		OpenAIKey:    c.ApiKey,
-		Model:        c.DefaultModel,
-		SystemPrompt: c.DefaultSystemPrompt,
-		MaxTokens:    c.DefaultMaxTokens,
-		MinTokens:    c.DefaultMinTokens,
-		Indexes:      c.EnabledIndexes,
-		APIType:      c.APIType,
-		AzureBaseURL: c.AzureBaseURL,
-		AzureVersion: c.AzureVersion,
+		Enable:                c.Enable,
+		OpenAIKey:             c.ApiKey,
+		Model:                 c.DefaultModel,
+		DefaultEmbeddingModel: c.DefaultEmbeddingModel,
+		SystemPrompt:          c.DefaultSystemPrompt,
+		MaxTokens:             c.DefaultMaxTokens,
+		MinTokens:             c.DefaultMinTokens,
+		Indexes:               c.EnabledIndexes,
+		APIType:               c.APIType,
+		AzureBaseURL:          c.AzureBaseURL,
+		AzureVersion:          c.AzureVersion,
 	}
 }
 
@@ -1078,16 +1148,17 @@ func (c ConfigDetails) ToInternalConfig() OpenAIConfig {
 // config structure
 func (o OpenAIConfig) ToExternalConfig() ConfigDetails {
 	return ConfigDetails{
-		Enable:              o.Enable,
-		ApiKey:              o.OpenAIKey,
-		DefaultModel:        o.Model,
-		DefaultSystemPrompt: o.SystemPrompt,
-		DefaultMaxTokens:    o.MaxTokens,
-		DefaultMinTokens:    o.MinTokens,
-		EnabledIndexes:      o.Indexes,
-		APIType:             o.APIType,
-		AzureBaseURL:        o.AzureBaseURL,
-		AzureVersion:        o.AzureVersion,
+		Enable:                o.Enable,
+		ApiKey:                o.OpenAIKey,
+		DefaultModel:          o.Model,
+		DefaultEmbeddingModel: o.DefaultEmbeddingModel,
+		DefaultSystemPrompt:   o.SystemPrompt,
+		DefaultMaxTokens:      o.MaxTokens,
+		DefaultMinTokens:      o.MinTokens,
+		EnabledIndexes:        o.Indexes,
+		APIType:               o.APIType,
+		AzureBaseURL:          o.AzureBaseURL,
+		AzureVersion:          o.AzureVersion,
 	}
 }
 
@@ -1108,6 +1179,11 @@ func ValidateConfigPassed(config ConfigDetails) (ConfigDetails, error) {
 	if config.DefaultModel == nil {
 		defaultModelAsStr := defaultModel
 		config.DefaultModel = &defaultModelAsStr
+	}
+
+	if config.DefaultEmbeddingModel == nil {
+		defaultEmbeddingModel := TextEmbedding3Small
+		config.DefaultEmbeddingModel = &defaultEmbeddingModel
 	}
 
 	if config.DefaultSystemPrompt == nil {
@@ -1177,10 +1253,13 @@ func ValidateConfigPassed(config ConfigDetails) (ConfigDetails, error) {
 }
 
 // BuildChatGPTBody will build the chatGPT body that will be sent to the API
-func BuildChatGPTBody(model string, messages []map[string]interface{}, maxTokens *int, temperature *float64, isStream bool) map[string]interface{} {
+func BuildChatGPTBody(model string, messages []map[string]interface{}, maxTokens *int, temperature *float64, isStream bool, apiType APIType) map[string]interface{} {
 	requestBodyAsMap := map[string]interface{}{
-		"model":    model,
 		"messages": messages,
+	}
+
+	if apiType != AzureType {
+		requestBodyAsMap["model"] = model
 	}
 
 	// If maxTokens is passed, inject it in the request body
@@ -1201,12 +1280,20 @@ func BuildChatGPTBody(model string, messages []map[string]interface{}, maxTokens
 }
 
 // MakeChatGPTRequest will make the ChatGPT request and return the response accordingly
-func MakeChatGPTRequest(model string, messages []map[string]interface{}, apiKey string, maxTokens *int, temperature *float64) (*http.Response, []byte, []byte, int64, *http.Request, error) {
+func MakeChatGPTRequest(
+	model string,
+	messages []map[string]interface{},
+	apiKey string,
+	maxTokens *int,
+	temperature *float64,
+	apiType APIType,
+	azureUrl string,
+	azureVersion string,
+) (*http.Response, []byte, []byte, int64, *http.Request, error) {
 	// Build the request to send to ChatGPT API
-	endpointToHit := "/chat/completions"
-	URLToHit := OpenAIAPIURL + endpointToHit
+	URLToHit := BuildOpenAIURL(apiType, azureUrl, model, azureVersion)
 
-	requestBodyAsMap := BuildChatGPTBody(model, messages, maxTokens, temperature, false)
+	requestBodyAsMap := BuildChatGPTBody(model, messages, maxTokens, temperature, false, apiType)
 
 	bodyAsBytes, bodyMarshalErr := json.Marshal(requestBodyAsMap)
 	if bodyMarshalErr != nil {
@@ -1223,7 +1310,12 @@ func MakeChatGPTRequest(model string, messages []map[string]interface{}, apiKey 
 	}
 
 	// Set the authorization header
-	request.Header.Add("Authorization", fmt.Sprintf("Bearer %s", apiKey))
+	// Set the authorization header
+	if apiType == OpenAIType {
+		request.Header.Add("Authorization", fmt.Sprintf("Bearer %s", apiKey))
+	} else if apiType == AzureType {
+		request.Header.Add("api-key", apiKey)
+	}
 	request.Header.Add("Content-Type", "application/json")
 
 	response, reqErr := util.HTTPClient().Do(request)
@@ -1253,6 +1345,19 @@ func MakeChatGPTRequest(model string, messages []map[string]interface{}, apiKey 
 	return response, responseInBytes, bodyAsBytes, resolvedAt, request, nil
 }
 
+// Build the OpenAI API URL based on the api type.
+func BuildOpenAIURL(apiType APIType, azureUrl string, model string, azureVersion string) string {
+	// Build the request to send to ChatGPT API
+	endpointToHit := "/chat/completions"
+
+	URLToHit := OpenAIAPIURL + endpointToHit
+	if apiType == AzureType {
+		URLToHit = fmt.Sprintf("%s/openai/deployments/%s/chat/completions?api-version=%s", azureUrl, model, azureVersion)
+	}
+
+	return URLToHit
+}
+
 // MakeChatGPTRequestWithStream will make the ChatGPT request but stream it so that each
 // chunk is written to the passed channel until the `[DONE]` text is received.
 func MakeChatGPTRequestWithStream(
@@ -1266,17 +1371,11 @@ func MakeChatGPTRequestWithStream(
 	azureUrl string,
 	azureVersion string,
 ) ([][]byte, []byte, int64, int64, int64, *http.Request, error) {
-	// Build the request to send to ChatGPT API
-	endpointToHit := "/chat/completions"
-
-	URLToHit := OpenAIAPIURL + endpointToHit
-	if apiType == AzureType {
-		URLToHit = azureUrl + endpointToHit + "?api-version=" + azureVersion
-	}
+	URLToHit := BuildOpenAIURL(apiType, azureUrl, model, azureVersion)
 
 	log.Debug(logTag, ": Hitting OpenAI URL: ", URLToHit)
 
-	requestBodyAsMap := BuildChatGPTBody(model, messages, maxTokens, temperature, true)
+	requestBodyAsMap := BuildChatGPTBody(model, messages, maxTokens, temperature, true, apiType)
 
 	bodyAsBytes, bodyMarshalErr := json.Marshal(requestBodyAsMap)
 	if bodyMarshalErr != nil {
@@ -1295,7 +1394,12 @@ func MakeChatGPTRequestWithStream(
 	responseDataToReturn := make([][]byte, 0)
 
 	// Set the authorization header
-	request.Header.Add("Authorization", fmt.Sprintf("Bearer %s", apiKey))
+	if apiType == OpenAIType {
+		request.Header.Add("Authorization", fmt.Sprintf("Bearer %s", apiKey))
+	} else if apiType == AzureType {
+		request.Header.Add("api-key", apiKey)
+	}
+
 	request.Header.Add("Content-Type", "application/json")
 
 	// Set SSE specific headers
@@ -1312,6 +1416,33 @@ func MakeChatGPTRequestWithStream(
 		return nil, bodyAsBytes, resolvedAt, 0, 0, request, fmt.Errorf(errMsg)
 	}
 
+	defer response.Body.Close()
+
+	// Create a buffer to store a copy of the response body
+	var buf bytes.Buffer
+	tee := io.TeeReader(response.Body, &buf)
+
+	// Read the response body
+	body, readErr := ioutil.ReadAll(tee)
+	if readErr != nil {
+		log.Fatalf("Error reading response body: %v", readErr)
+	}
+	value, dataType, _, chatGPTResponseErr := jsonparser.Get(body, "error")
+	if chatGPTResponseErr != nil && dataType != jsonparser.NotExist {
+		// If there's an error parsing, return the error
+		log.Warnln(logTag, ": error while parsing response body: ", chatGPTResponseErr)
+	}
+	if dataType == jsonparser.Object {
+		return nil, body, resolvedAt, 0, 0, request, fmt.Errorf("%s", string(value))
+	}
+
+	// Restore the response body so it can be read again
+	response.Body = ioutil.NopCloser(&buf)
+	// NOTE: If the body is read for debugging purposes, ensure
+	// that the body is passed on in the following as go response
+	// bodies are read once only so by the time the chunks are actually
+	// read below, the body will be empty.
+
 	var firstByteRead int64 = 0
 	var streamClosedAt int64 = 0
 
@@ -1319,6 +1450,11 @@ func MakeChatGPTRequestWithStream(
 		data := make([]byte, 1024)
 		_, err := response.Body.Read(data)
 		if err != nil {
+			// End of file reached, exit the loop gracefully
+			if err == io.EOF {
+				break
+			}
+
 			return nil, bodyAsBytes, resolvedAt, 0, 0, request, fmt.Errorf("error while reading chunk: %s", err.Error())
 		}
 
@@ -1349,10 +1485,25 @@ func FetchChatGPTForSession(
 	apiKey string,
 	maxTokens *int,
 	temperature *float64,
+	apiType APIType,
+	azureUrl string,
+	azureVersion string,
+	skipStoringFailedResponse bool,
 ) error {
 	// Make ChatGPT request
-	_, responseInBytes, requestInBytes, resolvedAt, httpReq, chatGPTErr := MakeChatGPTRequest(modelUsed, messages, apiKey, maxTokens, temperature)
+	_, responseInBytes, requestInBytes, resolvedAt, httpReq, chatGPTErr := MakeChatGPTRequest(modelUsed, messages, apiKey, maxTokens, temperature, apiType, azureUrl, azureVersion)
 	if chatGPTErr != nil {
+		// Create the error message that is to be returned
+		errAsStr := chatGPTErr.Error()
+		errMsg := fmt.Errorf("error while sending request to chatGPT: %s", errAsStr)
+		log.Warnln(logTag, ": ", errMsg)
+
+		// If storing the failed response is skipped, we will return the error right away
+		// and not do anything.
+		if skipStoringFailedResponse {
+			return fmt.Errorf(`{"error": %s}`, responseInBytes)
+		}
+
 		// We will need to store the error in a way that it can be returned to the user directly.
 		responseToStoreInBytes := fmt.Sprintf(`{"error": "%s"}`, chatGPTErr.Error())
 
@@ -1380,8 +1531,6 @@ func FetchChatGPTForSession(
 		// Set the resolved time
 		sessionMap.SetResolvedAt(sessionId, resolvedAt, httpReq, 0, 0, requestInBytes)
 
-		errMsg := fmt.Errorf("error while sending request to chatGPT: %s", chatGPTErr.Error())
-		log.Warnln(logTag, ": ", errMsg)
 		return errMsg
 	}
 
@@ -1411,6 +1560,75 @@ func FetchChatGPTForSession(
 	return nil
 }
 
+// Parse the streamed response received from GPT 4 or newer API models
+func ParseGPT4Responses(responsesArr [][]byte) (map[string]interface{}, string, *error) {
+	isModelExtracted := false
+	responseAsMap := make(map[string]interface{})
+	completeText := ""
+
+	combinedText := ""
+
+	// We will split the responses bytes by the newlines.
+	// Then we will join them with an empty string to get a complete
+	// string which will then be splitted using the `data: ` separator
+	// to get a list of parse-able stringified JSON bodies.
+	for _, val := range responsesArr {
+		responseInStr := string(val)
+		splittedResponse := strings.Split(responseInStr, "\n\n")
+
+		// Join the splitted response and then break it down using `data: `
+		// as a separator.
+		combinedText += strings.Join(splittedResponse, "")
+	}
+
+	textSplittedByData := strings.Split(combinedText, "data: ")
+
+	// Iterate through the splitted JSON bodies.
+	for position, valEach := range textSplittedByData {
+		// Skip the value if it is an empty string
+		if valEach == "" {
+			continue
+		}
+
+		if position == len(textSplittedByData)-1 {
+			// Last one, so probably empty, skip it!
+			continue
+		}
+
+		if !isModelExtracted {
+			// This is the first one that we can skip.
+
+			// Extract the model
+			modelAsStr, extractErr := jsonparser.GetString([]byte(valEach), "model")
+			if extractErr != nil {
+				errMsg := fmt.Errorf("error while extracting model: %s", extractErr.Error())
+				log.Warnln(logTag, ": ", errMsg)
+				return responseAsMap, completeText, &errMsg
+			}
+
+			responseAsMap["model"] = modelAsStr
+			isModelExtracted = true
+		}
+
+		contentEach, extractErr := jsonparser.GetString([]byte(valEach), "choices", "[0]", "delta", "content")
+		if extractErr != nil {
+			errMsg := fmt.Errorf("error while extracting value: %s", extractErr.Error())
+			log.Warnln(logTag, ": ", errMsg)
+			continue
+		}
+
+		completeText += contentEach
+	}
+
+	return responseAsMap, completeText, nil
+}
+
+// IsValidJSON checks if a string is a valid JSON.
+func IsValidJSON(str string) bool {
+	var js json.RawMessage
+	return json.Unmarshal([]byte(str), &js) == nil
+}
+
 // FetchChatGPTForSessionWithStream will fetch the ChatGPT response with streaming
 // enabled.
 func FetchChatGPTForSessionWithStream(
@@ -1425,6 +1643,7 @@ func FetchChatGPTForSessionWithStream(
 	apiType APIType,
 	azureURL string,
 	azureVersion string,
+	skipStoringFailedResponse bool,
 ) error {
 	// Create the channel and set it for the passed sessionId
 	responseChannel := sessionMap.GetChannel(sessionId)
@@ -1437,7 +1656,24 @@ func FetchChatGPTForSessionWithStream(
 
 	if chatGPTErr != nil {
 		// We will need to store the error in a way that it can be returned to the user directly.
-		responseToStoreInBytes := fmt.Sprintf(`{"error": "%s"}`, chatGPTErr.Error())
+		errorStr := fmt.Sprintf(`{"error": "%s"}`, chatGPTErr.Error())
+		if IsValidJSON(chatGPTErr.Error()) {
+			errorStr = fmt.Sprintf(`{"error": %s}`, chatGPTErr.Error())
+		}
+
+		errMsg := fmt.Errorf("error while sending request to chatGPT: %s", chatGPTErr.Error())
+		log.Warnln(logTag, ": ", errMsg)
+
+		if skipStoringFailedResponse {
+			// Set the streaming as false.
+			sessionMap.SetIsStreaming(sessionId, false)
+			return fmt.Errorf(errorStr)
+		}
+
+		responseToStoreInBytes := errorStr
+
+		// SetIsFailed for the session since the request failed
+		sessionMap.SetIsFailed(sessionId, true)
 
 		// If request is valid, store it against the sessionId
 		if requestInBytes != nil {
@@ -1450,11 +1686,6 @@ func FetchChatGPTForSessionWithStream(
 		// Set the resolved time
 		sessionMap.SetResolvedAt(sessionId, resolvedAt, httpReq, firstByteRead, streamClosedAt, requestInBytes)
 
-		// SetIsFailed for the session since the request failed
-		sessionMap.SetIsFailed(sessionId, true)
-
-		errMsg := fmt.Errorf("error while sending request to chatGPT: %s", chatGPTErr.Error())
-		log.Warnln(logTag, ": ", errMsg)
 		return errMsg
 	}
 
@@ -1481,41 +1712,52 @@ func FetchChatGPTForSessionWithStream(
 	completeText := ""
 	isModelExtracted := false
 
-	for _, val := range responsesArr {
-		val = bytes.Replace(val, []byte("data: "), []byte(""), -1)
+	if !strings.Contains(strings.ToLower(modelUsed), "gpt-3") {
+		var parseErr *error
+		responseAsMap, completeText, parseErr = ParseGPT4Responses(responsesArr)
+		if parseErr != nil {
+			return fmt.Errorf("Error while parsing azure OpenAI response: %s", (*parseErr).Error())
+		}
+	} else {
+		for _, val := range responsesArr {
+			val = bytes.Replace(val, []byte("data: "), []byte(""), -1)
 
-		responseInStr := string(val)
-		splittedResponse := strings.Split(responseInStr, "\n\n")
+			responseInStr := string(val)
+			splittedResponse := strings.Split(responseInStr, "\n\n")
 
-		for position, valEach := range splittedResponse {
-			if position == len(splittedResponse)-1 {
-				// Last one, so probably empty, skip it!
-				continue
-			}
-
-			if !isModelExtracted {
-				// This is the first one that we can skip.
-
-				// Extract the model
-				modelAsStr, extractErr := jsonparser.GetString([]byte(valEach), "model")
-				if extractErr != nil {
-					errMsg := fmt.Errorf("error while extracting model: %s", extractErr.Error())
-					log.Warnln(logTag, ": ", errMsg)
-					return errMsg
+			for position, valEach := range splittedResponse {
+				if position == len(splittedResponse)-1 {
+					// Last one, so probably empty, skip it!
+					continue
 				}
 
-				responseAsMap["model"] = modelAsStr
-				isModelExtracted = true
-			}
+				if !isModelExtracted {
+					// This is the first one that we can skip.
 
-			contentEach, extractErr := jsonparser.GetString([]byte(valEach), "choices", "[0]", "delta", "content")
-			if extractErr != nil {
-				errMsg := fmt.Errorf("error while extracting value: %s", extractErr.Error())
-				log.Warnln(logTag, ": ", errMsg)
-				continue
-			}
+					// Extract the model
+					modelAsStr, extractErr := jsonparser.GetString([]byte(valEach), "model")
+					if extractErr != nil {
+						errMsg := fmt.Errorf("error while extracting model: %s", extractErr.Error())
+						log.Warnln(logTag, ": ", errMsg)
+						return errMsg
+					}
 
-			completeText += contentEach
+					responseAsMap["model"] = modelAsStr
+					isModelExtracted = true
+				}
+
+				log.Debug(logTag, ": val each: ", valEach)
+
+				contentEach, extractErr := jsonparser.GetString([]byte(valEach), "choices", "[0]", "delta", "content")
+				if extractErr != nil {
+					errMsg := fmt.Errorf("error while extracting value: %s", extractErr.Error())
+					log.Warnln(logTag, ": ", errMsg)
+					continue
+				}
+
+				log.Debug(logTag, ": content: ", contentEach)
+				completeText += contentEach
+			}
 		}
 	}
 
@@ -1625,6 +1867,7 @@ func FetchFromOldSession(oldSessionId string, sessionMap *SessionIdToChatGPTResp
 			openAIInstance.GetConfig().GetAPIType(),
 			openAIInstance.GetConfig().GetAzureURL(),
 			openAIInstance.GetConfig().GetAzureVersion(),
+			false,
 		)
 	}(newSessionId, sessionMap, openAIInstance, olderMessagesAsArr, olderResponse, olderRequestAsStruct)
 
@@ -1772,4 +2015,64 @@ func GetChannelWithSize(size int) chan []byte {
 // GenerateSessionId will generate a sessionId for the ChatGPT request
 func GenerateSessionId() string {
 	return shortuuid.New()
+}
+
+// PingChatGPTWithDetails will make a ping call to chatGPT based on the
+// passed details to check whether the configuration is good to go.
+func PingChatGPTWithDetails(
+	model string,
+	apiKey string,
+	maxTokens *int,
+	temperature *float64,
+	apiType APIType,
+	azureUrl string,
+	azureVersion string,
+	systemPrompt string,
+) *util.Error {
+	messagesArrToPassChatGPT := make([]map[string]interface{}, 0)
+	messagesArrToPassChatGPT = append(messagesArrToPassChatGPT, map[string]interface{}{
+		"role":    "system",
+		"content": systemPrompt,
+	})
+	messagesArrToPassChatGPT = append(messagesArrToPassChatGPT, map[string]interface{}{
+		"role":    "user",
+		"content": "Ping. If you got the ping, reply with pong.",
+	})
+
+	// Build the messages body.
+	_, responseInBytes, _, _, _, chatGPTErr := MakeChatGPTRequest(
+		model,
+		messagesArrToPassChatGPT,
+		apiKey,
+		maxTokens,
+		temperature,
+		apiType,
+		azureUrl,
+		azureVersion,
+	)
+
+	if chatGPTErr != nil {
+		return &util.Error{
+			Err:     chatGPTErr,
+			Message: fmt.Sprintf("Error received while making request: %s", chatGPTErr.Error()),
+		}
+	}
+
+	// Check the response and accordingly determine whether it was successful or not.
+	pingResponse, getErr := jsonparser.GetString(responseInBytes, "choices", "[0]", "message", "content")
+	if getErr != nil {
+		return &util.Error{
+			Err:     getErr,
+			Message: "Failed to parse response received from upstream",
+		}
+	}
+
+	if strings.Contains(strings.ToLower(pingResponse), "pong") {
+		return nil
+	}
+
+	return &util.Error{
+		Err:     fmt.Errorf("`pong` not found in response message: %s", pingResponse),
+		Message: "Did not find `pong` in the response message",
+	}
 }

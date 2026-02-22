@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/appbaseio-confidential/reactivesearch/plugins/querytranslate"
+	"github.com/appbaseio/reactivesearch-api/plugins/querytranslate"
 	. "github.com/smartystreets/goconvey/convey"
 )
 
@@ -503,7 +503,7 @@ func TestExecutePipeline(t *testing.T) {
 			}
 		}
 		cachedResInBytes, _ := json.Marshal(cachedRes)
-		expectedResponse := "{\"console_logs\":[],\"envs\":{\"category\":\"reactivesearch\",\"index\":[\"test\"],\"path\":\"/test/_reactivesearch\"},\"request\":{\"body\":\"{\\\"query\\\":[{\\\"id\\\":\\\"search\\\",\\\"type\\\":\\\"search\\\",\\\"dataField\\\":\\\"ded\\\"},{\\\"id\\\":\\\"search2\\\"}]}\",\"headers\":{},\"method\":\"\",\"url\":\"\"},\"response\":{\"body\":\"{\\\"settings\\\":{\\\"took\\\":0,\\\"script_took\\\":0,\\\"cached\\\":true},\\\"search\\\":{\\\"took\\\":1,\\\"timed_out\\\":false,\\\"_shards\\\":{\\\"total\\\":1,\\\"successful\\\":1,\\\"skipped\\\":0,\\\"failed\\\":0},\\\"hits\\\":{\\\"total\\\":{\\\"value\\\":1,\\\"relation\\\":\\\"eq\\\"},\\\"max_score\\\":1,\\\"hits\\\":[{\\\"_index\\\":\\\"test\\\",\\\"_type\\\":\\\"_doc\\\",\\\"_id\\\":\\\"1\\\",\\\"_score\\\":1,\\\"_source\\\":{\\\"queryLength\\\":6,\\\"query\\\":\\\"value1\\\"}}]},\\\"status\\\":200}}\",\"code\":200,\"headers\":{\"X-request-Cache\":\"true\",\"x-pipeline-id\":\"cache_test\"}}}"
+		expectedResponse := "{\"console_logs\":[],\"envs\":{\"cacheHit\":true,\"category\":\"reactivesearch\",\"index\":[\"test\"],\"path\":\"/test/_reactivesearch\"},\"request\":{\"body\":\"{\\\"query\\\":[{\\\"id\\\":\\\"search\\\",\\\"type\\\":\\\"search\\\",\\\"dataField\\\":\\\"ded\\\"},{\\\"id\\\":\\\"search2\\\"}]}\",\"headers\":{},\"method\":\"\",\"url\":\"\"},\"response\":{\"body\":\"{\\\"settings\\\":{\\\"took\\\":0,\\\"script_took\\\":0,\\\"cached\\\":true},\\\"search\\\":{\\\"took\\\":1,\\\"timed_out\\\":false,\\\"_shards\\\":{\\\"total\\\":1,\\\"successful\\\":1,\\\"skipped\\\":0,\\\"failed\\\":0},\\\"hits\\\":{\\\"total\\\":{\\\"value\\\":1,\\\"relation\\\":\\\"eq\\\"},\\\"max_score\\\":1,\\\"hits\\\":[{\\\"_index\\\":\\\"test\\\",\\\"_type\\\":\\\"_doc\\\",\\\"_id\\\":\\\"1\\\",\\\"_score\\\":1,\\\"_source\\\":{\\\"queryLength\\\":6,\\\"query\\\":\\\"value1\\\"}}]},\\\"status\\\":200}}\",\"code\":200,\"headers\":{\"X-request-Cache\":\"true\",\"x-pipeline-id\":\"cache_test\"}}}"
 		So(string(cachedResInBytes), ShouldResemble, expectedResponse)
 	})
 

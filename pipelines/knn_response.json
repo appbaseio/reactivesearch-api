@@ -1,0 +1,58 @@
+{
+    "enabled": true,
+    "routes": [
+        {
+            "path": "/{index}/_reactivesearch",
+            "method": "POST",
+            "classify": {
+                "category": "reactivesearch"
+            }
+        }
+    ],
+    "envs": {
+        "bertURL": "http://34.134.214.19:8125"
+    },
+    "stages": [
+        {
+            "id": "auth",
+            "use": "authorization"
+        },
+        {
+            "id": "modify request",
+            "script": "function handleRequest() { const reqBody = JSON.parse(context.request.body); return { ...context, request: {...context.request, body: JSON.stringify({...reqBody, query: [...reqBody.query, {id: 'search2'}]})}}; }"
+        },
+        {
+            "id": "generate vector",
+            "async": true,
+            "script": "async function handleRequest() { const requestBody = JSON.parse(context.request.body); const vectoredQuery = await getVectorForData(requestBody.query[0].value); return { queryVector: vectoredQuery } } async function getVectorForData(data) { const url = `${context.envs.bertURL}/encode`; const response = await fetch(url, { method: 'POST, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: 1, texts: [data], is_tokenized: false }) }); const jsonResponse = JSON.parse(response); return jsonResponse.result[0]; }",
+            "continueOnError": false
+        },
+        {
+            "id": "knn response",
+            "use": "kNN",
+            "inputs": {
+                "search": {
+                    "queryVector": "{{queryVector}}",
+                    "vectorDataField": "name_vector"
+                }
+            },
+            "needs": [
+                "generate vector"
+            ],
+            "continueOnError": false
+        },
+        {
+            "id": "print context request",
+            "script": "console.log(context.request.body)"
+        },
+        {
+            "id": "query",
+            "use": "reactivesearchQuery"
+        },
+        {
+            "id": "es_query",
+            "use": "elasticsearchQuery",
+            "async": true
+        }
+    ]
+}

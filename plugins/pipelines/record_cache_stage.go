@@ -5,10 +5,10 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/appbaseio-confidential/reactivesearch/model/category"
-	"github.com/appbaseio-confidential/reactivesearch/plugins/cache"
-	"github.com/appbaseio-confidential/reactivesearch/plugins/querytranslate"
-	"github.com/appbaseio-confidential/reactivesearch/plugins/rules"
+	"github.com/appbaseio/reactivesearch-api/model/category"
+	"github.com/appbaseio/reactivesearch-api/plugins/cache"
+	"github.com/appbaseio/reactivesearch-api/plugins/querytranslate"
+	"github.com/appbaseio/reactivesearch-api/plugins/rules"
 	log "github.com/sirupsen/logrus"
 )
 

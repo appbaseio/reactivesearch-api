@@ -19,7 +19,7 @@ import (
 	"sync"
 	"time"
 
-	appbase_errors "github.com/appbaseio-confidential/reactivesearch/errors"
+	appbase_errors "github.com/appbaseio/reactivesearch-api/errors"
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 	log "github.com/sirupsen/logrus"
@@ -42,8 +42,8 @@ var OfflineBilling bool
 var Opensource string
 
 // We set it in the `main.go` based on the env variable and run time flag
-// defaults to `true`
-var IsTelemetryEnabled bool = true
+// defaults to `false` for open-source builds
+var IsTelemetryEnabled bool = false
 
 // Version ReactiveSearch version
 var Version string
@@ -116,6 +116,15 @@ func WriteBackRaw(w http.ResponseWriter, raw []byte, code int) {
 func Contains(slice []string, val string) bool {
 	for _, v := range slice {
 		if v == val {
+			return true
+		}
+	}
+	return false
+}
+
+func ContainsBytes(slice [][]byte, item []byte) bool {
+	for _, v := range slice {
+		if bytes.Equal(v, item) {
 			return true
 		}
 	}
@@ -386,7 +395,7 @@ func GetArcID() (string, error) {
 			return "", appbase_errors.NewEnvVarNotSetError(ClusterIDEnvName)
 		}
 	} else {
-		appbaseID, err := GetAppbaseID()
+		appbaseID, err := GetReactiveSearchID()
 		if err != nil {
 			return "", err
 		}

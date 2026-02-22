@@ -6,7 +6,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/appbaseio-confidential/reactivesearch/util"
+	"github.com/appbaseio/reactivesearch-api/util"
 )
 
 type ActionType int

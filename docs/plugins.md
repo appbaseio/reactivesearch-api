@@ -38,7 +38,7 @@ The `greeter.go` would be responsible for implementing the `Plugin` interface an
 	import (
 		"fmt"
 	
-		"github.com/appbaseio-confidential/reactivesearch/plugins"
+		"github.com/appbaseio/reactivesearch-api/plugins"
 	)
 
 	const pluginName = "greeter"
@@ -79,7 +79,7 @@ Define a list of routes that the plugin aims to handle.
 	import (
 	 	"net/http"
  	
-  		"github.com/appbaseio-confidential/reactivesearch/plugins"
+  		"github.com/appbaseio/reactivesearch-api/plugins"
 	)
 	
 	func (g *Greeter) routes() []plugin.Route {

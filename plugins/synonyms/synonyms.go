@@ -4,15 +4,15 @@ import (
 	"os"
 	"sync"
 
-	"github.com/appbaseio-confidential/reactivesearch/plugins"
+	"github.com/appbaseio/reactivesearch-api/plugins"
 
-	"github.com/appbaseio-confidential/reactivesearch/middleware"
+	"github.com/appbaseio/reactivesearch-api/middleware"
 	"github.com/go-playground/validator/v10"
 )
 
 const (
 	logTag                 = "[synonyms]"
-	defaultSynonymsEsIndex = ".synonyms"
+	defaultSynonymsEsIndex = ".rs-synonyms"
 	synonymsEsIndex        = "SYNONYMS_ES_INDEX"
 	mapping                = `{ "settings": { "index.number_of_shards": 1, "index.number_of_replicas": %d } }`
 	typeName               = "_doc"

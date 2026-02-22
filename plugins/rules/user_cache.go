@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/appbaseio-confidential/reactivesearch/plugins/cache"
+	"github.com/appbaseio/reactivesearch-api/plugins/cache"
 	"github.com/dgraph-io/ristretto"
 	"rogchap.com/v8go"
 )
@@ -90,18 +90,22 @@ func (kv *KV) GetKVReadFunctionCallback() v8go.FunctionCallback {
 // The TTL of the key will be set according to the cache preferences
 // of the cluster.
 func (kv *KV) StoreValueInCache(key, value string) error {
+	return StoreValueInCacheWithObject(key, value, kv.cache)
+}
+
+func StoreValueInCacheWithObject(key, value string, cacheObject *ristretto.Cache) error {
 	cachePreferences := cache.GetCachePreferences()
-	if cachePreferences.EnableCache == nil || !*cachePreferences.EnableCache || kv.cache == nil {
+	if cachePreferences.EnableCache == nil || !*cachePreferences.EnableCache || cacheObject == nil {
 		// Cache is disabled or something else has stopped caching
 		// from being initiated, we cannot continue.
 		return fmt.Errorf("Caching is disabled. Enable it by heading over to ReactiveSearch Dashboard.")
 	}
 
 	ttlSet := time.Duration(*cachePreferences.MaxDuration) * time.Second
-	isAdded := kv.cache.SetWithTTL(key, value, int64(len([]byte(value))), ttlSet)
+	isAdded := cacheObject.SetWithTTL(key, value, int64(len([]byte(value))), ttlSet)
 
 	// Wait for the value to pass through buffers
-	kv.cache.Wait()
+	cacheObject.Wait()
 
 	if !isAdded {
 		return fmt.Errorf("Error while setting key `%s` in cache with value `%s`", key, value)

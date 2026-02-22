@@ -1,0 +1,40 @@
+{
+    "enabled": true,
+    "description": "Pipeline to use mongo db as search backend with custom request body",
+    "routes": [
+      {
+        "path": "mongodb/_search",
+        "method": "POST"
+      }
+    ],
+    "stages": [
+      {
+        "use": "authorization",
+        "continueOnError": false
+      },
+      {
+        "use": "mongoDBQuery",
+        "inputs": {
+          "host": "cluster1.3aj3d.mongodb.net",
+          "credentials": "sid:hello123",
+          "db": "sample_airbnb",
+          "collection": "listingsAndReviews",
+          "connectionOptions": "authSource=admin&readPreference=primary&ssl=true",
+          "body": [{
+            "$facet":{
+              "aggregations":[
+                {
+                  "$unwind":"$property_type"
+                },
+                {
+                  "$sortByCount":"$property_type"
+                }
+              ]
+            }
+          }]
+        },
+        "continueOnError": false
+      }
+    ]
+  }
+  

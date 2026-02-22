@@ -11,7 +11,8 @@ import (
 	"github.com/buger/jsonparser"
 	log "github.com/sirupsen/logrus"
 
-	"github.com/appbaseio-confidential/reactivesearch/util"
+	"github.com/appbaseio/reactivesearch-api/util"
+	"github.com/appbaseio/reactivesearch-api/util/escompat"
 	es7 "github.com/olivere/elastic/v7"
 )
 
@@ -113,9 +114,9 @@ func (es *elasticsearch) updateUserSessionEs7(ctx context.Context, docID string,
 }
 
 func (es *elasticsearch) storedQueriesUsageEs7(ctx context.Context, from, to string, size int, filters map[string]interface{}) ([]byte, error) {
-	duration := es7.NewRangeQuery("timestamp").
-		From(from).
-		To(to)
+	duration := escompat.NewRangeQuery("timestamp").
+		Gte(from).
+		Lte(to)
 
 	query := es7.NewBoolQuery().Filter(duration)
 
@@ -158,9 +159,9 @@ func (es *elasticsearch) storedQueriesUsageEs7(ctx context.Context, from, to str
 }
 
 func (es *elasticsearch) queryRulesUsageEs7(ctx context.Context, from, to string, size int, filters map[string]interface{}) ([]byte, error) {
-	duration := es7.NewRangeQuery("timestamp").
-		From(from).
-		To(to)
+	duration := escompat.NewRangeQuery("timestamp").
+		Gte(from).
+		Lte(to)
 
 	query := es7.NewBoolQuery().Filter(duration)
 
@@ -203,9 +204,9 @@ func (es *elasticsearch) queryRulesUsageEs7(ctx context.Context, from, to string
 }
 
 func (es *elasticsearch) popularSearchesRawEs7(ctx context.Context, from, to string, size int, clickAnalytics bool, filters map[string]interface{}, indices ...string) ([]byte, error) {
-	duration := es7.NewRangeQuery("timestamp").
-		From(from).
-		To(to)
+	duration := escompat.NewRangeQuery("timestamp").
+		Gte(from).
+		Lte(to)
 
 	query := es7.NewBoolQuery().Filter(duration)
 
@@ -265,14 +266,14 @@ func (es *elasticsearch) popularSearchesRawEs7(ctx context.Context, from, to str
 }
 
 func (es *elasticsearch) recentSearchesEs7(ctx context.Context, from, to string, size int, minChar *int, filters map[string]interface{}, indices ...string) ([]byte, error) {
-	duration := es7.NewRangeQuery("timestamp").
-		From(from).
-		To(to)
+	duration := escompat.NewRangeQuery("timestamp").
+		Gte(from).
+		Lte(to)
 
 	query := es7.NewBoolQuery().Filter(duration)
 
 	if minChar != nil {
-		minCharQuery := es7.NewRangeQuery("search_characters_length").Gte(minChar)
+		minCharQuery := escompat.NewRangeQuery("search_characters_length").Gte(minChar)
 		query.Filter(minCharQuery)
 	}
 
@@ -337,9 +338,9 @@ func (es *elasticsearch) recentSearchesEs7(ctx context.Context, from, to string,
 }
 
 func (es *elasticsearch) getTotalUniqueSearchesEs7(ctx context.Context, from, to string, minDocCount int, filters map[string]interface{}, indices ...string) (totalUniqueSearches float64, avgClickRate float64, err error) {
-	duration := es7.NewRangeQuery("timestamp").
-		From(from).
-		To(to)
+	duration := escompat.NewRangeQuery("timestamp").
+		Gte(from).
+		Lte(to)
 
 	query := es7.NewBoolQuery().Filter(duration)
 
@@ -414,9 +415,9 @@ func (es *elasticsearch) getTotalUniqueSearchesEs7(ctx context.Context, from, to
 }
 
 func (es *elasticsearch) getTotalUniqueNoResultsSearchesEs7(ctx context.Context, from, to string, filters map[string]interface{}, indices ...string) (totalUniqueSearches float64, err error) {
-	duration := es7.NewRangeQuery("timestamp").
-		From(from).
-		To(to)
+	duration := escompat.NewRangeQuery("timestamp").
+		Gte(from).
+		Lte(to)
 
 	zeroHits := es7.NewTermQuery("total_hits", 0)
 
@@ -452,9 +453,9 @@ func (es *elasticsearch) getTotalUniqueNoResultsSearchesEs7(ctx context.Context,
 }
 
 func (es *elasticsearch) getTotalUniquePopularFiltersEs7(ctx context.Context, from, to string, filters map[string]interface{}, indices ...string) (totalUniqueFilters float64, err error) {
-	duration := es7.NewRangeQuery("timestamp").
-		From(from).
-		To(to)
+	duration := escompat.NewRangeQuery("timestamp").
+		Gte(from).
+		Lte(to)
 
 	query := es7.NewBoolQuery().Filter(duration)
 
@@ -495,9 +496,9 @@ func (es *elasticsearch) getTotalUniquePopularFiltersEs7(ctx context.Context, fr
 }
 
 func (es *elasticsearch) getTotalFiltersSelectionsEs7(ctx context.Context, from, to string, filters map[string]interface{}, indices ...string) (totalUniqueFilters float64, err error) {
-	duration := es7.NewRangeQuery("timestamp").
-		From(from).
-		To(to)
+	duration := escompat.NewRangeQuery("timestamp").
+		Gte(from).
+		Lte(to)
 
 	query := es7.NewBoolQuery().Filter(duration)
 
@@ -538,16 +539,16 @@ func (es *elasticsearch) getTotalFiltersSelectionsEs7(ctx context.Context, from,
 }
 
 func (es *elasticsearch) getTotalSearchesFromLogsEs7(ctx context.Context, from, to string, minResponseTime *int, indices ...string) (float64, error) {
-	duration := es7.NewRangeQuery("timestamp").
-		From(from).
-		To(to)
+	duration := escompat.NewRangeQuery("timestamp").
+		Gte(from).
+		Lte(to)
 
 	filterCategory := es7.NewTermQuery("category.keyword", "search")
 
 	query := es7.NewBoolQuery().Filter(duration).Filter(filterCategory)
 
 	if minResponseTime != nil {
-		rangeFilter := es7.NewRangeQuery("response.took").Gt(*minResponseTime)
+		rangeFilter := escompat.NewRangeQuery("response.took").Gt(*minResponseTime)
 		query = query.Filter(rangeFilter)
 	}
 
@@ -563,9 +564,9 @@ func (es *elasticsearch) getTotalSearchesFromLogsEs7(ctx context.Context, from, 
 }
 
 func (es *elasticsearch) noResultSearchesRawEs7(ctx context.Context, from, to string, size int, filters map[string]interface{}, indices ...string) ([]byte, error) {
-	duration := es7.NewRangeQuery("timestamp").
-		From(from).
-		To(to)
+	duration := escompat.NewRangeQuery("timestamp").
+		Gte(from).
+		Lte(to)
 
 	zeroHits := es7.NewTermQuery("total_hits", 0)
 
@@ -620,9 +621,9 @@ func (es *elasticsearch) noResultSearchesRawEs7(ctx context.Context, from, to st
 }
 
 func (es *elasticsearch) popularFiltersRawEs7(ctx context.Context, from, to string, size int, clickAnalytics bool, filters map[string]interface{}, indices ...string) ([]byte, error) {
-	duration := es7.NewRangeQuery("timestamp").
-		From(from).
-		To(to)
+	duration := escompat.NewRangeQuery("timestamp").
+		Gte(from).
+		Lte(to)
 
 	query := es7.NewBoolQuery().Filter(duration)
 
@@ -703,9 +704,9 @@ func (es *elasticsearch) popularFiltersRawEs7(ctx context.Context, from, to stri
 }
 
 func (es *elasticsearch) popularResultsRawEs7(ctx context.Context, from, to string, size int, clickAnalytics bool, filters map[string]interface{}, indices ...string) ([]byte, error) {
-	duration := es7.NewRangeQuery("timestamp").
-		From(from).
-		To(to)
+	duration := escompat.NewRangeQuery("timestamp").
+		Gte(from).
+		Lte(to)
 
 	query := es7.NewBoolQuery().Filter(duration)
 
@@ -787,9 +788,9 @@ func (es *elasticsearch) popularResultsRawEs7(ctx context.Context, from, to stri
 }
 
 func (es *elasticsearch) recentResultsEs7(ctx context.Context, from, to string, size int, filters map[string]interface{}, indices ...string) ([]byte, error) {
-	duration := es7.NewRangeQuery("timestamp").
-		From(from).
-		To(to)
+	duration := escompat.NewRangeQuery("timestamp").
+		Gte(from).
+		Lte(to)
 
 	query := es7.NewBoolQuery().Filter(duration)
 
@@ -852,9 +853,9 @@ func (es *elasticsearch) recentResultsEs7(ctx context.Context, from, to string, 
 }
 
 func (es *elasticsearch) topResultsRawEs7(ctx context.Context, from, to, queryTerm string, size int, filters map[string]interface{}, indices ...string) ([]map[string]interface{}, error) {
-	duration := es7.NewRangeQuery("timestamp").
-		From(from).
-		To(to)
+	duration := escompat.NewRangeQuery("timestamp").
+		Gte(from).
+		Lte(to)
 
 	query := es7.NewBoolQuery().Filter(duration)
 
@@ -920,9 +921,9 @@ func (es *elasticsearch) topResultsRawEs7(ctx context.Context, from, to, queryTe
 }
 
 func (es *elasticsearch) topResultsClicksRawEs7(ctx context.Context, from, to, queryTerm string, size int, filters map[string]interface{}, indices ...string) ([]map[string]interface{}, error) {
-	duration := es7.NewRangeQuery("timestamp").
-		From(from).
-		To(to)
+	duration := escompat.NewRangeQuery("timestamp").
+		Gte(from).
+		Lte(to)
 
 	query := es7.NewBoolQuery().Filter(duration)
 
@@ -986,9 +987,9 @@ func (es *elasticsearch) topResultsClicksRawEs7(ctx context.Context, from, to, q
 }
 
 func (es *elasticsearch) topSuggestionsClicksRawEs7(ctx context.Context, from, to, queryTerm string, size int, filters map[string]interface{}, indices ...string) ([]map[string]interface{}, error) {
-	duration := es7.NewRangeQuery("timestamp").
-		From(from).
-		To(to)
+	duration := escompat.NewRangeQuery("timestamp").
+		Gte(from).
+		Lte(to)
 
 	query := es7.NewBoolQuery().Filter(duration)
 
@@ -1513,9 +1514,9 @@ func addClickAnalyticsPopularResultsEs7(r *es7.AggregationBucketKeyItem, count i
 }
 
 func (es *elasticsearch) totalResultsCountEs7(ctx context.Context, from, to string, filters map[string]interface{}, indices ...string) (float64, error) {
-	duration := es7.NewRangeQuery("timestamp").
-		From(from).
-		To(to)
+	duration := escompat.NewRangeQuery("timestamp").
+		Gte(from).
+		Lte(to)
 
 	query := es7.NewBoolQuery().Filter(duration)
 
@@ -1553,9 +1554,9 @@ func (es *elasticsearch) totalResultsCountEs7(ctx context.Context, from, to stri
 }
 
 func (es *elasticsearch) totalUniqueResultsCountEs7(ctx context.Context, from, to string, filters map[string]interface{}, indices ...string) (float64, error) {
-	duration := es7.NewRangeQuery("timestamp").
-		From(from).
-		To(to)
+	duration := escompat.NewRangeQuery("timestamp").
+		Gte(from).
+		Lte(to)
 
 	query := es7.NewBoolQuery().Filter(duration)
 
@@ -1596,9 +1597,9 @@ func (es *elasticsearch) totalUniqueResultsCountEs7(ctx context.Context, from, t
 }
 
 func (es *elasticsearch) getRequestDistributionEs7(ctx context.Context, queryParams QueryParams, interval string, size int, filters map[string]interface{}, indices ...string) ([]byte, error) {
-	duration := es7.NewRangeQuery("timestamp").
-		From(queryParams.From).
-		To(queryParams.To)
+	duration := escompat.NewRangeQuery("timestamp").
+		Gte(queryParams.From).
+		Lte(queryParams.To)
 
 	query := es7.NewBoolQuery().
 		Filter(duration)
@@ -1680,9 +1681,9 @@ func (es *elasticsearch) getRequestDistributionEs7(ctx context.Context, queryPar
 }
 
 func (es *elasticsearch) getTotalRequestsEs7(ctx context.Context, from, to string, code int, indices ...string) (int64, error) {
-	duration := es7.NewRangeQuery("timestamp").
-		From(from).
-		To(to)
+	duration := escompat.NewRangeQuery("timestamp").
+		Gte(from).
+		Lte(to)
 
 	query := es7.NewBoolQuery().
 		Filter(duration)
@@ -1706,9 +1707,9 @@ func (es *elasticsearch) getTotalRequestsEs7(ctx context.Context, from, to strin
 }
 
 func (es *elasticsearch) latenciesEs7(ctx context.Context, from, to string, size int, filters map[string]interface{}, indices ...string) ([]byte, error) {
-	duration := es7.NewRangeQuery("timestamp").
-		From(from).
-		To(to)
+	duration := escompat.NewRangeQuery("timestamp").
+		Gte(from).
+		Lte(to)
 
 	query := es7.NewBoolQuery().Filter(duration)
 
@@ -1751,9 +1752,9 @@ func (es *elasticsearch) latenciesEs7(ctx context.Context, from, to string, size
 }
 
 func (es *elasticsearch) getAvgSearchLatencyEs7(ctx context.Context, from, to string, filters map[string]interface{}, indices ...string) (float64, error) {
-	duration := es7.NewRangeQuery("timestamp").
-		From(from).
-		To(to)
+	duration := escompat.NewRangeQuery("timestamp").
+		Gte(from).
+		Lte(to)
 
 	query := es7.NewBoolQuery().Filter(duration)
 
@@ -1782,9 +1783,9 @@ func (es *elasticsearch) getAvgSearchLatencyEs7(ctx context.Context, from, to st
 }
 
 func (es *elasticsearch) geoRequestsDistributionEs7(ctx context.Context, from, to string, size int, filters map[string]interface{}, indices ...string) ([]byte, error) {
-	duration := es7.NewRangeQuery("timestamp").
-		From(from).
-		To(to)
+	duration := escompat.NewRangeQuery("timestamp").
+		Gte(from).
+		Lte(to)
 
 	query := es7.NewBoolQuery().Filter(duration)
 
@@ -1836,9 +1837,9 @@ func (es *elasticsearch) geoRequestsDistributionEs7(ctx context.Context, from, t
 }
 
 func (es *elasticsearch) geoTotalCountriesEs7(ctx context.Context, from, to string, filters map[string]interface{}, indices ...string) (float64, error) {
-	duration := es7.NewRangeQuery("timestamp").
-		From(from).
-		To(to)
+	duration := escompat.NewRangeQuery("timestamp").
+		Gte(from).
+		Lte(to)
 
 	query := es7.NewBoolQuery().Filter(duration)
 
@@ -1913,9 +1914,9 @@ func (es *elasticsearch) getFilterValuesEs7(ctx context.Context, label, prefix s
 }
 
 func (es *elasticsearch) searchHistogramRawEs7(ctx context.Context, queryParams QueryParams, filters map[string]interface{}, indices ...string) ([]byte, error) {
-	duration := es7.NewRangeQuery("timestamp").
-		From(queryParams.From).
-		To(queryParams.To)
+	duration := escompat.NewRangeQuery("timestamp").
+		Gte(queryParams.From).
+		Lte(queryParams.To)
 
 	query := es7.NewBoolQuery().Filter(duration)
 
@@ -1965,9 +1966,9 @@ func (es *elasticsearch) searchHistogramRawEs7(ctx context.Context, queryParams 
 }
 
 func (es *elasticsearch) queryHistogramRawEs7(ctx context.Context, queryParams QueryParams, queryTerm string, filters map[string]interface{}, indices ...string) ([]map[string]interface{}, error) {
-	duration := es7.NewRangeQuery("timestamp").
-		From(queryParams.From).
-		To(queryParams.To)
+	duration := escompat.NewRangeQuery("timestamp").
+		Gte(queryParams.From).
+		Lte(queryParams.To)
 
 	query := es7.NewBoolQuery().Filter(duration)
 	if queryTerm == "" {
@@ -2016,9 +2017,9 @@ func (es *elasticsearch) queryHistogramRawEs7(ctx context.Context, queryParams Q
 }
 
 func (es *elasticsearch) totalSearchesEs7(ctx context.Context, from, to string, filters map[string]interface{}, indices ...string) (float64, error) {
-	duration := es7.NewRangeQuery("timestamp").
-		From(from).
-		To(to)
+	duration := escompat.NewRangeQuery("timestamp").
+		Gte(from).
+		Lte(to)
 
 	query := es7.NewBoolQuery().Filter(duration)
 
@@ -2045,9 +2046,9 @@ func (es *elasticsearch) totalSearchesEs7(ctx context.Context, from, to string, 
 }
 
 func (es *elasticsearch) totalUsersEs7(ctx context.Context, from, to string, filters map[string]interface{}, indices ...string) (float64, error) {
-	duration := es7.NewRangeQuery("timestamp").
-		From(from).
-		To(to)
+	duration := escompat.NewRangeQuery("timestamp").
+		Gte(from).
+		Lte(to)
 
 	query := es7.NewBoolQuery().Filter(duration)
 
@@ -2074,9 +2075,9 @@ func (es *elasticsearch) totalUsersEs7(ctx context.Context, from, to string, fil
 }
 
 func (es *elasticsearch) totalUserSessionsEs7(ctx context.Context, from, to string, filters map[string]interface{}, indices ...string) (float64, float64, error) {
-	duration := es7.NewRangeQuery("timestamp").
-		From(from).
-		To(to)
+	duration := escompat.NewRangeQuery("timestamp").
+		Gte(from).
+		Lte(to)
 
 	query := es7.NewBoolQuery().Filter(duration)
 
@@ -2114,7 +2115,7 @@ func (es *elasticsearch) totalUserSessionsEs7(ctx context.Context, from, to stri
 
 func (es *elasticsearch) getActiveUserSessionsEs7(ctx context.Context) ([]ActiveUserSessionES, error) {
 	activeUserSessions := []ActiveUserSessionES{}
-	query := es7.NewRangeQuery("last_interaction_time").Gt(time.Now().Unix() - defaultUserSessionDuration*60)
+	query := escompat.NewRangeQuery("last_interaction_time").Gt(time.Now().Unix() - defaultUserSessionDuration*60)
 	result, err := util.GetClient7().Search(es.userSessionIndex).
 		Query(query).
 		Size(10000).
@@ -2137,9 +2138,9 @@ func (es *elasticsearch) getActiveUserSessionsEs7(ctx context.Context) ([]Active
 }
 
 func (es *elasticsearch) avgResultClickPositionEs7(ctx context.Context, from, to string, filters map[string]interface{}, queryFilters *[]QueryFilter, indices ...string) (float64, error) {
-	duration := es7.NewRangeQuery("timestamp").
-		From(from).
-		To(to)
+	duration := escompat.NewRangeQuery("timestamp").
+		Gte(from).
+		Lte(to)
 
 	clickPositionAggr := es7.NewNestedAggregation().
 		Path("hits_in_response").
@@ -2177,9 +2178,9 @@ func (es *elasticsearch) avgResultClickPositionEs7(ctx context.Context, from, to
 }
 
 func (es *elasticsearch) avgSuggestionsClickPositionEs7(ctx context.Context, from, to string, filters map[string]interface{}, queryFilters *[]QueryFilter, indices ...string) (float64, error) {
-	duration := es7.NewRangeQuery("timestamp").
-		From(from).
-		To(to)
+	duration := escompat.NewRangeQuery("timestamp").
+		Gte(from).
+		Lte(to)
 
 	clickPositionAggr := es7.NewAvgAggregation().
 		Field("suggestion_click_position_ids")
@@ -2212,9 +2213,9 @@ func (es *elasticsearch) avgSuggestionsClickPositionEs7(ctx context.Context, fro
 }
 
 func (es *elasticsearch) totalBounceUsersEs7(ctx context.Context, from, to string, filters map[string]interface{}, indices ...string) (float64, error) {
-	duration := es7.NewRangeQuery("timestamp").
-		From(from).
-		To(to)
+	duration := escompat.NewRangeQuery("timestamp").
+		Gte(from).
+		Lte(to)
 
 	bounce := es7.NewTermQuery("bounce", true)
 
@@ -2237,9 +2238,9 @@ func (es *elasticsearch) totalBounceUsersEs7(ctx context.Context, from, to strin
 }
 
 func (es *elasticsearch) avgQueryLengthEs7(ctx context.Context, from, to string, indices ...string) (float64, error) {
-	duration := es7.NewRangeQuery("timestamp").
-		From(from).
-		To(to)
+	duration := escompat.NewRangeQuery("timestamp").
+		Gte(from).
+		Lte(to)
 
 	queryLengthAggr := es7.NewAvgAggregation().
 		Field("search_query_length")
@@ -2267,9 +2268,9 @@ func (es *elasticsearch) avgQueryLengthEs7(ctx context.Context, from, to string,
 }
 
 func (es *elasticsearch) noResultsSearchesEs7(ctx context.Context, from, to string, filters map[string]interface{}, indices ...string) (float64, error) {
-	duration := es7.NewRangeQuery("timestamp").
-		From(from).
-		To(to)
+	duration := escompat.NewRangeQuery("timestamp").
+		Gte(from).
+		Lte(to)
 
 	zeroHits := es7.NewTermQuery("total_hits", 0)
 
@@ -2298,9 +2299,9 @@ func (es *elasticsearch) noResultsSearchesEs7(ctx context.Context, from, to stri
 }
 
 func (es *elasticsearch) totalConversionsEs7(ctx context.Context, from, to string, filters map[string]interface{}, queryFilters *[]QueryFilter, indices ...string) (float64, error) {
-	duration := es7.NewRangeQuery("timestamp").
-		From(from).
-		To(to)
+	duration := escompat.NewRangeQuery("timestamp").
+		Gte(from).
+		Lte(to)
 
 	conversionAggr := es7.NewSumAggregation().
 		Field("conversion_count")
@@ -2352,9 +2353,9 @@ func applyQueryFiltersEs7(query *es7.BoolQuery, queryFilters *[]QueryFilter) {
 }
 
 func (es *elasticsearch) totalClicksEs7(ctx context.Context, from, to string, filters map[string]interface{}, queryFilters *[]QueryFilter, indices ...string) (float64, error) {
-	duration := es7.NewRangeQuery("timestamp").
-		From(from).
-		To(to)
+	duration := escompat.NewRangeQuery("timestamp").
+		Gte(from).
+		Lte(to)
 
 	clickAggr := es7.NewSumAggregation().
 		Field("result_click_count")
@@ -2387,9 +2388,9 @@ func (es *elasticsearch) totalClicksEs7(ctx context.Context, from, to string, fi
 }
 
 func (es *elasticsearch) totalSuggestionsClicksEs7(ctx context.Context, from, to string, filters map[string]interface{}, queryFilters *[]QueryFilter, indices ...string) (float64, error) {
-	duration := es7.NewRangeQuery("timestamp").
-		From(from).
-		To(to)
+	duration := escompat.NewRangeQuery("timestamp").
+		Gte(from).
+		Lte(to)
 
 	clickAggr := es7.NewSumAggregation().
 		Field("suggestion_click_count")
@@ -2421,11 +2422,11 @@ func (es *elasticsearch) totalSuggestionsClicksEs7(ctx context.Context, from, to
 }
 
 func (es *elasticsearch) totalErrorsByStatusEs7(ctx context.Context, from, to string, minStatusCode *int, maxStatusCode *int, indices ...string) (float64, error) {
-	duration := es7.NewRangeQuery("timestamp").
-		From(from).
-		To(to)
+	duration := escompat.NewRangeQuery("timestamp").
+		Gte(from).
+		Lte(to)
 
-	filterByStatus := es7.NewRangeQuery("response.code")
+	filterByStatus := escompat.NewRangeQuery("response.code")
 	if minStatusCode != nil {
 		filterByStatus = filterByStatus.Gte(minStatusCode)
 	}
@@ -2595,7 +2596,7 @@ func (es recentDocumentsElasticsearch) getRecentDocumentsWithFilter(ctx context.
 	// Add the `from` and `to` filters.
 	if userId != "" {
 		mustArray = append(mustArray, es7.NewExistsQuery(fmt.Sprintf("users.%s", userId)))
-		mustArray = append(mustArray, es7.NewRangeQuery(fmt.Sprintf("users.%s", userId)).From(fromAsInt).To(toAsInt))
+		mustArray = append(mustArray, escompat.NewRangeQuery(fmt.Sprintf("users.%s", userId)).Gte(fromAsInt).Lte(toAsInt))
 	}
 
 	// If indexes are present, add them in the filter as well

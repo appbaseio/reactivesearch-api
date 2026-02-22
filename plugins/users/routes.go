@@ -3,7 +3,7 @@ package users
 import (
 	"net/http"
 
-	"github.com/appbaseio-confidential/reactivesearch/plugins"
+	"github.com/appbaseio/reactivesearch-api/plugins"
 )
 
 func (u *Users) routes() []plugins.Route {

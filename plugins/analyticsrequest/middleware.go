@@ -3,10 +3,10 @@ package analyticsrequest
 import (
 	"net/http"
 
-	"github.com/appbaseio-confidential/reactivesearch/plugins/querytranslate"
-	"github.com/appbaseio-confidential/reactivesearch/plugins/storedquery"
-	"github.com/appbaseio-confidential/reactivesearch/plugins/telemetry"
-	"github.com/appbaseio-confidential/reactivesearch/util"
+	"github.com/appbaseio/reactivesearch-api/plugins/querytranslate"
+	"github.com/appbaseio/reactivesearch-api/plugins/storedquery"
+	"github.com/appbaseio/reactivesearch-api/plugins/telemetry"
+	"github.com/appbaseio/reactivesearch-api/util"
 	log "github.com/sirupsen/logrus"
 )
 

@@ -1,13 +1,15 @@
 package querytranslate
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
 	"strings"
 
-	"github.com/appbaseio-confidential/reactivesearch/util"
+	"github.com/appbaseio/reactivesearch-api/plugins/openai"
+	"github.com/appbaseio/reactivesearch-api/util"
 	"github.com/buger/jsonparser"
 	log "github.com/sirupsen/logrus"
 )
@@ -228,10 +230,20 @@ func translateQuery(rsQuery RSQuery, userIP string, queryForId *string, preferen
 		}
 	}
 
-	// If no backend is passed for kNN, set it as `elasticsearch`
+	// If no backend is passed for kNN, detect from cluster type
 	backendPassed := ElasticSearch
 	if rsQuery.Settings != nil && rsQuery.Settings.Backend != nil {
 		backendPassed = *rsQuery.Settings.Backend
+	} else {
+		// Use cluster type detection
+		if clusterType := util.GetClusterType(); clusterType != nil {
+			switch *clusterType {
+			case util.OpenSearch:
+				backendPassed = OpenSearch
+			case util.ElasticSearch:
+				backendPassed = ElasticSearch
+			}
+		}
 	}
 
 	queryHashToQueryMap := make(map[string]int)
@@ -243,7 +255,39 @@ func translateQuery(rsQuery RSQuery, userIP string, queryForId *string, preferen
 
 	queryIdToDetails := make([]MSearchDetails, 0)
 
-	for _, query := range rsQuery.Query {
+	// First, identify and process vector queries that need to borrow values
+	// from search queries and update the react props
+	for i := range rsQuery.Query {
+		query := &rsQuery.Query[i] // Use pointer to modify the original query
+
+		// Only process search queries with vectorDataField and no value
+		if (query.Type == Search || query.Type == Suggestion) &&
+			query.VectorDataField != nil && query.Value == nil && query.React != nil {
+
+			valueInfo := findValueFromReactedSearchComponent(query, rsQuery)
+			if valueInfo.value != nil {
+				log.Debugln(logTag, ": Found value from reacted search component: ", *valueInfo.value)
+				query.Value = valueInfo.value
+
+				// Remove the search component from the react prop unless it has a customQuery
+				// This prevents applying both text search and vector search on the same value
+				if valueInfo.sourceQueryID != nil && !valueInfo.hasCustomQuery {
+					log.Debugln(logTag, ": Removing search component from react prop: ", *valueInfo.sourceQueryID)
+					removeQueryFromReactProp(query, *valueInfo.sourceQueryID)
+
+					// Print updated query to see the changes
+					queryBytes, _ := json.MarshalIndent(query, "", "  ")
+					log.Debugln(logTag, ": Updated query after removal: ", string(queryBytes))
+				}
+			}
+		}
+	}
+
+	// Now process all queries normally
+	// We use rsQuery.Query directly since we're done with the preprocessing
+	for i := range rsQuery.Query {
+		// Use a copy for iteration, since we're not further modifying the rsQuery.Query slice
+		query := rsQuery.Query[i]
 
 		// If the endpoint property is passed, set the query execute as false
 		if query.Endpoint != nil {
@@ -332,10 +376,13 @@ func translateQuery(rsQuery RSQuery, userIP string, queryForId *string, preferen
 			}
 
 			// If knn fields are passed, apply knn fields to the final query
-			if shouldApplyKnn(query) {
+			if (query.Type.String() == "search" || query.Type.String() == "suggestion") && shouldApplyKnn(query) {
 				// Apply default candidate number if nothing is passed
 				if query.Candidates == nil {
 					defaultCandidates := 10
+					if query.Size != nil {
+						defaultCandidates = *query.Size
+					}
 					query.Candidates = &defaultCandidates
 				}
 
@@ -349,22 +396,45 @@ func translateQuery(rsQuery RSQuery, userIP string, queryForId *string, preferen
 					minSize = *query.Size
 				}
 
-				// Set default script for the backend if none
-				// is passed
-				if query.Script == nil {
-					defaultScript := GetDefaultScript(backendPassed)
-					query.Script = &defaultScript
+				if query.QueryVector == nil {
+					// Check if OpenAIConfig is present & key is not empty
+					openAIConfig := openai.Instance().GetConfig()
+
+					// Validate query.Value using normalizeQueryValue
+					if openAIConfig.OpenAIKey != nil && *openAIConfig.OpenAIKey != "" && query.Value != nil {
+						normalizedValue, err := normalizeQueryValue(query.Value)
+						if err == nil && normalizedValue != nil {
+							valueAsInterface := *normalizedValue
+							queryString := valueAsInterface.(string)
+							if queryString != "" {
+								embeddingModel := openai.GetDefaultConfig().DefaultEmbeddingModel.String()
+								if openAIConfig.DefaultEmbeddingModel != nil {
+									embeddingModel = openAIConfig.DefaultEmbeddingModel.String()
+								}
+								// Make embeddings API call to get queryVector
+								queryVector, err := getQueryVectorFromOpenAI(queryString, embeddingModel)
+								if err == nil {
+									query.QueryVector = &queryVector
+								}
+							}
+						}
+					}
+				}
+
+				if query.QueryVector == nil {
+					return "", nil, nil, fmt.Errorf("queryVector is required for KNN search but was not provided. Please ensure AI preferences are properly configured or provide queryVector directly")
 				}
 
 				switch backendPassed {
 				case ElasticSearch:
 					finalQuery = applyElasticSearchKnn(finalQuery, query, minSize)
+
 				case OpenSearch:
 					queryWithKnn, errBuildingQuery := applyOpenSearchKnn(finalQuery, query, minSize)
 					if errBuildingQuery != nil {
 						return "", nil, nil, errBuildingQuery
 					}
-					finalQuery["query"] = queryWithKnn
+					finalQuery = queryWithKnn
 				}
 			}
 
@@ -613,33 +683,120 @@ func RemoveEndpointRecursionIfRS(resp []byte, queryID string) ([]byte, error) {
 	return json.Marshal(responseToReturn)
 }
 
-// shouldApplyKnn determines whether or not to apply KNN stage
 func shouldApplyKnn(query Query) bool {
-	return query.QueryVector != nil && query.VectorDataField != nil
+	return query.VectorDataField != nil
+}
+
+// Function to make embeddings API call to OpenAI
+func getQueryVectorFromOpenAI(value string, embeddingModel string) ([]float64, error) {
+	openAIConfig := openai.Instance().GetConfig()
+	apiKey := *openAIConfig.OpenAIKey
+	baseUrl := "https://api.openai.com/v1"
+	if openAIConfig.APIType.String() == "azure" {
+		baseUrl = *openAIConfig.AzureBaseURL
+	}
+	url := fmt.Sprintf("%s/embeddings", baseUrl)
+
+	requestBody := map[string]interface{}{
+		"model": embeddingModel,
+		"input": value,
+	}
+
+	body, err := json.Marshal(requestBody)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", url, bytes.NewBuffer(body))
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", apiKey))
+
+	resp, err := util.HTTPClient().Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("failed to get embeddings: %s", resp.Status)
+	}
+
+	var response map[string]interface{}
+	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
+		return nil, err
+	}
+
+	embeddings, ok := response["data"].([]interface{})
+	if !ok || len(embeddings) == 0 {
+		return nil, fmt.Errorf("invalid embeddings response")
+	}
+
+	rawVector := embeddings[0].(map[string]interface{})["embedding"].([]interface{})
+	vector := make([]float64, len(rawVector))
+	for i, v := range rawVector {
+		vector[i] = v.(float64)
+	}
+
+	return vector, nil
 }
 
 // applyElasticSearchKnn applies the knn query for elasticsearch
 // backend
 func applyElasticSearchKnn(queryMap map[string]interface{}, queryItem Query, size int) map[string]interface{} {
-	// Replace the query field
+	// Ensure a valid query: use match_all if empty.
 	currentQuery := queryMap["query"]
-	updatedQuery := map[string]interface{}{
-		"script_score": map[string]interface{}{
-			"query": currentQuery,
-			"script": map[string]interface{}{
-				"source": *queryItem.Script,
-				"params": map[string]interface{}{
-					"queryVector": *queryItem.QueryVector,
-					"dataField":   *queryItem.VectorDataField,
+	validQuery := map[string]interface{}{"match_all": map[string]interface{}{}}
+	if currentQuery != nil {
+		switch v := currentQuery.(type) {
+		case map[string]interface{}:
+			if len(v) > 0 {
+				validQuery = v
+			}
+		case *map[string]interface{}:
+			if v != nil && len(*v) > 0 {
+				validQuery = *v
+			}
+		case *interface{}:
+			if v != nil {
+				if m, ok := (*v).(map[string]interface{}); ok && len(m) > 0 {
+					validQuery = m
+				}
+			}
+		}
+	}
+	if queryItem.Script != nil && *queryItem.Script != "" {
+		// Exact kNN using script_score.
+		queryMap["query"] = map[string]interface{}{
+			"script_score": map[string]interface{}{
+				"query": validQuery,
+				"script": map[string]interface{}{
+					"source": *queryItem.Script,
+					"params": map[string]interface{}{
+						"queryVector":     *queryItem.QueryVector,
+						"vectorDataField": *queryItem.VectorDataField,
+					},
 				},
 			},
-		},
+		}
+	} else {
+		// Approximate kNN.
+		knnClause := map[string]interface{}{
+			"query_vector":   *queryItem.QueryVector,
+			"field":          *queryItem.VectorDataField,
+			"k":              *queryItem.Candidates,
+			"num_candidates": *queryItem.Candidates,
+			"filter":         validQuery,
+		}
+
+		delete(queryMap, "query")
+		queryMap["knn"] = knnClause
 	}
 
-	// Update the queryMap
-	queryMap["query"] = updatedQuery
-
-	// Set the size
+	// Set the size.
 	queryMap["size"] = size
 
 	return queryMap
@@ -649,74 +806,75 @@ func applyElasticSearchKnn(queryMap map[string]interface{}, queryItem Query, siz
 //
 // The structure is just a bit different to how it's applied for ES
 func applyOpenSearchKnn(queryMap map[string]interface{}, queryItem Query, size int) (map[string]interface{}, error) {
-	// Replace the query field
-	marshalledQuery, marshalErr := json.Marshal(queryMap)
-	if marshalErr != nil {
-		return nil, fmt.Errorf("error while marshalling query to read it properly for kNN generation: %s", marshalErr.Error())
-	}
-	queryAsMap := make(map[string]interface{})
-	unmarshallErr := json.Unmarshal(marshalledQuery, &queryAsMap)
-	if unmarshallErr != nil {
-		return nil, fmt.Errorf("error while unmarshalling query back into a map: %s", unmarshallErr.Error())
-	}
-
-	currentQuery, ok := queryAsMap["query"].(map[string]interface{})
-	if !ok {
-		return nil, errors.New("error while converting query to a map")
-	}
-
-	boolQuery, isPresent := currentQuery["bool"]
-
-	knnClause := map[string]interface{}{
-		*queryItem.VectorDataField: map[string]interface{}{
-			"vector": *queryItem.QueryVector,
-			"k":      *queryItem.Candidates,
-		},
-	}
-
-	if isPresent {
-		boolAsMap, asMapOk := boolQuery.(map[string]interface{})
-		if !asMapOk {
-			return nil, errors.New("bool is not a map, is this query correct?")
+	result := make(map[string]interface{})
+	// Preserve top-level keys except "query"
+	for k, v := range queryMap {
+		if k != "query" {
+			result[k] = v
 		}
+	}
 
-		must, isMustPresent := boolAsMap["must"]
-		if !isMustPresent {
-			boolAsMap["must"] = []map[string]interface{}{
-				{"knn": knnClause},
+	// Ensure a valid query: use match_all if empty.
+	currentQuery := queryMap["query"]
+	validQuery := map[string]interface{}{"match_all": map[string]interface{}{}}
+	if currentQuery != nil {
+		switch v := currentQuery.(type) {
+		case map[string]interface{}:
+			if len(v) > 0 {
+				validQuery = v
 			}
-			currentQuery["bool"] = boolAsMap
-			return currentQuery, nil
+		case *map[string]interface{}:
+			if v != nil && len(*v) > 0 {
+				validQuery = *v
+			}
+		case *interface{}:
+			if v != nil {
+				if m, ok := (*v).(map[string]interface{}); ok && len(m) > 0 {
+					validQuery = m
+				}
+			}
 		}
-
-		// If the must key is already present, we need to append the kNN clause
-		mustAsArr, asArrOk := must.([]interface{})
-		if !asArrOk {
-			return nil, errors.New("error while parsing must into an array")
-		}
-
-		mustAsArr = append(mustAsArr, map[string]interface{}{"knn": knnClause})
-		boolAsMap["must"] = mustAsArr
-		currentQuery["bool"] = boolAsMap
-		return currentQuery, nil
 	}
 
-	// If the bool query is not present, we will need to create a new bool
-	// query and add a must clause inside it.
-	currentQuery["bool"] = map[string]interface{}{
-		"must": []interface{}{
-			map[string]interface{}{"knn": knnClause},
-		},
+	if queryItem.Script != nil && *queryItem.Script != "" {
+		// Exact kNN using script_score.
+		result["query"] = map[string]interface{}{
+			"script_score": map[string]interface{}{
+				"query": validQuery,
+				"script": map[string]interface{}{
+					"source": "knn_score",
+					"lang":   "knn",
+					"params": map[string]interface{}{
+						"field":       *queryItem.VectorDataField,
+						"query_value": *queryItem.QueryVector,
+						"space_type":  *queryItem.Script,
+					},
+				},
+			},
+		}
+	} else {
+		// Approximate kNN.
+		fieldName := *queryItem.VectorDataField
+		knnClause := map[string]interface{}{
+			"knn": map[string]interface{}{
+				fieldName: map[string]interface{}{
+					"vector": *queryItem.QueryVector,
+					"k":      *queryItem.Candidates,
+					"filter": validQuery,
+				},
+			},
+		}
+		result["query"] = knnClause
 	}
-
-	return currentQuery, nil
+	result["size"] = size
+	return result, nil
 }
 
 // GetDefaultScript returns the default script for the passed backend
 func GetDefaultScript(backend Backend) string {
 	switch backend {
 	case ElasticSearch:
-		return "cosineSimilarity(params.queryVector, params.dataField) + 1.0"
+		return "cosineSimilarity(params.queryVector, params.vectorDataField) + 1.0"
 	case OpenSearch:
 		return "cosinesimil"
 	}

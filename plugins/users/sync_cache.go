@@ -3,9 +3,9 @@ package users
 import (
 	"encoding/json"
 
-	"github.com/appbaseio-confidential/reactivesearch/model/user"
-	"github.com/appbaseio-confidential/reactivesearch/plugins/auth"
-	"github.com/appbaseio-confidential/reactivesearch/util"
+	"github.com/appbaseio/reactivesearch-api/model/user"
+	"github.com/appbaseio/reactivesearch-api/plugins/auth"
+	"github.com/appbaseio/reactivesearch-api/util"
 	"github.com/olivere/elastic/v7"
 	log "github.com/sirupsen/logrus"
 )

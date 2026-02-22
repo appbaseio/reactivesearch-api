@@ -8,9 +8,9 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
-	"github.com/appbaseio-confidential/reactivesearch/middleware"
-	"github.com/appbaseio-confidential/reactivesearch/plugins"
-	"github.com/appbaseio-confidential/reactivesearch/util"
+	"github.com/appbaseio/reactivesearch-api/middleware"
+	"github.com/appbaseio/reactivesearch-api/plugins"
+	"github.com/appbaseio/reactivesearch-api/util"
 	"github.com/robfig/cron/v3"
 )
 
@@ -288,26 +288,25 @@ func (r *suggestions) InitFunc() error {
 	SetRecentPreferences(recentPreferences)
 
 	// if .suggestions index already exists, don't populate suggestions on server restart
-	// Check if Zinc alias exists and accordingly create one if it doesn't exist
 	exists = popularPreferences.AliasToIndex != ""
-	zincSuggestionsIndex := ""
+	suggestionsIndex := ""
 
 	if exists {
-		// Check if the index exists in the local zinc as well
-		existsOnZinc, existsCheckErr := checkIfZincIndexExists(popularPreferences.AliasToIndex)
+		// Check if the index exists in ES as well
+		existsOnES, existsCheckErr := util.GetClient7().IndexExists(popularPreferences.AliasToIndex).Do(context.Background())
 		if existsCheckErr != nil {
-			log.Errorln(logTag, ": error while checking if suggestions index exists in local zinc: ", existsCheckErr)
+			log.Errorln(logTag, ": error while checking if suggestions index exists in ES: ", existsCheckErr)
 			return existsCheckErr
 		}
 
-		exists = existsOnZinc
-		zincSuggestionsIndex = popularPreferences.AliasToIndex
+		exists = existsOnES
+		suggestionsIndex = popularPreferences.AliasToIndex
 	}
 
 	if !exists {
 		// Create suggestions index at init time only if one for the same day doesn't exist
 		// This will prevent multiple server nodes or server restarts from re-creating pop suggestions index
-		_, err := syncAnalyticsToSuggestionsZinc(r, zincSuggestionsIndex)
+		_, err := syncAnalyticsToSuggestions(r, suggestionsIndex)
 		if err != nil {
 			return err
 		}
@@ -318,7 +317,7 @@ func (r *suggestions) InitFunc() error {
 	cronjob := cron.New(
 		cron.WithLocation(time.UTC))
 	cronjob.AddFunc("30 23 * * *", func() {
-		_, err4 := syncAnalyticsToSuggestionsZinc(r, "")
+		_, err4 := syncAnalyticsToSuggestions(r, "")
 		if err4 != nil {
 			log.Errorln(logTag, ": sync process failed for suggestions, reason:", err4)
 		}

@@ -8,7 +8,7 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
-	"github.com/appbaseio-confidential/reactivesearch/util"
+	"github.com/appbaseio/reactivesearch-api/util"
 )
 
 func (px *Proxy) postSubscription() http.HandlerFunc {
@@ -23,7 +23,7 @@ func (px *Proxy) postSubscription() http.HandlerFunc {
 			if px.arcID == "" {
 				arcID, err := px.ap.getArcID()
 				if err != nil {
-					util.WriteBackError(w, "APPBASE_ID not found", http.StatusBadRequest)
+					util.WriteBackError(w, "REACTIVESEARCH_ID not found", http.StatusBadRequest)
 					return
 				}
 				px.arcID = arcID
@@ -85,7 +85,7 @@ func (px *Proxy) postMetadata() http.HandlerFunc {
 		if px.arcID == "" {
 			arcID, err := px.ap.getArcID()
 			if err != nil {
-				util.WriteBackError(w, "APPBASE_ID not found", http.StatusBadRequest)
+				util.WriteBackError(w, "REACTIVESEARCH_ID not found", http.StatusBadRequest)
 				return
 			}
 			px.arcID = arcID
@@ -113,7 +113,7 @@ func (px *Proxy) deleteSubscription() http.HandlerFunc {
 		if px.arcID == "" {
 			arcID, err := px.ap.getArcID()
 			if err != nil {
-				util.WriteBackError(w, "APPBASE_ID not found", http.StatusBadRequest)
+				util.WriteBackError(w, "REACTIVESEARCH_ID not found", http.StatusBadRequest)
 				return
 			}
 			px.arcID = arcID
@@ -148,7 +148,7 @@ func (px *Proxy) getSubscription() http.HandlerFunc {
 		if px.arcID == "" {
 			arcID, err := px.ap.getArcID()
 			if err != nil {
-				util.WriteBackError(w, "APPBASE_ID not found", http.StatusBadRequest)
+				util.WriteBackError(w, "REACTIVESEARCH_ID not found", http.StatusBadRequest)
 				return
 			}
 			px.arcID = arcID
@@ -188,7 +188,7 @@ func (px *Proxy) getPlan() http.HandlerFunc {
 			if px.arcID == "" {
 				arcID, err := px.ap.getArcID()
 				if err != nil {
-					util.WriteBackError(w, "APPBASE_ID not found", http.StatusBadRequest)
+					util.WriteBackError(w, "REACTIVESEARCH_ID not found", http.StatusBadRequest)
 					return
 				}
 				px.arcID = arcID
@@ -214,7 +214,7 @@ func (px *Proxy) getPlan() http.HandlerFunc {
 			arcDetails := getArcDetails{}
 			err = json.Unmarshal(response, &arcDetails)
 			if len(arcDetails.ArcInstances) == 0 {
-				util.WriteBackError(w, "No arc instance found for the APPBASE_ID.", http.StatusBadRequest)
+				util.WriteBackError(w, "No arc instance found for the REACTIVESEARCH_ID.", http.StatusBadRequest)
 				return
 			}
 			if len(arcDetails.ArcInstances) == 1 {
@@ -315,7 +315,7 @@ func (px *Proxy) getCuratedInsights() http.HandlerFunc {
 			if px.arcID == "" {
 				arcID, err := px.ap.getArcID()
 				if err != nil {
-					util.WriteBackError(w, "APPBASE_ID not found", http.StatusBadRequest)
+					util.WriteBackError(w, "REACTIVESEARCH_ID not found", http.StatusBadRequest)
 					return
 				}
 				px.arcID = arcID
@@ -351,7 +351,7 @@ func (px *Proxy) subscribeCuratedInsights() http.HandlerFunc {
 			if px.arcID == "" {
 				arcID, err := px.ap.getArcID()
 				if err != nil {
-					util.WriteBackError(w, "APPBASE_ID not found", http.StatusBadRequest)
+					util.WriteBackError(w, "REACTIVESEARCH_ID not found", http.StatusBadRequest)
 					return
 				}
 				px.arcID = arcID
@@ -399,7 +399,7 @@ func (px *Proxy) unSubscribeCuratedInsights() http.HandlerFunc {
 			if px.arcID == "" {
 				arcID, err := px.ap.getArcID()
 				if err != nil {
-					util.WriteBackError(w, "APPBASE_ID not found", http.StatusBadRequest)
+					util.WriteBackError(w, "REACTIVESEARCH_ID not found", http.StatusBadRequest)
 					return
 				}
 				px.arcID = arcID
@@ -438,7 +438,7 @@ func (px *Proxy) updatePaymentMethod() http.HandlerFunc {
 			if px.arcID == "" {
 				arcID, err := px.ap.getArcID()
 				if err != nil {
-					util.WriteBackError(w, "APPBASE_ID not found", http.StatusBadRequest)
+					util.WriteBackError(w, "REACTIVESEARCH_ID not found", http.StatusBadRequest)
 					return
 				}
 				px.arcID = arcID

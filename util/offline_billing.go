@@ -9,8 +9,8 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-// Appbase Public Key to validate the offline license
-var AppbasePublicKey = "f6c7f3e774cc07b73cf97f6a561d940274cd20abd5f64d0ebe6f9ef7a63667f1"
+// Public Key to validate the offline license (set via LICENSE_PUBLIC_KEY env var)
+var AppbasePublicKey = ""
 
 // OfflineGracePeriod is the time duration in days that defines the grace period for expired license.
 // Arc would start throwing 402 error when OfflineGracePeriod is passed.
@@ -49,8 +49,8 @@ func BillingMiddlewareOffline(next http.Handler) http.Handler {
 				remainingHoursFromGracePeriod := OfflineGracePeriod*24 - remainingHours
 				days := int64(remainingHoursFromGracePeriod / 24)
 				hours := int64(remainingHoursFromGracePeriod) % 24
-				errorMsg := fmt.Sprintf("Your license key has expired, please contact support@appbase.io - your server will stop processing API requests in %d days, %d hours.", days, hours)
-				// throw error so sentry can log
+				errorMsg := fmt.Sprintf("Your license key has expired, please contact support@reactivesearch.io - your server will stop processing API requests in %d days, %d hours.", days, hours)
+				// throw error
 				log.Errorln(errorMsg)
 				next.ServeHTTP(w, r)
 			} else if remainingHours >= OfflineGracePeriod*24 {
@@ -61,9 +61,9 @@ func BillingMiddlewareOffline(next http.Handler) http.Handler {
 				log.Infoln(licenseMsg)
 				next.ServeHTTP(w, r)
 			} else {
-				log.Errorln("Your license key has expired, please contact support@appbase.io")
+				log.Errorln("Your license key has expired, please contact support@reactivesearch.io")
 				// Write an error and stop the handler chain
-				WriteBackError(w, "Your license key has expired, please contact support@appbase.io", http.StatusPaymentRequired)
+				WriteBackError(w, "Your license key has expired, please contact support@reactivesearch.io", http.StatusPaymentRequired)
 				return
 			}
 		} else {

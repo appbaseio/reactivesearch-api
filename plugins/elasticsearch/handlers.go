@@ -15,11 +15,11 @@ import (
 
 	es7 "github.com/olivere/elastic/v7"
 
-	"github.com/appbaseio-confidential/reactivesearch/model/acl"
-	"github.com/appbaseio-confidential/reactivesearch/model/category"
-	"github.com/appbaseio-confidential/reactivesearch/model/op"
-	"github.com/appbaseio-confidential/reactivesearch/plugins/telemetry"
-	"github.com/appbaseio-confidential/reactivesearch/util"
+	"github.com/appbaseio/reactivesearch-api/model/acl"
+	"github.com/appbaseio/reactivesearch-api/model/category"
+	"github.com/appbaseio/reactivesearch-api/model/op"
+	"github.com/appbaseio/reactivesearch-api/plugins/telemetry"
+	"github.com/appbaseio/reactivesearch-api/util"
 )
 
 func (es *elasticsearch) handler() http.HandlerFunc {
@@ -52,19 +52,9 @@ func (es *elasticsearch) handler() http.HandlerFunc {
 		if encoding != "" {
 			r.Header.Set("Accept-Encoding", "identity")
 		}
-		// Forward the request to elasticsearch
-		// remove content-type header from r.Headers as that is internally managed my oliver
-		// and can give following error if passed `{"error":{"code":500,"message":"elastic: Error 400 (Bad Request): java.lang.IllegalArgumentException: only one Content-Type header should be provided [type=content_type_header_exception]","status":"Internal Server Error"}}`
-		//
-		// Skip adding the Accept header since it is passed by default as */* and Elastic doesn't like that and ends up throwing
-		// Invalid media-type value on header [Accept] [type=media_type_header_exception]
+
+		// Create a new set of headers with only the allowed ones
 		headers := http.Header{}
-		for k := range r.Header {
-			if k == "Content-Type" || k == "Authorization" || k == "Accept" {
-				continue
-			}
-			headers.Set(k, r.Header.Get(k))
-		}
 
 		params := r.URL.Query()
 		formatParam := params.Get("format")
@@ -81,23 +71,47 @@ func (es *elasticsearch) handler() http.HandlerFunc {
 			Headers: headers,
 		}
 
-		// convert body to string string as oliver Perform request can accept io.Reader, String, interface
+		// Convert body to string as oliver Perform request can accept io.Reader, String, interface
 		body, err := ioutil.ReadAll(r.Body)
 		if len(body) > 0 {
 			requestOptions.Body = string(body)
 		}
+
 		start := time.Now()
 		response, err := util.GetClient7().PerformRequest(ctx, requestOptions)
 		log.Println(fmt.Sprintf("TIME TAKEN BY ES: %dms", time.Since(start).Milliseconds()))
 		if err != nil {
+			// Log the general error
 			log.Errorln(logTag, ": error while sending request :", r.URL.Path, err)
+
+			// Check if response is not nil to read the error details
 			if response != nil {
-				telemetry.WriteBackErrorWithTelemetry(r, w, err.Error(), response.StatusCode)
+				var errMsg string
+				if response.Body != nil {
+					// Read the response body
+					bodyBytes, readErr := ioutil.ReadAll(bytes.NewReader(response.Body))
+					if readErr != nil {
+						errMsg = fmt.Sprintf("error reading response body: %v", readErr)
+					} else {
+						// Convert the body to a string and include it in the error message
+						errMsg = fmt.Sprintf("error response from ES: %s", string(bodyBytes))
+					}
+				} else {
+					errMsg = "response body is nil"
+				}
+
+				// Log the detailed error message
+				log.Errorln(logTag, ": detailed error response: ", errMsg)
+
+				// Write back the error with telemetry
+				telemetry.WriteBackErrorWithTelemetry(r, w, errMsg, response.StatusCode)
 				return
 			}
+
 			telemetry.WriteBackErrorWithTelemetry(r, w, err.Error(), http.StatusInternalServerError)
 			return
 		}
+
 		// Copy the headers
 		if response.Header != nil {
 			for k, v := range response.Header {
@@ -108,13 +122,12 @@ func (es *elasticsearch) handler() http.HandlerFunc {
 		}
 		w.WriteHeader(response.StatusCode)
 		// Copy the body
-		io.Copy(w, bytes.NewReader(response.Body))
-		w.Header().Set("X-Origin", "reactivesearch.io")
-		if err != nil {
-			log.Errorln(logTag, ": error fetching response for", r.URL.Path, err)
-			telemetry.WriteBackErrorWithTelemetry(r, w, err.Error(), response.StatusCode)
+		if _, copyErr := io.Copy(w, bytes.NewReader(response.Body)); copyErr != nil {
+			log.Errorln(logTag, ": error writing response for", r.URL.Path, copyErr)
+			telemetry.WriteBackErrorWithTelemetry(r, w, copyErr.Error(), http.StatusInternalServerError)
 			return
 		}
+		w.Header().Set("X-Origin", "reactivesearch.io")
 	}
 }
 

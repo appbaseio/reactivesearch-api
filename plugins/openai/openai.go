@@ -2,29 +2,30 @@ package openai
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"sync"
-	"time"
 
-	"github.com/appbaseio-confidential/reactivesearch/middleware"
-	"github.com/appbaseio-confidential/reactivesearch/plugins"
-	"github.com/appbaseio-confidential/reactivesearch/util"
-	"github.com/robfig/cron/v3"
+	"github.com/appbaseio/reactivesearch-api/middleware"
+	"github.com/appbaseio/reactivesearch-api/plugins"
+	"github.com/appbaseio/reactivesearch-api/util"
 	log "github.com/sirupsen/logrus"
 )
 
 const (
-	logTag                  = "[open_ai]"
-	defaultOpenAIEsIndex    = ".openai"
-	defaultAIAnalyticsIndex = ".ai_analytics"
-	defaultFAQIndex         = ".ai_faqs"
-	envOpenAIEsIndex        = "OPENAI_ES_INDEX"
-	typeName                = "_doc"
-	openAIConfigDocID       = "openai_config"
-	mapping                 = `{ "settings": { %s "index.number_of_shards": 1, "index.number_of_replicas": %d }, "mappings": {} }`
-	analyticsMapping        = `{ "settings": { %s "index.number_of_shards": 1, "index.number_of_replicas": %d }, "mappings": { "properties": { "timestamp": { "type": "date" } } } }`
-	FAQMapping              = `{ "settings": { %s "index.number_of_shards": 1, "index.number_of_replicas": %d }, "mappings": { "properties": { "updated_at": { "type": "long" } } } }`
-	zincMapping             = `
+	logTag                     = "[open_ai]"
+	defaultOpenAIEsIndex       = ".openai"
+	defaultAIAnalyticsIndex    = ".ai_analytics"
+	defaultFAQIndex            = ".ai_faqs"
+	envOpenAIEsIndex           = "OPENAI_ES_INDEX"
+	typeName                   = "_doc"
+	openAIConfigDocID          = "openai_config"
+	mapping                    = `{ "settings": { %s "index.number_of_shards": 1, "index.number_of_replicas": %d }, "mappings": {} }`
+	updatedMappingWithSettings = `{ "settings": { %s "index.number_of_shards": 1, "index.number_of_replicas": %d }, "mappings": %s }`
+	updatedMapping             = `{ "properties":{"azureVersion":{"type":"text","fields":{"keyword":{"type":"keyword","ignore_above":256}}}} }`
+	analyticsMapping           = `{ "settings": { %s "index.number_of_shards": 1, "index.number_of_replicas": %d }, "mappings": { "properties": { "timestamp": { "type": "date" } } } }`
+	FAQMapping                 = `{ "settings": { %s "index.number_of_shards": 1, "index.number_of_replicas": %d }, "mappings": { "properties": { "updated_at": { "type": "long" } } } }`
+	zincMapping                = `
 	{
 		"name": "%s",
 		"storage_type": "disk",
@@ -61,7 +62,6 @@ type OpenAI struct {
 	es          openaiService
 	analyticsEs openaiAnalyticsService
 	faqEs       openaiFAQServiceEs
-	faqZinc     openaiFAQService
 }
 
 // Instance returns the singleton instance of the plugin. Instance
@@ -92,10 +92,17 @@ func (r *OpenAI) InitFunc() error {
 
 	// initialize the dao
 	var err error
-	r.es, err = initPlugin(openAIIndex, mapping)
+	r.es, err = initPlugin(openAIIndex, updatedMappingWithSettings, updatedMapping)
 	if err != nil {
 		return err
 	}
+
+	settings := fmt.Sprintf(updatedMappingWithSettings, util.HiddenIndexSettings(), util.GetReplicas(), updatedMapping)
+	migration := MappingsMigration{
+		NewMapping: settings,
+		es:         r.es.(*elasticsearch),
+	}
+	util.AddMigrationScript(migration)
 
 	// Initialize the analytics plugin as well
 	r.analyticsEs, err = initAnalyticsPlugin(defaultAIAnalyticsIndex, analyticsMapping)
@@ -105,12 +112,6 @@ func (r *OpenAI) InitFunc() error {
 
 	// Initialize the FAQ index on ES
 	r.faqEs, err = initFAQPluginES(defaultFAQIndex, FAQMapping)
-	if err != nil {
-		return err
-	}
-
-	// Initiate the zinc index
-	r.faqZinc, err = initFAQPlugin(defaultFAQIndex, zincMapping)
 	if err != nil {
 		return err
 	}
@@ -128,46 +129,6 @@ func (r *OpenAI) InitFunc() error {
 		index: openAIIndex,
 	}
 	util.AddSyncScript(script)
-
-	// Do a sync for Zinc from ES and add a cron to do it
-	// regularly
-	syncErr := r.faqZinc.SyncFAQToZinc(defaultFAQIndex, defaultFAQIndex)
-	if syncErr != nil {
-		return syncErr
-	}
-
-	// Add the cronjob
-	//
-	// Note: Use UTC timezone and run at 23:30:00 to avoid conflicts with snapshots
-	//
-	// For self-hosted users, the cronjob will run every hour since AccAPI proxy
-	// is not present there.
-
-	isSelfHosted := util.Billing == "true"
-
-	var cronjob *cron.Cron
-	if isSelfHosted {
-		// Set the cron interval to 1h
-		cronjob = cron.New()
-		cronjob.AddFunc("@every 1h", func() {
-			err4 := r.faqZinc.SyncFAQToZinc(defaultFAQIndex, defaultFAQIndex)
-			if err4 != nil {
-				log.Errorln(logTag, ": sync process failed for FAQ suggestions, reason:", err4)
-			}
-		})
-	} else {
-		cronjob = cron.New(
-			cron.WithLocation(time.UTC))
-		cronjob.AddFunc("30 23 * * *", func() {
-			err4 := r.faqZinc.SyncFAQToZinc(defaultFAQIndex, defaultFAQIndex)
-			if err4 != nil {
-				log.Errorln(logTag, ": sync process failed for FAQ suggestions, reason:", err4)
-			}
-		})
-	}
-
-	// Start the cronjob
-	cronjob.Start()
 
 	return nil
 }

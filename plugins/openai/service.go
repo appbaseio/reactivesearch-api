@@ -23,11 +23,3 @@ type openaiFAQServiceEs interface {
 	getFAQCount(ctx context.Context) (int64, error)
 	getNextFAQOrder(ctx context.Context) (int, int64, error)
 }
-
-type openaiFAQService interface {
-	createFAQZinc(item FAQBody) error
-	getFAQZinc(faqId string) ([]byte, error)
-	deleteFAQZinc(faqId string) error
-	getFAQsZinc(from, size int) ([]byte, error)
-	SyncFAQToZinc(index string, zincIndex string) error
-}

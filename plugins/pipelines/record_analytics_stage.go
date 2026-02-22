@@ -3,10 +3,10 @@ package pipelines
 import (
 	"encoding/json"
 
-	"github.com/appbaseio-confidential/reactivesearch/model/category"
-	"github.com/appbaseio-confidential/reactivesearch/plugins/analytics"
-	"github.com/appbaseio-confidential/reactivesearch/plugins/querytranslate"
-	"github.com/appbaseio-confidential/reactivesearch/plugins/rules"
+	"github.com/appbaseio/reactivesearch-api/model/category"
+	"github.com/appbaseio/reactivesearch-api/plugins/analytics"
+	"github.com/appbaseio/reactivesearch-api/plugins/querytranslate"
+	"github.com/appbaseio/reactivesearch-api/plugins/rules"
 	log "github.com/sirupsen/logrus"
 )
 

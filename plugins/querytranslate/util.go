@@ -15,7 +15,7 @@ import (
 	"sync"
 	"unicode"
 
-	"github.com/appbaseio-confidential/reactivesearch/util"
+	"github.com/appbaseio/reactivesearch-api/util"
 	"github.com/bbalet/stopwords"
 	pluralize "github.com/gertd/go-pluralize"
 	"github.com/invopop/jsonschema"
@@ -49,6 +49,10 @@ var ES_MOCKED_RESPONSE = map[string]interface{}{
 }
 
 var RESERVED_KEYS_IN_RESPONSE = []string{"settings", "error"}
+var RESERVED_KEYS_IN_RESPONSE_BYTES = [][]byte{
+	[]byte("settings"),
+	[]byte("error"),
+}
 
 // EXCEPTION_KEYS_IN_QUERY represents the keys which will not get copied while combining the queries using `react` prop
 var EXCEPTION_KEYS_IN_QUERY = []string{"size", "from", "aggs", "_source", "query"}
@@ -71,7 +75,7 @@ type RankFunction struct {
 
 type QueryType int
 
-const synonymsFieldKey = ".synonyms"
+const synonymsFieldKey = ".rs-synonyms"
 
 const (
 	Search QueryType = iota
@@ -711,13 +715,218 @@ func getOperation(conjunction string) string {
 }
 
 // Returns the query instance by query id
+// Note: This returns a pointer to the original query in the rsQuery.Query slice
+// so modifications to the returned value will modify the original query.
 func getQueryInstanceByID(id string, rsQuery RSQuery) *Query {
-	for _, query := range rsQuery.Query {
-		if query.ID != nil && *query.ID == id {
-			return &query
+	for i := range rsQuery.Query {
+		if rsQuery.Query[i].ID != nil && *rsQuery.Query[i].ID == id {
+			return &rsQuery.Query[i]
 		}
 	}
 	return nil
+}
+
+// SearchValueInfo contains the value found from a search component and metadata about the source
+type SearchValueInfo struct {
+	value          *interface{} // The value from the search component
+	sourceQueryID  *string      // The ID of the search component that provided the value
+	hasCustomQuery bool         // Whether the source component has a custom query
+}
+
+// findValueFromReactedSearchComponent finds a value from a search component that is referenced in the react prop
+// This is useful when a vector search component doesn't have its own value but needs to inherit it from a search component
+func findValueFromReactedSearchComponent(query *Query, rsQuery RSQuery) SearchValueInfo {
+	result := SearchValueInfo{
+		value:          nil,
+		sourceQueryID:  nil,
+		hasCustomQuery: false,
+	}
+
+	if query.React == nil {
+		return result
+	}
+
+	// Find all the search components referenced in the react prop
+	searchQueries := findReactedSearchQueries(*query.React, rsQuery)
+
+	// Return the value from the first search component that has a value
+	for _, searchQuery := range searchQueries {
+		if searchQuery.Value != nil {
+			result.value = searchQuery.Value
+			result.sourceQueryID = searchQuery.ID
+			// Check if the query has a custom query defined
+			result.hasCustomQuery = (searchQuery.DefaultQuery != nil)
+			return result
+		}
+	}
+
+	return result
+}
+
+// removeQueryFromReactProp removes a query ID from a component's react prop
+// This is needed when we inherit a value from a search component but don't want to execute its query
+func removeQueryFromReactProp(query *Query, queryIDToRemove string) {
+	if query.React == nil {
+		return
+	}
+
+	react := *query.React
+	updatedReact := removeQueryIDFromReactValue(react, queryIDToRemove)
+
+	// We need to handle the type conversion correctly
+	if updatedReactMap, isMap := updatedReact.(map[string]interface{}); isMap {
+		// If it's a map, we can directly assign it
+		query.React = &updatedReactMap
+	} else if updatedReactArray, isArray := updatedReact.([]interface{}); isArray {
+		// If it's an array, we need to convert to the map format with "or"
+		query.React = &map[string]interface{}{
+			"or": updatedReactArray,
+		}
+	} else if updatedReactStr, isString := updatedReact.(string); isString {
+		// If it's a string, we need to convert to the map format with "or"
+		query.React = &map[string]interface{}{
+			"or": []interface{}{updatedReactStr},
+		}
+	} else if updatedReact == nil {
+		// If the result is nil, set an empty map
+		query.React = &map[string]interface{}{}
+	}
+}
+
+// removeQueryIDFromReactValue recursively removes a query ID from a react value
+func removeQueryIDFromReactValue(react interface{}, queryIDToRemove string) interface{} {
+	// Handle react as map (e.g., {"and": [...], "or": [...]})
+	reactMap, isMap := react.(map[string]interface{})
+	if isMap {
+		result := make(map[string]interface{})
+
+		// Process each key in the map
+		for key, value := range reactMap {
+			if key == "and" || key == "or" || key == "not" {
+				result[key] = removeQueryIDFromReactValue(value, queryIDToRemove)
+			} else {
+				result[key] = value
+			}
+		}
+
+		return result
+	}
+
+	// Handle react as array
+	reactArray, isArray := react.([]interface{})
+	if isArray {
+		result := make([]interface{}, 0, len(reactArray))
+
+		for _, item := range reactArray {
+			// If item is a string and matches the ID to remove, skip it
+			if queryID, isString := item.(string); isString {
+				if queryID == queryIDToRemove {
+					continue // Skip this ID
+				}
+				result = append(result, queryID)
+			} else {
+				// For non-string items, process recursively
+				processed := removeQueryIDFromReactValue(item, queryIDToRemove)
+
+				// Only add non-empty results to the array
+				if !isEmptyReactValue(processed) {
+					result = append(result, processed)
+				}
+			}
+		}
+
+		return result
+	}
+
+	// Handle react as string (direct query ID)
+	if queryID, isString := react.(string); isString {
+		if queryID == queryIDToRemove {
+			return nil // Remove this ID
+		}
+		return queryID
+	}
+
+	return react
+}
+
+// isEmptyReactValue checks if a react value is empty and can be removed
+func isEmptyReactValue(value interface{}) bool {
+	if value == nil {
+		return true
+	}
+
+	// Empty array
+	if arr, isArray := value.([]interface{}); isArray && len(arr) == 0 {
+		return true
+	}
+
+	// Empty map
+	if m, isMap := value.(map[string]interface{}); isMap && len(m) == 0 {
+		return true
+	}
+
+	return false
+}
+
+// findReactedSearchQueries finds all search queries referenced in a react prop
+// We need to be careful not to modify rsQuery.Query entries directly, as this could
+// lead to unexpected side effects when queries reference each other
+func findReactedSearchQueries(react interface{}, rsQuery RSQuery) []*Query {
+	result := []*Query{}
+
+	// Handle react as map (e.g., {"and": [...], "or": [...]})
+	reactMap, isMap := react.(map[string]interface{})
+	if isMap {
+		// Process "and" array
+		if andValue, hasAnd := reactMap["and"]; hasAnd {
+			andResults := findReactedSearchQueries(andValue, rsQuery)
+			result = append(result, andResults...)
+		}
+
+		// Process "or" array
+		if orValue, hasOr := reactMap["or"]; hasOr {
+			orResults := findReactedSearchQueries(orValue, rsQuery)
+			result = append(result, orResults...)
+		}
+
+		// Process "not" array (unlikely to be needed but included for completeness)
+		if notValue, hasNot := reactMap["not"]; hasNot {
+			notResults := findReactedSearchQueries(notValue, rsQuery)
+			result = append(result, notResults...)
+		}
+
+		return result
+	}
+
+	// Handle react as array
+	reactArray, isArray := react.([]interface{})
+	if isArray {
+		for _, item := range reactArray {
+			// If item is a string, it's a query ID
+			if queryID, isString := item.(string); isString {
+				q := getQueryInstanceByID(queryID, rsQuery)
+				if q != nil && q.Type == Search {
+					result = append(result, q)
+				}
+			} else {
+				// If item is not a string, it's a nested react object
+				nestedResults := findReactedSearchQueries(item, rsQuery)
+				result = append(result, nestedResults...)
+			}
+		}
+		return result
+	}
+
+	// Handle react as string (direct query ID)
+	if queryID, isString := react.(string); isString {
+		q := getQueryInstanceByID(queryID, rsQuery)
+		if q != nil && q.Type == Search {
+			result = append(result, q)
+		}
+		return result
+	}
+
+	return result
 }
 
 // Evaluate the react prop and adds the dependencies in query

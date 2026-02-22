@@ -1,0 +1,49 @@
+{
+    "enabled": true,
+    "description": "Pipeline to retrieve and merge Google knowledge graph response to ES response",
+    "routes": [
+        {
+            "path": "/good-books-ds-pipeline/_reactivesearch",
+            "method": "POST",
+            "classify": {
+                "category": "reactivesearch"
+            }
+        }
+    ],
+    "envs": {
+        "category": "reactivesearch",
+        "index": [
+            "good-books-ds-pipeline"
+        ],
+        "knowledgeGraphAPIKey": "AIzaSyAvTLlcYHNRzKAmaxB9iXPmTTeqKp547uo",
+        "query": "harry"
+    },
+    "stages": [
+        {
+            "use": "authorization"
+        },
+        {
+            "use": "reactivesearchQuery"
+        },
+        {
+            "id": "google_knowledge_graph",
+            "needs": [
+                "extract user passed query"
+            ],
+            "async": true,
+            "script": "async function handleRequest() { try { const URL = `https://kgsearch.googleapis.com/v1/entities:search?query=${context.envs.query}&key=${context.envs.knowledgeGraphAPIKey}&limit=1&indent=True`; const responseBody = await fetch(URL); const response = await responseBody.json(); return { knowledge_graph: response }} catch(e) {} return context; }"
+        },
+        {
+            "use": "elasticsearchQuery",
+            "async": true
+        },
+        {
+            "id": "merge_response",
+            "needs": [
+                "elasticsearchQuery",
+                "google_knowledge_graph"
+            ],
+            "script": "function handleRequest() { const esResponse = JSON.parse(context.elasticsearchQuery); const knowledgeGraph = context['knowledge_graph']; return { ...context, response: { ...context.response, body: JSON.stringify({ ...esResponse, knowledgeGraph })}}}"
+        }
+    ]
+}

@@ -3,7 +3,7 @@ package reindexer
 import (
 	"net/http"
 
-	"github.com/appbaseio-confidential/reactivesearch/plugins"
+	"github.com/appbaseio/reactivesearch-api/plugins"
 )
 
 func (rx *reindexer) routes() []plugins.Route {

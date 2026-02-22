@@ -13,29 +13,74 @@ import (
 
 // These are prefix-matched, so set the longer model name before the shorter one
 var MODEL_LIMIT_MAP = map[string]int{
+	// Modern GPT-4 variants
+	"gpt-4.1-mini":      128000,
+	"gpt-4.1":           128000,
+	"gpt-4o-mini":       128000,
+	"gpt-4o":            128000,
+	"gpt-4-turbo":       128000,
 	"gpt-4-32k":         32768,
 	"gpt-4":             8192,
 	"gpt-3.5-16k":       16384,
 	"gpt-3.5-turbo-16k": 16384,
 	"gpt-3.5":           4096,
+	// GPT-5 family (400K context window)
+	"gpt-5.2-pro": 400000,
+	"gpt-5.2":     400000,
+	"gpt-5.1":     400000,
+	"gpt-5-pro":   400000,
+	"gpt-5-nano":  400000,
+	"gpt-5-mini":  400000,
+	"gpt-5":       400000,
+	// o-series reasoning models (200K context window)
+	"o3-pro":  200000,
+	"o3-mini": 200000,
+	"o3":      200000,
+	"o4-mini": 200000,
+	"o1":      200000,
 }
 
 var MODEL_ENCODER_MAP = map[string]tokenizer.Model{
+	// 3.5 family
 	"gpt-3.5":           tokenizer.GPT35Turbo,
 	"gpt-3.5-16k":       tokenizer.GPT35Turbo,
-	"gpt-4":             tokenizer.GPT4,
 	"gpt-3.5-turbo-16k": tokenizer.GPT35Turbo,
-	"gpt-4-32k":         tokenizer.GPT4,
+	// 4 family
+	"gpt-4":        tokenizer.GPT4,
+	"gpt-4-32k":    tokenizer.GPT4,
+	"gpt-4-turbo":  tokenizer.GPT4,
+	"gpt-4o":       tokenizer.GPT4,
+	"gpt-4o-mini":  tokenizer.GPT4,
+	"gpt-4.1":      tokenizer.GPT4,
+	"gpt-4.1-mini": tokenizer.GPT4,
+	// 5 family (fallback to GPT-4 encoding until tiktoken adds a specific one)
+	"gpt-5":       tokenizer.GPT4,
+	"gpt-5-mini":  tokenizer.GPT4,
+	"gpt-5-nano":  tokenizer.GPT4,
+	"gpt-5-pro":   tokenizer.GPT4,
+	"gpt-5.1":     tokenizer.GPT4,
+	"gpt-5.2":     tokenizer.GPT4,
+	"gpt-5.2-pro": tokenizer.GPT4,
+	// o-series reasoning models (fallback to GPT-4 encoding)
+	"o1":      tokenizer.GPT4,
+	"o3-mini": tokenizer.GPT4,
+	"o3":      tokenizer.GPT4,
+	"o3-pro":  tokenizer.GPT4,
+	"o4-mini": tokenizer.GPT4,
 }
 
 // EncoderForModel will return the encoder to use for
 // the passed model
 func EncoderForModel(model string) tokenizer.Model {
+	// Pick the encoder using the longest prefix match, falling back to GPT-3.5 Turbo
 	modelToReturn := tokenizer.GPT35Turbo
-	for modelName, encoder := range MODEL_ENCODER_MAP {
-		if modelName == model {
-			modelToReturn = encoder
-			break
+	bestLen := 0
+	for modelPrefix, encoder := range MODEL_ENCODER_MAP {
+		if strings.HasPrefix(model, modelPrefix) {
+			if len(modelPrefix) > bestLen {
+				bestLen = len(modelPrefix)
+				modelToReturn = encoder
+			}
 		}
 	}
 
@@ -68,13 +113,19 @@ func CalculateTokens(stringToWorkOn string, model string) (int, error) {
 // If model is not found then -1 will be returned indicating that
 // we don't know what a valid limit is for the passed model.
 func LimitForModel(model string) int {
+	// Choose the limit using the longest prefix match to avoid ambiguous matches
+	bestLen := 0
+	limitToReturn := -1
 	for modelPrefix, limit := range MODEL_LIMIT_MAP {
 		if strings.HasPrefix(model, modelPrefix) {
-			return limit
+			if len(modelPrefix) > bestLen {
+				bestLen = len(modelPrefix)
+				limitToReturn = limit
+			}
 		}
 	}
 
-	return -1
+	return limitToReturn
 }
 
 // CheckLimit will check the token limit for the passed messages
@@ -94,7 +145,7 @@ func CheckLimit(messages []ChatGPTMessage, model string) int {
 	if strings.HasPrefix(model, "gpt-3.5-turbo") {
 		tokensPerMessage = 4 // every message follows <|start|>{role/name}\n{content}<|end|>\n
 		// tokensPerName = -1   // if there's a name, the role is omitted
-	} else if strings.HasPrefix(model, "gpt-4") {
+	} else if strings.HasPrefix(model, "gpt-4") || strings.HasPrefix(model, "gpt-5") || strings.HasPrefix(model, "o1") || strings.HasPrefix(model, "o3") || strings.HasPrefix(model, "o4") {
 		tokensPerMessage = 3
 		// tokensPerName = 1
 	}
@@ -152,7 +203,7 @@ func TrimMessagesAsPerModel(messages []ChatGPTMessage, model string, startTrimmi
 	// Check if the model is valid and extract the limit for the model
 	allowedLimit := LimitForModel(model)
 	if allowedLimit == -1 {
-		return messages, fmt.Errorf("`%s`: passed model is either invalid or not supported by ReactiveSearch yet!", model)
+		return messages, fmt.Errorf("`%s`: passed model is either invalid or not supported by ReactiveSearch yet", model)
 	}
 
 	// Reserve 100 tokens for the prompt response as well
@@ -249,7 +300,7 @@ func (o *OpenAI) TrimContextAsPerLimits(messagesArrToPassChatGPT []map[string]in
 		// Throw error here
 		errMsg := fmt.Sprintf("cannot continue as allowed token limit is below minTokens (%d) with context size (%d)", minTokens, limitCalculated)
 		log.Warnln(logTag, ": ", errMsg)
-		return messagesArrToPassChatGPT, maxTokens, fmt.Errorf(errMsg)
+		return messagesArrToPassChatGPT, maxTokens, fmt.Errorf("%s", errMsg)
 	}
 
 	// Calculate the maxTokens to use

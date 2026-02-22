@@ -8,3 +8,6 @@ telemetrylog
 .vscode
 indices
 data
+*.pgo
+es_load_check.sh
+ali-body.json

@@ -1,6 +1,6 @@
 package sync
 
-import "github.com/appbaseio-confidential/reactivesearch/util"
+import "github.com/appbaseio/reactivesearch-api/util"
 
 type SyncPreferences struct {
 	Interval *int `json:"interval,omitempty"`

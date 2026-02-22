@@ -6,10 +6,10 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
-	"github.com/appbaseio-confidential/reactivesearch/middleware"
-	"github.com/appbaseio-confidential/reactivesearch/model/credential"
-	"github.com/appbaseio-confidential/reactivesearch/model/permission"
-	"github.com/appbaseio-confidential/reactivesearch/plugins/telemetry"
+	"github.com/appbaseio/reactivesearch-api/middleware"
+	"github.com/appbaseio/reactivesearch-api/model/credential"
+	"github.com/appbaseio/reactivesearch-api/model/permission"
+	"github.com/appbaseio/reactivesearch-api/plugins/telemetry"
 )
 
 // PermissionExpiry returns a middleware that checks whether a permission is expired or not.

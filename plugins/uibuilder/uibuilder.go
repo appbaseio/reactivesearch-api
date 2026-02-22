@@ -5,9 +5,9 @@ import (
 	"os"
 	"sync"
 
-	"github.com/appbaseio-confidential/reactivesearch/middleware"
-	"github.com/appbaseio-confidential/reactivesearch/plugins"
-	"github.com/appbaseio-confidential/reactivesearch/util"
+	"github.com/appbaseio/reactivesearch-api/middleware"
+	"github.com/appbaseio/reactivesearch-api/plugins"
+	"github.com/appbaseio/reactivesearch-api/util"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -24,66 +24,10 @@ const (
 	mapping                          = `{ "settings": { %s "index.number_of_shards": 1, "index.number_of_replicas": %d } }`
 	envSearchBoxIndex                = "SEARCHBOX_ES_INDEX"
 	defaultSearchBoxIndex            = ".searchbox"
-	indexConfigZinc                  = `
-	{
-		"name": %s,
-		"mappings":{
-			"properties":{
-				"key":{
-					"type":"text",
-					"fields":{
-						"autosuggest":{
-							"type":"text",
-							"analyzer":"autosuggest_analyzer"
-						},
-						"keyword":{
-							"type":"keyword",
-							"ignore_above":256
-						}
-					}
-				},
-				"count":{
-					"type":"integer"
-				}
-			}
-		}
-	 }
-	`
-	indexSettingsZinc = `
-	{
-		"settings":{
-			%s
-		   "index.number_of_shards": 1,
-		   "index.number_of_replicas": %d,
-		   "analysis":{
-			  "analyzer":{
-					"autosuggest_analyzer":{
-						"filter":[
-							"lowercase",
-							"asciifolding",
-							"autosuggest_filter"
-						],
-						"tokenizer":"standard",
-						"type":"custom"
-					}
-			  },
-			  "filter":{
-					"autosuggest_filter":{
-						"max_gram":"20",
-						"min_gram":"1",
-						"token_chars":[
-							"letter",
-							"digit",
-							"punctuation",
-							"symbol"
-						],
-						"type":"edge_ngram"
-					}
-			  }
-		   }
-		}
-	 }
-	`
+	// Separate index for denormalized featured suggestions (for efficient search)
+	envFeaturedSuggestionsIndex     = "FEATURED_SUGGESTIONS_ES_INDEX"
+	defaultFeaturedSuggestionsIndex = ".featured_suggestions"
+	featuredSuggestionsMapping      = `{ "settings": { %s "index.number_of_shards": 1, "index.number_of_replicas": %d }, "mappings": { "properties": { "label": { "type": "text" }, "value": { "type": "text" }, "description": { "type": "text" }, "action": { "type": "keyword" }, "subAction": { "type": "keyword" }, "searchboxId": { "type": "keyword" }, "sectionId": { "type": "keyword" }, "sectionLabel": { "type": "text" }, "icon": { "type": "keyword" }, "iconURL": { "type": "keyword" }, "order": { "type": "integer" } } } }`
 )
 
 var (
@@ -130,14 +74,17 @@ func (e *UIBuilder) InitFunc() error {
 	if err != nil {
 		return err
 	}
-	// create searchbox index in zinc
-	_, _, err2 := createSuggestionsIndexZinc(searchboxIndex)
-	if err2 != nil {
-		log.Errorln(logTag, ": error creating suggestions index in zinc, ", searchboxIndex, ":", err2)
+	// Create separate index for denormalized featured suggestions
+	featuredSuggestionsIndex := os.Getenv(envFeaturedSuggestionsIndex)
+	if featuredSuggestionsIndex == "" {
+		featuredSuggestionsIndex = defaultFeaturedSuggestionsIndex
+	}
+	_, featuredSuggestionsIndexExists, err := createSearchBoxIndex(featuredSuggestionsIndex, featuredSuggestionsMapping)
+	if err != nil {
 		return err
 	}
 	e.featuredSuggestionsConfig = FeaturedSuggestionsConfig{
-		zincIndex: searchboxIndex,
+		esIndex: featuredSuggestionsIndex,
 	}
 
 	// initialize the dao
@@ -166,7 +113,10 @@ func (e *UIBuilder) InitFunc() error {
 		return err
 	}
 	if searchboxPreferencesResponse != nil {
-		err := e.featuredSuggestionsConfig.setFeaturedSuggestionsFromESResponse(searchboxPreferencesResponse, searchboxIndex)
+		// Only sync featured suggestions to ES if the index was just created
+		// (if it already existed, data is already there)
+		syncToES := !featuredSuggestionsIndexExists
+		err := e.featuredSuggestionsConfig.setFeaturedSuggestionsFromESResponse(searchboxPreferencesResponse, searchboxIndex, syncToES)
 		if err != nil {
 			return err
 		}

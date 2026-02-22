@@ -3,7 +3,7 @@ package auth
 import (
 	"encoding/json"
 
-	"github.com/appbaseio-confidential/reactivesearch/util"
+	"github.com/appbaseio/reactivesearch-api/util"
 	"github.com/dgrijalva/jwt-go"
 	"github.com/olivere/elastic/v7"
 	log "github.com/sirupsen/logrus"

@@ -3,9 +3,6 @@ package suggestions
 import (
 	"context"
 	"encoding/json"
-	"errors"
-	"fmt"
-	"net/http"
 	"strconv"
 	"strings"
 
@@ -13,7 +10,8 @@ import (
 	"golang.org/x/text/transform"
 	"golang.org/x/text/unicode/norm"
 
-	"github.com/appbaseio-confidential/reactivesearch/util"
+	"github.com/appbaseio/reactivesearch-api/util"
+	"github.com/appbaseio/reactivesearch-api/util/escompat"
 	es7 "github.com/olivere/elastic/v7"
 )
 
@@ -30,10 +28,10 @@ func (es *elasticsearch) updateLastSyncTimeEs7(ctx context.Context, record map[s
 func (es *elasticsearch) querySuggestionsEs7(ctx context.Context, preferences PopularPreferences, customEvents []string, afterKey map[string]interface{}) (*es7.SearchResult, error) {
 	query := es7.NewBoolQuery()
 	// Add min_hits constraint
-	query = query.Must(es7.NewRangeQuery("total_hits").Gte(preferences.MinHits))
+	query = query.Must(escompat.NewRangeQuery("total_hits").Gte(preferences.MinHits))
 	var dateRange = "now-" + strconv.Itoa(int(preferences.NumberOfDays)) + "d/d"
 	// Add number_of_days constraint
-	query = query.Must(es7.NewRangeQuery("timestamp").Gte(dateRange))
+	query = query.Must(escompat.NewRangeQuery("timestamp").Gte(dateRange))
 	// Apply indices constraint
 	if preferences.Indices != nil && len(preferences.Indices) > 0 {
 		// ignore wildcard index
@@ -63,7 +61,7 @@ func (es *elasticsearch) querySuggestionsEs7(ctx context.Context, preferences Po
 	return aggrResult, err
 }
 
-func (es *elasticsearch) populateTimeStampedIndexZinc(ctx context.Context, timestampedIndex string, zc *util.ZincClient) (interface{}, error) {
+func (es *elasticsearch) populateTimeStampedIndex(ctx context.Context, timestampedIndex string) (interface{}, error) {
 	// Get the preferences
 	preferences := GetPopularPreferences()
 	var afterKeyString string
@@ -192,9 +190,7 @@ func (es *elasticsearch) populateTimeStampedIndexZinc(ctx context.Context, times
 			filteredSuggestions = append(filteredSuggestions, suggestion)
 		}
 
-		// Create the bulk request body manually by separating it with
-		// a \n.
-		bulkRequestEachArr := make([]string, 0)
+		// Create the bulk request body for ES
 		bulkRequestEs := util.GetClient7().Bulk()
 
 		for _, filteredSuggestion := range filteredSuggestions {
@@ -216,28 +212,6 @@ func (es *elasticsearch) populateTimeStampedIndexZinc(ctx context.Context, times
 			// remove user_id key
 			delete(suggestionDoc, "user_id")
 
-			// Create the index body
-			indexBody := map[string]interface{}{
-				"index": map[string]interface{}{
-					"_index": timestampedIndex,
-					"_id":    filteredSuggestion.ID,
-				},
-			}
-			indexBodyAsStr, marshalErr := json.Marshal(indexBody)
-			if marshalErr != nil {
-				log.Errorln(logTag, ": error while marshalling index body, ", marshalErr)
-				return false, marshalErr
-			}
-
-			docBodyMarshalled, docBodyMarshalErr := json.Marshal(suggestionDoc)
-			if docBodyMarshalErr != nil {
-				log.Errorln(logTag, ": error while marshalling suggestion doc in bulk request, ", docBodyMarshalErr)
-				return false, docBodyMarshalErr
-			}
-
-			bulkRequestEachArr = append(bulkRequestEachArr, string(indexBodyAsStr))
-			bulkRequestEachArr = append(bulkRequestEachArr, string(docBodyMarshalled))
-
 			br := es7.NewBulkIndexRequest().
 				Index(timestampedIndex).
 				Id(filteredSuggestion.ID).
@@ -245,32 +219,12 @@ func (es *elasticsearch) populateTimeStampedIndexZinc(ctx context.Context, times
 			bulkRequestEs.Add(br)
 		}
 
-		// Execute bulk request
+		// Execute bulk request to ES
 		if len(filteredSuggestions) != 0 {
-			// Join the bulk request array using `\n`
-			bulkRequestStr := strings.Join(bulkRequestEachArr, "\n")
-			bulkReqResponse, bulkRequestErr := zc.MakeRequest("es/_bulk", http.MethodPost, []byte(bulkRequestStr), nil)
-			if bulkRequestErr != nil {
-				log.Errorln(logTag, ": error while sending bulk request to Zinc, ", bulkRequestErr)
-				return false, bulkRequestErr
-			}
-
-			// Check the status code
-			log.Debugln(logTag, ": bulk request endpoint status code: ", bulkReqResponse.StatusCode)
-			if bulkReqResponse.StatusCode != http.StatusOK {
-				errMsg := fmt.Sprint("bulk request to Zinc returned a non OK status code: ", bulkReqResponse.StatusCode)
-				log.Errorln(logTag, ": ", errMsg)
-				return false, errors.New(errMsg)
-			}
-
-			// Make the bulk call to ES as well
 			_, err3 := bulkRequestEs.Do(ctx)
 			if err3 != nil {
-				log.Warnln(logTag, ": error executing suggestions bulk request for ES:", err3)
-
-				// No need to stop execution as this is a backup sync for better
-				// usability.
-				return true, nil
+				log.Errorln(logTag, ": error executing suggestions bulk request for ES:", err3)
+				return false, err3
 			}
 		}
 	}

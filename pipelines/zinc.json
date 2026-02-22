@@ -1,0 +1,67 @@
+{
+    "enabled": true,
+    "routes": [
+        {
+            "path": "/_zinc/{index}/_reactivesearch",
+            "method": "POST",
+            "classify": {
+                "category": "reactivesearch"
+            }
+        },
+        {
+            "path": "/_zinc/{index}/_reactivesearch.v3",
+            "method": "POST",
+            "classify": {
+                "category": "reactivesearch"
+            }
+        },
+        {
+            "path": "/_zinc/{index}/_reactivesearch/validate",
+            "method": "POST",
+            "classify": {
+                "category": "reactivesearch"
+            }
+        },
+        {
+            "path": "/_zinc/{index}/_reactivesearch.v3/validate",
+            "method": "POST",
+            "classify": {
+                "category": "reactivesearch"
+            }
+        }
+    ],
+    "stages": [
+        {
+            "id": "auth",
+            "use": "authorization"
+        },
+        {
+            "id": "rs",
+            "use": "reactivesearchQuery",
+            "inputs": {
+                "backend": "zinc"
+            },
+            "continueOnError": false
+        },
+        {
+            "id": "print",
+            "script": "console.log(context.request.body)"
+        },
+        {
+            "id": "build validate response",
+            "script": "function handleRequest() { const originalReq = context.envs['ORIGINAL_RS_BODY']; if (originalReq == undefined || originalReq == '') { throw Error( `original request not found in context, can't build validate response` ); } const originalRequestParsed = JSON.parse(originalReq); var queriesExecuted = []; originalRequestParsed.query.forEach((el) => { if (el.execute != undefined && el.execute == false) { return; } queriesExecuted.push(el.id); }); const translatedQueries = []; const splittedReq = context.request.body.split('\\n'); for (let i = 0; i < splittedReq.length; i++) { if (i % 2 != 1) continue; translatedQueries.push(splittedReq[i]); } if (translatedQueries.length != queriesExecuted.length) { throw Error( `number of translated queries and executed queries are not equal!` ); } var validateResponse = []; queriesExecuted.forEach((el, index) => { const queryEach = { endpoint: { body: JSON.parse(translatedQueries[index]), url: `http://127.0.0.1:4080/es/_msearch`, method: 'POST', headers: { 'Content-Type': 'application/json' }, }, id: el, }; validateResponse.push(queryEach); }); return { response: { body: JSON.stringify(validateResponse) } }; }",
+            "continueOnError": false,
+            "trigger": {
+                "expression": "context.envs.path matches '^.+/validate$'"
+            }
+        },
+        {
+            "id": "zinc_query",
+            "use": "zincQuery",
+            "continueOnError": false,
+            "trigger": {
+                "expression": "not (context.envs.path matches '^.+/validate$')"
+            }
+        }
+    ]
+}

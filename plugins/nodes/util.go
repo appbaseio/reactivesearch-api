@@ -3,7 +3,7 @@ package nodes
 import (
 	"context"
 
-	"github.com/appbaseio-confidential/reactivesearch/util"
+	"github.com/appbaseio/reactivesearch-api/util"
 	"github.com/robfig/cron"
 	log "github.com/sirupsen/logrus"
 )

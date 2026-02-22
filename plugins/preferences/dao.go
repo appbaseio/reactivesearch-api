@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/appbaseio-confidential/reactivesearch/util"
+	"github.com/appbaseio/reactivesearch-api/util"
 )
 
 func savePreferences(ctx context.Context, indexName string, body map[string]interface{}) ([]byte, error) {

@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/appbaseio-confidential/reactivesearch/util"
+	"github.com/appbaseio/reactivesearch-api/util"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -66,7 +66,7 @@ func getUserSessionMappings() string {
 
 func (u UserSessionMappingsMigration) ConditionCheck() (bool, *util.Error) {
 	errorMsg := `Error occurred while checking condition for user sessions mappings update. 
-	Try restarting once if it doesn't fix the issue then please contact us by dropping a mail at support@appbase.io.`
+	Try restarting once if it doesn't fix the issue then please contact us by opening an issue on the GitHub repository.`
 	// Only run migration script when custom_events field is not defined in mappings
 	response, err := util.GetIndexMapping(u.indexName, context.Background())
 
@@ -113,7 +113,7 @@ func (u UserSessionMappingsMigration) ConditionCheck() (bool, *util.Error) {
 func (u UserSessionMappingsMigration) Script() *util.Error {
 	log.Println(logTag, "Running migration script for user sessions index....This process may take some time.")
 	errorMsg := `Error occurred while re-indexing the user sessions index mapping. 
-	Try restarting once if it doesn't fix the issue then please contact us by dropping a mail at support@appbase.io.`
+	Try restarting once if it doesn't fix the issue then please contact us by opening an issue on the GitHub repository.`
 	_, err2 := util.GetClient7().PutMapping().
 		Index(u.indexName).
 		BodyString(`{

@@ -7,7 +7,8 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/appbaseio-confidential/reactivesearch/util"
+	"github.com/appbaseio/reactivesearch-api/util"
+	"github.com/appbaseio/reactivesearch-api/util/escompat"
 	es7 "github.com/olivere/elastic/v7"
 	log "github.com/sirupsen/logrus"
 )
@@ -31,7 +32,7 @@ func (es *elasticsearch) getCacheAnalytics(ctx context.Context, from string, to 
 		return nil, toParseErr
 	}
 
-	rangeQuery := es7.NewRangeQuery("day").Gte(fromAsInt).Lte(toAsInt)
+	rangeQuery := escompat.NewRangeQuery("day").Gte(fromAsInt).Lte(toAsInt)
 
 	aggrMap := map[string]*es7.SumAggregation{
 		"total_requests":            es7.NewSumAggregation().Field("cache_request_count"),

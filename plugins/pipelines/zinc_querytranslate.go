@@ -7,7 +7,7 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/appbaseio-confidential/reactivesearch/plugins/querytranslate"
+	"github.com/appbaseio/reactivesearch-api/plugins/querytranslate"
 	log "github.com/sirupsen/logrus"
 )
 

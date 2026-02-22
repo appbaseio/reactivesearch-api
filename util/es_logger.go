@@ -33,7 +33,7 @@ func (logger WrapKitLoggerError) Printf(format string, vars ...interface{}) {
 }
 
 // DebugDeprecationWarns converts all the error logs containing
-// deprecation warnings to debug logs so that it doesn't invoke sentry
+// deprecation warnings to debug logs
 func DebugDeprecationWarns(formattedStr string) bool {
 	// Check if any of the vars contain `deprecation` in it.
 	isDeprecated, _ := regexp.MatchString(`.*deprecation.*`, strings.ToLower(formattedStr))

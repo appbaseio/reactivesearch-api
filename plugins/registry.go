@@ -7,7 +7,7 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
-	"github.com/appbaseio-confidential/reactivesearch/middleware"
+	"github.com/appbaseio/reactivesearch-api/middleware"
 
 	"github.com/gorilla/mux"
 )

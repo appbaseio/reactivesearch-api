@@ -1,0 +1,36 @@
+{
+    "enabled": true,
+    "description": "Pipeline to save search to an Elasticsearch index",
+    "routes": [
+        {
+            "path": "/good-books-ds-pipeline/_reactivesearch",
+            "method": "POST",
+            "classify": {
+                "category": "reactivesearch"
+            }
+        }
+    ],
+    "envs": {
+        "category": "reactivesearch",
+        "index": ["good-books-ds-pipeline"],
+        "saved_search_index": "savedsearch",
+        "saved_search_credentials": "c188342af1e2:5f6a8751-8e9e-4dfd-82d0-229de5024a25"
+    },
+    "stages": [
+        {
+            "use": "authorization"
+        },
+        {
+            "id": "save_search",
+            "async": true,
+            "script": "async function handleRequest() { try { const res = await fetch(`http://${context.envs.origin}/${context.envs.saved_search_index}/_doc`, {method: 'POST', body: context.request.body, headers: {'Content-Type': 'application/json', 'Authorization': `Basic ${btoa(context.envs.saved_search_credentials)}`} }); } catch(e) { console.log('error', e); } return {}; }"
+        },
+        {
+            "use": "reactivesearchQuery",
+            "needs": ["save_search"]
+        },
+        {
+            "use": "elasticsearchQuery"
+        }
+    ]
+}

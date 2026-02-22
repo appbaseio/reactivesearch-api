@@ -3,7 +3,7 @@ package acl
 import (
 	"context"
 
-	"github.com/appbaseio-confidential/reactivesearch/errors"
+	"github.com/appbaseio/reactivesearch-api/errors"
 	"github.com/invopop/jsonschema"
 )
 

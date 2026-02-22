@@ -1,7 +1,7 @@
 package proxy
 
 import (
-	"github.com/appbaseio-confidential/reactivesearch/util"
+	"github.com/appbaseio/reactivesearch-api/util"
 )
 
 type getArcDetails struct {

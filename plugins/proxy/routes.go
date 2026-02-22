@@ -3,7 +3,7 @@ package proxy
 import (
 	"net/http"
 
-	"github.com/appbaseio-confidential/reactivesearch/plugins"
+	"github.com/appbaseio/reactivesearch-api/plugins"
 )
 
 func (px *Proxy) routes() []plugins.Route {

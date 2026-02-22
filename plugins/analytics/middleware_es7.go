@@ -7,9 +7,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/appbaseio-confidential/reactivesearch/model/index"
-	"github.com/appbaseio-confidential/reactivesearch/plugins/analyticsrequest"
-	"github.com/appbaseio-confidential/reactivesearch/plugins/querytranslate"
+	"github.com/appbaseio/reactivesearch-api/model/index"
+	"github.com/appbaseio/reactivesearch-api/plugins/analyticsrequest"
+	"github.com/appbaseio/reactivesearch-api/plugins/querytranslate"
 	"github.com/buger/jsonparser"
 	log "github.com/sirupsen/logrus"
 )

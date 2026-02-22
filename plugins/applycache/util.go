@@ -7,7 +7,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/appbaseio-confidential/reactivesearch/plugins/openai"
+	"github.com/appbaseio/reactivesearch-api/plugins/openai"
 	"github.com/robfig/cron/v3"
 	log "github.com/sirupsen/logrus"
 )

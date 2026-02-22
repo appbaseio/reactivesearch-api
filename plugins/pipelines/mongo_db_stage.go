@@ -8,7 +8,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/appbaseio-confidential/reactivesearch/plugins/rules"
+	"github.com/appbaseio/reactivesearch-api/plugins/rules"
 	log "github.com/sirupsen/logrus"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"

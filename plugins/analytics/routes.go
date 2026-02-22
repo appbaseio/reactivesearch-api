@@ -3,7 +3,7 @@ package analytics
 import (
 	"net/http"
 
-	"github.com/appbaseio-confidential/reactivesearch/plugins"
+	"github.com/appbaseio/reactivesearch-api/plugins"
 )
 
 func (a *Analytics) routes() []plugins.Route {

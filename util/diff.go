@@ -8,7 +8,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 
-	"github.com/appbaseio-confidential/reactivesearch/model/difference"
+	"github.com/appbaseio/reactivesearch-api/model/difference"
 	"github.com/sergi/go-diff/diffmatchpatch"
 	log "github.com/sirupsen/logrus"
 )

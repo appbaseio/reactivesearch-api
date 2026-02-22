@@ -3,9 +3,9 @@ package permissions
 import (
 	"encoding/json"
 
-	"github.com/appbaseio-confidential/reactivesearch/model/permission"
-	"github.com/appbaseio-confidential/reactivesearch/plugins/auth"
-	"github.com/appbaseio-confidential/reactivesearch/util"
+	"github.com/appbaseio/reactivesearch-api/model/permission"
+	"github.com/appbaseio/reactivesearch-api/plugins/auth"
+	"github.com/appbaseio/reactivesearch-api/util"
 	"github.com/olivere/elastic/v7"
 	log "github.com/sirupsen/logrus"
 )

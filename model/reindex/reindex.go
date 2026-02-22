@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"time"
 
-	"github.com/appbaseio-confidential/reactivesearch/util"
+	"github.com/appbaseio/reactivesearch-api/util"
 	es7 "github.com/olivere/elastic/v7"
 	log "github.com/sirupsen/logrus"
 )
@@ -18,7 +18,7 @@ type SetAliasConfig struct {
 }
 
 const logTag = "[reindex]"
-const synonymsIndex = ".synonyms"
+const synonymsIndex = ".rs-synonyms"
 
 const typeName = "_doc"
 

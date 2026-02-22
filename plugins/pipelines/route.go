@@ -7,9 +7,9 @@ import (
 	"path"
 	"strconv"
 
-	"github.com/appbaseio-confidential/reactivesearch/middleware"
-	"github.com/appbaseio-confidential/reactivesearch/middleware/classify"
-	"github.com/appbaseio-confidential/reactivesearch/plugins/telemetry"
+	"github.com/appbaseio/reactivesearch-api/middleware"
+	"github.com/appbaseio/reactivesearch-api/middleware/classify"
+	"github.com/appbaseio/reactivesearch-api/plugins/telemetry"
 	"github.com/gorilla/mux"
 	log "github.com/sirupsen/logrus"
 )

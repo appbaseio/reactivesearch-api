@@ -3,7 +3,7 @@ package pipelines
 import (
 	"context"
 
-	"github.com/appbaseio-confidential/reactivesearch/util"
+	"github.com/appbaseio/reactivesearch-api/util"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -61,7 +61,7 @@ func (m MappingsMigration) ConditionCheck() (bool, *util.Error) {
 func (m MappingsMigration) Script() *util.Error {
 	log.Println(logTag, "Running migration script for pipeline....This process may take some time.")
 	errorMsg := `Error occurred while updating pipelines mapping. 
-	Try restarting once if it doesn't fix the issue then please contact us by dropping a mail at support@appbase.io.`
+	Try restarting once if it doesn't fix the issue then please contact us by opening an issue on the GitHub repository.`
 
 	_, err := util.GetClient7().PutMapping().
 		Index(m.indexName).

@@ -1,8 +1,8 @@
 package main
 
 import (
-	"github.com/appbaseio-confidential/reactivesearch/plugins"
-	"github.com/appbaseio-confidential/reactivesearch/plugins/reindexer"
+	"github.com/appbaseio/reactivesearch-api/plugins"
+	"github.com/appbaseio/reactivesearch-api/plugins/reindexer"
 )
 
 var PluginInstance plugins.Plugin = reindexer.Instance()

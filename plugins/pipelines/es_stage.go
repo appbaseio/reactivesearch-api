@@ -12,14 +12,16 @@ import (
 	"sync"
 	"time"
 
-	"github.com/appbaseio-confidential/reactivesearch/middleware/classify"
-	"github.com/appbaseio-confidential/reactivesearch/model/acl"
-	"github.com/appbaseio-confidential/reactivesearch/model/category"
-	"github.com/appbaseio-confidential/reactivesearch/plugins/querytranslate"
-	"github.com/appbaseio-confidential/reactivesearch/plugins/rules"
-	"github.com/appbaseio-confidential/reactivesearch/plugins/suggestions"
-	"github.com/appbaseio-confidential/reactivesearch/plugins/uibuilder"
-	"github.com/appbaseio-confidential/reactivesearch/util"
+	"github.com/appbaseio/reactivesearch-api/middleware/classify"
+	"github.com/appbaseio/reactivesearch-api/model/acl"
+	"github.com/appbaseio/reactivesearch-api/model/category"
+	"github.com/appbaseio/reactivesearch-api/plugins/querytranslate"
+	"github.com/appbaseio/reactivesearch-api/plugins/rules"
+	"github.com/appbaseio/reactivesearch-api/plugins/suggestions"
+	"github.com/appbaseio/reactivesearch-api/plugins/uibuilder"
+	"github.com/appbaseio/reactivesearch-api/util"
+
+	"github.com/appbaseio/reactivesearch-api/plugins/cache"
 	"github.com/buger/jsonparser"
 	es7 "github.com/olivere/elastic/v7"
 	log "github.com/sirupsen/logrus"
@@ -34,6 +36,7 @@ type ElasticsearchQueryInput struct {
 	Body                          *string            `json:"body,omitempty" jsonschema:"title=Body" jsonschema_description:"Request body in string format, e.g, {\"query\":{\"match_all\":{}}}."`
 	IndependentBody               *string            `json:"independentBody,omitempty" jsonschema:"title=Independent Body" jsonschema_description:"Array of independent requests, i:e ones that contain the endpoint in the query."`
 	ParseResponseToReactivesearch *bool              `json:"parseResponseToReactivesearch,omitempty" jsonschema:"title=Parse Response to ReactiveSearch API" jsonschema_description:"If set to 'true', then it would transform the Elasticsearch response to RS API response. Defaults to 'true', if route category is 'reactivesearch'."`
+	SetResponseToKV               *string            `json:"setResponseToKV,omitempty" jsonschema:"title=Set Response To KV" jsonschema_description:"Sets the response of the stage output as a value in the KV store with the provided key value. Accepts dynamic inputs using the {{{ mustache }}} syntax. E.g. pass envs as {{{envs.query}}} for the key to be set as the query value."`
 }
 
 func GetElasticsearchQueryInputSchema() map[string]interface{} {
@@ -69,10 +72,14 @@ func getInputs(
 		finalEnvs.IndependentBody = parsedESInputs.IndependentBody
 	}
 
+	if parsedESInputs.SetResponseToKV != nil {
+		finalEnvs.SetResponseToKV = parsedESInputs.SetResponseToKV
+	}
+
 	if parsedESInputs.Path != nil {
 		finalEnvs.Path = parsedESInputs.Path
 	}
-	if parsedESInputs.URL != nil {
+	if parsedESInputs.URL != nil && *parsedESInputs.URL != "" {
 		esURL := *parsedESInputs.URL
 		if strings.Contains(esURL, "@") {
 			splitIndex := strings.LastIndex(esURL, "@")
@@ -797,9 +804,9 @@ func executeElasticsearchStage(
 							// defaults to 1
 							boostFactor = 1
 						}
-						if boostResponse.Inputs.BoostOperation == Add {
+						if boostResponse.Inputs.BoostOperation == Add && hit.Score != nil {
 							score = float64(boostFactor) + *hit.Score
-						} else if boostResponse.Inputs.BoostOperation == Multiply {
+						} else if boostResponse.Inputs.BoostOperation == Multiply && hit.Score != nil {
 							score = float64(boostFactor) * *hit.Score
 						}
 						searchResult.Hits.Hits[i].Score = &score
@@ -821,10 +828,20 @@ func executeElasticsearchStage(
 					}
 				}
 				// Apply boost response as per boost inputs
-				if boostResponse.Inputs.BoostType == Score {
+				if boostResponse.Inputs.BoostType == Score && len(searchResult.Hits.Hits) > 0 {
 					// Sort results by _score (decreasing order)
+					for _, modifiedHit := range modifiedHits {
+						var sourceData map[string]interface{}
+						err := json.Unmarshal(modifiedHit.Source, &sourceData)
+						if err != nil {
+							log.Errorln(logTag, ":", err)
+							return nil, false, &Error{
+								Err: err,
+							}
+						}
+					}
 					sort.SliceStable(modifiedHits, func(i, j int) bool {
-						return *modifiedHits[i].Score > *modifiedHits[j].Score
+						return modifiedHits[i].Score != nil && modifiedHits[j].Score != nil && *modifiedHits[i].Score > *modifiedHits[j].Score
 					})
 				}
 				// Maintain the size of hits
@@ -1074,6 +1091,25 @@ func executeElasticsearchStage(
 
 		output = scriptContext
 	}
+
+	responseInBytes, err := json.Marshal(scriptContext.Response)
+	if err != nil {
+		log.Errorln(logTag, ":", err)
+		return nil, false, &Error{
+			Err: err,
+		}
+	}
+
+	if inputs.SetResponseToKV != nil {
+		errStoringInKV := rules.StoreValueInCacheWithObject(*inputs.SetResponseToKV, string(responseInBytes), cache.GetSearchCache())
+		if errStoringInKV != nil {
+			log.Errorln(logTag, ":", errStoringInKV)
+			return nil, false, &Error{
+				Err: errStoringInKV,
+			}
+		}
+	}
+
 	contextInBytes, err := json.Marshal(output)
 	if err != nil {
 		log.Errorln(logTag, ":", err)

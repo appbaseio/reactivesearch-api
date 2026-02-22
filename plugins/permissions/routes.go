@@ -3,7 +3,7 @@ package permissions
 import (
 	"net/http"
 
-	"github.com/appbaseio-confidential/reactivesearch/plugins"
+	"github.com/appbaseio/reactivesearch-api/plugins"
 )
 
 func (p *permissions) routes() []plugins.Route {

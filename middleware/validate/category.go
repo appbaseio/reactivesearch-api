@@ -8,12 +8,12 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
-	"github.com/appbaseio-confidential/reactivesearch/middleware"
-	"github.com/appbaseio-confidential/reactivesearch/model/category"
-	"github.com/appbaseio-confidential/reactivesearch/model/credential"
-	"github.com/appbaseio-confidential/reactivesearch/model/permission"
-	"github.com/appbaseio-confidential/reactivesearch/model/user"
-	"github.com/appbaseio-confidential/reactivesearch/plugins/telemetry"
+	"github.com/appbaseio/reactivesearch-api/middleware"
+	"github.com/appbaseio/reactivesearch-api/model/category"
+	"github.com/appbaseio/reactivesearch-api/model/credential"
+	"github.com/appbaseio/reactivesearch-api/model/permission"
+	"github.com/appbaseio/reactivesearch-api/model/user"
+	"github.com/appbaseio/reactivesearch-api/plugins/telemetry"
 )
 
 // Category returns a middleware that validates the request category against credential categories.

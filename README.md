@@ -1,6 +1,6 @@
 # ReactiveSearch API
 
-[![Tests](https://github.com/appbaseio/reactivesearch-api/actions/workflows/tests.yml/badge.svg)](https://github.com/appbaseio/reactivesearch-api/actions/workflows/tests.yml) [![Docker](https://github.com/appbaseio/reactivesearch-api/actions/workflows/docker-image.yml/badge.svg)](https://github.com/appbaseio/reactivesearch-api/actions/workflows/docker-image.yml)
+[![Tests](https://github.com/appbaseio/reactivesearch-api/actions/workflows/tests.yml/badge.svg)](https://github.com/appbaseio/reactivesearch-api/actions/workflows/tests.yml) [![Docker](https://github.com/appbaseio/reactivesearch-api/actions/workflows/docker-publish.yml/badge.svg)](https://github.com/appbaseio/reactivesearch-api/actions/workflows/docker-publish.yml)
 
 ReactiveSearch API is a declarative, open-source API for querying Elasticsearch, OpenSearch, Solr, MongoDB Atlas Search and OpenAI. It also acts as a reverse proxy and API gateway for Elasticsearch and OpenSearch. ReactiveSearch API is best suited for site search, app search and e-commerce search use-cases.
 
@@ -41,29 +41,20 @@ docker network create reactivesearch
 2. Start a single node Elasticsearch cluster locally
 
 ```sh
-docker run -d --rm --name elasticsearch -p 9200:9200 -p 9300:9300 --net=reactivesearch -e "discovery.type=single-node" -e "xpack.security.enabled=false" docker.elastic.co/elasticsearch/elasticsearch:8.10.3
+docker run -d --rm --name elasticsearch -p 9200:9200 -p 9300:9300 --net=reactivesearch -e "discovery.type=single-node" -e "xpack.security.enabled=false" docker.elastic.co/elasticsearch/elasticsearch:8.17.0
 ```
 
-> NOTE: It is advised to use `-e "xpack.security.enabled=false"` for local runs of ElasticSearch since otherwise ES is not available on :9200.
+> NOTE: It is advised to use `-e "xpack.security.enabled=false"` for local runs of Elasticsearch since otherwise ES is not available on :9200.
 
 OR
 
 Alternative to using Elasticsearch, you can also start a single node OpenSearch cluster locally
 
 ```sh
-docker run --name opensearch --rm -d -p 9200:9200 -e http.port=9200 -e discovery.type=single-node -e http.max_content_length=10MB -e http.cors.enabled=true -e http.cors.allow-origin=\* -e http.cors.allow-headers=X-Requested-With,X-Auth-Token,Content-Type,Content-Length,Authorization -e http.cors.allow-credentials=true -e "plugins.security.disabled=true" --net=reactivesearch opensearchproject/opensearch:2.10.0
+docker run --name opensearch --rm -d -p 9200:9200 -e http.port=9200 -e discovery.type=single-node -e http.max_content_length=10MB -e http.cors.enabled=true -e http.cors.allow-origin=\* -e http.cors.allow-headers=X-Requested-With,X-Auth-Token,Content-Type,Content-Length,Authorization -e http.cors.allow-credentials=true -e "plugins.security.disabled=true" --net=reactivesearch opensearchproject/opensearch:latest
 ```
 
-3. Start Zinc locally
-
-```sh
-mkdir data                                                                                                                            
-docker run --rm -d -v data:/data -e ZINC_DATA_PATH="/data" -p 4080:4080 --net=reactivesearch \
-    -e ZINC_FIRST_ADMIN_USER=appbase -e ZINC_FIRST_ADMIN_PASSWORD=zincf0rappbase \
-    --name zinc public.ecr.aws/zinclabs/zinc:latest
-```
-
-4. Start ReactiveSearch locally
+3. Start ReactiveSearch locally
 
 ```sh
 docker build -t reactivesearch . && docker run --rm --name reactivesearch -p 8000:8000 --net=reactivesearch --env-file=config/docker.env reactivesearch --log=info --diff-logs=false --enable-telemetry=false --enable-logs=true --disable-health-check=true

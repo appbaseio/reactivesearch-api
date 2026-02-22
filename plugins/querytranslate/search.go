@@ -133,7 +133,9 @@ func (query *Query) generateShouldQueryByValue(value string, isMultiSearch bool)
 	var phrasePrefixFields []string
 	normalizedFields := NormalizedDataFields(query.DataField, query.FieldWeights)
 	if len(normalizedFields) < 1 {
-		return nil, errors.New("field 'dataField' cannot be empty")
+		if !(query.VectorDataField != nil && *query.VectorDataField != "") {
+			return nil, errors.New("one of the fields: 'dataField' or 'vectorDataField' is required")
+		}
 	}
 	for _, dataField := range normalizedFields {
 		var fieldWeight string

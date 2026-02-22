@@ -9,7 +9,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/appbaseio-confidential/reactivesearch/middleware/classify"
+	"github.com/appbaseio/reactivesearch-api/middleware/classify"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -162,7 +162,7 @@ func getSearchRelevancyIndex() string {
 func getSynonymsIndex() string {
 	synonymsIndex := os.Getenv("SYNONYMS_ES_INDEX")
 	if synonymsIndex == "" {
-		synonymsIndex = ".synonyms"
+		synonymsIndex = ".rs-synonyms"
 	}
 	return synonymsIndex
 }

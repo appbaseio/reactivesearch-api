@@ -11,11 +11,11 @@ import (
 	"sync"
 	"time"
 
-	"github.com/appbaseio-confidential/reactivesearch/plugins/querytranslate"
-	"github.com/appbaseio-confidential/reactivesearch/plugins/rules"
-	"github.com/appbaseio-confidential/reactivesearch/plugins/suggestions"
-	"github.com/appbaseio-confidential/reactivesearch/plugins/uibuilder"
-	"github.com/appbaseio-confidential/reactivesearch/util"
+	"github.com/appbaseio/reactivesearch-api/plugins/querytranslate"
+	"github.com/appbaseio/reactivesearch-api/plugins/rules"
+	"github.com/appbaseio/reactivesearch-api/plugins/suggestions"
+	"github.com/appbaseio/reactivesearch-api/plugins/uibuilder"
+	"github.com/appbaseio/reactivesearch-api/util"
 	"github.com/buger/jsonparser"
 	log "github.com/sirupsen/logrus"
 )

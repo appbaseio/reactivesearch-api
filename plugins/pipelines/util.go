@@ -19,11 +19,11 @@ import (
 	"time"
 
 	"github.com/antonmedv/expr"
-	"github.com/appbaseio-confidential/reactivesearch/model/acl"
-	"github.com/appbaseio-confidential/reactivesearch/model/category"
-	"github.com/appbaseio-confidential/reactivesearch/plugins/querytranslate"
-	"github.com/appbaseio-confidential/reactivesearch/plugins/rules"
-	"github.com/appbaseio-confidential/reactivesearch/util"
+	"github.com/appbaseio/reactivesearch-api/model/acl"
+	"github.com/appbaseio/reactivesearch-api/model/category"
+	"github.com/appbaseio/reactivesearch-api/plugins/querytranslate"
+	"github.com/appbaseio/reactivesearch-api/plugins/rules"
+	"github.com/appbaseio/reactivesearch-api/util"
 	units "github.com/bcicen/go-units"
 	"github.com/invopop/jsonschema"
 	"github.com/kr/pretty"
@@ -1398,7 +1398,7 @@ type DelayedStageLogTracker struct {
 	IsReady   bool
 	RemoveAt  *int64
 	logs      *StageLogTracker
-	timeTaken *map[string]*int
+	timeTaken *BackgroundStageToTime
 }
 
 func (d *DelayedStageLogTracker) GetIsReady() bool {
@@ -1414,7 +1414,7 @@ func (d *DelayedStageLogTracker) GetLogs() *StageLogTracker {
 }
 
 func (d *DelayedStageLogTracker) GetTimeTaken() *map[string]*int {
-	return d.timeTaken
+	return d.timeTaken.GetAll()
 }
 
 // ValidateIDToConsoleLogs will contain the console logs against
@@ -1439,7 +1439,7 @@ func (v *ValidateIDToConsoleLogs) Register(validateId string) *DelayedStageLogTr
 	return newLogTracker
 }
 
-func (v *ValidateIDToConsoleLogs) AddLogs(validateId string, logs *StageLogTracker, timeTaken *map[string]*int) {
+func (v *ValidateIDToConsoleLogs) AddLogs(validateId string, logs *StageLogTracker, timeTaken *BackgroundStageToTime) {
 	v.mu.Lock()
 	defer v.mu.Unlock()
 	removeAt := time.Now().Add(30 * time.Minute).Unix()
@@ -1463,6 +1463,23 @@ func (v *ValidateIDToConsoleLogs) GetLogs(validateId string) *DelayedStageLogTra
 	}
 
 	return logs
+}
+
+// BackgroundStageToTime will store the time taken by each stage
+// to process against the stage
+type BackgroundStageToTime struct {
+	mu      sync.Mutex
+	storage map[string]*int
+}
+
+func (b *BackgroundStageToTime) Add(key string, value *int) {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	b.storage[key] = value
+}
+
+func (b *BackgroundStageToTime) GetAll() *map[string]*int {
+	return &b.storage
 }
 
 var (

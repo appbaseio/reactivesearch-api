@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"os"
 
-	"github.com/appbaseio-confidential/reactivesearch/util"
+	"github.com/appbaseio/reactivesearch-api/util"
 	es7 "github.com/olivere/elastic/v7"
 	log "github.com/sirupsen/logrus"
 )
@@ -28,7 +28,7 @@ type suggestionsMetaResponse struct {
 
 func (m SuggestionsPreferencesMigration) ConditionCheck() (bool, *util.Error) {
 	errorMsg := `Error occurred while checking condition for suggestions preferences. 
-	Try restarting once if it doesn't fix the issue then please contact us by dropping a mail at support@appbase.io.`
+	Try restarting once if it doesn't fix the issue then please contact us by opening an issue on the GitHub repository.`
 	// Only run migration script when suggestions preferences are stored in the meta index
 	oldSuggestionsPreferencesIndex := os.Getenv(envSuggestionsMetaEsIndex)
 	if oldSuggestionsPreferencesIndex == "" {
@@ -54,7 +54,7 @@ func (m SuggestionsPreferencesMigration) ConditionCheck() (bool, *util.Error) {
 func (m SuggestionsPreferencesMigration) Script() *util.Error {
 	log.Println(logTag, "Running migration script for suggestions preferences....This process may take some time.")
 	errorMsg := `Error occurred while updating the suggestions preferences.
-	Try restarting once if it doesn't fix the issue then please contact us by dropping a mail at support@appbase.io.`
+	Try restarting once if it doesn't fix the issue then please contact us by opening an issue on the GitHub repository.`
 	oldSuggestionsPreferencesIndex := os.Getenv(envSuggestionsMetaEsIndex)
 	if oldSuggestionsPreferencesIndex == "" {
 		oldSuggestionsPreferencesIndex = defaultSuggestionsMetaEsIndex

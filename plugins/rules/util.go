@@ -20,13 +20,13 @@ import (
 	_ "embed"
 
 	"github.com/antonmedv/expr"
-	"github.com/appbaseio-confidential/reactivesearch/model/acl"
-	"github.com/appbaseio-confidential/reactivesearch/model/category"
-	"github.com/appbaseio-confidential/reactivesearch/model/index"
-	"github.com/appbaseio-confidential/reactivesearch/plugins/openai"
-	"github.com/appbaseio-confidential/reactivesearch/plugins/querytranslate"
-	"github.com/appbaseio-confidential/reactivesearch/util"
-	"github.com/appbaseio-confidential/reactivesearch/util/iplookup"
+	"github.com/appbaseio/reactivesearch-api/model/acl"
+	"github.com/appbaseio/reactivesearch-api/model/category"
+	"github.com/appbaseio/reactivesearch-api/model/index"
+	"github.com/appbaseio/reactivesearch-api/plugins/openai"
+	"github.com/appbaseio/reactivesearch-api/plugins/querytranslate"
+	"github.com/appbaseio/reactivesearch-api/util"
+	"github.com/appbaseio/reactivesearch-api/util/iplookup"
 	"github.com/invopop/jsonschema"
 	"github.com/kr/pretty"
 	"github.com/robfig/cron"
@@ -1075,8 +1075,8 @@ func RunScript(scriptContext []byte, script string, timeout time.Duration) ([]by
 		if strings.Trim(v, " ") == "" {
 			// If it is the last element than handle that as well
 			if s == len(consoleLogs) {
-				consoleLogs = append(consoleLogs[:s])
-			} else {
+				consoleLogs = consoleLogs[:s]
+			} else if s < len(consoleLogs) {
 				consoleLogs = append(consoleLogs[:s], consoleLogs[s+1:]...)
 			}
 		}

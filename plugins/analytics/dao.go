@@ -13,14 +13,15 @@ import (
 	"time"
 
 	"github.com/antonmedv/expr"
-	"github.com/appbaseio-confidential/reactivesearch/plugins/analyticsrequest"
+	"github.com/appbaseio/reactivesearch-api/plugins/analyticsrequest"
 	log "github.com/sirupsen/logrus"
 
-	"github.com/appbaseio-confidential/reactivesearch/middleware/classify"
-	"github.com/appbaseio-confidential/reactivesearch/model/index"
-	"github.com/appbaseio-confidential/reactivesearch/model/reindex"
-	"github.com/appbaseio-confidential/reactivesearch/plugins/querytranslate"
-	"github.com/appbaseio-confidential/reactivesearch/util"
+	"github.com/appbaseio/reactivesearch-api/middleware/classify"
+	"github.com/appbaseio/reactivesearch-api/model/index"
+	"github.com/appbaseio/reactivesearch-api/model/reindex"
+	"github.com/appbaseio/reactivesearch-api/plugins/querytranslate"
+	"github.com/appbaseio/reactivesearch-api/util"
+	"github.com/appbaseio/reactivesearch-api/util/escompat"
 	es7 "github.com/olivere/elastic/v7"
 )
 
@@ -3030,12 +3031,7 @@ func (es *elasticsearch) rolloverIndexJob(alias string) {
 	ctx := context.Background()
 
 	var mappings map[string]interface{}
-	marshalled, err := json.Marshal(getAnalyticsMappings())
-	if err != nil {
-		log.Errorln(logTag, "error while marshalling mappings", err)
-		return
-	}
-	err2 := json.Unmarshal(marshalled, &mappings)
+	err2 := json.Unmarshal([]byte(getAnalyticsMappings()), &mappings)
 	if err2 != nil {
 		log.Errorln(logTag, "error while un-marshalling mappings", err2)
 		return
@@ -3553,15 +3549,15 @@ type SavedSearchesFilters struct {
 
 func (es *elasticsearch) getSavedSearches(ctx context.Context, filters SavedSearchesFilters) ([]SavedSearchES, error) {
 	var savedSearches = make([]SavedSearchES, 0)
-	duration := es7.NewRangeQuery("timestamp").
-		From(filters.FromTimeStamp).
-		To(filters.ToTimeStamp).
+	duration := escompat.NewRangeQuery("timestamp").
+		Gte(filters.FromTimeStamp).
+		Lte(filters.ToTimeStamp).
 		TimeZone(filters.TimeZone)
 
 	query := es7.NewBoolQuery().Filter(duration)
 
 	if filters.MinChars != nil {
-		minCharQuery := es7.NewRangeQuery("search_characters_length").Gte(*filters.MinChars)
+		minCharQuery := escompat.NewRangeQuery("search_characters_length").Gte(*filters.MinChars)
 		query.Filter(minCharQuery)
 	}
 
@@ -3689,15 +3685,15 @@ func (es *elasticsearch) updateFavorite(ctx context.Context, record FavoriteRequ
 }
 func (es *elasticsearch) getFavorites(ctx context.Context, filters SavedSearchesFilters) ([]map[string]interface{}, error) {
 	var favorites = make([]map[string]interface{}, 0)
-	duration := es7.NewRangeQuery("timestamp").
-		From(filters.FromTimeStamp).
-		To(filters.ToTimeStamp).
+	duration := escompat.NewRangeQuery("timestamp").
+		Gte(filters.FromTimeStamp).
+		Lte(filters.ToTimeStamp).
 		TimeZone(filters.TimeZone)
 
 	query := es7.NewBoolQuery().Filter(duration)
 
 	if filters.MinChars != nil {
-		minCharQuery := es7.NewRangeQuery("search_characters_length").Gte(*filters.MinChars)
+		minCharQuery := escompat.NewRangeQuery("search_characters_length").Gte(*filters.MinChars)
 		query.Filter(minCharQuery)
 	}
 

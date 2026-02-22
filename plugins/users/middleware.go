@@ -6,15 +6,15 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
-	"github.com/appbaseio-confidential/reactivesearch/middleware"
-	"github.com/appbaseio-confidential/reactivesearch/middleware/classify"
-	"github.com/appbaseio-confidential/reactivesearch/middleware/validate"
-	"github.com/appbaseio-confidential/reactivesearch/model/category"
-	"github.com/appbaseio-confidential/reactivesearch/model/index"
-	"github.com/appbaseio-confidential/reactivesearch/model/user"
-	"github.com/appbaseio-confidential/reactivesearch/plugins/auth"
-	"github.com/appbaseio-confidential/reactivesearch/plugins/logs"
-	"github.com/appbaseio-confidential/reactivesearch/plugins/telemetry"
+	"github.com/appbaseio/reactivesearch-api/middleware"
+	"github.com/appbaseio/reactivesearch-api/middleware/classify"
+	"github.com/appbaseio/reactivesearch-api/middleware/validate"
+	"github.com/appbaseio/reactivesearch-api/model/category"
+	"github.com/appbaseio/reactivesearch-api/model/index"
+	"github.com/appbaseio/reactivesearch-api/model/user"
+	"github.com/appbaseio/reactivesearch-api/plugins/auth"
+	"github.com/appbaseio/reactivesearch-api/plugins/logs"
+	"github.com/appbaseio/reactivesearch-api/plugins/telemetry"
 )
 
 type chain struct {

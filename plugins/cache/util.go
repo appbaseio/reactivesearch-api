@@ -2,29 +2,34 @@ package cache
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"net"
 	"net/http"
+	"sync"
 	"time"
 
-	"github.com/appbaseio-confidential/reactivesearch/model/index"
-	"github.com/appbaseio-confidential/reactivesearch/plugins/openai"
-	"github.com/appbaseio-confidential/reactivesearch/plugins/querytranslate"
-	"github.com/appbaseio-confidential/reactivesearch/util"
+	"github.com/appbaseio/reactivesearch-api/model/index"
+	"github.com/appbaseio/reactivesearch-api/plugins/openai"
+	"github.com/appbaseio/reactivesearch-api/plugins/querytranslate"
+	"github.com/appbaseio/reactivesearch-api/util"
 	"github.com/buger/jsonparser"
 	"github.com/dgraph-io/ristretto"
 	"github.com/go-redis/redis/v8"
 	log "github.com/sirupsen/logrus"
 )
 
-var searchCache *ristretto.Cache
-var redisSearchCache *redis.Client
-var useRedisCache bool = true
+var (
+	searchCache      *ristretto.Cache
+	redisSearchCache *redis.Client
+	useRedisCache    bool = true
+	cacheInitOnce    sync.Once
+	ctx              = context.Background()
+)
 
 const CachedRequestHeader = "X-request-Cache"
-
-var ctx = context.Background()
 
 func GetSearchCache() *ristretto.Cache {
 	return searchCache
@@ -60,6 +65,25 @@ func initializeSearchCache() error {
 		maxSize = *cacheConfig.MaxSize
 	}
 
+	// Initialize in-memory cache regardless of Redis cache
+	cacheInstance, err := ristretto.NewCache(&ristretto.Config{
+		NumCounters: 1e7,                   // number of keys to track frequency of (10M).
+		MaxCost:     maxSize * 1024 * 1024, // maximum cost of cache in bytes, maxSize is in MB.
+		BufferItems: 64,                    // number of keys per Get buffer.
+	})
+	if err == nil {
+		// Clear the memory if search cache already exist
+		if searchCache != nil {
+			searchCache.Clear()
+		}
+		searchCache = cacheInstance
+	} else {
+		log.Errorln(logTag, ": error initializing in-memory cache: ", err)
+		// If in-memory cache cannot be initialized, set searchCache to nil
+		searchCache = nil
+	}
+
+	// Attempt to initialize Redis cache if configured
 	if cacheConfig.Addr != nil && *cacheConfig.Addr != "" {
 		// Extract host and port using net.SplitHostPort
 		host, port, err := net.SplitHostPort(*cacheConfig.Addr)
@@ -71,6 +95,7 @@ func initializeSearchCache() error {
 				// Handle other potential errors
 				useRedisCache = false
 				log.Errorln(logTag, ", Error parsing Redis address:", err)
+				redisSearchCache = nil
 				return err
 			}
 		}
@@ -96,33 +121,25 @@ func initializeSearchCache() error {
 		if err != nil {
 			useRedisCache = false
 			fmt.Println("Error connecting to Redis:", err)
-
-			// NOTE: We are not returning the error here as we want
-			// the ristretto cache to be initialized anyway
-			// return err
+			redisSearchCache = nil
+			return err
 		} else {
 			useRedisCache = true
 			log.Debugln(logTag, ": Redis connection established: ", pong)
 		}
+	} else {
+		useRedisCache = false
+		redisSearchCache = nil
 	}
 
-	cacheInstance, err := ristretto.NewCache(&ristretto.Config{
-		NumCounters: 1e7,                // number of keys to track frequency of (10M).
-		MaxCost:     10000000 * maxSize, // maximum cost of cache (4GB).
-		BufferItems: 64,                 // number of keys per Get buffer.
-	})
-	if err == nil {
-		// Clear the memory if search cache already exist
-		if searchCache != nil {
-			searchCache.Clear()
-		}
-		searchCache = cacheInstance
-	}
-
-	return err
+	return nil
 }
 
-func writeToCache(url string, body string, value []byte, rsQuery *querytranslate.RSQuery) bool {
+func writeToCache(url string, body []byte, value []byte, rsQuery *querytranslate.RSQuery) bool {
+	// Ensure cache is initialized only once
+	cacheInitOnce.Do(func() {
+		initializeSearchCache()
+	})
 	cacheConfig := GetCachePreferences()
 	var maxDuration int64 = 60
 	if cacheConfig.MaxDuration != nil {
@@ -130,28 +147,25 @@ func writeToCache(url string, body string, value []byte, rsQuery *querytranslate
 	}
 	cacheKey := GetCacheKey(url, body)
 	// cost to store request (cache key)
-	requestSize := int64(len([]byte(cacheKey)))
+	requestSize := int64(len(cacheKey))
 	// cost to store response
 	responseSize := int64(len(value))
 	// overall cost to store a search query
 	itemCost := requestSize + responseSize
-	// init search cache if found nil
-	if isRedisCacheEnabled() && redisSearchCache == nil {
-		initializeSearchCache()
-	} else if !isRedisCacheEnabled() && searchCache == nil {
-		initializeSearchCache()
-	}
 	var isAdded bool
 	if isRedisCacheEnabled() && redisSearchCache != nil {
-		statusCmd := redisSearchCache.Set(ctx, cacheKey, string(value), time.Duration(time.Duration(maxDuration)*time.Second))
+		statusCmd := redisSearchCache.Set(ctx, cacheKey, value, time.Duration(maxDuration)*time.Second)
 		if statusCmd.Err() != nil {
 			log.Errorln(logTag, ": error while setting cache value: ", statusCmd.Err().Error())
 			return isAdded
 		} else {
 			isAdded = true
 		}
+	} else if searchCache != nil {
+		isAdded = searchCache.SetWithTTL(cacheKey, value, itemCost, time.Duration(maxDuration)*time.Second)
 	} else {
-		isAdded = searchCache.SetWithTTL(cacheKey, string(value), itemCost, time.Duration(time.Duration(maxDuration)*time.Second))
+		log.Errorln(logTag, ": no cache initialized")
+		return false
 	}
 
 	// If RS Query is nil, we don't need to do anything
@@ -180,52 +194,65 @@ func writeToCache(url string, body string, value []byte, rsQuery *querytranslate
 			continue
 		}
 
-		// Wait for the ChatGPT response to resolve and then update the value here
-		go func() {
+		// Passing queryId and responseDetails as arguments to the goroutine ensures that each goroutine operates on the correct data.
+		go func(queryId string, responseDetails *openai.InternalChatGPTResponse) {
 			for !responseDetails.GetIsReady() {
 				time.Sleep(5 * time.Second)
 				continue
 			}
 
-			// If the response failed then we don't need to update
 			if responseDetails.GetIsFailed() {
 				log.Debug(logTag, ": not updating cache since AI response failed!")
 				return
 			}
 
-			// It should have resolved now
+			// Update cache with AI answer
 			UpdateValueWithAIAnswer(cacheKey, queryId, responseDetails.Response(), responseDetails, value, maxDuration, itemCost)
-		}()
+		}(queryId, responseDetails)
 	}
 
 	return isAdded
 }
 
-func ReadResponseFromCache(url string, body string) interface{} {
-	if redisSearchCache != nil {
-		value, err := redisSearchCache.Get(ctx, GetCacheKey(url, body)).Result()
+func ReadResponseFromCache(url string, body []byte) (string, []byte) {
+	// Ensure cache is initialized only once
+	cacheInitOnce.Do(func() {
+		initializeSearchCache()
+	})
+	cacheKey := GetCacheKey(url, body)
+	if isRedisCacheEnabled() && redisSearchCache != nil {
+		value, err := redisSearchCache.Get(ctx, cacheKey).Bytes()
 		if err == redis.Nil {
-			return nil
+			return cacheKey, nil
 		} else if err != nil {
 			log.Errorln(logTag, ": error while reading cache value: ", err.Error())
-			return nil
+			return cacheKey, nil
 		} else {
-			return value
+			return cacheKey, value
 		}
 	} else {
-		value, found := searchCache.Get(GetCacheKey(url, body))
+		value, found := searchCache.Get(cacheKey)
 		if !found {
-			return nil
+			return cacheKey, nil
 		}
-		return value
+		valueBytes, ok := value.([]byte)
+		if !ok {
+			log.Errorln(logTag, ": unexpected type in cache")
+			return cacheKey, nil
+		}
+		return cacheKey, valueBytes
 	}
 }
 
 const cacheKeySeparator = "__"
 
 // Cache key is prefixed by request url to avoid conflicts among same requests for different indices
-func GetCacheKey(url string, body string) string {
-	return url + cacheKeySeparator + body
+func GetCacheKey(url string, body []byte) string {
+	hasher := sha256.New()
+	hasher.Write([]byte(url))
+	hasher.Write([]byte(cacheKeySeparator))
+	hasher.Write(body)
+	return hex.EncodeToString(hasher.Sum(nil))
 }
 
 type CacheConfig struct {
@@ -313,8 +340,25 @@ func UpdateValueWithAIAnswer(cacheKey string, queryId string, aiAnswerResponse [
 	// happens.
 
 	// Inject the sessionDoc in bytes in order to use it later on
-	// Sleep 5 seconds for the session doc to complete updating.
-	time.Sleep(5 * time.Second)
+	// Poll for the session document's readiness with a timeout. This prevents unnecessary delays & provides a more reliable and efficient way to wait for the session document.
+	timeout := time.After(10 * time.Second)
+	ticker := time.NewTicker(500 * time.Millisecond)
+	defer ticker.Stop()
+
+outerLoop:
+	for {
+		select {
+		case <-timeout:
+			log.Warnln(logTag, ": timeout waiting for session document to be ready")
+			return
+		case <-ticker.C:
+			sessionDoc := response.GetSession()
+			if sessionDoc != nil {
+				// Proceed with updating the cache
+				break outerLoop
+			}
+		}
+	}
 
 	sessionDoc := response.GetSession()
 	sessionInBytes, marshalErr := json.Marshal(sessionDoc)
@@ -329,15 +373,34 @@ func UpdateValueWithAIAnswer(cacheKey string, queryId string, aiAnswerResponse [
 		return
 	}
 
-	olderTTL, isFound := searchCache.GetTTL(cacheKey)
-	if !isFound {
-		olderTTL = time.Duration(time.Duration(maxDuration) * time.Second)
+	var olderTTL time.Duration
+	if isRedisCacheEnabled() && redisSearchCache != nil {
+		ttlCmd := redisSearchCache.TTL(ctx, cacheKey)
+		ttl, err := ttlCmd.Result()
+		if err != nil {
+			log.Warnln(logTag, ": error getting TTL from Redis:", err)
+			olderTTL = time.Duration(maxDuration) * time.Second
+		} else {
+			olderTTL = ttl
+			if olderTTL <= 0 {
+				olderTTL = time.Duration(maxDuration) * time.Second
+			}
+		}
+	} else if searchCache != nil {
+		var ok bool
+		olderTTL, ok = searchCache.GetTTL(cacheKey)
+		if !ok {
+			olderTTL = time.Duration(maxDuration) * time.Second
+		}
+	} else {
+		log.Errorln(logTag, ": no cache initialized")
+		return
 	}
 
 	log.Debugln(logTag, ": setting the updated body into cache: ", string(updatedValue))
 	if isRedisCacheEnabled() && redisSearchCache != nil {
-		redisSearchCache.Set(ctx, cacheKey, string(updatedValue), olderTTL)
+		redisSearchCache.Set(ctx, cacheKey, updatedValue, olderTTL)
 	} else {
-		searchCache.SetWithTTL(cacheKey, string(updatedValue), cost, olderTTL)
+		searchCache.SetWithTTL(cacheKey, updatedValue, cost, olderTTL)
 	}
 }

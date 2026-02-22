@@ -1,0 +1,48 @@
+{
+    "enabled": true,
+    "description": "Pipeline to use mongo db as search backend",
+    "routes": [
+      {
+        "path": "good-books-ds-pipeline/_reactivesearch",
+        "method": "POST",
+        "classify": {
+          "category": "reactivesearch"
+        }
+      }
+    ],
+    "envs": {
+      "category": "reactivesearch",
+      "index": ["good-books-ds-pipeline"]
+    },
+    "stages": [
+      {
+        "use": "authorization",
+        "continueOnError": false
+      },
+      {
+        "id": "mock-request-body",
+        "description": "Mocks the request body",
+        "script": "function handleRequest() { return { request: {...context.request, body: JSON.stringify({ query: [{ id: 'search', type: 'term', value: 'harry', dataField: 'property_type'}] })}}}",
+        "continueOnError": false
+      },
+      {
+        "use": "reactivesearchQuery",
+        "inputs": {
+          "backend": "mongodb"
+        },
+        "continueOnError": false
+      },
+      {
+        "use": "mongoDBQuery",
+        "inputs": {
+          "host": "cluster1.3aj3d.mongodb.net",
+          "credentials": "sid:hello123",
+          "db": "sample_airbnb",
+          "collection": "listingsAndReviews",
+          "connectionOptions": "authSource=admin&readPreference=primary&ssl=true"
+        },
+        "continueOnError": false
+      }
+    ]
+  }
+  

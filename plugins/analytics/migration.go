@@ -7,8 +7,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/appbaseio-confidential/reactivesearch/model/reindex"
-	"github.com/appbaseio-confidential/reactivesearch/util"
+	"github.com/appbaseio/reactivesearch-api/model/reindex"
+	"github.com/appbaseio/reactivesearch-api/util"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -19,7 +19,7 @@ type MappingsMigration struct {
 
 func (m MappingsMigration) ConditionCheck() (bool, *util.Error) {
 	errorMsg := `Error occurred while checking condition for analytics mappings update. 
-	Try restarting once if it doesn't fix the issue then please contact us by dropping a mail at support@appbase.io.`
+	Try restarting once if it doesn't fix the issue then please contact us by opening an issue on the GitHub repository.`
 	// Only run migration script when nested mapping is not present for search filters
 	indices := m.es.getSortedIndices(m.es.analyticsIndex)
 	var indexName = m.es.analyticsIndex
@@ -105,7 +105,7 @@ func (m MappingsMigration) ConditionCheck() (bool, *util.Error) {
 func (m MappingsMigration) Script() *util.Error {
 	log.Println(logTag, "Running migration script for analytics....This process may take some time.")
 	errorMsg := `Error occurred while re-indexing the analytics index mapping. 
-	Try restarting once if it doesn't fix the issue then please contact us by dropping a mail at support@appbase.io.`
+	Try restarting once if it doesn't fix the issue then please contact us by opening an issue on the GitHub repository.`
 	indices := m.es.getSortedIndices(m.es.analyticsIndex)
 	var mappingAsMap map[string]interface{}
 	err := json.Unmarshal([]byte(m.NewMapping), &mappingAsMap)

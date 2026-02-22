@@ -3,7 +3,7 @@ package rules
 import (
 	"context"
 
-	"github.com/appbaseio-confidential/reactivesearch/errors"
+	"github.com/appbaseio/reactivesearch-api/errors"
 )
 
 // contextKey is a key against which rs api request will get stored in the context.

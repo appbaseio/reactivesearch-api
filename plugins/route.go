@@ -9,9 +9,9 @@ import (
 	"sort"
 	"sync"
 
-	"github.com/appbaseio-confidential/reactivesearch/middleware/logger"
-	"github.com/appbaseio-confidential/reactivesearch/middleware/tracer"
-	"github.com/appbaseio-confidential/reactivesearch/model/tracktime"
+	"github.com/appbaseio/reactivesearch-api/middleware/logger"
+	"github.com/appbaseio/reactivesearch-api/middleware/tracer"
+	"github.com/appbaseio/reactivesearch-api/model/tracktime"
 	"github.com/gorilla/mux"
 	"github.com/rs/cors"
 	log "github.com/sirupsen/logrus"

@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/appbaseio-confidential/reactivesearch/model/reindex"
+	"github.com/appbaseio/reactivesearch-api/model/reindex"
 	"github.com/olivere/elastic"
 )
 

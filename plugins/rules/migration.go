@@ -3,7 +3,7 @@ package rules
 import (
 	"context"
 
-	"github.com/appbaseio-confidential/reactivesearch/util"
+	"github.com/appbaseio/reactivesearch-api/util"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -26,7 +26,7 @@ const rulesMapping = `{
 
 func (m MappingsMigration) ConditionCheck() (bool, *util.Error) {
 	errorMsg := `Error occurred while checking condition for rules mappings update. 
-	Try restarting once if it doesn't fix the issue then please contact us by dropping a mail at support@appbase.io.`
+	Try restarting once if it doesn't fix the issue then please contact us by opening an issue on the GitHub repository.`
 	// Only run migration script when mapping is not present for `script`
 	response, err := util.GetIndexMapping(m.indexName, context.Background())
 
@@ -76,7 +76,7 @@ func (m MappingsMigration) ConditionCheck() (bool, *util.Error) {
 func (m MappingsMigration) Script() *util.Error {
 	log.Println(logTag, "Running migration script for rules....This process may take some time.")
 	errorMsg := `Error occurred while updating rules mapping. 
-	Try restarting once if it doesn't fix the issue then please contact us by dropping a mail at support@appbase.io.`
+	Try restarting once if it doesn't fix the issue then please contact us by opening an issue on the GitHub repository.`
 
 	_, err := util.GetClient7().PutMapping().
 		Index(m.indexName).

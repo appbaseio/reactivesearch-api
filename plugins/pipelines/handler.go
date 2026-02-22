@@ -13,21 +13,21 @@ import (
 	"sync"
 	"time"
 
-	"github.com/appbaseio-confidential/reactivesearch/middleware"
-	"github.com/appbaseio-confidential/reactivesearch/middleware/ratelimiter"
-	"github.com/appbaseio-confidential/reactivesearch/middleware/validate"
-	"github.com/appbaseio-confidential/reactivesearch/model/acl"
-	"github.com/appbaseio-confidential/reactivesearch/model/category"
-	"github.com/appbaseio-confidential/reactivesearch/model/index"
-	"github.com/appbaseio-confidential/reactivesearch/model/tracktime"
-	"github.com/appbaseio-confidential/reactivesearch/plugins/auth"
-	"github.com/appbaseio-confidential/reactivesearch/plugins/logs"
-	"github.com/appbaseio-confidential/reactivesearch/plugins/openai"
-	"github.com/appbaseio-confidential/reactivesearch/plugins/querytranslate"
-	"github.com/appbaseio-confidential/reactivesearch/plugins/rules"
-	"github.com/appbaseio-confidential/reactivesearch/plugins/telemetry"
-	"github.com/appbaseio-confidential/reactivesearch/util"
-	"github.com/appbaseio-confidential/reactivesearch/util/iplookup"
+	"github.com/appbaseio/reactivesearch-api/middleware"
+	"github.com/appbaseio/reactivesearch-api/middleware/ratelimiter"
+	"github.com/appbaseio/reactivesearch-api/middleware/validate"
+	"github.com/appbaseio/reactivesearch-api/model/acl"
+	"github.com/appbaseio/reactivesearch-api/model/category"
+	"github.com/appbaseio/reactivesearch-api/model/index"
+	"github.com/appbaseio/reactivesearch-api/model/tracktime"
+	"github.com/appbaseio/reactivesearch-api/plugins/auth"
+	"github.com/appbaseio/reactivesearch-api/plugins/logs"
+	"github.com/appbaseio/reactivesearch-api/plugins/openai"
+	"github.com/appbaseio/reactivesearch-api/plugins/querytranslate"
+	"github.com/appbaseio/reactivesearch-api/plugins/rules"
+	"github.com/appbaseio/reactivesearch-api/plugins/telemetry"
+	"github.com/appbaseio/reactivesearch-api/util"
+	"github.com/appbaseio/reactivesearch-api/util/iplookup"
 	"github.com/buger/jsonparser"
 	"github.com/gdexlab/go-render/render"
 	"github.com/gorilla/mux"
@@ -686,7 +686,7 @@ func executeStage(
 	req *http.Request,
 	contextDiffWg *sync.WaitGroup,
 	bgScriptWg *sync.WaitGroup,
-	bgStagesToTime *map[string]*int,
+	bgStagesToTime *BackgroundStageToTime,
 	runInBg bool,
 ) (bool, *Error) {
 	stageStart := time.Now()
@@ -833,7 +833,7 @@ func executeStage(
 			logsInstance := logs.Instance()
 
 			if runInBg {
-				(*bgStagesToTime)[*id] = &stageTimeTook
+				(*bgStagesToTime).Add(*id, &stageTimeTook)
 			}
 
 			if updatedScriptContext != nil {
@@ -1093,7 +1093,9 @@ func (pipeline ESPipelineDoc) executePipeline(pipelineExecutionContext PipelineE
 	}
 
 	// Track the time of the stages run in the background
-	bgStagesToTime := make(map[string]*int, 0)
+	bgStagesToTime := BackgroundStageToTime{
+		storage: make(map[string]*int, 0),
+	}
 
 	// Create a wait group to wait for all the stage context diffs to complete.
 	//
@@ -1101,7 +1103,7 @@ func (pipeline ESPipelineDoc) executePipeline(pipelineExecutionContext PipelineE
 	// before the logs are written.
 	var stageDiffWg = (*logUpdateWgArr)[1]
 
-	defer func(bgScriptWg *sync.WaitGroup, pipelineLog *PipelineLog, stageChanges *[]*StageChange, shouldUpdateLog *bool, contextDiffWg *sync.WaitGroup, logWg *sync.WaitGroup, validateId *string, stageLogTracker *StageLogTracker, bgStagesToTime *map[string]*int) {
+	defer func(bgScriptWg *sync.WaitGroup, pipelineLog *PipelineLog, stageChanges *[]*StageChange, shouldUpdateLog *bool, contextDiffWg *sync.WaitGroup, logWg *sync.WaitGroup, validateId *string, stageLogTracker *StageLogTracker, bgStagesToTime *BackgroundStageToTime) {
 		go func(bgScriptWg *sync.WaitGroup, pipelineLog *PipelineLog, stageChanges *[]*StageChange, shouldUpdateLog *bool, contextDiffWg *sync.WaitGroup, logWg *sync.WaitGroup) {
 			// Wait for the logs to update
 			logWg.Add(1)
@@ -1119,7 +1121,7 @@ func (pipeline ESPipelineDoc) executePipeline(pipelineExecutionContext PipelineE
 
 		// Update the console logs against the validate ID so that the updated console
 		// logs can be fetched.
-		go func(validateId *string, stageLogTracker *StageLogTracker, bgStagesToTime *map[string]*int) {
+		go func(validateId *string, stageLogTracker *StageLogTracker, bgStagesToTime *BackgroundStageToTime) {
 			// Wait for the bg scripts to complete
 			log.Debug(logTag, ": waiting for bg scripts to complete (if any)")
 			bgScriptWg.Wait()
@@ -1155,11 +1157,33 @@ func (pipeline ESPipelineDoc) executePipeline(pipelineExecutionContext PipelineE
 		scheme += "s"
 	}
 
+	URL := ""
+	// use any user-defined search URL env, if present
+	searchURL, ok := pipelineExecutionContext.envs["searchURL"].(string)
+	if ok {
+		URL = searchURL
+	} else {
+		searchURL, ok := pipelineExecutionContext.envs["url"].(string)
+		if ok {
+			URL = searchURL
+		} else {
+			searchURL, ok := pipelineExecutionContext.envs["URL"].(string)
+			if ok {
+				URL = searchURL
+			}
+		}
+	}
+
 	requestURL := ""
 	requestMethod := ""
 	if req != nil {
 		requestURL = fmt.Sprintf("%s://%s%s", scheme, req.Host, req.URL.RequestURI())
 		requestMethod = req.Method
+	}
+	if URL != "" {
+		requestURL = URL
+		// TODO: Remove this log line
+		fmt.Println("updating fallback URL to one defined in env: ", requestURL)
 	}
 
 	scriptContext := ExecutePipelineResponse{
@@ -1239,10 +1263,27 @@ func (pipeline ESPipelineDoc) executePipeline(pipelineExecutionContext PipelineE
 							}
 						}
 					}
+					URL := ""
+					// use any user-defined search URL env, if present
+					searchURL, ok := scriptContext.Environments["searchURL"].(string)
+					if ok {
+						URL = searchURL
+					} else {
+						searchURL, ok := scriptContext.Environments["url"].(string)
+						if ok {
+							URL = searchURL
+						} else {
+							searchURL, ok := scriptContext.Environments["URL"].(string)
+							if ok {
+								URL = searchURL
+							}
+						}
+					}
 					inputVariables := make(map[string]interface{})
 					parsedInputs, err := getInputValuesFromContext(p.Inputs, inputVariables)
 					if err == nil {
 						inputs, err := getInputs(ElasticsearchQueryInput{
+							URL:                           &URL,
 							ParseResponseToReactivesearch: &transformToRSAPIResponse,
 						}, parsedInputs)
 						if err == nil && inputs.ParseResponseToReactivesearch != nil {

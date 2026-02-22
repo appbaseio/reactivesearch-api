@@ -3,7 +3,7 @@ package nodes
 import (
 	"net/http"
 
-	"github.com/appbaseio-confidential/reactivesearch/middleware"
+	"github.com/appbaseio/reactivesearch-api/middleware"
 )
 
 type chain struct {

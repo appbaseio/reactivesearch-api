@@ -1,0 +1,77 @@
+{
+    "enabled": true,
+    "routes": [
+        {
+            "path": "/query-boost-example",
+            "method": "POST",
+            "classify": {
+                "category": "reactivesearch"
+            }
+        }
+    ],
+    "envs": {
+        "category": "reactivesearch",
+        "index": [
+            "best-buy-dataset"
+        ]
+    },
+    "stages": [
+        {
+            "use": "authorization",
+            "continueOnError": false
+        },
+        {
+            "use": "addFilter",
+            "description": "Filter results by department",
+            "inputs": {
+                "data": {
+                    "department.keyword": "DIGITAL COMMUNICATIO"
+                }
+            },
+            "continueOnError": false
+        },
+        {
+            "use": "replaceWords",
+            "description": "Replaces 'iphone' word to 'iphone 11 apple'",
+            "inputs": {
+                "data": {
+                    "iphone": "iphone 11 apple"
+                }
+            },
+            "continueOnError": false
+        },
+        {
+            "id": "boostByScore",
+            "use": "boost",
+            "inputs": {
+                "dataField": "categoryPath.name",
+                "value": [
+                    "cell Phones",
+                    "Prepaid Phones"
+                ]
+            },
+            "continueOnError": false
+        },
+        {
+            "id": "promoteResults",
+            "use": "boost",
+            "inputs": {
+                "dataField": "albumTitle",
+                "value": [
+                    "Galaxy Note10+"
+                ],
+                "boostType": "promote",
+                "boostMaxDocs": 1
+            },
+            "continueOnError": false
+        },
+        {
+            "use": "reactivesearchQuery",
+            "continueOnError": false
+        },
+        {
+            "use": "elasticsearchQuery",
+            "continueOnError": false
+        }
+    ]
+}

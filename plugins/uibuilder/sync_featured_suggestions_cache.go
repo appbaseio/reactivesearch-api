@@ -18,7 +18,8 @@ func (s FeaturedSuggestionsCacheSyncScript) PluginName() string {
 
 func (s FeaturedSuggestionsCacheSyncScript) SetCache(response *elastic.SearchResult) error {
 	if response != nil {
-		err := s.featuredSuggestionsConfig.setFeaturedSuggestionsFromESResponse(response, s.index)
+		// Always sync to ES when called from sync script (data has changed)
+		err := s.featuredSuggestionsConfig.setFeaturedSuggestionsFromESResponse(response, s.index, true)
 		if err != nil {
 			return err
 		}

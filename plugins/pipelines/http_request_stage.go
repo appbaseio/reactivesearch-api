@@ -10,17 +10,19 @@ import (
 	"strings"
 	"time"
 
-	"github.com/appbaseio-confidential/reactivesearch/plugins/rules"
-	"github.com/appbaseio-confidential/reactivesearch/util"
+	"github.com/appbaseio/reactivesearch-api/plugins/cache"
+	"github.com/appbaseio/reactivesearch-api/plugins/rules"
+	"github.com/appbaseio/reactivesearch-api/util"
 	log "github.com/sirupsen/logrus"
 )
 
 type HTTPRequestInput struct {
-	Method  *string            `json:"method,omitempty" jsonschema:"title=Request Method" jsonschema_description:"Http request method, for e.g, 'POST'. The default value is the pipeline request method."`
-	URL     *string            `json:"url,omitempty" jsonschema:"title=Request URL,required" jsonschema_description:"Request URL, for e.g, 'https://appbase-demo-ansible-abxiydt-arc.searchbase.io/good-books-ds/_search'."`
-	Params  *map[string]string `json:"params,omitempty" jsonschema:"title=Query params" jsonschema_description:"Request query params, for e.g, '{ format: 'JSON' }'"`
-	Headers *map[string]string `json:"headers,omitempty" jsonschema:"title=Request Headers" jsonschema_description:"Request headers, for e.g, '{ Content-Type: 'application/json' }'"`
-	Body    *string            `json:"body,omitempty" jsonschema:"title=Body" jsonschema_description:"Request body in string format, e.g, {\"query\":{\"match_all\":{}}}."`
+	Method          *string            `json:"method,omitempty" jsonschema:"title=Request Method" jsonschema_description:"Http request method, for e.g, 'POST'. The default value is the pipeline request method."`
+	URL             *string            `json:"url,omitempty" jsonschema:"title=Request URL,required" jsonschema_description:"Request URL, for e.g, 'https://appbase-demo-ansible-abxiydt-arc.searchbase.io/good-books-ds/_search'."`
+	Params          *map[string]string `json:"params,omitempty" jsonschema:"title=Query params" jsonschema_description:"Request query params, for e.g, '{ format: 'JSON' }'"`
+	Headers         *map[string]string `json:"headers,omitempty" jsonschema:"title=Request Headers" jsonschema_description:"Request headers, for e.g, '{ Content-Type: 'application/json' }'"`
+	Body            *string            `json:"body,omitempty" jsonschema:"title=Body" jsonschema_description:"Request body in string format, e.g, {\"query\":{\"match_all\":{}}}."`
+	SetResponseToKV *string            `json:"setResponseToKV,omitempty" jsonschema:"title=Set Response To KV" jsonschema_description:"Sets the response of the stage output as a value in the KV store with the provided key value. Accepts dynamic inputs using the {{{ mustache }}} syntax. E.g. pass envs as {{{envs.query}}} for the key to be set as the query value."`
 }
 
 func GetHTTPRequestInputSchema() map[string]interface{} {
@@ -50,7 +52,10 @@ func getHTTPInputs(
 	if parsedESInputs.Body != nil {
 		finalEnvs.Body = parsedESInputs.Body
 	}
-	if parsedESInputs.URL != nil {
+	if parsedESInputs.SetResponseToKV != nil {
+		finalEnvs.SetResponseToKV = parsedESInputs.SetResponseToKV
+	}
+	if parsedESInputs.URL != nil && *parsedESInputs.URL != "" {
 		httpURL := *parsedESInputs.URL
 		if strings.Contains(httpURL, "@") {
 			splitIndex := strings.LastIndex(httpURL, "@")
@@ -105,6 +110,7 @@ func executeHTTPRequestStage(
 	var requestBody *string
 	paramsMap := make(map[string]string)
 	headersMap := make(map[string]string)
+	URL := ""
 
 	// only sync can read the request from context
 	// Only sync stage can modify the final response
@@ -134,6 +140,22 @@ func executeHTTPRequestStage(
 			}
 		}
 
+		// use any user-defined search URL env, if present
+		searchURL, ok := scriptEnvs["searchURL"].(string)
+		if ok {
+			URL = searchURL
+		} else {
+			searchURL, ok := scriptEnvs["url"].(string)
+			if ok {
+				URL = searchURL
+			} else {
+				searchURL, ok := scriptEnvs["URL"].(string)
+				if ok {
+					URL = searchURL
+				}
+			}
+		}
+
 		for k := range headers {
 			headersMap[k] = headers.Get(k)
 		}
@@ -146,6 +168,7 @@ func executeHTTPRequestStage(
 		Body:    requestBody,
 		Params:  &paramsMap,
 		Headers: &headersMap,
+		URL:     &URL,
 	}, parsedInputs)
 	if err != nil {
 		errorMsg := fmt.Errorf("error reading inputs for stage: "+*id+", %s", err.Error())
@@ -236,6 +259,14 @@ func executeHTTPRequestStage(
 			Err: err,
 		}
 	}
+
+	// Check for response body length and status code
+	// TODO: Remove this log
+	if len(responseBody) < 5 || response.StatusCode >= 400 {
+		log.Errorln(logTag, "Error in response: Body length < 5 or status code >= 400")
+		log.Errorln(logTag, "Response Body:", string(responseBody))
+		log.Errorln(logTag, "Status Code:", response.StatusCode)
+	}
 	log.Debugln("Pipeline Elasticsearch: RESPONSE", string(responseBody))
 	// Set response to script context
 	// set headers
@@ -277,6 +308,25 @@ func executeHTTPRequestStage(
 			shouldStopExecution = true
 		}
 	}
+
+	responseInBytes, err := json.Marshal(scriptContext.Response)
+	if err != nil {
+		log.Errorln(logTag, ":", err)
+		return nil, false, &Error{
+			Err: err,
+		}
+	}
+
+	if inputs.SetResponseToKV != nil {
+		errStoringInKV := rules.StoreValueInCacheWithObject(*inputs.SetResponseToKV, string(responseInBytes), cache.GetSearchCache())
+		if errStoringInKV != nil {
+			log.Errorln(logTag, ":", errStoringInKV)
+			return nil, false, &Error{
+				Err: errStoringInKV,
+			}
+		}
+	}
+
 	contextInBytes, err := json.Marshal(output)
 	if err != nil {
 		log.Errorln(logTag, ":", err)

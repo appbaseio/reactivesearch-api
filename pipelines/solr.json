@@ -1,0 +1,81 @@
+{
+  "enabled": true,
+  "routes": [
+    {
+      "path": "/_solr/_reactivesearch",
+      "method": "POST",
+      "classify": {
+        "category": "reactivesearch"
+      }
+    },
+    {
+      "path": "/_solr/_reactivesearch.v3",
+      "method": "POST",
+      "classify": {
+        "category": "reactivesearch"
+      }
+    },
+    {
+      "path": "/_solr/_reactivesearch/validate",
+      "method": "POST",
+      "classify": {
+        "category": "reactivesearch"
+      }
+    },
+    {
+      "path": "/_solr/_reactivesearch.v3/validate",
+      "method": "POST",
+      "classify": {
+        "category": "reactivesearch"
+      }
+    }
+  ],
+  "envs": {
+    "protocol": "https",
+    "host": "us-east-8-11.solrcluster.com",
+    "credentials": "opensolr:27afc26ba47c919b62ad995f1532f557",
+    "collection": "appbase_demo"
+  },
+  "stages": [
+    {
+      "id": "auth",
+      "use": "authorization"
+    },
+    {
+      "id": "rs",
+      "use": "reactivesearchQuery",
+      "inputs": {
+        "backend": "solr"
+      },
+      "continueOnError": false
+    },
+    {
+      "id": "parse index and queryString",
+      "script": "function handleRequest() { if (context.envs.urlValues == undefined) return; var qs = null; if (context.envs.urlValues.queryString != undefined) qs = context.envs.urlValues.queryString; return { collection: context.envs.urlValues.index, queryString: qs } }",
+      "continueOnError": false
+    },
+    {
+      "id": "generate the query",
+      "script": "function handleRequest() { const queries = JSON.parse(context.request.body); var collectionName = context.envs.collection; if (context.collection != undefined) { collectionName = context.collection; } const URL = `${context.envs.protocol}://${context.envs.host}/solr/${collectionName}/select`; var headers = { Authorization: `Basic ${btoa(context.envs.credentials)}` }; const BLACKLISTED_HEADERS = ['Authorization']; for (var key in BLACKLISTED_HEADERS) { if (key in headers) { delete headers[key]; } } var generatedURIs = {}; var validateResponse = []; for (var key of Object.keys(queries)) { const queryEach = queries[key]; const generatedEach = { original: JSON.parse(queryEach['_original']) }; delete queryEach['_original']; const isEndpoint = queryEach['_isEndpoint'] == 'true'; if (!isEndpoint) { generatedURIs[key] = generatedEach; generatedEach['built'] = '?' + Object.keys(queryEach) .reduce(function (a, k) { a.push(k + '=' + encodeURIComponent(queryEach[k])); return a; }, []) .join('&'); const finalURL = URL + (context.queryString != '' ? '?' + context.queryString + '&' : '?') + generatedEach['built']; validateResponse.push({ id: key, endpoint: { url: finalURL, method: 'GET', headers: headers, body: {}, }, }); } else { validateResponse.push({ id: queryEach['id'], endpoint: queryEach['endpoint'], }); } } return { response: { body: JSON.stringify(validateResponse), code: 200 } }; }",
+      "continueOnError": false,
+      "trigger": {
+        "expression": "context.envs.path == '/_solr/_reactivesearch/validate'"
+      }
+    },
+    {
+      "id": "solr_query",
+      "use": "solrQuery",
+      "continueOnError": false,
+      "inputs": {
+        "protocol": "{{protocol}}",
+        "host": "{{host}}",
+        "credentials": "{{credentials}}",
+        "collection": "{{collection}}",
+        "queryString": "{{queryString}}"
+      },
+      "trigger": {
+        "expression": "context.envs.path != '/_solr/_reactivesearch/validate'"
+      }
+    }
+  ]
+}

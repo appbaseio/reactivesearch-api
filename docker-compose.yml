@@ -22,8 +22,10 @@ services:
   reactivesearch:
     build: ./
     container_name: reactivesearch
-    env_file:
-      - config/docker.env
+    environment:
+      - ES_CLUSTER_URL=http://elasticsearch:9200
+      - USERNAME=admin
+      - PASSWORD=admin
     networks:
       - reactivesearch
     restart: on-failure

@@ -1,0 +1,34 @@
+{
+    "enabled": true,
+    "routes": [
+        {
+            "path": "/basic-json/_reactivesearch",
+            "method": "POST",
+            "classify": {
+                "category": "reactivesearch"
+            }
+        }
+    ],
+    "envs": {
+        "index": "movie-ds"
+    },
+    "stages": [
+        {
+            "id": "auth",
+            "use": "authorization"
+        },
+        {
+            "id": "modify request",
+            "script": "function handleRequest() { const reqBody = JSON.parse(context.request.body); return { ...context, request: {...context.request, body: JSON.stringify({...reqBody, query: [...reqBody.query, {id: 'search2'}]})}}; }"
+        },
+        {
+            "id": "query",
+            "use": "reactivesearchQuery"
+        },
+        {
+            "id": "es_query",
+            "use": "elasticsearchQuery",
+            "async": true
+        }
+    ]
+}

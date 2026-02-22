@@ -1,0 +1,156 @@
+{
+    "enabled": true,
+    "description": "Fusion search Pipeline",
+    "routes": [
+        {
+            "path": "/_fusion/_reactivesearch",
+            "method": "POST",
+            "classify": {
+                "category": "reactivesearch"
+            }
+        },
+        {
+            "path": "/_fusion/_reactivesearch.v3",
+            "method": "POST",
+            "classify": {
+                "category": "reactivesearch"
+            }
+        },
+        {
+            "path": "/_fusion/_reactivesearch/validate",
+            "method": "POST",
+            "classify": {
+                "category": "reactivesearch"
+            }
+        },
+        {
+            "path": "/_fusion/_reactivesearch.v3/validate",
+            "method": "POST",
+            "classify": {
+                "category": "reactivesearch"
+            }
+        }
+    ],
+    "envs": {
+        "protocol": "http"
+    },
+    "stages": [
+        {
+            "id": "auth",
+            "use": "authorization"
+        },
+        {
+            "id": "extract app and profile",
+            "script": "function handleRequest() {     const body = JSON.parse(context.request.body);     const metadata = body.metadata;     if (         metadata == undefined ||         metadata.app == undefined ||         metadata.profile == undefined     ) {         throw Error(             '`metadata.app` and `metadata.profile` are required fields!'         );     }     const sponsoredProfile = metadata.sponsored_profile;     var shouldRunSponsor = false;     var queryToUpdate = '';     if (body.query[0].type == undefined) {         body.query[0].type = 'search';     }      try {         shouldRunSponsor =             ['suggestion', 'geo', 'search'].includes(body.query[0].type) &&             sponsoredProfile != undefined; if (!body.query[0].enableIndexSuggestions && !body.query[0].enableEndpointSuggestions) {shouldRunSponsor = false;}         if (shouldRunSponsor) {             queryToUpdate = body.query[0].id;         }     } catch (e) {         throw e;     }     return {         fusionApp: metadata.app,         fusionProfile: metadata.profile,         fusionSponsoredProfile: sponsoredProfile,         fusionShouldRunSponsor: shouldRunSponsor,         fusionQueryToUpdate: queryToUpdate,         fusionSuggestionProfile: metadata.suggestion_profile || metadata.profile,     }; }",
+            "continueOnError": false
+        },
+        {
+            "id": "parse index and queryString",
+            "script": "function handleRequest() {  const body = JSON.parse(context.request.body); var qs = null; if (context.envs.urlValues?.queryString != undefined) qs = context.envs.urlValues.queryString; if (qs == null) { qs = `user_id=${encodeURIComponent(body.settings?.userId)}` }; console.log('qs is: ', qs); return { fusionProfile: (context.envs.urlValues && context.envs.urlValues.index) ? context.envs.urlValues.index : context.fusionProfile, queryString: qs } }",
+            "continueOnError": false
+        },
+        {
+            "id": "rs",
+            "use": "reactivesearchQuery",
+            "inputs": {
+                "backend": "solr"
+            },
+            "continueOnError": false
+        },
+        {
+            "id": "generate the query",
+            "script": "function handleRequest() { const queries = JSON.parse(context.request.body); const URL = `${context.envs.protocol}://${context.envs.FUSION_HOST}/api/apps/${context.fusionApp}/query/${context.fusionProfile}`; var headers = { Authorization: `Basic ${btoa(context.envs.credentials)}` }; const BLACKLISTED_HEADERS = ['Authorization']; for (var key in BLACKLISTED_HEADERS) { if (key in headers) { delete headers[key]; } } var generatedURIs = {}; var validateResponse = []; for (var key of Object.keys(queries)) { const queryEach = queries[key]; const generatedEach = { original: JSON.parse(queryEach['_original']) }; delete queryEach['_original']; const isEndpoint = queryEach['_isEndpoint'] == 'true'; if (!isEndpoint) { generatedURIs[key] = generatedEach; generatedEach['built'] = Object.keys(queryEach).reduce(function (a, k) { a.push(k + '=' + encodeURIComponent(queryEach[k])); return a; }, []).join('&'); const finalURL = URL + (generatedEach['built'] != '' ? '?' + generatedEach['built'] + '&' : '?') + context.queryString; validateResponse.push({ id: key, endpoint: { url: finalURL, method: 'GET', headers: headers, body: {}, }, }); } else { validateResponse.push({ id: queryEach['id'], endpoint: queryEach['endpoint'], }); } } return { response: { body: JSON.stringify(validateResponse), code: 200 } }; }",
+            "continueOnError": false,
+            "trigger": {
+                "expression": "context.envs.path == '/_fusion/_reactivesearch/validate'"
+            },
+            "needs": [
+                "extract app and profile",
+                "parse index and queryString"
+            ]
+        },
+        {
+            "id": "solr_query",
+            "use": "solrQuery",
+            "continueOnError": false,
+            "inputs": {
+                "protocol": "http",
+                "host": "34.122.120.39:6764",
+                "app": "{{fusionApp}}",
+                "profile": "{{fusionProfile}}",
+                "credentials": "appbase:Appbase123",
+                "suggestionProfile": "{{fusionSuggestionProfile}}"
+            },
+            "trigger": {
+                "expression": "context.envs.path != '/_fusion/_reactivesearch/validate'"
+            },
+            "needs": [
+                "extract app and profile",
+                "parse index and queryString"
+            ]
+        },
+        {
+            "id": "sponsor query generation",
+            "script": "function handleRequest() { const query = context.envs.query; if (query == undefined) { throw new Error('no query found in request'); } const olderResponse = context.response; return { request: { ...context.request, body: JSON.stringify({ query: [ { id: 'sponsorQuery', value: query, }, ], }), }, fusionOriginalResponse: JSON.stringify(olderResponse), }; }",
+            "continueOnError": false,
+            "trigger": {
+                "expression": "context.fusionShouldRunSponsor == true and context.envs.path != '/_fusion/_reactivesearch/validate'"
+            },
+            "needs": [
+                "extract app and profile"
+            ]
+        },
+        {
+            "id": "rs for sponsor",
+            "use": "reactivesearchQuery",
+            "inputs": {
+                "backend": "solr"
+            },
+            "continueOnError": false,
+            "needs": [
+                "sponsor query generation"
+            ],
+            "trigger": {
+                "expression": "context.fusionShouldRunSponsor == true and context.envs.path != '/_fusion/_reactivesearch/validate'"
+            }
+        },
+        {
+            "id": "solr stage for sponsor",
+            "use": "solrQuery",
+            "continueOnError": false,
+            "inputs": {
+                "protocol": "http",
+                "host": "34.122.120.39:6764",
+                "app": "{{fusionApp}}",
+                "profile": "{{fusionSponsoredProfile}}",
+                "credentials": "appbase:Appbase123"
+            },
+            "trigger": {
+                "expression": "context.fusionShouldRunSponsor == true and context.envs.path != '/_fusion/_reactivesearch/validate'"
+            },
+            "needs": [
+                "rs for sponsor"
+            ]
+        },
+        {
+            "id": "merge sponsor into response",
+            "needs": [
+                "solr stage for sponsor",
+                "solr_query"
+            ],
+            "script": "function handleRequest() {     const SPONSORED_RESULTS_LIMIT = 1;     const originalResponse = JSON.parse(context.fusionOriginalResponse);     const currentResponse = context.response;     const ogResponseBody = JSON.parse(originalResponse.body);     var hitsForSponsor = JSON.parse(currentResponse.body)['sponsorQuery'].hits         .hits;     /* add limit for returning only 1 sponsored result */     hitsForSponsor = hitsForSponsor.slice(0, SPONSORED_RESULTS_LIMIT);     hitsForSponsor.forEach((item, index) => {         hitsForSponsor[index]._promoted = true;     });     const fusionQueryIdToUpdate = context.fusionQueryToUpdate;     const ogHits = ogResponseBody[fusionQueryIdToUpdate].hits.hits;     const updatedHits = hitsForSponsor.concat(ogHits);     ogResponseBody[fusionQueryIdToUpdate].hits.hits = updatedHits;     originalResponse.body = JSON.stringify(ogResponseBody);     return { response: originalResponse }; } ",
+            "continueOnError": false
+        },
+        {
+            "id": "handle-request",
+            "script": "async function handleRequest() {     const queryId = context.envs.query;     const queries = JSON.parse(context.request.body);     var userId = context.userId;     console.log('query id is: ', queryId);      const bodyToSend = {         timestamp: Date.now(),         type: 'request',         params: {             fusion_query_id: queryId,             user_id: userId,             ctype: 'request',         },     };      const fusionApp = 'appbase';      const response = await fetch(         `http://34.122.120.39:6764/api/signals/${fusionApp}`,         {             method: 'POST',             body: JSON.stringify([bodyToSend]),             headers: {                 Authorization: 'Basic YXBwYmFzZTpBcHBiYXNlMTIz',                 'Content-Type': 'application/json',             },         }     );      return {         statusReturned: response.status,         responseReturned: response,     }; } ",
+            "continueOnError": false,
+            "async": true
+        },
+        {
+            "id": "recordAnalytics",
+            "use": "recordAnalytics",
+            "description": "To record Appbase search analytics. Record Analytics stage is only applicable for reactivesearch requests."
+        }
+    ]
+}

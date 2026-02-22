@@ -4,8 +4,8 @@ import (
 	"os"
 	"sync"
 
-	"github.com/appbaseio-confidential/reactivesearch/middleware"
-	"github.com/appbaseio-confidential/reactivesearch/plugins"
+	"github.com/appbaseio/reactivesearch-api/middleware"
+	"github.com/appbaseio/reactivesearch-api/plugins"
 	"github.com/natefinch/lumberjack"
 	"github.com/robfig/cron"
 	log "github.com/sirupsen/logrus"
@@ -135,6 +135,8 @@ func (l *Logs) InitFunc() error {
 	// init cron job
 	cronjob := cron.New()
 	cronjob.AddFunc("@midnight", func() { l.es.rolloverIndexJob(indexName) })
+	cronjob.AddFunc("@hourly", func() { l.es.rolloverIndexJob(indexName) })
+
 	cronjob.Start()
 
 	return nil

@@ -8,10 +8,10 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/appbaseio-confidential/reactivesearch/model/category"
-	"github.com/appbaseio-confidential/reactivesearch/model/op"
-	"github.com/appbaseio-confidential/reactivesearch/model/permission"
-	"github.com/appbaseio-confidential/reactivesearch/util"
+	"github.com/appbaseio/reactivesearch-api/model/category"
+	"github.com/appbaseio/reactivesearch-api/model/op"
+	"github.com/appbaseio/reactivesearch-api/model/permission"
+	"github.com/appbaseio/reactivesearch-api/util"
 	. "github.com/smartystreets/goconvey/convey"
 )
 

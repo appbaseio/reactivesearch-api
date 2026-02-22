@@ -10,9 +10,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/appbaseio-confidential/reactivesearch/model/tracktime"
-	"github.com/appbaseio-confidential/reactivesearch/util"
-	"github.com/appbaseio-confidential/reactivesearch/util/iplookup"
+	"github.com/appbaseio/reactivesearch-api/model/tracktime"
+	"github.com/appbaseio/reactivesearch-api/util"
+	"github.com/appbaseio/reactivesearch-api/util/iplookup"
 	"github.com/buger/jsonparser"
 	log "github.com/sirupsen/logrus"
 )

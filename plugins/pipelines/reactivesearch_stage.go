@@ -7,9 +7,9 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/appbaseio-confidential/reactivesearch/plugins/querytranslate"
-	"github.com/appbaseio-confidential/reactivesearch/plugins/rules"
-	"github.com/appbaseio-confidential/reactivesearch/plugins/suggestions"
+	"github.com/appbaseio/reactivesearch-api/plugins/querytranslate"
+	"github.com/appbaseio/reactivesearch-api/plugins/rules"
+	"github.com/appbaseio/reactivesearch-api/plugins/suggestions"
 	log "github.com/sirupsen/logrus"
 )
 

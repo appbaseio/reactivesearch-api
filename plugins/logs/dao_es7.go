@@ -7,17 +7,21 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/appbaseio-confidential/reactivesearch/model/category"
-	"github.com/appbaseio-confidential/reactivesearch/model/difference"
-	"github.com/appbaseio-confidential/reactivesearch/util"
+	"github.com/appbaseio/reactivesearch-api/model/category"
+	"github.com/appbaseio/reactivesearch-api/model/difference"
+	"github.com/appbaseio/reactivesearch-api/util"
+	"github.com/appbaseio/reactivesearch-api/util/escompat"
 	es7 "github.com/olivere/elastic/v7"
 	log "github.com/sirupsen/logrus"
 )
 
 func (es *elasticsearch) getRawLogsES7(ctx context.Context, logsFilter logsFilter) ([]byte, error) {
-	duration := es7.NewRangeQuery("timestamp").
-		From(logsFilter.StartDate).
-		To(logsFilter.EndDate)
+	fmt.Println("Getting raw logs from ES7 ~~")
+	// print logsFilter object
+	fmt.Printf("logsFilter: %+v\n", logsFilter)
+	duration := escompat.NewRangeQuery("timestamp").
+		Gte(logsFilter.StartDate).
+		Lte(logsFilter.EndDate)
 
 	query := es7.NewBoolQuery().Filter(duration)
 	// apply category filter
@@ -31,17 +35,17 @@ func (es *elasticsearch) getRawLogsES7(ctx context.Context, logsFilter logsFilte
 		filters := []es7.Query{
 			es7.NewTermsQuery("request.method.keyword", []interface{}{"POST", "PUT"}...),
 			es7.NewTermsQuery("category.keyword", []interface{}{"docs"}...),
-			es7.NewRangeQuery("response.code").Gte(200).Lte(299),
+			escompat.NewRangeQuery("response.code").Gte(200).Lte(299),
 		}
 		query.Filter(filters...)
 	} else if logsFilter.Filter == "delete" {
 		filters := es7.NewMatchQuery("request.method.keyword", "DELETE")
 		query.Filter(filters)
 	} else if logsFilter.Filter == "success" {
-		filters := es7.NewRangeQuery("response.code").Gte(200).Lte(299)
+		filters := escompat.NewRangeQuery("response.code").Gte(200).Lte(299)
 		query.Filter(filters)
 	} else if logsFilter.Filter == "error" {
-		filters := es7.NewRangeQuery("response.code").Gte(400)
+		filters := escompat.NewRangeQuery("response.code").Gte(400)
 		query.Filter(filters)
 	} else {
 		query.Filter(es7.NewMatchAllQuery())
@@ -52,7 +56,7 @@ func (es *elasticsearch) getRawLogsES7(ctx context.Context, logsFilter logsFilte
 
 	// only apply latency filter when start or end range is available
 	if logsFilter.StartLatency != nil || logsFilter.EndLatency != nil {
-		latencyRangeQuery := es7.NewRangeQuery("response.took")
+		latencyRangeQuery := escompat.NewRangeQuery("response.took")
 		if logsFilter.StartLatency != nil {
 			latencyRangeQuery.Gte(*logsFilter.StartLatency)
 		}
@@ -125,7 +129,7 @@ func (es *elasticsearch) getRawLogES7(ctx context.Context, ID string, parseDiffs
 
 	if len(response.Hits.Hits) == 0 {
 		return nil, &LogError{
-			Err:  errors.New(fmt.Sprintf("Log not found with ID: %s", ID)),
+			Err:  fmt.Errorf("log not found with ID: %s", ID),
 			Code: http.StatusNotFound,
 		}
 	}
@@ -136,7 +140,7 @@ func (es *elasticsearch) getRawLogES7(ctx context.Context, ID string, parseDiffs
 	err = json.Unmarshal(logMatched.Source, &log)
 	if err != nil {
 		return nil, &LogError{
-			Err:  errors.New("Error occurred while unmarshalling log hit"),
+			Err:  errors.New("error occurred while unmarshaling log hit"),
 			Code: http.StatusInternalServerError,
 		}
 	}
@@ -362,14 +366,14 @@ func parseStageDiffs(logPassed []byte) ([]byte, error) {
 func parseStringToMap(changes interface{}) (interface{}, error) {
 	requestChanges, ok := changes.([]interface{})
 	if !ok {
-		errMsg := fmt.Sprint("error while converting request changes to interface array")
+		errMsg := "error while converting request changes to interface array"
 		return requestChanges, errors.New(errMsg)
 	}
 
 	for changeIndex, change := range requestChanges {
 		changeAsMap, ok := change.(map[string]interface{})
 		if !ok {
-			errMsg := fmt.Sprint("error while converting stage to map from interface")
+			errMsg := "error while converting stage to map from interface"
 			return requestChanges, errors.New(errMsg)
 		}
 

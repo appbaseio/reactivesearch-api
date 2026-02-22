@@ -3,12 +3,11 @@ package uibuilder
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"net/http"
 	"time"
 
-	"github.com/appbaseio-confidential/reactivesearch/util"
+	"github.com/appbaseio/reactivesearch-api/util"
 	es7 "github.com/olivere/elastic/v7"
 	log "github.com/sirupsen/logrus"
 )
@@ -67,60 +66,6 @@ func createSearchBoxIndex(indexName string, indexConfig string) (*elasticsearch,
 
 	log.Println(logTag, ": successfully created index named", indexName)
 	return &es, false, nil
-}
-
-// createSuggestionsIndexZinc creates a suggestions index with the
-// provided name in Zinc.
-func createSuggestionsIndexZinc(indexWithSuffix string) (*util.ZincClient, bool, error) {
-	zincClient := util.GetZincClient()
-
-	// Check if the index already exists
-	// Make a request to the get settings endpoint of Zinc
-	// and check if the status code is 200 to know if it exists
-	// or not.
-	existsEndpointZinc := fmt.Sprintf("api/%s/_settings", indexWithSuffix)
-	existsResponse, existsResponseErr := zincClient.MakeRequest(existsEndpointZinc, http.MethodGet, []byte(""), nil)
-
-	if existsResponseErr != nil {
-		return nil, false, fmt.Errorf("error while checking if index already exists: %v", existsResponseErr)
-	}
-
-	if existsResponse == nil || existsResponse.StatusCode == http.StatusOK {
-		log.Infoln(logTag, ": index named", indexWithSuffix, "already exists, skipping...")
-		return zincClient, true, nil
-	}
-
-	indexCreateBody := fmt.Sprintf(indexConfigZinc, indexWithSuffix)
-
-	// Send a create request for the index
-	// with the mapping and name of the index present in the body
-	indexCreateResponse, indexCreateErr := zincClient.MakeRequest("api/index", http.MethodPost, []byte(indexCreateBody), nil)
-
-	if indexCreateErr != nil {
-		return nil, false, fmt.Errorf("error while creating index named: %s, %v", indexWithSuffix, indexCreateErr)
-	}
-
-	// TODO: Check status code and handle errors accordingly, if any
-	log.Debugln(logTag, "index create status code returned is: ", indexCreateResponse.StatusCode)
-
-	// Set the settings for the index as well.
-	indexSettings := fmt.Sprintf(indexSettingsZinc, util.HiddenIndexSettings(), util.GetReplicas())
-	indexSettingsResponse, indexSettingsErr := zincClient.MakeRequest(fmt.Sprintf("api/%s/_settings", indexWithSuffix), http.MethodPut, []byte(indexSettings), nil)
-
-	if indexSettingsErr != nil {
-		return nil, false, fmt.Errorf("error while setting settings for the newly created index %s, %v", indexWithSuffix, indexSettingsErr)
-	}
-
-	// Check if proper response code is returned
-	log.Debugln(logTag, "index settings update code returned is: ", indexSettingsResponse.StatusCode)
-	if indexSettingsResponse.StatusCode != http.StatusOK {
-		errMsg := fmt.Sprint("index settings Zinc endpoint returned a non OK status, ", indexSettingsResponse.StatusCode)
-		log.Warnln(logTag, ": ", errMsg)
-		return nil, false, errors.New(errMsg)
-	}
-
-	log.Println(logTag, ": successfully created index named", indexWithSuffix)
-	return zincClient, false, nil
 }
 
 // To save the preference for a given ID

@@ -1,0 +1,23 @@
+{
+    "enabled": true,
+    "routes": [
+        {
+            "path": "/{index}/_analytics/favorite",
+            "method": "PUT",
+            "classify": {
+                "category": "analytics"
+            }
+        }
+    ],
+    "stages": [
+        {
+            "id": "auth",
+            "use": "authorization",
+            "continueOnError": false
+        },
+        {
+            "use": "recordFavorite",
+            "continueOnError": false
+        }
+    ]
+}

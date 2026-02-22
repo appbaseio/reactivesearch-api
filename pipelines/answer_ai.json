@@ -1,0 +1,41 @@
+{
+    "enabled": true,
+    "routes": [
+        {
+            "path": "/movie-db/_reactivesearch",
+            "method": "POST",
+            "classify": {
+                "category": "reactivesearch"
+            }
+        }
+    ],
+    "envs": {
+        "index": [
+            "movie-db"
+        ]
+    },
+    "stages": [
+        {
+            "id": "auth",
+            "use": "authorization"
+        },
+        {
+            "id": "query",
+            "use": "reactivesearchQuery"
+        },
+        {
+            "id": "es_query",
+            "use": "elasticsearchQuery"
+        },
+        {
+            "id": "answerAI",
+            "use": "answerAI",
+            "inputs": {
+                "topDocsForContext": 10,
+                "docTemplate": "${source.title} is ${source.overview} with url as ${source.backdrop_path}",
+                "queryTemplate": "Can you tell me about: ${value}",
+                "apiKey": "sk-..."
+            }
+        }
+    ]
+}

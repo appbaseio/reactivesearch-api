@@ -1,8 +1,8 @@
 package main
 
 import (
-	"github.com/appbaseio-confidential/reactivesearch/plugins"
-	"github.com/appbaseio-confidential/reactivesearch/plugins/logs"
+	"github.com/appbaseio/reactivesearch-api/plugins"
+	"github.com/appbaseio/reactivesearch-api/plugins/logs"
 )
 
 var PluginInstance plugins.Plugin = logs.Instance()

@@ -4,7 +4,7 @@ import (
 	"context"
 	"sync"
 
-	"github.com/appbaseio-confidential/reactivesearch/errors"
+	"github.com/appbaseio/reactivesearch-api/errors"
 )
 
 // contextKey is a key against which the pipeline log body

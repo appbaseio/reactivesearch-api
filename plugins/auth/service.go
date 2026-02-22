@@ -3,9 +3,9 @@ package auth
 import (
 	"context"
 
-	"github.com/appbaseio-confidential/reactivesearch/model/credential"
-	"github.com/appbaseio-confidential/reactivesearch/model/permission"
-	"github.com/appbaseio-confidential/reactivesearch/model/user"
+	"github.com/appbaseio/reactivesearch-api/model/credential"
+	"github.com/appbaseio/reactivesearch-api/model/permission"
+	"github.com/appbaseio/reactivesearch-api/model/user"
 )
 
 type authService interface {

@@ -8,8 +8,8 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
-	"github.com/appbaseio-confidential/reactivesearch/plugins/telemetry"
-	"github.com/appbaseio-confidential/reactivesearch/util"
+	"github.com/appbaseio/reactivesearch-api/plugins/telemetry"
+	"github.com/appbaseio/reactivesearch-api/util"
 )
 
 // Route handler to update the popular suggestions preferences
@@ -110,7 +110,7 @@ func (rx *suggestions) savePopularSuggestionsPreferences() http.HandlerFunc {
 			SetPopularPreferences(body)
 			// Re-populate the popular suggestions index, no need to wait
 			go func() {
-				syncAnalyticsToSuggestionsZinc(rx, body.AliasToIndex)
+				syncAnalyticsToSuggestions(rx, body.AliasToIndex)
 			}()
 		}
 

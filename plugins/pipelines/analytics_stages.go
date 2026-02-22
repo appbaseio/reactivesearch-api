@@ -5,8 +5,8 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/appbaseio-confidential/reactivesearch/plugins/analytics"
-	"github.com/appbaseio-confidential/reactivesearch/plugins/rules"
+	"github.com/appbaseio/reactivesearch-api/plugins/analytics"
+	"github.com/appbaseio/reactivesearch-api/plugins/rules"
 	log "github.com/sirupsen/logrus"
 )
 

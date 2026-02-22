@@ -7,9 +7,9 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/appbaseio-confidential/reactivesearch/plugins/openai"
-	"github.com/appbaseio-confidential/reactivesearch/plugins/querytranslate"
-	"github.com/appbaseio-confidential/reactivesearch/plugins/rules"
+	"github.com/appbaseio/reactivesearch-api/plugins/openai"
+	"github.com/appbaseio/reactivesearch-api/plugins/querytranslate"
+	"github.com/appbaseio/reactivesearch-api/plugins/rules"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -358,7 +358,7 @@ func executeAIAnswerStage(
 	messagesArrToPassChatGPT = append(messagesArrToPassChatGPT, map[string]interface{}{"role": "user", "content": queryTemplateToUse})
 
 	// Make the ChatGPT request
-	_, responseInBytes, chatGPTReqBodyInBytes, _, _, chatGPTErr := openai.MakeChatGPTRequest(*inputs.Model, messagesArrToPassChatGPT, *inputs.ApiKey, inputs.MaxTokens, inputs.Temperature)
+	_, responseInBytes, chatGPTReqBodyInBytes, _, _, chatGPTErr := openai.MakeChatGPTRequest(*inputs.Model, messagesArrToPassChatGPT, *inputs.ApiKey, inputs.MaxTokens, inputs.Temperature, openai.OpenAIType, "", "")
 	if chatGPTErr != nil {
 		errMsg := fmt.Errorf("error while sending request to chatGPT: %s", chatGPTErr.Error())
 		log.Warnln(logTag, ": ", errMsg)

@@ -3,7 +3,7 @@ package applycache
 import (
 	"net/http"
 
-	"github.com/appbaseio-confidential/reactivesearch/plugins"
+	"github.com/appbaseio/reactivesearch-api/plugins"
 )
 
 func (c *Cache) routes() []plugins.Route {

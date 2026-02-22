@@ -9,9 +9,9 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
-	"github.com/appbaseio-confidential/reactivesearch/util"
+	"github.com/appbaseio/reactivesearch-api/util"
 
-	appbase_errors "github.com/appbaseio-confidential/reactivesearch/errors"
+	appbase_errors "github.com/appbaseio/reactivesearch-api/errors"
 )
 
 type arcProxy struct {

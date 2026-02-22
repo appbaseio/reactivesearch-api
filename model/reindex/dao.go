@@ -15,8 +15,8 @@ import (
 	"github.com/olivere/elastic/v7"
 	log "github.com/sirupsen/logrus"
 
-	"github.com/appbaseio-confidential/reactivesearch/middleware/classify"
-	"github.com/appbaseio-confidential/reactivesearch/util"
+	"github.com/appbaseio/reactivesearch-api/middleware/classify"
+	"github.com/appbaseio/reactivesearch-api/util"
 	"github.com/hashicorp/go-version"
 	es7 "github.com/olivere/elastic/v7"
 )

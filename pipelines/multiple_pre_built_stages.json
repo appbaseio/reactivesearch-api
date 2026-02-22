@@ -1,0 +1,84 @@
+{
+    "enabled": true,
+    "description": "Pipeline to use elasticsearch query stage multiple times",
+    "routes": [
+      {
+        "path": "/good-books-ds-pipeline/_reactivesearch",
+        "method": "POST",
+        "classify": {
+          "category": "reactivesearch"
+        }
+      }
+    ],
+    "envs": {
+      "category": "reactivesearch",
+      "index": ["good-books-ds-pipeline"]
+    },
+    "stages": [
+      {
+        "use": "authorization",
+        "continueOnError": false
+      },
+      {
+        "use": "searchRelevancy",
+        "inputs": {
+          "search": {
+            "dataField": ["original_title"],
+            "size": 1
+          },
+          "suggestion": {
+            "dataField": ["original_title"],
+            "enablePopularSuggestions": true,
+            "size": 3,
+            "popularSuggestionsConfig": {
+              "size": 1
+            },
+            "enableRecentSuggestions": true,
+            "recentSuggestionsConfig": {
+              "size": 1
+            }
+          }
+        },
+        "continueOnError": false
+      },
+      {
+        "use": "reactivesearchQuery",
+        "continueOnError": false
+      },
+      {
+          "id": "get_es_index",
+          "script": "function handleRequest() { return {'es_index': 'good-books-ds'}}"
+      },
+      {
+        "id": "search_books",
+        "use": "elasticsearchQuery",
+        "async": true,
+        "inputs": {
+          "method": "POST",
+          "url": "https://HBuZlvcqQ:43435aeb-7aab-4980-8c7b-063bff449f3d@appbase-demo-ansible-abxiydt-es.searchbase.io/good-books-ds/_search",
+          "body": "{\"query\": {\"match_all\": {}}, \"size\": 5}",
+          "headers": {
+            "Content-Type": "application/json"
+          },
+          "parseResponseToReactivesearch": false
+        },
+        "continueOnError": false
+      },
+      {
+        "use": "elasticsearchQuery",
+        "inputs": {
+          "path": "/{{es_index}}/_msearch"  
+        },
+        "continueOnError": false
+      },
+      {
+        "id": "merge",
+        "needs": ["search_books"],
+        "script": "function handleRequest() { return {}; }"
+      },
+      {
+        "use": "recordAnalytics"
+      }
+    ]
+  }
+  

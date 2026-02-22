@@ -22,6 +22,7 @@ type pipelineInvocationService interface {
 	queryPipelineVersionStageTimeTaken(ctx context.Context, from, to string, size int, pipelineID string, version int, filters map[string]interface{}) ([]byte, error)
 	queryPipelineVersionStageErrorRate(ctx context.Context, from, to string, size int, pipelineID string, version int, filters map[string]interface{}) ([]byte, error)
 	queryPipelineVersionStats(ctx context.Context, pipelineID string) (map[int]interface{}, error)
+	rolloverIndexJob(alias string)
 }
 
 type pipelineLogService interface {

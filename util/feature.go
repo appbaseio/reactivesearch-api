@@ -1,7 +1,7 @@
 package util
 
 // Feature custom events
-var featureCustomEvents bool
+var featureCustomEvents bool = true
 
 // GetFeatureCustomEvents returns the featureCustomEvents
 func GetFeatureCustomEvents() bool {
@@ -14,7 +14,7 @@ func SetFeatureCustomEvents(val bool) {
 }
 
 // Feature suggestions
-var featureSuggestions bool
+var featureSuggestions bool = true
 
 // GetFeatureSuggestions returns the featureSuggestions
 func GetFeatureSuggestions() bool {
@@ -27,7 +27,7 @@ func SetFeatureSuggestions(val bool) {
 }
 
 // Feature rules
-var featureRules bool
+var featureRules bool = true
 
 // GetFeatureRules returns the featureRules
 func GetFeatureRules() bool {
@@ -40,7 +40,7 @@ func SetFeatureRules(val bool) {
 }
 
 // Feature search settings
-var featureSearchRelevancy bool
+var featureSearchRelevancy bool = true
 
 // GetFeatureSearchRelevancy returns the featureSearchRelevancy
 func GetFeatureSearchRelevancy() bool {
@@ -53,7 +53,7 @@ func SetFeatureSearchRelevancy(val bool) {
 }
 
 // Feature search grader
-var featureSearchGrader bool
+var featureSearchGrader bool = true
 
 // GetFeatureSearchGrader returns the featureSearchGrader
 func GetFeatureSearchGrader() bool {
@@ -66,7 +66,7 @@ func SetFeatureSearchGrader(val bool) {
 }
 
 // Feature ecommerce
-var featureEcommerce bool
+var featureEcommerce bool = true
 
 // GetFeatureEcommerce returns the featureEcommerce
 func GetFeatureEcommerce() bool {
@@ -79,7 +79,7 @@ func SetFeatureEcommerce(val bool) {
 }
 
 // Feature ui builder premium
-var featureUIBuilder bool
+var featureUIBuilder bool = true
 
 // GetFeatureUIBuilderPremium returns the featureUIBuilder
 func GetFeatureUIBuilderPremium() bool {
@@ -92,7 +92,7 @@ func SetFeatureUIBuilderPremium(val bool) {
 }
 
 // Feature cache
-var featureCache bool
+var featureCache bool = true
 
 // GetFeatureCache returns the featureCache
 func GetFeatureCache() bool {
@@ -105,7 +105,7 @@ func SetFeatureCache(val bool) {
 }
 
 // Feature pipelines
-var featurePipelines bool
+var featurePipelines bool = true
 
 // GetFeatureCache returns the featurePipelines
 func GetFeaturePipelines() bool {
@@ -118,7 +118,7 @@ func SetFeaturePipelines(val bool) {
 }
 
 // Feature OpenAI
-var featureOpenAI bool
+var featureOpenAI bool = true
 
 // GetFeatureOpenAI returns the value of featureOpenAI
 func GetFeatureOpenAI() bool {

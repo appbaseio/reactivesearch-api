@@ -11,10 +11,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/appbaseio-confidential/reactivesearch/model/index"
-	"github.com/appbaseio-confidential/reactivesearch/plugins/telemetry"
-	"github.com/appbaseio-confidential/reactivesearch/util"
-	"github.com/appbaseio-confidential/reactivesearch/util/iplookup"
+	"github.com/appbaseio/reactivesearch-api/model/index"
+	"github.com/appbaseio/reactivesearch-api/plugins/telemetry"
+	"github.com/appbaseio/reactivesearch-api/util"
+	"github.com/appbaseio/reactivesearch-api/util/iplookup"
 	"github.com/buger/jsonparser"
 	"github.com/gorilla/mux"
 	log "github.com/sirupsen/logrus"
@@ -27,7 +27,7 @@ func buildResponseBody(responseDetails *InternalChatGPTResponse) ([]byte, int, e
 	if responseDetails.GetIsFailed() {
 		// TODO: Check whether or not request is present and accordingly return
 		// request as well?
-		return responseDetails.Response(), http.StatusOK, nil
+		return responseDetails.Response(), http.StatusBadRequest, nil
 	}
 
 	// At this point either it timed out or we have the response ready
@@ -199,9 +199,46 @@ func (r *OpenAI) postOpenAIConfig() http.HandlerFunc {
 			return
 		}
 
-		// Save the validated config in the db now.
 		bodyToSave := validatedConfig.ToInternalConfig()
 
+		// Make a simple ping call to ChatGPT with the passed details
+		// and accordingly ensure that it is working fine.
+		//
+		// Validation will happen only if the `enable` is set to `true`
+		if bodyToSave.Enable != nil && *bodyToSave.Enable {
+			maxTokens := bodyToSave.MaxTokens
+			azureUrlToUse := ""
+			azureVersionToUse := ""
+
+			if bodyToSave.AzureBaseURL != nil {
+				azureUrlToUse = *bodyToSave.AzureBaseURL
+			}
+
+			if bodyToSave.AzureVersion != nil {
+				azureVersionToUse = *bodyToSave.AzureVersion
+			}
+
+			configValidationErr := PingChatGPTWithDetails(
+				*bodyToSave.Model,
+				*bodyToSave.OpenAIKey,
+				maxTokens,
+				nil,
+				*bodyToSave.APIType,
+				azureUrlToUse,
+				azureVersionToUse,
+				*bodyToSave.SystemPrompt,
+			)
+
+			// If the validation failed, throw an error accordingly
+			if configValidationErr != nil {
+				errMsg := fmt.Sprint("error while validating the passed credentials: ", configValidationErr.Message)
+				log.Warnln(logTag, ": ", errMsg)
+				telemetry.WriteBackErrorWithTelemetry(req, w, errMsg, http.StatusBadRequest)
+				return
+			}
+		}
+
+		// Save the validated config in the db now.
 		saveErr := r.es.saveSettings(bodyToSave, req.Context())
 		if saveErr != nil {
 			errMsg := fmt.Sprint("error while saving passed body to index: ", saveErr.Error())
@@ -481,6 +518,12 @@ func (r *OpenAI) postFollowUpQuestion() http.HandlerFunc {
 			return
 		}
 
+		// If the follow-up body doesn't contain the `model` field, we will
+		// add the default value for model.
+		if followUpReqBody.Model == "" {
+			followUpReqBody.Model = r.GetConfig().GetModel()
+		}
+
 		// Since we are not expecting the userId here, we will have to use the
 		// user IP address
 		userId := req.RemoteAddr
@@ -517,13 +560,25 @@ func (r *OpenAI) postFollowUpQuestion() http.HandlerFunc {
 			r.GetConfig().Key(),
 			followUpReqBody.MaxTokens,
 			followUpReqBody.Temperature,
+			r.GetConfig().GetAPIType(),
+			r.GetConfig().GetAzureURL(),
+			r.GetConfig().GetAzureVersion(),
+			true,
 		)
 
 		// Log the error, if any
 		if err != nil {
 			errMsg := fmt.Sprint("error while fetching follow-up response from ChatGPT: ", err.Error())
 			log.Warnln(logTag, ": ", errMsg)
-			telemetry.WriteBackErrorWithTelemetry(req, w, errMsg, http.StatusInternalServerError)
+
+			// If the err is a valid JSON, return it directly instead of parsing it into
+			// the error body.
+			if IsValidJSON(err.Error()) {
+				util.WriteBackRaw(w, []byte(err.Error()), http.StatusInternalServerError)
+			} else {
+				telemetry.WriteBackErrorWithTelemetry(req, w, errMsg, http.StatusInternalServerError)
+			}
+
 			return
 		}
 
@@ -580,10 +635,16 @@ func (r *OpenAI) findFollowUpAnswer(responseDetails *InternalChatGPTResponse, fo
 		r.GetConfig().GetAPIType(),
 		r.GetConfig().GetAzureURL(),
 		r.GetConfig().GetAzureVersion(),
+		true,
 	)
 
 	// Log the error, if any
 	if err != nil {
+		// If it's a JSON error, we should return it without modifying it.
+		if IsValidJSON(err.Error()) {
+			return nil, err, http.StatusInternalServerError
+		}
+
 		errMsg := fmt.Sprint("error while fetching follow-up response from ChatGPT: ", err.Error())
 		return nil, fmt.Errorf(errMsg), http.StatusInternalServerError
 	}
@@ -673,26 +734,37 @@ func (r *OpenAI) postFollowUpQuestionSSE() http.HandlerFunc {
 		// Since we are not expecting the userId here, we will have to use the
 		// user IP address
 		userId := req.RemoteAddr
+		errChannel := make(chan error)
 
-		go func(responseDetails *InternalChatGPTResponse, followUpPassed FollowUpRequest, sessionId string, userId string) {
+		go func(responseDetails *InternalChatGPTResponse, followUpPassed FollowUpRequest, sessionId string, userId string, errorChan chan<- error) {
 			// Start the streaming from OpenAI. This will let use use the channel to read the response as it
 			// gets streamed
-			r.findFollowUpAnswer(responseDetails, followUpPassed, sessionId, userId)
-		}(responseDetails, followUpPassed, sessionId, userId)
+			_, err, _ := r.findFollowUpAnswer(responseDetails, followUpPassed, sessionId, userId)
+			errorChan <- err
+		}(responseDetails, followUpPassed, sessionId, userId, errChannel)
 
 		// Wait till OpenAI streaming starts
 		timerStart := time.Now()
 
 		log.Debug(logTag, ": waiting for streaming to be ready or timeout")
 		for time.Since(timerStart).Seconds() <= 60 && !responseDetails.GetIsStreaming() {
+			log.Debug(logTag, "streaming: ", responseDetails.GetIsStreaming())
 			continue
 		}
 
 		// If streaming is still not ready, throw an error here
 		if !responseDetails.GetIsStreaming() {
-			errMsg := fmt.Sprint("streaming is not initialized yet, cannot continue, request has timed out!")
+			errMsg := "streaming is not initialized yet, cannot continue, request has timed out!"
 			log.Warnln(logTag, ": ", errMsg)
 			telemetry.WriteBackErrorWithTelemetry(req, w, errMsg, http.StatusRequestTimeout)
+		}
+
+		// Check if the response failed and in such a case return the error
+		followUpErr, ok := <-errChannel
+		if ok && followUpErr != nil {
+			log.Warnln(logTag, ": Streaming failed, returning JSON response with error")
+			util.WriteBackRaw(w, []byte(followUpErr.Error()), http.StatusInternalServerError)
+			return
 		}
 
 		// Fetch the flusher interface from the writer
@@ -918,18 +990,9 @@ func (r *OpenAI) createOrUpdateFAQ() http.HandlerFunc {
 			return
 		}
 
-		// If it is local update request, we just need to update the local
-		// Zinc since ES will already be updated.
+		// If it is local update request, ES is already updated by the proxy.
 		isLocal := req.URL.Query().Get("local")
 		if isLocal == "true" {
-			zincCreateErr := r.faqZinc.createFAQZinc(FAQBodyPassed)
-			if zincCreateErr != nil {
-				errMsg := fmt.Sprint("error while creating the FAQ doc in Zinc: ", zincCreateErr.Error())
-				log.Warnln(logTag, ": ", errMsg)
-				telemetry.WriteBackErrorWithTelemetry(req, w, errMsg, http.StatusInternalServerError)
-				return
-			}
-
 			util.WriteBackMessage(w, "FAQ added successfully!", http.StatusOK)
 			return
 		}
@@ -1017,14 +1080,6 @@ func (r *OpenAI) createOrUpdateFAQ() http.HandlerFunc {
 				util.WriteBackRaw(w, bodyBytes, res.StatusCode)
 				return
 			}
-		} else {
-			zincCreateErr := r.faqZinc.createFAQZinc(FAQBodyPassed)
-			if zincCreateErr != nil {
-				errMsg := fmt.Sprint("error while creating the FAQ doc in Zinc: ", zincCreateErr.Error())
-				log.Warnln(logTag, ": ", errMsg)
-				telemetry.WriteBackErrorWithTelemetry(req, w, errMsg, http.StatusInternalServerError)
-				return
-			}
 		}
 
 		// Return the FAQ body in response
@@ -1054,18 +1109,9 @@ func (r *OpenAI) deleteFAQ() http.HandlerFunc {
 			return
 		}
 
-		// If it is local delete request, we just need to delete the local
-		// Zinc since ES will already be updated.
+		// If it is local delete request, ES is already updated by the proxy.
 		isLocal := req.URL.Query().Get("local")
 		if isLocal == "true" {
-			deleteResponse := r.faqZinc.deleteFAQZinc(docId)
-			if deleteResponse != nil {
-				errMsg := fmt.Sprint("error while deleting FAQ from Zinc: ", deleteResponse.Error())
-				log.Warnln(logTag, ": ", errMsg)
-				telemetry.WriteBackErrorWithTelemetry(req, w, errMsg, http.StatusInternalServerError)
-				return
-			}
-
 			util.WriteBackMessage(w, "FAQ deleted successfully!", http.StatusOK)
 			return
 		}
@@ -1119,14 +1165,6 @@ func (r *OpenAI) deleteFAQ() http.HandlerFunc {
 					return
 				}
 				util.WriteBackRaw(w, bodyBytes, res.StatusCode)
-				return
-			}
-		} else {
-			deleteResponse := r.faqZinc.deleteFAQZinc(docId)
-			if deleteResponse != nil {
-				errMsg := fmt.Sprint("error while deleting FAQ from Zinc: ", deleteResponse.Error())
-				log.Warnln(logTag, ": ", errMsg)
-				telemetry.WriteBackErrorWithTelemetry(req, w, errMsg, http.StatusInternalServerError)
 				return
 			}
 		}
@@ -1378,6 +1416,7 @@ func (r *OpenAI) createSession() http.HandlerFunc {
 				r.GetConfig().GetAPIType(),
 				r.GetConfig().GetAzureURL(),
 				r.GetConfig().GetAzureVersion(),
+				false,
 			)
 			// Log the error, if any
 			if err != nil {
@@ -1501,14 +1540,6 @@ func (r *OpenAI) patchFAQ() http.HandlerFunc {
 					return
 				}
 				util.WriteBackRaw(w, bodyBytes, res.StatusCode)
-				return
-			}
-		} else {
-			zincCreateErr := r.faqZinc.createFAQZinc(updatedBodyWithPassedFields)
-			if zincCreateErr != nil {
-				errMsg := fmt.Sprint("error while updating the FAQ doc in Zinc: ", zincCreateErr.Error())
-				log.Warnln(logTag, ": ", errMsg)
-				telemetry.WriteBackErrorWithTelemetry(req, w, errMsg, http.StatusInternalServerError)
 				return
 			}
 		}

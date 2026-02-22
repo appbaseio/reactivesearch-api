@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/appbaseio-confidential/reactivesearch/util"
+	"github.com/appbaseio/reactivesearch-api/util"
 	badger "github.com/outcaste-io/badger/v3"
 	log "github.com/sirupsen/logrus"
 )

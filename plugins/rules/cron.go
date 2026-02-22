@@ -9,8 +9,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/appbaseio-confidential/reactivesearch/model/console"
-	"github.com/appbaseio-confidential/reactivesearch/plugins/logs"
+	"github.com/appbaseio/reactivesearch-api/model/console"
+	"github.com/appbaseio/reactivesearch-api/plugins/logs"
 	"github.com/robfig/cron"
 	log "github.com/sirupsen/logrus"
 	consolePolyfill "go.kuoruan.net/v8go-polyfills/console"

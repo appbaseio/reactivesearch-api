@@ -1,13 +1,9 @@
 package suggestions
 
 import (
-	"fmt"
-	"net/http"
 	"strings"
 	"time"
 	"unicode"
-
-	"github.com/appbaseio-confidential/reactivesearch/util"
 )
 
 // returns ${index}_${timestamp} where timestamp is at a day's resolution
@@ -77,27 +73,4 @@ type RecentPreferences struct {
 	MinHits  *int     `json:"minHits"`
 	MinChars *int     `json:"minChars"`
 	Size     *int     `json:"size"`
-}
-
-// checkIfZincIndexExists will check if the passed zinc index
-// exists and accordingly handle errors and such.
-func checkIfZincIndexExists(index string) (bool, error) {
-	zincClient := util.GetZincClient()
-
-	// Check if the index already exists
-	// Make a request to the get settings endpoint of Zinc
-	// and check if the status code is 200 to know if it exists
-	// or not.
-	existsEndpointZinc := fmt.Sprintf("api/%s/_settings", index)
-	existsResponse, existsResponseErr := zincClient.MakeRequest(existsEndpointZinc, http.MethodGet, []byte(""), nil)
-
-	if existsResponseErr != nil {
-		return false, fmt.Errorf("error while checking if index already exists: %v", existsResponseErr)
-	}
-
-	if existsResponse == nil || existsResponse.StatusCode == http.StatusOK {
-		return true, nil
-	}
-
-	return false, nil
 }

@@ -3,23 +3,21 @@ package openai
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
 	"log"
-	"net/http"
 
-	"github.com/appbaseio-confidential/reactivesearch/util"
+	"github.com/appbaseio/reactivesearch-api/util"
 )
 
 type elasticsearch struct {
 	indexName string
 }
 
-func initPlugin(openAIIndex, mapping string) (*elasticsearch, error) {
+func initPlugin(openAIIndex, mapping string, actualMapping string) (*elasticsearch, error) {
 	es := &elasticsearch{openAIIndex}
 
 	ctx := context.Background()
 
-	// Check if the rules index already exists
+	// Check if the openai index already exists
 	exists, err := util.GetClient7().IndexExists(openAIIndex).Do(ctx)
 	if err != nil {
 		return es, fmt.Errorf("error while checking if index already exists: %v", err)
@@ -30,7 +28,7 @@ func initPlugin(openAIIndex, mapping string) (*elasticsearch, error) {
 	}
 
 	replicas := util.GetReplicas()
-	settings := fmt.Sprintf(mapping, util.HiddenIndexSettings(), replicas)
+	settings := fmt.Sprintf(mapping, util.HiddenIndexSettings(), replicas, actualMapping)
 
 	// Meta index does not exists, create a new one
 	_, err = util.GetClient7().CreateIndex(openAIIndex).Body(settings).Do(ctx)
@@ -100,64 +98,6 @@ func (es *analyticsElasticsearch) getAISessionAnalytics(ctx context.Context, fro
 // filterSessionAnalytics will filter the responses based on the filters passed by the user
 func (es *analyticsElasticsearch) filterAISessionAnalytics(ctx context.Context, queryParams FilterQueryParams) ([]AISessionDoc, error) {
 	return es.filterAISessionAnalyticsEs7(ctx, queryParams)
-}
-
-type FAQZinc struct {
-	indexName  string
-	zincClient *util.ZincClient
-}
-
-// initFAQPlugin will take care of initializing the FAQ index
-func initFAQPlugin(FAQIndex, mapping string) (*FAQZinc, error) {
-	zincClient := util.GetZincClient()
-
-	es := &FAQZinc{
-		indexName:  FAQIndex,
-		zincClient: zincClient,
-	}
-
-	// Check if the index already exists
-	// Make a request to the get settings endpoint of Zinc
-	// and check if the status code is 200 to know if it exists
-	// or not.
-	existsEndpointZinc := fmt.Sprintf("api/%s/_settings", FAQIndex)
-	existsResponse, existsResponseErr := zincClient.MakeRequest(existsEndpointZinc, http.MethodGet, []byte(""), nil)
-
-	if existsResponseErr != nil {
-		return nil, fmt.Errorf("error while checking if index already exists: %v", existsResponseErr)
-	}
-
-	if existsResponse == nil || existsResponse.StatusCode == http.StatusOK {
-		log.Printf("%s: index named '%s' already exists, skipping...", logTag, FAQIndex)
-		return es, nil
-	}
-
-	indexCreateBody := fmt.Sprintf(zincMapping, FAQIndex)
-
-	// Send a create request for the index
-	// with the mapping and name of the index present in the body
-	indexCreateResponse, indexCreateErr := zincClient.MakeRequest("api/index", http.MethodPost, []byte(indexCreateBody), nil)
-
-	if indexCreateErr != nil {
-		return nil, fmt.Errorf("error while creating index named: %s, %v", FAQIndex, indexCreateErr)
-	}
-
-	// Check status code and handle errors accordingly, if any
-	if indexCreateResponse.StatusCode != http.StatusOK {
-		useBody := false
-		body, readErr := ioutil.ReadAll(indexCreateResponse.Body)
-		if readErr == nil {
-			useBody = true
-		}
-		errMsg := fmt.Sprintf("non OK status code received while creating index named `%s` with status code: %d", FAQIndex, indexCreateResponse.StatusCode)
-		if useBody {
-			errMsg += fmt.Sprintf(" and message: %s", string(body))
-		}
-		return nil, fmt.Errorf(errMsg)
-	}
-
-	log.Printf("%s successfully created index named '%s'", logTag, FAQIndex)
-	return es, nil
 }
 
 type FAQElasticsearch struct {

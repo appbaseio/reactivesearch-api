@@ -1,0 +1,63 @@
+{
+  "enabled": true,
+  "description": "Pipeline to return custom error response with status code at any stage",
+  "routes": [
+    {
+      "path": "/books/suggestions",
+      "method": "POST"
+    }
+  ],
+  "envs": {
+    "INDEX": "good-books-ds-pipeline",
+    "APPBASE_API_KEY": "dcb12bff775b:538567ac-8703-4828-b9c6-5b1bbbb87495"
+  },
+  "stages": [
+    {
+      "id": "mock-request-body",
+      "description": "Mocks the request body",
+      "script": "function handleRequest() { return { request: {...context.request, body: JSON.stringify({ query: [{ id: 'search', value: 'harry', dataField: 'original_title'}] })}}}",
+      "continueOnError": false
+    },
+    {
+      "id": "set_query",
+      "description": "To extract the query key from request body",
+      "script": "function handleRequest() { try { return { query: JSON.parse(context.request.body).query[0].value }} catch(e) { throw e }}",
+      "continueOnError": false
+    },
+    {
+      "id": "data_muse_api",
+      "description": "To get data from data muse api in asynchronous manner",
+      "use": "httpRequest",
+      "async": true,
+      "inputs": {
+        "url": "https://api.datamuse.com/sug",
+        "params": {
+          "s": "{{query}}"
+        }
+      },
+      "continueOnError": false
+    },
+    {
+      "id": "build_url",
+      "continueOnError": false,
+      "script": "function handleRequest() { return { envs: {...context.envs, 'HTTP_URL': `https://${context.envs.APPBASE_API_KEY}@appbase-demo-ansible-abxiydt-arc.searchbase.io/${context.envs.INDEX}/_reactivesearch`} } }"
+    },
+    {
+      "use": "httpRequest",
+      "description": "Fetch RS API response from Appbase and write to response",
+      "inputs": {
+        "url": "{{HTTP_URL}}",
+        "method": "POST"
+      },
+      "continueOnError": false
+    },
+    {
+      "id": "merge_response",
+      "description": "Merges the data muse response to RS API response",
+      "needs": [
+        "data_muse_api"
+      ],
+      "script": "function handleRequest() { return { response: {...context.response, body: JSON.stringify({...JSON.parse(context.response.body), data_muse: context.data_muse_api })}}}"
+    }
+  ]
+}

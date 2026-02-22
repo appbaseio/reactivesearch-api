@@ -1,8 +1,8 @@
 package main
 
 import (
-	"github.com/appbaseio-confidential/reactivesearch/plugins"
-	"github.com/appbaseio-confidential/reactivesearch/plugins/preferences"
+	"github.com/appbaseio/reactivesearch-api/plugins"
+	"github.com/appbaseio/reactivesearch-api/plugins/preferences"
 )
 
 var PluginInstance plugins.Plugin = preferences.Instance()

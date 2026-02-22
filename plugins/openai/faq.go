@@ -5,11 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
-	"net/http"
-	"strings"
 
-	"github.com/appbaseio-confidential/reactivesearch/util"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -36,116 +32,6 @@ func ValidateFAQBody(bodyPassed FAQBody) error {
 
 	if bodyPassed.SearchboxId == nil {
 		return errors.New("`searchboxId` is a required field")
-	}
-
-	return nil
-}
-
-// SyncFAQToZinc will sync the FAQ's from ES to Zinc
-//
-// When this function runs, all the FAQ's will be fetched from ES
-// and stored in Zinc.
-//
-// This function will pull all the records from ElasticSearch, delete all
-// the existing docs from Zinc and index them into Zinc again.
-func (zinc *FAQZinc) SyncFAQToZinc(index string, zincIndex string) error {
-	// Pull all the docs from ES
-	response, err := util.GetClient7().Search().
-		Index(index).
-		Size(10000).
-		Sort("updated_at", false).
-		Do(context.Background())
-
-	if err != nil {
-		errMsg := fmt.Sprint("error while pulling records from ES to save in Zinc: ", err.Error())
-		log.Warnln(logTag, ": ", errMsg)
-		return errors.New(errMsg)
-	}
-
-	// Iterate through the requests and build a bulk request body
-	// to index the data into Zinc.
-	zincBulkBody := make([]string, 0)
-	zincIndexDoc := fmt.Sprintf(`{ "index" : { "_index" : "%s" } }`, zincIndex)
-
-	for _, doc := range response.Hits.Hits {
-		zincBulkBody = append(zincBulkBody, zincIndexDoc)
-		zincBulkBody = append(zincBulkBody, strings.Replace(string(doc.Source), "\n", " ", -1))
-	}
-
-	// Make the x-ndjson request
-	requestBody := strings.Join(zincBulkBody, "\n")
-
-	// Add ending newline since nd-json should end with a new line.
-	requestBody += "\n"
-
-	// Delete the index if it already exists
-	indexDeleteURL := fmt.Sprintf("/api/index/%s", zincIndex)
-	reqHeaders := make(http.Header)
-	reqHeaders.Add("Content-Type", "application/x-ndjson")
-
-	deleteResponse, deleteErr := zinc.zincClient.MakeRequest(indexDeleteURL, http.MethodDelete, nil, &reqHeaders)
-	if deleteErr != nil {
-		errMsg := fmt.Sprint("error while deleting zinc index before indexing new data: ", deleteErr.Error())
-		log.Warnln(logTag, ": ", errMsg)
-		return errors.New(errMsg)
-	}
-
-	// For delete, we can accept the following response codes:
-	// 200: deleted
-	// 400: something went wrong from our end, possibly index doesn't exist
-	if deleteResponse.StatusCode != http.StatusOK && deleteResponse.StatusCode != http.StatusBadRequest {
-		body, readErr := ioutil.ReadAll(deleteResponse.Body)
-		if readErr == nil {
-			log.Warnln(logTag, ": response received: ", string(body))
-			log.Warnln(logTag, ": status received: ", deleteResponse.Status)
-		}
-		errMsg := fmt.Sprint("non OK status code received while deleting zinc index")
-		log.Warnln(logTag, ": ", errMsg)
-		return errors.New(errMsg)
-	}
-
-	// Create the index before making the bulk request
-
-	indexCreateBody := fmt.Sprintf(zincMapping, zincIndex)
-
-	// Send a create request for the index
-	// with the mapping and name of the index present in the body
-	indexCreateResponse, indexCreateErr := zinc.zincClient.MakeRequest("/api/index", http.MethodPost, []byte(indexCreateBody), nil)
-
-	if indexCreateErr != nil {
-		return fmt.Errorf("error while creating index named: %s, %v", zincIndex, indexCreateErr)
-	}
-
-	// Check status code and handle errors accordingly, if any
-	if indexCreateResponse.StatusCode != http.StatusOK {
-		useBody := false
-		body, readErr := ioutil.ReadAll(indexCreateResponse.Body)
-		if readErr == nil {
-			useBody = true
-		}
-		errMsg := fmt.Sprintf("non OK status code received while creating index named `%s` with status code: %d", zincIndex, indexCreateResponse.StatusCode)
-		if useBody {
-			errMsg += fmt.Sprintf(" and message: %s", string(body))
-		}
-		return fmt.Errorf(errMsg)
-	}
-
-	bulkURL := fmt.Sprintf("/api/_bulk")
-	bulkResponse, bulkErr := zinc.zincClient.MakeRequest(bulkURL, http.MethodPost, []byte(requestBody), nil)
-
-	if bulkErr != nil {
-		errMsg := fmt.Sprint("error while sending bulk request to zinc to index FAQ suggestions: ", bulkErr.Error())
-		log.Warnln(logTag, ": ", errMsg)
-		return errors.New(errMsg)
-	}
-
-	if bulkResponse.StatusCode != http.StatusOK {
-		body, readErr := ioutil.ReadAll(bulkResponse.Body)
-		if readErr == nil {
-			log.Warnln(logTag, ": response received: ", string(body))
-			log.Warnln(logTag, ": status received: ", bulkResponse.Status)
-		}
-		return fmt.Errorf("non OK status code received while bulk creating FAQ's: %d", bulkResponse.StatusCode)
 	}
 
 	return nil

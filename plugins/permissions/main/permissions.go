@@ -1,8 +1,8 @@
 package main
 
 import (
-	"github.com/appbaseio-confidential/reactivesearch/plugins"
-	"github.com/appbaseio-confidential/reactivesearch/plugins/permissions"
+	"github.com/appbaseio/reactivesearch-api/plugins"
+	"github.com/appbaseio/reactivesearch-api/plugins/permissions"
 )
 
 var PluginInstance plugins.Plugin = permissions.Instance()

@@ -1,4 +1,4 @@
-module github.com/appbaseio-confidential/reactivesearch
+module github.com/appbaseio/reactivesearch-api
 
 go 1.16
 

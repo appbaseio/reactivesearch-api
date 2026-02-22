@@ -9,11 +9,11 @@ import (
 	"sync"
 	"time"
 
-	"github.com/appbaseio-confidential/reactivesearch/model/category"
-	"github.com/appbaseio-confidential/reactivesearch/plugins/applycache"
-	"github.com/appbaseio-confidential/reactivesearch/plugins/querytranslate"
-	"github.com/appbaseio-confidential/reactivesearch/plugins/rules"
-	"github.com/appbaseio-confidential/reactivesearch/plugins/suggestions"
+	"github.com/appbaseio/reactivesearch-api/model/category"
+	"github.com/appbaseio/reactivesearch-api/plugins/applycache"
+	"github.com/appbaseio/reactivesearch-api/plugins/querytranslate"
+	"github.com/appbaseio/reactivesearch-api/plugins/rules"
+	"github.com/appbaseio/reactivesearch-api/plugins/suggestions"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -236,6 +236,7 @@ func executeUseCacheStage(
 				}
 				scriptContext.Response.Body = string(cachedResponseBody)
 				scriptContext.Response.Code = http.StatusOK
+				scriptContext.Environments["cacheHit"] = true
 				contextInBytes, err := json.Marshal(scriptContext)
 				if err != nil {
 					log.Errorln(logTag, ":", err)
@@ -245,6 +246,17 @@ func executeUseCacheStage(
 				}
 				// stop execution and return response
 				return contextInBytes, true, nil
+			} else {
+				scriptContext.Environments["cacheHit"] = false
+				contextInBytes, err := json.Marshal(scriptContext)
+				if err != nil {
+					log.Errorln(logTag, ":", err)
+					return nil, false, &Error{
+						Err: err,
+					}
+				}
+				// don't stop execution and return response
+				return contextInBytes, false, nil
 			}
 		}
 	}

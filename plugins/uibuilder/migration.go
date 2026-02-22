@@ -6,7 +6,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/appbaseio-confidential/reactivesearch/util"
+	"github.com/appbaseio/reactivesearch-api/util"
 	"github.com/google/uuid"
 	es7 "github.com/olivere/elastic/v7"
 	log "github.com/sirupsen/logrus"
@@ -19,7 +19,7 @@ type UIBuilderPreferencesMigration struct {
 
 func (m UIBuilderPreferencesMigration) ConditionCheck() (bool, *util.Error) {
 	errorMsg := `Error occurred while checking condition for uibuilder preferences. 
-	Try restarting once if it doesn't fix the issue then please contact us by dropping a mail at support@appbase.io.`
+	Try restarting once if it doesn't fix the issue then please contact us by opening an issue on the GitHub repository.`
 	// Only run migration script when `uibuilder-preferences` index exists (old index)
 	preferenceIndex := os.Getenv(envEcommPreferencesIndex)
 	if preferenceIndex == "" {
@@ -45,7 +45,7 @@ func (m UIBuilderPreferencesMigration) ConditionCheck() (bool, *util.Error) {
 func (m UIBuilderPreferencesMigration) Script() *util.Error {
 	log.Println(logTag, "Running migration script for uibuilder preferences....This process may take some time.")
 	errorMsg := `Error occurred while updating the uibuilder preferences.
-	Try restarting once if it doesn't fix the issue then please contact us by dropping a mail at support@appbase.io.`
+	Try restarting once if it doesn't fix the issue then please contact us by opening an issue on the GitHub repository.`
 	// Get preferences from old index
 	response, err := util.GetClient7().Search(m.oldIndex).Size(10000).
 		Do(context.Background())

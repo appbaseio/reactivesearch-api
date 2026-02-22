@@ -7,9 +7,9 @@ import (
 	"os"
 	"sync"
 
-	"github.com/appbaseio-confidential/reactivesearch/middleware"
-	"github.com/appbaseio-confidential/reactivesearch/plugins"
-	"github.com/appbaseio-confidential/reactivesearch/util"
+	"github.com/appbaseio/reactivesearch-api/middleware"
+	"github.com/appbaseio/reactivesearch-api/plugins"
+	"github.com/appbaseio/reactivesearch-api/util"
 	"github.com/robfig/cron"
 )
 
@@ -191,6 +191,8 @@ func (a *Analytics) InitFunc() error {
 	// init cron job
 	cronjob := cron.New()
 	cronjob.AddFunc("@midnight", func() { a.es.rolloverIndexJob(analyticsIndex) })
+	// in addition, run every hour, keeping original midnight job as well
+	cronjob.AddFunc("@hourly", func() { a.es.rolloverIndexJob(analyticsIndex) })
 	cronjob.Start()
 
 	// init a monthly cron job to send analytics report to the admin users

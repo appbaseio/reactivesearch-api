@@ -14,7 +14,7 @@ import (
 
 	"github.com/dgrijalva/jwt-go"
 
-	"github.com/appbaseio-confidential/reactivesearch/util"
+	"github.com/appbaseio/reactivesearch-api/util"
 )
 
 func (a *Auth) savePublicKey(ctx context.Context, indexName string, record publicKey) (interface{}, error) {

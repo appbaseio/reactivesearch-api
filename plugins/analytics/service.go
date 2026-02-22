@@ -3,7 +3,7 @@ package analytics
 import (
 	"context"
 
-	"github.com/appbaseio-confidential/reactivesearch/plugins/analyticsrequest"
+	"github.com/appbaseio/reactivesearch-api/plugins/analyticsrequest"
 )
 
 type analyticsService interface {

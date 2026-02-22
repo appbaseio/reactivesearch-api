@@ -4,8 +4,8 @@ import (
 	"context"
 	"encoding/json"
 
-	"github.com/appbaseio-confidential/reactivesearch/errors"
-	"github.com/appbaseio-confidential/reactivesearch/model/acl"
+	"github.com/appbaseio/reactivesearch-api/errors"
+	"github.com/appbaseio/reactivesearch-api/model/acl"
 	"github.com/invopop/jsonschema"
 )
 

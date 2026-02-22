@@ -4,8 +4,8 @@ import (
 	"context"
 	"time"
 
-	"github.com/appbaseio-confidential/reactivesearch/util"
-	es7 "github.com/olivere/elastic/v7"
+	"github.com/appbaseio/reactivesearch-api/util"
+	"github.com/appbaseio/reactivesearch-api/util/escompat"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -49,7 +49,7 @@ func (es *elasticsearch) deleteOlderRecords7(ctx context.Context) error {
 	// We will get the current time - 7 days
 	maxTime := time.Now().AddDate(0, 0, -7).Unix()
 
-	rangeQuery := es7.NewRangeQuery("ping_time").Lt(maxTime)
+	rangeQuery := escompat.NewRangeQuery("ping_time").Lt(maxTime)
 
 	_, err := util.GetClient7().DeleteByQuery().Index(es.indexName).Query(rangeQuery).Do(ctx)
 	if err != nil {
@@ -69,7 +69,7 @@ func (es *elasticsearch) deleteOlderRecords7(ctx context.Context) error {
 func (es *elasticsearch) activeNodesInTenMins7(ctx context.Context) (int64, error) {
 	minTime := time.Now().Add(time.Minute * -10).Unix()
 
-	rangeQuery := es7.NewRangeQuery("ping_time").Gte(minTime)
+	rangeQuery := escompat.NewRangeQuery("ping_time").Gte(minTime)
 
 	resp, err := util.GetClient7().Count().Index(es.indexName).Query(rangeQuery).Do(ctx)
 	if err != nil {
@@ -88,7 +88,7 @@ func (es *elasticsearch) activeNodesInTenMins7(ctx context.Context) (int64, erro
 func (es *elasticsearch) activeNodesInSevenDays7(ctx context.Context) (int64, error) {
 	minTime := time.Now().AddDate(0, 0, -7).Unix()
 
-	rangeQuery := es7.NewRangeQuery("ping_time").Gte(minTime)
+	rangeQuery := escompat.NewRangeQuery("ping_time").Gte(minTime)
 
 	nodeCount, err := util.GetClient7().Count().Index(es.indexName).Query(rangeQuery).Do(ctx)
 	if err != nil {

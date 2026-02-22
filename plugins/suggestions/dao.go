@@ -5,20 +5,19 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
-	"io/ioutil"
 	"net/http"
 	"os"
 	"strings"
 	"time"
 
-	"github.com/appbaseio-confidential/reactivesearch/plugins/analytics"
-	"github.com/appbaseio-confidential/reactivesearch/plugins/openai"
+	"github.com/appbaseio/reactivesearch-api/plugins/analytics"
+	"github.com/appbaseio/reactivesearch-api/plugins/openai"
 	"github.com/kr/pretty"
 	log "github.com/sirupsen/logrus"
 
-	"github.com/appbaseio-confidential/reactivesearch/plugins/querytranslate"
-	"github.com/appbaseio-confidential/reactivesearch/util"
+	"github.com/appbaseio/reactivesearch-api/plugins/querytranslate"
+	"github.com/appbaseio/reactivesearch-api/util"
+	"github.com/appbaseio/reactivesearch-api/util/escompat"
 	es7 "github.com/olivere/elastic/v7"
 )
 
@@ -81,58 +80,6 @@ func createSuggestionsIndex(indexWithSuffix, indexConfigEs6, indexConfigEs7 stri
 
 	log.Println(logTag, ": successfully created index named", indexWithSuffix)
 	return es, false, nil
-}
-
-// createSuggestionsIndexZinc creates a suggestions index with the
-// provided name in Zinc.
-func createSuggestionsIndexZinc(indexWithSuffix string) (*util.ZincClient, bool, error) {
-	zincClient := util.GetZincClient()
-
-	// Check if the index already exists
-	// Make a request to the get settings endpoint of Zinc
-	// and check if the status code is 200 to know if it exists
-	// or not.
-	existsEndpointZinc := fmt.Sprintf("api/%s/_settings", indexWithSuffix)
-	existsResponse, existsResponseErr := zincClient.MakeRequest(existsEndpointZinc, http.MethodGet, []byte(""), nil)
-
-	if existsResponseErr != nil {
-		return nil, false, fmt.Errorf("error while checking if index already exists: %v", existsResponseErr)
-	}
-
-	if existsResponse == nil || existsResponse.StatusCode == http.StatusOK {
-		log.Infoln(logTag, ": index named", indexWithSuffix, "already exists, skipping...")
-		return zincClient, true, nil
-	}
-
-	indexCreateBody := fmt.Sprintf(indexConfigZinc, indexWithSuffix)
-	log.Debugln(logTag, ": zinc create body: ", indexCreateBody)
-
-	// Send a create request for the index
-	// with the mapping and name of the index present in the body
-	indexCreateResponse, indexCreateErr := zincClient.MakeRequest("api/index", http.MethodPost, []byte(indexCreateBody), nil)
-
-	if indexCreateErr != nil {
-		return nil, false, fmt.Errorf("error while creating index named: %s, %v", indexWithSuffix, indexCreateErr)
-	}
-
-	// Check status code and handle errors accordingly, if any
-	log.Debugln(logTag, "index create status code returned is: ", indexCreateResponse.StatusCode)
-	if indexCreateResponse.StatusCode != http.StatusOK {
-		useBody := false
-		body, readErr := ioutil.ReadAll(indexCreateResponse.Body)
-		if readErr == nil {
-			useBody = true
-		}
-		errMsg := fmt.Sprintf("non OK status code received while creating index named `%s` with status code: %d", indexWithSuffix, indexCreateResponse.StatusCode)
-		if useBody {
-			errMsg += fmt.Sprintf(" and message: %s", string(body))
-		}
-		log.Warnln(logTag, ": ", errMsg)
-		return nil, false, fmt.Errorf(errMsg)
-	}
-
-	log.Println(logTag, ": successfully created index named", indexWithSuffix)
-	return zincClient, false, nil
 }
 
 // Create or update the popular suggestions preferences
@@ -503,7 +450,7 @@ func getSuggestionsIndex() string {
 	return suggestionsIndex
 }
 
-func syncAnalyticsToSuggestionsZinc(s *suggestions, indexToUse string) (interface{}, error) {
+func syncAnalyticsToSuggestions(s *suggestions, indexToUse string) (interface{}, error) {
 	// Only sync for users having a valid plan
 	if util.ValidatePlans(validPlans, util.GetFeatureSuggestions()) {
 		context := context.Background()
@@ -519,9 +466,7 @@ func syncAnalyticsToSuggestionsZinc(s *suggestions, indexToUse string) (interfac
 		var err error
 		var exists bool
 
-		zc := new(util.ZincClient)
-
-		zc, exists, err = createSuggestionsIndexZinc(indexWithTimeStamp)
+		s.es, exists, err = createSuggestionsIndex(indexWithTimeStamp, indexConfigEs6, indexConfigEs7)
 		if err != nil {
 			log.Errorln(logTag, ": error creating suggestions index, ", indexWithTimeStamp, ":", err)
 			return false, err
@@ -532,22 +477,21 @@ func syncAnalyticsToSuggestionsZinc(s *suggestions, indexToUse string) (interfac
 			// 72h index will be reclaimed either tomorrow or when next time the popular suggestions preferences are saved again
 			timeFuture := time.Now().Add(72 * time.Hour)
 			indexWithTimeStamp = getTimestampedIndex(suggestionsIndex, timeFuture)
-			zc, exists, err = createSuggestionsIndexZinc(indexWithTimeStamp)
+			s.es, exists, err = createSuggestionsIndex(indexWithTimeStamp, indexConfigEs6, indexConfigEs7)
 			if err != nil {
 				log.Errorln(logTag, ": error creating a future timestamp suggestions index, ", indexWithTimeStamp, ":", err)
 				return false, err
 			}
 		}
 
-		s.es = &elasticsearch{indexWithTimeStamp, indexConfigEs6, indexConfigEs7}
 		// Get the current popular preferences from cache
 		currentPreferences := GetPopularPreferences()
 
 		// a fresh popular suggestions index should now reasonably exist
 		if !exists {
 			// Step2: Populate index with analytics results + Apply External Suggestions
-			log.Debug(logTag, ": Populating popular suggestions index in zinc")
-			s.es.populateTimeStampedIndexZinc(context, indexWithTimeStamp, zc)
+			log.Debug(logTag, ": Populating popular suggestions index")
+			s.es.populateTimeStampedIndex(context, indexWithTimeStamp)
 
 			// Step3: Add an alias with time-stamped index to the main suggestions(.suggestions) index
 			log.Debug(logTag, ": aliased index is: ", indexWithTimeStamp)
@@ -586,8 +530,7 @@ func syncAnalyticsToSuggestionsZinc(s *suggestions, indexToUse string) (interfac
 				}
 			}
 
-			// Make the following request with Zinc
-			// Update last synced time with zinc
+			// Update last synced time
 			s.esMeta.updateLastSyncTime(context)
 		} else if currentPreferences.AliasToIndex == "" {
 			// Update the aliasToIndex value with the indexTimestamp value
@@ -637,22 +580,6 @@ type Error struct {
 	Error error
 }
 
-// GetIndexFilterQueryZinc apply the index filtering logic
-func GetIndexFilterQueryZinc(query []interface{}, indices ...string) []interface{} {
-	if indices != nil && len(indices) > 0 {
-		var indexQueries = make([]interface{}, 0)
-		for _, index := range indices {
-			indexQueries = append(indexQueries, map[string]interface{}{
-				"match": map[string]interface{}{
-					"indices": index,
-				},
-			})
-		}
-		query = append(query, indexQueries...)
-	}
-	return query
-}
-
 // To get popular suggestions
 func GetPopularSuggestions(config querytranslate.PopularSuggestionsOptions, value string, indices []string) ([]querytranslate.SuggestionHIT, *Error) {
 	var suggestions = make([]querytranslate.SuggestionHIT, 0)
@@ -679,139 +606,44 @@ func GetPopularSuggestions(config querytranslate.PopularSuggestionsOptions, valu
 			return suggestions, &Error{Code: http.StatusInternalServerError, Error: fmt.Errorf(errMsg)}
 		}
 
-		// Create the query as a map
-		//
-		// query should be passed in the `query` key in the final
-		// body sent to Zinc
-		query := make(map[string]interface{})
-
-		boolQuery := make(map[string]interface{})
-		mustQuery := make([]interface{}, 0)
-		filterQuery := make([]interface{}, 0)
+		// Build ES query using olivere/elastic
+		query := es7.NewBoolQuery()
 
 		// Add the value inside the mustQuery if present
 		if value != "" {
-			mustQuery = append(mustQuery, map[string]interface{}{"prefix": map[string]interface{}{
-				"key": value,
-			}})
-		} else {
-			mustQuery = append(mustQuery, map[string]interface{}{"match_all": map[string]interface{}{}})
+			query = query.Must(es7.NewPrefixQuery("key", value))
 		}
 
 		// Consider the minCount value
 		if config.MinCount != nil {
-			mustQuery = append(mustQuery, map[string]interface{}{"range": map[string]interface{}{
-				"count": map[string]interface{}{
-					"gte": *config.MinCount,
-				},
-			}})
+			query = query.Must(escompat.NewRangeQuery("count").Gte(*config.MinCount))
 		}
 
 		// Consider the MinChars
 		if config.MinChars != nil {
-			filterQuery = append(filterQuery, map[string]interface{}{"range": map[string]interface{}{
-				"search_characters_length": map[string]interface{}{
-					"gte": *config.MinChars,
-				},
-			}})
+			query = query.Filter(escompat.NewRangeQuery("search_characters_length").Gte(*config.MinChars))
 		}
 
 		if config.ShowGlobal == nil || !*config.ShowGlobal {
 			// Avoid filtering when select all pattern is present
 			// Filter uses the term query which would yield no results for `*`
 			if !util.Contains(indices, "*") {
-				mustQuery = GetIndexFilterQueryZinc(mustQuery, indices...)
+				util.GetIndexFilterQueryEs7(query, indices...)
 			}
 		}
 
 		// Filter by custom events
-		mustQuery = applyCustomEventsZinc(mustQuery, config.CustomEvents)
+		applyCustomEventsEs7(query, config.CustomEvents)
 
-		if len(filterQuery) > 0 {
-			boolQuery["filter"] = filterQuery
-		}
-
-		boolQuery["must"] = mustQuery
-		query["bool"] = boolQuery
-
-		finalBodyToSend := map[string]interface{}{
-			"query": query,
-			"size":  size,
-		}
-
-		bodyAsString, marshalErr := json.Marshal(finalBodyToSend)
-		if marshalErr != nil {
-			log.Warnln(logTag, ": error while marshaling search source, ", marshalErr)
-			return suggestions, &Error{Code: http.StatusInternalServerError, Error: marshalErr}
-		}
-
-		log.Debugln(logTag, ": zinc body being sent is: ", pretty.Formatter(string(bodyAsString)))
-
-		zincEndpointToHit := fmt.Sprintf("es/%s/_search", aliasedIndex)
-		log.Debugln(logTag, ": zinc endpoint: ", zincEndpointToHit)
-
-		zc := util.GetZincClient()
-
-		searchResponse, searchErr := zc.MakeRequest(zincEndpointToHit, http.MethodPost, bodyAsString, nil)
+		// Execute search against ES
+		res, searchErr := util.GetClient7().Search().
+			Index(aliasedIndex).
+			Query(query).
+			Size(size).
+			Do(context.Background())
 
 		if searchErr != nil {
-			errMsg := fmt.Sprint("error while hitting zinc to get popular suggestions, ", searchErr)
-			log.Warnln(logTag, ": ", errMsg)
-			return suggestions, &Error{Code: http.StatusInternalServerError, Error: fmt.Errorf(errMsg)}
-		}
-
-		// Return error if status code is not 200
-		if searchResponse.StatusCode != http.StatusOK {
-			errMsg := fmt.Sprint("Zinc returned a non OK status code: ", searchResponse.StatusCode)
-			log.Warnln(logTag, ": ", errMsg)
-			return suggestions, &Error{Code: http.StatusInternalServerError, Error: fmt.Errorf(errMsg)}
-		}
-
-		res := new(es7.SearchResult)
-		tempMap := make(map[string]interface{})
-
-		defer searchResponse.Body.Close()
-		rawSearchBody, readErr := io.ReadAll(searchResponse.Body)
-
-		if readErr != nil {
-			log.Warnln(logTag, ": ", readErr)
-			return suggestions, &Error{Code: http.StatusInternalServerError, Error: readErr}
-		}
-
-		// Marshal into a map and make sure error is not an empty string, if so then
-		// just set it to nil.
-		//
-		// This is necessary because ES returns errors as nil instead of empty string.
-		unmarshalToMapErr := json.Unmarshal(rawSearchBody, &tempMap)
-
-		if unmarshalToMapErr != nil {
-			errMsg := fmt.Sprint("error while unmarshalling Zinc response to map to modify it, ", unmarshalToMapErr)
-			log.Errorln(logTag, ": ", errMsg)
-			return suggestions, &Error{Code: http.StatusInternalServerError, Error: fmt.Errorf(errMsg)}
-		}
-
-		if tempMap["error"] != nil {
-			errorAsStr, errorAsStrOk := tempMap["error"].(string)
-			if errorAsStrOk && errorAsStr == "" {
-				tempMap["error"] = nil
-			}
-		}
-
-		// Marshal the map back
-		finalMapToUnmarshal, marshalErr := json.Marshal(tempMap)
-		if marshalErr != nil {
-			errMsg := fmt.Sprint("error while marshalling modified response to unmarshal into ES searchResult, ", marshalErr)
-			log.Errorln(logTag, ": ", errMsg)
-			return suggestions, &Error{Code: http.StatusInternalServerError, Error: fmt.Errorf(errMsg)}
-		}
-
-		log.Debugln(logTag, ": response code recieved: ", searchResponse.StatusCode)
-		log.Debugln(logTag, ": response recieved from zinc is: ", pretty.Formatter(string(finalMapToUnmarshal)))
-
-		unmarshalErr := json.Unmarshal(finalMapToUnmarshal, &res)
-
-		if unmarshalErr != nil {
-			errMsg := fmt.Sprint("error while unmarshalling Zinc response into ES hit body, ", unmarshalErr)
+			errMsg := fmt.Sprint("error while searching for popular suggestions: ", searchErr)
 			log.Warnln(logTag, ": ", errMsg)
 			return suggestions, &Error{Code: http.StatusInternalServerError, Error: fmt.Errorf(errMsg)}
 		}
@@ -886,8 +718,6 @@ func GetFAQSuggestions(config querytranslate.FAQSuggestionsOptions, value string
 		}
 	}
 
-	zincClient := util.GetZincClient()
-
 	// If size is specified in the config, use it
 	size := 5
 	if config.Size != nil && *config.Size != 0 {
@@ -896,134 +726,36 @@ func GetFAQSuggestions(config querytranslate.FAQSuggestionsOptions, value string
 
 	var suggestions = make([]querytranslate.SuggestionHIT, 0)
 
-	mustQuery := make([]interface{}, 0)
-
-	// Add the main match query
-	if value != "" {
-		mustQuery = append(mustQuery, map[string]interface{}{
-			"match": map[string]interface{}{
-				"question": value,
-			},
-		})
-	} else {
-		mustQuery = append(mustQuery, map[string]interface{}{
-			"match_all": map[string]interface{}{},
-		})
-	}
-
-	shouldQuery := make([]interface{}, 0)
-
-	// Inject the searchbox filter
-	shouldQuery = append(shouldQuery, map[string]interface{}{
-		"term": map[string]interface{}{
-			"searchboxId.keyword": searchboxId,
-		},
-	})
-
-	// Put the should query inside the must
-	mustQuery = append(mustQuery, map[string]interface{}{
-		"bool": map[string]interface{}{
-			"should": shouldQuery,
-		},
-	})
-
-	query := map[string]interface{}{
-		"query": map[string]interface{}{
-			"bool": map[string]interface{}{
-				"must": mustQuery,
-			},
-		},
-		"size": size,
-	}
-
 	// If sectionLabel is not passed, set default sectionLabel
 	if config.SectionLabel == nil {
 		sectionLabel := "<b>FAQs</b>"
 		config.SectionLabel = &sectionLabel
 	}
 
-	// Marshal the body into bytes
-	queryInBytes, marshalErr := json.Marshal(query)
-	if marshalErr != nil {
-		errMsg := fmt.Sprint("error while marshalling query into bytes: ", marshalErr.Error())
+	// Build ES query
+	query := es7.NewBoolQuery()
+
+	// Add the main match query
+	if value != "" {
+		query = query.Must(es7.NewMatchQuery("question", value))
+	}
+
+	// Filter by searchboxId
+	query = query.Must(es7.NewTermQuery("searchboxId.keyword", *searchboxId))
+
+	// Execute search against ES
+	res, searchErr := util.GetClient7().Search().
+		Index(".ai_faqs").
+		Query(query).
+		Size(size).
+		Do(context.Background())
+
+	if searchErr != nil {
+		errMsg := fmt.Sprint("Error while searching FAQs in ES: ", searchErr.Error())
 		return suggestions, &Error{
 			Error: errors.New(errMsg),
 			Code:  http.StatusInternalServerError,
 		}
-	}
-
-	searchURL := fmt.Sprintf("/es/%s/_search", ".ai_faqs")
-	searchResponse, searchErr := zincClient.MakeRequest(searchURL, http.MethodPost, queryInBytes, nil)
-
-	if searchErr != nil {
-		errMsg := fmt.Sprint("Error while making search request to Zinc: ", searchErr.Error())
-		return suggestions, &Error{
-			Error: errors.New(errMsg),
-		}
-	}
-
-	// If search response is not OK, we need to throw error as well
-	if searchResponse.StatusCode != http.StatusOK {
-		errMsg := fmt.Sprint("error while getting response from Zinc for FAQ with status code: ", searchResponse.StatusCode)
-		bodyInBytes, readErr := ioutil.ReadAll(searchResponse.Body)
-		if readErr == nil {
-			errMsg += " " + " with body: " + string(bodyInBytes)
-		}
-
-		return suggestions, &Error{
-			Error: errors.New(errMsg),
-		}
-	}
-
-	// Since response was okay, read it and return it
-
-	res := new(es7.SearchResult)
-	tempMap := make(map[string]interface{})
-
-	defer searchResponse.Body.Close()
-	rawSearchBody, readErr := io.ReadAll(searchResponse.Body)
-
-	if readErr != nil {
-		log.Warnln(logTag, ": ", readErr)
-		return suggestions, &Error{Code: http.StatusInternalServerError, Error: readErr}
-	}
-
-	// Marshal into a map and make sure error is not an empty string, if so then
-	// just set it to nil.
-	//
-	// This is necessary because ES returns errors as nil instead of empty string.
-	unmarshalToMapErr := json.Unmarshal(rawSearchBody, &tempMap)
-
-	if unmarshalToMapErr != nil {
-		errMsg := fmt.Sprint("error while unmarshalling Zinc response to map to modify it, ", unmarshalToMapErr)
-		log.Errorln(logTag, ": ", errMsg)
-		return suggestions, &Error{Code: http.StatusInternalServerError, Error: fmt.Errorf(errMsg)}
-	}
-
-	if tempMap["error"] != nil {
-		errorAsStr, errorAsStrOk := tempMap["error"].(string)
-		if errorAsStrOk && errorAsStr == "" {
-			tempMap["error"] = nil
-		}
-	}
-
-	// Marshal the map back
-	finalMapToUnmarshal, marshalErr := json.Marshal(tempMap)
-	if marshalErr != nil {
-		errMsg := fmt.Sprint("error while marshalling modified response to unmarshal into ES searchResult, ", marshalErr)
-		log.Errorln(logTag, ": ", errMsg)
-		return suggestions, &Error{Code: http.StatusInternalServerError, Error: fmt.Errorf(errMsg)}
-	}
-
-	log.Debugln(logTag, ": response code recieved: ", searchResponse.StatusCode)
-	log.Debugln(logTag, ": response recieved from zinc is: ", pretty.Formatter(string(finalMapToUnmarshal)))
-
-	unmarshalErr := json.Unmarshal(finalMapToUnmarshal, &res)
-
-	if unmarshalErr != nil {
-		errMsg := fmt.Sprint("error while unmarshalling Zinc response into ES hit body, ", unmarshalErr)
-		log.Warnln(logTag, ": ", errMsg)
-		return suggestions, &Error{Code: http.StatusInternalServerError, Error: fmt.Errorf(errMsg)}
 	}
 
 	for _, v := range res.Hits.Hits {
@@ -1084,11 +816,11 @@ func GetRecentSuggestions(q querytranslate.Query, config querytranslate.RecentSu
 		}
 
 		if config.MinHits != nil {
-			query = query.Must(es7.NewRangeQuery("total_hits").Gte(*config.MinHits))
+			query = query.Must(escompat.NewRangeQuery("total_hits").Gte(*config.MinHits))
 		}
 
 		if config.MinChars != nil {
-			minCharQuery := es7.NewRangeQuery("search_characters_length").Gte(*config.MinChars)
+			minCharQuery := escompat.NewRangeQuery("search_characters_length").Gte(*config.MinChars)
 			query.Filter(minCharQuery)
 		}
 

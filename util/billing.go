@@ -18,9 +18,17 @@ import (
 const ArcIDEnvName = "ARC_ID"
 const ClusterIDEnvName = "CLUSTER_ID"
 const AppbaseIDEnvName = "APPBASE_ID"
+const ReactiveSearchIDEnvName = "REACTIVESEARCH_ID"
 
-// ACCAPI URL
-var ACCAPI = "https://accapi.appbase.io/"
+// ACCAPI URL - configurable via ACCAPI_URL env var
+var ACCAPI = getACCAPIURL()
+
+func getACCAPIURL() string {
+	if url := os.Getenv("ACCAPI_URL"); url != "" {
+		return url
+	}
+	return ""
+}
 
 // var ACCAPI = "http://localhost:3000/"
 
@@ -187,7 +195,7 @@ func SetDefaultTier() {
 	SetTier(&plan)
 }
 
-// ValidateArcID validates the APPBASE_ID by checking the response returned from the ACCAPI
+// ValidateArcID validates the REACTIVESEARCH_ID by checking the response returned from the ACCAPI
 func ValidateArcID(statusCode int) {
 	if statusCode == http.StatusBadRequest {
 		// Set the flag to `true` so `Arc` can start throwing errors immediately
@@ -214,8 +222,8 @@ func BillingMiddleware(next http.Handler) http.Handler {
 		log.Infoln("current time validity value: ", GetTimeValidity())
 
 		if isInvalidArcIDUsed {
-			// throw invalid APPBASE_ID usage error
-			WriteBackError(w, "Please make sure that you're using a valid APPBASE_ID. If the issue persists please contact support@appbase.io with your APPBASE_ID or registered e-mail address.", http.StatusBadRequest)
+			// throw invalid REACTIVESEARCH_ID usage error
+			WriteBackError(w, "Please make sure that you're using a valid REACTIVESEARCH_ID. If the issue persists please contact support@reactivesearch.io with your REACTIVESEARCH_ID or registered e-mail address.", http.StatusBadRequest)
 			return
 		}
 
@@ -278,7 +286,7 @@ func getArcInstance(arcID string) (ArcInstance, error) {
 			// fetch plan from arc/fs/plan endpoint
 			planDetails, err := GetCachedPlanDetails()
 			if err != nil {
-				log.Errorln("error while refreshing plan, please contact at support@appbase.io")
+				log.Errorln("error while refreshing plan, please contact at support@reactivesearch.io")
 				// If plan is not set already (that would be the case at the time of initialization)
 				// then set the highest reactivesearch.io plan
 				plan := GetTier()
@@ -338,7 +346,7 @@ func setBillingVarsArcInstance(body []byte) (ArcInstance, error) {
 		setNumberOfMachines(arcInstanceByID.NumberOfMachines)
 		ClusterID = arcInstanceByID.ClusterID
 	} else {
-		return arcInstance, errors.New("no valid instance found for the provided APPBASE_ID")
+		return arcInstance, errors.New("no valid instance found for the provided REACTIVESEARCH_ID")
 	}
 	return arcInstance, nil
 }
@@ -359,7 +367,7 @@ func getArcClusterInstance(clusterID string) (ArcInstance, error) {
 			// fetch plan from arc/fs/plan endpoint
 			planDetails, err := GetCachedPlanDetails()
 			if err != nil {
-				log.Errorln("error while refreshing plan, please contact at support@appbase.io")
+				log.Errorln("error while refreshing plan, please contact at support@reactivesearch.io")
 				// If plan is not set already (that would be the case at the time of initialization)
 				// then set the highest appbase.io plan
 				plan := GetTier()
@@ -425,7 +433,7 @@ func getClusterPlan(clusterID string) (ClusterPlan, error) {
 			// fetch plan from arc/fs/plan endpoint
 			planDetails, err := GetCachedPlanDetails()
 			if err != nil {
-				log.Errorln("error while refreshing plan, please contact at support@appbase.io")
+				log.Errorln("error while refreshing plan, please contact at support@reactivesearch.io")
 				plan := GetTier()
 				if plan == nil {
 					highestPlan := ProductionThird2021
@@ -499,7 +507,7 @@ func SetClusterPlan() {
 	}
 	_, err := getClusterPlan(clusterID)
 	if err != nil {
-		log.Errorln("Unable to fetch the cluster plan. Please make sure that you're using a valid CLUSTER_ID. If the issue persists please contact support@appbase.io with your APPBASE_ID or registered e-mail address.", err)
+		log.Errorln("Unable to fetch the cluster plan. Please make sure that you're using a valid CLUSTER_ID. If the issue persists please contact support@reactivesearch.io with your REACTIVESEARCH_ID or registered e-mail address.", err)
 		return
 	}
 }
@@ -508,7 +516,7 @@ func reportUsageRequest(arcUsage ArcUsage) (ArcUsageResponse, error) {
 	response := ArcUsageResponse{}
 	url := ACCAPI + "arc/report_usage"
 	marshalledRequest, err := json.Marshal(arcUsage)
-	log.Println("ReactiveSearch usage for APPBASE_ID:", arcUsage)
+	log.Println("ReactiveSearch usage for REACTIVESEARCH_ID:", arcUsage)
 	if err != nil {
 		log.Errorln("error while marshalling req body:", err)
 		return response, err
@@ -587,20 +595,22 @@ func reportClusterUsageRequest(arcUsage ArcUsage) (ArcUsageResponse, error) {
 	return response, nil
 }
 
-// GetAppbaseID to get appbase id
-func GetAppbaseID() (string, error) {
-	arcID := os.Getenv(ArcIDEnvName)
-	if arcID == "" {
-		appbaseID := os.Getenv(AppbaseIDEnvName)
-		if appbaseID == "" {
-			return "", errors.New("APPBASE_ID env required but not present")
-		} else {
-			arcID = appbaseID
-		}
+// GetReactiveSearchID returns REACTIVESEARCH_ID if set, else APPBASE_ID (legacy), else ARC_ID
+func GetReactiveSearchID() (string, error) {
+	if v := os.Getenv(ReactiveSearchIDEnvName); strings.TrimSpace(v) != "" {
+		return v, nil
 	}
-
-	return arcID, nil
+	if v := os.Getenv(AppbaseIDEnvName); strings.TrimSpace(v) != "" {
+		return v, nil
+	}
+	if v := os.Getenv(ArcIDEnvName); strings.TrimSpace(v) != "" { // ultimate fallback
+		return v, nil
+	}
+	return "", errors.New("REACTIVESEARCH_ID env required but not present")
 }
+
+// GetAppbaseID maintained for backward compatibility; now resolves via GetReactiveSearchID
+func GetAppbaseID() (string, error) { return GetReactiveSearchID() }
 
 // ReportUsage reports ReactiveSearch usage, intended to be called every hour
 func ReportUsage() {
@@ -610,7 +620,7 @@ func ReportUsage() {
 		return
 	}
 
-	arcID, err := GetAppbaseID()
+	arcID, err := GetReactiveSearchID()
 	if err != nil {
 		log.Fatalln(err)
 		return
@@ -618,7 +628,7 @@ func ReportUsage() {
 
 	result, err := getArcInstance(arcID)
 	if err != nil {
-		log.Errorln("Unable to fetch the reactivesearch.io instance. Please make sure that you're using a valid APPBASE_ID. If the issue persists please contact support@appbase.io with your APPBASE_ID or registered e-mail address.")
+		log.Errorln("Unable to fetch the reactivesearch.io instance. Please make sure that you're using a valid REACTIVESEARCH_ID. If the issue persists please contact support@reactivesearch.io with your REACTIVESEARCH_ID or registered e-mail address.")
 		return
 	}
 
@@ -641,7 +651,7 @@ func ReportUsage() {
 	}
 	response, err1 := reportUsageRequest(usageBody)
 	if err1 != nil {
-		log.Errorln("Please contact support@appbase.io with your APPBASE_ID or registered e-mail address. Usage is not getting reported:", err1)
+		log.Errorln("Please contact support@reactivesearch.io with your REACTIVESEARCH_ID or registered e-mail address. Usage is not getting reported:", err1)
 	}
 
 	if response.WarningMsg != "" {
@@ -669,7 +679,7 @@ func ReportHostedArcUsage() {
 	// getArcClusterInstance(clusterId)
 	result, err := getArcClusterInstance(clusterID)
 	if err != nil {
-		log.Errorln("Unable to fetch the ReactiveSearch API server. Please make sure that you're using a valid CLUSTER_ID. If the issue persists please contact support@appbase.io with your APPBASE_ID or registered e-mail address.", err)
+		log.Errorln("Unable to fetch the ReactiveSearch API server. Please make sure that you're using a valid CLUSTER_ID. If the issue persists please contact support@reactivesearch.io with your REACTIVESEARCH_ID or registered e-mail address.", err)
 		return
 	}
 
@@ -692,7 +702,7 @@ func ReportHostedArcUsage() {
 	}
 	response, err1 := reportClusterUsageRequest(usageBody)
 	if err1 != nil {
-		log.Errorln("Please contact support@appbase.io with your CLUSTER_ID or registered e-mail address. Usage is not getting reported:", err1)
+		log.Errorln("Please contact support@reactivesearch.io with your CLUSTER_ID or registered e-mail address. Usage is not getting reported:", err1)
 	}
 
 	if response.WarningMsg != "" {

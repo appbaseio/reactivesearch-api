@@ -3,7 +3,7 @@ package preferences
 import (
 	"net/http"
 
-	"github.com/appbaseio-confidential/reactivesearch/plugins"
+	"github.com/appbaseio/reactivesearch-api/plugins"
 )
 
 func (rx *preferences) routes() []plugins.Route {

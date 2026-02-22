@@ -4,7 +4,7 @@ import (
 	"net"
 	"strings"
 
-	"github.com/appbaseio-confidential/reactivesearch/util"
+	"github.com/appbaseio/reactivesearch-api/util"
 	badger "github.com/outcaste-io/badger/v3"
 )
 

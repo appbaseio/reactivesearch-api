@@ -1,0 +1,58 @@
+{
+    "enabled": true,
+    "description": "Pipeline to handle script errors using throw",
+    "routes": [
+      {
+        "path": "good-books-ds-pipeline/_reactivesearch",
+        "method": "POST",
+        "classify": {
+          "category": "reactivesearch"
+        }
+      }
+    ],
+    "envs": {
+      "category": "reactivesearch",
+      "index": ["good-books-ds-pipeline"]
+    },
+    "stages": [
+      {
+        "id": "custom_script_error",
+        "continueOnError": false,
+        "script":"function handleRequest() { throw Error('custom error message'); }"
+      },
+      {
+        "use": "searchRelevancy",
+        "inputs": {
+          "search": {
+            "dataField": ["original_title"],
+            "size": 1
+          },
+          "suggestion": {
+            "dataField": ["original_title"],
+            "enablePopularSuggestions": true,
+            "size": 3,
+            "popularSuggestionsConfig": {
+              "size": 1
+            },
+            "enableRecentSuggestions": true,
+            "recentSuggestionsConfig": {
+              "size": 1
+            }
+          }
+        },
+        "continueOnError": false
+      },
+      {
+        "use": "reactivesearchQuery",
+        "continueOnError": false
+      },
+      {
+        "use": "elasticsearchQuery",
+        "continueOnError": false
+      },
+      {
+        "use": "recordAnalytics"
+      }
+    ]
+  }
+  

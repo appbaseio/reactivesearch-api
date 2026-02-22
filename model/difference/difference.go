@@ -3,7 +3,7 @@ package difference
 import (
 	"context"
 
-	"github.com/appbaseio-confidential/reactivesearch/errors"
+	"github.com/appbaseio/reactivesearch-api/errors"
 )
 
 type Difference struct {

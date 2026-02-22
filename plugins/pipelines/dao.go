@@ -7,9 +7,9 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
-	"github.com/appbaseio-confidential/reactivesearch/middleware/classify"
-	"github.com/appbaseio-confidential/reactivesearch/model/reindex"
-	"github.com/appbaseio-confidential/reactivesearch/util"
+	"github.com/appbaseio/reactivesearch-api/middleware/classify"
+	"github.com/appbaseio/reactivesearch-api/model/reindex"
+	"github.com/appbaseio/reactivesearch-api/util"
 )
 
 type elasticsearch struct {
@@ -57,31 +57,79 @@ func initPlugin(pipelinesIndex, mapping string) (*elasticsearch, error) {
 }
 
 // initInvocationIndex will initiate the index to store pipeline invocation details.
-func initInvocationIndex(invocationIndex, mapping string) (*invocationElasticsearch, error) {
-	es := &invocationElasticsearch{invocationIndex}
+func initInvocationIndex(invocationAlias, _ string) (*invocationElasticsearch, error) {
+	es := &invocationElasticsearch{invocationAlias}
 
 	ctx := context.Background()
 
-	// Check if the pipelines index already exists
-	exists, err := util.GetClient7().IndexExists(invocationIndex).Do(ctx)
+	// Check if alias exists instead of index and create first index if not exists with `${alias}-000001`
+	res, err := util.GetClient7().Aliases().Do(ctx)
 	if err != nil {
-		return es, fmt.Errorf("error while checking if index already exists: %v", err)
+		return nil, fmt.Errorf("error while checking if index already exists: %v", err)
 	}
+	indices := res.IndicesByAlias(invocationAlias)
+	exists := false
+	if len(indices) > 0 {
+		exists = true
+	}
+
 	if exists {
-		log.Printf("%s: index named '%s' already exists, skipping...", logTag, invocationIndex)
+		log.Printf("%s: index named '%s' already exists, skipping...", logTag, invocationAlias)
 		return es, nil
 	}
 
 	replicas := util.GetReplicas()
-	settings := fmt.Sprintf(mapping, pipelineInvocationMapping, util.HiddenIndexSettings(), replicas)
+	settings := fmt.Sprintf(invocationConfig, invocationAlias, util.HiddenIndexSettings(), replicas, pipelineInvocationMapping)
 
+	// Create the index name to match the name regex for rollover
+	invocationIndex := invocationAlias + `-000001`
 	// Meta index does not exists, create a new one
 	_, err = util.GetClient7().CreateIndex(invocationIndex).Body(settings).Do(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("error while creating index named %s: %v", invocationIndex, err)
+		log.Errorln(logTag, " : ", fmt.Errorf("error while creating index named \"%s\" %v", invocationIndex, err))
+		isAliasExistsAsIndex, err := util.GetClient7().IndexExists(invocationAlias).Do(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("error while checking if index already exists: %v", err)
+		}
+		if !isAliasExistsAsIndex {
+			return nil, fmt.Errorf("error while creating index named \"%s\" %v", invocationIndex, err)
+		}
+		// If .pipeline_invocations exists as an index then perform following steps:
+		// 1. Re-index `.pipeline_invocations` to `.pipeline_invocations-000001`
+		// 2. Delete `.pipeline_invocations` and continue
+		sourceIndex := invocationAlias
+		destinationIndex := invocationIndex
+		var settingsAsMap map[string]interface{}
+		err1 := json.Unmarshal([]byte(settings), &settingsAsMap)
+		if err1 != nil {
+			log.Errorln(logTag, ":", err1)
+			return nil, fmt.Errorf("error while un-marshalling invocation mappings %v", err1)
+		}
+		settings, _ := settingsAsMap["settings"].(map[string]interface{})
+		mappings, _ := settingsAsMap["mappings"].(map[string]interface{})
+		reIndexConfig := reindex.ReindexConfig{
+			Settings: settings,
+			Mappings: mappings,
+		}
+		log.Infoln(logTag, ": re-indexing ", invocationIndex, " index, this may take a while...")
+		taskDetails, err := reindex.Reindex(context.Background(), sourceIndex, &reIndexConfig, false, destinationIndex)
+		if err != nil {
+			log.Errorln(logTag, ":", err)
+			return nil, nil
+		}
+		// Re-index synchronously
+		reindex.TrackReindex(reindex.SetAliasConfig{
+			AliasName:    sourceIndex,
+			NewIndex:     destinationIndex,
+			OldIndex:     sourceIndex,
+			IsWriteIndex: true,
+		}, taskDetails)
 	}
 
-	log.Printf("%s successfully created index named '%s'", logTag, invocationIndex)
+	classify.SetIndexAlias(invocationIndex, invocationAlias)
+	classify.SetAliasIndex(invocationAlias, invocationIndex)
+
+	log.Printf("%s successfully created index named '%s'", logTag, invocationAlias)
 	return es, nil
 }
 

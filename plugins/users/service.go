@@ -3,7 +3,7 @@ package users
 import (
 	"context"
 
-	"github.com/appbaseio-confidential/reactivesearch/model/user"
+	"github.com/appbaseio/reactivesearch-api/model/user"
 )
 
 type userService interface {

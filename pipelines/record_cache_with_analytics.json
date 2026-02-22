@@ -1,0 +1,64 @@
+{
+  "enabled": true,
+  "description": "Pipeline to record cache with analytics",
+  "routes": [
+    {
+      "path": "good-books-ds-pipeline/_reactivesearch",
+      "method": "POST",
+      "classify": {
+        "category": "reactivesearch"
+      }
+    }
+  ],
+  "envs": {
+    "category": "reactivesearch",
+    "index": ["good-books-ds-pipeline"],
+    "urlValues": {
+      "cache": true
+    }
+  },
+  "stages": [
+    {
+      "id": "mock-request-body",
+      "description": "Mocks the request body",
+      "script": "function handleRequest() { return { request: {...context.request, body: JSON.stringify({ query: [{ id: 'search', value: 'harry', dataField: 'original_title'}], settings: { recordAnalytics: true } })}}}",
+      "continueOnError": false
+    },
+    {
+      "use": "searchRelevancy",
+      "inputs": {
+        "search": {
+          "dataField": ["original_title"],
+          "size": 1
+        },
+        "suggestion": {
+          "dataField": ["original_title"],
+          "enablePopularSuggestions": true,
+          "size": 3,
+          "popularSuggestionsConfig": {
+            "size": 1
+          },
+          "enableRecentSuggestions": true,
+          "recentSuggestionsConfig": {
+            "size": 1
+          }
+        }
+      },
+      "continueOnError": false
+    },
+    {
+      "use": "useCache"
+    },
+    {
+      "use": "reactivesearchQuery",
+      "continueOnError": false
+    },
+    {
+      "use": "elasticsearchQuery",
+      "continueOnError": false
+    },
+    {
+      "use": "recordAnalytics"
+    }
+  ]
+}

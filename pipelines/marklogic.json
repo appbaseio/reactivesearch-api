@@ -1,0 +1,85 @@
+{
+    "enabled": true,
+    "routes": [
+        {
+            "path": "/_marklogic/_reactivesearch",
+            "method": "POST",
+            "classify": {
+                "category": "reactivesearch"
+            }
+        },
+        {
+            "path": "/_marklogic/_reactivesearch/validate",
+            "method": "POST",
+            "classify": {
+                "category": "reactivesearch"
+            }
+        }
+    ],
+    "envs": {},
+    "stages": [
+        {
+            "id": "auth",
+            "use": "authorization"
+        },
+        {
+            "id": "parse ml__mode",
+            "script": "function handleRequest() { var urlValues = context.envs.urlValues; if (urlValues == undefined) urlValues = {}; if (urlValues.ml__mode == undefined) { urlValues.ml__mode = 'search'; } return { envs: { ...context.envs, urlValues: urlValues } } }"
+        },
+        {
+            "id": "rs",
+            "use": "reactivesearchQuery",
+            "inputs": {
+                "backend": "marklogic"
+            },
+            "trigger": {
+                "expression": "context.envs.urlValues.ml__mode == 'search'"
+            },
+            "continueOnError": false
+        },
+        {
+            "id": "transform sparql request",
+            "script": "function handleRequest() { const queryPassed = JSON.parse(context.request.body); const queryBuilt = {}; for (var i = 0; i < queryPassed.query.length;i++) { var query = queryPassed.query[i]; if (query.execute != undefined && !query.execute) continue; if (query.id == undefined) { throw Error(`query.id required at index: ${i}`); } var dataField = query.dataField; var queryValue = query.value; if (queryValue == undefined) { queryValue = '*'; } if (dataField == undefined) { dataField = ['description', 'label']; } else if (typeof(dataField) == 'string') { dataField = [dataField]; } var limitToUse = 10; if (query.size != undefined) { limitToUse = query.size } const filterQueryArr = []; dataField.forEach(df => { filterQueryArr.push(`CONTAINS(?${df},\"${queryValue}\")`) }); const filterQuery = filterQueryArr.join(' || '); queryBuilt[query.id] = { body: getSparQLQuery(filterQuery, limitToUse), headers: { 'content-type': 'application/sparql-query' }, url: '/v1/graphs/sparql', method: 'POST' }; } return { request: { body: JSON.stringify(queryBuilt) } } } function getSparQLQuery(filterQuery, limit) { const rawQuery = `SELECT DISTINCT (?label AS ?Disease) (?s AS ?Class)(?description AS ?Description) (?parentLabel AS ?Parent) (GROUP_CONCAT(DISTINCT ?childLabel;SEPARATOR=', ') AS ?Children) WHERE { ?s ?p ?o . ?s <http://www.w3.org/2000/01/rdf-schema#label> ?label . OPTIONAL { ?s <http://purl.obolibrary.org/obo/IAO_0000115> ?description } . OPTIONAL { ?s <http://www.w3.org/2000/01/rdf-schema#subClassOf> ?parent . ?parent <http://www.w3.org/2000/01/rdf-schema#label> ?parentLabel . FILTER ( LANG(?parentLabel) = 'en' ) } . OPTIONAL { ?child <http://www.w3.org/2000/01/rdf-schema#subClassOf> ?s . ?child <http://www.w3.org/2000/01/rdf-schema#label> ?childLabel . FILTER ( LANG(?childLabel) = 'en' ) } . FILTER ( LANG(?label) = 'en' ) . FILTER ( ${filterQuery} ) } GROUP BY ?label LIMIT ${limit}`; return rawQuery; }",
+            "continueOnError": false,
+            "trigger": {
+                "expression": "context.envs.urlValues.ml__mode == 'sparql'"
+            }
+        },
+        {
+            "id": "transform optic request",
+            "script": "function handleRequest() { const queryPassed = JSON.parse(context.request.body); const queryBuilt = {}; for (var i = 0; i < queryPassed.query.length; i++) { var query = queryPassed.query[i]; if (query.execute != undefined && !query.execute) continue; if (query.id == undefined) { throw Error(`query.id required at index: ${i}`); } var dataField = query.dataField; var queryValue = query.value; if (queryValue == undefined) { queryValue = '*'; } if (dataField == undefined) { dataField = [ 'LastName', 'ProviderLastName', 'serviceDescription', 'label', ]; } else if (typeof dataField == 'string') { dataField = [dataField]; } var limitToUse = 10; if (query.size != undefined) { limitToUse = query.size; } const filterQueryArr = []; dataField.forEach((df) => { filterQueryArr.push( `fn.contains(fn.lowerCase(op.col('${df}')), term)` ); }); const filterQuery = filterQueryArr.join(' || '); queryBuilt[query.id] = { body: getOpticQuery(filterQuery, limitToUse, queryValue), headers: { 'content-type': 'application/vnd.marklogic.querydsl+javascript', }, url: '/v1/rows', method: 'POST', }; } return { request: { body: JSON.stringify(queryBuilt) } }; } function getOpticQuery(filterQuery, limit, queryValue) { const rawQuery = `const term = fn.lowerCase('${queryValue}');op.fromView(null, 'Member').joinInner(op.fromView(null, 'ClaimFHIR'), op.on('memberID', 'patient')).joinInner(op.fromView(null, 'ClaimItem'), op.on('identifier', 'claimId')).joinLeftOuter(op.fromView(null, 'CMSProvider'), op.on('provider', 'ProviderNPI')).joinLeftOuter(op.fromSPARQL('SELECT DISTINCT (str(?code) AS ?Code) ?label WHERE { ?code <http://www.w3.org/2000/01/rdf-schema#label> ?label }'), op.on(op.col('diagnosisIRI'), 'Code')).select(['LastName', 'ProviderLastName', 'identifier', 'type', 'serviceDescription', 'unitPrice', 'diagnosisIRI', 'label']).where( ${filterQuery} ).whereDistinct().limit(${limit})`; return rawQuery; }",
+            "continueOnError": false,
+            "trigger": {
+                "expression": "context.envs.urlValues.ml__mode == 'optic'"
+            }
+        },
+        {
+            "id": "validate query generation",
+            "script": "function handleRequest() { const request = JSON.parse(context.request.body); const qs = JSON.parse(context.envs['ML_QS_PARAMS']); const qsKeys = Object.keys(qs); const queryArr = []; for (var i = 0; i < qsKeys.length; i++) { const key = qsKeys[i]; const value = qs[key]; queryArr.push(`${key}=${value}`); } const queryString = 'http://localhost:8011/v1/search?' + queryArr.join('&'); const endpointToReturn = { url: queryString, method: 'POST', body: request, headers: {} }; return { response: { body: JSON.stringify(endpointToReturn) } } }",
+            "trigger": {
+                "expression": "context.envs.path == '/_marklogic/_reactivesearch/validate' and context.envs.urlValues.ml__mode == 'search'"
+            },
+            "continueOnError": false
+        },
+        {
+            "id": "show validate and return",
+            "trigger": {
+                "expression": "context.envs.path == '/_marklogic/_reactivesearch/validate' and (context.envs.urlValues.ml__mode == 'sparql' or context.envs.urlValues.ml__mode == 'optic')"
+            },
+            "script": "function handleRequest() { return { response: { body: context.request.body } } }"
+        },
+        {
+            "id": "make marklogic request",
+            "use": "marklogicQuery",
+            "inputs": {
+                "uri": "http://reactive-poc.demo.marklogic.com:8011",
+                "username": "DrSmith",
+                "password": "demo",
+                "type": "{{envs.urlValues.ml__mode}}"
+            },
+            "trigger": {
+                "expression": "context.envs.path != '/_marklogic/_reactivesearch/validate'"
+            }
+        }
+    ]
+}

@@ -11,23 +11,23 @@ import (
 	"sync"
 	"time"
 
-	"github.com/appbaseio-confidential/reactivesearch/util/iplookup"
+	"github.com/appbaseio/reactivesearch-api/util/iplookup"
 	"github.com/gorilla/mux"
 
-	"github.com/appbaseio-confidential/reactivesearch/middleware"
-	"github.com/appbaseio-confidential/reactivesearch/middleware/classify"
-	"github.com/appbaseio-confidential/reactivesearch/middleware/ratelimiter"
-	"github.com/appbaseio-confidential/reactivesearch/middleware/validate"
-	"github.com/appbaseio-confidential/reactivesearch/model/category"
-	"github.com/appbaseio-confidential/reactivesearch/model/difference"
-	"github.com/appbaseio-confidential/reactivesearch/model/op"
-	"github.com/appbaseio-confidential/reactivesearch/model/permission"
-	"github.com/appbaseio-confidential/reactivesearch/model/request"
-	"github.com/appbaseio-confidential/reactivesearch/model/requestlogs"
-	"github.com/appbaseio-confidential/reactivesearch/model/trackplugin"
-	"github.com/appbaseio-confidential/reactivesearch/plugins/auth"
-	"github.com/appbaseio-confidential/reactivesearch/plugins/logs"
-	"github.com/appbaseio-confidential/reactivesearch/plugins/telemetry"
+	"github.com/appbaseio/reactivesearch-api/middleware"
+	"github.com/appbaseio/reactivesearch-api/middleware/classify"
+	"github.com/appbaseio/reactivesearch-api/middleware/ratelimiter"
+	"github.com/appbaseio/reactivesearch-api/middleware/validate"
+	"github.com/appbaseio/reactivesearch-api/model/category"
+	"github.com/appbaseio/reactivesearch-api/model/difference"
+	"github.com/appbaseio/reactivesearch-api/model/op"
+	"github.com/appbaseio/reactivesearch-api/model/permission"
+	"github.com/appbaseio/reactivesearch-api/model/request"
+	"github.com/appbaseio/reactivesearch-api/model/requestlogs"
+	"github.com/appbaseio/reactivesearch-api/model/trackplugin"
+	"github.com/appbaseio/reactivesearch-api/plugins/auth"
+	"github.com/appbaseio/reactivesearch-api/plugins/logs"
+	"github.com/appbaseio/reactivesearch-api/plugins/telemetry"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -319,6 +319,8 @@ func queryTranslate(h http.HandlerFunc) http.HandlerFunc {
 		if translateErr != nil {
 			log.Errorln(logTag, ":", translateErr)
 			telemetry.WriteBackErrorWithTelemetry(req, w, translateErr.Error(), http.StatusBadRequest)
+			// Set response header to prevent further processing
+			w.Header().Set("X-Error-Processed", "true")
 			return
 		}
 

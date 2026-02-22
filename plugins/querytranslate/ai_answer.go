@@ -12,8 +12,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/appbaseio-confidential/reactivesearch/plugins/openai"
-	"github.com/appbaseio-confidential/reactivesearch/util"
+	"github.com/appbaseio/reactivesearch-api/plugins/openai"
+	"github.com/appbaseio/reactivesearch-api/util"
 	"github.com/buger/jsonparser"
 	"github.com/kr/pretty"
 	log "github.com/sirupsen/logrus"
@@ -413,6 +413,7 @@ func ExecuteAIAnswerInQuery(rsRequest *RSQuery, transformedResponse []byte, indi
 				openAIInstance.GetConfig().GetAPIType(),
 				openAIInstance.GetConfig().GetAzureURL(),
 				openAIInstance.GetConfig().GetAzureVersion(),
+				false,
 			)
 			// Log the error, if any
 			if err != nil {

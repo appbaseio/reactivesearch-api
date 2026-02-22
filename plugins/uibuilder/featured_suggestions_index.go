@@ -1,23 +1,17 @@
 package uibuilder
 
 import (
+	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
-	"io"
-	"net/http"
-	"strconv"
-	"strings"
 
-	"github.com/appbaseio-confidential/reactivesearch/util"
-	"github.com/gdexlab/go-render/render"
-	"github.com/olivere/elastic/v7"
+	"github.com/appbaseio/reactivesearch-api/util"
 	es7 "github.com/olivere/elastic/v7"
 	log "github.com/sirupsen/logrus"
 )
 
 type FeaturedSuggestionsConfig struct {
-	zincIndex string
+	esIndex string
 }
 
 func getIndexDocument(featuredSuggestion ESFeaturedSuggestionDoc) map[string]interface{} {
@@ -58,8 +52,11 @@ func getIndexDocument(featuredSuggestion ESFeaturedSuggestionDoc) map[string]int
 	return doc
 }
 
-// Update the featured suggestions in Zinc index
+// Update the featured suggestions in ES index
 func (featuredSuggestionsConfig *FeaturedSuggestionsConfig) UpdateFeaturedSuggestions(searchboxId string, featuredSuggestions []ESFeaturedSuggestionDoc) error {
+	ctx := context.Background()
+	client := util.GetClient7()
+
 	newSuggestionsIds := make([]string, 0)
 	for _, suggestion := range featuredSuggestions {
 		if suggestion.Id != nil {
@@ -83,51 +80,44 @@ func (featuredSuggestionsConfig *FeaturedSuggestionsConfig) UpdateFeaturedSugges
 		}
 	}
 
-	zc := util.GetZincClient()
-	bulkRequestEachArr := make([]string, 0)
+	bulkRequest := client.Bulk().Index(featuredSuggestionsConfig.esIndex)
+
 	// Add items to delete
 	for _, id := range suggestionsIdsToDelete {
-		marshallledOperation, _ := json.Marshal(map[string]interface{}{
-			"delete": map[string]interface{}{"_index": featuredSuggestionsConfig.zincIndex, "_id": id},
-		})
-		bulkRequestEachArr = append(bulkRequestEachArr, string(marshallledOperation))
+		bulkRequest.Add(es7.NewBulkDeleteRequest().Id(id))
 	}
 	// Add items to index
 	for _, featuredSuggestion := range featuredSuggestions {
 		if featuredSuggestion.Id != nil {
 			doc := getIndexDocument(featuredSuggestion)
-			marshalledDoc, err := json.Marshal(doc)
-			if err != nil {
-				log.Errorln(logTag, ":", err.Error())
-				return err
-			}
-			marshallledOperation, _ := json.Marshal(map[string]interface{}{
-				"index": map[string]interface{}{"_index": featuredSuggestionsConfig.zincIndex, "_id": *featuredSuggestion.Id},
-			})
-			bulkRequestEachArr = append(bulkRequestEachArr, string(marshallledOperation))
-			bulkRequestEachArr = append(bulkRequestEachArr, string(marshalledDoc))
+			bulkRequest.Add(es7.NewBulkIndexRequest().Id(*featuredSuggestion.Id).Doc(doc))
 		}
 	}
-	bulkRequestStr := strings.Join(bulkRequestEachArr, "\n")
-	bulkRequestStr += "\n"
-	bulkReqResponse, bulkRequestErr := zc.MakeRequest("es/_bulk", http.MethodPost, []byte(bulkRequestStr), nil)
-	if bulkRequestErr != nil {
-		log.Errorln(logTag, ": error while sending searchbox bulk request to Zinc, ", bulkRequestErr)
-		return bulkRequestErr
+
+	if bulkRequest.NumberOfActions() == 0 {
+		return nil
 	}
 
-	log.Debugln(logTag, ": bulk request endpoint status code: ", bulkReqResponse.StatusCode)
-	if bulkReqResponse.StatusCode != http.StatusOK {
-		errMsg := fmt.Sprint("bulk request to Zinc returned a non OK status code: ", bulkReqResponse.StatusCode)
-		log.Errorln(logTag, ": ", errMsg)
-		return errors.New(errMsg)
+	bulkResponse, bulkErr := bulkRequest.Refresh("wait_for").Do(ctx)
+	if bulkErr != nil {
+		log.Errorln(logTag, ": error while sending searchbox bulk request to ES, ", bulkErr)
+		return bulkErr
 	}
-	bulkReqResponse.Body.Close()
+
+	if bulkResponse.Errors {
+		errMsg := fmt.Sprint("bulk request to ES had errors")
+		log.Errorln(logTag, ": ", errMsg)
+		for _, item := range bulkResponse.Failed() {
+			log.Errorln(logTag, ": bulk item error: ", item.Error)
+		}
+	}
+
 	return nil
 }
 
 func (featuredSuggestionsConfig *FeaturedSuggestionsConfig) DeleteFeaturedSuggestions(searchboxId string, idsToDelete *[]string) error {
-	zc := util.GetZincClient()
+	ctx := context.Background()
+	client := util.GetClient7()
 
 	suggestionsIds := make([]string, 0)
 
@@ -150,38 +140,37 @@ func (featuredSuggestionsConfig *FeaturedSuggestionsConfig) DeleteFeaturedSugges
 		}
 	}
 
-	bulkRequestEachArr := make([]string, 0)
-	for _, id := range suggestionsIds {
-		marshallledOperation, _ := json.Marshal(map[string]interface{}{
-			"delete": map[string]interface{}{"_index": featuredSuggestionsConfig.zincIndex, "_id": id},
-		})
-		bulkRequestEachArr = append(bulkRequestEachArr, string(marshallledOperation))
-	}
-	bulkRequestStr := strings.Join(bulkRequestEachArr, "\n")
-	bulkRequestStr += "\n"
-	bulkReqResponse, bulkRequestErr := zc.MakeRequest("es/_bulk", http.MethodPost, []byte(bulkRequestStr), nil)
-	if bulkRequestErr != nil {
-		log.Errorln(logTag, ": error while sending searchbox bulk request to Zinc, ", bulkRequestErr)
-		return bulkRequestErr
+	if len(suggestionsIds) == 0 {
+		return nil
 	}
 
-	log.Debugln(logTag, ": bulk request endpoint status code: ", bulkReqResponse.StatusCode)
-	if bulkReqResponse.StatusCode != http.StatusOK {
-		errMsg := fmt.Sprint("bulk request to Zinc returned a non OK status code: ", bulkReqResponse.StatusCode)
-		log.Errorln(logTag, ": ", errMsg)
-		return errors.New(errMsg)
+	bulkRequest := client.Bulk().Index(featuredSuggestionsConfig.esIndex)
+	for _, id := range suggestionsIds {
+		bulkRequest.Add(es7.NewBulkDeleteRequest().Id(id))
 	}
-	bulkReqResponse.Body.Close()
+
+	bulkResponse, bulkErr := bulkRequest.Refresh("wait_for").Do(ctx)
+	if bulkErr != nil {
+		log.Errorln(logTag, ": error while sending searchbox bulk delete request to ES, ", bulkErr)
+		return bulkErr
+	}
+
+	if bulkResponse.Errors {
+		errMsg := fmt.Sprint("bulk delete request to ES had errors")
+		log.Errorln(logTag, ": ", errMsg)
+		for _, item := range bulkResponse.Failed() {
+			log.Errorln(logTag, ": bulk item error: ", item.Error)
+		}
+	}
+
 	return nil
 }
 
 // Returns the matched featured suggestions by value
 func (featuredSuggestionsConfig *FeaturedSuggestionsConfig) SearchFeaturedSuggestions(groupId string, value string) ([]ESFeaturedSuggestionDoc, error) {
+	ctx := context.Background()
+	client := util.GetClient7()
 	featuredSuggestions := make([]ESFeaturedSuggestionDoc, 0)
-
-	zincEndpointToHit := fmt.Sprintf("es/%s/_search", featuredSuggestionsConfig.zincIndex)
-
-	zc := util.GetZincClient()
 
 	// If value is present ======>
 	// Filter by group id
@@ -194,7 +183,7 @@ func (featuredSuggestionsConfig *FeaturedSuggestionsConfig) SearchFeaturedSugges
 
 	// filter by search box id
 	query.Must(es7.NewTermQuery("searchboxId", groupId))
-	if strings.TrimSpace(value) != "" {
+	if value != "" {
 		// filter by `value` field
 		query.Should(es7.NewMatchQuery("value", value).Operator("or").Boost(3).Fuzziness("2"))
 		query.Should(es7.NewMatchPhraseQuery("value", value).Boost(3))
@@ -220,57 +209,18 @@ func (featuredSuggestionsConfig *FeaturedSuggestionsConfig) SearchFeaturedSugges
 		query.Should(es7.NewMatchAllQuery())
 	}
 
-	searchSource := es7.NewSearchSource().Query(query).Size(10000)
-	searchString, err := searchSource.Source()
+	searchResult, err := client.Search().
+		Index(featuredSuggestionsConfig.esIndex).
+		Query(query).
+		Size(10000).
+		Do(ctx)
 	if err != nil {
-		log.Errorln(logTag, ":", err)
-		return featuredSuggestions, err
-	}
-
-	bodyAsString, marshalErr := json.Marshal(searchString)
-	if marshalErr != nil {
-		log.Warnln(logTag, ": error while marshaling search source, ", marshalErr)
-		return featuredSuggestions, marshalErr
-	}
-
-	rawQuery := render.Render(string(bodyAsString))
-
-	zincQuery, err := strconv.Unquote(rawQuery)
-	if err != nil {
-		log.Warnln(logTag, ": error while parsing query, ", err)
-		return featuredSuggestions, err
-	}
-
-	searchResponse, searchErr := zc.MakeRequest(zincEndpointToHit, http.MethodPost, []byte(zincQuery), nil)
-	if searchErr != nil {
-		errMsg := fmt.Sprint("error while hitting zinc to get featured suggestions, ", searchErr)
-		log.Warnln(logTag, ": ", errMsg)
-		return featuredSuggestions, fmt.Errorf(errMsg)
-	}
-	if searchResponse.StatusCode != http.StatusOK {
-		errMsg := fmt.Sprint("Zinc returned a non OK status code: ", searchResponse.StatusCode)
+		errMsg := fmt.Sprint("error while hitting ES to get featured suggestions, ", err)
 		log.Warnln(logTag, ": ", errMsg)
 		return featuredSuggestions, fmt.Errorf(errMsg)
 	}
 
-	var res struct {
-		Hits *es7.SearchHits `json:"hits,omitempty"`
-	}
-
-	defer searchResponse.Body.Close()
-	rawSearchBody, readErr := io.ReadAll(searchResponse.Body)
-
-	if readErr != nil {
-		log.Warnln(logTag, ": ", readErr)
-		return featuredSuggestions, readErr
-	}
-	err3 := json.Unmarshal(rawSearchBody, &res)
-	if err3 != nil {
-		log.Errorln(logTag, ":", err3)
-		return featuredSuggestions, err3
-	}
-
-	for _, hit := range res.Hits.Hits {
+	for _, hit := range searchResult.Hits.Hits {
 		var featureSuggestion ESFeaturedSuggestionDoc
 		err := json.Unmarshal(hit.Source, &featureSuggestion)
 		if err != nil {
@@ -285,69 +235,26 @@ func (featuredSuggestionsConfig *FeaturedSuggestionsConfig) SearchFeaturedSugges
 
 // Get saved featured suggestions
 func (featuredSuggestionsConfig *FeaturedSuggestionsConfig) GetFeaturedSuggestions(groupId string) ([]ESFeaturedSuggestionDoc, error) {
+	ctx := context.Background()
+	client := util.GetClient7()
 	featuredSuggestions := make([]ESFeaturedSuggestionDoc, 0)
 
-	zincEndpointToHit := fmt.Sprintf("es/%s/_search", featuredSuggestionsConfig.zincIndex)
-
-	zc := util.GetZincClient()
-
 	// Filter by group id
-
 	query := es7.NewBoolQuery()
-
-	// filter by search box id
 	query.Must(es7.NewTermQuery("searchboxId", groupId))
 
-	searchSource := es7.NewSearchSource().Query(query).Size(10000)
-	searchString, err := searchSource.Source()
+	searchResult, err := client.Search().
+		Index(featuredSuggestionsConfig.esIndex).
+		Query(query).
+		Size(10000).
+		Do(ctx)
 	if err != nil {
-		log.Errorln(logTag, ":", err)
-		return featuredSuggestions, err
-	}
-
-	bodyAsString, marshalErr := json.Marshal(searchString)
-	if marshalErr != nil {
-		log.Warnln(logTag, ": error while marshaling search source, ", marshalErr)
-		return featuredSuggestions, marshalErr
-	}
-
-	rawQuery := render.Render(string(bodyAsString))
-	zincQuery, err := strconv.Unquote(rawQuery)
-	if err != nil {
-		log.Warnln(logTag, ": error while parsing query, ", err)
-		return featuredSuggestions, err
-	}
-
-	searchResponse, searchErr := zc.MakeRequest(zincEndpointToHit, http.MethodPost, []byte(zincQuery), nil)
-	if searchErr != nil {
-		errMsg := fmt.Sprint("error while hitting zinc to get featured suggestions, ", searchErr, zincQuery)
-		log.Warnln(logTag, ": ", errMsg)
-		return featuredSuggestions, fmt.Errorf(errMsg)
-	}
-	if searchResponse.StatusCode != http.StatusOK {
-		errMsg := fmt.Sprint("Zinc returned a non OK status code: ", searchResponse.StatusCode)
+		errMsg := fmt.Sprint("error while hitting ES to get featured suggestions, ", err)
 		log.Warnln(logTag, ": ", errMsg)
 		return featuredSuggestions, fmt.Errorf(errMsg)
 	}
 
-	var res struct {
-		Hits *es7.SearchHits `json:"hits,omitempty"`
-	}
-
-	defer searchResponse.Body.Close()
-	rawSearchBody, readErr := io.ReadAll(searchResponse.Body)
-
-	if readErr != nil {
-		log.Warnln(logTag, ": ", readErr)
-		return featuredSuggestions, readErr
-	}
-	err3 := json.Unmarshal(rawSearchBody, &res)
-	if err3 != nil {
-		log.Errorln(logTag, ":", err3)
-		return featuredSuggestions, err3
-	}
-
-	for _, hit := range res.Hits.Hits {
+	for _, hit := range searchResult.Hits.Hits {
 		var featureSuggestion ESFeaturedSuggestionDoc
 		err := json.Unmarshal(hit.Source, &featureSuggestion)
 		if err != nil {
@@ -361,7 +268,7 @@ func (featuredSuggestionsConfig *FeaturedSuggestionsConfig) GetFeaturedSuggestio
 	return featuredSuggestions, nil
 }
 
-func (featuredSuggestionsConfig *FeaturedSuggestionsConfig) setFeaturedSuggestionsFromESResponse(response *elastic.SearchResult, searchboxIndex string) error {
+func (featuredSuggestionsConfig *FeaturedSuggestionsConfig) setFeaturedSuggestionsFromESResponse(response *es7.SearchResult, searchboxIndex string, syncToES bool) error {
 	var searchboxes []SearchBoxESModel
 	for _, hit := range response.Hits.Hits {
 		if hit.Index == searchboxIndex {
@@ -372,46 +279,93 @@ func (featuredSuggestionsConfig *FeaturedSuggestionsConfig) setFeaturedSuggestio
 				return err
 			}
 			searchboxes = append(searchboxes, searchbox)
+		}
+	}
+
+	// Only sync to ES if requested (i.e., when index was just created)
+	if syncToES {
+		ctx := context.Background()
+		client := util.GetClient7()
+
+		// Collect all featured suggestions from all searchboxes
+		allFeaturedSuggestions := make([]ESFeaturedSuggestionDoc, 0)
+		for _, searchbox := range searchboxes {
 			if searchbox.Id != nil {
-				featuredSuggestionsConfig.UpdateFeaturedSuggestions(*searchbox.Id, getFeaturedSuggestionsFromSearchBoxes(searchboxes))
+				featuredSuggestions := getFeaturedSuggestionsFromSearchBox(searchbox)
+				allFeaturedSuggestions = append(allFeaturedSuggestions, featuredSuggestions...)
 			}
 		}
 
+		// Batch index all featured suggestions in a single bulk request
+		if len(allFeaturedSuggestions) > 0 {
+			bulkRequest := client.Bulk().Index(featuredSuggestionsConfig.esIndex)
+			for _, featuredSuggestion := range allFeaturedSuggestions {
+				if featuredSuggestion.Id != nil {
+					doc := getIndexDocument(featuredSuggestion)
+					bulkRequest.Add(es7.NewBulkIndexRequest().Id(*featuredSuggestion.Id).Doc(doc))
+				}
+			}
+
+			if bulkRequest.NumberOfActions() > 0 {
+				bulkResponse, bulkErr := bulkRequest.Do(ctx)
+				if bulkErr != nil {
+					log.Errorln(logTag, ": error while sending featured suggestions bulk request to ES, ", bulkErr)
+					return bulkErr
+				}
+				if bulkResponse.Errors {
+					log.Warnln(logTag, ": bulk request to ES had some errors")
+					for _, item := range bulkResponse.Failed() {
+						log.Errorln(logTag, ": bulk item error: ", item.Error)
+					}
+				}
+				log.Infoln(logTag, ": indexed", len(allFeaturedSuggestions), "featured suggestions")
+			}
+		}
+	} else {
+		log.Infoln(logTag, ": skipping featured suggestions sync (index already exists)")
 	}
+
 	// Update local cache
 	SetCachedSearchBoxes(searchboxes)
 	return nil
 }
 
-// Transforms the featured suggestions from elasticsearch to the featured suggestions stored in zinc index
+// Transforms the featured suggestions from a single searchbox to denormalized documents
+func getFeaturedSuggestionsFromSearchBox(searchbox SearchBoxESModel) []ESFeaturedSuggestionDoc {
+	featuredSuggestionsToIndex := make([]ESFeaturedSuggestionDoc, 0)
+	if searchbox.SearchBox != nil &&
+		searchbox.SearchBox.Featured != nil &&
+		searchbox.SearchBox.Featured.Layout != nil &&
+		searchbox.SearchBox.Featured.Layout.Sections != nil {
+		for _, section := range searchbox.SearchBox.Featured.Layout.Sections {
+			order := 1
+			for _, suggestion := range section.Suggestions {
+				featuredSuggestionsToIndex = append(featuredSuggestionsToIndex, ESFeaturedSuggestionDoc{
+					Label:        suggestion.Label,
+					Value:        suggestion.Value,
+					Action:       suggestion.Action,
+					SubAction:    suggestion.SubAction,
+					Id:           suggestion.Id,
+					Description:  suggestion.Description,
+					Icon:         suggestion.Icon,
+					IconURL:      suggestion.IconURL,
+					SearchboxId:  searchbox.Id,
+					SectionId:    section.Id,
+					SectionLabel: section.Label,
+					Order:        &order,
+				})
+				order += 1
+			}
+		}
+	}
+	return featuredSuggestionsToIndex
+}
+
+// Transforms the featured suggestions from multiple searchboxes (kept for backwards compatibility)
 func getFeaturedSuggestionsFromSearchBoxes(searchboxes []SearchBoxESModel) []ESFeaturedSuggestionDoc {
 	featuredSuggestionsToIndex := make([]ESFeaturedSuggestionDoc, 0)
 	for _, searchbox := range searchboxes {
-		if searchbox.SearchBox != nil &&
-			searchbox.SearchBox.Featured != nil &&
-			searchbox.SearchBox.Featured.Layout != nil &&
-			searchbox.SearchBox.Featured.Layout.Sections != nil {
-			for _, section := range searchbox.SearchBox.Featured.Layout.Sections {
-				order := 1
-				for _, suggestion := range section.Suggestions {
-					featuredSuggestionsToIndex = append(featuredSuggestionsToIndex, ESFeaturedSuggestionDoc{
-						Label:        suggestion.Label,
-						Value:        suggestion.Value,
-						Action:       suggestion.Action,
-						SubAction:    suggestion.SubAction,
-						Id:           suggestion.Id,
-						Description:  suggestion.Description,
-						Icon:         suggestion.Icon,
-						IconURL:      suggestion.IconURL,
-						SearchboxId:  searchbox.Id,
-						SectionId:    section.Id,
-						SectionLabel: section.Label,
-						Order:        &order,
-					})
-					order += 1
-				}
-			}
-		}
+		featuredSuggestionsToIndex = append(featuredSuggestionsToIndex, getFeaturedSuggestionsFromSearchBox(searchbox)...)
 	}
 	return featuredSuggestionsToIndex
 }

@@ -5,12 +5,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
-	"net/http"
 	"sort"
 
-	"github.com/appbaseio-confidential/reactivesearch/util"
-	"github.com/buger/jsonparser"
+	"github.com/appbaseio/reactivesearch-api/util"
+	"github.com/appbaseio/reactivesearch-api/util/escompat"
 	es7 "github.com/olivere/elastic/v7"
 	log "github.com/sirupsen/logrus"
 )
@@ -100,7 +98,7 @@ func (es *analyticsElasticsearch) getSessionEs7(ctx context.Context, sessionId s
 // getAISessionAnalytics will return the session analytics for
 // AI sessions
 func (es *analyticsElasticsearch) getAISessionAnalyticsEs7(ctx context.Context, from int64, to int64, size int) ([]byte, error) {
-	timeRange := es7.NewRangeQuery("created_at").Gte(from).Lte(to)
+	timeRange := escompat.NewRangeQuery("created_at").Gte(from).Lte(to)
 	query := es7.NewBoolQuery().Filter(timeRange)
 
 	// Add user term aggregation
@@ -238,7 +236,7 @@ func (es *analyticsElasticsearch) filterAISessionAnalyticsEs7(ctx context.Contex
 
 	// Invocation will have a range query
 	if queryParams.InvocationMin != nil || queryParams.InvocationMax != nil {
-		invocationRangeQuery := es7.NewRangeQuery("invocation_count")
+		invocationRangeQuery := escompat.NewRangeQuery("invocation_count")
 
 		if queryParams.InvocationMin != nil {
 			invocationRangeQuery = invocationRangeQuery.Gte(queryParams.InvocationMin)
@@ -254,14 +252,14 @@ func (es *analyticsElasticsearch) filterAISessionAnalyticsEs7(ctx context.Contex
 
 	// Timestamp will have a range query
 	if queryParams.FromTimeStamp != nil || queryParams.ToTimeStamp != nil {
-		timestampRangeQuery := es7.NewRangeQuery("timestamp")
+		timestampRangeQuery := escompat.NewRangeQuery("timestamp")
 
 		if queryParams.FromTimeStamp != nil {
-			timestampRangeQuery = timestampRangeQuery.From(queryParams.FromTimeStamp)
+			timestampRangeQuery = timestampRangeQuery.Gte(queryParams.FromTimeStamp)
 		}
 
 		if queryParams.ToTimeStamp != nil {
-			timestampRangeQuery = timestampRangeQuery.To(queryParams.ToTimeStamp)
+			timestampRangeQuery = timestampRangeQuery.Lte(queryParams.ToTimeStamp)
 		}
 
 		isFilterUsed = true
@@ -556,135 +554,4 @@ func (es *FAQElasticsearch) getNextFAQOrderEs7(ctx context.Context) (int, int64,
 	}
 
 	return *faqEach.Order + 1, response.Hits.TotalHits.Value, nil
-}
-
-// createFAQZinc will create a new FAQ item based on the passed
-// details
-func (zinc *FAQZinc) createFAQZinc(item FAQBody) error {
-	// Extract the ID to use
-	//
-	// NOTE: We can safely assume that the ID will not be nil
-	// since this will be checked in the parent.
-	idToUse := item.ID
-
-	// Marshal the item
-	itemMarshalled, marshalErr := json.Marshal(item)
-	if marshalErr != nil {
-		return marshalErr
-	}
-
-	createURL := fmt.Sprintf("/es/%s/_doc/%s", zinc.indexName, *idToUse)
-	createResponse, createErr := zinc.zincClient.MakeRequest(createURL, http.MethodPut, itemMarshalled, nil)
-
-	if createErr != nil {
-		return fmt.Errorf("error while creating document with error: %s", createErr.Error())
-	}
-
-	// The above endpoint will overwrite the doc if it
-	// already exists, thus upsert-ing it.
-	if createResponse.StatusCode != http.StatusOK {
-		body, readErr := ioutil.ReadAll(createResponse.Body)
-		if readErr == nil {
-			log.Warnln(logTag, ": response received: ", string(body))
-			log.Warnln(logTag, ": status received: ", createResponse.Status)
-		}
-		return fmt.Errorf("non OK status code received while creating FAQ: %d", createResponse.StatusCode)
-	}
-
-	return nil
-}
-
-// getFAQZinc will get the FAQ item by using the passed ID
-func (zinc *FAQZinc) getFAQZinc(faqId string) ([]byte, error) {
-	getURL := fmt.Sprintf("/api/%s/_doc/%s", zinc.indexName, faqId)
-	getResponse, getErr := zinc.zincClient.MakeRequest(getURL, http.MethodGet, []byte(""), nil)
-	if getErr != nil {
-		return nil, fmt.Errorf("error while getting the document from Zinc: %s", getErr.Error())
-	}
-
-	// If the status code is 404, return that accordingly
-	if getResponse.StatusCode == http.StatusNotFound {
-		return nil, fmt.Errorf("FAQ not found with the passed ID")
-	}
-
-	if getResponse.StatusCode != http.StatusOK {
-		// Something went wrong
-		body, readErr := ioutil.ReadAll(getResponse.Body)
-		if readErr == nil {
-			log.Warnln(logTag, ": response received: ", string(body))
-			log.Warnln(logTag, ": status received: ", getResponse.Status)
-		}
-		return nil, fmt.Errorf("non OK status code received while getting FAQ: %d", getResponse.StatusCode)
-	}
-
-	// Since everything was good, we can extract the value
-	bodyRead, readErr := ioutil.ReadAll(getResponse.Body)
-	if readErr != nil {
-		return nil, fmt.Errorf("error while reading body received from Zinc: %s", readErr.Error())
-	}
-
-	faqSource, _, _, faqSrcErr := jsonparser.Get(bodyRead, "_source")
-	return faqSource, faqSrcErr
-}
-
-// deleteFAQZinc will delete the FAQ item by using the passed ID
-func (zinc *FAQZinc) deleteFAQZinc(faqId string) error {
-	deleteURL := fmt.Sprintf("/es/%s/_delete_by_query", zinc.indexName)
-	deleteBody := map[string]interface{}{
-		"query": map[string]interface{}{
-			"term": map[string]interface{}{
-				"faq_id": faqId,
-			},
-		},
-	}
-
-	bodyMarshalled, marshalErr := json.Marshal(deleteBody)
-	if marshalErr != nil {
-		return marshalErr
-	}
-
-	deleteResponse, deleteErr := zinc.zincClient.MakeRequest(deleteURL, http.MethodPost, bodyMarshalled, nil)
-	if deleteErr != nil {
-		return deleteErr
-	}
-
-	if deleteResponse.StatusCode != http.StatusOK {
-		body, readErr := ioutil.ReadAll(deleteResponse.Body)
-		if readErr == nil {
-			log.Warnln(logTag, ": response received: ", string(body))
-			log.Warnln(logTag, ": status received: ", deleteResponse.Status)
-		}
-		return fmt.Errorf("non OK status code received while deleting FAQ: %d", deleteResponse.StatusCode)
-	}
-
-	return nil
-}
-
-// getFAQsZinc will get the FAQ's from Zinc
-func (zc *FAQZinc) getFAQsZinc(from, size int) ([]byte, error) {
-	searchBody := map[string]interface{}{
-		"sort": []interface{}{
-			map[string]interface{}{
-				"updated_at": "desc",
-			},
-		},
-		"from": from,
-		"size": size,
-	}
-
-	// Marshal the search body
-	// NOTE: Since we created the body manually, no need to handle marshal
-	// error
-	marshalledBody, _ := json.Marshal(searchBody)
-
-	searchURL := fmt.Sprintf("/es/%s/_search", zc.indexName)
-	searchResponse, searchErr := zc.zincClient.MakeRequest(searchURL, http.MethodPost, marshalledBody, nil)
-
-	if searchErr != nil {
-		return nil, searchErr
-	}
-
-	// Read the search response body and return it
-	searchResult, readErr := ioutil.ReadAll(searchResponse.Body)
-	return searchResult, readErr
 }

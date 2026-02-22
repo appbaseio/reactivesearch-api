@@ -1,11 +1,11 @@
-FROM golang:1.21.3 AS builder
+FROM golang:1.26.0 AS builder
 
-ARG VERSION=8.22.2
+ARG VERSION=9.2.0
 ENV VERSION="${VERSION}"
 
 # Default value
 # Run `--build-arg BILLING=true` to enable billing
-ARG BILLING=true
+ARG BILLING=false
 ENV BILLING="${BILLING}"
 
 # Run `--build-arg HOSTED_BILLING=true` to enable billing for hosted reactivesearch
@@ -18,7 +18,7 @@ ENV CLUSTER_BILLING="${CLUSTER_BILLING}"
 
 
 # Run `--build-arg OPENSOURCE=true` to build opensource 
-ARG OPENSOURCE=false
+ARG OPENSOURCE=true
 ENV OPENSOURCE="${OPENSOURCE}"
 
 # Run `--build-arg IGNORE_BILLING_MIDDLEWARE=true` to disable billing middleware for testing

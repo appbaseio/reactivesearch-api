@@ -5,9 +5,9 @@ import (
 	"os"
 	"sync"
 
-	"github.com/appbaseio-confidential/reactivesearch/middleware"
-	"github.com/appbaseio-confidential/reactivesearch/plugins"
-	"github.com/appbaseio-confidential/reactivesearch/util"
+	"github.com/appbaseio/reactivesearch-api/middleware"
+	"github.com/appbaseio/reactivesearch-api/plugins"
+	"github.com/appbaseio/reactivesearch-api/util"
 	"github.com/robfig/cron"
 	log "github.com/sirupsen/logrus"
 	"gopkg.in/natefinch/lumberjack.v2"
@@ -21,7 +21,7 @@ const (
 	defaultPipelineVarsIndex          = ".pipeline_vars"
 	typeName                          = "_doc"
 	envPipelinesEsIndexSuffix         = "PIPELINES_ES_INDEX_SUFFIX"
-	mapping                           = `{"mappings": %s, "settings":{ %s "index.number_of_shards": 2, "index.number_of_replicas":%d}}`
+	mapping                           = `{"mappings": %s, "settings":{ %s "index.number_of_shards": 3, "index.number_of_replicas":%d}}`
 	envPipelineLogFilePath            = "PIPELINE_LOG_FILE_PATH"
 	defaultPipelineLogFilePath        = "log/arc/pipeline.json"
 	envPipelineInvocationFilePath     = "PIPELINE_INVOCATION_FILE_PATH"
@@ -29,7 +29,7 @@ const (
 	XCacheHeader                      = "x-cache"
 	XPipelineID                       = "x-pipeline-id"
 	rolloverConfig                    = `{"max_age":  "%s", "max_docs": %d, "max_size": "%s"}`
-	logsConfig                        = `
+	invocationConfig                  = `
 	{
 	  "aliases": {
 		"%s": {
@@ -38,7 +38,21 @@ const (
 	  },
 	  "settings": {
 		%s
-	    "index.number_of_shards": 2,
+	    "index.number_of_shards": 3,
+	    "index.number_of_replicas": %d
+	  },
+	  "mappings": %s
+	}`
+	logsConfig = `
+	{
+	  "aliases": {
+		"%s": {
+		  "is_write_index": true
+	    }
+	  },
+	  "settings": {
+		%s
+	    "index.number_of_shards": 3,
 	    "index.number_of_replicas": %d
 	  },
 	  "mappings": %s
@@ -202,6 +216,14 @@ func (p *Pipelines) InitFunc() error {
 	// Initiate the logs rollover cronjob
 	cronjob := cron.New()
 	cronjob.AddFunc("@midnight", func() { p.logEs.rolloverIndexJob(defaultPipelinesLogEsIndex) })
+	// in addition, run every hour, keeping original midnight job as well
+	cronjob.AddFunc("@hourly", func() { p.logEs.rolloverIndexJob(defaultPipelinesLogEsIndex) })
+
+	// Initiate the invocations rollover cronjob
+	cronjob.AddFunc("@midnight", func() { p.invocationEs.rolloverIndexJob(defaultPipelineInvocationIndex) })
+	// in addition, run every hour, keeping original midnight job as well
+	cronjob.AddFunc("@hourly", func() { p.invocationEs.rolloverIndexJob(defaultPipelineInvocationIndex) })
+
 	cronjob.Start()
 
 	return nil

@@ -3,7 +3,7 @@ package uibuilder
 import (
 	"net/http"
 
-	"github.com/appbaseio-confidential/reactivesearch/plugins"
+	"github.com/appbaseio/reactivesearch-api/plugins"
 )
 
 func (a *UIBuilder) routes() []plugins.Route {

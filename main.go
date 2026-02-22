@@ -24,38 +24,37 @@ import (
 	"strings"
 	"time"
 
-	"github.com/appbaseio-confidential/reactivesearch/middleware"
-	"github.com/appbaseio-confidential/reactivesearch/model/requestlogs"
-	"github.com/appbaseio-confidential/reactivesearch/plugins"
-	"github.com/appbaseio-confidential/reactivesearch/plugins/analytics"
-	"github.com/appbaseio-confidential/reactivesearch/plugins/analyticsrequest"
-	"github.com/appbaseio-confidential/reactivesearch/plugins/applycache"
-	"github.com/appbaseio-confidential/reactivesearch/plugins/auth"
-	"github.com/appbaseio-confidential/reactivesearch/plugins/cache"
-	"github.com/appbaseio-confidential/reactivesearch/plugins/elasticsearch"
-	"github.com/appbaseio-confidential/reactivesearch/plugins/logs"
-	"github.com/appbaseio-confidential/reactivesearch/plugins/nodes"
-	"github.com/appbaseio-confidential/reactivesearch/plugins/openai"
-	"github.com/appbaseio-confidential/reactivesearch/plugins/permissions"
-	"github.com/appbaseio-confidential/reactivesearch/plugins/pipelines"
-	"github.com/appbaseio-confidential/reactivesearch/plugins/preferences"
-	"github.com/appbaseio-confidential/reactivesearch/plugins/proxy"
-	"github.com/appbaseio-confidential/reactivesearch/plugins/querytranslate"
-	"github.com/appbaseio-confidential/reactivesearch/plugins/reindexer"
-	"github.com/appbaseio-confidential/reactivesearch/plugins/rules"
-	"github.com/appbaseio-confidential/reactivesearch/plugins/searchgrader"
-	"github.com/appbaseio-confidential/reactivesearch/plugins/searchrelevancy"
-	"github.com/appbaseio-confidential/reactivesearch/plugins/storedquery"
-	"github.com/appbaseio-confidential/reactivesearch/plugins/suggestions"
-	"github.com/appbaseio-confidential/reactivesearch/plugins/sync"
-	"github.com/appbaseio-confidential/reactivesearch/plugins/synonyms"
-	"github.com/appbaseio-confidential/reactivesearch/plugins/telemetry"
-	"github.com/appbaseio-confidential/reactivesearch/plugins/uibuilder"
-	"github.com/appbaseio-confidential/reactivesearch/plugins/users"
-	"github.com/appbaseio-confidential/reactivesearch/plugins/zinc"
-	"github.com/appbaseio-confidential/reactivesearch/util"
+	"github.com/appbaseio/reactivesearch-api/middleware"
+	"github.com/appbaseio/reactivesearch-api/model/requestlogs"
+	"github.com/appbaseio/reactivesearch-api/plugins"
+	"github.com/appbaseio/reactivesearch-api/plugins/analytics"
+	"github.com/appbaseio/reactivesearch-api/plugins/analyticsrequest"
+	"github.com/appbaseio/reactivesearch-api/plugins/applycache"
+	"github.com/appbaseio/reactivesearch-api/plugins/auth"
+	"github.com/appbaseio/reactivesearch-api/plugins/cache"
+	"github.com/appbaseio/reactivesearch-api/plugins/elasticsearch"
+	"github.com/appbaseio/reactivesearch-api/plugins/logs"
+	"github.com/appbaseio/reactivesearch-api/plugins/nodes"
+	"github.com/appbaseio/reactivesearch-api/plugins/openai"
+	"github.com/appbaseio/reactivesearch-api/plugins/permissions"
+	"github.com/appbaseio/reactivesearch-api/plugins/pipelines"
+	"github.com/appbaseio/reactivesearch-api/plugins/preferences"
+	"github.com/appbaseio/reactivesearch-api/plugins/proxy"
+	"github.com/appbaseio/reactivesearch-api/plugins/querytranslate"
+	"github.com/appbaseio/reactivesearch-api/plugins/reindexer"
+	"github.com/appbaseio/reactivesearch-api/plugins/rules"
+	"github.com/appbaseio/reactivesearch-api/plugins/searchgrader"
+	"github.com/appbaseio/reactivesearch-api/plugins/searchrelevancy"
+	"github.com/appbaseio/reactivesearch-api/plugins/storedquery"
+	"github.com/appbaseio/reactivesearch-api/plugins/suggestions"
+	"github.com/appbaseio/reactivesearch-api/plugins/sync"
+	"github.com/appbaseio/reactivesearch-api/plugins/synonyms"
+	"github.com/appbaseio/reactivesearch-api/plugins/telemetry"
+	"github.com/appbaseio/reactivesearch-api/plugins/uibuilder"
+	"github.com/appbaseio/reactivesearch-api/plugins/users"
+	"github.com/appbaseio/reactivesearch-api/plugins/zinc"
+	"github.com/appbaseio/reactivesearch-api/util"
 	"github.com/denisbrodbeck/machineid"
-	"github.com/getsentry/sentry-go"
 	"github.com/gorilla/mux"
 	"github.com/keygen-sh/keygen-go"
 	"github.com/mackerelio/go-osstat/memory"
@@ -125,29 +124,6 @@ var (
 	// FeatureOpenAI for testing
 	FeatureOpenAI string
 )
-
-// SentryErrorHook implements the logrus.Hooks interface to report errors to sentry
-type SentryErrorHook struct {
-}
-
-// Report error logs for logs above or equal to error level
-func (h *SentryErrorHook) Levels() []log.Level {
-	return []log.Level{log.ErrorLevel}
-}
-
-func (h *SentryErrorHook) Fire(e *log.Entry) error {
-	// send event to sentry
-	sentry.CaptureMessage(e.Message)
-	return nil
-}
-
-type LicenseDetails struct {
-	Created string `json:"created"`
-	Expiry  string `json:"expiry"`
-}
-type LicenseData struct {
-	License LicenseDetails `json:"license"`
-}
 
 func init() {
 	flag.StringVar(&enableTelemetry, "enable-telemetry", "", "Set as `false` to disable telemetry")
@@ -226,29 +202,6 @@ func init() {
 
 	if util.IsTelemetryEnabled {
 		log.Println("Appbase Telemetry is enabled. You can disable it by setting the `enable-telemetry` runtime flag as `false`")
-		// configure sentry
-		dsn := "https://3b9b4fcedbf4460c90844f51e8634229@o27644.ingest.sentry.io/6063525"
-		// Use prod dsn for customers
-		if Billing == "true" || ClusterBilling == "true" || HostedBilling == "true" {
-			dsn = "https://ecb33128f4514511b2ee7ecaf2e4e689@o27644.ingest.sentry.io/6125897"
-		}
-		err := sentry.Init(sentry.ClientOptions{
-			Dsn:              dsn,
-			Release:          util.Version,
-			AttachStacktrace: true,
-			Debug:            true,
-		})
-		if err != nil {
-			log.Fatalf("sentry.Init: %s", err)
-		}
-
-		defer func() {
-			err := recover()
-			if err != nil {
-				sentry.CurrentHub().Recover(err)
-				sentry.Flush(time.Second * 10)
-			}
-		}()
 	}
 
 	// Set tracing enabled flag for global access
@@ -314,9 +267,6 @@ func main() {
 			return "", fmt.Sprintf(" %s:%d", filename, f.Line)
 		},
 	})
-	if util.IsTelemetryEnabled {
-		log.AddHook(&SentryErrorHook{})
-	}
 	switch logMode {
 	case "debug":
 		log.SetLevel(log.DebugLevel)
@@ -429,13 +379,20 @@ func main() {
 		dataset, err := keygen.Genuine(licenseKey, keygen.SchemeCodeEd25519)
 		switch {
 		case err == keygen.ErrLicenseNotGenuine:
-			log.Fatalln("License key is not genuine, please contact support@appbase.io")
+			log.Fatalln("License key is not genuine, please contact support@reactivesearch.io")
 			return
 		case err != nil:
-			log.Fatalln("License key validation failed, please contact support@appbase.io", err.Error())
+			log.Fatalln("License key validation failed, please contact support@reactivesearch.io", err.Error())
 			return
 		}
 		// Validate expiry date for genuine license
+		type LicenseDetails struct {
+			Created string `json:"created"`
+			Expiry  string `json:"expiry"`
+		}
+		type LicenseData struct {
+			License LicenseDetails `json:"license"`
+		}
 		var licenseData LicenseData
 		err2 := json.Unmarshal(dataset, &licenseData)
 		if err2 != nil {
@@ -451,8 +408,8 @@ func main() {
 		if IgnoreBillingMiddleware != "true" {
 			mainRouter.Use(util.BillingMiddlewareOffline)
 		}
-	} else {
-		// Fetch the plan limits
+	} else if Billing == "true" || HostedBilling == "true" || ClusterBilling == "true" {
+		// Fetch the plan limits (requires ACCAPI)
 		fetchErr := util.FetchArcLimitsPerPlan()
 		if fetchErr != nil {
 			errMsg := fmt.Sprint("error while fetching plan limits: ", fetchErr.Error())
@@ -497,10 +454,10 @@ func main() {
 			if IgnoreBillingMiddleware != "true" {
 				mainRouter.Use(util.BillingMiddleware)
 			}
-		} else {
-			util.SetDefaultTier()
-			log.Println("You're running ReactiveSearch with billing module disabled.")
 		}
+	} else {
+		util.SetDefaultTier()
+		log.Println("You're running ReactiveSearch with billing module disabled.")
 	}
 
 	// Testing Env: Set variables based on the build blags

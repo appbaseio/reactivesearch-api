@@ -3,7 +3,8 @@ package applycache
 import (
 	"context"
 
-	"github.com/appbaseio-confidential/reactivesearch/util"
+	"github.com/appbaseio/reactivesearch-api/util"
+	"github.com/appbaseio/reactivesearch-api/util/escompat"
 	es7 "github.com/olivere/elastic/v7"
 	log "github.com/sirupsen/logrus"
 )
@@ -47,7 +48,7 @@ func (es *elasticsearch) updateStatScript7(ctx context.Context, scriptString str
 // DeleteOlderRecordsByDate7 will delete older records before the
 // passed date.
 func (es *elasticsearch) deleteOlderRecordsByDate7(ctx context.Context, maxTime int64) error {
-	rangeQuery := es7.NewRangeQuery("day").Lt(maxTime)
+	rangeQuery := escompat.NewRangeQuery("day").Lt(maxTime)
 
 	_, err := util.GetClient7().DeleteByQuery().Index(es.indexName).Query(rangeQuery).Do(ctx)
 	if err != nil {

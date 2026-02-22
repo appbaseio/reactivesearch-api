@@ -1,0 +1,137 @@
+{
+    "enabled": true,
+    "description": "Pipeline to use query rules pre-built stages",
+    "routes": [
+      {
+        "path": "/good-books-ds-pipeline/_reactivesearch",
+        "method": "POST",
+        "classify": {
+          "category": "reactivesearch"
+        }
+      }
+    ],
+    "envs": {
+      "category": "reactivesearch",
+      "index": ["good-books-ds-pipeline"]
+    },
+    "stages": [
+      {
+        "use": "authorization",
+        "continueOnError": false
+      },
+      {
+        "id": "mock-request-body",
+        "description": "Mocks the request body",
+        "script": "function handleRequest() { return { request: {...context.request, body: JSON.stringify({ query: [{ id: 'search', value: 'harry', dataField: 'original_title'}], settings: { recordAnalytics: true } })}}}",
+        "continueOnError": false
+      },
+      {
+        "use": "searchRelevancy",
+        "inputs": {
+          "search": {
+            "dataField": ["original_title"],
+            "size": 1
+          },
+          "suggestion": {
+            "dataField": ["original_title"],
+            "enablePopularSuggestions": true,
+            "size": 3,
+            "popularSuggestionsConfig": {
+              "size": 1
+            },
+            "enableRecentSuggestions": true,
+            "recentSuggestionsConfig": {
+              "size": 1
+            }
+          }
+        },
+        "continueOnError": false
+      },
+      {
+        "use": "replaceSearchTerm",
+        "description": "Replace query to 'paradise test query'",
+        "inputs": {
+          "data": "paradise test query"
+        },
+        "continueOnError": false
+      },
+      {
+        "use": "removeWords",
+        "description": "Removes 'test' word from query",
+        "inputs": {
+          "data": ["test"]
+        },
+        "continueOnError": false
+      },
+      {
+        "use": "replaceWords",
+        "description": "Replaces 'query' word to 'lost'",
+        "inputs": {
+          "data": {
+            "query": "lost"
+          }
+        },
+        "continueOnError": false
+      },
+      {
+        "use": "addFilter",
+        "description": "Filter results by author",
+        "inputs": {
+          "data": {
+            "authors.keyword": "Simone Elkeles"
+          }
+        },
+        "continueOnError": false
+      },
+      {
+        "use": "reactivesearchQuery",
+        "continueOnError": false
+      },
+      {
+        "use": "elasticsearchQuery",
+        "continueOnError": false
+      },
+      {
+        "use": "promoteResults",
+        "inputs": {
+          "data": [
+            {
+              "doc": {
+                "_id": "id_1",
+                "_source": {
+                  "title": "id_1"
+                }
+              },
+              "position": 10
+            },
+            {
+              "doc": {
+                "_id": "id_2",
+                "_source": {
+                  "title": "id_2"
+                }
+              },
+              "position": 5
+            }
+          ]
+        }
+      },
+      {
+        "use": "hideResults",
+        "inputs": {
+          "data": [
+            "1jftXXEBdEU4aeo6Gdqs"
+          ]
+        }
+      },
+      {
+        "use": "customData",
+        "inputs": {
+          "data": {
+            "reference": "Appbase Pipeline"
+          }
+        }
+      }
+    ]
+  }
+  

@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/appbaseio-confidential/reactivesearch/plugins/rules"
+	"github.com/appbaseio/reactivesearch-api/plugins/rules"
 	. "github.com/smartystreets/goconvey/convey"
 )
 

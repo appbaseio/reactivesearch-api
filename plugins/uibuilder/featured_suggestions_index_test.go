@@ -1,61 +1,49 @@
 package uibuilder
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
-	"net/http"
 	"testing"
 
-	"github.com/appbaseio-confidential/reactivesearch/plugins/querytranslate"
-	"github.com/appbaseio-confidential/reactivesearch/util"
+	"github.com/appbaseio/reactivesearch-api/plugins/querytranslate"
+	"github.com/appbaseio/reactivesearch-api/util"
 	log "github.com/sirupsen/logrus"
 	. "github.com/smartystreets/goconvey/convey"
 )
 
-func createTestIndexZinc(indexWithSuffix string) (*util.ZincClient, bool, error) {
-	zincClient := util.GetZincClient()
+func createTestIndexES(indexName string) error {
+	ctx := context.Background()
+	client := util.GetClient7()
 
 	// Check if the index already exists
-	// Make a request to the get settings endpoint of Zinc
-	// and check if the status code is 200 to know if it exists
-	// or not.
-	existsEndpointZinc := fmt.Sprintf("api/%s/_settings", indexWithSuffix)
-	existsResponse, existsResponseErr := zincClient.MakeRequest(existsEndpointZinc, http.MethodGet, []byte(""), nil)
-
-	if existsResponseErr != nil {
-		return nil, false, fmt.Errorf("error while checking if index already exists: %v", existsResponseErr)
+	exists, err := client.IndexExists(indexName).Do(ctx)
+	if err != nil {
+		return fmt.Errorf("error while checking if index already exists: %v", err)
+	}
+	if exists {
+		log.Infoln(logTag, ": index named", indexName, "already exists, skipping...")
+		return nil
 	}
 
-	if existsResponse == nil || existsResponse.StatusCode == http.StatusOK {
-		log.Infoln(logTag, ": index named", indexWithSuffix, "already exists, skipping...")
-		return zincClient, true, nil
+	// Create the index
+	_, err = client.CreateIndex(indexName).Do(ctx)
+	if err != nil {
+		return fmt.Errorf("error while creating index named: %s, %v", indexName, err)
 	}
 
-	indexCreateBody := fmt.Sprintf(indexConfigZinc, indexWithSuffix)
-
-	// Send a create request for the index
-	// with the mapping and name of the index present in the body
-	indexCreateResponse, indexCreateErr := zincClient.MakeRequest("api/index", http.MethodPost, []byte(indexCreateBody), nil)
-
-	if indexCreateErr != nil {
-		return nil, false, fmt.Errorf("error while creating index named: %s, %v", indexWithSuffix, indexCreateErr)
-	}
-
-	// TODO: Check status code and handle errors accordingly, if any
-	log.Debugln(logTag, "index create status code returned is: ", indexCreateResponse.StatusCode)
-
-	log.Println(logTag, ": successfully created index named", indexWithSuffix)
-	return zincClient, false, nil
+	log.Println(logTag, ": successfully created index named", indexName)
+	return nil
 }
 
 func TestFeaturedSuggestions(t *testing.T) {
 	searchboxTestingIndex := ".searchbox_test"
-	_, _, err := createTestIndexZinc(searchboxTestingIndex)
+	err := createTestIndexES(searchboxTestingIndex)
 	if err != nil {
 		t.Fatal(err)
 	}
 	featuredSuggestionsConfig := FeaturedSuggestionsConfig{
-		zincIndex: searchboxTestingIndex,
+		esIndex: searchboxTestingIndex,
 	}
 	searchboxId := "document"
 

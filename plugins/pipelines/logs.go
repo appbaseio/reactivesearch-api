@@ -14,11 +14,12 @@ import (
 	"sync"
 	"time"
 
-	"github.com/appbaseio-confidential/reactivesearch/middleware/classify"
-	"github.com/appbaseio-confidential/reactivesearch/model/acl"
-	"github.com/appbaseio-confidential/reactivesearch/model/category"
-	"github.com/appbaseio-confidential/reactivesearch/plugins/logs"
-	"github.com/appbaseio-confidential/reactivesearch/util"
+	"github.com/appbaseio/reactivesearch-api/middleware/classify"
+	"github.com/appbaseio/reactivesearch-api/model/acl"
+	"github.com/appbaseio/reactivesearch-api/model/category"
+	"github.com/appbaseio/reactivesearch-api/plugins/logs"
+	"github.com/appbaseio/reactivesearch-api/util"
+	"github.com/appbaseio/reactivesearch-api/util/escompat"
 	es7 "github.com/olivere/elastic/v7"
 	log "github.com/sirupsen/logrus"
 )
@@ -78,9 +79,9 @@ type logsFilter struct {
 // based on the passed filters
 func (es *logsElasticsearch) getPipelineLogs(ctx context.Context, logsFilter logsFilter) ([]byte, error) {
 	// Add start and end date to the filter
-	duration := es7.NewRangeQuery("timestamp").
-		From(logsFilter.StartDate).
-		To(logsFilter.EndDate)
+	duration := escompat.NewRangeQuery("timestamp").
+		Gte(logsFilter.StartDate).
+		Lte(logsFilter.EndDate)
 
 	query := es7.NewBoolQuery().Filter(duration)
 
@@ -95,17 +96,17 @@ func (es *logsElasticsearch) getPipelineLogs(ctx context.Context, logsFilter log
 		filters := []es7.Query{
 			es7.NewTermsQuery("request.method.keyword", []interface{}{"POST", "PUT"}...),
 			es7.NewTermsQuery("category.keyword", []interface{}{"docs"}...),
-			es7.NewRangeQuery("response.code").Gte(200).Lte(299),
+			escompat.NewRangeQuery("response.code").Gte(200).Lte(299),
 		}
 		query.Filter(filters...)
 	} else if logsFilter.Filter == "delete" {
 		filters := es7.NewMatchQuery("request.method.keyword", "DELETE")
 		query.Filter(filters)
 	} else if logsFilter.Filter == "success" {
-		filters := es7.NewRangeQuery("response.code").Gte(200).Lte(299)
+		filters := escompat.NewRangeQuery("response.code").Gte(200).Lte(299)
 		query.Filter(filters)
 	} else if logsFilter.Filter == "error" {
-		filters := es7.NewRangeQuery("response.code").Gte(400)
+		filters := escompat.NewRangeQuery("response.code").Gte(400)
 		query.Filter(filters)
 	} else if logsFilter.PipelineID == "" {
 		query.Filter(es7.NewMatchAllQuery())

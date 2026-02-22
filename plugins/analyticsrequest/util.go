@@ -1,6 +1,6 @@
 package analyticsrequest
 
-import "github.com/appbaseio-confidential/reactivesearch/plugins/querytranslate"
+import "github.com/appbaseio/reactivesearch-api/plugins/querytranslate"
 
 type HIT struct {
 	ID    string `json:"id"`
