@@ -41,12 +41,16 @@ COPY go.mod go.sum ./
 # Install library dependencies
 RUN go mod download
 
+ARG TARGETARCH
+
 # Copy the entire project and build it
 # This layer is rebuilt when a file changes in the project directory
 COPY . .
-RUN make
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=$TARGETARCH make
 
-FROM debian:bookworm AS final
+FROM debian:bookworm-slim AS final
+
+RUN apt-get update && apt-get install -y ca-certificates && rm -rf /var/lib/apt/lists/*
 
 # Create env folder
 RUN mkdir /reactivesearch-data && touch /reactivesearch-data/.env && chmod 777 /reactivesearch-data/.env
