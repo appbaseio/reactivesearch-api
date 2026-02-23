@@ -6,6 +6,11 @@ on:
     repository_dispatch:
         types: [publish_docker]
     workflow_dispatch:
+        inputs:
+            version:
+                description: "Version tag to build (e.g., 9.2.0)"
+                required: true
+                type: string
 
 jobs:
     build:
@@ -14,9 +19,14 @@ jobs:
         steps:
             - uses: actions/checkout@v2
 
-            - name: Extract version from payload
+            - name: Resolve version
               id: get_version
-              run: echo "version=${{ github.event.client_payload.version }}" >> $GITHUB_OUTPUT
+              env:
+                  INPUT_VERSION: ${{ inputs.version }}
+                  PAYLOAD_VERSION: ${{ github.event.client_payload.version }}
+              run: |
+                  VERSION="${INPUT_VERSION:-${PAYLOAD_VERSION}}"
+                  echo "version=${VERSION}" >> $GITHUB_OUTPUT
             - name: Get Version For Release
               id: get_version_release
               uses: battila7/get-version-action@v2.2.1
