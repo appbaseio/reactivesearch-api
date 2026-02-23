@@ -4,65 +4,106 @@
 
 ReactiveSearch API is a declarative, open-source API for querying Elasticsearch, OpenSearch, Solr, MongoDB Atlas Search and OpenAI. It also acts as a reverse proxy and API gateway for Elasticsearch and OpenSearch. ReactiveSearch API is best suited for site search, app search and e-commerce search use-cases.
 
-## Why use ReactiveSearch API
+![ReactiveSearch Architecture](assets/reactivesearch-architecture.svg)
 
-Lets take a search query for a books e-commerce site where a user is searching for the keyword "chronicles" on either `title` or `author` fields, has a rating filter applied to only return books with a rating `gte` 4.
+## Why ReactiveSearch API
 
-This query takes ~80 lines of code to write with Elasticsearch's DSL. The same query can be expressed in ~20 lines of code with ReactiveSearch.
+### 1. Search pipelines — fully programmable request lifecycle
+
+Pipelines let you define the entire request/response lifecycle as a DAG of stages. Choose from 28+ pre-built stages (`reactivesearchQuery`, `elasticsearchQuery`, `useCache`, `recordAnalytics`, `kNN`, `openAIEmbeddings`, `AIAnswer`, `httpRequest` and more) or write custom **JavaScript functions** with full `async/await` and `fetch` support. Stages run in parallel, trigger conditionally and chain with `needs` dependencies — making it possible to enrich queries with external APIs or ML models, merge results and reshape responses without touching application code.
+
+### 2. AI and vector search, built in
+
+- **OpenAI Embeddings** stage generates vector embeddings at query time or index time and feeds them directly into kNN queries.
+- **kNN** stage executes vector similarity search natively on Elasticsearch / OpenSearch.
+- **AI Answer** stage sends top search results as context to GPT and returns a natural-language answer alongside traditional results — with session support for follow-up questions.
+- **Knowledge Graph** integration via pipeline scripts to merge structured data from external APIs into search responses.
+
+### 3. Declarative query API — write 4× less code, safely
+
+A typical Elasticsearch query with filters takes ~80 lines of imperative DSL. The same intent is expressed in ~20 lines of declarative ReactiveSearch JSON. Each query is an independent, composable block wired together with the `react` property — no nesting hell, no engine-specific boilerplate. Because the format is declarative, it is safe to expose to web and mobile clients without risk of script injection.
 
 ![](https://i.imgur.com/0wIHBWB.png)
 
-Lets understand the key differences between the two formats:
+### 4. Fine-grained access control and security
 
-1. The Elasticsearch query is imperative in nature, makes use of search-engine specific terminologies. This makes it more expressive at the cost of a higher learning curve. In comparison, the ReactiveSearch query is declarative and hides the implementation details.
+API keys and users support granular permissions: restrict by **index pattern**, **API category** (Docs, Search, Indices, Cat, Clusters, Analytics, etc.), individual **ACLs**, **operations** (read / write / delete), **source IPs**, **HTTP referers**, **include/exclude fields**, per-category **rate limits** and **time-to-live** expiration. JWT-based auth with configurable RSA public keys is also supported.
 
-2. A ReactiveSearch query isn't prone to the nesting hell that Elasticsearch's query is. It expresses each query individually and then composes them together using the `react` property.
+### 5. Query rules, search relevancy and suggestions
 
-3. ReactiveSearch query's declarative nature also makes it composable. It is easy to capture intent, enrich the query and apply access control checks to the individual queries.
+**Query rules** let you promote, hide or inject results, replace search terms, add filters and schedule rules via cron — all configurable as data, not code. **Search Relevancy** persists per-index relevancy profiles (field weights, fuzziness, language settings) applied automatically to queries. **Suggestions** powers seven types out of the box — popular, recent, predictive, featured, FAQ, document and index — for a complete search-as-you-type experience.
 
-4. ReactiveSearch query's declarative nature also makes it a perfect fit for exposing it to publicly inspectable web and mobile networks. Exposing Elasticsearch's DSL in such a setting isn't recommended as it opens up a script injection attack vector.
+### 6. Analytics, caching and UI libraries
 
-Full API reference for ReactiveSearch is available over [here](https://docs.reactivesearch.io/docs/search/reactivesearch-api/reference).
+**Analytics** records every search, click, conversion, favorite and saved search via dedicated pipeline stages, feeding actionable insights such as slow queries, zero-result searches and geo distribution. **Caching** via the `useCache` stage serves repeat queries from a configurable in-memory cache with sub-millisecond latency. **UI libraries** — the declarative API maps 1-to-1 to [ReactiveSearch](https://github.com/appbaseio/reactivesearch) and [Searchbox](https://github.com/appbaseio/searchbox) component props (React, Vue, React Native, Flutter, Vanilla JS), compressing weeks of search UI development into days.
 
-## Installation
+Full API reference is available [here](https://docs.reactivesearch.io/docs/search/reactivesearch-api/reference).
 
-### Running it
+## Getting Started
 
-In order to run `reactivesearch-api`, you'll require an Elasticsearch node. There are multiple ways you can [setup an Elasticsearch](https://www.elastic.co/guide/en/elasticsearch/reference/current/setup.html), either locally or remotely. We, however, are delineating the steps for local setup of a single node Elasticsearch via it's Docker image.
+Get up and running in minutes. Four steps to a fully functional search stack with Elasticsearch, search pipelines, analytics and a visual dashboard.
 
-**Note**: The steps described here assumes a [docker](https://docs.docker.com/install/) installation on the system.
+**Prerequisites:** [Docker](https://docs.docker.com/install/) and Docker Compose installed on your machine.
 
-1. Create a docker network
+### 1. Clone and start the services
 
-```sh
-docker network create reactivesearch
-```
-
-2. Start a single node Elasticsearch cluster locally
+Clone the Docker Compose template and start all services with a single command.
 
 ```sh
-docker run -d --rm --name elasticsearch -p 9200:9200 -p 9300:9300 --net=reactivesearch -e "discovery.type=single-node" -e "xpack.security.enabled=false" docker.elastic.co/elasticsearch/elasticsearch:8.17.0
+git clone https://github.com/appbaseio/reactivesearch-api-docker.git \
+  && cd reactivesearch-api-docker
+
+docker-compose -f docker-compose-with-elasticsearch.yaml up -d
 ```
 
-> NOTE: It is advised to use `-e "xpack.security.enabled=false"` for local runs of Elasticsearch since otherwise ES is not available on :9200.
+This starts Elasticsearch, ReactiveSearch API, Nginx (with TLS), Zinc (for internal logging) and Fluent Bit — all with a single command.
 
-OR
+> **Using OpenSearch instead?** Replace the compose file with `docker-compose-with-opensearch.yaml`.
 
-Alternative to using Elasticsearch, you can also start a single node OpenSearch cluster locally
+### 2. Verify the service is running
+
+Once the containers are up, verify ReactiveSearch is accessible.
 
 ```sh
-docker run --name opensearch --rm -d -p 9200:9200 -e http.port=9200 -e discovery.type=single-node -e http.max_content_length=10MB -e http.cors.enabled=true -e http.cors.allow-origin=\* -e http.cors.allow-headers=X-Requested-With,X-Auth-Token,Content-Type,Content-Length,Authorization -e http.cors.allow-credentials=true -e "plugins.security.disabled=true" --net=reactivesearch opensearchproject/opensearch:latest
+curl http://localhost:8000 -u rs-admin-user:rs-password
 ```
 
-3. Start ReactiveSearch locally
+You should see a response like:
 
-```sh
-docker build -t reactivesearch . && docker run --rm --name reactivesearch -p 8000:8000 --net=reactivesearch --env-file=config/docker.env reactivesearch --log=info --diff-logs=false --enable-telemetry=false --enable-logs=true --disable-health-check=true
+```json
+{
+  "name": "elasticsearch",
+  "cluster_name": "docker-cluster",
+  "version": {
+    "number": "8.17.0"
+  },
+  "tagline": "You Know, for Search"
+}
 ```
 
-For convenience, the steps described above are combined into a single `docker-compose` file. You can execute the file with command:
+This confirms ReactiveSearch is running and connected to your search cluster.
 
-    docker-compose up
+### 3. Connect the Dashboard
+
+Open [dash.reactivesearch.io](https://dash.reactivesearch.io/) in your browser. Enter your ReactiveSearch URL, username and password:
+
+- **URL:** `http://localhost:8000`
+- **Username:** `rs-admin-user`
+- **Password:** `rs-password`
+
+![ReactiveSearch Dashboard — Sign in](assets/reactivesearch-dashboard-login.png)
+
+### 4. Start building
+
+After signing in you'll land on the Cluster Overview — your central hub for managing indices, configuring search relevancy, building search UIs, setting up analytics and more.
+
+![ReactiveSearch Dashboard — Cluster Overview](assets/reactivesearch-dashboard-overview.png)
+
+### What's next?
+
+- [Quickstart Guide](https://docs.reactivesearch.io/docs/gettingstarted/quickstart/) — Import data, preview search and build your first search UI.
+- [Create a Search Pipeline](https://docs.reactivesearch.io/docs/pipelines/how-to/) — Learn how to create a search pipeline.
+- [Build a Search UI](https://www.reactivesearch.io/how-to/build-search-ui) — Hands-on demos to build search UIs with ReactiveSearch.
 
 ## Building
 
