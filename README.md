@@ -2,7 +2,7 @@
 
 [![Tests](https://github.com/appbaseio/reactivesearch-api/actions/workflows/tests.yml/badge.svg)](https://github.com/appbaseio/reactivesearch-api/actions/workflows/tests.yml) [![Docker](https://github.com/appbaseio/reactivesearch-api/actions/workflows/docker-image.yml/badge.svg)](https://github.com/appbaseio/reactivesearch-api/actions/workflows/docker-image.yml)
 
-ReactiveSearch API is a declarative, open-source API for querying Elasticsearch, OpenSearch, Solr, MongoDB Atlas Search and OpenAI. It also acts as a reverse proxy and API gateway for Elasticsearch and OpenSearch. ReactiveSearch API is best suited for site search, app search and e-commerce search use-cases.
+ReactiveSearch API is an open-source, self-hosted search middleware for Elasticsearch and OpenSearch. It is a versatile stack for incrementally adopting AI for your site search — author composable search pipelines, build UIs, analyze performance and scale securely.
 
 ![ReactiveSearch Architecture](assets/reactivesearch-architecture.svg)
 
@@ -56,7 +56,7 @@ git clone https://github.com/appbaseio/reactivesearch-api-docker.git \
 docker-compose -f docker-compose-with-elasticsearch.yaml up -d
 ```
 
-This starts Elasticsearch, ReactiveSearch API, Nginx (with TLS), Zinc (for internal logging) and Fluent Bit — all with a single command.
+This starts Elasticsearch, ReactiveSearch API, Nginx (with TLS) and Fluent Bit — all with a single command.
 
 > **Using OpenSearch instead?** Replace the compose file with `docker-compose-with-opensearch.yaml`.
 
