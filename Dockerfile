@@ -41,14 +41,12 @@ COPY go.mod go.sum ./
 # Install library dependencies
 RUN go mod download
 
-ARG TARGETARCH
-
 # Copy the entire project and build it
 # This layer is rebuilt when a file changes in the project directory
 COPY . .
-RUN CGO_ENABLED=0 GOOS=linux GOARCH=$TARGETARCH make
+RUN make
 
-FROM debian:bookworm-slim AS final
+FROM debian:trixie-slim AS final
 
 RUN apt-get update && apt-get install -y ca-certificates && rm -rf /var/lib/apt/lists/*
 
