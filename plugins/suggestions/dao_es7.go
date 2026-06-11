@@ -53,7 +53,7 @@ func (es *elasticsearch) querySuggestionsEs7(ctx context.Context, preferences Po
 		field := event + ".keyword"
 		aggr.SubAggregation(event, es7.NewTermsAggregation().Field(field))
 	}
-	aggrResult, err := util.GetClient7().Search(".analytics").
+	aggrResult, err := util.GetClient7().Search(util.MetaIndexName(".analytics")).
 		Query(query).
 		Aggregation("top-terms", aggr).
 		Size(0).

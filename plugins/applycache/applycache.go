@@ -5,6 +5,7 @@ import (
 
 	"github.com/appbaseio/reactivesearch-api/middleware"
 	"github.com/appbaseio/reactivesearch-api/plugins"
+	"github.com/appbaseio/reactivesearch-api/util"
 )
 
 const (
@@ -42,7 +43,7 @@ func Instance() *Cache {
 // InitFunc is a part of Plugin interface that gets executed only once, and initializes
 // the dao, i.e. elasticsearch before the plugin is operational.
 func (c *Cache) InitFunc() error {
-	indexPrefix := cacheEsIndex
+	indexPrefix := util.MetaIndexName(cacheEsIndex)
 
 	// initialize the dao
 	var err error

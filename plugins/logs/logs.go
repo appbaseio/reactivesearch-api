@@ -6,6 +6,7 @@ import (
 
 	"github.com/appbaseio/reactivesearch-api/middleware"
 	"github.com/appbaseio/reactivesearch-api/plugins"
+	"github.com/appbaseio/reactivesearch-api/util"
 	"github.com/natefinch/lumberjack"
 	"github.com/robfig/cron"
 	log "github.com/sirupsen/logrus"
@@ -112,6 +113,7 @@ func (l *Logs) InitFunc() error {
 	if indexName == "" {
 		indexName = defaultLogsEsIndex
 	}
+	indexName = util.MetaIndexName(indexName)
 
 	// initialize the elasticsearch client
 	var err error

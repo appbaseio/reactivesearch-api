@@ -63,6 +63,7 @@ func (r *Rules) InitFunc() error {
 	if indexPrefix == "" {
 		indexPrefix = defaultRulesEsIndex
 	}
+	indexPrefix = util.MetaIndexName(indexPrefix)
 
 	// initialize the dao
 	var err error

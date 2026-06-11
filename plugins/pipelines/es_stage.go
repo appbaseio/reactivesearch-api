@@ -568,6 +568,7 @@ func executeElasticsearchStage(
 		for k := range requestHeader {
 			esRequest.Header.Set(k, requestHeader.Get(k))
 		}
+		util.ApplyESAuth(esRequest)
 
 		// perform Request
 		log.Debugln("Pipeline Elasticsearch: REQUEST METHOD", esRequest.Method)

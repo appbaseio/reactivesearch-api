@@ -103,7 +103,7 @@ func (route *ESPipelineRoutes) classifyRouteACL() func(h http.HandlerFunc) http.
 
 func classifyIndices(h http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
-		ctx := index.NewContext(req.Context(), []string{defaultPipelinesEsIndex})
+		ctx := index.NewContext(req.Context(), []string{util.MetaIndexName(defaultPipelinesEsIndex)})
 		req = req.WithContext(ctx)
 		h(w, req)
 	}

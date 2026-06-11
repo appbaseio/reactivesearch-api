@@ -47,6 +47,7 @@ func (p *permissions) InitFunc() error {
 	if indexName == "" {
 		indexName = defaultPermissionsEsIndex
 	}
+	indexName = util.MetaIndexName(indexName)
 
 	// initialize the dao
 	var err error

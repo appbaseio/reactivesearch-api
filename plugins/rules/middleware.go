@@ -88,7 +88,7 @@ func classifyCategory(h http.HandlerFunc) http.HandlerFunc {
 
 func classifyIndices(h http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
-		ctx := index.NewContext(req.Context(), []string{defaultRulesEsIndex})
+		ctx := index.NewContext(req.Context(), []string{util.MetaIndexName(defaultRulesEsIndex)})
 		req = req.WithContext(ctx)
 		h(w, req)
 	}

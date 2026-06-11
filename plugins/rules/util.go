@@ -1384,6 +1384,7 @@ func (r *Rules) runScript(scriptContext ScriptContext, script string, executeRSA
 					req.Header.Set(key, value)
 				}
 			}
+			util.ApplyESAuth(req)
 
 			res, err := util.HTTPClient().Do(req)
 			if err != nil {

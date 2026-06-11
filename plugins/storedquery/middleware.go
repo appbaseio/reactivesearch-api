@@ -57,7 +57,7 @@ func classifyCategory(h http.HandlerFunc) http.HandlerFunc {
 
 func classifyIndices(h http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
-		ctx := index.NewContext(req.Context(), []string{defaultStoredQueryEsIndex})
+		ctx := index.NewContext(req.Context(), []string{util.MetaIndexName(defaultStoredQueryEsIndex)})
 		req = req.WithContext(ctx)
 		h(w, req)
 	}

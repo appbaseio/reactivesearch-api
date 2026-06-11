@@ -52,7 +52,7 @@ func (es *elasticsearch) createIndex(indexName, mapping string) (bool, error) {
 
 	replicas := util.GetReplicas()
 
-	settings := fmt.Sprintf(mapping, util.HiddenIndexSettings(), replicas)
+	settings := util.AdaptIndexBody(fmt.Sprintf(mapping, util.HiddenIndexSettings(), replicas))
 	// Meta index does not exists, create a new one
 	_, err = util.GetClient7().CreateIndex(indexName).
 		Body(settings).
@@ -88,6 +88,7 @@ func (es *elasticsearch) getPublicKey(ctx context.Context) (publicKey, error) {
 	if publicKeyIndex == "" {
 		publicKeyIndex = defaultPublicKeyEsIndex
 	}
+	publicKeyIndex = util.MetaIndexName(publicKeyIndex)
 	return es.getPublicKeyEs7(ctx, publicKeyIndex, publicKeyDocID)
 }
 

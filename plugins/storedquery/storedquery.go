@@ -49,6 +49,7 @@ func (s *StoredQuery) InitFunc() error {
 	if indexPrefix == "" {
 		indexPrefix = defaultStoredQueryEsIndex
 	}
+	indexPrefix = util.MetaIndexName(indexPrefix)
 
 	// initialize the dao
 	var err error

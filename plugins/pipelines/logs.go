@@ -245,7 +245,7 @@ func (es *logsElasticsearch) rolloverIndexJob(alias string) {
 		rolloverConfiguration = fmt.Sprintf(rolloverConfig, "30d", 1000000, "10gb")
 	}
 	json.Unmarshal([]byte(rolloverConfiguration), &rolloverConditions)
-	settingsString := fmt.Sprintf(`{%s "index.number_of_shards": 2, "index.number_of_replicas": %d}`, util.HiddenIndexSettings(), util.GetReplicas())
+	settingsString := util.AdaptIndexBody(fmt.Sprintf(`{%s "index.number_of_shards": 2, "index.number_of_replicas": %d}`, util.HiddenIndexSettings(), util.GetReplicas()))
 	settings := make(map[string]interface{})
 	json.Unmarshal([]byte(settingsString), &settings)
 

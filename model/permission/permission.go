@@ -494,7 +494,7 @@ func (p *Permission) CanAccessIndex(name string) (bool, error) {
 		if suggestionsIndex == "" {
 			suggestionsIndex = ".suggestions"
 		}
-		indices = append(indices, suggestionsIndex)
+		indices = append(indices, util.MetaIndexName(suggestionsIndex))
 	}
 	for _, pattern := range indices {
 		matched, err := util.ValidateIndex(pattern, name)

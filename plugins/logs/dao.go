@@ -50,6 +50,7 @@ func initPlugin(alias, config string) (*elasticsearch, error) {
 		mappings := fmt.Sprintf(`{"_doc": %s}`, LogsMappings)
 		settings = fmt.Sprintf(config, alias, util.HiddenIndexSettings(), replicas, mappings)
 	}
+	settings = util.AdaptIndexBody(settings)
 	// Meta index doesn't exist, create one
 	indexName := alias + `-000001`
 	// this works for ES6 client as well
@@ -153,7 +154,7 @@ func (es *elasticsearch) rolloverIndexJob(alias string) {
 		rolloverConfiguration = fmt.Sprintf(rolloverConfig, "30d", 1000000, "10gb")
 	}
 	json.Unmarshal([]byte(rolloverConfiguration), &rolloverConditions)
-	settingsString := fmt.Sprintf(`{%s "index.number_of_shards": 2, "index.number_of_replicas": %d}`, util.HiddenIndexSettings(), util.GetReplicas())
+	settingsString := util.AdaptIndexBody(fmt.Sprintf(`{%s "index.number_of_shards": 2, "index.number_of_replicas": %d}`, util.HiddenIndexSettings(), util.GetReplicas()))
 	settings := make(map[string]interface{})
 	json.Unmarshal([]byte(settingsString), &settings)
 

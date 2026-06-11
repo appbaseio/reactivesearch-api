@@ -6,6 +6,7 @@ import (
 
 	"github.com/appbaseio/reactivesearch-api/middleware"
 	"github.com/appbaseio/reactivesearch-api/plugins"
+	"github.com/appbaseio/reactivesearch-api/util"
 )
 
 const (
@@ -47,6 +48,7 @@ func (s *SearchGrader) InitFunc() error {
 	if searchgraderIndex == "" {
 		searchgraderIndex = defaultSearchgraderEsIndex
 	}
+	searchgraderIndex = util.MetaIndexName(searchgraderIndex)
 	// initialize the dao
 	var err error
 	s.es, err = initPlugin(searchgraderIndex, mapping)

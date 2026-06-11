@@ -28,7 +28,7 @@ func initPlugin(openAIIndex, mapping string, actualMapping string) (*elasticsear
 	}
 
 	replicas := util.GetReplicas()
-	settings := fmt.Sprintf(mapping, util.HiddenIndexSettings(), replicas, actualMapping)
+	settings := util.AdaptIndexBody(fmt.Sprintf(mapping, util.HiddenIndexSettings(), replicas, actualMapping))
 
 	// Meta index does not exists, create a new one
 	_, err = util.GetClient7().CreateIndex(openAIIndex).Body(settings).Do(ctx)
@@ -61,7 +61,7 @@ func initAnalyticsPlugin(openAIAnalyticsIndex, mapping string) (*analyticsElasti
 	}
 
 	replicas := util.GetReplicas()
-	settings := fmt.Sprintf(mapping, util.HiddenIndexSettings(), replicas)
+	settings := util.AdaptIndexBody(fmt.Sprintf(mapping, util.HiddenIndexSettings(), replicas))
 
 	// Meta index does not exists, create a new one
 	_, err = util.GetClient7().CreateIndex(openAIAnalyticsIndex).Body(settings).Do(ctx)
@@ -121,7 +121,7 @@ func initFAQPluginES(faqIndex, mapping string) (*FAQElasticsearch, error) {
 	}
 
 	replicas := util.GetReplicas()
-	settings := fmt.Sprintf(mapping, util.HiddenIndexSettings(), replicas)
+	settings := util.AdaptIndexBody(fmt.Sprintf(mapping, util.HiddenIndexSettings(), replicas))
 
 	// Meta index does not exists, create a new one
 	_, err = util.GetClient7().CreateIndex(faqIndex).Body(settings).Do(ctx)

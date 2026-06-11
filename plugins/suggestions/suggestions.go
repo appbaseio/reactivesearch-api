@@ -241,6 +241,7 @@ func (r *suggestions) InitFunc() error {
 	if indexPreferencesSuffix == "" {
 		indexPreferencesSuffix = defaultSuggestionsPreferencesIndex
 	}
+	indexPreferencesSuffix = util.MetaIndexName(indexPreferencesSuffix)
 
 	var err error
 	var exists bool

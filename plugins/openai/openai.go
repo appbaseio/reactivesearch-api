@@ -89,6 +89,7 @@ func (r *OpenAI) InitFunc() error {
 	if openAIIndex == "" {
 		openAIIndex = defaultOpenAIEsIndex
 	}
+	openAIIndex = util.MetaIndexName(openAIIndex)
 
 	// initialize the dao
 	var err error
@@ -97,7 +98,7 @@ func (r *OpenAI) InitFunc() error {
 		return err
 	}
 
-	settings := fmt.Sprintf(updatedMappingWithSettings, util.HiddenIndexSettings(), util.GetReplicas(), updatedMapping)
+	settings := util.AdaptIndexBody(fmt.Sprintf(updatedMappingWithSettings, util.HiddenIndexSettings(), util.GetReplicas(), updatedMapping))
 	migration := MappingsMigration{
 		NewMapping: settings,
 		es:         r.es.(*elasticsearch),
@@ -105,13 +106,13 @@ func (r *OpenAI) InitFunc() error {
 	util.AddMigrationScript(migration)
 
 	// Initialize the analytics plugin as well
-	r.analyticsEs, err = initAnalyticsPlugin(defaultAIAnalyticsIndex, analyticsMapping)
+	r.analyticsEs, err = initAnalyticsPlugin(util.MetaIndexName(defaultAIAnalyticsIndex), analyticsMapping)
 	if err != nil {
 		return err
 	}
 
 	// Initialize the FAQ index on ES
-	r.faqEs, err = initFAQPluginES(defaultFAQIndex, FAQMapping)
+	r.faqEs, err = initFAQPluginES(util.MetaIndexName(defaultFAQIndex), FAQMapping)
 	if err != nil {
 		return err
 	}

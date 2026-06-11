@@ -132,6 +132,17 @@ func (a *Analytics) InitFunc() error {
 		recentDocumentsIndex = defaultRecentSearchesEsIndex
 	}
 
+	// resolve cluster-safe meta index names (e.g. serverless)
+	analyticsIndex = util.MetaIndexName(analyticsIndex)
+	logsIndex = util.MetaIndexName(logsIndex)
+	userSessionIndex = util.MetaIndexName(userSessionIndex)
+	analyticsInsightsIndex = util.MetaIndexName(analyticsInsightsIndex)
+	usersIndex = util.MetaIndexName(usersIndex)
+	savedSearchedIndex = util.MetaIndexName(savedSearchedIndex)
+	favoritesIndex = util.MetaIndexName(favoritesIndex)
+	preferencesIndex = util.MetaIndexName(preferencesIndex)
+	recentDocumentsIndex = util.MetaIndexName(recentDocumentsIndex)
+
 	// initialize the dao
 	var err error
 	a.es, err = initPlugin(analyticsIndex, logsIndex, usersIndex, userSessionIndex, analyticsInsightsIndex, savedSearchedIndex, favoritesIndex, mapping, analyticsMapping,
