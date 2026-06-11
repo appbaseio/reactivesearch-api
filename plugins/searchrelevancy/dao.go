@@ -31,7 +31,7 @@ func initPlugin(searchRelevancyIndex string) (*elasticsearch, error) {
 
 	mappingData := mapping
 
-	settings := fmt.Sprintf(indexSettingMapping, mappingData, util.HiddenIndexSettings(), replicas)
+	settings := util.AdaptIndexBody(fmt.Sprintf(indexSettingMapping, mappingData, util.HiddenIndexSettings(), replicas))
 
 	// Meta index does not exists, create a new one
 	_, err = util.GetClient7().CreateIndex(searchRelevancyIndex).Body(settings).Do(ctx)

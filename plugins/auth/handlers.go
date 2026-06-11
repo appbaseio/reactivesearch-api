@@ -67,6 +67,7 @@ func (a *Auth) setPublicKey() http.HandlerFunc {
 		if publicKeyIndex == "" {
 			publicKeyIndex = defaultPublicKeyEsIndex
 		}
+		publicKeyIndex = util.MetaIndexName(publicKeyIndex)
 
 		jwtRsaPublicKey, err := getJWTPublickKey(body)
 		if err != nil {

@@ -48,6 +48,7 @@ func (u *Users) InitFunc() error {
 	if indexName == "" {
 		indexName = defaultUsersEsIndex
 	}
+	indexName = util.MetaIndexName(indexName)
 
 	// initialize the dao
 	var err error

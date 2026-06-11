@@ -70,7 +70,7 @@ func createSuggestionsIndex(indexWithSuffix, indexConfigEs6, indexConfigEs7 stri
 	default:
 		indexConfig = indexConfigEs7
 	}
-	settings := fmt.Sprintf(indexConfig, util.HiddenIndexSettings(), replicas)
+	settings := util.AdaptIndexBody(fmt.Sprintf(indexConfig, util.HiddenIndexSettings(), replicas))
 
 	// index does not exists, create a new one
 	_, err = util.GetClient7().CreateIndex(indexWithSuffix).Body(settings).Do(ctx)
@@ -256,7 +256,7 @@ func (es *elasticsearch) getPopularSuggestionsPreferences(ctx context.Context) (
 // Returns the custom events from analytics index
 func getCustomEvents() ([]string, error) {
 	var customEvents []string
-	var indexName = ".analytics"
+	var indexName = util.MetaIndexName(".analytics")
 	// Fetch analytics mapping to find the custom events
 	response, err := util.GetIndexMapping(indexName, context.Background())
 	if err != nil {
@@ -447,7 +447,7 @@ func getSuggestionsIndex() string {
 	if suggestionsIndex == "" {
 		suggestionsIndex = defaultSuggestionsEsIndex
 	}
-	return suggestionsIndex
+	return util.MetaIndexName(suggestionsIndex)
 }
 
 func syncAnalyticsToSuggestions(s *suggestions, indexToUse string) (interface{}, error) {
@@ -745,7 +745,7 @@ func GetFAQSuggestions(config querytranslate.FAQSuggestionsOptions, value string
 
 	// Execute search against ES
 	res, searchErr := util.GetClient7().Search().
-		Index(".ai_faqs").
+		Index(util.MetaIndexName(".ai_faqs")).
 		Query(query).
 		Size(size).
 		Do(context.Background())

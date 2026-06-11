@@ -28,7 +28,7 @@ func initPlugin(indexName, mapping string) (*elasticsearch, error) {
 	}
 
 	replicas := util.GetReplicas()
-	settings := fmt.Sprintf(mapping, util.HiddenIndexSettings(), replicas)
+	settings := util.AdaptIndexBody(fmt.Sprintf(mapping, util.HiddenIndexSettings(), replicas))
 
 	// Meta index does not exists, create a new one
 	_, err = util.GetClient7().CreateIndex(indexName).Body(settings).Do(ctx)
@@ -56,7 +56,7 @@ func createSearchBoxIndex(indexName string, indexConfig string) (*elasticsearch,
 
 	replicas := util.GetReplicas()
 
-	settings := fmt.Sprintf(indexConfig, util.HiddenIndexSettings(), replicas)
+	settings := util.AdaptIndexBody(fmt.Sprintf(indexConfig, util.HiddenIndexSettings(), replicas))
 
 	// index does not exists, create a new one
 	_, err = util.GetClient7().CreateIndex(indexName).Body(settings).Do(ctx)

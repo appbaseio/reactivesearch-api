@@ -119,6 +119,7 @@ func (p *Pipelines) InitFunc() error {
 	if indexPrefix == "" {
 		indexPrefix = defaultPipelinesEsIndex
 	}
+	indexPrefix = util.MetaIndexName(indexPrefix)
 
 	// initialize the dao
 	var err error
@@ -128,19 +129,19 @@ func (p *Pipelines) InitFunc() error {
 	}
 
 	// Initialize the dao for invocation
-	p.invocationEs, err = initInvocationIndex(defaultPipelineInvocationIndex, mapping)
+	p.invocationEs, err = initInvocationIndex(util.MetaIndexName(defaultPipelineInvocationIndex), mapping)
 	if err != nil {
 		return err
 	}
 
 	// Init the logs index
-	p.logEs, err = initLogIndex(defaultPipelinesLogEsIndex, logsConfig)
+	p.logEs, err = initLogIndex(util.MetaIndexName(defaultPipelinesLogEsIndex), logsConfig)
 	if err != nil {
 		return err
 	}
 
 	// Init the vars index
-	p.varEs, err = initVarIndex(defaultPipelineVarsIndex, mapping)
+	p.varEs, err = initVarIndex(util.MetaIndexName(defaultPipelineVarsIndex), mapping)
 	if err != nil {
 		return err
 	}
@@ -214,15 +215,17 @@ func (p *Pipelines) InitFunc() error {
 	p.pipelineSchema = schema
 
 	// Initiate the logs rollover cronjob
+	pipelineLogsIndex := util.MetaIndexName(defaultPipelinesLogEsIndex)
+	pipelineInvocationsIndex := util.MetaIndexName(defaultPipelineInvocationIndex)
 	cronjob := cron.New()
-	cronjob.AddFunc("@midnight", func() { p.logEs.rolloverIndexJob(defaultPipelinesLogEsIndex) })
+	cronjob.AddFunc("@midnight", func() { p.logEs.rolloverIndexJob(pipelineLogsIndex) })
 	// in addition, run every hour, keeping original midnight job as well
-	cronjob.AddFunc("@hourly", func() { p.logEs.rolloverIndexJob(defaultPipelinesLogEsIndex) })
+	cronjob.AddFunc("@hourly", func() { p.logEs.rolloverIndexJob(pipelineLogsIndex) })
 
 	// Initiate the invocations rollover cronjob
-	cronjob.AddFunc("@midnight", func() { p.invocationEs.rolloverIndexJob(defaultPipelineInvocationIndex) })
+	cronjob.AddFunc("@midnight", func() { p.invocationEs.rolloverIndexJob(pipelineInvocationsIndex) })
 	// in addition, run every hour, keeping original midnight job as well
-	cronjob.AddFunc("@hourly", func() { p.invocationEs.rolloverIndexJob(defaultPipelineInvocationIndex) })
+	cronjob.AddFunc("@hourly", func() { p.invocationEs.rolloverIndexJob(pipelineInvocationsIndex) })
 
 	cronjob.Start()
 

@@ -15,6 +15,7 @@ import (
 	"github.com/appbaseio/reactivesearch-api/plugins/auth"
 	"github.com/appbaseio/reactivesearch-api/plugins/logs"
 	"github.com/appbaseio/reactivesearch-api/plugins/telemetry"
+	"github.com/appbaseio/reactivesearch-api/util"
 )
 
 type chain struct {
@@ -52,7 +53,7 @@ func classifyCategory(h http.HandlerFunc) http.HandlerFunc {
 
 func classifyIndices(h http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
-		ctx := index.NewContext(req.Context(), []string{defaultUsersEsIndex})
+		ctx := index.NewContext(req.Context(), []string{util.MetaIndexName(defaultUsersEsIndex)})
 		req = req.WithContext(ctx)
 		h(w, req)
 	}

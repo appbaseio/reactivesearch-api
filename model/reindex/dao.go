@@ -522,11 +522,78 @@ func GetAliasIndexMap(ctx context.Context) (map[string]string, error) {
 	return res, nil
 }
 
+// GetIndexStoreSize returns the primary store size in bytes for an index or alias.
+// It uses _cat/indices, which is supported on Elasticsearch Serverless where
+// _stats is unavailable.
+func GetIndexStoreSize(ctx context.Context, indexName string) (int64, error) {
+	index := indexName
+	aliasesIndexMap, err := GetAliasIndexMap(ctx)
+	if err != nil {
+		return 0, err
+	}
+	if indexNameFromMap, ok := aliasesIndexMap[indexName]; ok {
+		index = indexNameFromMap
+	}
+
+	if !util.IsServerless() {
+		stats, err := util.GetClient7().IndexStats(index).Do(ctx)
+		if err == nil {
+			if val, ok := stats.Indices[index]; ok {
+				return val.Primaries.Store.SizeInBytes, nil
+			}
+		}
+	}
+
+	return indexStoreSizeFromCat(ctx, index)
+}
+
+func indexStoreSizeFromCat(ctx context.Context, index string) (int64, error) {
+	v := url.Values{}
+	v.Set("format", "json")
+	v.Set("bytes", "b")
+
+	requestOptions := es7.PerformRequestOptions{
+		Method: "GET",
+		Path:   "/_cat/indices/" + index,
+		Params: v,
+	}
+	response, err := util.GetClient7().PerformRequest(ctx, requestOptions)
+	if err != nil {
+		return 0, err
+	}
+	if response.StatusCode > 300 {
+		return 0, errors.New(string(response.Body))
+	}
+
+	var indices []AliasedIndices
+	if err := json.Unmarshal(response.Body, &indices); err != nil {
+		return 0, err
+	}
+	if len(indices) == 0 {
+		return 0, fmt.Errorf(`index "%s" not found`, index)
+	}
+
+	storeSize := indices[0].PriStoreSize
+	if storeSize == "" {
+		storeSize = indices[0].StoreSize
+	}
+	if isNumericStoreSize(storeSize) {
+		return strconv.ParseInt(storeSize, 10, 64)
+	}
+	return ParseStoreSize(storeSize)
+}
+
 func isTaskCompleted(ctx context.Context, taskID string) (bool, error) {
 	isCompleted := false
 	url := util.GetESURL() + "/_tasks/" + taskID
 
-	response, err := http.Get(url)
+	req, err := http.NewRequest(http.MethodGet, url, nil)
+	if err != nil {
+		log.Errorln(logTag, " Get task status error", err)
+		return isCompleted, err
+	}
+	util.ApplyESAuth(req)
+	response, err := util.HTTPClient().Do(req)
 	if err != nil {
 		log.Errorln(logTag, " Get task status error", err)
 		return isCompleted, err

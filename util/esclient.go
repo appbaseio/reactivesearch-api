@@ -53,12 +53,26 @@ func GetClient7() *es7.Client {
 	return client7
 }
 
-// GetESURL returns elasticsearch url with escaped auth
+// GetESURL returns the elasticsearch cluster URL. When ES_API_KEY is set, the URL
+// is returned without credentials and auth is applied via request headers instead.
+// Otherwise, basic auth credentials embedded in ES_CLUSTER_URL are escaped in place.
 func GetESURL() string {
 	esURL := os.Getenv("ES_CLUSTER_URL")
 
 	if esURL == "" {
 		log.Fatal("Error encountered: ", fmt.Errorf("ES_CLUSTER_URL must be set in the environment variables"))
+	}
+
+	if err := validateESAuthConfig(); err != nil {
+		log.Fatal("Error encountered: ", err)
+	}
+
+	if esAPIKey != "" {
+		cleanURL, err := stripURLCredentials(esURL)
+		if err != nil {
+			log.Fatal("Error encountered: ", fmt.Errorf("error parsing ES_CLUSTER_URL: %v", err))
+		}
+		return cleanURL
 	}
 
 	if strings.Contains(esURL, "@") {
@@ -185,6 +199,10 @@ func GetClusterType() *ClusterType {
 
 // HiddenIndexSettings to set plugin indices as hidden index
 func HiddenIndexSettings() string {
+	// Serverless rejects the `index.hidden` setting on index creation
+	if IsServerless() {
+		return ""
+	}
 	esVersion, _ := v.NewVersion(GetSemanticVersion())
 	hiddenIndexVersion, _ := v.NewVersion("7.7.0")
 	if esVersion.GreaterThanOrEqual(hiddenIndexVersion) {
@@ -204,6 +222,10 @@ func isSniffingEnabled() bool {
 }
 
 func initClient7() {
+	if err := validateESAuthConfig(); err != nil {
+		log.Fatal("Error encountered: ", err)
+	}
+
 	var err error
 	// Initialize the ES v7 client
 
@@ -211,7 +233,7 @@ func initClient7() {
 	wrappedLoggerDebug := &WrapKitLoggerDebug{*loggerT}
 	wrappedLoggerError := &WrapKitLoggerError{*loggerT}
 
-	client7, err = es7.NewClient(
+	clientOptions := []es7.ClientOptionFunc{
 		es7.SetURL(GetESURL()),
 		es7.SetRetrier(NewRetrier()),
 		es7.SetSniff(isSniffingEnabled()),
@@ -220,7 +242,12 @@ func initClient7() {
 		es7.SetErrorLog(wrappedLoggerError),
 		es7.SetInfoLog(wrappedLoggerDebug),
 		es7.SetTraceLog(wrappedLoggerDebug),
-	)
+	}
+	if UsesESAPIKey() {
+		clientOptions = append(clientOptions, es7.SetHeaders(ESAuthHeaders()))
+	}
+
+	client7, err = es7.NewClient(clientOptions...)
 	if err != nil {
 		log.Fatal("Error encountered: ", fmt.Errorf("error while initializing elastic v7 client: %v", err))
 	}

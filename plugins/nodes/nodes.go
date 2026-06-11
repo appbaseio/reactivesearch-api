@@ -5,6 +5,7 @@ import (
 
 	"github.com/appbaseio/reactivesearch-api/middleware"
 	"github.com/appbaseio/reactivesearch-api/plugins"
+	"github.com/appbaseio/reactivesearch-api/util"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -39,7 +40,7 @@ func (n *nodes) Name() string {
 func (n *nodes) InitFunc() error {
 	log.Println(logTag, ": initializing plugin")
 
-	indexName := defaultNodesIndex
+	indexName := util.MetaIndexName(defaultNodesIndex)
 
 	// initialize the dao
 	var err error

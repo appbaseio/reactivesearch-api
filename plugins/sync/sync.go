@@ -50,6 +50,7 @@ func (p *Sync) InitFunc() error {
 	if indexName == "" {
 		indexName = defaultSyncPreferencesIndex
 	}
+	indexName = util.MetaIndexName(indexName)
 
 	// initialize the dao
 	var err error

@@ -8,8 +8,10 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"unicode"
 
 	"github.com/appbaseio/reactivesearch-api/middleware/classify"
+	"github.com/appbaseio/reactivesearch-api/util"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -69,6 +71,62 @@ var CurrentlyReIndexingProcessMutex = sync.RWMutex{}
 
 // IndexStoreSize to decide whether to use async or sync re-indexing
 const IndexStoreSize = int64(100000000)
+
+// ParseStoreSize converts Elasticsearch _cat/indices size strings (e.g. "1.2kb",
+// "100mb") or plain byte counts to bytes. A dash or empty value is treated as zero.
+func ParseStoreSize(size string) (int64, error) {
+	size = strings.TrimSpace(strings.ToLower(size))
+	if size == "" || size == "-" {
+		return 0, nil
+	}
+
+	multiplier := int64(1)
+	units := []struct {
+		suffix string
+		mult   int64
+	}{
+		{"pb", 1024 * 1024 * 1024 * 1024 * 1024},
+		{"tb", 1024 * 1024 * 1024 * 1024},
+		{"gb", 1024 * 1024 * 1024},
+		{"mb", 1024 * 1024},
+		{"kb", 1024},
+		{"b", 1},
+	}
+	for _, unit := range units {
+		if strings.HasSuffix(size, unit.suffix) {
+			size = strings.TrimSuffix(size, unit.suffix)
+			multiplier = unit.mult
+			break
+		}
+	}
+
+	size = strings.TrimSpace(size)
+	if size == "" {
+		return 0, fmt.Errorf("invalid store size")
+	}
+
+	value, err := strconv.ParseFloat(size, 64)
+	if err != nil {
+		return 0, fmt.Errorf("invalid store size %q: %w", size, err)
+	}
+	if value < 0 {
+		return 0, fmt.Errorf("invalid store size %q", size)
+	}
+
+	return int64(value * float64(multiplier)), nil
+}
+
+func isNumericStoreSize(size string) bool {
+	if size == "" {
+		return false
+	}
+	for _, r := range size {
+		if !unicode.IsDigit(r) {
+			return false
+		}
+	}
+	return true
+}
 
 // reindexedName calculates from the name the number of times an index has been
 // reindexed to generate the successive name for the index. For example: for an
@@ -155,7 +213,7 @@ func getSearchRelevancyIndex() string {
 	if searchRelevancyIndex == "" {
 		searchRelevancyIndex = ".searchrelevancy"
 	}
-	return searchRelevancyIndex
+	return util.MetaIndexName(searchRelevancyIndex)
 }
 
 // Returns the index name for synonyms
@@ -164,5 +222,5 @@ func getSynonymsIndex() string {
 	if synonymsIndex == "" {
 		synonymsIndex = ".rs-synonyms"
 	}
-	return synonymsIndex
+	return util.MetaIndexName(synonymsIndex)
 }

@@ -78,14 +78,17 @@ func (a *Auth) InitFunc() error {
 	if userIndex == "" {
 		userIndex = defaultUsersEsIndex
 	}
+	userIndex = util.MetaIndexName(userIndex)
 	permissionIndex := os.Getenv(envPermissionsEsIndex)
 	if permissionIndex == "" {
 		permissionIndex = defaultPermissionsEsIndex
 	}
+	permissionIndex = util.MetaIndexName(permissionIndex)
 	publicKeyIndex := os.Getenv(envPublicKeyEsIndex)
 	if publicKeyIndex == "" {
 		publicKeyIndex = defaultPublicKeyEsIndex
 	}
+	publicKeyIndex = util.MetaIndexName(publicKeyIndex)
 	var err error
 
 	// initialize the dao

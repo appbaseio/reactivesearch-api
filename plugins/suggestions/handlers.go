@@ -338,6 +338,7 @@ func (rx *suggestions) getPopularSuggestionsPreferences() http.HandlerFunc {
 		if suggestionsIndex == "" {
 			suggestionsIndex = defaultSuggestionsEsIndex
 		}
+		suggestionsIndex = util.MetaIndexName(suggestionsIndex)
 
 		var finalResponse map[string]interface{}
 

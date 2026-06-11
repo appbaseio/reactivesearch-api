@@ -49,6 +49,7 @@ func (c *Cache) InitFunc() error {
 	if cacheIndex == "" {
 		cacheIndex = defaultCacheEsIndex
 	}
+	cacheIndex = util.MetaIndexName(cacheIndex)
 	// initialize the dao
 	var err error
 	c.es, err = initPlugin(cacheIndex, mapping)

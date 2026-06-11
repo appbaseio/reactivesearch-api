@@ -915,7 +915,7 @@ func GetAnalyticsIndex() string {
 	if analyticsIndex == "" {
 		analyticsIndex = defaultAnalyticsEsIndex
 	}
-	return analyticsIndex
+	return util.MetaIndexName(analyticsIndex)
 }
 
 func GetDocumentSuggestionsIndex() string {
@@ -923,7 +923,7 @@ func GetDocumentSuggestionsIndex() string {
 	if recentDocumentsIndex == "" {
 		recentDocumentsIndex = defaultRecentSearchesEsIndex
 	}
-	return recentDocumentsIndex
+	return util.MetaIndexName(recentDocumentsIndex)
 }
 
 func getQueryTypeByID(id string, request querytranslate.RSQuery) *querytranslate.QueryType {

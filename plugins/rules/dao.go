@@ -28,7 +28,7 @@ func initPlugin(rulesIndex, mapping string) (*elasticsearch, error) {
 	}
 
 	replicas := util.GetReplicas()
-	settings := fmt.Sprintf(mapping, rulesMapping, util.HiddenIndexSettings(), replicas)
+	settings := util.AdaptIndexBody(fmt.Sprintf(mapping, rulesMapping, util.HiddenIndexSettings(), replicas))
 
 	// Meta index does not exists, create a new one
 	_, err = util.GetClient7().CreateIndex(rulesIndex).Body(settings).Do(ctx)

@@ -19,6 +19,7 @@ import (
 	"github.com/appbaseio/reactivesearch-api/model/trackplugin"
 	"github.com/appbaseio/reactivesearch-api/model/user"
 	"github.com/appbaseio/reactivesearch-api/plugins/telemetry"
+	"github.com/appbaseio/reactivesearch-api/util"
 	"github.com/dgrijalva/jwt-go"
 	"github.com/dgrijalva/jwt-go/request"
 	"github.com/gorilla/mux"
@@ -51,6 +52,7 @@ func classifyIndices(h http.HandlerFunc) http.HandlerFunc {
 		if publicKeyIndex == "" {
 			publicKeyIndex = defaultPublicKeyEsIndex
 		}
+		publicKeyIndex = util.MetaIndexName(publicKeyIndex)
 		ctx := index.NewContext(req.Context(), []string{publicKeyIndex})
 		req = req.WithContext(ctx)
 		h(w, req)

@@ -65,10 +65,12 @@ func (e *UIBuilder) InitFunc() error {
 	if preferencesIndex == "" {
 		preferencesIndex = defaultUIBuilderPreferencesIndex
 	}
+	preferencesIndex = util.MetaIndexName(preferencesIndex)
 	searchboxIndex := os.Getenv(envSearchBoxIndex)
 	if searchboxIndex == "" {
 		searchboxIndex = defaultSearchBoxIndex
 	}
+	searchboxIndex = util.MetaIndexName(searchboxIndex)
 	var err error
 	e.esFeaturedSuggestions, _, err = createSearchBoxIndex(searchboxIndex, mapping)
 	if err != nil {
@@ -79,6 +81,7 @@ func (e *UIBuilder) InitFunc() error {
 	if featuredSuggestionsIndex == "" {
 		featuredSuggestionsIndex = defaultFeaturedSuggestionsIndex
 	}
+	featuredSuggestionsIndex = util.MetaIndexName(featuredSuggestionsIndex)
 	_, featuredSuggestionsIndexExists, err := createSearchBoxIndex(featuredSuggestionsIndex, featuredSuggestionsMapping)
 	if err != nil {
 		return err

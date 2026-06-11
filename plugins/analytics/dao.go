@@ -96,7 +96,7 @@ func initPlugin(analyticsAlias, logsIndex, usersIndex, userSessionIndex, insight
 	replicas := util.GetReplicas()
 	// Analytics index does not exists, create a new one
 	if !isAnalyticsIndexExist {
-		settings := fmt.Sprintf(analyticsMapping, analyticsAlias, getAnalyticsMappings(), util.HiddenIndexSettings(), replicas)
+		settings := util.AdaptIndexBody(fmt.Sprintf(analyticsMapping, analyticsAlias, getAnalyticsMappings(), util.HiddenIndexSettings(), replicas))
 		analyticsIndex := analyticsAlias + `-000001`
 		_, err = util.GetClient7().CreateIndex(analyticsIndex).
 			Body(settings).
@@ -142,11 +142,11 @@ func initPlugin(analyticsAlias, logsIndex, usersIndex, userSessionIndex, insight
 		log.Println(logTag, ": successfully created index named", analyticsAlias)
 	}
 
-	settings := fmt.Sprintf(mapping, util.HiddenIndexSettings(), replicas)
+	settings := util.AdaptIndexBody(fmt.Sprintf(mapping, util.HiddenIndexSettings(), replicas))
 
 	// User session index does not exists, create a new one
 	if !isUserSessionIndexExist {
-		settings := fmt.Sprintf(userSessionMapping, getUserSessionMappings(), util.HiddenIndexSettings(), replicas)
+		settings := util.AdaptIndexBody(fmt.Sprintf(userSessionMapping, getUserSessionMappings(), util.HiddenIndexSettings(), replicas))
 		_, err = util.GetClient7().CreateIndex(userSessionIndex).Body(settings).Do(ctx)
 		if err != nil {
 			return nil, fmt.Errorf("error while creating index named %s: %v", userSessionIndex, err)
@@ -183,7 +183,7 @@ func initPlugin(analyticsAlias, logsIndex, usersIndex, userSessionIndex, insight
 
 	// If preferences index doesn't exist, create it.
 	if !isPreferencesIndexExist {
-		prefsSettings := fmt.Sprintf(preferencesMapping, util.HiddenIndexSettings(), replicas)
+		prefsSettings := util.AdaptIndexBody(fmt.Sprintf(preferencesMapping, util.HiddenIndexSettings(), replicas))
 		_, err = util.GetClient7().CreateIndex(preferencesIndex).Body(prefsSettings).Do(ctx)
 		if err != nil {
 			return nil, fmt.Errorf("error while creating index named %s: %v", preferencesIndex, err)
@@ -3043,7 +3043,7 @@ func (es *elasticsearch) rolloverIndexJob(alias string) {
 	}
 
 	json.Unmarshal([]byte(rolloverConfiguration), &rolloverConditions)
-	settingsString := fmt.Sprintf(`{%s "index.number_of_shards": 2, "index.number_of_replicas": %d}`, util.HiddenIndexSettings(), util.GetReplicas())
+	settingsString := util.AdaptIndexBody(fmt.Sprintf(`{%s "index.number_of_shards": 2, "index.number_of_replicas": %d}`, util.HiddenIndexSettings(), util.GetReplicas()))
 	settings := make(map[string]interface{})
 	json.Unmarshal([]byte(settingsString), &settings)
 	rolloverService, err := es7.NewIndicesRolloverService(util.GetClient7()).
@@ -3787,7 +3787,7 @@ func createRecentSearchesIndex(indexWithSuffix, indexConfig string) (*recentDocu
 
 	mappings = fmt.Sprintf(mappings, mappingForType)
 
-	settings := fmt.Sprintf(indexConfig, util.HiddenIndexSettings(), replicas, mappings)
+	settings := util.AdaptIndexBody(fmt.Sprintf(indexConfig, util.HiddenIndexSettings(), replicas, mappings))
 
 	// index does not exists, create a new one
 	_, err = util.GetClient7().CreateIndex(indexWithSuffix).Body(settings).Do(context.Background())
@@ -3796,7 +3796,7 @@ func createRecentSearchesIndex(indexWithSuffix, indexConfig string) (*recentDocu
 	}
 
 	// Use fallback method to create the index without the mappings
-	fallbackSettings := fmt.Sprintf(indexConfig, util.HiddenIndexSettings(), replicas, "{}")
+	fallbackSettings := util.AdaptIndexBody(fmt.Sprintf(indexConfig, util.HiddenIndexSettings(), replicas, "{}"))
 	_, fallbackErr := util.GetClient7().CreateIndex(indexWithSuffix).Body(fallbackSettings).Do(context.Background())
 	if fallbackErr != nil {
 		return nil, fmt.Errorf("error while creating index named %s: %v", indexWithSuffix, err)

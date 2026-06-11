@@ -52,6 +52,7 @@ func (a *SearchRelevancy) InitFunc() error {
 	if searchRelevancyIndex == "" {
 		searchRelevancyIndex = defaultSearchRelevancyEsIndex
 	}
+	searchRelevancyIndex = util.MetaIndexName(searchRelevancyIndex)
 
 	// initialize the dao
 	var err error
