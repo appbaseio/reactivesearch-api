@@ -3,6 +3,7 @@ package util
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"os"
 	"strings"
@@ -152,4 +153,19 @@ func stripUnsupportedSettings(settings map[string]interface{}) {
 			delete(index, key)
 		}
 	}
+}
+
+// RolloverIndexSettings returns index settings for a rollover new-index template,
+// adapted for the target cluster. On Elasticsearch Serverless, platform-managed
+// settings (shards, replicas, hidden) are stripped via AdaptIndexBody. Rollover
+// conditions (max_age, max_docs, max_size) must be evaluated client-side on
+// Serverless via WriteIndexMeetsRolloverConditions before calling the rollover API.
+func RolloverIndexSettings(numberOfShards int) map[string]interface{} {
+	body := AdaptIndexBody(fmt.Sprintf(`{%s "index.number_of_shards": %d, "index.number_of_replicas": %d}`, HiddenIndexSettings(), numberOfShards, GetReplicas()))
+	settings := make(map[string]interface{})
+	if err := json.Unmarshal([]byte(body), &settings); err != nil {
+		log.Warnln("error while parsing rollover index settings, using empty settings: ", err)
+		return map[string]interface{}{}
+	}
+	return settings
 }

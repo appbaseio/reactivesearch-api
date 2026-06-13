@@ -794,37 +794,50 @@ func withPipelineIDFallback(ctx context.Context, executor func(string) (*es7.Sea
 // in ElasticSearch.
 func (es *invocationElasticsearch) rolloverIndexJob(alias string) {
 	ctx := context.Background()
+
 	rolloverConditions := make(map[string]interface{})
 	rolloverConfiguration := fmt.Sprintf(rolloverConfig, "3d", 100000, "1gb")
 	if util.IsProductionPlan() {
 		rolloverConfiguration = fmt.Sprintf(rolloverConfig, "7d", 10000000, "10gb")
 	}
 	json.Unmarshal([]byte(rolloverConfiguration), &rolloverConditions)
-	settingsString := util.AdaptIndexBody(fmt.Sprintf(`{%s "index.number_of_shards": 3, "index.number_of_replicas": %d}`, util.HiddenIndexSettings(), util.GetReplicas()))
-	settings := make(map[string]interface{})
-	json.Unmarshal([]byte(settingsString), &settings)
 
 	mappingString := pipelineInvocationMapping
 
 	mappings := make(map[string]interface{})
 	json.Unmarshal([]byte(mappingString), &mappings)
-	rolloverService, err := es7.NewIndicesRolloverService(util.GetClient7()).
-		Alias(alias).
-		Conditions(rolloverConditions).
-		Settings(settings).
-		Mappings(mappings).
-		Do(ctx)
-	if err != nil {
-		log.Println(logTag, "error while creating a rollover service", alias, err)
-		return
-	}
-	log.Println(logTag, ": rollover res oldIndex", rolloverService.OldIndex)
-	log.Println(logTag, ": rollover res newIndex", rolloverService.NewIndex)
-	log.Println(logTag, ": rollover res isRolledover", rolloverService.RolledOver)
 
-	if rolloverService.RolledOver {
-		classify.SetIndexAlias(rolloverService.NewIndex, alias)
-		classify.SetAliasIndex(alias, rolloverService.NewIndex)
+	shouldRollover := true
+	if util.IsServerless() {
+		var conditionErr error
+		shouldRollover, conditionErr = util.WriteIndexMeetsRolloverConditions(ctx, alias, rolloverConditions)
+		if conditionErr != nil {
+			log.Errorln(logTag, ": serverless rollover condition check error, skipping rollover", conditionErr)
+			shouldRollover = false
+		} else if !shouldRollover {
+			log.Println(logTag, ": serverless rollover skipped, conditions not met for alias", alias)
+		}
+	}
+
+	if shouldRollover {
+		rolloverSvc := util.NewIndicesRolloverService(alias, rolloverConditions).
+			Mappings(mappings)
+		if settings := util.RolloverIndexSettings(3); len(settings) > 0 {
+			rolloverSvc = rolloverSvc.Settings(settings)
+		}
+		rolloverService, err := rolloverSvc.Do(ctx)
+		if err != nil {
+			log.Println(logTag, "error while creating a rollover service", alias, err)
+			return
+		}
+		log.Println(logTag, ": rollover res oldIndex", rolloverService.OldIndex)
+		log.Println(logTag, ": rollover res newIndex", rolloverService.NewIndex)
+		log.Println(logTag, ": rollover res isRolledover", rolloverService.RolledOver)
+
+		if rolloverService.RolledOver {
+			classify.SetIndexAlias(rolloverService.NewIndex, alias)
+			classify.SetAliasIndex(alias, rolloverService.NewIndex)
+		}
 	}
 
 	// We cannot rely on rollover service response here,

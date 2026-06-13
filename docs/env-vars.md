@@ -6,6 +6,17 @@ Plugins might require certain environment variables to be in order initialize th
 
 **Meta index naming:** ReactiveSearch stores its metadata in dot-prefixed indices (e.g. `.pipelines`, `.users`). Elasticsearch Serverless does not allow creating dot-prefixed indices, so when a Serverless cluster is detected (via `build_flavor` from `GET /`), meta indices are automatically created with the `rs_` prefix instead (e.g. `rs_pipelines`). Set `RS_META_INDEX_PREFIX` to force an alternate prefix on any cluster (the prefix must not start with `_`, `-` or `+`). On Serverless, platform-managed index settings (`index.hidden`, shard/replica counts) are also stripped from index creation requests.
 
+**Serverless rollover:** Elasticsearch Serverless rejects conditional index rollover (`max_age`, `max_docs`, `max_size`) with `rollover with conditions is not supported in serverless mode`. On Serverless clusters, ReactiveSearch evaluates those thresholds **client-side** before calling the rollover API without conditions. Rollover runs when any threshold is met (OR semantics), same as on self-managed clusters. After rollover, old backing indices beyond the latest two are deleted as usual.
+
+| Meta index (Serverless default) | `max_age` (non-production) | `max_age` (production plan) |
+|---------------------------------|----------------------------|-----------------------------|
+| `rs_analytics` | 30 days | 30 days |
+| `rs_logs` | 7 days | 30 days |
+| `rs_pipeline_logs` | 7 days | 30 days |
+| `rs_pipeline_invocations` | 3 days | 7 days |
+
+Rollover cron jobs run at `@midnight` and `@hourly`. On Serverless, expect `serverless rollover skipped, conditions not met` when thresholds are not yet satisfied; when rollover does run, logs include `rollover res oldIndex`, `rollover res newIndex`, and `rollover res isRolledover`. On non-Serverless clusters, conditional rollover is sent in the API request and post-rollover index cleanup (keeping the latest two backing indices) is unchanged.
+
 List of specific env vars required by respective plugins are listed below:
 
 ##### 1. Users
