@@ -1,5 +1,6 @@
 build/
-config/
+config/*
+!config/*.example
 *.log
 .idea
 .DS_Store

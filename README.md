@@ -39,6 +39,30 @@ API keys and users support granular permissions: restrict by **index pattern**, 
 
 Full API reference is available [here](https://docs.reactivesearch.io/docs/search/reactivesearch-api/reference).
 
+## Deploy to Render
+
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/appbaseio/reactivesearch-api)
+
+Deploy ReactiveSearch API to [Render](https://render.com) in one click. For a fully free stack, pair it with [Aiven's free OpenSearch](https://aiven.io/free-opensearch) — host search on Aiven and the API on Render's free web service tier.
+
+1. Create a free OpenSearch service on Aiven and copy its connection URI.
+2. Click **Deploy to Render** above and set `ES_CLUSTER_URL` to that URI (basic auth may be embedded in the URL).
+3. After deploy, verify the API is up:
+
+```sh
+curl https://<your-service>.onrender.com -u rs-demo:rs-password
+```
+
+Recommended environment variables (defaults are pre-filled in `render.yaml` where noted):
+
+| Variable | Default | Description |
+| --- | --- | --- |
+| `ES_CLUSTER_URL` | — | Upstream Elasticsearch / OpenSearch URL (required) |
+| `RS_SETUP_PROFILE` | `minimal` | Meta indices to create at startup |
+| `USERNAME` | `rs-demo` | Master user created on first start |
+| `PASSWORD` | `rs-password` | Password for the master user |
+| `PORT` | set by Render | Listen port (Render injects this automatically) |
+
 ## Getting Started
 
 Get up and running in minutes. Four steps to a fully functional search stack with Elasticsearch, search pipelines, analytics and a visual dashboard.

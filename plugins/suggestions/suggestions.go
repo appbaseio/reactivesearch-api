@@ -236,6 +236,10 @@ func (rx *suggestions) Name() string {
 }
 
 func (r *suggestions) InitFunc() error {
+	if !util.ShouldCreateMetaIndex(util.MetaIndexSuggestionsPrefs) {
+		log.Infoln(logTag, ": skipping ES index creation (setup profile:", util.GetSetupProfile(), ")")
+		return nil
+	}
 	// Create suggestions preferences index if not exists
 	indexPreferencesSuffix := os.Getenv(envSuggestionsPreferencesEsIndex)
 	if indexPreferencesSuffix == "" {

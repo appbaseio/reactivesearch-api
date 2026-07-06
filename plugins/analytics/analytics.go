@@ -11,6 +11,7 @@ import (
 	"github.com/appbaseio/reactivesearch-api/plugins"
 	"github.com/appbaseio/reactivesearch-api/util"
 	"github.com/robfig/cron"
+	log "github.com/sirupsen/logrus"
 )
 
 const (
@@ -37,7 +38,7 @@ const (
 	indexSettingsRecentSearches   = `{
 		"settings":{
 			%s
-		   "index.number_of_shards": 2,
+		   "index.number_of_shards": %d,
 		   "index.number_of_replicas": %d
 		},
 		"mappings": %s
@@ -89,6 +90,14 @@ func (a *Analytics) Name() string {
 // InitFunc is a part of Plugin interface that gets executed only once, and initializes
 // the dao, i.e. elasticsearch before the plugin is operational.
 func (a *Analytics) InitFunc() error {
+	if !util.IsAnalyticsPluginEnabled() {
+		log.Infoln(logTag, ": skipping ES index creation (setup profile:", util.GetSetupProfile(), ")")
+		a.session = InitSession(10000, 30)
+		a.timestampSession = InitTimestampSession(10000, 30)
+		a.userSession = InitUserSession(60000, defaultUserSessionDuration*60, nil)
+		return nil
+	}
+
 	// fetch the required env vars
 	analyticsIndex := os.Getenv(envAnalyticsEsIndex)
 	if analyticsIndex == "" {
@@ -152,9 +161,11 @@ func (a *Analytics) InitFunc() error {
 	}
 
 	// Create the recent documents index
-	a.recentDocuments, err = createRecentSearchesIndex(recentDocumentsIndex, indexSettingsRecentSearches)
-	if err != nil {
-		return err
+	if util.ShouldCreateMetaIndex(util.MetaIndexRecentDocuments) {
+		a.recentDocuments, err = createRecentSearchesIndex(recentDocumentsIndex, indexSettingsRecentSearches)
+		if err != nil {
+			return err
+		}
 	}
 
 	// Create a session to record search ids with a 30s max TTL
@@ -200,34 +211,37 @@ func (a *Analytics) InitFunc() error {
 	SetPreferencesInCache(analyticsPrefs)
 
 	// init cron job
-	cronjob := cron.New()
-	cronjob.AddFunc("@midnight", func() { a.es.rolloverIndexJob(analyticsIndex) })
-	// in addition, run every hour, keeping original midnight job as well
-	cronjob.AddFunc("@hourly", func() { a.es.rolloverIndexJob(analyticsIndex) })
-	cronjob.Start()
+	if util.ShouldCreateMetaIndex(util.MetaIndexAnalytics) {
+		cronjob := cron.New()
+		cronjob.AddFunc("@midnight", func() { a.es.rolloverIndexJob(analyticsIndex) })
+		cronjob.AddFunc("@hourly", func() { a.es.rolloverIndexJob(analyticsIndex) })
+		if util.ClusterBilling == "true" {
+			cronjob.AddFunc("@midnight", a.es.deleteOldMetricBeatIndices)
+		}
+		cronjob.Start()
+	}
 
 	// init a monthly cron job to send analytics report to the admin users
-	analyticsCronJob := cron.New()
-	// Run once a month, midnight, first of month
-	analyticsCronJob.AddFunc("@monthly", a.es.reportAnalyticsToUsers)
-	analyticsCronJob.Start()
+	if util.ShouldCreateMetaIndex(util.MetaIndexAnalyticsInsights) {
+		analyticsCronJob := cron.New()
+		analyticsCronJob.AddFunc("@monthly", a.es.reportAnalyticsToUsers)
+		analyticsCronJob.Start()
+	}
 
 	// Add analytics mapping changes migration script
-	m := MappingsMigration{
-		NewMapping: getAnalyticsMappings(),
-		es:         a.es.(*elasticsearch),
+	if util.ShouldCreateMetaIndex(util.MetaIndexAnalytics) {
+		m := MappingsMigration{
+			NewMapping: getAnalyticsMappings(),
+			es:         a.es.(*elasticsearch),
+		}
+		util.AddMigrationScript(m)
 	}
-	util.AddMigrationScript(m)
-	// Add user session mapping changes to migration script
-	util.AddMigrationScript(UserSessionMappingsMigration{
-		NewMapping: getUserSessionMappings(),
-		es:         a.es.(*elasticsearch),
-		indexName:  userSessionIndex,
-	})
-	clusterBilling := util.ClusterBilling
-
-	if clusterBilling == "true" {
-		cronjob.AddFunc("@midnight", a.es.deleteOldMetricBeatIndices)
+	if util.ShouldCreateMetaIndex(util.MetaIndexUserSessions) {
+		util.AddMigrationScript(UserSessionMappingsMigration{
+			NewMapping: getUserSessionMappings(),
+			es:         a.es.(*elasticsearch),
+			indexName:  userSessionIndex,
+		})
 	}
 	return nil
 }

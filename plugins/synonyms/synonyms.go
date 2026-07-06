@@ -9,6 +9,7 @@ import (
 	"github.com/appbaseio/reactivesearch-api/middleware"
 	"github.com/appbaseio/reactivesearch-api/util"
 	"github.com/go-playground/validator/v10"
+	log "github.com/sirupsen/logrus"
 )
 
 const (
@@ -46,6 +47,11 @@ func (s *Synonyms) Name() string {
 // InitFunc is a part of Plugin interface that gets executed only once, and initializes
 // the dao, i.e. elasticsearch before the plugin is operational.
 func (s *Synonyms) InitFunc() error {
+	s.validate = validator.New()
+	if !util.ShouldCreateMetaIndex(util.MetaIndexSynonyms) {
+		log.Infoln(logTag, ": skipping ES index creation (setup profile:", util.GetSetupProfile(), ")")
+		return nil
+	}
 	// fetch the required env vars
 	synonymsIndex := os.Getenv(synonymsEsIndex)
 	if synonymsIndex == "" {
@@ -60,12 +66,9 @@ func (s *Synonyms) InitFunc() error {
 		return err
 	}
 
-	// initialize validator
-	s.validate = validator.New()
 	return nil
 }
 
-// Routes returns the synonyms routes that the plugin serves.
 func (s *Synonyms) Routes() []plugins.Route {
 	return s.routes()
 }

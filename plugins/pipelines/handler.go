@@ -1077,7 +1077,9 @@ func (pipeline ESPipelineDoc) executePipeline(pipelineExecutionContext PipelineE
 				log.Debug(logTag, ": waiting for bg scripts to complete (if any)")
 				bgScriptWg.Wait()
 				log.Debug(logTag, ": done waiting! Creating invocation record.")
-				Instance().invocationEs.createPipelineInvokeRecord(*pipeline.ID, *pipeline.LiveVersion, stagesInvokedMap.GetStagesMap(), timeTook)
+				if inv := Instance().invocationEs; inv != nil {
+					inv.createPipelineInvokeRecord(*pipeline.ID, *pipeline.LiveVersion, stagesInvokedMap.GetStagesMap(), timeTook)
+				}
 			}(bgScriptWg)
 		}(bgScriptWg)
 	}

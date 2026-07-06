@@ -97,57 +97,79 @@ func (a *Auth) InitFunc() error {
 		return err
 	}
 
-	// Create public key index
-	_, err = a.es.createIndex(publicKeyIndex, settings)
-	if err != nil {
-		return err
-	}
+	if util.ShouldCreateMetaIndex(util.MetaIndexPublicKey) {
+		// Create public key index
+		_, err = a.es.createIndex(publicKeyIndex, settings)
+		if err != nil {
+			return err
+		}
 
-	// Populate public key from ES
-	record, err := a.es.getPublicKey(context.Background())
-	if err != nil {
-		jwtRsaPublicKeyLoc := os.Getenv(envJwtRsaPublicKeyLoc)
-		if jwtRsaPublicKeyLoc != "" {
-			// Read file from location
-			var publicKeyBuf []byte
-			publicKeyBuf, err = ioutil.ReadFile(jwtRsaPublicKeyLoc)
-			if err != nil {
-				log.Errorln(logTag, ":unable to read the public key file from environment,", err)
-			}
-			var record = publicKey{}
-			record.PublicKey = string(publicKeyBuf)
-			record.RoleKey = a.jwtRoleKey
-			jwtRsaPublicKey, err := getJWTPublickKey(record)
-			if err != nil {
-				log.Errorln(logTag, ":unable to save public key record from environment,", err)
-			} else {
-				_, err = a.savePublicKey(context.Background(), publicKeyIndex, record)
+		// Populate public key from ES
+		record, err := a.es.getPublicKey(context.Background())
+		if err != nil {
+			jwtRsaPublicKeyLoc := os.Getenv(envJwtRsaPublicKeyLoc)
+			if jwtRsaPublicKeyLoc != "" {
+				// Read file from location
+				var publicKeyBuf []byte
+				publicKeyBuf, err = ioutil.ReadFile(jwtRsaPublicKeyLoc)
+				if err != nil {
+					log.Errorln(logTag, ":unable to read the public key file from environment,", err)
+				}
+				var record = publicKey{}
+				record.PublicKey = string(publicKeyBuf)
+				record.RoleKey = a.jwtRoleKey
+				jwtRsaPublicKey, err := getJWTPublickKey(record)
 				if err != nil {
 					log.Errorln(logTag, ":unable to save public key record from environment,", err)
 				} else {
-					// Update local state
+					_, err = a.savePublicKey(context.Background(), publicKeyIndex, record)
+					if err != nil {
+						log.Errorln(logTag, ":unable to save public key record from environment,", err)
+					} else {
+						// Update local state
+						a.updateLocalPublicKey(jwtRsaPublicKey, record.RoleKey)
+					}
+				}
+			}
+		} else {
+			publicKeyBuf, err := util.DecodeBase64Key(record.PublicKey)
+			if err != nil {
+				log.Errorln(logTag, ":error parsing public key record,", err)
+			}
+			a.jwtRsaPublicKey, err = jwt.ParseRSAPublicKeyFromPEM(publicKeyBuf)
+			if err != nil {
+				log.Errorln(logTag, ":error parsing public key record,", err)
+			}
+			a.jwtRoleKey = record.RoleKey
+		}
+
+		// Set plugin cache sync script
+		s := CacheSyncScript{
+			index: publicKeyIndex,
+			a:     a,
+		}
+		util.AddSyncScript(s)
+	} else {
+		jwtRsaPublicKeyLoc := os.Getenv(envJwtRsaPublicKeyLoc)
+		if jwtRsaPublicKeyLoc != "" {
+			publicKeyBuf, readErr := ioutil.ReadFile(jwtRsaPublicKeyLoc)
+			if readErr != nil {
+				log.Errorln(logTag, ": unable to read the public key file from environment,", readErr)
+			} else {
+				var record = publicKey{}
+				record.PublicKey = string(publicKeyBuf)
+				record.RoleKey = a.jwtRoleKey
+				jwtRsaPublicKey, parseErr := getJWTPublickKey(record)
+				if parseErr != nil {
+					log.Errorln(logTag, ": unable to parse public key from environment,", parseErr)
+				} else {
 					a.updateLocalPublicKey(jwtRsaPublicKey, record.RoleKey)
 				}
 			}
+		} else {
+			log.Infoln(logTag, ": skipping .publickey index (setup profile:", util.GetSetupProfile(), "); set JWT_RSA_PUBLIC_KEY_LOC for JWT auth")
 		}
-	} else {
-		publicKeyBuf, err := util.DecodeBase64Key(record.PublicKey)
-		if err != nil {
-			log.Errorln(logTag, ":error parsing public key record,", err)
-		}
-		a.jwtRsaPublicKey, err = jwt.ParseRSAPublicKeyFromPEM(publicKeyBuf)
-		if err != nil {
-			log.Errorln(logTag, ":error parsing public key record,", err)
-		}
-		a.jwtRoleKey = record.RoleKey
 	}
-
-	// Set plugin cache sync script
-	s := CacheSyncScript{
-		index: publicKeyIndex,
-		a:     a,
-	}
-	util.AddSyncScript(s)
 
 	return nil
 }

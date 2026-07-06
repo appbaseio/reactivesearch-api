@@ -822,7 +822,7 @@ func (es *invocationElasticsearch) rolloverIndexJob(alias string) {
 	if shouldRollover {
 		rolloverSvc := util.NewIndicesRolloverService(alias, rolloverConditions).
 			Mappings(mappings)
-		if settings := util.RolloverIndexSettings(3); len(settings) > 0 {
+		if settings := util.RolloverIndexSettings(util.MetaIndexShards(3)); len(settings) > 0 {
 			rolloverSvc = rolloverSvc.Settings(settings)
 		}
 		rolloverService, err := rolloverSvc.Do(ctx)

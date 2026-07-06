@@ -43,59 +43,82 @@ func initPlugin(analyticsAlias, logsIndex, usersIndex, userSessionIndex, insight
 
 	es := &elasticsearch{analyticsAlias, logsIndex, userSessionIndex, insightsIndex, usersIndex, savedSearchesIndex, favoritesIndex, preferencesIndex}
 
-	// Check if alias exists instead of index and create first index if not exists with `${alias}-000001`
-	res, err := util.GetClient7().Aliases().Index("_all").Do(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("error while checking if index already exists: %v", err)
-	}
-	indices := res.IndicesByAlias(analyticsAlias)
-	isAnalyticsIndexExist := false
-	if len(indices) > 0 {
-		isAnalyticsIndexExist = true
+	needAnalytics := util.ShouldCreateMetaIndex(util.MetaIndexAnalytics)
+	needUserSessions := util.ShouldCreateMetaIndex(util.MetaIndexUserSessions)
+	needInsights := util.ShouldCreateMetaIndex(util.MetaIndexAnalyticsInsights)
+	needSavedSearches := util.ShouldCreateMetaIndex(util.MetaIndexSavedSearches)
+	needFavorites := util.ShouldCreateMetaIndex(util.MetaIndexFavorites)
+	needPreferences := util.ShouldCreateMetaIndex(util.MetaIndexAnalyticsPreferences)
+
+	isAnalyticsIndexExist := true
+	if needAnalytics {
+		res, err := util.GetClient7().Aliases().Index("_all").Do(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("error while checking if index already exists: %v", err)
+		}
+		indices := res.IndicesByAlias(analyticsAlias)
+		isAnalyticsIndexExist = len(indices) > 0
 	}
 
-	// Check if user sessions index exists
-	isUserSessionIndexExist, err1 := util.GetClient7().IndexExists(userSessionIndex).Do(ctx)
-	if err1 != nil {
-		return nil, fmt.Errorf("error while checking if index already exists: %v", err1)
-	}
-	// Check if analytics insights index exists
-	isInsightsIndexExist, err1 := util.GetClient7().IndexExists(insightsIndex).Do(ctx)
-	if err1 != nil {
-		return nil, fmt.Errorf("error while checking if index already exists: %v", err1)
+	isUserSessionIndexExist := true
+	if needUserSessions {
+		var err1 error
+		isUserSessionIndexExist, err1 = util.GetClient7().IndexExists(userSessionIndex).Do(ctx)
+		if err1 != nil {
+			return nil, fmt.Errorf("error while checking if index already exists: %v", err1)
+		}
 	}
 
-	// Check if saved searches index exists
-	isSavedSearchesIndexExist, err1 := util.GetClient7().IndexExists(savedSearchesIndex).Do(ctx)
-	if err1 != nil {
-		return nil, fmt.Errorf("error while checking if index already exists: %v", err1)
+	isInsightsIndexExist := true
+	if needInsights {
+		var err1 error
+		isInsightsIndexExist, err1 = util.GetClient7().IndexExists(insightsIndex).Do(ctx)
+		if err1 != nil {
+			return nil, fmt.Errorf("error while checking if index already exists: %v", err1)
+		}
 	}
 
-	// Check if favorites index exists
-	isFavoritesIndexExist, err1 := util.GetClient7().IndexExists(favoritesIndex).Do(ctx)
-	if err1 != nil {
-		return nil, fmt.Errorf("error while checking if index already exists: %v", err1)
+	isSavedSearchesIndexExist := true
+	if needSavedSearches {
+		var err1 error
+		isSavedSearchesIndexExist, err1 = util.GetClient7().IndexExists(savedSearchesIndex).Do(ctx)
+		if err1 != nil {
+			return nil, fmt.Errorf("error while checking if index already exists: %v", err1)
+		}
 	}
 
-	// Check if preferences index exists
-	isPreferencesIndexExist, prefErr := util.GetClient7().IndexExists(preferencesIndex).Do(ctx)
-	if prefErr != nil {
-		return nil, fmt.Errorf("error while checking if preferences index already exists: %v", prefErr)
+	isFavoritesIndexExist := true
+	if needFavorites {
+		var err1 error
+		isFavoritesIndexExist, err1 = util.GetClient7().IndexExists(favoritesIndex).Do(ctx)
+		if err1 != nil {
+			return nil, fmt.Errorf("error while checking if index already exists: %v", err1)
+		}
 	}
 
-	if isAnalyticsIndexExist && isUserSessionIndexExist && isInsightsIndexExist && isSavedSearchesIndexExist && isFavoritesIndexExist && isPreferencesIndexExist {
-		log.Println(logTag, ": index named", analyticsAlias, "already exists, skipping...")
-		log.Println(logTag, ": index named", userSessionIndex, "already exists, skipping...")
-		log.Println(logTag, ": index named", insightsIndex, "already exists, skipping...")
-		log.Println(logTag, ": index named", savedSearchesIndex, "already exists, skipping...")
-		log.Println(logTag, ": index named", favoritesIndex, "already exists, skipping...")
-		log.Println(logTag, ": index named", preferencesIndex, "already exists, skipping...")
+	isPreferencesIndexExist := true
+	if needPreferences {
+		var prefErr error
+		isPreferencesIndexExist, prefErr = util.GetClient7().IndexExists(preferencesIndex).Do(ctx)
+		if prefErr != nil {
+			return nil, fmt.Errorf("error while checking if preferences index already exists: %v", prefErr)
+		}
+	}
+
+	if (!needAnalytics || isAnalyticsIndexExist) &&
+		(!needUserSessions || isUserSessionIndexExist) &&
+		(!needInsights || isInsightsIndexExist) &&
+		(!needSavedSearches || isSavedSearchesIndexExist) &&
+		(!needFavorites || isFavoritesIndexExist) &&
+		(!needPreferences || isPreferencesIndexExist) {
+		log.Println(logTag, ": analytics meta indices already exist or disabled for profile, skipping creation...")
 		return es, nil
 	}
 
 	replicas := util.GetReplicas()
+	var err error
 	// Analytics index does not exists, create a new one
-	if !isAnalyticsIndexExist {
+	if needAnalytics && !isAnalyticsIndexExist {
 		settings := util.AdaptIndexBody(fmt.Sprintf(analyticsMapping, analyticsAlias, getAnalyticsMappings(), util.HiddenIndexSettings(), replicas))
 		analyticsIndex := analyticsAlias + `-000001`
 		_, err = util.GetClient7().CreateIndex(analyticsIndex).
@@ -145,7 +168,7 @@ func initPlugin(analyticsAlias, logsIndex, usersIndex, userSessionIndex, insight
 	settings := util.AdaptIndexBody(fmt.Sprintf(mapping, util.HiddenIndexSettings(), replicas))
 
 	// User session index does not exists, create a new one
-	if !isUserSessionIndexExist {
+	if needUserSessions && !isUserSessionIndexExist {
 		settings := util.AdaptIndexBody(fmt.Sprintf(userSessionMapping, getUserSessionMappings(), util.HiddenIndexSettings(), replicas))
 		_, err = util.GetClient7().CreateIndex(userSessionIndex).Body(settings).Do(ctx)
 		if err != nil {
@@ -155,7 +178,7 @@ func initPlugin(analyticsAlias, logsIndex, usersIndex, userSessionIndex, insight
 	}
 
 	// Analytics insights index does not exists, create a new one
-	if !isInsightsIndexExist {
+	if needInsights && !isInsightsIndexExist {
 		_, err = util.GetClient7().CreateIndex(insightsIndex).Body(settings).Do(ctx)
 		if err != nil {
 			return nil, fmt.Errorf("error while creating index named %s: %v", insightsIndex, err)
@@ -164,7 +187,7 @@ func initPlugin(analyticsAlias, logsIndex, usersIndex, userSessionIndex, insight
 	}
 
 	// Analytics saved searches index does not exists, create a new one
-	if !isSavedSearchesIndexExist {
+	if needSavedSearches && !isSavedSearchesIndexExist {
 		_, err = util.GetClient7().CreateIndex(savedSearchesIndex).Body(settings).Do(ctx)
 		if err != nil {
 			return nil, fmt.Errorf("error while creating index named %s: %v", savedSearchesIndex, err)
@@ -173,7 +196,7 @@ func initPlugin(analyticsAlias, logsIndex, usersIndex, userSessionIndex, insight
 	}
 
 	// Analytics favorites index does not exists, create a new one
-	if !isFavoritesIndexExist {
+	if needFavorites && !isFavoritesIndexExist {
 		_, err = util.GetClient7().CreateIndex(favoritesIndex).Body(settings).Do(ctx)
 		if err != nil {
 			return nil, fmt.Errorf("error while creating index named %s: %v", favoritesIndex, err)
@@ -182,7 +205,7 @@ func initPlugin(analyticsAlias, logsIndex, usersIndex, userSessionIndex, insight
 	}
 
 	// If preferences index doesn't exist, create it.
-	if !isPreferencesIndexExist {
+	if needPreferences && !isPreferencesIndexExist {
 		prefsSettings := util.AdaptIndexBody(fmt.Sprintf(preferencesMapping, util.HiddenIndexSettings(), replicas))
 		_, err = util.GetClient7().CreateIndex(preferencesIndex).Body(prefsSettings).Do(ctx)
 		if err != nil {
@@ -3059,7 +3082,7 @@ func (es *elasticsearch) rolloverIndexJob(alias string) {
 	if shouldRollover {
 		rolloverSvc := util.NewIndicesRolloverService(alias, rolloverConditions).
 			Mappings(mappings)
-		if settings := util.RolloverIndexSettings(2); len(settings) > 0 {
+		if settings := util.RolloverIndexSettings(util.MetaIndexShards(2)); len(settings) > 0 {
 			rolloverSvc = rolloverSvc.Settings(settings)
 		}
 		rolloverService, err := rolloverSvc.Do(ctx)
@@ -3800,7 +3823,7 @@ func createRecentSearchesIndex(indexWithSuffix, indexConfig string) (*recentDocu
 
 	mappings = fmt.Sprintf(mappings, mappingForType)
 
-	settings := util.AdaptIndexBody(fmt.Sprintf(indexConfig, util.HiddenIndexSettings(), replicas, mappings))
+	settings := util.AdaptIndexBody(fmt.Sprintf(indexConfig, util.HiddenIndexSettings(), util.MetaIndexShards(2), replicas, mappings))
 
 	// index does not exists, create a new one
 	_, err = util.GetClient7().CreateIndex(indexWithSuffix).Body(settings).Do(context.Background())
@@ -3809,7 +3832,7 @@ func createRecentSearchesIndex(indexWithSuffix, indexConfig string) (*recentDocu
 	}
 
 	// Use fallback method to create the index without the mappings
-	fallbackSettings := util.AdaptIndexBody(fmt.Sprintf(indexConfig, util.HiddenIndexSettings(), replicas, "{}"))
+	fallbackSettings := util.AdaptIndexBody(fmt.Sprintf(indexConfig, util.HiddenIndexSettings(), util.MetaIndexShards(2), replicas, "{}"))
 	_, fallbackErr := util.GetClient7().CreateIndex(indexWithSuffix).Body(fallbackSettings).Do(context.Background())
 	if fallbackErr != nil {
 		return nil, fmt.Errorf("error while creating index named %s: %v", indexWithSuffix, err)

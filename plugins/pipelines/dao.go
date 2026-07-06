@@ -44,7 +44,7 @@ func initPlugin(pipelinesIndex, mapping string) (*elasticsearch, error) {
 	}
 
 	replicas := util.GetReplicas()
-	settings := util.AdaptIndexBody(fmt.Sprintf(mapping, pipelinesMapping, util.HiddenIndexSettings(), replicas))
+	settings := util.AdaptIndexBody(fmt.Sprintf(mapping, pipelinesMapping, util.HiddenIndexSettings(), util.MetaIndexShards(3), replicas))
 
 	// Meta index does not exists, create a new one
 	_, err = util.GetClient7().CreateIndex(pipelinesIndex).Body(settings).Do(ctx)
@@ -79,7 +79,7 @@ func initInvocationIndex(invocationAlias, _ string) (*invocationElasticsearch, e
 	}
 
 	replicas := util.GetReplicas()
-	settings := util.AdaptIndexBody(fmt.Sprintf(invocationConfig, invocationAlias, util.HiddenIndexSettings(), replicas, pipelineInvocationMapping))
+	settings := util.AdaptIndexBody(fmt.Sprintf(invocationConfig, invocationAlias, util.HiddenIndexSettings(), util.MetaIndexShards(3), replicas, pipelineInvocationMapping))
 
 	// Create the index name to match the name regex for rollover
 	invocationIndex := invocationAlias + `-000001`
@@ -156,7 +156,7 @@ func initLogIndex(logsAlias, mapping string) (*logsElasticsearch, error) {
 	}
 
 	replicas := util.GetReplicas()
-	settings := util.AdaptIndexBody(fmt.Sprintf(mapping, logsAlias, util.HiddenIndexSettings(), replicas, pipelineLogsMapping))
+	settings := util.AdaptIndexBody(fmt.Sprintf(mapping, logsAlias, util.HiddenIndexSettings(), util.MetaIndexShards(3), replicas, pipelineLogsMapping))
 
 	// Create the index name to match the name regex for
 	logsIndex := logsAlias + `-000001`
@@ -227,7 +227,7 @@ func initVarIndex(varIndex, mapping string) (*varElasticsearch, error) {
 	}
 
 	replicas := util.GetReplicas()
-	settings := util.AdaptIndexBody(fmt.Sprintf(mapping, pipelineVarMapping, util.HiddenIndexSettings(), replicas))
+	settings := util.AdaptIndexBody(fmt.Sprintf(mapping, pipelineVarMapping, util.HiddenIndexSettings(), util.MetaIndexShards(3), replicas))
 
 	// Meta index does not exists, create a new one
 	_, err = util.GetClient7().CreateIndex(varIndex).Body(settings).Do(ctx)

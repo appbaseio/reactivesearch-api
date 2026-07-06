@@ -61,6 +61,13 @@ func (e *UIBuilder) Name() string {
 // InitFunc is a part of Plugin interface that gets executed only once, and initializes
 // the dao, i.e. elasticsearch before the plugin is operational.
 func (e *UIBuilder) InitFunc() error {
+	if !util.ShouldCreateMetaIndex(util.MetaIndexUIBuilderPreferences) &&
+		!util.ShouldCreateMetaIndex(util.MetaIndexSearchBox) &&
+		!util.ShouldCreateMetaIndex(util.MetaIndexFeaturedSuggestions) {
+		log.Infoln(logTag, ": skipping ES index creation (setup profile:", util.GetSetupProfile(), ")")
+		return nil
+	}
+
 	preferencesIndex := os.Getenv(envUIBuilderPreferencesIndex)
 	if preferencesIndex == "" {
 		preferencesIndex = defaultUIBuilderPreferencesIndex
@@ -72,9 +79,11 @@ func (e *UIBuilder) InitFunc() error {
 	}
 	searchboxIndex = util.MetaIndexName(searchboxIndex)
 	var err error
-	e.esFeaturedSuggestions, _, err = createSearchBoxIndex(searchboxIndex, mapping)
-	if err != nil {
-		return err
+	if util.ShouldCreateMetaIndex(util.MetaIndexSearchBox) {
+		e.esFeaturedSuggestions, _, err = createSearchBoxIndex(searchboxIndex, mapping)
+		if err != nil {
+			return err
+		}
 	}
 	// Create separate index for denormalized featured suggestions
 	featuredSuggestionsIndex := os.Getenv(envFeaturedSuggestionsIndex)
@@ -82,54 +91,56 @@ func (e *UIBuilder) InitFunc() error {
 		featuredSuggestionsIndex = defaultFeaturedSuggestionsIndex
 	}
 	featuredSuggestionsIndex = util.MetaIndexName(featuredSuggestionsIndex)
-	_, featuredSuggestionsIndexExists, err := createSearchBoxIndex(featuredSuggestionsIndex, featuredSuggestionsMapping)
-	if err != nil {
-		return err
-	}
-	e.featuredSuggestionsConfig = FeaturedSuggestionsConfig{
-		esIndex: featuredSuggestionsIndex,
+	var featuredSuggestionsIndexExists bool
+	if util.ShouldCreateMetaIndex(util.MetaIndexFeaturedSuggestions) {
+		_, featuredSuggestionsIndexExists, err = createSearchBoxIndex(featuredSuggestionsIndex, featuredSuggestionsMapping)
+		if err != nil {
+			return err
+		}
+		e.featuredSuggestionsConfig = FeaturedSuggestionsConfig{
+			esIndex: featuredSuggestionsIndex,
+		}
 	}
 
 	// initialize the dao
-	e.es, err = initPlugin(preferencesIndex, mapping)
-	if err != nil {
-		log.Errorln(logTag, ":", err)
-		return err
+	if util.ShouldCreateMetaIndex(util.MetaIndexUIBuilderPreferences) {
+		e.es, err = initPlugin(preferencesIndex, mapping)
+		if err != nil {
+			log.Errorln(logTag, ":", err)
+			return err
+		}
 	}
 	oldPreferenceIndex := os.Getenv(envEcommPreferencesIndex)
 	if oldPreferenceIndex == "" {
 		oldPreferenceIndex = defaultEcommPreferencesIndex
 	}
-	// Add suggestions preferences migration script
-	m := UIBuilderPreferencesMigration{
-		newIndex: preferencesIndex,
-		oldIndex: oldPreferenceIndex,
+	if util.ShouldCreateMetaIndex(util.MetaIndexUIBuilderPreferences) {
+		util.AddMigrationScript(UIBuilderPreferencesMigration{
+			newIndex: preferencesIndex,
+			oldIndex: oldPreferenceIndex,
+		})
 	}
-	util.AddMigrationScript(m)
 
-	// sync searchbox preferences cache
-	searchboxPreferencesResponse, err := util.GetClient7().
-		Search(searchboxIndex).
-		Size(10000).
-		Do(context.Background())
-	if err != nil {
-		return err
-	}
-	if searchboxPreferencesResponse != nil {
-		// Only sync featured suggestions to ES if the index was just created
-		// (if it already existed, data is already there)
-		syncToES := !featuredSuggestionsIndexExists
-		err := e.featuredSuggestionsConfig.setFeaturedSuggestionsFromESResponse(searchboxPreferencesResponse, searchboxIndex, syncToES)
-		if err != nil {
-			return err
+	if util.ShouldCreateMetaIndex(util.MetaIndexSearchBox) {
+		searchboxPreferencesResponse, searchErr := util.GetClient7().
+			Search(searchboxIndex).
+			Size(10000).
+			Do(context.Background())
+		if searchErr != nil {
+			return searchErr
 		}
+		if searchboxPreferencesResponse != nil && util.ShouldCreateMetaIndex(util.MetaIndexFeaturedSuggestions) {
+			syncToES := !featuredSuggestionsIndexExists
+			err := e.featuredSuggestionsConfig.setFeaturedSuggestionsFromESResponse(searchboxPreferencesResponse, searchboxIndex, syncToES)
+			if err != nil {
+				return err
+			}
+		}
+		util.AddSyncScript(FeaturedSuggestionsCacheSyncScript{
+			index:                     searchboxIndex,
+			featuredSuggestionsConfig: e.featuredSuggestionsConfig,
+		})
 	}
-	// Set featured suggestions cache sync script
-	f := FeaturedSuggestionsCacheSyncScript{
-		index:                     searchboxIndex,
-		featuredSuggestionsConfig: e.featuredSuggestionsConfig,
-	}
-	util.AddSyncScript(f)
 	return nil
 }
 

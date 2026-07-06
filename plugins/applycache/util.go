@@ -72,6 +72,9 @@ func (r *RollOverStat) RollOver() *CacheStatES {
 // The value of performanceSave will be ignored if the cache
 // was not hit.
 func (r *RollOverStat) Add(isHit bool, performanceSave int64) {
+	if r == nil || r.Stat == nil {
+		return
+	}
 	r.mu.Lock()
 
 	r.Stat.CacheRequestCount += 1

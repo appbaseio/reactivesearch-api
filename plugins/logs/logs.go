@@ -28,7 +28,7 @@ const (
 	  },
 	  "settings": {
 		%s
-	    "index.number_of_shards": 2,
+	    "index.number_of_shards": %d,
 	    "index.number_of_replicas": %d
 	  },
 	  "mappings": %s
@@ -79,6 +79,10 @@ func (l *Logs) IsDiffingDisabled() bool {
 // InitFunc is a part of Plugin interface that gets executed only once, and initializes
 // the dao, i.e. elasticsearch before the plugin is operational.
 func (l *Logs) InitFunc() error {
+	if !util.ShouldCreateMetaIndex(util.MetaIndexLogs) {
+		log.Infoln(logTag, ": skipping ES index creation (setup profile:", util.GetSetupProfile(), ")")
+		return nil
+	}
 	// Set the value for enableDiffing
 	//
 	// We will read the value from an environment variable
