@@ -52,6 +52,10 @@ func (n *nodes) DeleteOutdated() {
 // - ping job: every 1m
 // - delete job: every 7d
 func (n *nodes) StartAutomatedJobs() {
+	if n.es == nil {
+		return
+	}
+
 	// Start the ping job
 	pingESJob := cron.New()
 	pingESJob.AddFunc("@every 1m", n.PingESWithTime)

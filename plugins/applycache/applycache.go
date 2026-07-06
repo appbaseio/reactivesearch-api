@@ -43,6 +43,9 @@ func Instance() *Cache {
 // InitFunc is a part of Plugin interface that gets executed only once, and initializes
 // the dao, i.e. elasticsearch before the plugin is operational.
 func (c *Cache) InitFunc() error {
+	if !util.ShouldCreateMetaIndex(util.MetaIndexCacheStats) {
+		return nil
+	}
 	indexPrefix := util.MetaIndexName(cacheEsIndex)
 
 	// initialize the dao

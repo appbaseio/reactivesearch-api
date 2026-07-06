@@ -44,6 +44,10 @@ func (p *Sync) Name() string {
 // InitFunc is a part of Plugin interface that gets executed only once, and initializes
 // the dao, i.e. elasticsearch before the plugin is operational.
 func (p *Sync) InitFunc() error {
+	if !util.ShouldCreateMetaIndex(util.MetaIndexSyncPreferences) {
+		log.Infoln(logTag, ": skipping ES index creation (setup profile:", util.GetSetupProfile(), ")")
+		return nil
+	}
 
 	// Create suggestions preferences index if not exists
 	indexName := os.Getenv(envSyncPreferencesEsIndex)
