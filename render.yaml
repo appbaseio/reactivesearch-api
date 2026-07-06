@@ -17,6 +17,6 @@ services:
       - key: RS_SETUP_PROFILE
         value: minimal
       - key: USERNAME
-        value: rs-demo
+        sync: false
       - key: PASSWORD
-        value: rs-password
+        sync: false
