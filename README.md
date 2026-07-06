@@ -8,34 +8,32 @@ ReactiveSearch API is an open-source, self-hosted search middleware for Elastics
 
 ## Why ReactiveSearch API
 
-### 1. Search pipelines — fully programmable request lifecycle
+### 1. A secure gateway to Elasticsearch and OpenSearch
+
+ReactiveSearch sits between your application and the search cluster so clients never talk to Elasticsearch directly. API keys and users support granular permissions: restrict by **index pattern**, **API category** (Docs, Search, Indices, Cat, Clusters, Analytics, etc.), individual **ACLs**, **operations** (read / write / delete), **source IPs**, **HTTP referers**, **include/exclude fields**, per-category **rate limits** and **time-to-live** expiration. JWT-based auth with configurable RSA public keys is also supported. You get a production-ready search endpoint without handing out cluster credentials or full DSL access.
+
+### 2. Search pipelines — fully programmable request lifecycle
 
 Pipelines let you define the entire request/response lifecycle as a DAG of stages. Choose from 28+ pre-built stages (`reactivesearchQuery`, `elasticsearchQuery`, `useCache`, `recordAnalytics`, `kNN`, `openAIEmbeddings`, `AIAnswer`, `httpRequest` and more) or write custom **JavaScript functions** with full `async/await` and `fetch` support. Stages run in parallel, trigger conditionally and chain with `needs` dependencies — making it possible to enrich queries with external APIs or ML models, merge results and reshape responses without touching application code.
 
-### 2. AI and vector search, built in
+### 3. AI and vector search, built in
 
 - **OpenAI Embeddings** stage generates vector embeddings at query time or index time and feeds them directly into kNN queries.
 - **kNN** stage executes vector similarity search natively on Elasticsearch / OpenSearch.
 - **AI Answer** stage sends top search results as context to GPT and returns a natural-language answer alongside traditional results — with session support for follow-up questions.
 - **Knowledge Graph** integration via pipeline scripts to merge structured data from external APIs into search responses.
 
-### 3. Declarative query API — write 4× less code, safely
+### 4. Composable query API — safe to expose, easy to target
 
-A typical Elasticsearch query with filters takes ~80 lines of imperative DSL. The same intent is expressed in ~20 lines of declarative ReactiveSearch JSON. Each query is an independent, composable block wired together with the `react` property — no nesting hell, no engine-specific boilerplate. Because the format is declarative, it is safe to expose to web and mobile clients without risk of script injection.
-
-![](https://i.imgur.com/0wIHBWB.png)
-
-### 4. Fine-grained access control and security
-
-API keys and users support granular permissions: restrict by **index pattern**, **API category** (Docs, Search, Indices, Cat, Clusters, Analytics, etc.), individual **ACLs**, **operations** (read / write / delete), **source IPs**, **HTTP referers**, **include/exclude fields**, per-category **rate limits** and **time-to-live** expiration. JWT-based auth with configurable RSA public keys is also supported.
+Search is expressed as independent, composable query blocks wired together with the `react` property — each block maps to a facet, filter or result set without nested DSL. Because the format is declarative (no arbitrary scripts in queries), it is safe to expose to web and mobile clients. The API is also a stable, documented contract for tools, agents and UI libraries to generate against: the same query shape maps 1-to-1 to [ReactiveSearch](https://github.com/appbaseio/reactivesearch) and [Searchbox](https://github.com/appbaseio/searchbox) component props across React, Vue, React Native, Flutter and Vanilla JS.
 
 ### 5. Query rules, search relevancy and suggestions
 
 **Query rules** let you promote, hide or inject results, replace search terms, add filters and schedule rules via cron — all configurable as data, not code. **Search Relevancy** persists per-index relevancy profiles (field weights, fuzziness, language settings) applied automatically to queries. **Suggestions** powers seven types out of the box — popular, recent, predictive, featured, FAQ, document and index — for a complete search-as-you-type experience.
 
-### 6. Analytics, caching and UI libraries
+### 6. Analytics, caching and observability
 
-**Analytics** records every search, click, conversion, favorite and saved search via dedicated pipeline stages, feeding actionable insights such as slow queries, zero-result searches and geo distribution. **Caching** via the `useCache` stage serves repeat queries from a configurable in-memory cache with sub-millisecond latency. **UI libraries** — the declarative API maps 1-to-1 to [ReactiveSearch](https://github.com/appbaseio/reactivesearch) and [Searchbox](https://github.com/appbaseio/searchbox) component props (React, Vue, React Native, Flutter, Vanilla JS), compressing weeks of search UI development into days.
+**Analytics** records every search, click, conversion, favorite and saved search via dedicated pipeline stages, feeding actionable insights such as slow queries, zero-result searches and geo distribution. **Caching** via the `useCache` stage serves repeat queries from a configurable in-memory cache with sub-millisecond latency. Request logging and audit trails capture what was sent to the cluster, so you can debug relevance and performance without reproducing production traffic locally.
 
 Full API reference is available [here](https://docs.reactivesearch.io/docs/search/reactivesearch-api/reference).
 
