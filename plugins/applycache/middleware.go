@@ -140,6 +140,7 @@ func applyCachedResponse(h http.HandlerFunc) http.HandlerFunc {
 
 		isCacheHit := false
 		cacheInstance := Instance()
+		trackCacheStats := cacheInstance.rollOver != nil
 
 		if cache.ShouldApplyCache(req, *body) {
 			startTime, err := tracktime.FromTimeTrackerContext(req.Context())
@@ -167,7 +168,9 @@ func applyCachedResponse(h http.HandlerFunc) http.HandlerFunc {
 			// We will consider the cache a hit only when it reaches this phase.
 			if cachedResponse != nil {
 				// Capture the cache as a hit
-				cacheInstance.rollOver.Add(true, cachedResponse.PerformanceSave)
+				if trackCacheStats {
+					cacheInstance.rollOver.Add(true, cachedResponse.PerformanceSave)
+				}
 				isCacheHit = true
 
 				for k, v := range cachedResponse.Headers {
@@ -179,7 +182,7 @@ func applyCachedResponse(h http.HandlerFunc) http.HandlerFunc {
 		}
 
 		// If cache is not hit, count it as a miss
-		if !isCacheHit {
+		if !isCacheHit && trackCacheStats {
 			cacheInstance.rollOver.Add(false, 0)
 		}
 

@@ -87,6 +87,10 @@ func (a *Analytics) recordAnalyticsES7(esResponse searchResponseEs7, docID, sear
 		calculateAnalytics(r, &record)
 	}
 
+	if a.es == nil {
+		return
+	}
+
 	// TODO: remove
 	//logRaw(record)
 	err2 := a.es.updateRecord(context.Background(), docID, record)

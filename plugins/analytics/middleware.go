@@ -530,6 +530,9 @@ type RecordUserSessionConfig struct {
 
 // Records a user session for a particular search request
 func (a *Analytics) recordUserSession(config RecordUserSessionConfig) {
+	if a.es == nil {
+		return
+	}
 	// Don't record for invalid plans
 	if !util.ValidatePlans(validPlans, util.GetFeatureCustomEvents()) {
 		return
