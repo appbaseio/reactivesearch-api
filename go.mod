@@ -12,7 +12,6 @@ require (
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/gdexlab/go-render v1.0.1
 	github.com/gertd/go-pluralize v0.1.7
-	github.com/getsentry/sentry-go v0.11.0
 	github.com/ghodss/yaml v1.0.0
 	github.com/go-playground/validator/v10 v10.14.1
 	github.com/go-redis/redis/v8 v8.11.5
@@ -21,7 +20,6 @@ require (
 	github.com/hashicorp/go-version v1.3.0
 	github.com/invopop/jsonschema v0.7.0
 	github.com/keygen-sh/keygen-go v1.11.0
-	github.com/klauspost/compress v1.16.5 // indirect
 	github.com/kljensen/snowball v0.6.0
 	github.com/kr/pretty v0.3.1
 	github.com/lithammer/fuzzysearch v1.1.3
@@ -42,11 +40,11 @@ require (
 	github.com/tiktoken-go/tokenizer v0.1.0
 	github.com/ulule/limiter v2.2.2+incompatible
 	go.kuoruan.net/v8go-polyfills v0.5.0
-	go.mongodb.org/mongo-driver v1.12.0
-	golang.org/x/crypto v0.21.0
-	golang.org/x/net v0.23.0
-	golang.org/x/sys v0.18.0
-	golang.org/x/text v0.14.0
+	go.mongodb.org/mongo-driver v1.17.7
+	golang.org/x/crypto v0.26.0
+	golang.org/x/net v0.25.0
+	golang.org/x/sys v0.23.0
+	golang.org/x/text v0.17.0
 	gopkg.in/DataDog/dd-trace-go.v1 v1.52.0
 	gopkg.in/natefinch/lumberjack.v2 v2.0.0
 	gopkg.in/olivere/elastic.v6 v6.2.26
