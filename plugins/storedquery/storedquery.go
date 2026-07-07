@@ -45,6 +45,10 @@ func (s *StoredQuery) Name() string {
 // InitFunc initializes the dao, i.e. elasticsearch client, and should be executed
 // only once in the lifetime of the plugin.
 func (s *StoredQuery) InitFunc() error {
+	if !util.ShouldCreateMetaIndex(util.MetaIndexStoredQuery) {
+		log.Infoln(logTag, ": skipping ES index creation (setup profile:", util.GetSetupProfile(), ")")
+		return nil
+	}
 	indexPrefix := os.Getenv(envStoredQueryEsIndex)
 	if indexPrefix == "" {
 		indexPrefix = defaultStoredQueryEsIndex

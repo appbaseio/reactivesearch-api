@@ -21,7 +21,7 @@ const (
 	defaultPipelineVarsIndex          = ".pipeline_vars"
 	typeName                          = "_doc"
 	envPipelinesEsIndexSuffix         = "PIPELINES_ES_INDEX_SUFFIX"
-	mapping                           = `{"mappings": %s, "settings":{ %s "index.number_of_shards": 3, "index.number_of_replicas":%d}}`
+	mapping                           = `{"mappings": %s, "settings":{ %s "index.number_of_shards": %d, "index.number_of_replicas":%d}}`
 	envPipelineLogFilePath            = "PIPELINE_LOG_FILE_PATH"
 	defaultPipelineLogFilePath        = "log/arc/pipeline.json"
 	envPipelineInvocationFilePath     = "PIPELINE_INVOCATION_FILE_PATH"
@@ -38,7 +38,7 @@ const (
 	  },
 	  "settings": {
 		%s
-	    "index.number_of_shards": 3,
+	    "index.number_of_shards": %d,
 	    "index.number_of_replicas": %d
 	  },
 	  "mappings": %s
@@ -52,7 +52,7 @@ const (
 	  },
 	  "settings": {
 		%s
-	    "index.number_of_shards": 3,
+	    "index.number_of_shards": %d,
 	    "index.number_of_replicas": %d
 	  },
 	  "mappings": %s
@@ -123,27 +123,32 @@ func (p *Pipelines) InitFunc() error {
 
 	// initialize the dao
 	var err error
-	p.es, err = initPlugin(indexPrefix, mapping)
-	if err != nil {
-		return err
+	if util.ShouldCreateMetaIndex(util.MetaIndexPipelines) {
+		p.es, err = initPlugin(indexPrefix, mapping)
+		if err != nil {
+			return err
+		}
 	}
 
-	// Initialize the dao for invocation
-	p.invocationEs, err = initInvocationIndex(util.MetaIndexName(defaultPipelineInvocationIndex), mapping)
-	if err != nil {
-		return err
+	if util.ShouldCreateMetaIndex(util.MetaIndexPipelineInvocations) {
+		p.invocationEs, err = initInvocationIndex(util.MetaIndexName(defaultPipelineInvocationIndex), mapping)
+		if err != nil {
+			return err
+		}
 	}
 
-	// Init the logs index
-	p.logEs, err = initLogIndex(util.MetaIndexName(defaultPipelinesLogEsIndex), logsConfig)
-	if err != nil {
-		return err
+	if util.ShouldCreateMetaIndex(util.MetaIndexPipelineLogs) {
+		p.logEs, err = initLogIndex(util.MetaIndexName(defaultPipelinesLogEsIndex), logsConfig)
+		if err != nil {
+			return err
+		}
 	}
 
-	// Init the vars index
-	p.varEs, err = initVarIndex(util.MetaIndexName(defaultPipelineVarsIndex), mapping)
-	if err != nil {
-		return err
+	if util.ShouldCreateMetaIndex(util.MetaIndexPipelineVars) {
+		p.varEs, err = initVarIndex(util.MetaIndexName(defaultPipelineVarsIndex), mapping)
+		if err != nil {
+			return err
+		}
 	}
 
 	// Init the validateId to logs session single
@@ -178,32 +183,33 @@ func (p *Pipelines) InitFunc() error {
 		MaxAge:     30, // in days
 	}
 
-	// Add user session mapping changes to migration script
-	util.AddMigrationScript(MappingsMigration{
-		es:        p.es.(*elasticsearch),
-		indexName: indexPrefix,
-	})
-	// sync rules
-	esRules, err := p.es.getPipelines(context.Background())
-	if err != nil {
-		log.Errorln(logTag, ":", "error while retrieving the pipelines:", err)
-		return nil
+	if p.es != nil {
+		util.AddMigrationScript(MappingsMigration{
+			es:        p.es.(*elasticsearch),
+			indexName: indexPrefix,
+		})
 	}
-	SetPipelinesToCache(esRules)
+	if p.es != nil {
+		esRules, err := p.es.getPipelines(context.Background())
+		if err != nil {
+			log.Errorln(logTag, ":", "error while retrieving the pipelines:", err)
+			return nil
+		}
+		SetPipelinesToCache(esRules)
+	}
 
-	// Sync pipeline vars
-	pipelineVars, err := p.varEs.getVars(context.Background())
-	if err != nil {
-		log.Errorln(logTag, ": error while retrieving the pipeline variables, ", err)
-		return nil
+	if p.varEs != nil {
+		pipelineVars, err := p.varEs.getVars(context.Background())
+		if err != nil {
+			log.Errorln(logTag, ": error while retrieving the pipeline variables, ", err)
+			return nil
+		}
+		SetVars(pipelineVars)
 	}
-	SetVars(pipelineVars)
 
-	// Set plugin cache sync script
-	s := CacheSyncScript{
-		index: indexPrefix,
+	if p.es != nil {
+		util.AddSyncScript(CacheSyncScript{index: indexPrefix})
 	}
-	util.AddSyncScript(s)
 
 	// generate pipeline schema
 	schema, err := GetPipelineSchema()
@@ -214,20 +220,20 @@ func (p *Pipelines) InitFunc() error {
 	// set schema
 	p.pipelineSchema = schema
 
-	// Initiate the logs rollover cronjob
-	pipelineLogsIndex := util.MetaIndexName(defaultPipelinesLogEsIndex)
-	pipelineInvocationsIndex := util.MetaIndexName(defaultPipelineInvocationIndex)
-	cronjob := cron.New()
-	cronjob.AddFunc("@midnight", func() { p.logEs.rolloverIndexJob(pipelineLogsIndex) })
-	// in addition, run every hour, keeping original midnight job as well
-	cronjob.AddFunc("@hourly", func() { p.logEs.rolloverIndexJob(pipelineLogsIndex) })
-
-	// Initiate the invocations rollover cronjob
-	cronjob.AddFunc("@midnight", func() { p.invocationEs.rolloverIndexJob(pipelineInvocationsIndex) })
-	// in addition, run every hour, keeping original midnight job as well
-	cronjob.AddFunc("@hourly", func() { p.invocationEs.rolloverIndexJob(pipelineInvocationsIndex) })
-
-	cronjob.Start()
+	if p.logEs != nil || p.invocationEs != nil {
+		pipelineLogsIndex := util.MetaIndexName(defaultPipelinesLogEsIndex)
+		pipelineInvocationsIndex := util.MetaIndexName(defaultPipelineInvocationIndex)
+		cronjob := cron.New()
+		if p.logEs != nil {
+			cronjob.AddFunc("@midnight", func() { p.logEs.rolloverIndexJob(pipelineLogsIndex) })
+			cronjob.AddFunc("@hourly", func() { p.logEs.rolloverIndexJob(pipelineLogsIndex) })
+		}
+		if p.invocationEs != nil {
+			cronjob.AddFunc("@midnight", func() { p.invocationEs.rolloverIndexJob(pipelineInvocationsIndex) })
+			cronjob.AddFunc("@hourly", func() { p.invocationEs.rolloverIndexJob(pipelineInvocationsIndex) })
+		}
+		cronjob.Start()
+	}
 
 	return nil
 }

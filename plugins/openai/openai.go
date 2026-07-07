@@ -85,6 +85,11 @@ func (r *OpenAI) InitFunc() error {
 	// Initialize the chatGPT session ID map
 	r.sessionMap = SessionInstance()
 
+	if !util.ShouldCreateMetaIndex(util.MetaIndexOpenAI) {
+		log.Infoln(logTag, ": skipping ES index creation (setup profile:", util.GetSetupProfile(), ")")
+		return nil
+	}
+
 	openAIIndex := os.Getenv(envOpenAIEsIndex)
 	if openAIIndex == "" {
 		openAIIndex = defaultOpenAIEsIndex
@@ -106,15 +111,19 @@ func (r *OpenAI) InitFunc() error {
 	util.AddMigrationScript(migration)
 
 	// Initialize the analytics plugin as well
-	r.analyticsEs, err = initAnalyticsPlugin(util.MetaIndexName(defaultAIAnalyticsIndex), analyticsMapping)
-	if err != nil {
-		return err
+	if util.ShouldCreateMetaIndex(util.MetaIndexAIAnalytics) {
+		r.analyticsEs, err = initAnalyticsPlugin(util.MetaIndexName(defaultAIAnalyticsIndex), analyticsMapping)
+		if err != nil {
+			return err
+		}
 	}
 
 	// Initialize the FAQ index on ES
-	r.faqEs, err = initFAQPluginES(util.MetaIndexName(defaultFAQIndex), FAQMapping)
-	if err != nil {
-		return err
+	if util.ShouldCreateMetaIndex(util.MetaIndexAIFAQs) {
+		r.faqEs, err = initFAQPluginES(util.MetaIndexName(defaultFAQIndex), FAQMapping)
+		if err != nil {
+			return err
+		}
 	}
 
 	// Fetch the settings

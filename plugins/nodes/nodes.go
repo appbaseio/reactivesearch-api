@@ -38,6 +38,10 @@ func (n *nodes) Name() string {
 }
 
 func (n *nodes) InitFunc() error {
+	if !util.ShouldCreateMetaIndex(util.MetaIndexNodes) {
+		log.Infoln(logTag, ": skipping ES index creation (setup profile:", util.GetSetupProfile(), ")")
+		return nil
+	}
 	log.Println(logTag, ": initializing plugin")
 
 	indexName := util.MetaIndexName(defaultNodesIndex)

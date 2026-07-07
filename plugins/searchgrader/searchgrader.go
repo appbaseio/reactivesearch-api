@@ -7,6 +7,7 @@ import (
 	"github.com/appbaseio/reactivesearch-api/middleware"
 	"github.com/appbaseio/reactivesearch-api/plugins"
 	"github.com/appbaseio/reactivesearch-api/util"
+	log "github.com/sirupsen/logrus"
 )
 
 const (
@@ -43,6 +44,10 @@ func (s *SearchGrader) Name() string {
 // InitFunc is a part of Plugin interface that gets executed only once, and initializes
 // the dao, i.e. elasticsearch before the plugin is operational.
 func (s *SearchGrader) InitFunc() error {
+	if !util.ShouldCreateMetaIndex(util.MetaIndexSearchGrader) {
+		log.Infoln(logTag, ": skipping ES index creation (setup profile:", util.GetSetupProfile(), ")")
+		return nil
+	}
 	// fetch the required env vars
 	searchgraderIndex := os.Getenv(envSearchgraderEsIndex)
 	if searchgraderIndex == "" {

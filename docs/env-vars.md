@@ -8,6 +8,18 @@ Plugins might require certain environment variables to be in order initialize th
 
 **Serverless rollover:** Elasticsearch Serverless rejects conditional index rollover (`max_age`, `max_docs`, `max_size`) with `rollover with conditions is not supported in serverless mode`. On Serverless clusters, ReactiveSearch evaluates those thresholds **client-side** before calling the rollover API without conditions. Rollover runs when any threshold is met (OR semantics), same as on self-managed clusters. After rollover, old backing indices beyond the latest two are deleted as usual.
 
+**Setup profile:** Set `RS_SETUP_PROFILE` to control which meta (system) Elasticsearch indices are created at startup. All profiles use 1 primary shard per index except `full`, which keeps the current per-index defaults. Unset defaults to `full` (backward compatible).
+
+| Profile | Primary shards (fresh install) | Indexes created |
+|---------|-------------------------------|-----------------|
+| `minimal` | 4 | `.users`, `.permissions`, `.pipelines`, `.pipeline_vars` |
+| `standard` | 12 | minimal + `.synonyms`, `.searchrelevancy`, `.logs`, `.pipeline_logs`, `.pipeline_invocations`, `.analytics`, `.user_sessions`, `.analytics_preferences` |
+| `full` | ~35–48 | All meta indexes (current behavior) |
+
+On `minimal` and `standard`, the `.publickey` index is not created — set `JWT_RSA_PUBLIC_KEY_LOC` for JWT auth. Rollover aliases (`.logs`, `.analytics`, pipeline telemetry) may grow to two backing indices each over time.
+
+A local test env for the minimal profile is provided as `config/minimal.env.example`. Copy it to `config/minimal.env` (gitignored), set `ES_CLUSTER_URL`, then start the server with `--env=config/minimal.env`.
+
 | Meta index (Serverless default) | `max_age` (non-production) | `max_age` (production plan) |
 |---------------------------------|----------------------------|-----------------------------|
 | `rs_analytics` | 30 days | 30 days |

@@ -83,6 +83,10 @@ func (a *Analytics) recordAnalyticsES6(esResponse searchResponseEs6, docID, sear
 		calculateAnalytics(r, &record)
 	}
 
+	if a.es == nil {
+		return
+	}
+
 	err2 := a.es.updateRecord(context.Background(), docID, record)
 	if err2 != nil {
 		return

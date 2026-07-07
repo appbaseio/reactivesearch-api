@@ -1,0 +1,22 @@
+# Render Blueprint — one-click deploy for ReactiveSearch API.
+#
+# Pair with Aiven free OpenSearch: https://aiven.io/free-opensearch
+# Set ES_CLUSTER_URL to your Aiven service URI (credentials in the URL).
+
+services:
+  - type: web
+    name: reactivesearch-api
+    runtime: docker
+    plan: free
+    region: oregon
+    healthCheckPath: /arc/health
+    autoDeployTrigger: off
+    envVars:
+      - key: ES_CLUSTER_URL
+        sync: false
+      - key: RS_SETUP_PROFILE
+        value: minimal
+      - key: USERNAME
+        sync: false
+      - key: PASSWORD
+        sync: false

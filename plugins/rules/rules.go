@@ -65,30 +65,27 @@ func (r *Rules) InitFunc() error {
 	}
 	indexPrefix = util.MetaIndexName(indexPrefix)
 
-	// initialize the dao
-	var err error
-	r.es, err = initPlugin(indexPrefix, mapping)
-	if err != nil {
-		return err
+	var esRules []ESRuleDoc
+	if util.ShouldCreateMetaIndex(util.MetaIndexRules) {
+		var err error
+		r.es, err = initPlugin(indexPrefix, mapping)
+		if err != nil {
+			return err
+		}
+		util.AddMigrationScript(MappingsMigration{
+			es:        r.es.(*elasticsearch),
+			indexName: indexPrefix,
+		})
+		esRules, err = r.es.getRules(context.Background())
+		if err != nil {
+			log.Errorln(logTag, ":", "error while retrieving the rules:", err)
+			return nil
+		}
+		SetRulesToCache(esRules)
+		util.AddSyncScript(CacheSyncScript{index: indexPrefix})
+	} else {
+		log.Infoln(logTag, ": skipping ES index creation (setup profile:", util.GetSetupProfile(), ")")
 	}
-	// Add user session mapping changes to migration script
-	util.AddMigrationScript(MappingsMigration{
-		es:        r.es.(*elasticsearch),
-		indexName: indexPrefix,
-	})
-	// sync rules
-	esRules, err := r.es.getRules(context.Background())
-	if err != nil {
-		log.Errorln(logTag, ":", "error while retrieving the rules:", err)
-		return nil
-	}
-	SetRulesToCache(esRules)
-
-	// Set plugin cache sync script
-	s := CacheSyncScript{
-		index: indexPrefix,
-	}
-	util.AddSyncScript(s)
 
 	// instantiate a new JavaScript VM
 	r.iso = v8go.NewIsolate()
@@ -117,7 +114,9 @@ func (r *Rules) InitFunc() error {
 	cronjob.Start()
 
 	// Start the cron rules
-	r.initCronRules(esRules)
+	if r.es != nil {
+		r.initCronRules(esRules)
+	}
 
 	return nil
 }

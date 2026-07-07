@@ -267,7 +267,7 @@ func (es *logsElasticsearch) rolloverIndexJob(alias string) {
 	if shouldRollover {
 		rolloverSvc := util.NewIndicesRolloverService(alias, rolloverConditions).
 			Mappings(mappings)
-		if settings := util.RolloverIndexSettings(2); len(settings) > 0 {
+		if settings := util.RolloverIndexSettings(util.MetaIndexShards(2)); len(settings) > 0 {
 			rolloverSvc = rolloverSvc.Settings(settings)
 		}
 		rolloverService, err := rolloverSvc.Do(ctx)
@@ -372,15 +372,27 @@ func (route ESPipelineRoutes) initLogsRecorder(h http.HandlerFunc) http.HandlerF
 
 		// If recording logs is disabled, return
 		if route.RecordLogs != nil && !*route.RecordLogs {
+			h(rw, r)
 			return
+		}
+
+		routeCategory := category.Pipelines
+		routeACL := acl.ACL(0)
+		if route.Classify != nil {
+			if route.Classify.Category != nil {
+				routeCategory = *route.Classify.Category
+			}
+			if route.Classify.ACL != nil {
+				routeACL = *route.Classify.ACL
+			}
 		}
 
 		// Create a new pipeline log and store it in the
 		// context with the basic pipeline details
 		pipelineLog := PipelineLog{
 			Route:        route.Path,
-			Category:     route.Classify.Category,
-			ACL:          route.Classify.ACL,
+			Category:     &routeCategory,
+			ACL:          &routeACL,
 			Request:      new(Request),
 			PipelineID:   new(string),
 			Took:         new(int),

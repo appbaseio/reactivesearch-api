@@ -17,6 +17,12 @@ func (n *nodes) healthCheckNodes() http.HandlerFunc {
 			Health: "ok",
 		}
 
+		if n.es == nil {
+			responseInBytes, _ := json.Marshal(response)
+			util.WriteBackRaw(w, responseInBytes, http.StatusOK)
+			return
+		}
+
 		// Add the node counts after fetching it from ES
 		activeTenMins, err := n.es.activeNodesInTenMins(req.Context())
 		if err != nil {
