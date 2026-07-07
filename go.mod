@@ -6,13 +6,12 @@ require (
 	github.com/antonmedv/expr v1.9.0
 	github.com/bbalet/stopwords v1.0.0
 	github.com/bcicen/go-units v1.0.3
-	github.com/buger/jsonparser v1.1.1
+	github.com/buger/jsonparser v1.1.2
 	github.com/denisbrodbeck/machineid v1.0.1
 	github.com/dgraph-io/ristretto v0.1.1
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/gdexlab/go-render v1.0.1
 	github.com/gertd/go-pluralize v0.1.7
-	github.com/getsentry/sentry-go v0.11.0
 	github.com/ghodss/yaml v1.0.0
 	github.com/go-playground/validator/v10 v10.14.1
 	github.com/go-redis/redis/v8 v8.11.5
