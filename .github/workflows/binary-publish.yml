@@ -1,7 +1,6 @@
 name: build binary
 on:
-    release:
-        types: [published]
+    # Manual only — official releases are distributed via Docker (docker-image.yml).
     workflow_dispatch:
         inputs:
             version:
@@ -101,11 +100,11 @@ jobs:
                       export PATH="$PATH:/usr/local/go/bin:/usr/bin"
 
                       # ----- Clone & build -----
-                      sudo rm -rf arc-noss build out 2>/dev/null || true
-                      echo "Cloning appbaseio-confidential/rs-api-server @ ${branch}"
-                      git clone --depth=1 -b "${branch}" "https://${PAT_ACCESS_TOKEN}@github.com/appbaseio-confidential/rs-api-server" arc-noss
+                      sudo rm -rf reactivesearch-api build out 2>/dev/null || true
+                      echo "Cloning appbaseio/reactivesearch-api @ ${branch}"
+                      git clone --depth=1 -b "${branch}" "https://x-access-token:${PAT_ACCESS_TOKEN}@github.com/appbaseio/reactivesearch-api.git" reactivesearch-api
 
-                      pushd arc-noss >/dev/null
+                      pushd reactivesearch-api >/dev/null
                         make clean
                         if [[ "${mode}" == "ami" ]]; then
                           BILLING=true CLUSTER_BILLING= VERSION="${version}" make
@@ -115,11 +114,11 @@ jobs:
                       popd >/dev/null
 
                       mkdir -p out
-                      # Zip without the leading arc-noss/ so the archive has build/ and go/ at root
-                      pushd arc-noss >/dev/null
-                        zip -r "../out/rs-linux-${mode}.zip" build go >/dev/null
+                      # Zip without the leading reactivesearch-api/ so the archive has build/ at root
+                      pushd reactivesearch-api >/dev/null
+                        zip -r "../out/rs-linux-${mode}.zip" build >/dev/null
                       popd >/dev/null
-                      echo "Packaged out/rs-linux-${mode}.zip (root: build/, go/)"
+                      echo "Packaged out/rs-linux-${mode}.zip (root: build/)"
 
                       # ----- Upload to GitHub release (by tag) -----
                       owner="appbaseio"
