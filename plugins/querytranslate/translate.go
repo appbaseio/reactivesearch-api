@@ -602,7 +602,7 @@ func BuildIndependentRequest(query Query, rsQuery RSQuery) (map[string]interface
 		if unmarshalErr != nil {
 			errMsg := fmt.Sprint("error while unmarshalling body without endpoint property into a map, ", unmarshalErr)
 			log.Warnln(logTag, ": ", errMsg)
-			return nil, fmt.Errorf(errMsg)
+			return nil, fmt.Errorf("%s", errMsg)
 		}
 
 		delete(queryAsMap, "endpoint")

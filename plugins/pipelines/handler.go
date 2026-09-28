@@ -1030,7 +1030,7 @@ func (pipeline ESPipelineDoc) executePipeline(pipelineExecutionContext PipelineE
 		// Thrown an error if not isValidate, else initialize
 		if !isValidate {
 			return make(map[string]interface{}), &Error{
-				Err:  fmt.Errorf(errMsg),
+				Err:  fmt.Errorf("%s", errMsg),
 				Code: http.StatusInternalServerError,
 			}
 		} else {

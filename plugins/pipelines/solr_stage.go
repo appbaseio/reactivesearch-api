@@ -74,7 +74,7 @@ func executeSolrStage(
 	// Verify the user inputs
 	if parsedInputs == nil {
 		return scriptContextInBytes, false, &Error{
-			Err:  fmt.Errorf("Inputs are missing for stage id: " + *id),
+			Err:  fmt.Errorf("%s", "Inputs are missing for stage id: "+*id),
 			Code: http.StatusBadRequest,
 		}
 	}
@@ -178,7 +178,7 @@ func executeSolrStage(
 			errMsg := fmt.Sprint("query parsing failed, invalid query: ", parseErr)
 			log.Warnln(logTag, ": ", errMsg)
 			return scriptContextInBytes, false, &Error{
-				Err:  fmt.Errorf(errMsg),
+				Err:  fmt.Errorf("%s", errMsg),
 				Code: http.StatusBadRequest,
 			}
 		}
@@ -202,7 +202,7 @@ func executeSolrStage(
 			errMsg := fmt.Sprint("error while unmarshalling request body from RS stage, ", unmarshalErr)
 			log.Errorln(logTag, ": ", errMsg)
 			return scriptContextInBytes, false, &Error{
-				Err:  fmt.Errorf(errMsg),
+				Err:  fmt.Errorf("%s", errMsg),
 				Code: http.StatusInternalServerError,
 			}
 		}
@@ -238,7 +238,7 @@ func executeSolrStage(
 				log.Errorln(logTag, ": ", errMsg)
 
 				return scriptContextInBytes, false, &Error{
-					Err:  fmt.Errorf(errMsg),
+					Err:  fmt.Errorf("%s", errMsg),
 					Code: http.StatusInternalServerError,
 				}
 			}
@@ -339,7 +339,7 @@ func executeSolrStage(
 				errMsg := "error while converting map of interface to map of string"
 				log.Warnln(logTag, ": ", errMsg)
 				return scriptContextInBytes, false, &Error{
-					Err:  fmt.Errorf(errMsg),
+					Err:  fmt.Errorf("%s", errMsg),
 					Code: http.StatusInternalServerError,
 				}
 			}
@@ -360,7 +360,7 @@ func executeSolrStage(
 				log.Errorln(logTag, ": ", errMsg)
 
 				return scriptContextInBytes, false, &Error{
-					Err:  fmt.Errorf(errMsg),
+					Err:  fmt.Errorf("%s", errMsg),
 					Code: http.StatusInternalServerError,
 				}
 			}
@@ -462,7 +462,7 @@ func executeSolrStage(
 			log.Warnln(logTag, ": ", errMsg)
 
 			return scriptContextInBytes, false, &Error{
-				Err:  fmt.Errorf(errMsg),
+				Err:  fmt.Errorf("%s", errMsg),
 				Code: http.StatusInternalServerError,
 			}
 		}
@@ -535,7 +535,7 @@ func executeSolrStage(
 			errMsg := fmt.Sprintf("error while execution independent query with ID `%s` and error: %v", queryId, queryErr)
 			log.Warnln(logTag, ": ", errMsg)
 			return scriptContextInBytes, false, &Error{
-				Err:  fmt.Errorf(errMsg),
+				Err:  fmt.Errorf("%s", errMsg),
 				Code: http.StatusBadRequest,
 			}
 		}
@@ -548,7 +548,7 @@ func executeSolrStage(
 			log.Warnln(logTag, ": ", errMsg)
 
 			return scriptContextInBytes, false, &Error{
-				Err:  fmt.Errorf(errMsg),
+				Err:  fmt.Errorf("%s", errMsg),
 				Code: http.StatusInternalServerError,
 			}
 		}
@@ -569,7 +569,7 @@ func executeSolrStage(
 			errMsg := fmt.Sprintf("error while marshalling solr output map, %s", outputMarshalErr)
 			log.Errorln(logTag, ": ", errMsg)
 			return scriptContextInBytes, false, &Error{
-				Err:  fmt.Errorf(errMsg),
+				Err:  fmt.Errorf("%s", errMsg),
 				Code: http.StatusInternalServerError,
 			}
 		}
@@ -581,7 +581,7 @@ func executeSolrStage(
 			errMsg := fmt.Sprint("error while marshalling combined output, ", outputMarshalErr)
 			log.Errorln(logTag, ": ", errMsg)
 			return scriptContextInBytes, false, &Error{
-				Err:  fmt.Errorf(errMsg),
+				Err:  fmt.Errorf("%s", errMsg),
 				Code: http.StatusInternalServerError,
 			}
 		}
@@ -662,7 +662,7 @@ func executeSolrStage(
 		log.Errorln(logTag, ": ", errMsg)
 
 		return scriptContextInBytes, false, &Error{
-			Err:  fmt.Errorf(errMsg),
+			Err:  fmt.Errorf("%s", errMsg),
 			Code: http.StatusInternalServerError,
 		}
 	}
@@ -872,7 +872,7 @@ func runSolrQuery(query *map[string]string, uri *string, headers *map[string]str
 		log.Errorln(logTag, ": ", errMsg)
 
 		return nil, nil, &Error{
-			Err:  fmt.Errorf(errMsg),
+			Err:  fmt.Errorf("%s", errMsg),
 			Code: http.StatusInternalServerError,
 		}
 	}
@@ -904,7 +904,7 @@ func runSolrQuery(query *map[string]string, uri *string, headers *map[string]str
 			log.Errorln(errMsg)
 
 			return nil, nil, &Error{
-				Err:  fmt.Errorf(errMsg),
+				Err:  fmt.Errorf("%s", errMsg),
 				Code: http.StatusInternalServerError,
 			}
 		}
@@ -943,7 +943,7 @@ func runSolrQuery(query *map[string]string, uri *string, headers *map[string]str
 		log.Warnln(logTag, ": ", errMsg)
 
 		return nil, nil, &Error{
-			Err:  fmt.Errorf(errMsg),
+			Err:  fmt.Errorf("%s", errMsg),
 			Code: http.StatusInternalServerError,
 		}
 	}
@@ -955,7 +955,7 @@ func runSolrQuery(query *map[string]string, uri *string, headers *map[string]str
 		log.Warnln(logTag, ": ", errMsg)
 
 		return nil, response, &Error{
-			Err:  fmt.Errorf(errMsg),
+			Err:  fmt.Errorf("%s", errMsg),
 			Code: http.StatusInternalServerError,
 		}
 	}
@@ -1186,7 +1186,7 @@ func TranslateToRS(solrResponse map[string]interface{}, queryRun map[string]stri
 				log.Errorln(logTag, ": ", errMsg)
 
 				return nil, settingsToReturn, &Error{
-					Err:  fmt.Errorf(errMsg),
+					Err:  fmt.Errorf("%s", errMsg),
 					Code: http.StatusInternalServerError,
 				}
 			}
@@ -3025,7 +3025,7 @@ func evalReactToSolr(react interface{}, conjunction string, allQueries *[]queryt
 		errMsg := "Invalid value passed for `react`"
 		log.Warnln(logTag, ": ", errMsg)
 		return "", &Error{
-			Err:  fmt.Errorf(errMsg),
+			Err:  fmt.Errorf("%s", errMsg),
 			Code: http.StatusBadRequest,
 		}
 
@@ -3109,7 +3109,7 @@ func evalReactToSolr(react interface{}, conjunction string, allQueries *[]queryt
 		errMsg := fmt.Sprintf("error while extracting the query value from the matched query with ID: %s with err: %s", *matchedQuery.ID, queryValueErr.Err.Error())
 		log.Warnln(logTag, ": ", errMsg)
 		return "", &Error{
-			Err:  fmt.Errorf(errMsg),
+			Err:  fmt.Errorf("%s", errMsg),
 			Code: http.StatusBadRequest,
 		}
 	}
@@ -3147,7 +3147,7 @@ func evalReactToSolr(react interface{}, conjunction string, allQueries *[]queryt
 		errMsg := fmt.Sprintf("cannot accept dataField with weights and work with `react` for query with ID: %s", *matchedQuery.ID)
 		log.Warnln(logTag, ": ", errMsg)
 		return "", &Error{
-			Err:  fmt.Errorf(errMsg),
+			Err:  fmt.Errorf("%s", errMsg),
 			Code: http.StatusBadRequest,
 		}
 	}
@@ -3162,7 +3162,7 @@ func evalReactToSolr(react interface{}, conjunction string, allQueries *[]queryt
 			if !dfAsStrOk {
 				errMsg := fmt.Sprintf("invalid dataField value passed in position %d for query with ID: %s", dfPosition, *matchedQuery.ID)
 				return "", &Error{
-					Err:  fmt.Errorf(errMsg),
+					Err:  fmt.Errorf("%s", errMsg),
 					Code: http.StatusBadRequest,
 				}
 			}

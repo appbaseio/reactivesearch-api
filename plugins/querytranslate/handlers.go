@@ -218,13 +218,13 @@ func ExecuteIndependentQuery(independentReq map[string]interface{}, host string,
 	endpointAsMap, endpointAsMapOk := independentReq["endpoint"].(map[string]interface{})
 	if !endpointAsMapOk {
 		errMsg := fmt.Sprint("error while converting endpoint to map for independent request with ID: ", requestId)
-		return nil, nil, fmt.Errorf(errMsg)
+		return nil, nil, fmt.Errorf("%s", errMsg)
 	}
 
 	urlToHit, urlOk := endpointAsMap["url"].(string)
 	if !urlOk {
 		errMsg := fmt.Sprint("error while extracting URL from independent request built for: ", requestId)
-		return nil, nil, fmt.Errorf(errMsg)
+		return nil, nil, fmt.Errorf("%s", errMsg)
 	}
 
 	// If the URL is not complete, append the host to make it complete.
@@ -240,13 +240,13 @@ func ExecuteIndependentQuery(independentReq map[string]interface{}, host string,
 	methodToUse, methodOk := endpointAsMap["method"].(string)
 	if !methodOk {
 		errMsg := fmt.Sprint("error while extracting method from independent request built for: ", requestId)
-		return nil, nil, fmt.Errorf(errMsg)
+		return nil, nil, fmt.Errorf("%s", errMsg)
 	}
 
 	headersToUse, headerOk := endpointAsMap["headers"].(map[string]interface{})
 	if !headerOk {
 		errMsg := fmt.Sprint("error while extracting headers from independent request built for: ", requestId)
-		return nil, nil, fmt.Errorf(errMsg)
+		return nil, nil, fmt.Errorf("%s", errMsg)
 	}
 	headerToSend := make(http.Header)
 	isAuthPresent := false
@@ -261,7 +261,7 @@ func ExecuteIndependentQuery(independentReq map[string]interface{}, host string,
 		if !valueAsStrOk {
 			errMsg := fmt.Sprintf("error while converting header value to string for key `%s` and request: `%s`", key, requestId)
 			log.Warnln(logTag, ": ", errMsg)
-			return nil, nil, fmt.Errorf(errMsg)
+			return nil, nil, fmt.Errorf("%s", errMsg)
 		}
 		headerToSend.Set(key, valueAsString)
 	}
@@ -293,14 +293,14 @@ func ExecuteIndependentQuery(independentReq map[string]interface{}, host string,
 	if marshalErr != nil {
 		errMsg := fmt.Sprintf("error while marshalling body to send it for independent request for request `%s` with err: %v", requestId, marshalErr)
 		log.Errorln(logTag, ": ", errMsg)
-		return nil, nil, fmt.Errorf(errMsg)
+		return nil, nil, fmt.Errorf("%s", errMsg)
 	}
 
 	respBody, res, reqErr := util.MakeRequestWithHeader(urlToHit, methodToUse, bodyInBytes, headerToSend)
 	if reqErr != nil {
 		errMsg := fmt.Sprintf("error while sending independent request for ID: `%s` with err: `%v`", requestId, reqErr)
 		log.Errorln(logTag, ": ", errMsg)
-		return nil, nil, fmt.Errorf(errMsg)
+		return nil, nil, fmt.Errorf("%s", errMsg)
 	}
 
 	// Parse the response and if it is of RS structure, return the top level of
@@ -309,7 +309,7 @@ func ExecuteIndependentQuery(independentReq map[string]interface{}, host string,
 	if respErr != nil {
 		errMsg := fmt.Sprint("error while parsing the response to remove recursion, ", respErr)
 		log.Errorln(logTag, ": ", errMsg)
-		return nil, nil, fmt.Errorf(errMsg)
+		return nil, nil, fmt.Errorf("%s", errMsg)
 	}
 
 	return responseToReturn, res, reqErr
@@ -439,14 +439,14 @@ func ParseMsearchToValidate(reqBodySplitted []string, requestURL string, methodU
 		if prefUnmarshalErr != nil {
 			errMsg := fmt.Sprintf("error while unmarshalling preferences at index `%d` with err: %v", reqIndex, prefUnmarshalErr)
 			log.Errorln(logTag, ": ", errMsg)
-			return validateMapToShow, fmt.Errorf(errMsg)
+			return validateMapToShow, fmt.Errorf("%s", errMsg)
 		}
 
 		reqUnmarshalErr := json.Unmarshal([]byte(requestBody), &bodyAsMap)
 		if reqUnmarshalErr != nil {
 			errMsg := fmt.Sprintf("error while unmarshalling request at index `%d` with err: %v", reqIndex+1, reqUnmarshalErr)
 			log.Errorln(logTag, ": ", errMsg)
-			return validateMapToShow, fmt.Errorf(errMsg)
+			return validateMapToShow, fmt.Errorf("%s", errMsg)
 		}
 
 		// Extract the preference string

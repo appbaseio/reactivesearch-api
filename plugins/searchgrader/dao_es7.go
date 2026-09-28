@@ -116,7 +116,7 @@ func (es *elasticsearch) getMetricsEs7(ctx context.Context, record GradeMetricsR
 				return nil, nil, err
 			}
 			if res.StatusCode != 200 {
-				return nil, &res.StatusCode, fmt.Errorf("error encountered while querying the `" + index + "` index, please make sure that `index` is active and search relevancy settings is applied")
+				return nil, &res.StatusCode, fmt.Errorf("%s", "error encountered while querying the `"+index+"` index, please make sure that `index` is active and search relevancy settings is applied")
 			}
 			var rsAPIResponse map[string]struct {
 				Hits struct {

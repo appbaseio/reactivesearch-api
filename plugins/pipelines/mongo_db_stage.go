@@ -64,7 +64,7 @@ func executeMongoDBStage(
 	// validate inputs
 	if parsedInputs == nil {
 		return scriptContextInBytes, false, &Error{
-			Err:  fmt.Errorf("Inputs are missing for stage id: " + *id),
+			Err:  fmt.Errorf("%s", "Inputs are missing for stage id: "+*id),
 			Code: http.StatusBadRequest,
 		}
 	}
@@ -79,28 +79,28 @@ func executeMongoDBStage(
 
 	if inputs.HOST == nil || *inputs.HOST == "" {
 		return scriptContextInBytes, false, &Error{
-			Err:  fmt.Errorf("The 'host' input must be present for stage: " + *id),
+			Err:  fmt.Errorf("%s", "The 'host' input must be present for stage: "+*id),
 			Code: http.StatusBadRequest,
 		}
 	}
 
 	if inputs.DB == nil || *inputs.DB == "" {
 		return scriptContextInBytes, false, &Error{
-			Err:  fmt.Errorf("The 'db' input must be present for stage: " + *id),
+			Err:  fmt.Errorf("%s", "The 'db' input must be present for stage: "+*id),
 			Code: http.StatusBadRequest,
 		}
 	}
 
 	if inputs.Collection == nil || *inputs.Collection == "" {
 		return scriptContextInBytes, false, &Error{
-			Err:  fmt.Errorf("The 'collection' input must be present for stage: " + *id),
+			Err:  fmt.Errorf("%s", "The 'collection' input must be present for stage: "+*id),
 			Code: http.StatusBadRequest,
 		}
 	}
 
 	if inputs.Credentials == nil || *inputs.Credentials == "" {
 		return scriptContextInBytes, false, &Error{
-			Err:  fmt.Errorf("The 'credentials' input must be present for stage: " + *id),
+			Err:  fmt.Errorf("%s", "The 'credentials' input must be present for stage: "+*id),
 			Code: http.StatusBadRequest,
 		}
 	}
@@ -116,7 +116,7 @@ func executeMongoDBStage(
 	if err != nil {
 		log.Errorln(logTag, ":", err)
 		return scriptContextInBytes, false, &Error{
-			Err:  fmt.Errorf("Error encountered while connecting the mongodb client: " + err.Error()),
+			Err:  fmt.Errorf("%s", "Error encountered while connecting the mongodb client: "+err.Error()),
 			Code: http.StatusBadRequest,
 		}
 	}

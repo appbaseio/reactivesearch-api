@@ -1306,7 +1306,7 @@ func MakeChatGPTRequest(
 		errMsg := fmt.Sprint("error while creating the request to send OpenAI, ", requestCreateErr)
 		log.Errorln(logTag, ": ", errMsg)
 
-		return nil, nil, bodyAsBytes, 0, nil, fmt.Errorf(errMsg)
+		return nil, nil, bodyAsBytes, 0, nil, fmt.Errorf("%s", errMsg)
 	}
 
 	// Set the authorization header
@@ -1324,7 +1324,7 @@ func MakeChatGPTRequest(
 		errMsg := fmt.Sprint("error while sending request to ChatGPT, ", reqErr)
 		log.Warnln(logTag, ": ", errMsg)
 
-		return nil, nil, bodyAsBytes, resolvedAt, request, fmt.Errorf(errMsg)
+		return nil, nil, bodyAsBytes, resolvedAt, request, fmt.Errorf("%s", errMsg)
 	}
 
 	// Read the body.
@@ -1333,7 +1333,7 @@ func MakeChatGPTRequest(
 		errMsg := fmt.Sprint("error while reading the response body from ChatGPT, ", readErr)
 		log.Warnln(logTag, ": ", errMsg)
 
-		return nil, nil, bodyAsBytes, resolvedAt, request, fmt.Errorf(errMsg)
+		return nil, nil, bodyAsBytes, resolvedAt, request, fmt.Errorf("%s", errMsg)
 	}
 
 	// Verify the status code received, a non 200 OK status code will return an
@@ -1388,7 +1388,7 @@ func MakeChatGPTRequestWithStream(
 		errMsg := fmt.Sprint("error while creating the request to send OpenAI, ", requestCreateErr)
 		log.Errorln(logTag, ": ", errMsg)
 
-		return nil, bodyAsBytes, 0, 0, 0, nil, fmt.Errorf(errMsg)
+		return nil, bodyAsBytes, 0, 0, 0, nil, fmt.Errorf("%s", errMsg)
 	}
 
 	responseDataToReturn := make([][]byte, 0)
@@ -1413,7 +1413,7 @@ func MakeChatGPTRequestWithStream(
 		errMsg := fmt.Sprint("error while sending request to ChatGPT, ", reqErr)
 		log.Warnln(logTag, ": ", errMsg)
 
-		return nil, bodyAsBytes, resolvedAt, 0, 0, request, fmt.Errorf(errMsg)
+		return nil, bodyAsBytes, resolvedAt, 0, 0, request, fmt.Errorf("%s", errMsg)
 	}
 
 	defer response.Body.Close()
@@ -1667,7 +1667,7 @@ func FetchChatGPTForSessionWithStream(
 		if skipStoringFailedResponse {
 			// Set the streaming as false.
 			sessionMap.SetIsStreaming(sessionId, false)
-			return fmt.Errorf(errorStr)
+			return fmt.Errorf("%s", errorStr)
 		}
 
 		responseToStoreInBytes := errorStr
@@ -1799,7 +1799,7 @@ func FetchChatGPTForSessionWithStream(
 	if marshalErr != nil {
 		errMsg := fmt.Sprint("error while marshalling response into bytes: ", marshalErr.Error())
 		log.Warnln(logTag, ": ", errMsg)
-		return fmt.Errorf(errMsg)
+		return fmt.Errorf("%s", errMsg)
 	}
 
 	var idsSetErr error
@@ -1843,7 +1843,7 @@ func FetchFromOldSession(oldSessionId string, sessionMap *SessionIdToChatGPTResp
 	unmarshalErr := json.Unmarshal(olderMessages, &olderMessagesAsArr)
 	if unmarshalErr != nil {
 		errMsg := fmt.Sprint("Error while unmarshalling older messages into array of map: ", unmarshalErr.Error())
-		return "", fmt.Errorf(errMsg)
+		return "", fmt.Errorf("%s", errMsg)
 	}
 
 	openAIInstance := Instance()
@@ -1898,7 +1898,7 @@ func BuildFollowUpBody(response *InternalChatGPTResponse, followUp FollowUpReque
 		// Check if the older request is ready for usage
 		if !response.Request().IsStructReady() {
 			errMsg := fmt.Sprint("older ChatGPT request is not usable with error: ", response.Request().Error())
-			return nil, fmt.Errorf(errMsg)
+			return nil, fmt.Errorf("%s", errMsg)
 		}
 
 		olderRequestBody := response.Request().Struct()
@@ -1915,7 +1915,7 @@ func BuildFollowUpBody(response *InternalChatGPTResponse, followUp FollowUpReque
 		latestResponseMessage, _, _, getErr := jsonparser.Get(response.Response(), "choices", "[0]", "message")
 		if getErr != nil {
 			errMsg := fmt.Sprint("error while trying to extract last response's message: ", getErr.Error())
-			return nil, fmt.Errorf(errMsg)
+			return nil, fmt.Errorf("%s", errMsg)
 		}
 
 		// Unmarshal the response in message into a message object

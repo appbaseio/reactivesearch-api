@@ -80,7 +80,7 @@ func TranslateEachToZinc(query *querytranslate.Query, allQueries *[]querytransla
 		errMsg := "`geo` is not supported when Zinc is backend"
 		log.Warnln(logTag, ": ", errMsg)
 		return zincMap, &Error{
-			Err:  fmt.Errorf(errMsg),
+			Err:  fmt.Errorf("%s", errMsg),
 			Code: http.StatusBadRequest,
 		}
 	}
@@ -93,7 +93,7 @@ func TranslateEachToZinc(query *querytranslate.Query, allQueries *[]querytransla
 	if query.Type == querytranslate.Range && query.Value != nil && query.DataField == nil {
 		errMsg := "`dataField` is required when `value` is passed and type is `range`"
 		return zincMap, &Error{
-			Err:  fmt.Errorf(errMsg),
+			Err:  fmt.Errorf("%s", errMsg),
 			Code: http.StatusBadRequest,
 		}
 	}
@@ -162,7 +162,7 @@ func TranslateEachToZinc(query *querytranslate.Query, allQueries *[]querytransla
 			errMsg := fmt.Sprintf("error while evaluating react prop: %s", err.Error())
 			log.Warnln(logTag, ": ", errMsg)
 			return finalOptions, &Error{
-				Err:  fmt.Errorf(errMsg),
+				Err:  fmt.Errorf("%s", errMsg),
 				Code: http.StatusInternalServerError,
 			}
 		}
@@ -180,7 +180,7 @@ func TranslateEachToZinc(query *querytranslate.Query, allQueries *[]querytransla
 					errMsg := fmt.Sprintf("error while generating query by type: %s", err.Error())
 					log.Warnln(logTag, ": ", errMsg)
 					return finalOptions, &Error{
-						Err:  fmt.Errorf(errMsg),
+						Err:  fmt.Errorf("%s", errMsg),
 						Code: http.StatusInternalServerError,
 					}
 				}
@@ -218,7 +218,7 @@ func TranslateEachToZinc(query *querytranslate.Query, allQueries *[]querytransla
 		if rangeQueryErr != nil {
 			errMsg := fmt.Sprintf("error while building range query: %s", rangeQueryErr.Error())
 			return zincMap, &Error{
-				Err:  fmt.Errorf(errMsg),
+				Err:  fmt.Errorf("%s", errMsg),
 				Code: http.StatusBadRequest,
 			}
 		}

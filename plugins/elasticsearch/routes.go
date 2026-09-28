@@ -72,7 +72,7 @@ func (es *elasticsearch) preprocess(mw []middleware.Middleware) error {
 		if readErr != nil {
 			errMsg := "error while reading file with name: " + fileName
 			log.Debug(logTag, ": ", errMsg)
-			return fmt.Errorf(errMsg)
+			return fmt.Errorf("%s", errMsg)
 		}
 
 		api, decodeErr := decodeSpecFileFromBytes(fileContents, fileName)

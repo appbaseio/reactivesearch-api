@@ -108,7 +108,7 @@ func executeOpenAIEmbeddingsStage(
 		errMsg := fmt.Sprint("`apiKey` is a required value for OpenAI stage")
 		log.Warnln(logTag, ": ", errMsg)
 		return scriptContextInBytes, false, &Error{
-			Err:  fmt.Errorf(errMsg),
+			Err:  fmt.Errorf("%s", errMsg),
 			Code: http.StatusBadRequest,
 		}
 	}
@@ -125,7 +125,7 @@ func executeOpenAIEmbeddingsStage(
 		errMsg := fmt.Sprint("one of `text` or `useWithReactiveSearchQuery` needs to be present")
 		log.Warnln(logTag, ": ", errMsg)
 		return scriptContextInBytes, false, &Error{
-			Err:  fmt.Errorf(errMsg),
+			Err:  fmt.Errorf("%s", errMsg),
 			Code: http.StatusBadRequest,
 		}
 	}
@@ -158,7 +158,7 @@ func executeOpenAIEmbeddingsStage(
 			log.Errorln(logTag, ": ", errMsg)
 
 			return scriptContextInBytes, false, &Error{
-				Err:  fmt.Errorf(errMsg),
+				Err:  fmt.Errorf("%s", errMsg),
 				Code: http.StatusInternalServerError,
 			}
 		}
@@ -341,7 +341,7 @@ func executeOpenAIEmbeddingsIndexStage(stage ESPipelineStage,
 		errMsg := fmt.Sprint("`apiKey` is a required value for OpenAI stage")
 		log.Warnln(logTag, ": ", errMsg)
 		return scriptContextInBytes, false, &Error{
-			Err:  fmt.Errorf(errMsg),
+			Err:  fmt.Errorf("%s", errMsg),
 			Code: http.StatusBadRequest,
 		}
 	}
@@ -358,7 +358,7 @@ func executeOpenAIEmbeddingsIndexStage(stage ESPipelineStage,
 		errMsg := fmt.Sprint("`inputKeys` is a required value for OpenAI Indexing stage")
 		log.Warnln(logTag, ": ", errMsg)
 		return scriptContextInBytes, false, &Error{
-			Err:  fmt.Errorf(errMsg),
+			Err:  fmt.Errorf("%s", errMsg),
 			Code: http.StatusBadRequest,
 		}
 	}
@@ -369,7 +369,7 @@ func executeOpenAIEmbeddingsIndexStage(stage ESPipelineStage,
 		errMsg := fmt.Sprint("async cannot be `true` when `outputKey` is specified")
 		log.Warnln(logTag, ": ", errMsg)
 		return scriptContextInBytes, false, &Error{
-			Err:  fmt.Errorf(errMsg),
+			Err:  fmt.Errorf("%s", errMsg),
 			Code: http.StatusBadRequest,
 		}
 	}
@@ -384,7 +384,7 @@ func executeOpenAIEmbeddingsIndexStage(stage ESPipelineStage,
 		errMsg := fmt.Sprint("error while unmarshaling body into an object. Is it an object? Err is: ", unmarshalErr.Error())
 		log.Warnln(logTag, ": ", errMsg)
 		return scriptContextInBytes, false, &Error{
-			Err:  fmt.Errorf(errMsg),
+			Err:  fmt.Errorf("%s", errMsg),
 			Code: http.StatusBadRequest,
 		}
 	}
@@ -419,7 +419,7 @@ func executeOpenAIEmbeddingsIndexStage(stage ESPipelineStage,
 		errMsg := fmt.Sprint("All keys passed in `inputKeys` are either not present or are not string in the request body, cannot continue")
 		log.Warnln(logTag, ": ", errMsg)
 		return scriptContextInBytes, false, &Error{
-			Err:  fmt.Errorf(errMsg),
+			Err:  fmt.Errorf("%s", errMsg),
 			Code: http.StatusBadRequest,
 		}
 	}
@@ -430,7 +430,7 @@ func executeOpenAIEmbeddingsIndexStage(stage ESPipelineStage,
 		errMsg := fmt.Sprint("Final text generated from the passed keys is an empty string, cannot continue")
 		log.Warnln(logTag, ": ", errMsg)
 		return scriptContextInBytes, false, &Error{
-			Err:  fmt.Errorf(errMsg),
+			Err:  fmt.Errorf("%s", errMsg),
 			Code: http.StatusBadRequest,
 		}
 	}
@@ -456,7 +456,7 @@ func executeOpenAIEmbeddingsIndexStage(stage ESPipelineStage,
 			log.Errorln(logTag, ": ", errMsg)
 
 			return scriptContextInBytes, false, &Error{
-				Err:  fmt.Errorf(errMsg),
+				Err:  fmt.Errorf("%s", errMsg),
 				Code: http.StatusInternalServerError,
 			}
 		}
@@ -512,7 +512,7 @@ func GetEmbeddingsForText(text string, model string, apiKey string) ([]float64, 
 		log.Errorln(logTag, ": ", errMsg)
 
 		return nil, &Error{
-			Err:  fmt.Errorf(errMsg),
+			Err:  fmt.Errorf("%s", errMsg),
 			Code: http.StatusInternalServerError,
 		}
 	}
@@ -527,7 +527,7 @@ func GetEmbeddingsForText(text string, model string, apiKey string) ([]float64, 
 		log.Warnln(logTag, ": ", errMsg)
 
 		return nil, &Error{
-			Err:  fmt.Errorf(errMsg),
+			Err:  fmt.Errorf("%s", errMsg),
 			Code: http.StatusInternalServerError,
 		}
 	}
@@ -539,7 +539,7 @@ func GetEmbeddingsForText(text string, model string, apiKey string) ([]float64, 
 		log.Warnln(logTag, ": ", errMsg)
 
 		return nil, &Error{
-			Err:  fmt.Errorf(errMsg),
+			Err:  fmt.Errorf("%s", errMsg),
 			Code: http.StatusInternalServerError,
 		}
 	}

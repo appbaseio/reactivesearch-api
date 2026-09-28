@@ -217,7 +217,7 @@ func (featuredSuggestionsConfig *FeaturedSuggestionsConfig) SearchFeaturedSugges
 	if err != nil {
 		errMsg := fmt.Sprint("error while hitting ES to get featured suggestions, ", err)
 		log.Warnln(logTag, ": ", errMsg)
-		return featuredSuggestions, fmt.Errorf(errMsg)
+		return featuredSuggestions, fmt.Errorf("%s", errMsg)
 	}
 
 	for _, hit := range searchResult.Hits.Hits {
@@ -251,7 +251,7 @@ func (featuredSuggestionsConfig *FeaturedSuggestionsConfig) GetFeaturedSuggestio
 	if err != nil {
 		errMsg := fmt.Sprint("error while hitting ES to get featured suggestions, ", err)
 		log.Warnln(logTag, ": ", errMsg)
-		return featuredSuggestions, fmt.Errorf(errMsg)
+		return featuredSuggestions, fmt.Errorf("%s", errMsg)
 	}
 
 	for _, hit := range searchResult.Hits.Hits {

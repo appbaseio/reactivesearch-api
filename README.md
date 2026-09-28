@@ -129,7 +129,7 @@ After signing in you'll land on the Cluster Overview — your central hub for ma
 
 ## Building
 
-To build from source you need [Git](https://git-scm.com/downloads) and [Go](https://golang.org/doc/install) (version 1.16 or higher).
+To build from source you need [Git](https://git-scm.com/downloads) and [Go](https://golang.org/doc/install) (version 1.25.14 or higher).
 
 You can build the binary locally by executing the following command from the project directory:
 

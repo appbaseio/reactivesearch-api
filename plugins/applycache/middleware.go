@@ -256,7 +256,7 @@ func ApplyCache(
 						if AIAnswerErr != nil {
 							errMsg := fmt.Sprintf(": error while executing AI Answer query: %v", AIAnswerErr)
 							log.Warnln(logTag, errMsg)
-							return fmt.Errorf(errMsg)
+							return fmt.Errorf("%s", errMsg)
 						}
 						responseToWrite = updatedRSResponse
 
@@ -265,7 +265,7 @@ func ApplyCache(
 						if readErr != nil {
 							errMsg := fmt.Sprintf("sessionId not injected, cannot continue with cache hit: %v", readErr)
 							log.Warnln(logTag, ": ", errMsg)
-							return fmt.Errorf(errMsg)
+							return fmt.Errorf("%s", errMsg)
 						}
 
 						newSessionId = extractedSessionId
@@ -303,7 +303,7 @@ func ApplyCache(
 						if newSessionGenerateErr != nil {
 							errMsg := fmt.Sprintf("error while generating new session Id from details: %v", newSessionGenerateErr)
 							log.Warnln(logTag, ": ", errMsg)
-							return fmt.Errorf(errMsg)
+							return fmt.Errorf("%s", errMsg)
 						}
 					}
 
@@ -312,7 +312,7 @@ func ApplyCache(
 					if injectErr != nil {
 						errMsg := fmt.Sprintf("error while injecting new sessionId: %v", injectErr)
 						log.Warnln(logTag, ": ", errMsg)
-						return fmt.Errorf(errMsg)
+						return fmt.Errorf("%s", errMsg)
 					}
 
 					modifiedValue = bodyWithNewSessionId
@@ -324,7 +324,7 @@ func ApplyCache(
 			if sessionIdUpdateErr != nil {
 				errMsg := fmt.Sprintf("error while updating sessionId in cached response: %v", sessionIdUpdateErr)
 				log.Warnln(logTag, ": ", errMsg)
-				return nil, fmt.Errorf(errMsg)
+				return nil, fmt.Errorf("%s", errMsg)
 			}
 		}
 
