@@ -1,6 +1,6 @@
 FROM golang:1.26.6 AS builder
 
-ARG VERSION=9.4.0
+ARG VERSION=9.4.1
 ENV VERSION="${VERSION}"
 
 # Default value
