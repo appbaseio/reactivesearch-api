@@ -32,7 +32,7 @@ func executeValidateStage(
 		errMsg := fmt.Sprint("error while reading to see if the validate stage should be executed: ", validateFetchErr.Error())
 		log.Errorln(logTag, ": ", errMsg)
 		return nil, false, &Error{
-			Err: fmt.Errorf(errMsg),
+			Err: fmt.Errorf("%s", errMsg),
 		}
 	}
 
@@ -80,7 +80,7 @@ func executeValidateStage(
 		errMsg := fmt.Sprint("seems like the `reactivesearchQuery` stage was not executed before this stage, cannot continue!")
 		log.Warnln(logTag, ": ", errMsg)
 		return nil, false, &Error{
-			Err: fmt.Errorf(errMsg),
+			Err: fmt.Errorf("%s", errMsg),
 		}
 	}
 
@@ -101,7 +101,7 @@ func executeValidateStage(
 			errMsg := fmt.Sprint("error while unmarshalling mdb body into map: ", unmarshalErr.Error())
 			log.Warnln(logTag, ": ", errMsg)
 			return nil, false, &Error{
-				Err: fmt.Errorf(errMsg),
+				Err: fmt.Errorf("%s", errMsg),
 			}
 		}
 
@@ -127,7 +127,7 @@ func executeValidateStage(
 			errMsg := fmt.Sprint("error while unmarshalling solr body into map: ", unmarshalErr.Error())
 			log.Warnln(logTag, ": ", errMsg)
 			return nil, false, &Error{
-				Err: fmt.Errorf(errMsg),
+				Err: fmt.Errorf("%s", errMsg),
 			}
 		}
 
@@ -136,7 +136,7 @@ func executeValidateStage(
 			errMsg := fmt.Sprint("error while parsing urlValues, not present")
 			log.Warnln(logTag, ": ", errMsg)
 			return nil, false, &Error{
-				Err: fmt.Errorf(errMsg),
+				Err: fmt.Errorf("%s", errMsg),
 			}
 		}
 
@@ -149,7 +149,7 @@ func executeValidateStage(
 			errMsg := fmt.Sprint("urlValues is not a map, cannot parse index!")
 			log.Warnln(logTag, ": ", errMsg)
 			return nil, false, &Error{
-				Err: fmt.Errorf(errMsg),
+				Err: fmt.Errorf("%s", errMsg),
 			}
 		}
 
@@ -240,7 +240,7 @@ func executeValidateStage(
 			errMsg := fmt.Sprint("error while parsing request into validate equivalent: ", parseErr.Error())
 			log.Warnln(logTag, ": ", errMsg)
 			return nil, false, &Error{
-				Err: fmt.Errorf(errMsg),
+				Err: fmt.Errorf("%s", errMsg),
 			}
 		}
 	}
@@ -252,7 +252,7 @@ func executeValidateStage(
 			errMsg := fmt.Sprint("could not parse independent requests to string!")
 			log.Warnln(logTag, ": ", errMsg)
 			return nil, false, &Error{
-				Err: fmt.Errorf(errMsg),
+				Err: fmt.Errorf("%s", errMsg),
 			}
 		}
 
@@ -262,7 +262,7 @@ func executeValidateStage(
 			errMsg := fmt.Sprint("error unmarshalling independent requests to map: ", independentUnmarshalErr.Error())
 			log.Warnln(logTag, ": ", errMsg)
 			return nil, false, &Error{
-				Err: fmt.Errorf(errMsg),
+				Err: fmt.Errorf("%s", errMsg),
 			}
 		}
 
@@ -305,7 +305,7 @@ func executeValidateStage(
 		errMsg := fmt.Sprint("error while marshalling response, ", marshalErr)
 		log.Warnln(logTag, ": ", errMsg)
 		return nil, false, &Error{
-			Err: fmt.Errorf(errMsg),
+			Err: fmt.Errorf("%s", errMsg),
 		}
 	}
 

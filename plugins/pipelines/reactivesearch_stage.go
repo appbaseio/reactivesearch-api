@@ -311,7 +311,7 @@ func executeReactivesearchStage(
 			errMsg := "`index` should be present as an env for zinc stage"
 			log.Warnln(logTag, ": ", errMsg)
 			return nil, false, &Error{
-				Err:  fmt.Errorf(errMsg),
+				Err:  fmt.Errorf("%s", errMsg),
 				Code: http.StatusBadRequest,
 			}
 		}
@@ -328,7 +328,7 @@ func executeReactivesearchStage(
 				errMsg := "`index` is neither array nor string, should be one of the two"
 				log.Warnln(logTag, ": ", errMsg)
 				return nil, false, &Error{
-					Err:  fmt.Errorf(errMsg),
+					Err:  fmt.Errorf("%s", errMsg),
 					Code: http.StatusBadRequest,
 				}
 			}
@@ -340,7 +340,7 @@ func executeReactivesearchStage(
 				errMsg := "`index` array should contain at-least 1 element"
 				log.Warnln(logTag, ": ", errMsg)
 				return nil, false, &Error{
-					Err:  fmt.Errorf(errMsg),
+					Err:  fmt.Errorf("%s", errMsg),
 					Code: http.StatusBadRequest,
 				}
 			}
@@ -353,7 +353,7 @@ func executeReactivesearchStage(
 					errMsg := "element at 0th index for `index` is non-string value"
 					log.Warnln(logTag, ": ", errMsg)
 					return nil, false, &Error{
-						Err:  fmt.Errorf(errMsg),
+						Err:  fmt.Errorf("%s", errMsg),
 						Code: http.StatusBadRequest,
 					}
 				}
@@ -366,7 +366,7 @@ func executeReactivesearchStage(
 			errMsg := "couldn't parse a value of `index`"
 			log.Warnln(logTag, ": ", errMsg)
 			return nil, false, &Error{
-				Err:  fmt.Errorf(errMsg),
+				Err:  fmt.Errorf("%s", errMsg),
 				Code: http.StatusBadRequest,
 			}
 		}

@@ -603,7 +603,7 @@ func GetPopularSuggestions(config querytranslate.PopularSuggestionsOptions, valu
 		if aliasedIndex == "" {
 			errMsg := "error while getting aliased index name from preferences"
 			log.Warnln(logTag, ": ", errMsg)
-			return suggestions, &Error{Code: http.StatusInternalServerError, Error: fmt.Errorf(errMsg)}
+			return suggestions, &Error{Code: http.StatusInternalServerError, Error: fmt.Errorf("%s", errMsg)}
 		}
 
 		// Build ES query using olivere/elastic
@@ -645,7 +645,7 @@ func GetPopularSuggestions(config querytranslate.PopularSuggestionsOptions, valu
 		if searchErr != nil {
 			errMsg := fmt.Sprint("error while searching for popular suggestions: ", searchErr)
 			log.Warnln(logTag, ": ", errMsg)
-			return suggestions, &Error{Code: http.StatusInternalServerError, Error: fmt.Errorf(errMsg)}
+			return suggestions, &Error{Code: http.StatusInternalServerError, Error: fmt.Errorf("%s", errMsg)}
 		}
 
 		for _, v := range res.Hits.Hits {
@@ -713,7 +713,7 @@ func GetFAQSuggestions(config querytranslate.FAQSuggestionsOptions, value string
 	if searchboxId == nil || strings.TrimSpace(*searchboxId) == "" {
 		errMsg := fmt.Sprint("`searchboxId` needs to be valid")
 		return make([]querytranslate.SuggestionHIT, 0), &Error{
-			Error: fmt.Errorf(errMsg),
+			Error: fmt.Errorf("%s", errMsg),
 			Code:  http.StatusBadRequest,
 		}
 	}

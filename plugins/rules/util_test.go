@@ -2,7 +2,9 @@ package rules
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
+	"net/http/httptest"
 	"testing"
 	"time"
 
@@ -303,6 +305,14 @@ func TestRunScript(t *testing.T) {
 	})
 
 	Convey("Sync Fetch", t, func() {
+		// The awaited fetch only needs a JSON body before the script rewrites
+		// the request. GitHub Actions cannot reach the old demo cluster.
+		fetchSrv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+			_, _ = w.Write([]byte(`{}`))
+		}))
+		defer fetchSrv.Close()
+
 		scriptRequest := ScriptRequest{
 			Body: "{\"query\":[{\"id\":\"search\",\"react\":{\"and\":\"color\"},\"dataField\":[\"name\"],\"size\":5,\"value\":\"vinyl\",\"includeFields\":[\"name\",\"color\"],\"index\":\"best-buy-dataset\"},{\"id\":\"color\",\"type\":\"term\",\"dataField\":\"color.keyword\",\"value\":[\"Black\"],\"execute\":false}]}",
 			Headers: map[string]string{
@@ -329,7 +339,7 @@ func TestRunScript(t *testing.T) {
 		}
 
 		// Script to pass
-		scriptStr := "async function handleRequest() { const res = await fetch('https://b7GLrKxsd:095e2eab-3800-491b-abf6-6b15cf8edf87@appbase-demo-ansible-abxiydt-arc.searchbase.io/_search'); const parsedResponse = await res.json(); const body = JSON.parse(context.request.body); return { ...context.request, body: JSON.stringify({ ...body, query: [ ...body.query, { id: 'brandFilter', execute: false, type: 'term', dataField: 'brand.keyword', }, ], }), }; }"
+		scriptStr := fmt.Sprintf("async function handleRequest() { const res = await fetch('%s'); const parsedResponse = await res.json(); const body = JSON.parse(context.request.body); return { ...context.request, body: JSON.stringify({ ...body, query: [ ...body.query, { id: 'brandFilter', execute: false, type: 'term', dataField: 'brand.keyword', }, ], }), }; }", fetchSrv.URL)
 
 		response, err := r.runScript(context, scriptStr, false, false, timeout, true, false)
 

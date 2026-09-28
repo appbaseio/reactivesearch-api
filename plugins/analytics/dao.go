@@ -3143,7 +3143,7 @@ func (es *elasticsearch) getInsights(ctx context.Context, indexName string, disa
 	if err != nil {
 		msg := "error occurred while fetching insights"
 		log.Errorln(logTag, ":", err)
-		return GetInsight{}, fmt.Errorf(msg)
+		return GetInsight{}, fmt.Errorf("%s", msg)
 	}
 	var insights = make([]InsightResponseType, 0)
 	var savedInsights = make([]InsightResponseType, 0)

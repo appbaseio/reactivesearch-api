@@ -621,7 +621,7 @@ func executeElasticsearchStage(
 			errMsg := fmt.Sprint("error while parsing hit for boost from msearch response: ", hitParseErr.Error())
 			log.Warnln(logTag, ": ", errMsg)
 			return nil, false, &Error{
-				Err: fmt.Errorf(errMsg),
+				Err: fmt.Errorf("%s", errMsg),
 			}
 		}
 
@@ -631,7 +631,7 @@ func executeElasticsearchStage(
 			errMsg := fmt.Sprint("error while unmarshalling hit into search hit: ", unmarshalErr.Error())
 			log.Warnln(logTag, ": ", errMsg)
 			return nil, false, &Error{
-				Err: fmt.Errorf(errMsg),
+				Err: fmt.Errorf("%s", errMsg),
 			}
 		}
 
@@ -752,7 +752,7 @@ func executeElasticsearchStage(
 					errMsg := fmt.Sprint("could not cast `boostStageResponse` into proper type")
 					log.Errorln(logTag, ": ", errMsg)
 					return nil, false, &Error{
-						Err: fmt.Errorf(errMsg),
+						Err: fmt.Errorf("%s", errMsg),
 					}
 				}
 
@@ -766,7 +766,7 @@ func executeElasticsearchStage(
 					errMsg := fmt.Sprint("could not cast `searchHits` into es7.SearchResult")
 					log.Errorln(logTag, ": ", errMsg)
 					return nil, false, &Error{
-						Err: fmt.Errorf(errMsg),
+						Err: fmt.Errorf("%s", errMsg),
 					}
 				}
 
@@ -895,7 +895,7 @@ func executeElasticsearchStage(
 					errMsg := fmt.Sprint("could not cast `boostStageResponse` into proper type")
 					log.Errorln(logTag, ": ", errMsg)
 					return nil, false, &Error{
-						Err: fmt.Errorf(errMsg),
+						Err: fmt.Errorf("%s", errMsg),
 					}
 				}
 
@@ -909,7 +909,7 @@ func executeElasticsearchStage(
 					errMsg := fmt.Sprint("could not cast `searchHits` into es7.SearchResult")
 					log.Errorln(logTag, ": ", errMsg)
 					return nil, false, &Error{
-						Err: fmt.Errorf(errMsg),
+						Err: fmt.Errorf("%s", errMsg),
 					}
 				}
 
@@ -1013,7 +1013,7 @@ func executeElasticsearchStage(
 				errMsg := fmt.Sprintf("error while unmarshalling received response for independent request with ID: `%s` and err: `%v`", requestId, unmarshalIndependentResponseErr)
 				log.Errorln(logTag, ": ", errMsg)
 				return nil, false, &Error{
-					Err: fmt.Errorf(errMsg),
+					Err: fmt.Errorf("%s", errMsg),
 				}
 			}
 
@@ -1029,7 +1029,7 @@ func executeElasticsearchStage(
 				errMsg := fmt.Sprint("error while unmarshalling RS response into a map to modify it: ", rsResponseAsMapErr)
 				log.Errorln(logTag, ": ", errMsg)
 				return nil, false, &Error{
-					Err: fmt.Errorf(errMsg),
+					Err: fmt.Errorf("%s", errMsg),
 				}
 			}
 
@@ -1047,7 +1047,7 @@ func executeElasticsearchStage(
 				errMsg := fmt.Sprint("error while marshalling rs response back into bytes from modified map: ", marshalErr)
 				log.Errorln(logTag, ": ", errMsg)
 				return nil, false, &Error{
-					Err: fmt.Errorf(errMsg),
+					Err: fmt.Errorf("%s", errMsg),
 				}
 			}
 		}
