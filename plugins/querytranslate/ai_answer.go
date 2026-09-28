@@ -142,13 +142,13 @@ func ExecuteAIAnswerInQuery(rsRequest *RSQuery, transformedResponse []byte, indi
 				// The query based index is not whitelisted, we need to throw an error
 				errMsg := fmt.Sprintf("`%s` is not whitelisted for OpenAI execution", *indexFromQuery)
 				log.Warnln(logTag, ": ", errMsg)
-				return transformedResponse, fmt.Errorf(errMsg)
+				return transformedResponse, fmt.Errorf("%s", errMsg)
 			}
 		} else if !areAllIndexesWhitelisted {
 			// One or more of the passed indices are not allowed for OpenAI execution
 			errMsg := "one or more of the passed indices are not allowed for OpenAI execution"
 			log.Warnln(logTag, ": ", errMsg)
-			return transformedResponse, fmt.Errorf(errMsg)
+			return transformedResponse, fmt.Errorf("%s", errMsg)
 		}
 
 		// Check API type and accordingly extract the values
@@ -181,7 +181,7 @@ func ExecuteAIAnswerInQuery(rsRequest *RSQuery, transformedResponse []byte, indi
 			if *AIConfigUsed.Temperature < 0 || *AIConfigUsed.Temperature > 2 {
 				errMsg := "`temperature` should be in the range of 0 and 2"
 				log.Warnln(logTag, ": ", errMsg)
-				return transformedResponse, fmt.Errorf(errMsg)
+				return transformedResponse, fmt.Errorf("%s", errMsg)
 			}
 		}
 
@@ -297,7 +297,7 @@ func ExecuteAIAnswerInQuery(rsRequest *RSQuery, transformedResponse []byte, indi
 				// Handle this case where the df list might be empty
 				errMsg := "cannot build `docTemplate` without `dataField` being passed. Either pass `dataField` or pass `query.AIConfig.docTemplate` value"
 				log.Warnln(logTag, ": ", errMsg)
-				return transformedResponse, fmt.Errorf(errMsg)
+				return transformedResponse, fmt.Errorf("%s", errMsg)
 			}
 
 			AIConfigUsed.DocTemplate = &defaultDocTemplate
@@ -546,7 +546,7 @@ func MakeChatGPTRequest(model string, messages []map[string]interface{}, apiKey 
 		errMsg := fmt.Sprint("error while creating the request to send OpenAI, ", requestCreateErr)
 		log.Errorln(logTag, ": ", errMsg)
 
-		return nil, nil, nil, fmt.Errorf(errMsg)
+		return nil, nil, nil, fmt.Errorf("%s", errMsg)
 	}
 
 	// Set the authorization header
@@ -558,7 +558,7 @@ func MakeChatGPTRequest(model string, messages []map[string]interface{}, apiKey 
 		errMsg := fmt.Sprint("error while sending request to ChatGPT, ", reqErr)
 		log.Warnln(logTag, ": ", errMsg)
 
-		return nil, nil, nil, fmt.Errorf(errMsg)
+		return nil, nil, nil, fmt.Errorf("%s", errMsg)
 	}
 
 	// Read the body.
@@ -567,7 +567,7 @@ func MakeChatGPTRequest(model string, messages []map[string]interface{}, apiKey 
 		errMsg := fmt.Sprint("error while reading the response body from ChatGPT, ", readErr)
 		log.Warnln(logTag, ": ", errMsg)
 
-		return nil, nil, nil, fmt.Errorf(errMsg)
+		return nil, nil, nil, fmt.Errorf("%s", errMsg)
 	}
 
 	// Verify the status code received, a non 200 OK status code will return an
@@ -657,7 +657,7 @@ func FindValueForAI(queryToUse Query, rsQuery RSQuery) (string, error) {
 		// We cannot do anything since no `react` value is passed and either
 		// value is not passed or is not of type string
 		errMsg := ("error while parsing value from query, `value` or `react` not parsable or not present")
-		return "", fmt.Errorf(errMsg)
+		return "", fmt.Errorf("%s", errMsg)
 	}
 
 	// If `react` is present, then we can iterate the react values and

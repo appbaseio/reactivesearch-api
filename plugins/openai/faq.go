@@ -73,7 +73,7 @@ func (r *OpenAI) UpdatePartialFields(ctx context.Context, faqBody FAQBody, faqId
 	if fetchErr != nil {
 		errMsg := fmt.Sprint("error while fetching FAQ with passed ID: ", fetchErr.Error())
 		log.Warnln(logTag, ": ", errMsg)
-		return FAQBody{}, fmt.Errorf(errMsg)
+		return FAQBody{}, fmt.Errorf("%s", errMsg)
 	}
 
 	// Unmarshal the FAQ bytes into the structure.
@@ -82,7 +82,7 @@ func (r *OpenAI) UpdatePartialFields(ctx context.Context, faqBody FAQBody, faqId
 	if unmarshalErr != nil {
 		errMsg := fmt.Sprint("error while unmarshaling faq body from bytes into structure: ", unmarshalErr.Error())
 		log.Warnln(logTag, ": ", errMsg)
-		return FAQBody{}, fmt.Errorf(errMsg)
+		return FAQBody{}, fmt.Errorf("%s", errMsg)
 	}
 
 	if faqBody.Answer != nil {

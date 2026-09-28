@@ -1256,7 +1256,7 @@ func runStageTrigger(pipeline ESPipelineDoc, executionCtx PipelineExecutionConte
 	if unmarshalErr != nil {
 		errMsg := fmt.Sprintf("error while marshalling inputs for trigger environment for stage: %d", stageIndex)
 		log.Warnln(logTag, ": ", errMsg)
-		return false, fmt.Errorf(errMsg)
+		return false, fmt.Errorf("%s", errMsg)
 	}
 
 	globalEnv["inputs"] = inputsAsMap

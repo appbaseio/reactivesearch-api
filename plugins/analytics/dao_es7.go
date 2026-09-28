@@ -2617,7 +2617,7 @@ func (es recentDocumentsElasticsearch) getRecentDocumentsWithFilter(ctx context.
 	if searchErr != nil {
 		errMsg := fmt.Sprint("Error while searching for recent documents: ", searchErr.Error())
 		log.Warnln(logTag, ": ", errMsg)
-		return nil, fmt.Errorf(errMsg)
+		return nil, fmt.Errorf("%s", errMsg)
 	}
 
 	responsesToReturn := make([]map[string]interface{}, 0)

@@ -96,7 +96,7 @@ func executeAIAnswerStage(
 		errMsg := fmt.Sprint("`apiKey` is a required value for AIAnswer stage")
 		log.Warnln(logTag, ": ", errMsg)
 		return scriptContextInBytes, false, &Error{
-			Err:  fmt.Errorf(errMsg),
+			Err:  fmt.Errorf("%s", errMsg),
 			Code: http.StatusBadRequest,
 		}
 	}
@@ -140,7 +140,7 @@ func executeAIAnswerStage(
 		errMsg := "error while extracting ReactiveSearch Query from context. This stage should always be after the `reactivesearchQuery` has been executed."
 		log.Warnln(logTag, ": ", errMsg)
 		return scriptContextInBytes, false, &Error{
-			Err:  fmt.Errorf(errMsg),
+			Err:  fmt.Errorf("%s", errMsg),
 			Code: http.StatusBadRequest,
 		}
 	}
@@ -217,7 +217,7 @@ func executeAIAnswerStage(
 		errMsg := fmt.Sprintf("`%s` is not present inside response body, cannot continue!", *inputs.QueryID)
 		log.Warnln(logTag, ": ", errMsg)
 		return scriptContextInBytes, false, &Error{
-			Err:  fmt.Errorf(errMsg),
+			Err:  fmt.Errorf("%s", errMsg),
 			Code: http.StatusBadRequest,
 		}
 	}
@@ -227,7 +227,7 @@ func executeAIAnswerStage(
 		errMsg := fmt.Sprintf("`%s` is not an object!", *inputs.QueryID)
 		log.Warnln(logTag, ": ", errMsg)
 		return scriptContextInBytes, false, &Error{
-			Err:  fmt.Errorf(errMsg),
+			Err:  fmt.Errorf("%s", errMsg),
 			Code: http.StatusBadRequest,
 		}
 	}
@@ -250,7 +250,7 @@ func executeAIAnswerStage(
 		errMsg := fmt.Sprintf("error while unmarshalling query ID object into custom structure: %s", structureUnmarshalErr.Error())
 		log.Warnln(logTag, ": ", errMsg)
 		return scriptContextInBytes, false, &Error{
-			Err:  fmt.Errorf(errMsg),
+			Err:  fmt.Errorf("%s", errMsg),
 			Code: http.StatusInternalServerError,
 		}
 	}
@@ -312,7 +312,7 @@ func executeAIAnswerStage(
 			errMsg := "cannot build `docTemplate` without `dataField` being passed. Either pass `dataField` or pass `AIConfig.docTemplate` value"
 			log.Warnln(logTag, ": ", errMsg)
 			return scriptContextInBytes, false, &Error{
-				Err:  fmt.Errorf(errMsg),
+				Err:  fmt.Errorf("%s", errMsg),
 				Code: http.StatusBadRequest,
 			}
 		}

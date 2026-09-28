@@ -97,7 +97,7 @@ func (m MappingsMigration) Script() *util.Error {
 		errMsg := fmt.Sprint("error while saving passed body to index: ", saveErr.Error())
 		return &util.Error{
 			Message: errMsg,
-			Err:     fmt.Errorf(errMsg),
+			Err:     fmt.Errorf("%s", errMsg),
 		}
 	}
 

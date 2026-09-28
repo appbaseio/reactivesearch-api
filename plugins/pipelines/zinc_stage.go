@@ -327,7 +327,7 @@ func executeZincStage(
 				errMsg := fmt.Sprintf("error while unmarshalling received response for independent request with ID: `%s` and err: `%v`", requestId, unmarshalIndependentResponseErr)
 				log.Errorln(logTag, ": ", errMsg)
 				return nil, false, &Error{
-					Err: fmt.Errorf(errMsg),
+					Err: fmt.Errorf("%s", errMsg),
 				}
 			}
 
@@ -343,7 +343,7 @@ func executeZincStage(
 				errMsg := fmt.Sprint("error while unmarshalling RS response into a map to modify it: ", rsResponseAsMapErr)
 				log.Errorln(logTag, ": ", errMsg)
 				return nil, false, &Error{
-					Err: fmt.Errorf(errMsg),
+					Err: fmt.Errorf("%s", errMsg),
 				}
 			}
 
@@ -361,7 +361,7 @@ func executeZincStage(
 				errMsg := fmt.Sprint("error while marshalling rs response back into bytes from modified map: ", marshalErr)
 				log.Errorln(logTag, ": ", errMsg)
 				return nil, false, &Error{
-					Err: fmt.Errorf(errMsg),
+					Err: fmt.Errorf("%s", errMsg),
 				}
 			}
 		}
@@ -424,7 +424,7 @@ func executeZincStage(
 		log.Errorln(logTag, ": ", errMsg)
 
 		return scriptContextInBytes, false, &Error{
-			Err:  fmt.Errorf(errMsg),
+			Err:  fmt.Errorf("%s", errMsg),
 			Code: http.StatusInternalServerError,
 		}
 	}
@@ -443,7 +443,7 @@ func runZincQuery(uri *string, requestBody []byte, headers map[string]string) ([
 		log.Errorln(logTag, ": ", errMsg)
 
 		return nil, nil, &Error{
-			Err:  fmt.Errorf(errMsg),
+			Err:  fmt.Errorf("%s", errMsg),
 			Code: http.StatusInternalServerError,
 		}
 	}
@@ -459,7 +459,7 @@ func runZincQuery(uri *string, requestBody []byte, headers map[string]string) ([
 		log.Warnln(logTag, ": ", errMsg)
 
 		return nil, nil, &Error{
-			Err:  fmt.Errorf(errMsg),
+			Err:  fmt.Errorf("%s", errMsg),
 			Code: http.StatusInternalServerError,
 		}
 	}
@@ -471,7 +471,7 @@ func runZincQuery(uri *string, requestBody []byte, headers map[string]string) ([
 		log.Warnln(logTag, ": ", errMsg)
 
 		return nil, response, &Error{
-			Err:  fmt.Errorf(errMsg),
+			Err:  fmt.Errorf("%s", errMsg),
 			Code: http.StatusInternalServerError,
 		}
 	}
@@ -488,7 +488,7 @@ func parseZincToReactiveSearch(zincResponse []byte, allQueries []querytranslate.
 	if unmarshalErr != nil {
 		errMsg := fmt.Sprintf("error while unmarshalling zinc body into an array of interface to parse it: %s", unmarshalErr.Error())
 		return nil, &Error{
-			Err:  fmt.Errorf(errMsg),
+			Err:  fmt.Errorf("%s", errMsg),
 			Code: http.StatusInternalServerError,
 		}
 	}
@@ -498,7 +498,7 @@ func parseZincToReactiveSearch(zincResponse []byte, allQueries []querytranslate.
 		errMsg := fmt.Sprintf("error while parsing `responses` to an array")
 		log.Warnln(logTag, ": ", errMsg)
 		return nil, &Error{
-			Err:  fmt.Errorf(errMsg),
+			Err:  fmt.Errorf("%s", errMsg),
 			Code: http.StatusInternalServerError,
 		}
 	}
@@ -523,7 +523,7 @@ func parseZincToReactiveSearch(zincResponse []byte, allQueries []querytranslate.
 			errMsg := fmt.Sprintf("error while parsing zinc response at index `%d` to a map", queryIndex)
 			log.Warnln(logTag, ": ", errMsg)
 			return nil, &Error{
-				Err:  fmt.Errorf(errMsg),
+				Err:  fmt.Errorf("%s", errMsg),
 				Code: http.StatusInternalServerError,
 			}
 		}
@@ -548,7 +548,7 @@ func parseZincToReactiveSearch(zincResponse []byte, allQueries []querytranslate.
 				log.Errorln(logTag, ": ", errMsg)
 
 				return nil, &Error{
-					Err:  fmt.Errorf(errMsg),
+					Err:  fmt.Errorf("%s", errMsg),
 					Code: http.StatusInternalServerError,
 				}
 			}
@@ -644,28 +644,28 @@ func extractIndexSuggestionsForZinc(responseMap map[string]interface{}, rsQuery 
 	if !topHitsOk {
 		errMsg := "`response.hits` not present in map"
 		log.Warnln(logTag, ": ", errMsg)
-		return nil, fmt.Errorf(errMsg)
+		return nil, fmt.Errorf("%s", errMsg)
 	}
 
 	topHitsAsMap, asMapOk := responseHits.(map[string]interface{})
 	if !asMapOk {
 		errMsg := "`response.hits` cannot be parsed into a map"
 		log.Warnln(logTag, ": ", errMsg)
-		return nil, fmt.Errorf(errMsg)
+		return nil, fmt.Errorf("%s", errMsg)
 	}
 
 	nestedHits, nestedHitOk := topHitsAsMap["hits"]
 	if !nestedHitOk {
 		errMsg := "`response.hits.hits` not present in response"
 		log.Warnln(logTag, ": ", errMsg)
-		return nil, fmt.Errorf(errMsg)
+		return nil, fmt.Errorf("%s", errMsg)
 	}
 
 	nestedHitsAsMap, asMapOk := nestedHits.([]interface{})
 	if !asMapOk {
 		errMsg := "`response.hits.hits` not an array"
 		log.Warnln(logTag, ": ", errMsg)
-		return nil, fmt.Errorf(errMsg)
+		return nil, fmt.Errorf("%s", errMsg)
 	}
 
 	// Convert the hits into an ESDoc array

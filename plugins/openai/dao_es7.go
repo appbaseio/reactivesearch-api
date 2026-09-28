@@ -519,7 +519,7 @@ func (es *FAQElasticsearch) getFAQCountEs7(ctx context.Context) (int64, error) {
 
 	if err != nil {
 		errMsg := fmt.Sprint("error while fetching count of FAQ docs: ", err.Error())
-		return 0, fmt.Errorf(errMsg)
+		return 0, fmt.Errorf("%s", errMsg)
 	}
 
 	return faqCount, nil

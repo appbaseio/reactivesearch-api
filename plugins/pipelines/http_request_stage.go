@@ -182,7 +182,7 @@ func executeHTTPRequestStage(
 	// URL must be present
 	if inputs.URL == nil || *inputs.URL == "" {
 		return nil, false, &Error{
-			Err:  fmt.Errorf("The 'url' property must be present for stage: " + *id),
+			Err:  fmt.Errorf("%s", "The 'url' property must be present for stage: "+*id),
 			Code: http.StatusBadRequest,
 		}
 	}

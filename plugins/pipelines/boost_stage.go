@@ -180,13 +180,13 @@ func executeBoostStage(
 	}
 	if parsedBoostInputs.DataField == nil {
 		return scriptContextInBytes, false, &Error{
-			Err:  fmt.Errorf("The 'dataField' property must be present for stage: " + *stageId),
+			Err:  fmt.Errorf("%s", "The 'dataField' property must be present for stage: "+*stageId),
 			Code: http.StatusBadRequest,
 		}
 	}
 	if parsedBoostInputs.BoostType == Score && parsedBoostInputs.Value == nil {
 		return scriptContextInBytes, false, &Error{
-			Err:  fmt.Errorf("The 'value' property must be present when boostType is 'score' for stage: " + *stageId),
+			Err:  fmt.Errorf("%s", "The 'value' property must be present when boostType is 'score' for stage: "+*stageId),
 			Code: http.StatusBadRequest,
 		}
 	}
@@ -351,7 +351,7 @@ func executeBoostStage(
 					errMsg := fmt.Sprint("error while marshalling boost stage: ", marshalErr.Error())
 					log.Errorln(logTag, ": ", errMsg)
 					return nil, false, &Error{
-						Err: fmt.Errorf(errMsg),
+						Err: fmt.Errorf("%s", errMsg),
 					}
 				}
 

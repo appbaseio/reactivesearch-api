@@ -102,14 +102,14 @@ func FetchDocumentForSource(index string, documentId string) (map[string]interfa
 	if docFetchErr != nil {
 		errMsg := fmt.Sprint(errTemplate, " with error: ", docFetchErr.Error())
 		log.Warnln(logTag, ": ", errMsg)
-		return nil, fmt.Errorf(errMsg)
+		return nil, fmt.Errorf("%s", errMsg)
 	}
 
 	// Parse the response and extract the `_source`
 	if response.StatusCode != http.StatusOK {
 		errMsg := fmt.Sprint(errTemplate, " : non OK status code received: ", response.StatusCode)
 		log.Warnln(logTag, ": ", errMsg)
-		return nil, fmt.Errorf(errMsg)
+		return nil, fmt.Errorf("%s", errMsg)
 	}
 
 	// Unmarshal the body into map
@@ -118,21 +118,21 @@ func FetchDocumentForSource(index string, documentId string) (map[string]interfa
 	if unmarshalErr != nil {
 		errMsg := fmt.Sprint(errTemplate, " : error while unmarshaling ", unmarshalErr.Error())
 		log.Warnln(logTag, ": ", errMsg)
-		return nil, fmt.Errorf(errMsg)
+		return nil, fmt.Errorf("%s", errMsg)
 	}
 
 	source, isSourcePresent := responseAsMap["_source"]
 	if !isSourcePresent {
 		errMsg := fmt.Sprint(errTemplate, " : `_source` is not present")
 		log.Warnln(logTag, ": ", errMsg)
-		return nil, fmt.Errorf(errMsg)
+		return nil, fmt.Errorf("%s", errMsg)
 	}
 
 	sourceAsMap, asMapOk := source.(map[string]interface{})
 	if !asMapOk {
 		errMsg := fmt.Sprint(errTemplate, " : `_source` is not a map")
 		log.Warnln(logTag, ": ", errMsg)
-		return nil, fmt.Errorf(errMsg)
+		return nil, fmt.Errorf("%s", errMsg)
 	}
 
 	return sourceAsMap, nil

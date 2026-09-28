@@ -34,7 +34,7 @@ func buildResponseBody(responseDetails *InternalChatGPTResponse) ([]byte, int, e
 	if !responseDetails.GetIsReady() {
 		// It timed out and the response is not ready yet
 		errMsg := "request timed out while waiting for the ChatGPT response to be fetched"
-		return nil, http.StatusGatewayTimeout, fmt.Errorf(errMsg)
+		return nil, http.StatusGatewayTimeout, fmt.Errorf("%s", errMsg)
 	}
 
 	// Inject the request body as well in the response
@@ -59,14 +59,14 @@ func buildResponseBody(responseDetails *InternalChatGPTResponse) ([]byte, int, e
 	if extractErr != nil {
 		// Cannot continue, throw the error
 		errMsg := fmt.Sprint("error while extracting response from ChatGPT response: ", extractErr.Error())
-		return nil, http.StatusInternalServerError, fmt.Errorf(errMsg)
+		return nil, http.StatusInternalServerError, fmt.Errorf("%s", errMsg)
 	}
 
 	// Extract the model
 	modelAsText, modelExtractErr := jsonparser.GetString(responseDetails.Response(), "model")
 	if modelExtractErr != nil {
 		errMsg := fmt.Sprint("error while extracting model: ", modelExtractErr.Error())
-		return nil, http.StatusInternalServerError, fmt.Errorf(errMsg)
+		return nil, http.StatusInternalServerError, fmt.Errorf("%s", errMsg)
 	}
 
 	answerMap := map[string]interface{}{
@@ -85,7 +85,7 @@ func buildResponseBody(responseDetails *InternalChatGPTResponse) ([]byte, int, e
 		unmarshalErr := json.Unmarshal(documentIdsAsBytes, &documentIdsArr)
 		if unmarshalErr != nil {
 			errMsg := fmt.Sprint("error while unmarshalling documentIds into array: ", unmarshalErr.Error())
-			return nil, http.StatusInternalServerError, fmt.Errorf(errMsg)
+			return nil, http.StatusInternalServerError, fmt.Errorf("%s", errMsg)
 		}
 
 		answerMap["documentIds"] = documentIdsArr
@@ -97,7 +97,7 @@ func buildResponseBody(responseDetails *InternalChatGPTResponse) ([]byte, int, e
 	bodyWithResponse, marshalErr := json.Marshal(responseToReturn)
 	if marshalErr != nil {
 		errMsg := fmt.Sprint("error while marshalling body to return: ", marshalErr.Error())
-		return nil, http.StatusInternalServerError, fmt.Errorf(errMsg)
+		return nil, http.StatusInternalServerError, fmt.Errorf("%s", errMsg)
 	}
 
 	return bodyWithResponse, http.StatusOK, nil
@@ -613,7 +613,7 @@ func (r *OpenAI) findFollowUpAnswer(responseDetails *InternalChatGPTResponse, fo
 	messagesAsBytes, marshalErr := json.Marshal(followUpReqBody.Messages)
 	if marshalErr != nil {
 		errMsg := fmt.Sprint("error while marshalling built messages into bytes to pass to ChatGPT: ", marshalErr.Error())
-		return nil, fmt.Errorf(errMsg), http.StatusInternalServerError
+		return nil, fmt.Errorf("%s", errMsg), http.StatusInternalServerError
 	}
 
 	var messagesAsMap []map[string]interface{}
@@ -646,14 +646,14 @@ func (r *OpenAI) findFollowUpAnswer(responseDetails *InternalChatGPTResponse, fo
 		}
 
 		errMsg := fmt.Sprint("error while fetching follow-up response from ChatGPT: ", err.Error())
-		return nil, fmt.Errorf(errMsg), http.StatusInternalServerError
+		return nil, fmt.Errorf("%s", errMsg), http.StatusInternalServerError
 	}
 
 	// Inject the response inside the `response` key.
 	updatedResponse, setErr := jsonparser.Set([]byte("{}"), responseDetails.Response(), "response")
 	if setErr != nil {
 		errMsg := fmt.Sprint("error while setting the ChatGPT response inside the `response` key: ", setErr.Error())
-		return nil, fmt.Errorf(errMsg), http.StatusInternalServerError
+		return nil, fmt.Errorf("%s", errMsg), http.StatusInternalServerError
 	}
 
 	return updatedResponse, nil, http.StatusOK
