@@ -1,4 +1,4 @@
-FROM golang:1.26.6 AS builder
+FROM golang:1.26.8 AS builder
 
 ARG VERSION=9.4.0
 ENV VERSION="${VERSION}"
