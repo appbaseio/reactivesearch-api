@@ -106,7 +106,7 @@ func executeAIAnswerStage(
 
 	// Set default model if none is passed
 	if inputs.Model == nil {
-		defaultModel := "gpt-3.5-turbo"
+		defaultModel := "gpt-4.1-mini"
 		inputs.Model = &defaultModel
 	}
 

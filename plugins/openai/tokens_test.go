@@ -210,6 +210,13 @@ func TestTrimContextAsPerLimits(t *testing.T) {
 	json.Unmarshal(messagesAsBytes, &messagesAsMap)
 
 	openAIInstance := Instance()
+	// These cases are sized for a 4,096-token context window. The default
+	// model is no longer gpt-3.5-turbo, so name it explicitly.
+	previous := openAIInstance.GetConfig()
+	model := "gpt-3.5-turbo"
+	openAIInstance.SetConfig(OpenAIConfig{Model: &model})
+	defer openAIInstance.SetConfig(previous)
+
 	Convey("Within Limit messages 1 trimmed", t, func() {
 		messagesToPass := messagesAsMap
 		updatedMessages, maxTokensToUse, err := openAIInstance.TrimContextAsPerLimits(messagesToPass, 2048, 3700, false)
