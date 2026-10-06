@@ -27,7 +27,7 @@ var (
 
 const (
 	OpenAIAPIURL     string = "https://api.openai.com/v1"
-	defaultModel     string = "gpt-3.5-turbo"
+	defaultModel     string = "gpt-4.1-mini"
 	defaultPrompt    string = "You're a helpful assistant."
 	defaultMaxTokens int    = 300
 	defaultMinTokens int    = 100
@@ -830,7 +830,7 @@ func (o OpenAIConfig) Key() string {
 // call.
 //
 // This will prioritize the model that user has configured, if
-// any and fallback to `gpt-3.5-turbo`
+// any and fallback to `gpt-4.1-mini`
 func (o OpenAIConfig) GetModel() string {
 	modelSet := o.Model
 	if modelSet == nil {
@@ -1262,9 +1262,14 @@ func BuildChatGPTBody(model string, messages []map[string]interface{}, maxTokens
 		requestBodyAsMap["model"] = model
 	}
 
-	// If maxTokens is passed, inject it in the request body
+	// If maxTokens is passed, inject it in the request body. GPT-5 models
+	// reject `max_tokens` and take the limit as `max_completion_tokens`.
 	if maxTokens != nil {
-		requestBodyAsMap["max_tokens"] = *maxTokens
+		if strings.HasPrefix(model, "gpt-5") {
+			requestBodyAsMap["max_completion_tokens"] = *maxTokens
+		} else {
+			requestBodyAsMap["max_tokens"] = *maxTokens
+		}
 	}
 
 	// If temperature is passed, inject it in the request body
